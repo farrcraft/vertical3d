@@ -6,10 +6,10 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/canvas/World.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -17,7 +17,7 @@
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -87,6 +87,7 @@ class World final {
      * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
      *        the quads are built on and drawn through. Every pipeline reads set 0. A world
      *        canvas is in world space, so the pass's camera is its only transform
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines cannot be created
      **/
     World(const DeviceContext& context, const Spec& spec);
@@ -114,7 +115,7 @@ class World final {
      *        lights a canvas kept across frames without building it again, and two submissions
      *        of one canvas can be lit differently. White leaves the colours alone
      **/
-    void submit(const canvas::World& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha,
+    void submit(const canvas::World& canvas, frame::Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha,
         const glm::vec4& tint = glm::vec4(1.0F));
 
  private:
@@ -125,6 +126,8 @@ class World final {
     struct Push final {
         glm::vec4 tint;
         uint32_t texture;
+        uint32_t bands = 0;   /**< a curve batch's bands **/
+        uint32_t mode = 0;    /**< 0 for a picture, 1 for glyphs drawn from their curves, 2 for a distance field **/
     };
 
     /**
@@ -150,19 +153,19 @@ class World final {
      * @param formats the attachment formats. A depth format of VK_FORMAT_UNDEFINED is for a
      *        pass without depth, and anything else is tested against.
      **/
-    PipelineHandle createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend);
+    resource::PipelineHandle createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend);
 
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Cache> cache_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<Textures> textures_;
+    boost::shared_ptr<resource::Textures> textures_;
 
-    PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
-    PipelineHandle depthPipeline_;          /**< for a pass with one, and it tests without writing **/
-    PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
-    PipelineHandle additiveDepthPipeline_;
+    resource::PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+    resource::PipelineHandle depthPipeline_;          /**< for a pass with one, and it tests without writing **/
+    resource::PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
+    resource::PipelineHandle additiveDepthPipeline_;
 
     boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };

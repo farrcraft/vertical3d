@@ -1,6 +1,6 @@
 # Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
-# needs a compiler, the Vulkan SDK, a vcpkg install and the libnoise submodule built.
+# needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
 
 # push is filtered to the default branch and pull_request is not: a branch in this repository
@@ -18,12 +18,16 @@ concurrency:
   group: ctest-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: windows-latest
     timeout-minutes: 120
 
     env:
+      # The directory the ci preset in CMakePresets.json builds into
       BUILD_DIR: out/build/ci
       # The out of tree build of the starter example, which consumes the api as source. It is
       # a second build directory rather than a second workflow: it needs this job's toolchain,
@@ -46,9 +50,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # libnoise is a submodule and is needed: voxel compiles its headers and its suite
-          # links it. It is the only submodule; SDL3_mixer comes from vcpkg.
-          submodules: true
           # the whole history, so the fails-first step can find the branch a pull request
           # merges into and read each changed file at its version there
           fetch-depth: 0
@@ -221,11 +222,11 @@ jobs:
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache
       # makes a second run cheap. vcpkg refuses a cache directory that is not there.
       #
-      # The key names everything vcpkg hashes into a package's ABI that this job can vary. That
-      # is vcpkg.json for the ports and the baseline that fixes their versions,
-      # vcpkg-configuration.json for the registries, and the toolset that compiles them. An
-      # archive restored under a key missing any of them is not a cheaper build, it is a
-      # download whose every entry misses.
+      # The key names everything vcpkg hashes into a package's ABI that this job can vary.
+      # vcpkg.json names the ports and the baseline that fixes their versions, and
+      # vcpkg-configuration.json the registries and the overlays. ports/ holds the overlay ports
+      # themselves, and the toolset compiles them all. An archive restored under a key missing
+      # any of them is not a cheaper build, it is a download whose every entry misses.
       #
       # There is no rung below the toolset in restore-keys for the same reason: a cache built
       # by another compiler cannot be reused by this one, so fetching it only costs time.
@@ -239,9 +240,9 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-
             vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
 
       # The archives restored are listed, so that the step after the configure can tell which
@@ -273,37 +274,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
-      # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
-      # is not on this image, and its cmake_minimum_required predates what current CMake
-      # accepts on its own. The archive lands where voxel's target_link_directories expects
-      # it. It is the only vendored library.
-      - name: Build libnoise
-        shell: cmd
-        run: |
-          call "%RUNNER_TEMP%\vcvars.bat" >nul
-          cmake -S vendor/libnoise -B "%RUNNER_TEMP%\libnoise" -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL ^
-            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
-          cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
-
-      # The job pool holds linking to one edge at a time. A link edge does more than link:
-      # vcpkg's applocal deployment runs in the same edge, reopening the binary just linked and
-      # copying dlls out of the installed bin directory the other link edges are reading. Only
-      # linking is pooled, so compilation still uses the whole machine.
+      # The ci preset configures with the vcpkg checkout above, and with a job pool that holds
+      # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
+      # deployment runs in the same edge, reopening the binary just linked and copying dlls out
+      # of the installed bin directory the other link edges are reading. Only linking is pooled,
+      # so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --version || exit /b 1
           ninja --version || exit /b 1
-          cmake -S . -B "%BUILD_DIR%" -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -DCMAKE_JOB_POOLS="link=1" ^
-            -DCMAKE_JOB_POOL_LINK=link ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
-            -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
+          cmake --preset ci || exit /b 1
 
       # An archive is named by its package's ABI hash, and the install's status file lists the
       # hash of every package installed. An archive no installed package names is one the
@@ -344,7 +326,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
 
       - name: Build
         shell: cmd
@@ -357,16 +339,15 @@ jobs:
       # hardest to see by eye and the most likely to come from a rendering change.
       # The render suite is silent under it; the apps are not, and are not run here.
       #
-      # The render device and window suites and the editor's device suite are left out, because
-      # the steps after this run them and also fail on a skip, which ctest does not count as a
-      # failure.
+      # The device suites and the render window suite are left out. The steps after this run
+      # them, and also fail on a skip, which ctest does not count as a failure.
       - name: Test
         shell: cmd
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^(render_(device|window)|vertical3d_device)$" || exit /b 1
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^(render_(device|window)|ui_device|vertical3d_device)$" || exit /b 1
 
       # A skipped render suite is a failure here even though it is not one locally. A run where
       # the suite skipped is green but has checked nothing about the renderer. Locally the skip
@@ -435,6 +416,27 @@ jobs:
           Pop-Location
           if ($exit -eq 77) { throw "the editor device suite found no device and skipped" }
           if ($exit -ne 0) { throw "the editor device suite exited $exit" }
+
+      # The ui's device suite is held to the same rule, on the same device.
+      - name: The ui device suite ran rather than skipped
+        shell: pwsh
+        env:
+          VK_LAYER_VALIDATE_SYNC: "1"
+        run: |
+          $tests = (Resolve-Path "$env:BUILD_DIR\api\ui\tests").Path
+          Push-Location $tests
+          & "$tests\v3dtest_ui_device.exe" --detect_memory_leaks=0
+          $exit = $LASTEXITCODE
+          if ($exit -ne 0) {
+            $log = Join-Path $tests "v3d.log"
+            if (Test-Path $log) {
+              Write-Host "--- $log"
+              Get-Content $log
+            }
+          }
+          Pop-Location
+          if ($exit -eq 77) { throw "the ui device suite found no device and skipped" }
+          if ($exit -ne 0) { throw "the ui device suite exited $exit" }
 
       # The window suite is held to the same rule. This runner opens a window and lavapipe
       # presents to it, so a skip means one of the two stopped working, and the WindowRenderer cases

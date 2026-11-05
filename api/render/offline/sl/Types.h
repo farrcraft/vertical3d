@@ -42,7 +42,7 @@ enum class Storage : std::uint8_t {
 };
 
 /**
- * The shader types. Every type parses, but only surface, light and imager shaders run.
+ * The shader types. Every type parses, and every type but a volume shader runs.
  **/
 enum class ShaderType : std::uint8_t {
     SURFACE,

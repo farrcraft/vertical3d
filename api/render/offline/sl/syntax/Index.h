@@ -9,6 +9,10 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * An array element, written `array[index]`. The compiler rejects it, because arrays are not
+ * supported.
+ **/
 class Index final : public Expression {
  public:
     /** The array, and the expression that picks an element of it. **/
@@ -17,7 +21,7 @@ class Index final : public Expression {
         ExpressionPtr index;
     };
 
-    Index(const Parts & parts, const v3d::render::offline::Position & at);
+    Index(const Parts & parts, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr array;
     ExpressionPtr index;

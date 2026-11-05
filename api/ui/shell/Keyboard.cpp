@@ -105,6 +105,11 @@ bool Keyboard::event(const SDL_Event& event) {
     switch (event.type) {
     case SDL_EVENT_TEXT_INPUT:
         return keys_.text(event.text.text) || (layer_ != nullptr && layer_->typed(event.text.text));
+    case SDL_EVENT_TEXT_EDITING: {
+        // an input method's composition so far, which the next text input replaces
+        const std::string_view composing = event.edit.text != nullptr ? event.edit.text : "";
+        return keys_.composing(composing) || (layer_ != nullptr && layer_->composing(composing));
+    }
     case SDL_EVENT_KEY_DOWN: {
         // api/input's key names, the same table the key bindings use
         const std::string name = v3d::input::keyName(event.key.key);

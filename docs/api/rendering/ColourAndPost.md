@@ -16,7 +16,7 @@ spec.sources = 1;                             // images bound at set 1, bindings
 spec.colour = swapchainFormat;                // what the pass draws into
 renderer::FullScreen post(*context, spec);
 
-MaterialHandle source = post.source({sceneTexture});   // once, and again after a resize
+resource::MaterialHandle source = post.source({sceneTexture});   // once, and again after a resize
 colour->reads(scene);
 post.submit(source, colour.get());
 ```
@@ -30,12 +30,12 @@ post.submit(source, colour.get());
 
 ### Grade
 
-`Grade` is a colour grade built on `FullScreen`: every pixel is looked up in a 16×16×16 colour
-table.
+`renderer::Grade` is a colour grade built on `FullScreen`: every pixel is looked up in a 16×16×16
+colour table.
 
 ```cpp
-Grade grade(*context, {.colour = swapchainFormat, .strip = strip});   // once
-MaterialHandle source = grade.source(*scene);                         // again after a resize
+renderer::Grade grade(*context, {.colour = swapchainFormat, .strip = strip});   // once
+resource::MaterialHandle source = grade.source(*scene);                         // again after a resize
 
 colour->reads(scene);
 grade.submit(source, colour.get());
@@ -51,11 +51,11 @@ grade.submit(source, colour.get());
   neither changes what the table means. A lit scene in an `_SRGB` target can be graded into a
   `UNORM` swapchain.
 - The scene is read one texel per pixel, so the grade must draw into a target the scene's size.
-- `replace(texels)` changes the table from the next frame. Use it for a zone's own look, or lerp
-  two tables yourself for a slow change. Call it before the frame's `submit()`. The texels are
-  in the order `Grade::table()` returns. Sources keep their handles. The new table's upload
-  does not wait for the GPU, and the old table is retired through the Ring. A lerp that replaces
-  the table every frame makes and uploads a table every frame.
+- `replace(texels)` changes the table from the next frame. Use it for a zone's own look, or lerp two
+  tables yourself for a slow change. Call it before the frame's `submit()`. The texels are in the
+  order `renderer::Grade::table()` returns. Sources keep their handles. The new table's upload does
+  not wait for the GPU, and the old table is retired through the Ring. A lerp that replaces the
+  table every frame makes and uploads a table every frame.
 - `grade.release(source)` lets a source go. Destroying the grade releases its table and any
   source still held.
 
@@ -82,9 +82,9 @@ renderer_ = boost::make_shared<WindowRenderer>(logger(), VK_FORMAT_B8G8R8A8_SRGB
   other format a quad is written as it is.
 
 **A lit scene works in linear light and draws into an `_SRGB` target**, which encodes the result
-when it is stored. Its albedo textures are uploaded with `TextureFactory::Encoding::Srgb`, so
-they are decoded to linear when sampled. `MeshRegistry` does this for you. A glTF base colour
+when it is stored. Its albedo textures are uploaded with `TextureFactory::Encoding::Srgb`, so they
+are decoded to linear when sampled. `resource::MeshRegistry` does this for you. A glTF base colour
 factor is already linear. Every other texture keeps the `Display` default.
 
-Background: [ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md),
-[ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)
+Background: [ADR-0009](../../adr/rendering/0009-colour-display-space-unorm-swapchain.md),
+[ADR-0066](../../adr/rendering/0066-lighting-light-in-linear-draw-to-srgb.md)

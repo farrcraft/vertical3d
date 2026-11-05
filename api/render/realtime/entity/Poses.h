@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 
 #include <cstdint>
 #include <optional>
@@ -62,8 +62,10 @@ class Poses final {
  *
  * Called once a frame, before Lit::scene(), while the frame is built.
  *
+ * @param registry the entities to pose
  * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
+ * @param meshes resolves each entity's component::Mesh to the entry holding its skin
  **/
-Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& meshes);
+Poses poses(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes);
 
 };  // namespace v3d::render::realtime::entity

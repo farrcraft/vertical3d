@@ -7,9 +7,9 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/Batch.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -63,7 +63,7 @@ class Scratch final {
  **/
 struct Shots {
     Shots() :
-        mesh(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())) {
+        mesh(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())) {
         scene.add(mesh);
         scene.timeline({ .start = 1, .end = 2, .frame = 1 });
         settings.size = glm::uvec2(32, 24);
@@ -71,7 +71,7 @@ struct Shots {
     }
 
     v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> mesh;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh;
     v3d::type::camera::Profile view{ "front" };
     v3d::editor::scene::RenderSettings settings;
 };
@@ -133,10 +133,10 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
 
 BOOST_FIXTURE_TEST_CASE(batch_each_camera_test, Shots) {
     const Scratch scratch("cameras");
-    const boost::shared_ptr<v3d::editor::scene::Camera> first =
-        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Orthographic);
-    const boost::shared_ptr<v3d::editor::scene::Camera> second =
-        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> first =
+        v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Orthographic);
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> second =
+        v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Perspective);
     scene.add(first);
     scene.add(second);
     v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
@@ -168,7 +168,7 @@ BOOST_FIXTURE_TEST_CASE(batch_cancel_test, Shots) {
 BOOST_AUTO_TEST_CASE(batch_missing_program_test) {
     const Scratch scratch("missing");
     v3d::editor::scene::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
+    scene.add(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube()));
     scene.timeline({ .start = 1, .end = 1, .frame = 1 });
     v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), scratch.path() / "no-such-program.exe");
 

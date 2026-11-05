@@ -9,6 +9,9 @@ namespace v3d::image::format {
 
 #pragma pack(push, 2)
 
+/**
+ * One entry of a bmp's palette, in the order the file stores it.
+ **/
 struct bmp_rgb_quad {
     unsigned char blue_;
     unsigned char green_;

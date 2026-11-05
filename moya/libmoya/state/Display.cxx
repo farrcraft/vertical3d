@@ -8,7 +8,7 @@
 #include <api/asset/Writer.h>
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Requests.h>
 
 #include <algorithm>
@@ -55,7 +55,7 @@ glm::uvec4 Display::cropped(unsigned int width, unsigned int height) const {
     return glm::uvec4(first(width, crop_.xmin), first(width, crop_.xmax), first(height, crop_.ymin), first(height, crop_.ymax));
 }
 
-void Display::finish(v3d::render::offline::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const {
+void Display::finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const {
     const glm::uvec4 window = cropped(planes->width(), planes->height());
     for (unsigned int row = 0; row < planes->height(); row++) {
         for (unsigned int column = 0; column < planes->width(); column++) {

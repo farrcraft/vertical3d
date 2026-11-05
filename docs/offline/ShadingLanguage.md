@@ -13,21 +13,21 @@ named. The language is in `api/render/offline/sl`.
 
 | Stage | Class |
 |---|---|
-| Lexing | `sl::Lexer` |
-| Parsing into a syntax tree | `sl::Parser`, building `sl::syntax` nodes |
-| Type checking | `sl::Types`, `sl::Compiler` |
-| Uniform and varying inference | `sl::Inference` |
-| Flattening into instructions | `sl::Emitter`, producing a `sl::runtime::Program` |
+| Lexing | `sl::compiler::Lexer` |
+| Parsing into a syntax tree | `sl::compiler::Parser`, building `sl::syntax` nodes |
+| Type checking | `sl::Types`, `sl::compiler::Compiler` |
+| Uniform and varying inference | `sl::compiler::Inference` |
+| Flattening into instructions | `sl::compiler::Emitter`, producing a `sl::runtime::Program` |
 | Running over a batch | `sl::runtime::Machine` |
 | Finding a shader by name | `sl::ShaderLibrary` |
 | Binding a scene's parameters | `sl::Instance` |
-| Writing the globals into a batch | `sl::Globals`, filled from an `sl::Point` per shading point |
+| Writing the globals into a batch | `sl::runtime::Globals`, filled from an `sl::runtime::Point` per shading point |
 
-- **The SL lexer matches the RIB lexer.** Both are a `peek` and `next` lexer over an
-  `std::istream`, with an `error()` that ends the stream and a line and column on every token.
-  The shared parts are in `api/render/offline`: `offline::Characters` reads the stream with its
-  position and decodes string escapes, and each language's `Token` is an `offline::Lexeme` over
-  its own kinds.
+- **The SL lexer matches the RIB lexer.** Both are a `peek` and `next` lexer over an `std::istream`,
+  with an `error()` that ends the stream and a line and column on every token. The shared parts are
+  in `api/render/offline/source`: `offline::source::Characters` reads the stream with its position
+  and decodes string escapes, and each language's `Token` is an `offline::source::Lexeme` over its
+  own kinds.
 - **The keywords are a closed set**: the five shader types, the eight data types, the two
   storage classes, the control flow keywords and the three lighting constructs. Any other name
   is an identifier, so a shader may declare a variable called `output` or define its own
@@ -42,10 +42,9 @@ named. The language is in `api/render/offline/sl`.
   A scene names one with `Displacement`.
 - **The C preprocessor is not run.** A `#` produces a diagnostic naming the missing
   preprocessor. There is no compiled-shader file: a shader is source, compiled on first use.
-- **The compiler annotates the syntax tree in place.** Every expression gets a type and a
-  storage class, and every variable gets a symbol index. `sl::Compiler::symbols()` is the list
-  a machine allocates registers against. A local declared twice in nested scopes is two
-  symbols.
+- **The compiler annotates the syntax tree in place.** Every expression gets a type and a storage
+  class, and every variable gets a symbol index. `sl::compiler::Compiler::symbols()` is the list a
+  machine allocates registers against. A local declared twice in nested scopes is two symbols.
 - **`syntax::forEachChild` lists a node's children in source order.** A pass that treats most
   node kinds alike handles only the kinds it needs. A new kind of node needs one case there.
 - **The varying inference runs to a fixed point**, because a loop can carry a varying value back
@@ -73,9 +72,10 @@ named. The language is in `api/render/offline/sl`.
 
 ### Shaders, lights and spaces
 
-- **A shader is found by name.** A `.sl` file on `Option "searchpath" "shader"` wins over a
-  built-in shader of the same name, so a scene can replace one. A file holding exactly one
-  shader may have any file name: RI identifies a shader by the name in its source.
+- **A shader is found by name.** The file `<name>.sl` on `Option "searchpath" "shader"` wins over
+  a built-in shader of the same name, so a scene can replace one. From a file holding several
+  shaders, the one with that name is used. A file holding exactly one shader supplies it,
+  whatever name its source gives it.
 - **A search path is colon-separated, and `&` stands for the previous path.** A single letter
   before a colon is a Windows drive letter, not the end of a directory.
 - **A shader that fails to parse or compile is logged by name and position**, and the failure
@@ -94,9 +94,9 @@ named. The language is in `api/render/offline/sl`.
 - **A light shader runs in its own space.** While a light runs, `"shader"` is the inverse of
   the light's placement, not of the surface's. This places a `pointlight`'s default `from` where
   the scene put the light.
-- **Both hiders bind the same globals.** A hider fills one `sl::Point` per shading point.
-  `sl::Globals`, resolved once per program, writes the points into the batch and reads `Ci` and
-  `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are the step to a
+- **Both hiders bind the same globals.** A hider fills one `sl::runtime::Point` per shading point.
+  `sl::runtime::Globals`, resolved once per program, writes the points into the batch and reads `Ci`
+  and `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are the step to a
   neighbouring point: one over a grid's span, or a traced hit's stencil step.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
@@ -162,7 +162,7 @@ files on disk.
   in any order of buckets or pixels. A grid vertex is moved into world space first, so a vertex
   and a traced hit at the same position sample a light alike.
 
-  Background: [ADR-0094](../adr/0094-offline-area-lights-sampled-per-shading-point.md)
+  Background: [ADR-0094](../adr/offline/0094-offline-area-lights-sampled-per-shading-point.md)
 - **`background`** adds its colour behind each pixel in proportion to `1 - alpha`, then sets
   `alpha` to one, so a pixel it painted is no longer empty. A scene can use it instead of a
   backdrop polygon.
@@ -174,7 +174,7 @@ files on disk.
   - `SOURCE` is written in SL and inlined.
   - `STUB` returns its default value and is reported once. `shadow` is the one stub.
   - Every other body is implemented in C++ in the machine.
-- **`diffuse`, `specular` and `phong` are SL source** in `sl::Builtins`, written over
+- **`diffuse`, `specular` and `phong` are SL source** in `sl/compiler/Builtins.cxx`, written over
   `illuminance`, as the standard defines them. A shader that calls one has it copied into its
   own function list before anything else runs, so later stages see one kind of function. A
   shader's own definition of the name wins.
@@ -199,7 +199,7 @@ files on disk.
     because dicing runs u along the first edge and v along the last.
   - A derivative is first order, so on a curved surface it is as good as the grid is fine.
 
-  Background: [ADR-0093](../adr/0093-offline-derivatives-from-neighbouring-shading-points.md)
+  Background: [ADR-0093](../adr/offline/0093-offline-derivatives-from-neighbouring-shading-points.md)
 
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
@@ -271,10 +271,10 @@ files on disk.
   signature returns the cast's type. `color noise(P)` is three patterns, not one grey one, and
   `float texture(name)` is the first channel. Without a cast, `noise` returns a float and
   `texture` a colour.
-- **`texture()` reads an image held for the frame.** `offline::Textures` reads each name once,
-  looking on `Option "searchpath" "texture"` and then at the name as given. A name that fails
+- **`texture()` reads an image held for the frame.** `offline::texture::Textures` reads each name
+  once, looking on `Option "searchpath" "texture"` and then at the name as given. A name that fails
   to read is remembered as missing. The machine returns black for it and logs it once.
-  `offline::Texture` samples bilinearly between texel centres and wraps periodically, RI's
+  `offline::texture::Texture` samples bilinearly between texel centres and wraps periodically, RI's
   defaults, with `t` running down the image. A coordinate that is not finite reads black. A grey
   image fills all three channels and an alpha channel is dropped. Called with only a name,
   `texture()` reads at the shader's `s` and `t`.
@@ -284,7 +284,7 @@ files on disk.
   it. The lattice repeats every 256 cells, at any distance from the origin. A point that is
   not finite reads `0.5`.
 
-Background: [ADR-0026](../adr/0026-offline-shaders-run-over-batches-of-points.md)
+Background: [ADR-0026](../adr/offline/0026-offline-shaders-run-over-batches-of-points.md)
 
 ## Normals
 

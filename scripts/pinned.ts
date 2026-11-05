@@ -16,11 +16,9 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, report, runGate } from './lib/cli.ts';
+import { ROOT } from './lib/tree.ts';
 
 /** A uses: value that is not pinned, and the line it is on. */
 export interface Unpinned {
@@ -39,7 +37,7 @@ function beforeComment(line: string): string {
             }
         } else if (c === '"' || c === "'") {
             quote = c;
-        } else if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) {
+        } else if (c === '#' && (i === 0 || /\s/.test(line.charAt(i - 1)))) {
             return line.slice(0, i);
         }
     }
@@ -93,24 +91,10 @@ export function files(root: string): string[] {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/pinned.ts');
-        return 2;
-    }
-    let count = 0;
-    for (const file of files(ROOT)) {
-        for (const { line, value } of unpinned(readFileSync(path.join(ROOT, file), 'utf8'))) {
-            console.log(`${file}:${line}: uses: ${value === '' ? '(no value on the line)' : value}`);
-            count++;
-        }
-    }
-    if (count > 0) {
-        console.log('::error::Each uses: above is not pinned. Pin it to the full commit sha its tag points at.');
-        return 1;
-    }
-    return 0;
+    options('usage: node scripts/pinned.ts', {});
+    const found = files(ROOT).flatMap((file) => unpinned(readFileSync(path.join(ROOT, file), 'utf8'))
+        .map(({ line, value }) => ({ path: file, line, rule: 'unpinned', message: `uses: ${value === '' ? '(no value on the line)' : value}` })));
+    return report(found, 'names an action that is not pinned. Pin it to the full commit sha its tag points at.');
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

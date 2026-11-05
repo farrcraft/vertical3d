@@ -6,15 +6,19 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/LitScene.h>
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/lighting/LitScene.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
+#include <api/render/realtime/renderer/World.h>
 #include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
+#include <api/ui/paint/CurveText.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <demos/diorama/src/Layout.h>
@@ -32,8 +36,13 @@
 namespace diorama {
 
 /**
- * Everything the diorama draws: its models through a lit scene with a shadow map, graded into
- * the window's colour pass, and the shell's menu and statistics over them.
+ * Everything the diorama draws: its models through a lit scene with a shadow map, a sign standing
+ * over the well, graded into the window's colour pass, and the shell's menu and statistics over
+ * them.
+ *
+ * The sign's words are drawn from their curves, standing in the world above the well and turned
+ * to face the camera, so they are sharp from every side and at every zoom. A house in front of
+ * the sign hides it.
  *
  * The lit scene is built at the first frame, when the window's size is known, and replaced in
  * size whenever the window changes. The shadow map is fitted once, around the casters
@@ -99,22 +108,58 @@ class Renderer final {
      **/
     static constexpr glm::vec2 CLIPPING{0.1F, 100.0F};
 
+    /** What the sign over the well says. **/
+    static constexpr const char* SIGN = "Village Well";
+
+    /** The face the sign is set in, in the shared data directory. **/
+    static constexpr const char* SIGN_FONT = "fonts/Inter-SemiBold.ttf";
+
+    /** The sign's size, in its own pixels, and how long one of them is in the world. **/
+    static constexpr float SIGN_SIZE = 64.0F;
+    static constexpr float SIGN_SCALE = 1.0F / 80.0F;
+
+    /** How far above the well's base the top of the sign stands, in world units. **/
+    static constexpr float SIGN_HEIGHT = 3.2F;
+
+    /** The sign's colour, in linear light. **/
+    static constexpr glm::vec4 SIGN_COLOUR{1.0F, 0.95F, 0.8F, 1.0F};
+
+    /** The sign's outline, in its own pixels and in linear light. **/
+    static constexpr float SIGN_OUTLINE_WIDTH = 3.0F;
+    static constexpr glm::vec4 SIGN_OUTLINE_COLOUR{0.08F, 0.05F, 0.03F, 1.0F};
+
+    /** The sign's soft shadow, cast down and to the right. **/
+    static constexpr glm::vec2 SIGN_SHADOW_OFFSET{4.0F, 5.0F};
+    static constexpr float SIGN_SHADOW_SOFTNESS = 6.0F;
+    static constexpr glm::vec4 SIGN_SHADOW_COLOUR{0.0F, 0.0F, 0.0F, 0.6F};
+
     /**
      * Build the lit scene at a size, or replace its target with one of a new size, and give the
      * camera the window's aspect.
      **/
     void resize(uint32_t width, uint32_t height);
 
+    /**
+     * Stand the sign over the well in the lit pass, turned to face the camera.
+     **/
+    void drawSign(v3d::render::realtime::frame::Pass* lit);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     v3d::shell::Shell* shell_;
     v3d::render::realtime::WindowRenderer engine_;
-    boost::shared_ptr<v3d::render::realtime::MeshRegistry> meshes_;
-    boost::shared_ptr<v3d::render::realtime::LitScene> scene_;
+    boost::shared_ptr<v3d::render::realtime::resource::MeshRegistry> meshes_;
+    boost::shared_ptr<v3d::render::realtime::lighting::LitScene> scene_;
     v3d::render::realtime::lighting::Settings settings_;
     std::optional<v3d::render::realtime::lighting::ShadowBounds> bounds_;
     v3d::type::camera::Camera camera_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;
+    // the sign over the well: its words laid out once, drawn from their curves, and the world
+    // quads they become, built for the lit scene's target
+    boost::shared_ptr<v3d::font::text::ShapingCache> shaping_;
+    std::optional<v3d::font::text::Paragraph> sign_;
+    boost::shared_ptr<v3d::ui::paint::CurveText> signText_;
+    boost::shared_ptr<v3d::render::realtime::renderer::World> signs_;
 };
 
 };  // namespace diorama

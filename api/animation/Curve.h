@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -30,6 +31,9 @@ class Curve final {
         Bezier    /**< a cubic to the next key, by the two keys' slopes **/
     };
 
+    /**
+     * A value at a frame, with the slopes the curve arrives and leaves with.
+     **/
     struct Key final {
         float frame = 0.0F;
         float value = 0.0F;
@@ -43,6 +47,14 @@ class Curve final {
         bool automatic = true;
 
         bool operator==(const Key& other) const = default;
+    };
+
+    /**
+     * The slopes a key arrives and leaves with, in value per frame.
+     **/
+    struct Slopes final {
+        float in = 0.0F;
+        float out = 0.0F;
     };
 
     /**
@@ -77,6 +89,23 @@ class Curve final {
      * @return whether there was a key on that frame to remove
      **/
     bool remove(float frame);
+
+    /**
+     * Shift the keys on some frames along by an offset. Each moved key keeps its value, its
+     * interpolation and its slopes. A key that stays where it is and lies on a frame a moved
+     * key lands on is replaced by the moved one.
+     *
+     * @return how many keys moved. An offset that is not finite moves none
+     **/
+    std::size_t shift(const std::vector<float>& frames, float offset);
+
+    /**
+     * Give the key on a frame slopes of its own. It stops being automatic, so its slopes are
+     * no longer worked out from its neighbours.
+     *
+     * @return whether there was a key on that frame. Slopes that are not finite change nothing
+     **/
+    bool slopes(float frame, const Slopes& given);
 
     bool empty() const noexcept;
 

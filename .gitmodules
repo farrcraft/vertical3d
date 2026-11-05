@@ -1,3 +1,0 @@
-[submodule "vendor/libnoise"]
-	path = vendor/libnoise
-	url = https://github.com/eXpl0it3r/libnoise

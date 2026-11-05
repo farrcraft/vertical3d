@@ -6,8 +6,9 @@ into, and what happens when the window changes size. The objects named here are 
 
 ## A frame and its passes
 
-An app builds a frame during `render()` and draws it once at the end with `renderFrame()`. This
-is the whole of a 2D app's drawing, taken from [examples/starter](../../../examples/starter/src/AppEngine.cxx):
+An app builds a frame during `render()` and draws it once at the end with `renderFrame()`. This is
+the whole of a 2D app's drawing, taken from
+[examples/starter](../../../examples/starter/src/AppEngine.cxx):
 
 ```cpp
 bool AppEngine::render() {
@@ -20,7 +21,7 @@ bool AppEngine::render() {
     canvas_.rect(glm::vec2(40.0F, 40.0F), glm::vec2(size.x - 40.0F, size.y - 40.0F),
         glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
-    boost::shared_ptr<Pass> pass = renderer_->frame()->pass(WindowRenderer::colourPass);
+    boost::shared_ptr<frame::Pass> pass = renderer_->frame()->pass(WindowRenderer::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());
 
     renderer_->renderFrame();
@@ -39,9 +40,16 @@ clears to the colour set with `WindowRenderer::clearColour()`. A 2D app usually 
 
 ### Adding passes
 
-`Frame::pass(name)` returns the pass with that name, creating it at the end of the list if
+`frame::Frame::pass(name)` returns the pass with that name, creating it at the end of the list if
 there is none. More drawing means more passes, not a different kind of frame. An editor draws
 one pass per viewport of the same scene; a shadow map is a pass into an offscreen target.
+
+A pass stays in the frame until `frame::Frame::remove(name)` takes it out. A pass in the frame is
+recorded every frame, even when nothing was submitted to it, so a pass that clears goes on
+clearing its viewport. When what a pass drew goes away, such as a closed viewport, remove its
+pass. A pass created later is recorded after every pass already in the frame. A pass that has
+to stay last, such as a ui drawn over the views, is therefore removed and asked for again
+whenever a new pass is added.
 
 A pass has these settings:
 
@@ -88,28 +96,28 @@ reads a shadow map can therefore be created first and still draw second.
 - A pass that names its own target in `reads()` is reading that target's previous frame. That
   orders nothing.
 
-Background: [ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)
+Background: [ADR-0068](../../adr/rendering/0068-rendering-order-passes-by-what-they-read.md)
 
 ## Choosing a target
 
-A pass draws into the window unless it names a `RenderTarget`. A render target
+A pass draws into the window unless it names a `frame::RenderTarget`. A render target
 is an offscreen image that a later pass can sample.
 
 ```cpp
-using v3d::render::realtime::RenderTarget;
+namespace frame = v3d::render::realtime::frame;
 auto context = renderer_->context();
 
 // colour and depth, the size of a scene view
-auto scene = boost::make_shared<RenderTarget>(*context,
-    RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
+auto scene = boost::make_shared<frame::RenderTarget>(*context,
+    frame::RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
 
 // depth only, sampled later: a shadow map
-auto map = boost::make_shared<RenderTarget>(*context,
-    RenderTarget::Spec{.width = 2048, .height = 2048, .colour = VK_FORMAT_UNDEFINED, .depth = true,
+auto map = boost::make_shared<frame::RenderTarget>(*context,
+    frame::RenderTarget::Spec{.width = 2048, .height = 2048, .colour = VK_FORMAT_UNDEFINED, .depth = true,
         .sampledDepth = true});
 ```
 
-The constructor is `RenderTarget(context, spec)`. A `Spec` names the width and height, the
+The constructor is `frame::RenderTarget(context, spec)`. A `Spec` names the width and height, the
 colour format, whether there is depth and whether it is sampled, how many images, and how many
 layers. A target needs a size, and a colour format or sampled depth.
 
@@ -126,7 +134,7 @@ layers. A target needs a size, and a colour format or sampled depth.
   does not detect it; the validation layer reports it.
 - **A depth-only target can have several layers**, as a shadow map with a layer per cascade
   does. It needs sampled depth and no colour, or the constructor throws. A pass draws into one
-  layer, set with `Pass::layer(n)`, and recording a pass whose layer the target lacks throws.
+  layer, set with `frame::Pass::layer(n)`, and recording a pass whose layer the target lacks throws.
   Every pass that draws into the target clears its own layer, and the target is moved into its
   drawing layout once, before the first of them, and made readable once, after the last.
 - **Sampled depth is read as an array of layers**, a `sampler2DArray`, whether it has one layer
@@ -138,11 +146,11 @@ layers. A target needs a size, and a colour format or sampled depth.
 ### Sampling a target
 
 After the last pass that draws into a target, the target is left readable. To draw it, register
-it with `Textures`:
+it with `resource::Textures`:
 
 ```cpp
-TextureHandle sceneTexture = renderer_->textures()->texture(*scene);   // its colour
-TextureHandle shadowMap = renderer_->textures()->depthTexture(*map);   // its depth
+resource::TextureHandle sceneTexture = renderer_->textures()->texture(*scene);   // its colour
+resource::TextureHandle shadowMap = renderer_->textures()->depthTexture(*map);   // its depth
 ```
 
 `texture()` and `depthTexture()` return the white texture for a target with nothing of that
@@ -236,12 +244,39 @@ Testing with captures is covered in [contributing/Testing.md](../../contributing
 - The renderers `WindowRenderer` gives you keep working across a resize. Their pipelines do not need
   rebuilding.
 
+## Other windows
+
+`WindowRenderer::open(window)` draws to another created window as well as the renderer's own. It
+returns an `Output`, whose `frame()` is built for that window as `frame()` is for the renderer's
+own, with a colour pass named `colourPass`.
+
+```cpp
+const boost::shared_ptr<WindowRenderer::Output> output = renderer_->open(second);
+output->frame()->pass(WindowRenderer::colourPass);   // add passes and items as usual
+renderer_->renderFrame();                              // draws and presents both windows
+renderer_->close(output);                              // before the window is destroyed
+```
+
+- **Everything is shared.** Every window is drawn by the one device, so a texture, a pipeline or a
+  glyph page made for one can be drawn in any of them. The other window takes the renderer's
+  colour format.
+- **Every window is presented in the same frame.** The slowest window paces them all.
+- **Another window has a depth buffer of its own,** made the first frame one of its passes tests
+  depth and made again whenever its swapchain changes size. `Output::depth()` returns it, or null
+  before a pass has tested depth.
+- **`open()` returns null** before `initialize()`, and when the device cannot present to the
+  window or its surface does not offer the renderer's format.
+- **Close a window before it is destroyed.** `close()` waits for the device. `shutdown()` closes
+  every window still open.
+- A window that is minimized, or whose swapchain goes out of date, sits out the frames until it
+  is rebuilt, and the other windows go on.
+
 ## Vsync
 
 `WindowRenderer::present(mode)` sets how the window's images are presented. A settings screen
 calls this vsync. `presenting()` says which mode the driver granted.
 
-| `Present::` | Presents | Falls back to |
+| `frame::Present::` | Presents | Falls back to |
 |---|---|---|
 | `Uncapped` | as fast as the device draws, without tearing (mailbox). The default | `Vsync` |
 | `Vsync` | one image a refresh, waiting for the display (FIFO) | nothing: every driver offers it |

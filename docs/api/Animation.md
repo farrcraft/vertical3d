@@ -64,6 +64,12 @@ an in and an out slope, in value per frame.
   given.
 - `set(frame, value)` replaces the value of the key on that frame, keeping its interpolation and
   slopes, or adds an automatic Bezier key. Two frames within `SAME_FRAME` are one frame.
+- `remove(frame)` takes away the key on that frame.
+- `shift(frames, offset)` moves the keys on those frames along by the offset, each keeping its
+  value, interpolation and slopes. A key that stays on a frame a moved key lands on is replaced.
+  An offset that is not finite moves nothing.
+- `slopes(frame, { .in, .out })` gives the key on that frame slopes of its own, and it stops being
+  automatic. Slopes that are not finite change nothing.
 - Construction throws for keys that are not finite or do not rise in frame.
 
 ### SpriteClip and Track
@@ -78,7 +84,7 @@ an in and an out slope, in value per frame.
   midnight. `T` is anything `glm::mix` accepts. Construction throws for no keys, keys out of
   order, or a key outside the period.
 
-Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
+Background: [ADR-0070](../adr/scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
 
 ## Particle effects
 
@@ -146,4 +152,4 @@ particles an emitter has made and its own `Random`.
 When an effect fires and what the weather does are the game's decisions. The api provides a
 rate, a burst and an intensity, and nothing that chooses them.
 
-Background: [ADR-0072](../adr/0072-particles-an-emitter-component-owns-its-particles.md)
+Background: [ADR-0072](../adr/scene/0072-particles-an-emitter-component-owns-its-particles.md)

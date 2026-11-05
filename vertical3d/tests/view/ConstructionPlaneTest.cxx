@@ -95,6 +95,39 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
     BOOST_CHECK_GT(distinct, 1U);
 }
 
+/**
+ * A line through the origin takes the colour of the world axis it runs along. A perspective
+ * view's ground grid spans x and z, so no line takes y's colour.
+ **/
+BOOST_AUTO_TEST_CASE(constructionplane_origin_lines_take_their_axis_colours) {
+    v3d::editor::view::ConstructionPlane grid;
+    v3d::type::camera::Camera camera;
+    camera.orthographic(false);
+    v3d::render::realtime::canvas::Line canvas;
+    const glm::vec4 x(1.0F, 0.0F, 0.0F, 1.0F);
+    const glm::vec4 y(0.0F, 1.0F, 0.0F, 1.0F);
+    const glm::vec4 z(0.0F, 0.0F, 1.0F, 1.0F);
+    grid.colours({ .minor = glm::vec4(0.2F), .major = glm::vec4(0.4F), .axes = { x, y, z } });
+    grid.lines(4);
+    grid.spacing(1.0F);
+    grid.draw(camera, &canvas);
+
+    unsigned int alongX = 0;
+    unsigned int alongZ = 0;
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
+        BOOST_CHECK(vertex.colour != y);
+        if (vertex.colour == x) {
+            alongX++;
+            BOOST_CHECK_SMALL(vertex.position.z, 0.001F);
+        } else if (vertex.colour == z) {
+            alongZ++;
+            BOOST_CHECK_SMALL(vertex.position.x, 0.001F);
+        }
+    }
+    BOOST_CHECK_EQUAL(alongX, 2U);
+    BOOST_CHECK_EQUAL(alongZ, 2U);
+}
+
 BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     v3d::editor::view::ConstructionPlane grid;
     const v3d::type::camera::Camera camera;

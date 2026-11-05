@@ -69,6 +69,8 @@ void settle(entt::registry& registry, entt::entity entity) {
  * An entity with no Previous<T>, such as one created during the last step, is drawn at its
  * current value.
  *
+ * @param registry the registry holding the entity
+ * @param entity the entity to blend, which must have a T
  * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
  **/
 template <typename T>

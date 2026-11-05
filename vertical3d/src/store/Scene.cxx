@@ -12,11 +12,12 @@
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/store/internal/Inserts.h>
 #include <vertical3d/src/store/internal/Loaded.h>
 #include <vertical3d/src/store/internal/Writes.h>
@@ -80,6 +81,14 @@ const char* const MIGRATE_FROM_2 =
  * What takes a document's tables from version 3 to version 4: the name column.
  **/
 const char* const MIGRATE_FROM_3 = "ALTER TABLE items ADD COLUMN name TEXT NOT NULL DEFAULT '';";
+
+/**
+ * What takes a document's tables from version 4 to version 5: where each item is shown, in the
+ * views and in renders. An item from an older document is shown in both.
+ **/
+const char* const MIGRATE_FROM_4 =
+"ALTER TABLE items ADD COLUMN views INTEGER NOT NULL DEFAULT 1 CHECK (views IN (0, 1));"
+"ALTER TABLE items ADD COLUMN renders INTEGER NOT NULL DEFAULT 1 CHECK (renders IN (0, 1));";
 
 /**
  * The size of one key of a curve: its frame, value, in slope and out slope, then its
@@ -168,7 +177,7 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
         return true;
     }
     return (version > 1 || database->execute(MIGRATE_FROM_1)) && (version > 2 || database->execute(MIGRATE_FROM_2)) &&
-        (version > 3 || database->execute(MIGRATE_FROM_3)) &&
+        (version > 3 || database->execute(MIGRATE_FROM_3)) && (version > 4 || database->execute(MIGRATE_FROM_4)) &&
         database->userVersion(Scene::SCHEMA_VERSION);
 }
 
@@ -176,7 +185,7 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
  * The item one row of the items table describes, without its id or its placement. The blobs
  * it read are added to read.
  **/
-boost::shared_ptr<scene::Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
+boost::shared_ptr<scene::item::Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
     const boost::json::object& payload, v3d::database::Statement* buffers, std::size_t* read, std::string* problem) {
     const Codec* codec = codecNamed(kind);
     if (codec == nullptr) {
@@ -207,7 +216,7 @@ boost::shared_ptr<scene::Item> readKind(std::int64_t id, const std::string& kind
 /**
  * The item a row of the items table describes, whole.
  **/
-boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
+boost::shared_ptr<scene::item::Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
     std::int64_t* parent, std::size_t* read, std::string* problem) {
     Columns row(rows);
     const std::int64_t id = row.integer();
@@ -220,6 +229,8 @@ boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3
     const std::string text = row.text();
     *parent = row.integer();
     const std::string name = row.text();
+    const std::int64_t views = row.integer();
+    const std::int64_t renders = row.integer();
 
     if (id <= 0 || *parent < 0 || !finite(translation) || !finite(axis) || !std::isfinite(w) || !finite(scale)) {
         *problem = "its id or its placement is not valid";
@@ -231,12 +242,13 @@ boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3
         *problem = "its payload is not an object";
         return nullptr;
     }
-    boost::shared_ptr<scene::Item> item = readKind(id, kind, version, parsed.as_object(), buffers, read, problem);
+    boost::shared_ptr<scene::item::Item> item = readKind(id, kind, version, parsed.as_object(), buffers, read, problem);
     if (!item) {
         return nullptr;
     }
     item->documentId(id);
     item->name(name);
+    item->shown({ .views = views != 0, .renders = renders != 0 });
     item->translation(translation);
     item->rotation(glm::quat(w, axis.x, axis.y, axis.z));
     item->scale(scale);
@@ -248,7 +260,7 @@ boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3
  **/
 bool trees(const internal::Loaded& loaded) {
     std::map<std::int64_t, bool> held;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         held[item->documentId()] = true;
     }
     for (const auto& [child, parent] : loaded.parents) {
@@ -272,9 +284,11 @@ bool load(v3d::database::Database* database, std::int32_t version, internal::Loa
     const std::string parent = version >= 2 ? "parent" : "NULL";
     // nor one from before items had names
     const std::string name = version >= 4 ? "name" : "''";
+    // and an item from before items could be hidden is shown everywhere
+    const std::string shown = version >= 5 ? "views, renders" : "1, 1";
     v3d::database::Statement rows = database->prepare(
-        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent + ", " + name +
-        " FROM items ORDER BY position, id");
+        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent + ", " + name + ", " +
+        shown + " FROM items ORDER BY position, id");
     v3d::database::Statement buffers = database->prepare("SELECT role, count, data FROM buffers WHERE item = ?1");
     if (!rows.valid() || !buffers.valid()) {
         *problem = database->error();
@@ -287,7 +301,7 @@ bool load(v3d::database::Database* database, std::int32_t version, internal::Loa
     for (; step == v3d::database::Statement::Step::Row; step = rows.step()) {
         std::string fault;
         std::int64_t above = 0;
-        const boost::shared_ptr<scene::Item> item = readItem(rows, &buffers, &above, &blobs, &fault);
+        const boost::shared_ptr<scene::item::Item> item = readItem(rows, &buffers, &above, &blobs, &fault);
         if (!item) {
             *problem = "item " + std::to_string(rows.integer(0)) + ": " + fault;
             return false;
@@ -381,8 +395,8 @@ std::vector<std::byte> encodeKeys(const v3d::animation::Curve& curve) {
  * Every curve a document holds, once its items are read.
  **/
 bool loadAnimation(v3d::database::Database* database, std::int32_t version, internal::Loaded* loaded, std::string* problem) {
-    std::map<std::int64_t, scene::Item::Kind> kinds;
-    for (const boost::shared_ptr<scene::Item>& item : loaded->items) {
+    std::map<std::int64_t, scene::item::Item::Kind> kinds;
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded->items) {
         kinds[item->documentId()] = item->kind();
     }
     // a document from before curves has none to read
@@ -404,7 +418,7 @@ bool loadAnimation(v3d::database::Database* database, std::int32_t version, inte
             const std::span<const std::byte> keys = row.blob();
             std::string fault;
             const auto owner = kinds.find(animated.owner);
-            if (owner == kinds.end() || !declares(owner->second, animated.path)) {
+            if (owner == kinds.end() || !scene::declares(owner->second, animated.path)) {
                 fault = "it drives a property its owner does not have";
             } else if (current("curve", curveVersion, Scene::CURVE_VERSION, &fault) &&
                 decodeKeys(keys, count, &animated.curve, &fault) && animated.curve.empty()) {
@@ -426,7 +440,8 @@ bool loadAnimation(v3d::database::Database* database, std::int32_t version, inte
 }
 
 /**
- * One row of the meta table that holds a part of the timeline or the render settings.
+ * One row of the meta table that holds a part of the timeline, the render settings or the unit
+ * of length.
  **/
 bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded, std::string* problem) {
     const std::string key = meta.text(0);
@@ -438,6 +453,8 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
         loaded->timeline.end = static_cast<int>(meta.integer(1));
     } else if (key == "frame") {
         loaded->timeline.frame = static_cast<int>(meta.integer(1));
+    } else if (key == "auto_key") {
+        loaded->timeline.autoKey = meta.integer(1) != 0;
     } else if (key == "render_hider") {
         const std::string hider = meta.text(1);
         if (hider != "hidden" && hider != "raytrace") {
@@ -445,6 +462,13 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
             return false;
         }
         loaded->render.hider = hider == "raytrace" ? scene::RenderSettings::Hider::RayTrace : scene::RenderSettings::Hider::Hidden;
+    } else if (key == "length_unit") {
+        const std::optional<scene::Length> unit = scene::lengthOf(meta.text(1));
+        if (!unit) {
+            *problem = "its unit of length is one this build does not have";
+            return false;
+        }
+        loaded->length = *unit;
     } else {
         // a negative or oversized number is held just out of range, so valid() refuses it
         const auto number = static_cast<unsigned int>(
@@ -461,13 +485,13 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
 }
 
 /**
- * A document's timeline and render settings, from its meta table. Each part a document does
- * not hold keeps its default.
+ * A document's timeline, render settings and unit of length, from its meta table. Each part a
+ * document does not hold keeps its default.
  **/
 bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, std::string* problem) {
     v3d::database::Statement meta = database->prepare(
-        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', "
-        "'render_width', 'render_height', 'render_samples', 'render_hider')");
+        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', 'auto_key', "
+        "'render_width', 'render_height', 'render_samples', 'render_hider', 'length_unit')");
     if (!meta.valid()) {
         *problem = database->error();
         return false;
@@ -491,7 +515,7 @@ bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, s
 /**
  * Write one item's row, and its blobs.
  **/
-bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::Item>& item, std::int64_t position, std::int64_t parent) {
+bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::item::Item>& item, std::int64_t position, std::int64_t parent) {
     const Codec& codec = codecOf(item->kind());
     const std::string payload = boost::json::serialize(codec.payload(*item));
     const glm::vec3 translation = item->translation();
@@ -500,7 +524,8 @@ bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::Item>&
     if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(std::string(codec.name()))
         .integer(codec.version())
         .reals({ translation.x, translation.y, translation.z, rotation.x, rotation.y, rotation.z, rotation.w })
-        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).text(item->name()).run()) {
+        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).text(item->name())
+        .integer(item->shown().views ? 1 : 0).integer(item->shown().renders ? 1 : 0).run()) {
         return false;
     }
     return std::ranges::all_of(codec.buffers(*item), [&](const Buffer& buffer) {
@@ -525,9 +550,9 @@ bool store(v3d::database::Database* database, const scene::Scene& scene, const s
     }
 
     std::int64_t position = 0;
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
         const std::int64_t id = item->documentId();
-        const boost::shared_ptr<scene::Item> above = scene.parent(item->id());
+        const boost::shared_ptr<scene::item::Item> above = scene.parent(item->id());
         const std::int64_t parent = above ? above->documentId() : 0;
         const auto found = saved.find(id);
         const bool known = found != saved.end();
@@ -587,7 +612,7 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         return false;
     };
 
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
         for (const auto& [path, curve] : scene.curves(item->id())) {
             const auto key = std::make_pair(item->documentId(), path);
             const auto found = saved.find(key);
@@ -616,10 +641,12 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         Binder(&meta).text("start").integer(timeline.start).run() &&
         Binder(&meta).text("end").integer(timeline.end).run() &&
         Binder(&meta).text("frame").integer(timeline.frame).run() &&
+        Binder(&meta).text("auto_key").integer(timeline.autoKey ? 1 : 0).run() &&
         Binder(&meta).text("render_width").integer(render.size.x).run() &&
         Binder(&meta).text("render_height").integer(render.size.y).run() &&
         Binder(&meta).text("render_samples").integer(render.samples).run() &&
-        Binder(&meta).text("render_hider").text(render.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run();
+        Binder(&meta).text("render_hider").text(render.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run() &&
+        Binder(&meta).text("length_unit").text(std::string(scene::symbol(scene.length()))).run();
     return wrote || failed(meta);
 }
 
@@ -655,7 +682,7 @@ bool Scene::read(const std::string& path, scene::Scene* scene) {
     // the scene is replaced only once the whole document is understood
     scene->clear();
     std::map<std::int64_t, unsigned int> ids;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         ids[item->documentId()] = scene->add(item);
     }
     for (const auto& [child, parent] : loaded.parents) {
@@ -669,13 +696,14 @@ bool Scene::read(const std::string& path, scene::Scene* scene) {
     scene->nextDocumentId(loaded.next);
     scene->timeline(loaded.timeline);
     scene->renderSettings(loaded.render);
+    scene->length(loaded.length);
     scene->frame(loaded.timeline.frame);
 
     // the document holds what was just read, so the next write to it starts from here
     path_ = path;
     saved_.clear();
     std::int64_t position = 0;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         const auto above = loaded.parents.find(item->documentId());
         saved_[item->documentId()] = Saved{ .item = item, .revision = item->revision(), .position = position++,
             .parent = above == loaded.parents.end() ? 0 : above->second };

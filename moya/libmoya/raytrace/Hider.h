@@ -6,10 +6,10 @@
 #pragma once
 
 #include <api/render/offline/Camera.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampler.h>
-#include <api/render/offline/Sampling.h>
-#include <api/render/offline/Textures.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampler.h>
+#include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/texture/Textures.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Ray.h>
 #include <moya/libmoya/Hider.h>
@@ -40,7 +40,7 @@ class Hider final : public moya::Hider {
      * With a PixelVariance above zero, a pixel whose samples' variance of the mean is above it
      * takes further sets of samples, up to four sets in all.
      **/
-    void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
+    void render(state::RenderContext* context, v3d::render::offline::film::FrameBuffer* planes) override;
 
     /**
      * How many samples a pixel took in the last render: PixelSamples' count, or more where a
@@ -58,8 +58,8 @@ class Hider final : public moya::Hider {
      * The primary ray through a raster position, in world space, from a point on the unit
      * lens disc. An orthographic camera has no lens to move.
      **/
-    v3d::type::geometry::Ray ray(const v3d::render::offline::Sampler::Sample & at,
-        const v3d::render::offline::Sampling & sampling) const;
+    v3d::type::geometry::Ray ray(const v3d::render::offline::film::Sampler::Sample & at,
+        const v3d::render::offline::film::Sampling & sampling) const;
 
  private:
     /**

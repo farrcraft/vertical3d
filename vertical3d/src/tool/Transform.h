@@ -36,7 +36,8 @@ namespace v3d::editor::tool {
  *
  * What the handles move follows the select mask: the selected objects in object mode, and
  * the vertices of the selected components in a component mode. A gesture on objects is
- * recorded as a command::Transform, and one on components as a command::Vertex.
+ * recorded as a command::Transform, keyed at the current frame while auto key is on, and one on
+ * components as a command::Vertex.
  *
  * A press grabs a handle if one is under the cursor and does nothing if none is, so the
  * same button can also select. The controller offers the press here first and passes it

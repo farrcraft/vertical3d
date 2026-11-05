@@ -5,11 +5,11 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/renderer/World.h>
 
 #include <cstddef>
@@ -26,10 +26,10 @@
 
 #include "Headless.h"
 
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::Pass;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::frame::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::renderer::World;
 
 namespace canvas = v3d::render::realtime::canvas;

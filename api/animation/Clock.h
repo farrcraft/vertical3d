@@ -57,6 +57,7 @@ class Clock final {
      *
      * @param from where the step started, unwrapped
      * @param to where advance() put it
+     * @param marker a time within the clip, in [0, duration]
      **/
     uint32_t crossed(float from, float to, float marker) const noexcept;
 

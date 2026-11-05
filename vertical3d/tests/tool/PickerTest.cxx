@@ -12,11 +12,11 @@
 #include <api/curve/Curves.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/Picker.h>
@@ -47,15 +47,15 @@ boost::shared_ptr<v3d::editor::view::ViewPort> frontView();
  **/
 struct Lit {
     Lit() :
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        light(boost::make_shared<v3d::editor::scene::Light>()),
-        camera(boost::make_shared<v3d::editor::scene::Camera>()),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        light(boost::make_shared<v3d::editor::scene::item::Light>()),
+        camera(boost::make_shared<v3d::editor::scene::item::Camera>()),
         view(frontView()) {
         // both well inside the view's depth, so every point of either glyph is in front of
         // the eye, and the camera's picture narrow enough to stay clear of the middle
         light->translation(glm::vec3(0.75F, 0.75F, -0.5F));
         camera->translation(glm::vec3(-0.5F, -0.55F, -0.5F));
-        v3d::editor::scene::Camera::Lens lens;
+        v3d::editor::scene::item::Camera::Lens lens;
         lens.fov = 30.0F;
         camera->lens(lens);
         scene.add(cube);
@@ -64,9 +64,9 @@ struct Lit {
     }
 
     v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
-    boost::shared_ptr<v3d::editor::scene::Light> light;
-    boost::shared_ptr<v3d::editor::scene::Camera> camera;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Light> light;
+    boost::shared_ptr<v3d::editor::scene::item::Camera> camera;
     boost::shared_ptr<v3d::editor::view::ViewPort> view;
 };
 
@@ -108,7 +108,7 @@ std::size_t inside(const v3d::editor::scene::Scene& scene, const glm::vec3& corn
 
 BOOST_AUTO_TEST_CASE(picker_object_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const unsigned int id = scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
@@ -127,15 +127,44 @@ BOOST_AUTO_TEST_CASE(picker_object_test) {
     BOOST_CHECK_EQUAL(missed.valid, false);
 }
 
+/**
+ * An item hidden in the views cannot be picked, by a click or a band, and neither can one
+ * beneath it. One left out of renders alone still can.
+ **/
+BOOST_AUTO_TEST_CASE(picker_hidden_test) {
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    scene.add(holder);
+    const unsigned int id = scene.add(cube);
+    scene.parent(id, holder->id());
+    const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
+    v3d::editor::tool::Picker picker;
+    const auto picked = [&]() {
+        return picker.pick(scene, *view, glm::vec2(200.0F, 200.0F), v3d::editor::selection::SelectMask::Object).valid;
+    };
+
+    cube->shown({ .views = true, .renders = false });
+    BOOST_CHECK(picked());
+    cube->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!picked());
+    // a band over both holds the group alone
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-1.0F, -1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), v3d::editor::selection::SelectMask::Object), 1U);
+    cube->shown({});
+    holder->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!picked());
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-1.0F, -1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), v3d::editor::selection::SelectMask::Object), 0U);
+}
+
 BOOST_AUTO_TEST_CASE(picker_nearest_test) {
     v3d::editor::scene::Scene scene;
 
     // not near/far: the windows headers define both as macros
-    const boost::shared_ptr<v3d::editor::scene::Mesh> behind = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> behind = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     behind->translation(glm::vec3(0.0F, 0.0F, 4.0F));
     scene.add(behind);
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> front = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> front = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     front->translation(glm::vec3(0.0F, 0.0F, 2.0F));
     const unsigned int id = scene.add(front);
 
@@ -151,7 +180,7 @@ BOOST_AUTO_TEST_CASE(picker_nearest_test) {
 
 BOOST_AUTO_TEST_CASE(picker_transform_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->translation(glm::vec3(0.75F, 0.0F, 0.0F));
     const unsigned int id = scene.add(cube);
 
@@ -172,8 +201,8 @@ BOOST_AUTO_TEST_CASE(picker_transform_test) {
 
 BOOST_AUTO_TEST_CASE(picker_beneath_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     group->translation(glm::vec3(-0.5F, 0.5F, 0.0F));
     cube->translation(glm::vec3(0.75F, -0.75F, 0.0F));
     scene.add(group);
@@ -201,7 +230,7 @@ BOOST_AUTO_TEST_CASE(picker_beneath_test) {
 
 BOOST_AUTO_TEST_CASE(picker_face_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     const unsigned int id = scene.add(cube);
 
@@ -225,7 +254,7 @@ BOOST_AUTO_TEST_CASE(picker_face_test) {
 
 BOOST_AUTO_TEST_CASE(picker_component_needs_an_object_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
@@ -244,7 +273,7 @@ BOOST_AUTO_TEST_CASE(picker_component_needs_an_object_test) {
 
 BOOST_AUTO_TEST_CASE(picker_vertex_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
 
@@ -274,7 +303,7 @@ BOOST_AUTO_TEST_CASE(picker_vertex_test) {
 
 BOOST_AUTO_TEST_CASE(picker_edge_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
 
@@ -304,7 +333,7 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
 
 BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const unsigned int id = scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
@@ -333,7 +362,7 @@ BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
 
 BOOST_AUTO_TEST_CASE(picker_inside_component_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     scene.add(cube);
 
     const glm::vec3 bottomLeft(-0.6F, -0.6F, 0.0F);
@@ -373,7 +402,7 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
     // a view that has never been given a region divides by zero if it is picked in
     const v3d::type::camera::Profile profile("unsized");
     const v3d::editor::view::ViewPort unsized("unsized", profile);
-    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
+    scene.add(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube()));
     BOOST_CHECK_EQUAL(picker.pick(scene, unsized, glm::vec2(0.0F, 0.0F),
         v3d::editor::selection::SelectMask::Object).valid, false);
     BOOST_CHECK(picker.inside(scene, unsized, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 400.0F),
@@ -448,7 +477,7 @@ BOOST_AUTO_TEST_CASE(picker_curve_test) {
     const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
     BOOST_REQUIRE(curves->add({ .shape = v3d::curve::Poly{ { { -0.5F, 0.0F, 0.0F }, { 0.5F, 0.0F, 0.0F } } } }).empty());
     v3d::editor::scene::Scene scene;
-    const unsigned int id = scene.add(boost::make_shared<v3d::editor::scene::Curve>(curves));
+    const unsigned int id = scene.add(boost::make_shared<v3d::editor::scene::item::Curve>(curves));
     const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
     v3d::editor::tool::Picker picker;
 
@@ -477,7 +506,7 @@ BOOST_AUTO_TEST_CASE(picker_curve_parts_test) {
     }
     BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = boost::make_shared<v3d::editor::scene::Curve>(curves);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = boost::make_shared<v3d::editor::scene::item::Curve>(curves);
     const unsigned int id = scene.add(curve);
     const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
     v3d::editor::tool::Picker picker;

@@ -12,16 +12,17 @@
 #include <api/database/Statement.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Scene.h>
@@ -76,8 +77,8 @@ boost::shared_ptr<v3d::log::Logger> logger() {
     return boost::make_shared<v3d::log::Logger>();
 }
 
-boost::shared_ptr<v3d::editor::scene::Mesh> item(const boost::shared_ptr<v3d::brep::BRep>& geometry) {
-    return boost::make_shared<v3d::editor::scene::Mesh>(geometry);
+boost::shared_ptr<v3d::editor::scene::item::Mesh> item(const boost::shared_ptr<v3d::brep::BRep>& geometry) {
+    return boost::make_shared<v3d::editor::scene::item::Mesh>(geometry);
 }
 
 /**
@@ -87,24 +88,24 @@ boost::shared_ptr<v3d::editor::scene::Mesh> item(const boost::shared_ptr<v3d::br
 boost::shared_ptr<v3d::editor::scene::Scene> everyKind() {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = item(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = item(v3d::brep::cube());
     cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
     cube->rotation(glm::angleAxis(0.7F, glm::normalize(glm::vec3(1.0F, 2.0F, 3.0F))));
     cube->scale(glm::vec3(2.0F, 0.5F, 3.0F));
     cube->name("Crate's lid");
     scene->add(cube);
 
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
     camera->translation(glm::vec3(0.0F, 4.0F, -10.0F));
     camera->name("Camera");
-    camera->lens({ .projection = v3d::editor::scene::Camera::Projection::Orthographic, .fov = 30.0F, .extent = 6.5F,
+    camera->lens({ .projection = v3d::editor::scene::item::Camera::Projection::Orthographic, .fov = 30.0F, .extent = 6.5F,
         .clipping = glm::vec2(0.5F, 250.0F) });
     scene->add(camera);
 
-    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> light = boost::make_shared<v3d::editor::scene::item::Light>();
     light->name("Camera");
     light->rotation(glm::angleAxis(-0.3F, glm::vec3(1.0F, 0.0F, 0.0F)));
-    light->emission({ .type = v3d::editor::scene::Light::Type::Spot, .colour = glm::vec3(1.0F, 0.5F, 0.25F),
+    light->emission({ .type = v3d::editor::scene::item::Light::Type::Spot, .colour = glm::vec3(1.0F, 0.5F, 0.25F),
         .intensity = 40.0F, .cone = 0.4F, .delta = 0.1F });
     scene->add(light);
 
@@ -138,7 +139,7 @@ void sameGeometry(const v3d::brep::BRep& left, const v3d::brep::BRep& right) {
  * Whether two items are the same document item: kind, document id, name, placement, and what the
  * kind holds, all exactly. Their run ids differ, because a read makes new items.
  **/
-void same(const boost::shared_ptr<v3d::editor::scene::Item>& left, const boost::shared_ptr<v3d::editor::scene::Item>& right) {
+void same(const boost::shared_ptr<v3d::editor::scene::item::Item>& left, const boost::shared_ptr<v3d::editor::scene::item::Item>& right) {
     BOOST_REQUIRE(left->kind() == right->kind());
     BOOST_CHECK_EQUAL(left->documentId(), right->documentId());
     BOOST_CHECK_EQUAL(left->name(), right->name());
@@ -146,22 +147,22 @@ void same(const boost::shared_ptr<v3d::editor::scene::Item>& left, const boost::
     BOOST_CHECK(left->rotation() == right->rotation());
     BOOST_CHECK(left->scale() == right->scale());
     switch (left->kind()) {
-        case v3d::editor::scene::Item::Kind::Mesh:
-            sameGeometry(*v3d::editor::scene::as<v3d::editor::scene::Mesh>(left)->geometry(),
-                *v3d::editor::scene::as<v3d::editor::scene::Mesh>(right)->geometry());
+        case v3d::editor::scene::item::Item::Kind::Mesh:
+            sameGeometry(*v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(left)->geometry(),
+                *v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(right)->geometry());
             break;
-        case v3d::editor::scene::Item::Kind::Camera: {
-            const v3d::editor::scene::Camera::Lens& expected = v3d::editor::scene::as<v3d::editor::scene::Camera>(left)->lens();
-            const v3d::editor::scene::Camera::Lens& actual = v3d::editor::scene::as<v3d::editor::scene::Camera>(right)->lens();
+        case v3d::editor::scene::item::Item::Kind::Camera: {
+            const v3d::editor::scene::item::Camera::Lens& expected = v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(left)->lens();
+            const v3d::editor::scene::item::Camera::Lens& actual = v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(right)->lens();
             BOOST_CHECK(expected.projection == actual.projection);
             BOOST_CHECK_EQUAL(expected.fov, actual.fov);
             BOOST_CHECK_EQUAL(expected.extent, actual.extent);
             BOOST_CHECK(expected.clipping == actual.clipping);
             break;
         }
-        case v3d::editor::scene::Item::Kind::Light: {
-            const v3d::editor::scene::Light::Emission& expected = v3d::editor::scene::as<v3d::editor::scene::Light>(left)->emission();
-            const v3d::editor::scene::Light::Emission& actual = v3d::editor::scene::as<v3d::editor::scene::Light>(right)->emission();
+        case v3d::editor::scene::item::Item::Kind::Light: {
+            const v3d::editor::scene::item::Light::Emission& expected = v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(left)->emission();
+            const v3d::editor::scene::item::Light::Emission& actual = v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(right)->emission();
             BOOST_CHECK(expected.type == actual.type);
             BOOST_CHECK(expected.colour == actual.colour);
             BOOST_CHECK_EQUAL(expected.intensity, actual.intensity);
@@ -169,12 +170,12 @@ void same(const boost::shared_ptr<v3d::editor::scene::Item>& left, const boost::
             BOOST_CHECK_EQUAL(expected.delta, actual.delta);
             break;
         }
-        case v3d::editor::scene::Item::Kind::Group:
+        case v3d::editor::scene::item::Item::Kind::Group:
             // a group holds nothing but its placement
             break;
-        case v3d::editor::scene::Item::Kind::Curve: {
-            const v3d::editor::scene::Curve& expected = *v3d::editor::scene::as<v3d::editor::scene::Curve>(left);
-            const v3d::editor::scene::Curve& actual = *v3d::editor::scene::as<v3d::editor::scene::Curve>(right);
+        case v3d::editor::scene::item::Item::Kind::Curve: {
+            const v3d::editor::scene::item::Curve& expected = *v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(left);
+            const v3d::editor::scene::item::Curve& actual = *v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(right);
             BOOST_CHECK(expected.style() == actual.style());
             BOOST_CHECK_EQUAL(expected.geometry()->resolution(), actual.geometry()->resolution());
             BOOST_REQUIRE_EQUAL(expected.geometry()->size(), actual.geometry()->size());
@@ -227,10 +228,10 @@ BOOST_AUTO_TEST_CASE(store_round_trip_test) {
 BOOST_AUTO_TEST_CASE(store_selection_not_saved_test) {
     const Scratch scratch("selection");
     const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
-    for (const boost::shared_ptr<v3d::editor::scene::Item>& each : written->items()) {
+    for (const boost::shared_ptr<v3d::editor::scene::item::Item>& each : written->items()) {
         each->selected(true);
     }
-    written->components().select(written->items()[0]->id(), v3d::editor::scene::Component::Face, 0, true);
+    written->components().select(written->items()[0]->id(), v3d::editor::scene::item::Component::Face, 0, true);
     v3d::editor::store::Scene store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));
 
@@ -281,14 +282,14 @@ BOOST_AUTO_TEST_CASE(store_rewrite_test) {
 
     v3d::editor::scene::Scene read;
     BOOST_REQUIRE(store.read(scratch.path(), &read));
-    BOOST_CHECK(read.items()[0]->kind() == v3d::editor::scene::Item::Kind::Camera);
+    BOOST_CHECK(read.items()[0]->kind() == v3d::editor::scene::item::Item::Kind::Camera);
 }
 
 BOOST_AUTO_TEST_CASE(store_document_ids_test) {
     const Scratch scratch("ids");
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Light> first = boost::make_shared<v3d::editor::scene::Light>();
-    const boost::shared_ptr<v3d::editor::scene::Light> second = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> first = boost::make_shared<v3d::editor::scene::item::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> second = boost::make_shared<v3d::editor::scene::item::Light>();
     scene.add(first);
     scene.add(second);
     scene.remove(second->id());
@@ -300,7 +301,7 @@ BOOST_AUTO_TEST_CASE(store_document_ids_test) {
 
     // the id the removed light had is not given again, in this run or after a read
     BOOST_CHECK_EQUAL(read.items()[0]->documentId(), first->documentId());
-    const boost::shared_ptr<v3d::editor::scene::Light> third = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> third = boost::make_shared<v3d::editor::scene::item::Light>();
     read.add(third);
     BOOST_CHECK_EQUAL(third->documentId(), second->documentId() + 1);
 }
@@ -370,7 +371,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a blob that belongs to no mesh",
             "INSERT INTO buffers (item, role, count, data) SELECT id, 'extra', 0, X'' FROM items WHERE kind = 'camera'" },
         { "a next id that is not above every id", "UPDATE meta SET value = 1 WHERE key = 'next_id'" },
-        { "tables from a later build", "PRAGMA user_version = 5" },
+        { "tables from a later build", "PRAGMA user_version = 6" },
         { "a curve on a property its owner does not have",
             "INSERT INTO curves SELECT id, 'lens.fov', 1, 0, X'' FROM items WHERE kind = 'light'" },
         { "a curve with no keys", "INSERT INTO curves SELECT id, 'translation.x', 1, 0, X'' FROM items WHERE kind = 'light'" },
@@ -408,7 +409,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
 
             // the read fails whole, and the scene in memory is left as it was
             v3d::editor::scene::Scene scene;
-            const boost::shared_ptr<v3d::editor::scene::Mesh> kept = item(v3d::brep::plane());
+            const boost::shared_ptr<v3d::editor::scene::item::Mesh> kept = item(v3d::brep::plane());
             scene.add(kept);
             BOOST_CHECK(!store.read(scratch.path(), &scene));
             BOOST_REQUIRE_EQUAL(scene.count(), 1U);
@@ -462,13 +463,13 @@ BOOST_AUTO_TEST_CASE(store_writes_only_the_changes_test) {
     BOOST_CHECK(read.items()[1]->translation() == glm::vec3(7.0F, 0.0F, 0.0F));
 
     // so does a change to a mesh's geometry made in place, once it is counted
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = v3d::editor::scene::as<v3d::editor::scene::Mesh>(scene->items()[0]);
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(scene->items()[0]);
     cube->geometry()->vertex(0)->point(glm::vec3(3.0F));
     cube->geometry()->touch();
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
     BOOST_CHECK_EQUAL(store.written().rows, 1U);
     BOOST_REQUIRE(reader.read(scratch.path(), &read));
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Mesh>(read.items()[0])->geometry()->vertex(0)->point() == glm::vec3(3.0F));
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(read.items()[0])->geometry()->vertex(0)->point() == glm::vec3(3.0F));
 }
 
 BOOST_AUTO_TEST_CASE(store_removes_and_moves_rows_test) {
@@ -478,7 +479,7 @@ BOOST_AUTO_TEST_CASE(store_removes_and_moves_rows_test) {
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
 
     // removing the first item deletes its row and its blobs, and the rest only change place
-    const boost::shared_ptr<v3d::editor::scene::Item> cube = scene->items()[0];
+    const boost::shared_ptr<v3d::editor::scene::item::Item> cube = scene->items()[0];
     scene->remove(cube->id());
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
     BOOST_CHECK_EQUAL(store.written().removed, 1U);
@@ -496,7 +497,7 @@ BOOST_AUTO_TEST_CASE(store_removes_and_moves_rows_test) {
     BOOST_REQUIRE(reader.read(scratch.path(), &read));
     BOOST_REQUIRE_EQUAL(read.count(), 4U);
     same(cube, read.items()[3]);
-    BOOST_CHECK(read.items()[0]->kind() == v3d::editor::scene::Item::Kind::Camera);
+    BOOST_CHECK(read.items()[0]->kind() == v3d::editor::scene::item::Item::Kind::Camera);
 }
 
 BOOST_AUTO_TEST_CASE(store_reads_then_writes_only_the_changes_test) {
@@ -510,7 +511,7 @@ BOOST_AUTO_TEST_CASE(store_reads_then_writes_only_the_changes_test) {
     v3d::editor::store::Scene store(logger());
     v3d::editor::scene::Scene scene;
     BOOST_REQUIRE(store.read(scratch.path(), &scene));
-    v3d::editor::scene::as<v3d::editor::scene::Light>(scene.items()[2])->emission({ .intensity = 3.0F });
+    v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(scene.items()[2])->emission({ .intensity = 3.0F });
     BOOST_REQUIRE(store.write(scratch.path(), scene));
     BOOST_CHECK(!store.written().whole);
     BOOST_CHECK_EQUAL(store.written().rows, 1U);
@@ -567,7 +568,7 @@ BOOST_AUTO_TEST_CASE(store_hierarchy_round_trip_test) {
     const Scratch scratch("hierarchy");
     const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
     const v3d::editor::scene::Items kinds = written->items();
-    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
     group->translation(glm::vec3(0.0F, 3.0F, 0.0F));
     group->rotation(glm::angleAxis(0.5F, glm::vec3(0.0F, 1.0F, 0.0F)));
     written->add(group);
@@ -589,8 +590,8 @@ BOOST_AUTO_TEST_CASE(store_hierarchy_round_trip_test) {
     const v3d::editor::scene::Evaluation after = read.evaluate();
     for (std::size_t index = 0; index < read.count(); index++) {
         same(written->items()[index], read.items()[index]);
-        const boost::shared_ptr<v3d::editor::scene::Item> parent = written->parent(written->items()[index]->id());
-        const boost::shared_ptr<v3d::editor::scene::Item> back = read.parent(read.items()[index]->id());
+        const boost::shared_ptr<v3d::editor::scene::item::Item> parent = written->parent(written->items()[index]->id());
+        const boost::shared_ptr<v3d::editor::scene::item::Item> back = read.parent(read.items()[index]->id());
         BOOST_REQUIRE_EQUAL(static_cast<bool>(parent), static_cast<bool>(back));
         if (parent) {
             BOOST_CHECK_EQUAL(parent->documentId(), back->documentId());
@@ -599,11 +600,40 @@ BOOST_AUTO_TEST_CASE(store_hierarchy_round_trip_test) {
     }
 }
 
+/**
+ * Where each item is shown comes back as it was written, and a change to it alone writes the
+ * item's row.
+ **/
+BOOST_AUTO_TEST_CASE(store_shown_round_trip_test) {
+    const Scratch scratch("shown");
+    const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
+    const v3d::editor::scene::Items kinds = written->items();
+    kinds[0]->shown({ .views = false, .renders = true });
+    kinds[2]->shown({ .views = true, .renders = false });
+
+    v3d::editor::store::Scene store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE views = 0"), 1);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE renders = 0"), 1);
+
+    kinds[1]->shown({ .views = false, .renders = false });
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE views = 0"), 2);
+
+    v3d::editor::store::Scene reader(logger());
+    v3d::editor::scene::Scene read;
+    BOOST_REQUIRE(reader.read(scratch.path(), &read));
+    for (std::size_t index = 0; index < read.count(); index++) {
+        BOOST_CHECK(read.items()[index]->shown() == kinds[index]->shown());
+    }
+}
+
 BOOST_AUTO_TEST_CASE(store_parent_change_moves_a_row_test) {
     const Scratch scratch("reparent");
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = everyKind();
-    const boost::shared_ptr<v3d::editor::scene::Item> cube = scene->items()[0];
-    const boost::shared_ptr<v3d::editor::scene::Item> light = scene->items()[2];
+    const boost::shared_ptr<v3d::editor::scene::item::Item> cube = scene->items()[0];
+    const boost::shared_ptr<v3d::editor::scene::item::Item> light = scene->items()[2];
     scene->parent(light->id(), cube->id());
     v3d::editor::store::Scene store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
@@ -642,7 +672,7 @@ BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
     fade.set(12.0F, 0.0F);
     BOOST_REQUIRE(written->curve(kinds[0]->id(), "translation.y", shaped));
     BOOST_REQUIRE(written->curve(kinds[2]->id(), "emission.intensity", fade));
-    written->timeline({ .rate = 30.0F, .start = 2, .end = 48, .frame = 7 });
+    written->timeline({ .rate = 30.0F, .start = 2, .end = 48, .frame = 7, .autoKey = true });
 
     v3d::editor::store::Scene store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));
@@ -689,6 +719,40 @@ BOOST_AUTO_TEST_CASE(store_render_settings_test) {
     v3d::editor::scene::Scene plain;
     BOOST_REQUIRE(store.read(scratch.path(), &plain));
     BOOST_CHECK(plain.renderSettings() == v3d::editor::scene::RenderSettings());
+}
+
+BOOST_AUTO_TEST_CASE(store_length_unit_test) {
+    const Scratch scratch("length_unit");
+    const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
+    written->length(v3d::editor::scene::Length::Centimetre);
+
+    // the unit comes back as it was written
+    v3d::editor::store::Scene store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    v3d::editor::scene::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_CHECK(read.length() == v3d::editor::scene::Length::Centimetre);
+
+    // a document that names none measures in metres
+    alter(scratch, "DELETE FROM meta WHERE key = 'length_unit'");
+    v3d::editor::scene::Scene plain;
+    BOOST_REQUIRE(store.read(scratch.path(), &plain));
+    BOOST_CHECK(plain.length() == v3d::editor::scene::Length::Metre);
+
+    // and one that names a unit this build does not have is refused
+    alter(scratch, "INSERT INTO meta (key, value) VALUES ('length_unit', 'furlong')");
+    v3d::editor::scene::Scene refused;
+    BOOST_CHECK(!store.read(scratch.path(), &refused));
+}
+
+BOOST_AUTO_TEST_CASE(store_length_unit_symbols_test) {
+    // every unit's symbol names it again, and its metres are exact
+    for (const v3d::editor::scene::Length unit : v3d::editor::scene::LENGTHS) {
+        BOOST_CHECK(v3d::editor::scene::lengthOf(v3d::editor::scene::symbol(unit)) == unit);
+    }
+    BOOST_CHECK(!v3d::editor::scene::lengthOf("furlong"));
+    BOOST_CHECK_EQUAL(v3d::editor::scene::metres(v3d::editor::scene::Length::Inch), 0.0254);
+    BOOST_CHECK_EQUAL(v3d::editor::scene::metres(v3d::editor::scene::Length::Foot), 0.3048);
 }
 
 BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {
@@ -748,12 +812,15 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &scene));
     BOOST_REQUIRE_EQUAL(scene.count(), 1U);
     BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
-    BOOST_CHECK(scene.items()[0]->name().empty());
+    // the light was saved with no name, and the scene calls it by its kind. It is shown in the
+    // views and in renders, as everything was before an item could be hidden
+    BOOST_CHECK_EQUAL(scene.items()[0]->name(), "Light");
+    BOOST_CHECK(scene.items()[0]->shown() == v3d::editor::scene::item::Item::Shown{});
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
 
     // the first write to it brings its tables up to date, and can then save a parent and a
     // curve
-    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
     group->name("Rig");
     scene.add(group);
     scene.parent(scene.items()[0]->id(), group->id());
@@ -767,7 +834,7 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_REQUIRE_EQUAL(read.count(), 2U);
     BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
-    BOOST_CHECK(read.items()[0]->name().empty());
+    BOOST_CHECK_EQUAL(read.items()[0]->name(), "Light");
     BOOST_CHECK_EQUAL(read.items()[1]->name(), "Rig");
     BOOST_CHECK(read.curves(read.items()[1]->id()).at("rotation.y") == curve);
 }
@@ -776,11 +843,11 @@ BOOST_AUTO_TEST_CASE(store_curve_round_trip_test) {
     // a curve item of each type, one rendering and placed, comes back as it was written
     const Scratch scratch("curves");
     v3d::editor::scene::Scene written;
-    for (const v3d::editor::scene::CurveType type : { v3d::editor::scene::CurveType::Poly, v3d::editor::scene::CurveType::Bezier,
-        v3d::editor::scene::CurveType::CatmullRom, v3d::editor::scene::CurveType::Nurbs }) {
-        written.add(v3d::editor::scene::create_curve(type));
+    for (const v3d::editor::scene::item::CurveType type : { v3d::editor::scene::item::CurveType::Poly, v3d::editor::scene::item::CurveType::Bezier,
+        v3d::editor::scene::item::CurveType::CatmullRom, v3d::editor::scene::item::CurveType::Nurbs }) {
+        written.add(v3d::editor::scene::item::create_curve(type));
     }
-    const boost::shared_ptr<v3d::editor::scene::Curve> placed = v3d::editor::scene::as<v3d::editor::scene::Curve>(written.items()[1]);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> placed = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(written.items()[1]);
     placed->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     placed->style({ .renders = true, .width = 0.5F });
     v3d::editor::store::Scene store(logger());
@@ -799,7 +866,7 @@ BOOST_AUTO_TEST_CASE(store_curve_round_trip_test) {
     BOOST_REQUIRE(store.write(scratch.path(), written));
     v3d::editor::scene::Scene again;
     BOOST_REQUIRE(store.read(scratch.path(), &again));
-    BOOST_CHECK_EQUAL(v3d::editor::scene::as<v3d::editor::scene::Curve>(again.items()[1])->geometry()->resolution(), 3U);
+    BOOST_CHECK_EQUAL(v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(again.items()[1])->geometry()->resolution(), 3U);
 }
 
 };  // namespace

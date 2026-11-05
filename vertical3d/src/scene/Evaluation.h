@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include <api/type/Transform.h>
+#include <vertical3d/src/scene/item/Item.h>
+
 #include <unordered_map>
 
-#include "Item.h"
 #include "Properties.h"
 
 #include <glm/ext/quaternion_float.hpp>
@@ -52,7 +54,7 @@ class Evaluation final {
      * @return the item's placement, lens and emission as the evaluation found them, or as the
      *         item holds them when the evaluation did not see it
      **/
-    Pose pose(const Item& item) const;
+    Pose pose(const item::Item& item) const;
 
     /**
      * Record an item's pose. The scene's evaluation calls this once for each item.
@@ -77,5 +79,12 @@ glm::quat orientation(const glm::mat4& matrix);
  * A matrix's translation and orientation(), without its scale or shear.
  **/
 glm::mat4 withoutScale(const glm::mat4& matrix);
+
+/**
+ * A matrix taken apart into a placement: its translation, its orientation(), and the scale
+ * along the axes that orientation turns. Whatever shear the matrix holds is lost, because a
+ * placement cannot hold one.
+ **/
+v3d::type::Transform placement(const glm::mat4& matrix);
 
 };  // namespace v3d::editor::scene

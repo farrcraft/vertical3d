@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <moya/libmoya/ri/RenderMan.h>
@@ -77,7 +77,7 @@ class Converter {
      * the filters RI declares are known. Any other function, or a width the RIB reader would
      * refuse, skips the request.
      **/
-    static std::optional<v3d::render::offline::Filter> filter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
+    static std::optional<v3d::render::offline::film::Filter> filter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
 
     /**
      * A parameter list, typed by what the active handler has declared.

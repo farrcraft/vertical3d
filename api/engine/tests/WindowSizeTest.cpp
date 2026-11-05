@@ -6,6 +6,7 @@
 #include <api/engine/WindowSize.h>
 
 #include <optional>
+#include <string>
 
 #include <boost/json.hpp>
 #include <boost/test/unit_test.hpp>
@@ -38,6 +39,18 @@ BOOST_AUTO_TEST_CASE(a_window_size_an_int_cannot_hold_is_refused_test) {
             BOOST_CHECK(!read(document).has_value());
         }
     }
+}
+
+/**
+ * A window document may name the SVG its icon is drawn from. One that names none, names it as
+ * something other than a string, or has no window, gives no icon.
+ **/
+BOOST_AUTO_TEST_CASE(a_window_document_names_its_icon_test) {
+    const auto icon = [](const char* document) { return v3d::engine::windowIcon(boost::json::parse(document).as_object()); };
+    BOOST_CHECK(icon(R"({ "window": { "width": 800, "height": 600, "icon": "icon.svg" } })") == std::string("icon.svg"));
+    BOOST_CHECK(!icon(R"({ "window": { "width": 800, "height": 600 } })"));
+    BOOST_CHECK(!icon(R"({ "window": { "icon": 3 } })"));
+    BOOST_CHECK(!icon(R"({ "icon": "icon.svg" })"));
 }
 
 };  // namespace

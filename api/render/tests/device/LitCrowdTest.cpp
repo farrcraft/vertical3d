@@ -8,10 +8,10 @@
 #include <api/ecs/component/Playback.h>
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/entity/Poses.h>
@@ -19,8 +19,8 @@
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
@@ -43,13 +43,13 @@
 
 using v3d::ecs::component::Playback;
 using v3d::ecs::component::Transform;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::MeshHandle;
-using v3d::render::realtime::MeshRegistry;
-using v3d::render::realtime::Pass;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::resource::MeshHandle;
+using v3d::render::realtime::resource::MeshRegistry;
+using v3d::render::realtime::frame::Pass;
 using v3d::render::realtime::entity::Poses;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::renderer::Lit;
 
 namespace lighting = v3d::render::realtime::lighting;
@@ -151,7 +151,7 @@ boost::shared_ptr<v3d::image::Image> drawStrips(v3d::test::Headless* headless, c
     pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(view.view(), view.projection());
     pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F),
-        v3d::render::realtime::TextureHandle(), poses.palette()));
+        v3d::render::realtime::resource::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
     return headless->picture(frame, *target, path);

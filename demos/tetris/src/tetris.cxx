@@ -8,6 +8,6 @@
 
 #include "Controller.h"
 
-int main(int /* argc */, char *argv[]) {
-    return v3d::engine::run<Controller>(argv[0], { .organization = "Vertical3D", .application = "Tetris" });
+int main(int argc, char* argv[]) {
+    return v3d::engine::run<Controller>(argc, argv, { .organization = "Vertical3D", .application = "Tetris" });
 }

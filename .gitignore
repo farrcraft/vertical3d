@@ -6,3 +6,14 @@ vcpkg_installed/*
 
 # the logger writes beside whatever ran, and a test run leaves one in the tree root
 v3d.log
+
+# the TypeScript tooling package.json installs
+node_modules/
+
+# the image and render tests write what they produced here, in whatever directory they ran from
+data_out/
+
+# the documentation site, the tools that build it, and the scenes scripts/pictures.ts renders
+out/docs/
+out/tools/
+out/pictures/

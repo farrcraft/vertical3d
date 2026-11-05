@@ -5,7 +5,7 @@
 
 #include "Assignment.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Statement.h"
 
@@ -13,7 +13,7 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Assignment::Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::Position & at) :
+Assignment::Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::source::Position & at) :
     Statement(Kind::ASSIGNMENT, at),
     op(op),
     target(sides.target),

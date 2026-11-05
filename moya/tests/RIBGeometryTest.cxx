@@ -4,13 +4,14 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/Scene.h>
-#include <api/type/geometry/Ray.h>
 #include <api/render/offline/trace/Sphere.h>
+#include <api/type/geometry/Ray.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
         "AttributeEnd\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F, 0.01F);
     BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 32, 24), 1.0e-6F);
     BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::BLUE, 32, 24), 1.0e-6F);
@@ -145,7 +146,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
         "Polygon \"P\" [0 0 5  1 0 5  1 1 5  0 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
     // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
     BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 56, 7), 0.5F);
@@ -166,7 +167,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
         "Polygon \"P\" [-1 -1 5  -1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
     BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 32, 24), 0.5F);
 }
@@ -180,8 +181,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
     const std::string shading = "Surface \"constant\"\n";
     const std::string colours = "\"Cs\" [1 0 0  1 1 1  0 0 1  0 1 0]\n";
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, colours);
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, colours);
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> split = quad(16, shading, colours);
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> whole = quad(4096, shading, colours);
 
     for (const auto & pixel : INSIDE) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
@@ -212,8 +213,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
         "LightSource \"distantlight\" 1 \"to\" [0 0 1]\n"
         "Surface \"matte\" \"Ka\" [0]\n";
     const std::string normals = "\"N\" [-0.9 0 -0.436  -0.9 0 -0.436  0 0 -1  0 0 -1]\n";
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, normals);
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, normals);
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> split = quad(16, shading, normals);
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> whole = quad(4096, shading, normals);
 
     for (const auto & pixel : INSIDE) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
@@ -327,7 +328,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
         "Color [1 0 0]\n"
         "Polygon \"P\" [0.8 0 5  0.4 0.693 5  -0.4 0.693 5  -0.8 0 5  -0.4 -0.693 5  0.4 -0.693 5]\n"
         "WorldEnd\n", &handler));
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
 
     // y = 0.4 and y = -0.4 in screen space fall on rows 14 and 33, both inside the hexagon
     BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 32, 14), 0.5F);

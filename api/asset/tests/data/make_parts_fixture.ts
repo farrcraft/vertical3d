@@ -28,7 +28,7 @@ import {
     ARRAY_BUFFER, ASSET, ELEMENT_ARRAY_BUFFER, FLOAT, UNSIGNED_SHORT, Writer, bounds, f32, float, floats, u16,
 } from './gltf_writer.ts';
 
-const TRIANGLE = [[0, 0], [1, 0], [0, 1]];
+const TRIANGLE: [number, number][] = [[0, 0], [1, 0], [0, 1]];
 const NORMAL = [1, 0, 0];
 const QUARTER_TURN_ABOUT_Z = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 

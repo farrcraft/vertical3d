@@ -77,6 +77,8 @@ class Bar : public Component {
      * menu's own bounds are its panel.
      *
      * @param index which menu, which must be less than count()
+     * @param position the label's top left corner, in canvas pixels
+     * @param size the label's width and height, in pixels
      **/
     void place(std::size_t index, const glm::vec2& position, const glm::vec2& size);
 
@@ -120,7 +122,9 @@ class Bar : public Component {
     /**
      * The cursor moved.
      * @param cursor where it is, in the pixels the bar was drawn in
-     * @return whether it is over the bar or one of its open panels
+     * @return whether the bar took the cursor: it is over a label or an open panel, or anywhere
+     *         on the strip while a menu is open. The rest of a closed bar's strip is left to
+     *         what an app puts beside the labels
      **/
     bool motion(const glm::vec2& cursor);
 
@@ -137,6 +141,20 @@ class Bar : public Component {
      **/
     void docked(bool along) noexcept;
     bool docked() const noexcept;
+
+    /**
+     * How much of the bar's strip is drawn over what is beneath it, from 0 to 1. Its titles are
+     * drawn whole. A value outside the range is clamped to it.
+     **/
+    void opacity(float drawn) noexcept;
+    float opacity() const noexcept;
+
+    /**
+     * Text drawn after the last title in the secondary text colour, such as a hint about what
+     * the bar's area is doing. It takes no press. Empty draws nothing.
+     **/
+    void note(const std::string& text);
+    const std::string& note() const noexcept;
 
     /**
      * Open the submenu the cursor has rested on for the delay. Called once a frame with the
@@ -247,6 +265,8 @@ class Bar : public Component {
     int open_;   // the open menu, or -1
     float delay_;
     bool docked_ = true;
+    float opacity_ = 1.0F;
+    std::string note_;
     std::optional<Pending> pending_;
 };
 

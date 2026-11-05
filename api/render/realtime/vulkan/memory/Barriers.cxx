@@ -121,6 +121,19 @@ VkImageMemoryBarrier2 forUpload(VkImage image) {
 
 /**
  **/
+VkImageMemoryBarrier2 forRegionUpload(VkImage image) {
+    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, .to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL});
+    // what is waited on is reads, which make nothing available, so the access mask is empty and
+    // the dependency only orders the copy after them
+    into.srcStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    into.srcAccessMask = VK_ACCESS_2_NONE;
+    into.dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
+    into.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    return into;
+}
+
+/**
+ **/
 VkImageMemoryBarrier2 uploadedForSampling(VkImage image) {
     VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, .to = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     out.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;

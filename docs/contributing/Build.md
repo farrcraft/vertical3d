@@ -17,23 +17,39 @@ another repository against the api is covered in [UsingTheApi.md](../api/UsingTh
 
 ## Configure and build
 
-The tree builds with MSVC on Windows, using CMake and Ninja. There is no `CMakePresets.json`.
-Visual Studio configures `out/build/x64-Debug` from [CMakeSettings.json](../../CMakeSettings.json)
-when it opens the folder.
+The tree builds with MSVC on Windows, using CMake and Ninja.
+[CMakePresets.json](../../CMakePresets.json) names every build directory and the options it is
+configured with. Each preset builds into `out/build/<preset name>`:
+
+| Preset | Configured with | For |
+|---|---|---|
+| `x64-Debug` | the defaults | everyday work, and the build every script and document uses |
+| `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
+| `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
+| `verify` | both | both analysers in one build |
+| `asan` | `V3D_SANITIZE=ON` | AddressSanitizer ([Testing.md](Testing.md#sanitizers)) |
+| `ci` | the vcpkg that `VCPKG_INSTALLATION_ROOT` names, and one link at a time | the Windows CI job |
+
+Every preset is Debug, uses the `x64-windows` triplet, and generates for Ninja. Every one but
+`ci` uses the vcpkg in `vendor/vcpkg`. `ci` is listed only when `VCPKG_INSTALLATION_ROOT` is
+set, which the CI job does after it checks vcpkg out at the manifest's baseline. Visual Studio
+and VS Code list the presets when they open the folder.
 
 From a shell, enter a developer environment first (run `vcvars64.bat`), then configure and build:
 
 ```
-cmake -S . -B out/build/x64-Debug -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --preset x64-Debug                  # configure
 ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
+cmake --build --preset tidy               # build another preset's directory
 ```
 
-The first configure installs every vcpkg package into `out/build/x64-Debug/vcpkg_installed/`.
-See [Traps](#traps) for how long that takes and why that directory must be kept.
+Each build directory installs its own copy of every vcpkg package into
+`out/build/<preset name>/vcpkg_installed/` at its first configure. See [Traps](#traps) for how
+long that takes and why that directory must be kept.
+
+An option given on the command line after `--preset`, such as `-DV3D_WARNINGS_AS_ERRORS=OFF`,
+overrides the preset. It stays in that directory's cache until it is named again.
 
 `ninja`, `cmake` and `ctest` are on the PATH only inside a developer environment. Two scripts
 enter one for you:
@@ -52,6 +68,8 @@ scripts\test.cmd -R input                 # ctest, with any arguments passed thr
   edition). For any other install, set `V3D_VCVARS` to the full path of `vcvars64.bat`.
 
 Every target in the tree compiles and links.
+
+Background: [ADR-0172](../adr/project/0172-build-each-build-directory-is-a-cmake-preset.md)
 
 ## The CMake layout
 
@@ -98,20 +116,38 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 
 The api libraries whose closure names neither SDL3, Vulkan nor OpenUSD build and test with Clang
 on Linux:
-asset, asset_media, brep, database, ecs, event, font, grid, image, interchange, log,
+asset, asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
 render_offline and type. CI checks that on every pull request, in
 [.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them
 can therefore pass every gate on Windows and fail there.
 
 - Those libraries do not use an MSVC extension or a Windows header.
-- The job configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the
-  manifest's `platform` feature, and with `V3D_LIBRARIES` naming the list above.
-- To reproduce it on Windows, run the workflow's configure, build and test steps in an
-  `ubuntu:24.04` container with the tree mounted. Clang's GNU driver on Windows rejects MSVC's
-  flag spellings too, but it compiles against MSVC's standard library and the Windows headers,
-  so it misses what only Linux shows.
+- The job builds in an Ubuntu 26.04 image that
+  [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile) defines.
+  [scripts/portable/build.sh](../../scripts/portable/build.sh) runs the configure, the build and
+  the tests in it, and holds the list above. It configures with
+  `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the manifest's `platform` and `usd`
+  features, and with `V3D_LIBRARIES` naming the list.
+- **The job builds with `V3D_SANITIZE` and `V3D_FUZZ` on**, so its suites run under both
+  sanitizers, and it fuzzes each fuzz target after them. See
+  [Testing.md](Testing.md#sanitizers).
+- **The job builds with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts
+  code an older one rejects, so the oldest catches a feature that a consumer's compiler lacks.
+  Apple's Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
+  `std::expected` against libstdc++. The version is the `CLANG` argument in the Dockerfile, and
+  nothing else names it.
+- **`scripts\portable.cmd` runs the job locally**, with Docker Desktop running. It builds the
+  same image and runs the same script, with the tree mounted read-only. The build, the vcpkg
+  checkout and the binary cache live in the Docker volume `v3d-portable`, apart from the Windows
+  build, so a second run reuses them. The first run builds every dependency from source.
+  `docker volume rm v3d-portable` starts again from cold.
+- Clang's GNU driver on Windows is no substitute. It rejects MSVC's flag spellings, but it
+  compiles against MSVC's standard library and the Windows headers, so it misses what only Linux
+  shows.
 
-Background: [ADR-0107](../adr/0107-build-the-api-libraries-build-with-clang-off-windows.md)
+Background: [ADR-0107](../adr/project/0107-build-the-api-libraries-build-with-clang-off-windows.md),
+[ADR-0159](../adr/project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md),
+[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
 
 ### The manifest is checked on every configure
 
@@ -147,6 +183,8 @@ than an imported target, so it never appears in a link line.
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy. See [Linting.md](Linting.md) |
+| `V3D_SANITIZE` | `OFF` | AddressSanitizer, and the undefined behaviour sanitizer off MSVC. See [Testing.md](Testing.md#sanitizers) |
+| `V3D_FUZZ` | `OFF` | libFuzzer for the fuzz targets. Clang only. See [Testing.md](Testing.md#fuzz-targets) |
 | `V3D_LIBRARIES` | `all` | Which api libraries to build. See [UsingTheApi.md](../api/UsingTheApi.md#selecting-libraries) |
 | `V3D_FMOD_ROOT` | empty | An FMOD Studio API install to build the FMOD audio event backend against. See [Dependencies.md](Dependencies.md#fmod-studio) |
 
@@ -169,7 +207,9 @@ guard has to cover the whole file.
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
 | `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory beside the executable |
 | `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
+| `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
+| `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
 | `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` | Compiles a GLSL shader into the target. See [Shaders](#shaders) |
 
 ### Data directories
@@ -190,6 +230,22 @@ The two data helpers add a build rule whose inputs are the files in the source d
 
 These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
 vertical3d. All of them but moya also call `v3d_add_shared_data`.
+
+### App icons
+
+Every app has an icon, drawn from one SVG. An app that opens a window keeps it at
+`<app>/data/icon.svg`, and its `window.json` names it, so the window shows it at run time. moya
+and imagetool open no window and keep theirs at `<app>/icon.svg`. Each app's CMakeLists calls
+`v3d_add_app_icon` with its SVG, so its executable carries the same icon on Windows.
+
+- The SVG is a square with a size of its own, 256 by 256 in the tree. It is drawn at 16 to 256
+  pixels, so it keeps its detail large enough to read at 16.
+- The build draws the icon again when the SVG changes. The `.ico` is a build output and is
+  not committed.
+- Only the subset of SVG NanoSVG draws is used. A gradient's position and radius are written
+  as percentages, since a bare fraction is read as pixels.
+
+Background: [ADR-0170](../adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
 
 ## Shaders
 
@@ -233,8 +289,8 @@ PUBLIC when its headers include it, so the package reaches every app that links 
 comes through `v3dlib_type`, EnTT through `v3dlib_event`, Boost.Filesystem and Boost.JSON through
 `v3dlib_asset`, and SDL3 through `v3dlib_engine`. The one exception is a package the app's own
 sources include that none of the `v3dlib_*` targets it links carries. Examples are
-`Boost::program_options` in the apps that parse a command line, voxel's vendored `libnoise`, and
-`Boost::filesystem` in the moya suite. An app suite does not name `Boost::unit_test_framework`,
+`Boost::program_options` in the apps that parse a command line, and `Boost::filesystem` in the
+moya suite. An app suite does not name `Boost::unit_test_framework`,
 because `v3d_add_test` links it. A variable such as `${Boost_LIBRARIES}` counts as every target it
 names, and config-mode Boost sets it to every component the tree finds, so an app names a Boost
 component rather than the variable.
@@ -280,8 +336,8 @@ Specific rules:
   `glm::glm` or `EnTT::EnTT`. Do not rely on their headers being reachable through another
   package's include directory.
 
-Background: [ADR-0027](../adr/0027-build-consume-the-api-as-source.md),
-[ADR-0079](../adr/0079-assets-loaders-are-registered.md)
+Background: [ADR-0027](../adr/project/0027-build-consume-the-api-as-source.md),
+[ADR-0079](../adr/engine/0079-assets-loaders-are-registered.md)
 
 ## The starter example
 
@@ -296,6 +352,26 @@ also checks that the manifest's dependency lists are complete.
 
 [examples/README.md](../../examples/README.md#building-an-example) gives the commands that build
 it locally against the packages your main build already installed.
+
+## What a build error usually means
+
+MSVC prints an error and then the chain of instantiations that led to it. The first error is
+the one to fix, and later errors are usually caused by it. Redirect a build to a file and read
+around the first `error` line, rather than reading the end of the output.
+
+| Error | Usual cause here | Fix |
+|---|---|---|
+| `LNK2019` on a symbol that plainly exists | A source file missing from its target's `CMakeLists.txt`. Every source list is written by hand | Add the file to the list |
+| `LNK2019` on `vk*` symbols | A library calls Vulkan without linking `Vulkan::Vulkan` | Link it on that library. `v3dlib_render` links it PUBLIC, so an app never names it |
+| `C1083` cannot open include file | A header that does not exist, or a path not named from the repository root | Check that the header exists, then the include rule in [Conventions.md](Conventions.md#includes) |
+| `C2039` is not a member | A member removed from a header while a use remains | Correct the use, or restore the member |
+| `C2259` cannot instantiate abstract class | A pure virtual function whose override has a different signature | Mark the override `override`, and the compiler names the mismatch |
+| `C2440` or `C4244` on a conversion | `size_t` to `int`, or `int` to `float` | A `static_cast` at the boundary, through the checked helpers for input from outside |
+| A `static_assert` inside spdlog's bundled fmt | `/utf-8` missing from the target | Add it. The assert is correct |
+
+`/permissive-` is on, so MSVC rejects code that it would otherwise accept: a dependent name
+without `typename`, a name that two-phase lookup cannot find, and a non-const reference bound
+to a temporary.
 
 ## Traps
 
@@ -318,16 +394,25 @@ it locally against the packages your main build already installed.
   add that directory to their own include path. Its implementation is compiled once for every
   program, in
   [api/interchange/CgltfImpl.cxx](../../api/interchange/CgltfImpl.cxx). That file is
-  excluded from both static analysers, as `demos/voxel/src/noise/noiseutils.cpp` is.
-- **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
-  points at nothing. vcpkg still works, because the build uses the toolchain file.
-- **voxel will not link until libnoise is built.** `vendor/libnoise` is a git submodule and is
-  not prebuilt. voxel and its test suite expect the library under `vendor/libnoise/Debug`. See
-  [Dependencies.md](Dependencies.md#building-libnoise).
+  excluded from both static analysers.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
-  build again.
+  build again. If the same object fails again at the same section number, the corrupt object is
+  another one that defines the same symbol. Run `dumpbin /headers` on the named object and read
+  the `sym=` line of the section the error names. Then search the build tree's `.obj` files for
+  that symbol's name, and delete every object that defines it. Two builds running in one build
+  directory at once can cause this.
+- **`git status` can report files that `git diff` shows as unchanged.** After an edit to many
+  files, git's cached file times can go stale, and refreshing the index does not clear them.
+  Delete `.git/index` and run `git reset`. The working tree is not changed.
+- **`Select-Object -First` stops a build.** In PowerShell, a build piped through
+  `Select-Object -First N` is ended once N lines have passed. It exits with 255 and prints no
+  error, which looks like a failed build. Redirect a build to a file and search the file.
+- **A recursive search from the repository root reads the package installs.** Each build
+  directory under `out/build/` holds its own `vcpkg_installed/`, so most of the tree is not
+  source. Name the source directories to the search, or exclude `out/`, `vcpkg_installed/` and
+  `vendor/`.
 - **An executable that crashes before `main` can be a corrupt incremental link.** A Debug link is
   incremental, and it can write an executable whose kernel32 import table is partly zeroed. The
   loader then binds none of kernel32's imports. The program faults in the C runtime's startup,

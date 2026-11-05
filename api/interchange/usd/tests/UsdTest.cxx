@@ -161,6 +161,31 @@ BOOST_AUTO_TEST_CASE(usd_reads_keyed_translation_test) {
  * A keyed prim at the top of a z up stage goes beneath a group that turns and scales it, so its
  * keys keep their meaning. A still one takes the turn and the scale into its own placement.
  **/
+/**
+ * An invisible prim is neither seen nor rendered, and a guide or a proxy is seen and not
+ * rendered. A prim beneath an invisible one keeps its own values, and a prim with the render
+ * purpose, or none, is both.
+ **/
+BOOST_AUTO_TEST_CASE(usd_reads_visibility_and_purpose_test) {
+    const Scene scene = readScene("data/visibility.usda");
+
+    const Node& invisible = scene.nodes[nodeNamed(scene, "Invisible")];
+    BOOST_CHECK(!invisible.visible);
+    BOOST_CHECK(!invisible.renders);
+    for (const char* stand : { "Guide", "Proxy" }) {
+        BOOST_TEST_CONTEXT(stand) {
+            BOOST_CHECK(scene.nodes[nodeNamed(scene, stand)].visible);
+            BOOST_CHECK(!scene.nodes[nodeNamed(scene, stand)].renders);
+        }
+    }
+    for (const char* shown : { "Plain", "Beneath", "Render" }) {
+        BOOST_TEST_CONTEXT(shown) {
+            BOOST_CHECK(scene.nodes[nodeNamed(scene, shown)].visible);
+            BOOST_CHECK(scene.nodes[nodeNamed(scene, shown)].renders);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE(usd_turns_a_z_up_stage_in_centimetres_test) {
     const Scene scene = readScene("data/keyed_root.usda");
 

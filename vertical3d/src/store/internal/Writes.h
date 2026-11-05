@@ -22,8 +22,8 @@ struct Writes {
     explicit Writes(v3d::database::Database* database) :
         inserts{
             .item = database->prepare(
-                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent, name) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent, name, views, renders) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
             .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") },
         remove(database->prepare("DELETE FROM items WHERE id = ?")),
         move(database->prepare("UPDATE items SET position = ?, parent = ? WHERE id = ?")),

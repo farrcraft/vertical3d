@@ -7,11 +7,12 @@
 
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -22,13 +23,13 @@ namespace v3d::editor::command {
 
 /**
  **/
-Key::Key(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& items, float frame) :
+Key::Key(const boost::shared_ptr<scene::Scene>& scene, const std::vector<Target>& targets, float frame) :
     scene_(scene) {
     if (!scene_) {
         return;
     }
     const scene::Evaluation evaluation = scene_->evaluate();
-    for (const boost::shared_ptr<scene::Item>& item : items) {
+    for (const auto& [item, paths] : targets) {
         if (!item || scene_->item(item->id()) != item) {
             continue;
         }
@@ -43,6 +44,9 @@ Key::Key(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& items
             }
         }
         for (const auto& [path, value] : values(item->kind(), evaluation.pose(*item), near)) {
+            if (!paths.contains(path)) {
+                continue;
+            }
             const auto found = curves.find(path);
             Change change{ .item = item, .path = path };
             if (found != curves.end()) {
@@ -77,6 +81,19 @@ std::string Key::name() const {
  **/
 bool Key::empty() const noexcept {
     return changes_.empty();
+}
+
+/**
+ **/
+std::vector<Key::Target> Key::every(const scene::Items& items) {
+    std::vector<Target> targets;
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
+        if (item) {
+            const std::vector<std::string>& declared = scene::properties(item->kind());
+            targets.push_back({ .item = item, .paths = std::set<std::string>(declared.begin(), declared.end()) });
+        }
+    }
+    return targets;
 }
 
 /**

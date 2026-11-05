@@ -5,7 +5,7 @@
 
 #include "Converter.h"
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
@@ -60,30 +60,30 @@ glm::mat4x4 Converter::matrix(RtMatrix transform) {
 }
 
 std::optional<v3d::render::offline::rib::Format> Converter::format(const glm::ivec2 & resolution, RtFloat aspect) {
-    const std::optional<uint32_t> width = v3d::render::offline::formatSide(static_cast<float>(resolution.x));
-    const std::optional<uint32_t> height = v3d::render::offline::formatSide(static_cast<float>(resolution.y));
+    const std::optional<uint32_t> width = v3d::render::offline::film::formatSide(static_cast<float>(resolution.x));
+    const std::optional<uint32_t> height = v3d::render::offline::film::formatSide(static_cast<float>(resolution.y));
     if (!width || !height) {
         return std::nullopt;
     }
     return v3d::render::offline::rib::Format{.width = *width, .height = *height, .pixelAspect = aspect};
 }
 
-std::optional<v3d::render::offline::Filter> Converter::filter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-    v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
+std::optional<v3d::render::offline::film::Filter> Converter::filter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
+    v3d::render::offline::film::Filter filter = v3d::render::offline::film::Filter::Gaussian;
     if (filterfunc == RiBoxFilter) {
-        filter = v3d::render::offline::Filter::Box;
+        filter = v3d::render::offline::film::Filter::Box;
     } else if (filterfunc == RiTriangleFilter) {
-        filter = v3d::render::offline::Filter::Triangle;
+        filter = v3d::render::offline::film::Filter::Triangle;
     } else if (filterfunc == RiCatmullRomFilter) {
-        filter = v3d::render::offline::Filter::CatmullRom;
+        filter = v3d::render::offline::film::Filter::CatmullRom;
     } else if (filterfunc == RiGaussianFilter) {
-        filter = v3d::render::offline::Filter::Gaussian;
+        filter = v3d::render::offline::film::Filter::Gaussian;
     } else if (filterfunc == RiSincFilter) {
-        filter = v3d::render::offline::Filter::Sinc;
+        filter = v3d::render::offline::film::Filter::Sinc;
     } else {
         return std::nullopt;
     }
-    if (!v3d::render::offline::filterWidth(glm::vec2(xwidth, ywidth))) {
+    if (!v3d::render::offline::film::filterWidth(glm::vec2(xwidth, ywidth))) {
         return std::nullopt;
     }
     return filter;

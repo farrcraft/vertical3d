@@ -1,0 +1,36 @@
+##RenderMan RIB-Structure 1.1
+##Scene The stripes surface shader from Shaders.md on a sphere, beside a matte one
+version 3.03
+Hider "raytrace"
+Format 320 240 1
+Display "stripes.png" "file" "rgb"
+Projection "perspective" "fov" [40]
+Clipping 0.1 100
+Imager "background" "background" [0.55 0.65 0.8]
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [0.9] "to" [0.5 -1 0.8]
+
+AttributeBegin
+Color [0.8 0.8 0.75]
+Surface "matte"
+Polygon "P" [-5 0 -5  5 0 -5  5 0 6  -5 0 6]
+AttributeEnd
+
+# stripes runs along s, which goes once around a sphere
+AttributeBegin
+Color [0.2 0.3 0.8]
+Surface "stripes" "float frequency" [12] "color stripecolor" [1 0.9 0.2]
+Translate -0.9 0.8 0.5
+Sphere 0.8 -0.8 0.8 360
+AttributeEnd
+
+AttributeBegin
+Color [0.2 0.3 0.8]
+Surface "matte"
+Translate 1.1 0.8 0
+Sphere 0.8 -0.8 0.8 360
+AttributeEnd
+WorldEnd

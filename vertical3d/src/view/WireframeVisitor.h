@@ -7,14 +7,16 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Visitor.h>
+
+#include <cstdint>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
@@ -58,6 +60,11 @@ class WireframeVisitor final : public scene::Visitor {
          * handles as well.
          **/
         bool handles = false;
+        /**
+         * The document id of the scene camera the view looks through, which it does not draw,
+         * or 0 for none.
+         **/
+        std::int64_t through = 0;
     };
 
     /**
@@ -73,24 +80,24 @@ class WireframeVisitor final : public scene::Visitor {
      * @param components which parts of each mesh and curve to draw as selected, or null for none
      **/
     WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
-        const scene::Components* components = nullptr);
+        const scene::item::Components* components = nullptr);
 
     /**
      * Append one mesh's wireframe.
      **/
-    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) override;
 
     /**
      * Append one camera's, light's or group's glyph.
      **/
-    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) override;
 
     /**
      * Append one item's curves, through its world matrix.
      **/
-    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) override;
 
  private:
     /**
@@ -102,14 +109,12 @@ class WireframeVisitor final : public scene::Visitor {
      **/
     static constexpr glm::vec4 glyph{ 0.95F, 0.82F, 0.42F, 1.0F };
     /**
-     * An item selected as a whole, which is object mode selection.
+     * What is selected, in amber, whether it is an item selected as a whole or a component: an
+     * edge, the boundary of a selected face, or the marker drawn at a selected vertex.
      **/
-    static constexpr glm::vec4 object{ 0.35F, 0.72F, 1.0F, 1.0F };
-    /**
-     * A selected component: an edge, the boundary of a selected face, or the marker
-     * drawn at a selected vertex.
-     **/
-    static constexpr glm::vec4 component{ 1.0F, 0.62F, 0.19F, 1.0F };
+    static constexpr glm::vec4 selection{ 0.949F, 0.639F, 0.227F, 1.0F };
+    static constexpr glm::vec4 object = selection;
+    static constexpr glm::vec4 component = selection;
     /**
      * How big a selected vertex's marker is, as a fraction of the mesh's largest
      * dimension. A line canvas is world space, so the marker cannot be sized in pixels
@@ -134,11 +139,11 @@ class WireframeVisitor final : public scene::Visitor {
     /**
      * A selected curve's control points, its NURBS hulls and its Bezier handles, as shown.
      **/
-    void controls(const scene::Curve& item);
+    void controls(const scene::item::Curve& item);
 
     v3d::render::realtime::canvas::Line* canvas_;
     Shown shown_;
-    const scene::Components* components_;
+    const scene::item::Components* components_;
     glm::vec4 wire_;
     glm::vec4 glyph_;
     glm::vec4 object_;

@@ -5,15 +5,15 @@
 
 #pragma once
 
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -59,6 +59,7 @@ class FullScreen final {
     /**
      * @param context the device, pipeline cache, resources, ring and frame uniforms the
      *        pipeline is built on
+     * @param spec the fragment shader, how many images it samples, and the formats it draws into
      * @throw std::runtime_error if the pipeline cannot be built, or names no source
      **/
     FullScreen(const DeviceContext& context, const Spec& spec);
@@ -79,7 +80,7 @@ class FullScreen final {
      * @return the material an item names
      * @throw std::runtime_error if the count is wrong or a handle names nothing
      **/
-    MaterialHandle source(const std::vector<TextureHandle>& textures);
+    resource::MaterialHandle source(const std::vector<resource::TextureHandle>& textures);
 
     /**
      * Release a source. Its set goes back to the pool through the Ring once no frame can read
@@ -87,22 +88,22 @@ class FullScreen final {
      *
      * @return whether there was anything to release
      **/
-    bool release(const MaterialHandle& source);
+    bool release(const resource::MaterialHandle& source);
 
     /**
      * @return the one draw that covers the pass, reading the source given
      **/
-    DrawItem item(const MaterialHandle& source) const;
+    frame::DrawItem item(const resource::MaterialHandle& source) const;
 
     /**
      * Submit item() into a pass.
      **/
-    void submit(const MaterialHandle& source, Pass* pass) const;
+    void submit(const resource::MaterialHandle& source, frame::Pass* pass) const;
 
     /**
      * @return the pipeline
      **/
-    PipelineHandle pipeline() const noexcept;
+    resource::PipelineHandle pipeline() const noexcept;
 
  private:
     /**
@@ -112,10 +113,10 @@ class FullScreen final {
     static constexpr uint32_t setsPerPool = 8;
 
     boost::shared_ptr<vulkan::device::Device> device_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::pipeline::DescriptorPool> sources_;
     uint32_t count_;
-    PipelineHandle pipeline_;
+    resource::PipelineHandle pipeline_;
 };
 
 };  // namespace v3d::render::realtime::renderer

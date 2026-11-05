@@ -10,11 +10,11 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Visitor.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -37,7 +37,7 @@ namespace v3d::editor::tool {
  * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, a curve,
  * a curve's control point or handle, or a camera's, light's or group's glyph is hit when it is
  * drawn within a few pixels of the cursor. Everything is tested where the scene's evaluation
- * puts it.
+ * puts it. An item the views do not show is never hit.
  *
  * A mask that selects whole items considers only the kinds it takes. A component mask
  * considers only meshes and curves that are already selected: an object has to be selected
@@ -117,11 +117,11 @@ class Picker final : public scene::Visitor {
      * One item of the scene, during a pick. Public because the scene calls them through
      * scene::Visitor. Only the scene calls them.
      **/
-    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
-    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
-    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) override;
 
  private:
     /**
@@ -135,7 +135,7 @@ class Picker final : public scene::Visitor {
      * camera's, a light's or a group's glyph. It is hit when a segment is within tolerance of
      * the cursor, and inside a rectangle when every point of it is.
      **/
-    void lines(const scene::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
+    void lines(const scene::item::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
 
     /**
      * Points of the item being traversed, each named by its part number: hit within tolerance

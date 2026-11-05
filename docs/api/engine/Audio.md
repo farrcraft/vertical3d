@@ -151,7 +151,7 @@ sound_->attach(events_);                                 // hear events from sou
   `audio::orthonormal()` returned. The null backend refuses every position and listener.
 - `name()` is `"fmod"` or `"null"`, for the log.
 
-Background: [ADR-0021](../../adr/0021-audio-use-sdl3-mixer.md),
-[ADR-0079](../../adr/0079-assets-loaders-are-registered.md),
-[ADR-0084](../../adr/0084-audio-events-and-parameters-behind-an-interface.md),
-[ADR-0112](../../adr/0112-audio-a-voice-is-placed-in-world-coordinates.md)
+Background: [ADR-0021](../../adr/engine/0021-audio-use-sdl3-mixer.md),
+[ADR-0079](../../adr/engine/0079-assets-loaders-are-registered.md),
+[ADR-0084](../../adr/engine/0084-audio-events-and-parameters-behind-an-interface.md),
+[ADR-0112](../../adr/engine/0112-audio-a-voice-is-placed-in-world-coordinates.md)

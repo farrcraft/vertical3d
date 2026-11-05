@@ -79,17 +79,22 @@ class SelectList : public Component {
     };
 
     /**
-     * How wide the widest row is when it is drawn, stored here by whatever measured it.
+     * Store how wide the widest row is when it is drawn, for whatever measured it.
      *
      * Sizing a list to its content means measuring every row, and the result changes only
      * when the rows or the measure do. The width is kept with the key of the measure that
-     * produced it. items() clears it. Asking with a different key returns a negative number
-     * and leaves the stored width in place. Storing a width under a new key replaces it.
+     * produced it. items() clears it. Storing a width under a new key replaces it.
+     *
+     * @param measured the width, and the key of the measure that took it, which is never zero
+     **/
+    void widest(const Measured& measured) noexcept;
+    /**
+     * How wide the widest row is when it is drawn, as stored under a key. Asking with a
+     * different key leaves the stored width in place.
      *
      * @param measure a key naming the measure, which is never zero
      * @return the width, or a negative number when nothing has measured it with that key
      **/
-    void widest(const Measured& measured) noexcept;
     float widest(std::uint64_t measure) const noexcept;
 
     /**

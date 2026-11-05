@@ -132,6 +132,7 @@ class DepthBuffer final {
      * a pipeline drawing into a sampled buffer has to be built against the format this
      * returns for one.
      *
+     * @param device the physical device whose format support is queried
      * @param sampled whether the format also has to be readable through a descriptor set
      * @throw std::runtime_error if the device offers none, which a conformant device never does
      **/

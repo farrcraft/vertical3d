@@ -21,7 +21,7 @@ test('namespaces gives a file the namespace of its root and the directories belo
     assert.equal(expected('moya/libmoya/state/Attributes.h'), 'v3d::moya::state');
     assert.equal(expected('moya/moya.cxx'), 'v3d::moya');
     assert.equal(expected('vertical3d/src/Controller.h'), 'v3d::editor');
-    assert.equal(expected('vertical3d/src/scene/Item.h'), 'v3d::editor::scene');
+    assert.equal(expected('vertical3d/src/scene/Scene.h'), 'v3d::editor::scene');
 });
 
 test('namespaces checks no test, and no file outside a root', () => {

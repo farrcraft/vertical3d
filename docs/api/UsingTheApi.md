@@ -31,7 +31,7 @@ The api is used as **source**, not as an installed package. There is no
 `find_package(vertical3d)` and nothing to install. Your project adds this repository with
 `add_subdirectory` and builds it with your compiler.
 
-Background: [ADR-0027](../adr/0027-build-consume-the-api-as-source.md)
+Background: [ADR-0027](../adr/project/0027-build-consume-the-api-as-source.md)
 
 ## What you need
 
@@ -54,9 +54,6 @@ git submodule add https://github.com/<you>/vertical3d vendor/vertical3d
 git clone https://github.com/microsoft/vcpkg vendor/vcpkg
 .\vendor\vcpkg\bootstrap-vcpkg.bat
 ```
-
-vertical3d has one submodule of its own, libnoise, which only the voxel app uses. Apps are not
-built when vertical3d is nested in another project, so you do not need to clone libnoise.
 
 The layout ends up as:
 
@@ -93,6 +90,10 @@ needs.
   package's version. A boost library's file name includes its version, so a different baseline
   gives a different boost, and the result is a link error far from its cause. Nothing checks that
   your baseline matches vertical3d's.
+- **Point `overlay-ports` at vertical3d's `ports/`.** The copied file names `ports`, a path
+  relative to your root. Set it to the path of vertical3d's `ports/` from your root, such as
+  `vertical3d/ports`. Without it, ICU is built from vcpkg's own port, and every app that draws
+  text ships about 30 MB of ICU data rather than a few.
 
 ## 3. The CMakeLists
 
@@ -163,7 +164,7 @@ api library they depend on, and looks only for the third-party packages that set
 dependencies. The configure prints the resolved set as `vertical3d api:` and
 `vertical3d packages:` lines.
 
-Background: [ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest.md)
+Background: [ADR-0033](../adr/project/0033-build-select-api-libraries-through-a-manifest.md)
 
 ### Link `v3d::` targets
 
@@ -339,7 +340,8 @@ two files:
 
 - **`vcpkg.json`.** If vertical3d's baseline or package list changed, update yours. Yours is
   the one that is installed.
-- **`vcpkg-configuration.json`.** If vertical3d's registries changed, copy it again.
+- **`vcpkg-configuration.json`.** If vertical3d's registries or overlay ports changed, copy it
+  again and point `overlay-ports` back at vertical3d's `ports/`.
 
 The api is still changing, so expect to update a call site now and then.
 

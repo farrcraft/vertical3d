@@ -4,21 +4,27 @@
  **/
 
 #include <api/brep/Primitives.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/Outliner.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -36,13 +42,13 @@ using v3d::editor::control::Outliner;
  **/
 struct Rig {
     Rig() :
-        rig(named<v3d::editor::scene::Group>("Rig")),
-        arm(named<v3d::editor::scene::Group>("Arm")),
-        hand(named<v3d::editor::scene::Group>("Hand")),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        lamp(named<v3d::editor::scene::Light>("Lamp")) {
+        rig(named<v3d::editor::scene::item::Group>("Rig")),
+        arm(named<v3d::editor::scene::item::Group>("Arm")),
+        hand(named<v3d::editor::scene::item::Group>("Hand")),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        lamp(named<v3d::editor::scene::item::Light>("Lamp")) {
         cube->name("Cube");
-        for (const boost::shared_ptr<v3d::editor::scene::Item>& item : v3d::editor::scene::Items{ rig, cube, arm, hand, lamp }) {
+        for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : v3d::editor::scene::Items{ rig, cube, arm, hand, lamp }) {
             scene.add(item);
         }
         BOOST_REQUIRE(scene.parent(arm->id(), rig->id()));
@@ -50,7 +56,7 @@ struct Rig {
     }
 
     template <typename T>
-    static boost::shared_ptr<v3d::editor::scene::Item> named(const std::string& name) {
+    static boost::shared_ptr<v3d::editor::scene::item::Item> named(const std::string& name) {
         const boost::shared_ptr<T> made = boost::make_shared<T>();
         made->name(name);
         return made;
@@ -68,20 +74,17 @@ struct Rig {
     }
 
     v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Item> rig;
-    boost::shared_ptr<v3d::editor::scene::Item> arm;
-    boost::shared_ptr<v3d::editor::scene::Item> hand;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
-    boost::shared_ptr<v3d::editor::scene::Item> lamp;
+    boost::shared_ptr<v3d::editor::scene::item::Item> rig;
+    boost::shared_ptr<v3d::editor::scene::item::Item> arm;
+    boost::shared_ptr<v3d::editor::scene::item::Item> hand;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Item> lamp;
 };
 
 /**
  * What the outliner wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * An outliner drawn into a 200 by 300 region at the canvas's corner, through a layer that
@@ -89,8 +92,7 @@ struct Written final {
  **/
 struct Drawn : Rig {
     Drawn() :
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }) {
+        layer(v3d::ui::typeset::mono(&written)) {
         canvas.resize(glm::uvec2(400, 400));
     }
 
@@ -144,7 +146,7 @@ BOOST_AUTO_TEST_SUITE(outliner_test)
  * An item is listed by its name, or by its kind when it has none.
  **/
 BOOST_AUTO_TEST_CASE(a_row_names_its_item) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     BOOST_CHECK_EQUAL(Outliner::label(group), "Group");
     group.name("Rig");
     BOOST_CHECK_EQUAL(Outliner::label(group), "Rig");
@@ -222,6 +224,108 @@ BOOST_FIXTURE_TEST_CASE(a_click_on_the_mark_folds_a_row, Drawn) {
     BOOST_CHECK(!at("Hand"));
     BOOST_CHECK(at("Arm"));
     BOOST_CHECK(!arm->selected());
+}
+
+/**
+ * Every item sits under a Scene row. Its mark folds them all, and a click on it selects nothing.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_scene_row_holds_every_item, Drawn) {
+    lamp->selected(true);
+    frame({});
+    const std::optional<glm::vec2> onScene = at("Scene");
+    const std::optional<glm::vec2> onRig = at("Rig");
+    BOOST_REQUIRE(onScene.has_value());
+    BOOST_REQUIRE(onRig.has_value());
+    const glm::vec2 sceneRow = onScene.value_or(glm::vec2(0.0F));
+    const glm::vec2 rigRow = onRig.value_or(glm::vec2(0.0F));
+    BOOST_CHECK_LT(sceneRow.y, rigRow.y);
+    BOOST_CHECK_LT(sceneRow.x, rigRow.x);
+
+    click(sceneRow);
+    BOOST_CHECK(lamp->selected());
+    const std::optional<glm::vec2> onMark = at("Scene", -6.0F);
+    BOOST_REQUIRE(onMark.has_value());
+    click(onMark.value_or(glm::vec2(0.0F)));
+    frame({});
+    BOOST_CHECK(at("Scene"));
+    BOOST_CHECK(!at("Rig"));
+    BOOST_CHECK(!at("Lamp"));
+}
+
+/**
+ * Each kind of item has its own icon and colour, and with icons to draw, each row draws its
+ * kind's icon in its kind's colour, and the filter draws a magnifier.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
+    std::set<std::string> icons;
+    std::set<std::tuple<float, float, float>> colours;
+    for (const v3d::editor::scene::item::Item::Kind kind : { v3d::editor::scene::item::Item::Kind::Mesh, v3d::editor::scene::item::Item::Kind::Camera,
+             v3d::editor::scene::item::Item::Kind::Light, v3d::editor::scene::item::Item::Kind::Group, v3d::editor::scene::item::Item::Kind::Curve }) {
+        const Outliner::Mark marked = Outliner::mark(kind);
+        icons.insert(marked.icon);
+        colours.insert({ marked.colour.r, marked.colour.g, marked.colour.b });
+    }
+    BOOST_CHECK_EQUAL(icons.size(), 5U);
+    BOOST_CHECK_EQUAL(colours.size(), 5U);
+
+    std::vector<std::string> asked;
+    outliner.icons([&asked](const std::string& source) {
+        asked.push_back(source);
+        return v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(9));
+    });
+    frame({});
+    BOOST_CHECK(std::ranges::find(asked, "icon:item-scene") != asked.end());
+    BOOST_CHECK(std::ranges::find(asked, Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).icon) != asked.end());
+    const glm::vec4 mesh = Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).colour;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&mesh](const auto& vertex) { return vertex.colour == mesh; }));
+    // the filter leads with the magnifier, in the placeholder's colour
+    BOOST_CHECK(std::ranges::find(asked, "icon:search") != asked.end());
+    const glm::vec4 dim = layer.dressing().placeholder;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&dim](const auto& vertex) { return vertex.colour == dim; }));
+}
+
+/**
+ * Each item's row ends in an eye, and a click on it is handed on and selects nothing. A row whose
+ * item is hidden, by its own flag or a parent's, is dimmed.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_click_on_an_eye_is_handed_on, Drawn) {
+    std::vector<std::string> asked;
+    outliner.icons([&asked](const std::string& source) {
+        asked.push_back(source);
+        return v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(9));
+    });
+    std::vector<boost::shared_ptr<v3d::editor::scene::item::Item>> eyed;
+    outliner.eye([&eyed](const boost::shared_ptr<v3d::editor::scene::item::Item>& item) { eyed.push_back(item); });
+    rig->shown({ .views = false, .renders = true });
+    frame({});
+    BOOST_CHECK(std::ranges::find(asked, "icon:eye") != asked.end());
+    BOOST_CHECK(std::ranges::find(asked, "icon:eye-closed") != asked.end());
+    for (const Written& each : written) {
+        if (each.text == "Rig" || each.text == "Hand") {
+            BOOST_CHECK(each.colour == layer.dressing().disabledText);
+        } else if (each.text == "Cube") {
+            BOOST_CHECK(each.colour == layer.dressing().text);
+        }
+    }
+
+    // the eye is the icon drawn in secondary text on the cube's row
+    const std::optional<glm::vec2> found = at("Cube");
+    BOOST_REQUIRE(found);
+    const glm::vec2 onCube = found.value_or(glm::vec2(0.0F));
+    const glm::vec4 dim = layer.dressing().secondaryText;
+    float eye = 0.0F;
+    bool seen = false;
+    for (const auto& vertex : canvas.vertices()) {
+        if (vertex.colour == dim && std::abs(vertex.position.y - onCube.y) < layer.dressing().lineHeight && (!seen || vertex.position.x < eye)) {
+            eye = vertex.position.x;
+            seen = true;
+        }
+    }
+    BOOST_REQUIRE(seen);
+    click(glm::vec2(eye + 2.0F, onCube.y));
+    BOOST_REQUIRE_EQUAL(eyed.size(), 1U);
+    BOOST_CHECK(eyed[0] == cube);
+    BOOST_CHECK(!cube->selected());
 }
 
 /**

@@ -1,0 +1,43 @@
+##RenderMan RIB-Structure 1.1
+##Scene A sphere and a box on a floor, lit by a distant light, through the ray-trace hider
+version 3.03
+Hider "raytrace"
+Format 320 240 1
+Display "first.png" "file" "rgb"
+Projection "perspective" "fov" [40]
+Clipping 0.1 100
+Imager "background" "background" [0.55 0.65 0.8]
+# the camera: 5.5 units back from the origin, 1.4 units up, tilted down by 12 degrees
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [0.9] "to" [0.5 -1 0.8]
+
+# the floor
+AttributeBegin
+Color [0.8 0.8 0.75]
+Surface "matte"
+Polygon "P" [-5 0 -5  5 0 -5  5 0 6  -5 0 6]
+AttributeEnd
+
+# a red plastic sphere of radius 0.8, resting on the floor
+AttributeBegin
+Color [0.85 0.2 0.15]
+Surface "plastic" "Ks" [0.6] "roughness" [0.05]
+Translate -0.9 0.8 0.5
+Sphere 0.8 -0.8 0.8 360
+AttributeEnd
+
+# a blue box, one unit on a side, turned about the vertical axis
+AttributeBegin
+Color [0.2 0.4 0.85]
+Surface "matte"
+Translate 1.1 0.5 0
+Rotate 30 0 1 0
+PointsPolygons [4 4 4 4 4 4]
+    [0 1 2 3  5 4 7 6  4 0 3 7  1 5 6 2  3 2 6 7  4 5 1 0]
+    "P" [-0.5 -0.5 -0.5  0.5 -0.5 -0.5  0.5 0.5 -0.5  -0.5 0.5 -0.5
+         -0.5 -0.5 0.5  0.5 -0.5 0.5  0.5 0.5 0.5  -0.5 0.5 0.5]
+AttributeEnd
+WorldEnd

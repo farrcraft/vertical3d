@@ -16,6 +16,8 @@
 namespace v3d::image {
 class Image;
 /**
+ * An image that smaller images are packed into, each in a rectangle with a gutter of zeroed
+ * texels around it.
  **/
 class TextureAtlas {
  public:
@@ -47,6 +49,8 @@ class TextureAtlas {
     /**
      * Copy rows of pixels into a rectangle region() returned, x, y, width and height in turn.
      *
+     * @param area the rectangle to fill, as region() returned it
+     * @param data the pixels, each row the area's width in the atlas's depth
      * @param stride how many bytes apart the rows of the data are
      **/
     void region(const glm::ivec4 & area, const unsigned char * data, unsigned int stride);

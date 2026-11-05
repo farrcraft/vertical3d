@@ -7,12 +7,13 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/Checked.h>
+#include <api/ui/Image.h>
 #include <api/ui/Transition.h>
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Palette.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/TextRenderer.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Theme.h>
 
@@ -28,6 +29,7 @@
 #include <string_view>
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 
@@ -39,8 +41,8 @@ released(false),
 wheel(0.0F) {
 }
 
-Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
-    context_(std::make_unique<immediate::Context>(measure, write)) {
+Immediate::Immediate(const boost::shared_ptr<paint::TextRenderer>& text, float size) :
+    context_(std::make_unique<immediate::Context>(text, size)) {
 }
 
 // out of line, so that the header need not complete the context
@@ -48,13 +50,9 @@ Immediate::~Immediate() = default;
 Immediate::Immediate(Immediate&&) noexcept = default;
 Immediate& Immediate::operator=(Immediate&&) noexcept = default;
 
-void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
-    context_->measure = measure;
-    context_->write = write;
-}
-
-void Immediate::titles(const paint::Write& write) {
-    context_->strong = write;
+void Immediate::text(const boost::shared_ptr<paint::TextRenderer>& text, float size) {
+    context_->text = text;
+    context_->textSize = size;
 }
 
 void Immediate::clock(const Clock& now) noexcept {
@@ -111,12 +109,14 @@ void Immediate::end() {
     // the open combo's list goes over everything, so it is drawn after everything, and takes
     // the cursor from whatever it covers
     context_->drawPopup();
+    context_->drawTip();
 
     // a field that was not drawn cannot be typed into, so it does not keep the keys from the
     // app's bindings
     if (context_->typing != 0 && !context_->typingDrawn) {
         context_->focus(0);
     }
+    context_->focusNext = false;
 
     // what the cursor was found on this frame is used by the next one, so a window drawn
     // later takes the cursor from one under it
@@ -169,12 +169,45 @@ void Immediate::nextItemWidth(float width) {
     context_->nextWidth = width;
 }
 
+float Immediate::rowWidth() const noexcept {
+    return std::max(context_->row.right - context_->row.margin, 0.0F);
+}
+
+float Immediate::roomBelow() const noexcept {
+    if (!context_->window.open) {
+        return 0.0F;
+    }
+    // a row is followed by the gap between rows, and a window whose content ends past its body
+    // scrolls, so the gap is kept inside the body too
+    return std::max(context_->window.bodyMax.y - context_->dressing.spacing - context_->row.penY, 0.0F);
+}
+
 void Immediate::text(const std::string& line) {
     if (context_->canvas == nullptr) {
         return;
     }
     const glm::vec2 size(context_->measure(line), context_->dressing.lineHeight);
     context_->label(line, context_->place(size), size, context_->ink(context_->dressing.text));
+}
+
+void Immediate::text(const std::string& line, const glm::vec4& colour) {
+    if (context_->canvas == nullptr) {
+        return;
+    }
+    const glm::vec2 size(context_->measure(line), context_->dressing.lineHeight);
+    context_->label(line, context_->place(size), size, context_->ink(colour));
+}
+
+void Immediate::image(const Image& picture, const glm::vec2& size, const glm::vec4& tint) {
+    if (context_->canvas == nullptr) {
+        return;
+    }
+    // the item is at least a line tall, so it keeps the row's height beside text
+    const glm::vec2 room(size.x, std::max(size.y, context_->dressing.lineHeight));
+    const glm::vec2 corner = context_->place(room) + glm::vec2(0.0F, (room.y - size.y) * 0.5F);
+    if (picture.valid()) {
+        context_->canvas->rect(corner, corner + size, picture.uv0, picture.uv1, context_->ink(tint), picture.texture);
+    }
 }
 
 void Immediate::textDisabled(const std::string& line) {
@@ -186,10 +219,10 @@ void Immediate::textDisabled(const std::string& line) {
 }
 
 void Immediate::textWrapped(const std::string& line) {
-    if (context_->canvas == nullptr) {
+    if (context_->canvas == nullptr || !context_->text) {
         return;
     }
-    for (const std::string& row : paint::wrap(line, context_->row.right - context_->row.margin, context_->measure)) {
+    for (const std::string& row : context_->text->rows(line, context_->row.right - context_->row.margin, context_->text->style(context_->textSize))) {
         text(row);
     }
 }
@@ -236,6 +269,29 @@ bool Immediate::smallButton(const std::string& label) {
     return reaction.clicked;
 }
 
+bool Immediate::iconButton(const std::string& id, const IconLook& look) {
+    if (context_->canvas == nullptr) {
+        return false;
+    }
+    const float bar = context_->dressing.barHeight;
+    const glm::vec2 min = context_->place(glm::vec2(bar, bar));
+    const glm::vec2 max = min + glm::vec2(bar, bar);
+    const Id named = context_->identify(id);
+    const immediate::Reaction reaction = context_->interact(named, min, max);
+
+    paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->eased(named, context_->face(look.on || reaction.held, reaction.hovered)));
+    if (look.icon.valid()) {
+        const float side = std::min(context_->dressing.iconSize, bar);
+        const glm::vec2 corner = min + glm::vec2((bar - side) * 0.5F);
+        const glm::vec4 ink = context_->ink(look.on || reaction.hovered ? context_->dressing.activeText : context_->dressing.text);
+        context_->canvas->rect(corner, corner + glm::vec2(side), look.icon.uv0, look.icon.uv1, ink, look.icon.texture);
+    }
+    if (reaction.hovered && (!look.tooltip.empty() || !look.keys.empty())) {
+        context_->askTip(named, look.tooltip, look.keys, min, max);
+    }
+    return reaction.clicked;
+}
+
 bool Immediate::selectable(const std::string& label, bool selected) {
     if (context_->canvas == nullptr) {
         return false;
@@ -276,25 +332,89 @@ bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
             *row.open = !*row.open;
         }
     }
+    // the end icon is offered after the row too, so a click on it is not a click on the row
+    const float side = std::min(context_->dressing.iconSize, line);
+    const glm::vec2 endMin(max.x - line, min.y);
+    immediate::Reaction ending;
+    if (row.end.valid()) {
+        ending = context_->interact(context_->identify(label + " end"), endMin, max);
+    }
+    if (row.endClicked != nullptr) {
+        *row.endClicked = ending.clicked;
+    }
 
     if (row.selected) {
-        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.highlight);
-    } else if (reaction.hovered || fold.hovered) {
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.selected);
+    } else if (reaction.hovered || fold.hovered || ending.hovered) {
         paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
     }
-    const glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
-    if (row.open != nullptr) {
-        const glm::vec2 centre = (markMin + markMax) * 0.5F;
-        const float reach = line * foldScale;
-        const float width = std::max(line * foldWidth, 1.0F);
-        const glm::vec2 tip = *row.open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
-        const glm::vec2 side = *row.open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
-        const glm::vec2 back = *row.open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
-        context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
-        context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
+    glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
+    glm::vec4 tint = row.iconTint;
+    if (row.dimmed) {
+        ink = context_->ink(context_->dressing.disabledText);
+        tint.a *= 0.5F;
     }
-    context_->label(label, glm::vec2(markMax.x, min.y), glm::vec2(max.x - markMax.x, line), ink);
+    if (row.open != nullptr) {
+        foldMark((markMin + markMax) * 0.5F, *row.open, ink);
+    }
+    // the icon sits between the mark's place and the label, centred down the row
+    float left = markMax.x;
+    if (row.icon.valid()) {
+        const glm::vec2 corner(left, min.y + ((line - side) * 0.5F));
+        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.icon.uv0, row.icon.uv1, context_->ink(tint), row.icon.texture);
+        left += side + (context_->dressing.padding * 0.5F);
+    }
+    float right = max.x;
+    if (row.end.valid()) {
+        const glm::vec2 corner(endMin.x + ((line - side) * 0.5F), min.y + ((line - side) * 0.5F));
+        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.end.uv0, row.end.uv1, context_->ink(context_->dressing.secondaryText),
+            row.end.texture);
+        right = endMin.x;
+    }
+    // a long label is cut short of the end icon rather than drawn under it
+    if (row.end.valid()) {
+        context_->canvas->clip(glm::vec2(left, min.y), glm::vec2(std::max(left, right), max.y));
+    }
+    context_->label(label, glm::vec2(left, min.y), glm::vec2(std::max(right - left, 0.0F), line), ink);
+    if (row.end.valid()) {
+        context_->canvas->unclip();
+    }
     return reaction.clicked;
+}
+
+bool Immediate::heading(const std::string& label, bool* open) {
+    if (context_->canvas == nullptr) {
+        return open == nullptr || *open;
+    }
+    const float line = context_->dressing.lineHeight;
+    const glm::vec2 size(context_->itemWidth(), line);
+    const glm::vec2 min = context_->place(size);
+    const glm::vec2 max = min + size;
+    float left = min.x;
+    if (open != nullptr) {
+        const Id id = context_->identify(label);
+        const immediate::Reaction reaction = context_->interact(id, min, max);
+        if (reaction.clicked) {
+            *open = !*open;
+        }
+        if (reaction.hovered) {
+            paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
+        }
+        foldMark(min + glm::vec2(line * 0.5F), *open, context_->ink(context_->dressing.secondaryText));
+        left += line;
+    }
+    context_->title(label, glm::vec2(left, min.y), glm::vec2(max.x - left, line), context_->ink(context_->dressing.text));
+    return open == nullptr || *open;
+}
+
+void Immediate::foldMark(const glm::vec2& centre, bool open, const glm::vec4& ink) {
+    const float line = context_->dressing.lineHeight;
+    const float reach = line * foldScale;
+    const float width = std::max(line * foldWidth, 1.0F);
+    const glm::vec2 tip = open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
+    const glm::vec2 side = open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
+    const glm::vec2 back = open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
+    paint::chevron(context_->canvas, {.from = centre + back - side, .tip = centre + tip, .to = centre + back + side, .width = width}, ink);
 }
 
 bool Immediate::dragInt(const std::string& label, int* value, int low, int high) {
@@ -387,6 +507,18 @@ bool Immediate::itemFinished() const noexcept {
     return context_->itemFinished;
 }
 
+bool Immediate::itemEntered() const noexcept {
+    return context_->itemEntered;
+}
+
+bool Immediate::itemTyping() const noexcept {
+    return context_->itemTyping;
+}
+
+void Immediate::focusNext() noexcept {
+    context_->focusNext = true;
+}
+
 void Immediate::progressBar(float fraction, const std::string& overlay) {
     if (context_->canvas == nullptr) {
         return;
@@ -414,6 +546,55 @@ void Immediate::separator() {
     const glm::vec2 min = context_->place(size);
     const float middle = min.y + (context_->dressing.spacing * 0.5F);
     context_->canvas->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + immediate::Context::ruleWidth), context_->dressing.rule);
+}
+
+Immediate::Surface Immediate::surface(const std::string& id, float height) {
+    Surface made;
+    if (context_->canvas == nullptr || !std::isfinite(height) || height <= 0.0F) {
+        return made;
+    }
+    const glm::vec2 size(context_->itemWidth(), height);
+    made.min = context_->place(size);
+    made.max = made.min + size;
+    const Id identity = context_->identify(id);
+    const immediate::Reaction reaction = context_->interact(identity, made.min, made.max);
+    made.cursor = context_->input.cursor;
+    made.hovered = reaction.hovered;
+    made.held = reaction.held;
+    made.pressed = reaction.held && reaction.hovered && context_->input.pressed;
+    made.released = reaction.held && context_->input.released;
+    made.pressAt = reaction.held ? context_->pressAt : made.cursor;
+    made.wheel = made.hovered ? context_->input.wheel : 0.0F;
+    return made;
+}
+
+void Immediate::fill(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->canvas->rect(min, max, colour);
+    }
+}
+
+void Immediate::line(const glm::vec2& from, const glm::vec2& to, float width, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->canvas->segment({ .from = from, .to = to, .width = width }, colour);
+    }
+}
+
+void Immediate::diamond(const glm::vec2& centre, float radius, const glm::vec4& colour) {
+    if (context_->canvas != nullptr && std::isfinite(radius) && radius > 0.0F) {
+        // four sides from the right-hand point make a square stood on its corner
+        context_->canvas->circle(centre, radius, 4, colour);
+    }
+}
+
+void Immediate::textAt(const std::string& line, const glm::vec2& at, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->label(line, at, glm::vec2(context_->measure(line), context_->dressing.lineHeight), colour);
+    }
+}
+
+float Immediate::measure(const std::string& line) const {
+    return context_->measure(line);
 }
 
 void Immediate::sameLine() {

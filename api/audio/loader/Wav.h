@@ -9,6 +9,8 @@
 
 namespace v3d::audio::loader {
 /**
+ * Reads a WAV file into an AudioClip and gives a kind::Sound. A file that cannot be read gives
+ * no asset.
  **/
 class Wav final : public v3d::asset::Loader {
  public:

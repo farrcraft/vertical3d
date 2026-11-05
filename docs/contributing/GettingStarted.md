@@ -7,11 +7,10 @@ full.
 - [1. Install the tools](#1-install-the-tools)
 - [2. Clone the repository](#2-clone-the-repository)
 - [3. Set up vcpkg](#3-set-up-vcpkg)
-- [4. Build libnoise](#4-build-libnoise)
-- [5. Configure](#5-configure)
-- [6. Build](#6-build)
-- [7. Run the tests](#7-run-the-tests)
-- [8. Run an app](#8-run-an-app)
+- [4. Configure](#4-configure)
+- [5. Build](#5-build)
+- [6. Run the tests](#6-run-the-tests)
+- [7. Run an app](#7-run-an-app)
 - [Where to go next](#where-to-go-next)
 
 ## 1. Install the tools
@@ -27,17 +26,14 @@ The tree builds on Windows with MSVC. Install:
 
 `cmake`, `ninja` and `ctest` are on the PATH only inside a developer environment. Open the
 "x64 Native Tools Command Prompt", or run `vcvars64.bat` from your Visual Studio install, before
-running the commands below. The scripts in step 6 enter that environment for you.
+running the commands below. The scripts in step 5 enter that environment for you.
 
 ## 2. Clone the repository
 
 ```
-git clone --recurse-submodules https://github.com/farrcraft/vertical3d.git
+git clone https://github.com/farrcraft/vertical3d.git
 cd vertical3d
 ```
-
-`--recurse-submodules` also clones `vendor/libnoise`, the tree's only submodule. If you cloned
-without it, run `git submodule update --init`.
 
 ## 3. Set up vcpkg
 
@@ -48,21 +44,19 @@ git clone https://github.com/Microsoft/vcpkg.git vendor/vcpkg
 .\vendor\vcpkg\bootstrap-vcpkg.bat
 ```
 
-If you will build from Visual Studio, also run `.\vendor\vcpkg\vcpkg.exe integrate install`.
-
 You do not install packages yourself. The first configure installs them.
 [Dependencies.md](Dependencies.md) lists the packages.
 
-## 4. Build libnoise
+## 4. Configure
 
-The voxel app and its tests link libnoise, and the full build fails until it is built. Build it
-from a developer environment with the two commands in
-[Dependencies.md](Dependencies.md#building-libnoise).
+Visual Studio configures the tree when you open the folder, choosing the `x64-Debug` preset. From
+a developer environment, run:
 
-## 5. Configure
+```
+cmake --preset x64-Debug
+```
 
-Visual Studio configures the tree when you open the folder. From a developer environment, run
-the configure command in [Build.md](Build.md#configure-and-build).
+[Build.md](Build.md#configure-and-build) lists the other presets.
 
 **The first configure is slow**, because vcpkg builds every package from source. Read
 [Build.md](Build.md#traps) before you ever reset a build directory: it says which directory
@@ -70,7 +64,7 @@ holds the packages, and why it is kept.
 
 [Build.md](Build.md#the-options) lists the configure options.
 
-## 6. Build
+## 5. Build
 
 From a developer environment:
 
@@ -89,7 +83,7 @@ scripts\build.cmd pong
 The build treats warnings as errors. The tree has no warnings, so any warning comes from your
 change. [Linting.md](Linting.md) covers the other checks.
 
-## 7. Run the tests
+## 6. Run the tests
 
 ```
 ctest --test-dir out/build/x64-Debug --output-on-failure
@@ -105,7 +99,7 @@ scripts\test.cmd -R image                 # one suite
 Every suite should pass. `render_device` needs a Vulkan device. On a machine without one, ctest
 reports it as skipped. [Testing.md](Testing.md) explains the suites and how to write a test.
 
-## 8. Run an app
+## 7. Run an app
 
 Each app is built into its own directory under `out/build/x64-Debug/`, with its data copied
 beside it:

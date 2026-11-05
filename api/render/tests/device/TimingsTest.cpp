@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 
 #include <cmath>
@@ -18,10 +18,10 @@
 
 #include "Headless.h"
 
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::Pass;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::frame::Pass;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::vulkan::frame::Timings;
 
 namespace {

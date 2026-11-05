@@ -7,7 +7,7 @@
 
 #include <api/render/offline/rib/Handler.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -31,12 +31,12 @@ v3d::type::camera::Profile shotFrom(const scene::Scene& scene, const v3d::type::
  * The camera a scene camera is, with the placement and the lens an evaluation of its scene
  * found.
  **/
-v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::Camera>& camera,
+v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::item::Camera>& camera,
     const v3d::type::camera::Profile& view);
 
 /**
  * Send the scene to a RIB handler, as an evaluation of it found it, seen from a camera, as the
- * output's settings render it.
+ * output's settings render it. An item renders do not show is left out.
  *
  * The camera takes the picture's size and frame aspect from the settings, so the picture is
  * not stretched whatever the shape of the view it came from.

@@ -40,6 +40,8 @@ struct Difference final {
  * The tolerance covers float rounding across compilers, not "close enough". A test that
  * needs a loose tolerance is checking the wrong thing.
  *
+ * @param expected the reference image
+ * @param actual the image being checked against it
  * @param tolerance the largest per channel difference that still counts as a match
  **/
 Difference compare(const Image & expected, const Image & actual, unsigned int tolerance);

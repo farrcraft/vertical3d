@@ -40,5 +40,5 @@ renderer_->worldQuads()->submit(world, pass.get());
 - The key is the distance along `depthAxis`, larger being further. Use the camera's forward
   flattened onto the ground for an orthographic view of a ground plane, or the view direction for
   a perspective view. Sprites and particles in one `DepthOrder` sort among each other.
-- **Mesh**: a `MeshHandle` and `castsShadow`. The material belongs to the registry entry, so two
-  entities drawing one model look the same.
+- **Mesh**: a `resource::MeshHandle` and `castsShadow`. The material belongs to the registry entry,
+  so two entities drawing one model look the same.

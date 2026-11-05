@@ -6,14 +6,14 @@
 #pragma once
 
 #include <api/type/Transform.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
-
-#include "Camera.h"
-#include "Item.h"
-#include "Light.h"
 
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/vec3.hpp>
@@ -30,12 +30,12 @@ namespace v3d::editor::scene {
  *
  * @return the paths of one kind, in that order
  **/
-const std::vector<std::string>& properties(Item::Kind kind);
+const std::vector<std::string>& properties(item::Item::Kind kind);
 
 /**
  * @return whether the kind declares the path
  **/
-bool declares(Item::Kind kind, const std::string& path);
+bool declares(item::Item::Kind kind, const std::string& path);
 
 /**
  * The values of one item that a curve can drive: its placement, and a camera's lens or a
@@ -43,14 +43,14 @@ bool declares(Item::Kind kind, const std::string& path);
  **/
 struct Pose {
     v3d::type::Transform placement;
-    Camera::Lens lens;
-    Light::Emission emission;
+    item::Camera::Lens lens;
+    item::Light::Emission emission;
 };
 
 /**
  * @return the item's values as it holds them
  **/
-Pose pose(const Item& item);
+Pose pose(const item::Item& item);
 
 /**
  * The value of every property a kind declares, in a pose.
@@ -58,19 +58,26 @@ Pose pose(const Item& item);
  * @param near the rotation the Euler angles are taken closest to, in degrees. A rotation is a
  *        quaternion, which many sets of angles give
  **/
-std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm::vec3& near);
+std::map<std::string, float> values(item::Item::Kind kind, const Pose& pose, const glm::vec3& near);
 
 /**
  * The value of every property an item declares, as the item holds them.
  **/
-std::map<std::string, float> values(const Item& item, const glm::vec3& near);
+std::map<std::string, float> values(const item::Item& item, const glm::vec3& near);
+
+/**
+ * The properties whose values differ from one set of an item's values to a second, each as
+ * values() gives them. A path the first set lacks has changed. A rotation is changed whole,
+ * because its angles are read from one quaternion and a turn about one axis can change all three.
+ **/
+std::set<std::string> changed(const std::map<std::string, float>& first, const std::map<std::string, float>& second);
 
 /**
  * A pose with some of its properties set. A property that is not named keeps its value, and a
  * path the kind does not declare is ignored. A rotation is set whole, from its named angles and
  * the angles closest to zero for the rest.
  **/
-Pose posed(Item::Kind kind, Pose pose, const std::map<std::string, float>& values);
+Pose posed(item::Item::Kind kind, Pose pose, const std::map<std::string, float>& values);
 
 /**
  * The rotation of three Euler angles in degrees, turned about x, then y, then z.

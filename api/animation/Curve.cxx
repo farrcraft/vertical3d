@@ -100,6 +100,55 @@ bool Curve::remove(float frame) {
 
 /**
  **/
+std::size_t Curve::shift(const std::vector<float>& frames, float offset) {
+    if (!std::isfinite(offset)) {
+        return 0;
+    }
+    const auto chosen = [&frames](float frame) {
+        return std::any_of(frames.begin(), frames.end(), [frame](float each) { return std::fabs(each - frame) <= SAME_FRAME; });
+    };
+    std::vector<Key> moved;
+    std::vector<Key> kept;
+    for (const Key& key : keys_) {
+        if (chosen(key.frame)) {
+            moved.push_back(key);
+            moved.back().frame += offset;
+        } else {
+            kept.push_back(key);
+        }
+    }
+    if (moved.empty()) {
+        return 0;
+    }
+    std::erase_if(kept, [&moved](const Key& key) {
+        return std::any_of(moved.begin(), moved.end(), [&key](const Key& landed) { return std::fabs(landed.frame - key.frame) <= SAME_FRAME; });
+    });
+    kept.insert(kept.end(), moved.begin(), moved.end());
+    std::sort(kept.begin(), kept.end(), [](const Key& first, const Key& second) { return first.frame < second.frame; });
+    keys_ = kept;
+    smooth();
+    return moved.size();
+}
+
+/**
+ **/
+bool Curve::slopes(float frame, const Slopes& given) {
+    if (!std::isfinite(given.in) || !std::isfinite(given.out)) {
+        return false;
+    }
+    const auto at = std::find_if(keys_.begin(), keys_.end(),
+        [frame](const Key& key) { return std::fabs(key.frame - frame) <= SAME_FRAME; });
+    if (at == keys_.end()) {
+        return false;
+    }
+    at->in = given.in;
+    at->out = given.out;
+    at->automatic = false;
+    return true;
+}
+
+/**
+ **/
 bool Curve::empty() const noexcept {
     return keys_.empty();
 }

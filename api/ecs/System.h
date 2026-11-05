@@ -9,6 +9,9 @@
 
 namespace v3d::ecs {
 
+/**
+ * The base of a system: logic run over a registry's entities once per simulation step.
+ **/
 class System {
  public:
     explicit System(entt::registry* registry);

@@ -26,7 +26,7 @@ class Lighting final : public Statement {
         SOLAR
     };
 
-    Lighting(Construct construct, const v3d::render::offline::Position & at);
+    Lighting(Construct construct, const v3d::render::offline::source::Position & at);
 
     Construct construct = Construct::ILLUMINANCE;
     std::vector<ExpressionPtr> arguments;

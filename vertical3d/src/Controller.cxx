@@ -12,6 +12,7 @@
 #include <api/event/State.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/image/Image.h>
 #include <api/input/MouseState.h>
@@ -25,36 +26,45 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <api/window/Window.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/ConsoleEditor.h>
 #include <vertical3d/src/control/IconSheet.h>
-#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Playback.h>
-#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
-#include <vertical3d/src/control/RenderWindow.h>
-#include <vertical3d/src/control/StatusBar.h>
-#include <vertical3d/src/control/TopBar.h>
+#include <vertical3d/src/control/TimelineEditor.h>
+#include <vertical3d/src/control/RenderSettingsEditor.h>
+#include <vertical3d/src/control/RenderView.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
+#include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/render/Panels.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 #include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/Shading.h>
+#include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -64,8 +74,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "Renderer.h"
@@ -83,6 +96,7 @@ Controller::Controller(const std::string& path) :
 v3d::engine::Engine(path),
 shell_(this, shellOptions()),
 table_(&commands(), [this]() { commandRan(); }),
+scripting_(&table_),
 edits_(context_),
 toolCommands_(context_),
 viewCommands_(context_),
@@ -94,6 +108,12 @@ renderCommands_(context_) {
     context_.path = path;
     context_.areasChanged = [this]() { areasChanged(); };
     registerCommands();
+}
+
+/**
+ **/
+std::string Controller::declarations() const {
+    return scripting_.declarations();
 }
 
 /**
@@ -119,11 +139,17 @@ void Controller::registerCommands() {
     playbackCommands_.registerCommands(&table_);
     renderCommands_.registerCommands(&table_);
 
+    scripting_.bind();
     table_.press("search::open", [this]() { openSearch(); });
     table_.press("search::run", [this]() { runSearch(); });
     table_.hold("view::drag", [this](const v3d::event::Event& event) {
-        if (context_.pointer) {
-            context_.pointer->button(event.state() == v3d::event::State::Pressed, clicks_);
+        // the press goes to the pointer over the window the cursor is in
+        const v3d::input::MouseState* held = mouse();
+        const std::uint32_t in = held != nullptr ? held->window() : 0;
+        const auto opened = std::ranges::find_if(opened_, [in](const Opened& each) { return each.window->id() == in; });
+        const boost::shared_ptr<control::chrome::Pointer> pointer = opened != opened_.end() ? opened->pointer : context_.pointer;
+        if (pointer) {
+            pointer->button(event.state() == v3d::event::State::Pressed, clicks_);
             syncPointerShape();
         }
     });
@@ -138,6 +164,15 @@ bool Controller::start() {
     }
     context_.logger = logger();
     context_.settings = settings();
+    context_.keptWindows = [this]() { return keptWindows(); };
+    context_.keyed = [this]() -> std::optional<app::Context::Placed> {
+        const auto opened = std::ranges::find_if(opened_, [this](const Opened& each) { return each.window->id() == keyWindow_; });
+        if (opened == opened_.end()) {
+            return std::nullopt;
+        }
+        return app::Context::Placed{ .layout = opened->layout, .views = opened->views, .area = opened->pointer->activeArea() };
+    };
+    context_.reopen = [this](const boost::json::array& windows) { reopenWindows(windows); };
     if (!buildDocument() || !workspaces_.start(document(view::AreaLayout::DOCUMENT)) || !buildViews()) {
         return false;
     }
@@ -145,6 +180,7 @@ bool Controller::start() {
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     button_ = dispatcher()->sink<v3d::event::kind::MouseButton>().connect<&Controller::handleButton>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
+    close_ = dispatcher()->sink<v3d::event::kind::WindowClose>().connect<&Controller::handleClose>(*this);
     buildRenderer();
     if (!buildUi()) {
         return false;
@@ -154,6 +190,9 @@ bool Controller::start() {
     reportCommands();
 
     layoutViews(window()->width(), window()->height());
+    // the windows the first workspace keeps open once there is a ui to give them
+    const boost::json::array pending = std::exchange(pendingWindows_, boost::json::array());
+    reopenWindows(pending);
     syncUi();
     syncCaption();
     logger()->get()->info("{} with {} areas", context_.layout->name(), context_.layout->areas().size());
@@ -161,7 +200,7 @@ bool Controller::start() {
     // the editor starts on the default project without reading it, so an autosave a crash left
     // there is the one way back to that session's work
     files_.offerRecovery();
-    return true;
+    return scripting_.startup(launch(), *logger());
 }
 
 /**
@@ -181,16 +220,28 @@ bool Controller::buildDocument() {
 /**
  **/
 bool Controller::buildViews() {
-    context_.views = boost::make_shared<view::AreaViews>(context_.layout, [this](const view::AreaLayout::Editor& editor) -> boost::shared_ptr<view::ViewPort> {
-        const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
-        if (!camera || !context_.profiles->has(*camera)) {
-            logger()->get()->error("A viewport in the layout names no camera profile that exists");
-            return nullptr;
-        }
-        // the name is the view's pass name, so the editor's id keeps two views of a profile apart
-        return boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
-    });
+    context_.views = boost::make_shared<view::AreaViews>(context_.layout, [this](const view::AreaLayout::Editor& editor) { return makeView(editor); });
     return context_.views->sync();
+}
+
+/**
+ **/
+boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::Editor& editor) const {
+    const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
+    // a view that follows the scene's camera starts as a free perspective view
+    const bool follows = camera == view::SCENE_CAMERA;
+    const std::string profile = follows ? std::string(view::ViewPort::FREE_VIEW) : camera.value_or(std::string());
+    if (!context_.profiles->has(profile)) {
+        logger()->get()->error("A viewport in the layout names no camera profile that exists");
+        return nullptr;
+    }
+    // the name is the view's pass name, so the editor's id keeps two views of a profile apart
+    const boost::shared_ptr<view::ViewPort> made = boost::make_shared<view::ViewPort>(profile + " " + std::to_string(editor.id), context_.profiles->get(profile));
+    made->through({ .camera = v3d::asset::readInt(editor.state, "through").value_or(0), .scene = follows,
+        .locked = v3d::asset::readBool(editor.state, "locked").value_or(false) });
+    // the view starts in the shading its state names, as the Shading workspace's view names smooth
+    made->display().shading = view::shading(v3d::asset::readString(editor.state, "shading").value_or("")).value_or(view::Shading::Flat);
+    return made;
 }
 
 /**
@@ -198,6 +249,8 @@ bool Controller::buildViews() {
 void Controller::buildTools() {
     const boost::shared_ptr<scene::Scene>& scene = context_.document->scene();
     context_.cameraTool = boost::make_shared<tool::CameraControl>();
+    cameraLock_ = boost::make_shared<tool::CameraLock>(context_.document->history());
+    context_.cameraTool->watch([this](view::ViewPort& view, tool::CameraControl::Navigated what) { navigated(view, what); });
     context_.selectTool = boost::make_shared<tool::Select>(scene, logger());
     context_.transformTool = boost::make_shared<tool::Transform>(scene, logger());
     context_.transformTool->commands(context_.document->history());
@@ -217,11 +270,16 @@ void Controller::buildRenderer() {
         logger()->get()->error("The editor has no icon sheet it can read, so its toolbar shows labels");
     }
     renderer_->icons(icons);
+    outliner_.icons([this](const std::string& source) { return renderer_->image(source); });
+    outliner_.eye([this](const boost::shared_ptr<scene::item::Item>& item) {
+        context_.report(item->shown().views ? context_.document->hide({ item }) : context_.document->show({ item }));
+    });
     renderer_->views(context_.views);
     renderer_->scene(context_.document->scene());
     renderer_->transformTool(context_.transformTool);
     renderer_->selectTool(context_.selectTool);
-    context_.notices = boost::make_shared<control::Notices>();
+    context_.notices = boost::make_shared<control::chrome::Notices>();
+    context_.journal = table_.journal();
     renderer_->notices(context_.notices);
 }
 
@@ -239,19 +297,32 @@ bool Controller::buildUi() {
     const boost::shared_ptr<v3d::ui::Interface>& vgui = shell_.ui();
     buildPointer(vgui);
     // the areas' headers go under the editor's own container, so its menus drop over them
-    chrome_ = boost::make_shared<control::AreaChrome>(vgui, uiContainer,
+    chrome_ = boost::make_shared<control::chrome::Area>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     uiKeys_->immediate(renderer_->immediate());
     properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
+    context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
+        [this](const document::Outcome& outcome) { context_.report(outcome); });
+    context_.timeline->icons([this](const std::string& source) { return renderer_->image(source); });
+    context_.timeline->shortcuts([this](const std::string& command) { return shell_.screen()->shortcut(v3d::event::Event(command)); });
+    console_ = boost::make_shared<control::ConsoleEditor>(table_.journal(), [this](const std::string& line) { scripting_.line(line); });
+    graph_ = boost::make_shared<control::GraphEditor>(context_.document, [this](const document::Outcome& outcome) { context_.report(outcome); });
+    renderSettings_ = boost::make_shared<control::RenderSettingsEditor>(context_.document,
+        [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
+    renderer_->opened([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window) {
+        drawOpened(layer, canvas, window);
+    });
+    context_.window = [this](std::string_view kind) { return openWindow(kind); };
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<control::CommandSearch>(vgui);
-    topBar_ = boost::make_shared<control::TopBar>(vgui, firstDialog, renderer_->measure());
+    topBar_ = boost::make_shared<control::chrome::TopBar>(vgui, firstDialog, renderer_->type(),
+        [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     // moya.exe is built beside the editor
-    context_.renderWindow = boost::make_shared<control::RenderWindow>(boost::make_shared<render::Panels>(vgui),
-        boost::make_shared<render::MoyaDelegate>(logger()), boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
+    context_.renderView = boost::make_shared<control::RenderView>(boost::make_shared<render::MoyaDelegate>(logger()),
+        boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
         [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
     return findBars(vgui);
 }
@@ -263,8 +334,8 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
-        boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
-    context_.pointer = boost::make_shared<control::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
+        boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->type());
+    context_.pointer = boost::make_shared<control::chrome::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
         // the show flags a check item draws are the active view's
         syncUi();
     });
@@ -276,10 +347,56 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
         if (!end) {
             return false;
         }
-        lookAlong(view->camera().get(), *end);
+        turn(*view, *end);
         syncUi();
         return true;
     });
+}
+
+/**
+ **/
+void Controller::turn(view::ViewPort& view, const view::AxisEnd& end) {
+    // a turn is navigation, which frees a view through a scene camera or moves a locked one
+    if (!view.free() && !view.through().locked) {
+        view.letGo();
+        navigated(view, tool::CameraControl::Navigated::Freed);
+    }
+    lookAlong(view.camera().get(), end);
+    if (!view.free()) {
+        navigated(view, tool::CameraControl::Navigated::Moved);
+        navigated(view, tool::CameraControl::Navigated::Ended);
+    }
+}
+
+/**
+ **/
+void Controller::navigated(view::ViewPort& view, tool::CameraControl::Navigated what) {
+    switch (what) {
+        case tool::CameraControl::Navigated::Freed: {
+            // the editor's state follows the view, so its tab and a saved layout show it free
+            const auto free = [&view](const boost::shared_ptr<view::AreaLayout>& layout, const boost::shared_ptr<view::AreaViews>& views) {
+                for (std::size_t area = 0; layout && views && area < layout->areas().size(); area++) {
+                    if (views->of(area).get() == &view) {
+                        const std::size_t editor = layout->areas()[area].editor().id;
+                        layout->set(editor, "camera", boost::json::string(view::ViewPort::FREE_VIEW));
+                        layout->set(editor, "through", 0);
+                        layout->set(editor, "locked", false);
+                    }
+                }
+            };
+            free(context_.layout, context_.views);
+            for (const Opened& opened : opened_) {
+                free(opened.layout, opened.views);
+            }
+            break;
+        }
+        case tool::CameraControl::Navigated::Moved:
+            cameraLock_->moved(context_.document->scene(), view);
+            break;
+        case tool::CameraControl::Navigated::Ended:
+            cameraLock_->ended();
+            break;
+    }
 }
 
 /**
@@ -325,6 +442,45 @@ void Controller::reportCommands() const {
 
 /**
  **/
+void Controller::syncCameras() {
+    const control::chrome::Area::Cameras cameras = control::chrome::Area::of(*context_.document->scene());
+    if (chrome_) {
+        chrome_->cameras(cameras);
+    }
+    for (const Opened& opened : opened_) {
+        opened.chrome->cameras(cameras);
+    }
+    const boost::shared_ptr<v3d::ui::component::menu::Item> front = menu_ ? menu_->find("view::camera::front") : nullptr;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> owner = front ? front->menu().lock() : nullptr;
+    if (!owner) {
+        return;
+    }
+    if (viewCameras_ != cameras) {
+        if (!cameraItems_) {
+            cameraItems_ = owner->count();
+        }
+        owner->removeFrom(*cameraItems_);
+        if (!cameras.empty()) {
+            owner->addItem(boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Separator, std::string()));
+        }
+        // an item with no area acts on the active view
+        for (const control::chrome::Area::SceneCamera& camera : cameras) {
+            const boost::shared_ptr<v3d::ui::component::menu::Item> item =
+                boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Radio, camera.name);
+            item->menu(owner);
+            v3d::event::Event event("camera::scene", front->event().context());
+            event.data(std::to_string(camera.id));
+            item->event(event);
+            owner->addItem(item);
+        }
+        viewCameras_ = cameras;
+    }
+    const boost::shared_ptr<view::ViewPort> active = context_.activeView();
+    control::chrome::Area::checkCamera(owner.get(), active ? active->looking() : 0);
+}
+
+/**
+ **/
 void Controller::syncUi() {
     if (!menu_) {
         return;
@@ -346,12 +502,12 @@ void Controller::syncUi() {
 
     // the View menu marks the active view's state, as each header marks its own view's
     if (const boost::shared_ptr<view::ViewPort> activeView = context_.activeView()) {
-        for (const auto& [command, on] : control::AreaChrome::marks(*activeView)) {
+        for (const auto& [command, on] : control::chrome::Area::marks(*activeView)) {
             mark(command, on);
         }
     }
 
-    for (const auto& [command, on] : control::AreaChrome::marks(context_.selectTool->mask())) {
+    for (const auto& [command, on] : control::chrome::Area::marks(context_.selectTool->mask())) {
         mark(command, on);
     }
     const tool::CameraControl::CameraMode latched = context_.cameraTool->latched();
@@ -360,6 +516,8 @@ void Controller::syncUi() {
     mark("camera::zoom", latched == tool::CameraControl::CAMERA_MODE_ZOOM);
     mark("camera::pan", latched == tool::CameraControl::CAMERA_MODE_PAN);
     mark("camera::pitch", latched == tool::CameraControl::CAMERA_MODE_PITCH);
+
+    mark("timeline::auto_key", context_.document->scene()->timeline().autoKey);
 
     const tool::Transform::Mode mode = context_.transformTool->mode();
     mark("transform::select", mode == tool::Transform::Mode::None);
@@ -384,7 +542,7 @@ void Controller::syncCaption() {
     }
     std::string caption = "Vertical|3D - " + document->project()->directory().filename().string() +
         (document->dirty() ? " *" : "") + " - frame " + std::to_string(document->scene()->timeline().frame);
-    const render::Batch::Status batch = context_.renderWindow ? context_.renderWindow->batchStatus() : render::Batch::Status();
+    const render::Batch::Status batch = context_.renderView ? context_.renderView->batchStatus() : render::Batch::Status();
     if (batch.running) {
         caption += " - rendering " + std::to_string(batch.done + 1) + " of " + std::to_string(batch.total);
     }
@@ -398,13 +556,12 @@ void Controller::syncCaption() {
 /**
  **/
 void Controller::syncPointerShape() {
-    const std::optional<view::AreaLayout::Divider> lit = context_.pointer ? context_.pointer->lit() : std::nullopt;
-    if (!lit) {
-        window()->pointer(v3d::window::Window::Pointer::Arrow);
-        return;
+    if (context_.pointer) {
+        shapePointer(window().get(), *context_.pointer);
     }
-    // a divider between stacked areas moves up and down
-    window()->pointer(lit->across ? v3d::window::Window::Pointer::Rows : v3d::window::Window::Pointer::Columns);
+    for (const Opened& opened : opened_) {
+        shapePointer(opened.window.get(), *opened.pointer);
+    }
 }
 
 /**
@@ -413,16 +570,43 @@ void Controller::areasChanged() {
     if (context_.pointer) {
         context_.pointer->place();
     }
+    for (const Opened& opened : opened_) {
+        opened.views->sync();
+        opened.pointer->place();
+    }
     syncPointerShape();
 }
 
 /**
  **/
 void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) {
-    const boost::shared_ptr<control::Pointer>& pointer = context_.pointer;
+    drawAreas(layer, canvas, *context_.layout, context_.pointer.get(), window() ? window()->id() : 0);
+    // an outliner keeps its folds while any window shows it
+    std::vector<std::size_t> outliners;
+    const auto held = [&outliners](const view::AreaLayout& layout) {
+        for (const view::AreaLayout::Area& area : layout.areas()) {
+            for (const view::AreaLayout::Editor& editor : area.editors) {
+                if (editor.kind == control::Outliner::KIND) {
+                    outliners.push_back(editor.id);
+                }
+            }
+        }
+    };
+    held(*context_.layout);
+    for (const Opened& opened : opened_) {
+        held(*opened.layout);
+    }
+    outliner_.keep(outliners);
+}
+
+/**
+ **/
+void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+    control::chrome::Pointer* pointer, std::uint32_t window) {
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
-    if (held != nullptr && pointer && pointer->panels()) {
+    const bool here = held != nullptr && (held->window() == window || (held->window() == 0 && ownWindow(window)));
+    if (here && pointer != nullptr && pointer->panels()) {
         input.cursor = pointer->cursor();
         input.down = held->held("left");
         input.pressed = held->pressed("left");
@@ -430,33 +614,63 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         input.wheel = held->wheel();
     }
     layer->begin(canvas, input);
-    // a panel starts under its area's header
+    // a panel starts under its area's header, which a tabbed area showing a panel has none of
     const float header = renderer_->barHeight();
-    std::vector<std::size_t> outliners;
-    for (const view::AreaLayout::Area& area : context_.layout->areas()) {
-        const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
+    const control::GraphEditor::Navigate navigate = graphNavigation();
+    control::RenderView::Asked asked = control::RenderView::Asked::Nothing;
+    for (const view::AreaLayout::Area& area : layout.areas()) {
+        const float top = control::chrome::Area::headed(area) ? header : 0.0F;
+        const glm::vec4 region(area.content.x, area.content.y + top, area.content.z, area.content.w - top);
         const view::AreaLayout::Editor& editor = area.editor();
         if (region.z <= 0.0F || region.w <= 0.0F) {
             continue;
         }
         if (editor.kind == control::Outliner::KIND) {
             outliner_.draw(layer, context_.document->scene().get(), editor.id, region, context_.selectTool->adding());
-            outliners.push_back(editor.id);
         } else if (editor.kind == control::PropertiesEditor::KIND) {
-            properties_->draw(layer, context_.document->scene().get(), editor.id, region);
+            properties_->draw(layer, context_.document->scene(), editor.id, region);
+        } else if (editor.kind == control::TimelineEditor::KIND && context_.timeline) {
+            context_.timeline->draw(layer, editor.id, region);
+        } else if (editor.kind == control::GraphEditor::KIND && graph_) {
+            graph_->draw(layer, editor.id, region, navigate);
+        } else if (editor.kind == control::ConsoleEditor::KIND && console_) {
+            console_->draw(layer, editor.id, region);
+        } else if (editor.kind == control::RenderView::KIND && context_.renderView) {
+            asked = std::max(asked, context_.renderView->draw(layer, editor.id, region));
+        } else if (editor.kind == control::RenderSettingsEditor::KIND && renderSettings_) {
+            renderSettings_->draw(layer, editor.id, region);
         }
     }
     layer->end();
-    outliner_.keep(outliners);
-    if (pointer) {
+    asked_ = std::max(asked_, asked);
+    if (pointer != nullptr) {
         pointer->settle();
     }
 }
 
 /**
  **/
-control::TopBar::State Controller::topState() const {
-    control::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
+control::GraphEditor::Navigate Controller::graphNavigation() const {
+    // a graph moves its view by the camera move in force, as an orthographic view does
+    switch (context_.cameraTool->mode()) {
+        case tool::CameraControl::CAMERA_MODE_TRUCK:
+            return control::GraphEditor::Navigate::Pan;
+        case tool::CameraControl::CAMERA_MODE_ZOOM:
+        case tool::CameraControl::CAMERA_MODE_DOLLY:
+            return control::GraphEditor::Navigate::Zoom;
+        // turning the camera has no meaning in a graph, so a drag there moves a key
+        case tool::CameraControl::CAMERA_MODE_PAN:
+        case tool::CameraControl::CAMERA_MODE_PITCH:
+        case tool::CameraControl::CAMERA_MODE_NONE:
+            break;
+    }
+    return control::GraphEditor::Navigate::None;
+}
+
+/**
+ **/
+control::chrome::TopBar::State Controller::topState() const {
+    control::chrome::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
         .project = context_.document->project()->directory().filename().string(), .dirty = context_.document->dirty() };
     for (const boost::json::object& workspace : context_.workspaces->all()) {
         state.workspaces.emplace_back(v3d::asset::readString(workspace, "name").value_or(std::string()));
@@ -471,9 +685,14 @@ void Controller::openSearch() {
     // an area's commands are on its header, and run from the search they act on the active area
     const std::size_t active = context_.areaOf(v3d::event::Event());
     if (active < context_.layout->areas().size()) {
-        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::AreaChrome::name(context_.layout->areas()[active].id));
-        if (area) {
-            bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
+        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::chrome::Area::name(context_.layout->areas()[active].id));
+        // a tabbed area's own menu is on its strip, and its header holds only its view's
+        for (const char* holding : { "strip-menu", "header" }) {
+            const boost::shared_ptr<v3d::ui::component::menu::Bar> bar =
+                area ? boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get(holding)) : nullptr;
+            if (bar) {
+                bars.push_back(bar);
+            }
         }
     }
     std::vector<control::CommandSearch::Entry> entries = control::CommandSearch::catalogue(bars);
@@ -495,14 +714,15 @@ void Controller::runSearch() {
 
 /**
  **/
-control::Status Controller::status() const {
-    control::Status made;
+control::chrome::Status Controller::status() const {
+    control::chrome::Status made;
     const boost::shared_ptr<view::ViewPort> view = context_.activeView();
     const bool perspective = view && view->camera() && !view->camera()->orthographic();
-    made.buttons = control::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
-    made.selection = control::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
-    made.frame = "Frame " + std::to_string(context_.document->scene()->timeline().frame);
-    made.rate = control::StatusBar::rate(statistics().mean());
+    made.buttons = control::chrome::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
+    made.selection = control::chrome::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
+    made.frame = control::chrome::StatusBar::frame(context_.document->scene()->timeline());
+    made.rate = control::chrome::StatusBar::rate(statistics().mean());
+    made.health = control::chrome::StatusBar::health({ .mean = statistics().mean(), .refresh = window()->refreshRate() });
     return made;
 }
 
@@ -541,6 +761,33 @@ bool Controller::onEvent(const SDL_Event& event) {
             return true;
         }
     }
+    // while a console's line holds the keyboard, the up and down arrows step through the lines
+    // run before
+    if (console_ && console_->typing() && event.type == SDL_EVENT_KEY_DOWN && (event.key.key == SDLK_UP || event.key.key == SDLK_DOWN)) {
+        console_->recall(event.key.key == SDLK_UP ? -1 : 1);
+        return true;
+    }
+    // a key or text goes to the ui of the window it was typed in
+    std::uint32_t typed = 0;
+    switch (event.type) {
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+            typed = event.key.windowID;
+            break;
+        case SDL_EVENT_TEXT_INPUT:
+            typed = event.text.windowID;
+            break;
+        case SDL_EVENT_TEXT_EDITING:
+            typed = event.edit.windowID;
+            break;
+        default:
+            return uiKeys_ && uiKeys_->event(event);
+    }
+    keyWindow_ = typed;
+    const auto opened = std::ranges::find_if(opened_, [typed](const Opened& each) { return each.window->id() == typed; });
+    if (opened != opened_.end()) {
+        return opened->keys && opened->keys->event(event);
+    }
     return uiKeys_ && uiKeys_->event(event);
 }
 
@@ -578,12 +825,18 @@ bool Controller::render() {
     if (topBar_ && menu_ && menu_->count() > 0) {
         const v3d::type::geometry::Bound2D last = menu_->bound(menu_->count() - 1);
         const float end = last.position().x + last.size().x;
-        topBar_->sync(topState(), glm::vec4(end, menu_->position().y, static_cast<float>(window()->width()) - end, renderer_->barHeight()));
+        control::chrome::TopBar::State top = topState();
+        top.searchKey = shell_.screen()->shortcut(v3d::event::Event("search::open"));
+        topBar_->sync(top, glm::vec4(end, menu_->position().y, static_cast<float>(window()->width()) - end, renderer_->barHeight()));
     }
+    syncCameras();
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
-        chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight());
+        chrome_->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));
+        chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight(), context_.pointer ? context_.pointer->activeArea() : 0,
+            renderer_->frameLine());
     }
+    syncOpened();
     renderer_->status(status());
     renderer_->draw();
     return true;
@@ -596,9 +849,15 @@ bool Controller::release() {
     if (context_.document) {
         context_.document->close();
     }
+    // each window's keyboard, the editor's own and each opened one's, lets go of its screen's
+    // layer before the renderer releases the screen
+    for (Opened& opened : opened_) {
+        opened.keys.reset();
+    }
+    uiKeys_.reset();
     // a render's thread and a batch's are waited for, before anything they report to goes
-    if (context_.renderWindow) {
-        context_.renderWindow->release();
+    if (context_.renderView) {
+        context_.renderView->release();
     }
     // the screen draws through the renderer, so it goes first
     shell_.release();
@@ -615,10 +874,15 @@ bool Controller::tick(unsigned int delta) {
     if (context_.document) {
         context_.document->tick(delta);
     }
-    if (context_.renderWindow && context_.renderWindow->open() && context_.activeView() && context_.activeView()->camera()) {
-        context_.renderWindow->tick(*context_.document->scene(), context_.shot());
+    // a render view's buttons send what the Render menu does, after the frame that drew them
+    const control::RenderView::Asked asked = std::exchange(asked_, control::RenderView::Asked::Nothing);
+    if (asked != control::RenderView::Asked::Nothing) {
+        commands().invoke(v3d::event::Event(asked == control::RenderView::Asked::Render ? "render::view" : "render::stop"));
     }
-    if (context_.renderWindow) {
+    if (context_.renderView && context_.activeView() && context_.activeView()->camera()) {
+        context_.renderView->tick(*context_.document->scene(), context_.shot(), shows(control::RenderView::KIND));
+    }
+    if (context_.renderView) {
         syncCaption();
     }
     return Engine::tick(delta);
@@ -640,13 +904,23 @@ bool Controller::simulate(float step) {
 /**
  **/
 void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
+    // an opened window reads its size each frame it is drawn
+    if (!ownWindow(event.window())) {
+        return;
+    }
     layoutViews(event.width(), event.height());
 }
 
 /**
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
-    if (context_.pointer) {
+    const auto opened = std::ranges::find_if(opened_, [&event](const Opened& each) { return each.window->id() == event.window(); });
+    if (opened != opened_.end()) {
+        opened->pointer->motion(event.position(), event.modifiers().ctrl);
+        syncPointerShape();
+        return;
+    }
+    if (context_.pointer && ownWindow(event.window())) {
         context_.pointer->motion(event.position(), event.modifiers().ctrl);
         syncPointerShape();
     }
@@ -655,6 +929,9 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
 /**
  **/
 void Controller::handleButton(const v3d::event::kind::MouseButton& event) {
+    if (!ownWindow(event.window())) {
+        return;
+    }
     if (event.button() == "left") {
         clicks_ = event.clicks();
     } else if (event.button() == "right" && event.pressed() && context_.pointer && context_.pointer->cancel()) {

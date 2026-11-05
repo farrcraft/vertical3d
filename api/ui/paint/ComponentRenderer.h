@@ -21,6 +21,7 @@
 
 #include "Dressing.h"
 #include "Text.h"
+#include "Type.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -103,10 +104,9 @@ class Skin;
 class ComponentRenderer {
  public:
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param body what the ui's text is measured, wrapped and drawn through
      **/
-    ComponentRenderer(const Measure& measure, const Write& write);
+    explicit ComponentRenderer(const Type& body);
     ~ComponentRenderer();
 
     /**
@@ -180,6 +180,9 @@ class ComponentRenderer {
      * and is moved back onto the canvas where it would leave it. Draw it last, over everything
      * else.
      *
+     * @param canvas what the tooltip is drawn on, or null to draw nothing
+     * @param text the line of text. With keys also empty, nothing is drawn
+     * @param keys the shortcut drawn after the text, or empty for none
      * @param below the box it hangs by, which is the component it describes
      * @param beside whether it hangs to the right of the box, centred on it, rather than under
      *        it. A tooltip that would leave the canvas there goes to the left instead
@@ -206,7 +209,7 @@ class ComponentRenderer {
      * Draw lines of text over the scene, such as a score or a label, on one plate. The "hud"
      * class dresses it: the text, the plate's colour and how opaque it is, the padding around
      * the lines and the corners. The plate is as wide as the widest line and a line high for
-     * each.
+     * each. The lines are set in tabular figures, so a score that changes keeps its width.
      *
      * @return the plate's box, so that the next block can be placed against it
      **/
@@ -235,6 +238,13 @@ class ComponentRenderer {
      * button in a container, and the toolbar's layout writes them for a button on a toolbar.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
+
+    /**
+     * Draw a toggle that is a tab, as its look says. A chosen tab is marked as the place shown:
+     * a strip's in the panel's colour with the accent's line under it, a choice raised to the
+     * chosen colour. Either is set semibold. A tab under the cursor is raised halfway.
+     **/
+    void tab(v3d::render::realtime::canvas::Canvas* canvas, component::Button& button, const v3d::type::geometry::Bound2D& box) const;
 
     /**
      * Draw a panel: a filled box with a border, with the corner radius its style sets, at
@@ -321,6 +331,8 @@ class ComponentRenderer {
     /**
      * Draw a toolbar - a row of buttons across the canvas, or a column down its side.
      *
+     * @param canvas what the toolbar is drawn on, or null to draw nothing
+     * @param bar the toolbar drawn, or null to draw nothing
      * @param corner the strip's top left, past the room the strips before it have taken
      *      along the same edge
      **/
@@ -362,6 +374,16 @@ class ComponentRenderer {
      * How far a tooltip's text sits in from its edges, as a fraction of a line.
      **/
     static constexpr float tooltipInset = 0.4F;
+    /**
+     * How far a tab under the cursor is raised toward a chosen tab's colour, from 0 for not at
+     * all to 1 for all the way.
+     **/
+    static constexpr float tabHoverLift = 0.5F;
+    /**
+     * How far a toolbar's rule stops short of each side of the strip, as a share of the strip's
+     * thickness.
+     **/
+    static constexpr float toolbarRuleInset = 0.225F;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is
@@ -384,8 +406,7 @@ class ComponentRenderer {
      **/
     const Dressing& base() const noexcept;
 
-    Measure measure_;
-    Write write_;
+    Type type_;
     style::Resolver styles_;
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;

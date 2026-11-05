@@ -6,14 +6,15 @@
 #pragma once
 
 #include <api/interchange/Scene.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "Item.h"
 #include "Scene.h"
+#include "Timeline.h"
 
 namespace v3d::editor::scene {
 
@@ -35,6 +36,14 @@ struct Import final {
 };
 
 /**
+ * What an import is made to fit: the timeline its keys go on, and the unit its lengths are in.
+ **/
+struct Into final {
+    float rate = Timeline::DEFAULT_RATE;  /**< the frames a second of the timeline the keys go on **/
+    double metres = 1.0;                  /**< how many metres one unit of the scene is **/
+};
+
+/**
  * Make items from an interchange scene.
  *
  * Each node becomes one item: a mesh, a camera or a light when it carries one, in that order,
@@ -52,8 +61,8 @@ struct Import final {
  * keep their interpolation. Cubic spline keys become Bezier keys, with the file's tangents as
  * slopes for a translation or a scale, and automatic slopes for a rotation.
  *
- * @param rate the frames a second of the timeline the keys go on
+ * A file is read in metres, and every length is scaled into the scene's unit as it is made.
  **/
-Import importScene(const v3d::interchange::Scene& scene, float rate);
+Import importScene(const v3d::interchange::Scene& scene, const Into& into);
 
 };  // namespace v3d::editor::scene

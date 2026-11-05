@@ -16,10 +16,20 @@
     "entt",
     "freetype",
     "glm",
+    {
+      "name": "harfbuzz",
+      "features": [
+        "freetype"
+      ]
+    },
+    "icu",
     "libjpeg-turbo",
     "libpng",
+    "nanosvg",
+    "quickjs-ng",
     "spdlog",
-    "sqlite3"
+    "sqlite3",
+    "thorvg"
   ],
   "default-features": [
     "platform",

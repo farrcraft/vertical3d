@@ -5,11 +5,11 @@
 
 #include <api/brep/BRep.h>
 #include <api/type/Transform.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 
 #include <cstdint>
 #include <type_traits>
@@ -34,9 +34,9 @@ glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
 }
 
 BOOST_AUTO_TEST_CASE(item_identity_test) {
-    const v3d::editor::scene::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
-    const v3d::editor::scene::Camera camera;
-    const v3d::editor::scene::Light light;
+    const v3d::editor::scene::item::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
+    const v3d::editor::scene::item::Camera camera;
+    const v3d::editor::scene::item::Light light;
 
     // every kind has an id from one counter, so no two items share one
     BOOST_CHECK(mesh.id() != camera.id());
@@ -44,32 +44,32 @@ BOOST_AUTO_TEST_CASE(item_identity_test) {
     BOOST_CHECK(mesh.id() != light.id());
 
     // a copy would share that id with its original, so an item cannot be copied
-    static_assert(!std::is_copy_constructible_v<v3d::editor::scene::Mesh>);
-    static_assert(!std::is_copy_assignable_v<v3d::editor::scene::Camera>);
+    static_assert(!std::is_copy_constructible_v<v3d::editor::scene::item::Mesh>);
+    static_assert(!std::is_copy_assignable_v<v3d::editor::scene::item::Camera>);
 }
 
 BOOST_AUTO_TEST_CASE(item_kind_test) {
-    const boost::shared_ptr<v3d::editor::scene::Item> mesh =
-        boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
-    const boost::shared_ptr<v3d::editor::scene::Item> camera = boost::make_shared<v3d::editor::scene::Camera>();
-    const boost::shared_ptr<v3d::editor::scene::Item> light = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Item> mesh =
+        boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
+    const boost::shared_ptr<v3d::editor::scene::item::Item> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Item> light = boost::make_shared<v3d::editor::scene::item::Light>();
 
-    BOOST_CHECK(mesh->kind() == v3d::editor::scene::Item::Kind::Mesh);
-    BOOST_CHECK(camera->kind() == v3d::editor::scene::Item::Kind::Camera);
-    BOOST_CHECK(light->kind() == v3d::editor::scene::Item::Kind::Light);
+    BOOST_CHECK(mesh->kind() == v3d::editor::scene::item::Item::Kind::Mesh);
+    BOOST_CHECK(camera->kind() == v3d::editor::scene::item::Item::Kind::Camera);
+    BOOST_CHECK(light->kind() == v3d::editor::scene::item::Item::Kind::Light);
 
     // as() casts only to the kind the item is
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Mesh>(mesh).get() == mesh.get());
-    BOOST_CHECK(!v3d::editor::scene::as<v3d::editor::scene::Camera>(mesh));
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Camera>(camera).get() == camera.get());
-    BOOST_CHECK(!v3d::editor::scene::as<v3d::editor::scene::Light>(camera));
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Light>(light).get() == light.get());
-    BOOST_CHECK(!v3d::editor::scene::as<v3d::editor::scene::Mesh>(light));
-    BOOST_CHECK(!v3d::editor::scene::as<v3d::editor::scene::Mesh>(boost::shared_ptr<v3d::editor::scene::Item>()));
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(mesh).get() == mesh.get());
+    BOOST_CHECK(!v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(mesh));
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(camera).get() == camera.get());
+    BOOST_CHECK(!v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(camera));
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(light).get() == light.get());
+    BOOST_CHECK(!v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(light));
+    BOOST_CHECK(!v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(boost::shared_ptr<v3d::editor::scene::item::Item>()));
 }
 
 BOOST_AUTO_TEST_CASE(item_placement_test) {
-    v3d::editor::scene::Light light;
+    v3d::editor::scene::item::Light light;
 
     // the item's transform places it
     light.translation(glm::vec3(4.0F, 0.0F, 0.0F));
@@ -80,9 +80,24 @@ BOOST_AUTO_TEST_CASE(item_placement_test) {
 /**
  * A later item has a larger id than any earlier one.
  **/
+/**
+ * A new item is shown in the views and in renders. Changing where it is shown moves its revision,
+ * because a document saves it.
+ **/
+BOOST_AUTO_TEST_CASE(item_shown_test) {
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
+    BOOST_CHECK(group->shown().views);
+    BOOST_CHECK(group->shown().renders);
+    const std::uint64_t before = group->revision();
+    group->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!group->shown().views);
+    BOOST_CHECK(group->shown().renders);
+    BOOST_CHECK_GT(group->revision(), before);
+}
+
 BOOST_AUTO_TEST_CASE(item_id_order_test) {
-    const v3d::editor::scene::Group first;
-    const v3d::editor::scene::Group second;
+    const v3d::editor::scene::item::Group first;
+    const v3d::editor::scene::item::Group second;
     BOOST_CHECK_GT(second.id(), first.id());
 }
 
@@ -91,7 +106,7 @@ BOOST_AUTO_TEST_CASE(item_id_order_test) {
  * this checks that the rotation starts as the identity.
  **/
 BOOST_AUTO_TEST_CASE(item_default_placement_test) {
-    const v3d::editor::scene::Group group;
+    const v3d::editor::scene::item::Group group;
     BOOST_CHECK(near(group.translation(), glm::vec3(0.0F)));
     BOOST_CHECK(near(group.scale(), glm::vec3(1.0F)));
     BOOST_CHECK(near(apply(group.matrix(), glm::vec3(3.0F, 4.0F, 5.0F)), glm::vec3(3.0F, 4.0F, 5.0F)));
@@ -101,7 +116,7 @@ BOOST_AUTO_TEST_CASE(item_default_placement_test) {
  * translation() replaces the position, and translate() adds to it.
  **/
 BOOST_AUTO_TEST_CASE(item_translate_test) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     group.translation(glm::vec3(4.0F, 5.0F, 6.0F));
     group.translate(glm::vec3(1.0F, 1.0F, 1.0F));
     BOOST_CHECK(near(group.translation(), glm::vec3(5.0F, 6.0F, 7.0F)));
@@ -112,7 +127,7 @@ BOOST_AUTO_TEST_CASE(item_translate_test) {
  * The scale is applied first, so it acts along the item's own axes, not the rotated ones.
  **/
 BOOST_AUTO_TEST_CASE(item_compose_test) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     group.rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
     group.scale(glm::vec3(2.0F, 3.0F, 1.0F));
     group.translation(glm::vec3(10.0F, 0.0F, 0.0F));
@@ -126,7 +141,7 @@ BOOST_AUTO_TEST_CASE(item_compose_test) {
  * placement() holds what the setters wrote, and setting it back restores all three parts.
  **/
 BOOST_AUTO_TEST_CASE(item_whole_placement_test) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     group.translation(glm::vec3(1.0F, 2.0F, 3.0F));
     group.scale(glm::vec3(2.0F));
     const v3d::type::Transform kept = group.placement();
@@ -145,7 +160,7 @@ BOOST_AUTO_TEST_CASE(item_whole_placement_test) {
  * and reading does not.
  **/
 BOOST_AUTO_TEST_CASE(item_placement_revision_test) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     const std::uint64_t start = group.revision();
     group.translation(glm::vec3(0.0F));
     group.translate(glm::vec3(0.0F));
@@ -162,7 +177,7 @@ BOOST_AUTO_TEST_CASE(item_placement_revision_test) {
  * An item starts with no name, and naming it moves the revision, since a document saves it.
  **/
 BOOST_AUTO_TEST_CASE(item_name_test) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     BOOST_CHECK(group.name().empty());
     const std::uint64_t start = group.revision();
     group.name("Rig");
@@ -171,8 +186,8 @@ BOOST_AUTO_TEST_CASE(item_name_test) {
 }
 
 BOOST_AUTO_TEST_CASE(item_selection_test) {
-    const v3d::editor::scene::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
-    v3d::editor::scene::Camera camera;
+    const v3d::editor::scene::item::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
+    v3d::editor::scene::item::Camera camera;
 
     BOOST_CHECK_EQUAL(mesh.selected(), false);
     BOOST_CHECK_EQUAL(camera.selected(), false);
@@ -183,48 +198,48 @@ BOOST_AUTO_TEST_CASE(item_selection_test) {
 
 BOOST_AUTO_TEST_CASE(mesh_geometry_test) {
     // an empty pointer becomes an empty mesh, so the geometry is always there to read
-    const v3d::editor::scene::Mesh empty((boost::shared_ptr<v3d::brep::BRep>()));
+    const v3d::editor::scene::item::Mesh empty((boost::shared_ptr<v3d::brep::BRep>()));
     BOOST_REQUIRE(empty.geometry());
     BOOST_CHECK_EQUAL(empty.geometry()->vertexCount(), 0U);
 
     // two items may show one mesh, each placed by its own transform
     const boost::shared_ptr<v3d::brep::BRep> shared = boost::make_shared<v3d::brep::BRep>();
-    v3d::editor::scene::Mesh first(shared);
-    const v3d::editor::scene::Mesh second(shared);
+    v3d::editor::scene::item::Mesh first(shared);
+    const v3d::editor::scene::item::Mesh second(shared);
     BOOST_CHECK(first.geometry() == second.geometry());
     first.translation(glm::vec3(1.0F, 0.0F, 0.0F));
     BOOST_CHECK(first.translation() != second.translation());
 }
 
 BOOST_AUTO_TEST_CASE(camera_and_light_defaults_test) {
-    const v3d::editor::scene::Camera camera;
-    BOOST_CHECK(camera.lens().projection == v3d::editor::scene::Camera::Projection::Perspective);
+    const v3d::editor::scene::item::Camera camera;
+    BOOST_CHECK(camera.lens().projection == v3d::editor::scene::item::Camera::Projection::Perspective);
     BOOST_CHECK_GT(camera.lens().clipping.y, camera.lens().clipping.x);
 
     // the RI shaders' own defaults: white, at one, and a spot cone of 30 degrees with a
     // 5 degree soft edge
-    const v3d::editor::scene::Light light;
-    BOOST_CHECK(light.emission().type == v3d::editor::scene::Light::Type::Point);
+    const v3d::editor::scene::item::Light light;
+    BOOST_CHECK(light.emission().type == v3d::editor::scene::item::Light::Type::Point);
     BOOST_CHECK_CLOSE(light.emission().intensity, 1.0F, 0.01F);
     BOOST_CHECK_CLOSE(light.emission().cone, 0.523599F, 0.01F);
     BOOST_CHECK_CLOSE(light.emission().delta, 0.0872665F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(item_revision_test) {
-    v3d::editor::scene::Camera camera;
-    v3d::editor::scene::Light light;
-    v3d::editor::scene::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
+    v3d::editor::scene::item::Camera camera;
+    v3d::editor::scene::item::Light light;
+    v3d::editor::scene::item::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
 
     // placement, what a kind holds, and a mesh's geometry each move the revision
     std::uint64_t before = camera.revision();
     camera.translation(glm::vec3(1.0F, 0.0F, 0.0F));
     BOOST_CHECK_GT(camera.revision(), before);
     before = camera.revision();
-    camera.lens(v3d::editor::scene::Camera::Lens());
+    camera.lens(v3d::editor::scene::item::Camera::Lens());
     BOOST_CHECK_GT(camera.revision(), before);
 
     before = light.revision();
-    light.emission(v3d::editor::scene::Light::Emission());
+    light.emission(v3d::editor::scene::item::Light::Emission());
     BOOST_CHECK_GT(light.revision(), before);
 
     before = mesh.revision();

@@ -10,6 +10,7 @@ target_link_libraries(diorama PRIVATE
 	v3dlib_audio
 	v3dlib_ecs
 	v3dlib_engine
+	v3dlib_font
 	v3dlib_input
 	v3dlib_log
 	v3dlib_render
@@ -20,6 +21,7 @@ target_link_libraries(diorama PRIVATE
 )
 
 v3d_add_app_data(diorama)
+v3d_add_app_icon(diorama "data/icon.svg")
 v3d_add_shared_data(diorama)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

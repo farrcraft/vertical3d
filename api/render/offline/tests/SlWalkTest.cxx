@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/syntax/Block.h>
 #include <api/render/offline/sl/syntax/Expression.h>
 #include <api/render/offline/sl/syntax/Shader.h>
@@ -25,7 +25,7 @@ typedef v3d::render::offline::sl::syntax::Statement Statement;
  **/
 v3d::render::offline::sl::syntax::StatementPtr last(const char* source) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     BOOST_REQUIRE(!shaders[0]->body->statements.empty());

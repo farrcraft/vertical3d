@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <stdexcept>
 
 #include <boost/test/unit_test.hpp>
 
-using v3d::render::realtime::Pass;
-using v3d::render::realtime::Recorder;
+using v3d::render::realtime::frame::Pass;
+using v3d::render::realtime::frame::Recorder;
 using v3d::render::realtime::vulkan::pipeline::Pipeline;
 
 namespace {

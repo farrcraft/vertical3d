@@ -7,9 +7,9 @@
 
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/view/Picture.h>
 
 #include <cmath>
@@ -81,12 +81,12 @@ glm::mat4 glyphPlacement(const glm::mat4& world) {
 
 /**
  **/
-void drawCamera(const scene::Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
+void drawCamera(const scene::item::Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
     if (canvas == nullptr) {
         return;
     }
     const float depth = GLYPH_LENGTH;
-    if (lens.projection == scene::Camera::Projection::Orthographic) {
+    if (lens.projection == scene::item::Camera::Projection::Orthographic) {
         const Picture near{ .halfWidth = lens.extent * GLYPH_ASPECT, .halfHeight = lens.extent, .depth = 0.0F };
         const Picture far{ .halfWidth = near.halfWidth, .halfHeight = near.halfHeight, .depth = depth };
         frame(near, colour, canvas);
@@ -114,19 +114,19 @@ void drawCamera(const scene::Camera::Lens& lens, const glm::vec4& colour, v3d::r
 
 /**
  **/
-void drawLight(const scene::Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
+void drawLight(const scene::item::Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
     if (canvas == nullptr) {
         return;
     }
     switch (emission.type) {
-        case scene::Light::Type::Point: {
+        case scene::item::Light::Type::Point: {
             const float reach = GLYPH_LENGTH * STAR_REACH;
             canvas->line(glm::vec3(-reach, 0.0F, 0.0F), glm::vec3(reach, 0.0F, 0.0F), colour);
             canvas->line(glm::vec3(0.0F, -reach, 0.0F), glm::vec3(0.0F, reach, 0.0F), colour);
             canvas->line(glm::vec3(0.0F, 0.0F, -reach), glm::vec3(0.0F, 0.0F, reach), colour);
             break;
         }
-        case scene::Light::Type::Distant: {
+        case scene::item::Light::Type::Distant: {
             const float spacing = GLYPH_LENGTH * RAY_SPACING;
             const float head = GLYPH_LENGTH * ARROWHEAD;
             const glm::vec3 tip(0.0F, 0.0F, GLYPH_LENGTH);
@@ -137,7 +137,7 @@ void drawLight(const scene::Light::Emission& emission, const glm::vec4& colour, 
             canvas->line(tip, tip + glm::vec3(head, 0.0F, -head), colour);
             break;
         }
-        case scene::Light::Type::Spot: {
+        case scene::item::Light::Type::Spot: {
             // each ring is where a side of that angle ends, so the glyph holds its shape for
             // any cone, a cone wider than a right angle included
             const float edge = emission.cone;

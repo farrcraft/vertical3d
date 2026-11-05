@@ -8,7 +8,28 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 
+#include <cstddef>
+
+#include <glm/common.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
 namespace v3d::editor::view {
+
+namespace {
+
+/**
+ * @return the world axis a direction runs most nearly along: 0, 1 or 2 for x, y and z
+ **/
+std::size_t dominant(const glm::vec3& direction) {
+    const glm::vec3 size = glm::abs(direction);
+    if (size.x >= size.y && size.x >= size.z) {
+        return 0;
+    }
+    return size.y >= size.z ? 1 : 2;
+}
+
+};  // namespace
 
 /**
  **/
@@ -16,9 +37,19 @@ ConstructionPlane::ConstructionPlane() :
     spacing_(1.0F),
     intervals_(defaultIntervals),
     lines_(defaultLines),
-    minor_(minorColour),
-    major_(majorColour),
-    origin_(originColour) {
+    colours_{ .minor = minorColour, .major = majorColour, .axes = { originColour, originColour, originColour } } {
+}
+
+/**
+ **/
+void ConstructionPlane::colours(const Colours& colours) noexcept {
+    colours_ = colours;
+}
+
+/**
+ **/
+const ConstructionPlane::Colours& ConstructionPlane::colours() const noexcept {
+    return colours_;
 }
 
 /**
@@ -81,19 +112,17 @@ void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::rende
     const glm::vec3& up = plane.up;
 
     const float extent = static_cast<float>(lines_) * spacing_ / 2.0F;
+    // a line through the origin takes the colour of the world axis it runs along
+    const glm::vec4& alongUp = colours_.axes[dominant(up)];
+    const glm::vec4& alongRight = colours_.axes[dominant(right)];
 
     for (unsigned int index = 0; index <= lines_; index++) {
         const float offset = -extent + (static_cast<float>(index) * spacing_);
 
-        glm::vec4 colour = minor_;
-        if (offset == 0.0F) {
-            colour = origin_;
-        } else if (intervals_ > 0 && (index % intervals_) == 0) {
-            colour = major_;
-        }
-
-        canvas->line((right * offset) + (up * -extent), (right * offset) + (up * extent), colour);
-        canvas->line((right * -extent) + (up * offset), (right * extent) + (up * offset), colour);
+        const bool origin = offset == 0.0F;
+        const glm::vec4& colour = intervals_ > 0 && (index % intervals_) == 0 ? colours_.major : colours_.minor;
+        canvas->line((right * offset) + (up * -extent), (right * offset) + (up * extent), origin ? alongUp : colour);
+        canvas->line((right * -extent) + (up * offset), (right * extent) + (up * offset), origin ? alongRight : colour);
     }
 }
 

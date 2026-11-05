@@ -11,9 +11,12 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A name read or written as a variable.
+ **/
 class Variable final : public Expression {
  public:
-    Variable(const std::string & name, const v3d::render::offline::Position & at);
+    Variable(const std::string & name, const v3d::render::offline::source::Position & at);
 
     std::string name;
     /**

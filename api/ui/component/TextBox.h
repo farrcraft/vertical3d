@@ -14,6 +14,10 @@
 #include <string>
 #include <string_view>
 
+namespace v3d::ui::paint {
+class Type;
+};  // namespace v3d::ui::paint
+
 namespace v3d::ui::component {
 
 /**
@@ -26,8 +30,8 @@ namespace v3d::ui::component {
  * box's line. The key routing is in input::Keys, which chooses the operation for a key.
  *
  * The box never reaches the clipboard. input::Keys receives clipboard access as callbacks,
- * so api/ui names no SDL type. input::Cursor measures text through the app's Measure
- * callback, so a press places the caret through at() and a drag selects.
+ * so api/ui names no SDL type. input::Cursor lays text out in the type the ui is drawn in, so
+ * a press places the caret through place() and a drag selects.
  *
  * The background, the text and the caret are the "textbox" style class.
  **/
@@ -48,6 +52,7 @@ class TextBox : public Component {
      * Clamped to the text and moved to a character boundary, so an offset inside a
      * multi-byte character is not expressible.
      *
+     * @param offset the byte offset the caret moves to
      * @param extend whether the anchor stays where it is, so the move selects the run
      *        travelled
      **/
@@ -151,20 +156,23 @@ class TextBox : public Component {
     bool end(bool extend = false);
 
     /**
-     * Which character boundary a point in the box falls on, so that a press can put the
-     * caret where it landed.
+     * Put the caret where a point in the box falls, at the nearest edge of a grapheme cluster,
+     * so that a press puts it where it landed.
      *
-     * Measured against the pen position the last draw stored, so a box that has not been
-     * drawn returns the start of its text. The point is in canvas pixels and only its x is
+     * Laid out against the pen position the last draw stored, so a box that has not been drawn
+     * puts it near the start of its text. The point is in canvas pixels and only its x is
      * read, because a box holds one line.
      *
-     * Makes one measure call per character boundary. Per-character widths do not add up to
-     * what a run measures, so each boundary is measured as a run.
-     *
-     * @param measure how wide a run of the text is when it is drawn
-     * @return the byte offset of the boundary nearest the point
+     * @param point where the press landed, in canvas pixels
+     * @param type what the box's text is drawn in
+     * @param extend whether the anchor stays where it was, as it does during a drag
      **/
-    std::size_t at(const glm::vec2& point, const paint::Measure& measure) const;
+    void place(const glm::vec2& point, const paint::Type& type, bool extend = false);
+
+    /**
+     * Characters an input method is composing at the caret, shown in the box but not yet in it.
+     **/
+    void compose(std::string_view composing);
 
     /**
      * The line the box edits, for input::edit() to carry out a key on.
@@ -175,7 +183,7 @@ class TextBox : public Component {
      * Where the text was last drawn from, in canvas pixels: the inside edge of the box, less
      * however far the line slid to keep the caret in view.
      *
-     * Stored by whatever drew the box, like a list's row height. at() needs it to find a
+     * Stored by whatever drew the box, like a list's row height. place() needs it to find a
      * character.
      **/
     void pen(float x) noexcept;

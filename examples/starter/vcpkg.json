@@ -16,8 +16,17 @@
     "entt",
     "freetype",
     "glm",
+    {
+      "name": "harfbuzz",
+      "features": [
+        "freetype"
+      ]
+    },
+    "icu",
     "libjpeg-turbo",
     "libpng",
+    "nanosvg",
+    "quickjs-ng",
     {
       "name": "sdl3",
       "features": [
@@ -27,6 +36,7 @@
     "sdl3-mixer",
     "spdlog",
     "sqlite3",
+    "thorvg",
     "vulkan",
     "vulkan-memory-allocator"
   ]

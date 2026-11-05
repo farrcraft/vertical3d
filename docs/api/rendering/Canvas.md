@@ -38,6 +38,10 @@ renderer_->quads()->submit(canvas, pass.get());
   width either side. Its ends are square. It is untextured, so it joins the open untextured
   batch. A segment with no length or no width draws nothing. The transform stack has no
   rotation, so a segment is the way to draw a connector or a route at an angle.
+- A segment given a `feather` smooths its long sides. Each side fades to nothing across the
+  feather, centred on the side, so the band covers as much as a hard one of the same width. A
+  line narrower than its feather has no solid core and fades from its middle. Its ends stay
+  hard. A feathered segment is three quads across it.
 - A rectangle given `Corners` takes one colour per corner and blends them. It is two
   triangles, so a blend along one axis is exact and four different colours show the diagonal
   where the triangles meet. A ring given a `Blend` blends from the inner radius to the outer,
@@ -105,12 +109,53 @@ canvas.unfade();
 
 ### Text
 
-`Canvas::text(vertices, indices, atlas)` copies text that has already been laid out, as
-vertices and the triangles over them. `ui::paint::TextRenderer` lays the text out with
-`v3d::font`, and `render` does not depend on `font`. The atlas is a single-channel texture of
-signed distances. The quad shader turns the distance into a smooth edge about one pixel wide at
-any scale. Text and other quads that
-sample the same atlas are drawn as separate batches.
+Text on the pixel grid is drawn as textured rectangles. `ui::paint::TextRenderer` lays it out
+with `v3d::font` and places each glyph on whole pixels. `Canvas::glyphs(vertices, indices, page)`
+copies the glyphs as quads sampling their coverage from a single-channel glyph page. The page's
+view swizzles its channel into alpha, and the run joins pictures of the same page. `render` does
+not depend on `font`.
+
+`Canvas::curves(vertices, indices, curves, bands)` copies glyphs drawn from their quadratic curves,
+as vertices and the triangles over them. Each vertex's `uv` is its place in em units, y upwards,
+and its `glyph` is where its glyph's data starts among the bands. `curves` and `bands` are float
+textures holding the curves and each glyph's bands, laid out as `api/render/shaders/curves.glsl`
+describes. The quad shader finds each pixel's coverage from the curves that cross it, so the
+glyphs stay sharp at any size and under any transform. A curve run never merges with one drawn
+another way.
+
+A vertex whose `glyph` has its high bit set names a colour glyph's program among the bands, as
+`api/render/shaders/colour.glsl` describes, rather than a glyph. The program draws its layers
+inside their clips, with their gradients and composites, in the colours the font gives. Its
+colours are as they are displayed, as a quad's are. The vertex's colour gives its red, green
+and blue to any layer in the text's colour, and its alpha fades the whole glyph. A world glyph
+names a program the same way, and in an _SRGB target its colours are given in linear light.
+
+`Canvas::text(vertices, indices, atlas)` copies text that has already been laid out against an
+atlas of signed distances, as vertices and the triangles over them. A vertex whose `glyph` is 0
+is a glyph: the quad shader turns the distance into a smooth edge about one pixel wide at any
+scale. A vertex whose `glyph` is a ramp from `canvas::fieldRamp(whole, gone)` is an effect, such
+as an outline, a shadow or a glow. The ramp holds the field value at which the effect covers the
+whole pixel and the value at which it covers none of it. Coverage fades between the two, or rises
+across one pixel when they are closer than that. Text and other quads that sample the same
+atlas are drawn as separate batches.
+
+### Text weight
+
+A vertex's `contrast` marks it as text when it is 0 or more. It is -1 unless set, so nothing
+else is touched. Text's coverage is changed in the shader in two steps:
+
+- **Contrast.** Coverage `a` becomes `a + contrast * a * (1 - a)`, in every target. At 0 nothing
+  changes, and at 1 half coverage becomes three quarters. Light text on a dark ground looks
+  lighter than dark text on a light ground, and a style raises its contrast to make up for it.
+- **The target.** A UNORM target blends in display space and keeps the coverage as it is. An
+  _SRGB target blends in linear light, which would make dark text on a light ground thin and light
+  text on a dark ground bold. There the coverage is changed so that the linear blend gives the
+  colour a display space blend would, over a ground of the opposite luminance. Text then looks
+  one weight in either target. Over a mid-tone or busy ground the match is close, not exact.
+
+Coverage, curve and distance field glyphs are corrected alike, on the screen and in the world.
+
+Background: [ADR-0147](../../adr/text/0147-text-coverage-corrected-to-blend-as-in-display-space.md)
 
 ### User interface
 

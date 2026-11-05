@@ -10,7 +10,7 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/Delegate.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -32,14 +32,14 @@ namespace {
  **/
 struct Cube {
     Cube() :
-        mesh(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())) {
+        mesh(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())) {
         scene.add(mesh);
         settings.size = glm::uvec2(64, 48);
         settings.samples = 1;
     }
 
     v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> mesh;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh;
     v3d::type::camera::Profile view{ "front" };
     v3d::editor::scene::RenderSettings settings;
 };

@@ -7,8 +7,9 @@
 
 #include <api/asset/Manager.h>
 #include <api/event/Event.h>
-#include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
@@ -17,9 +18,12 @@
 #include <api/ui/input/Command.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
+#include <api/window/Window.h>
 
 #include "StatisticsOverlay.h"
 
@@ -47,15 +51,25 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
         options_.dress = lineHeight;
     }
 
-    // the atlas is a texture on the device, and this upload is the only line here that
-    // needs one
-    text_ = boost::make_shared<paint::TextRenderer>(assets, logger,
-        [engine](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            if (engine == nullptr || !engine->textures()) {
-                return v3d::render::realtime::TextureHandle();
+    // the glyph pages are textures on the device, and these three are the only lines here that
+    // need one
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = engine != nullptr ? engine->textures() : nullptr;
+    paint::GlyphPages pages(
+        [textures](const unsigned char* pixels, std::uint32_t side, std::uint32_t channels) {
+            return textures ? textures->texture(pixels, side, side, channels) : v3d::render::realtime::resource::TextureHandle();
+        },
+        [textures](const v3d::render::realtime::resource::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+            std::uint32_t channels) {
+            if (textures) {
+                textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
             }
-            return engine->textures()->texture(atlas);
+        },
+        [textures](const v3d::render::realtime::resource::TextureHandle& page) {
+            if (textures) {
+                textures->release(page);
+            }
         });
+    text_ = options_.text ? options_.text : boost::make_shared<paint::TextRenderer>(assets, logger, std::move(pages));
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);
         if (engine != nullptr && engine->context()) {
@@ -72,7 +86,7 @@ void Screen::build() {
     const boost::shared_ptr<style::Theme> drawing = components_ ? components_->theme() : boost::shared_ptr<style::Theme>();
     built_ = factor();
     const float drawn = size();
-    components_ = boost::make_shared<paint::ComponentRenderer>(text_->measure(drawn), text_->write(&canvas_, drawn));
+    components_ = boost::make_shared<paint::ComponentRenderer>(paint::Type(text_, drawn));
     // the built-in sizes at this scale, which the app's dress then fills in from the text size,
     // and a theme's sizes at the same scale
     components_->dressing() = paint::Dressing().scaled(built_);
@@ -81,21 +95,18 @@ void Screen::build() {
     // a menu's title and its chosen item are set semibold, and the title larger
     const float titled = drawn * titleScale;
     components_->emphasis({
-        .title = {.measure = text_->measure(titled, paint::Weight::SemiBold),
-            .write = text_->write(&canvas_, titled, paint::Weight::SemiBold), .scale = titleScale},
-        .chosen = {.measure = text_->measure(drawn, paint::Weight::SemiBold),
-            .write = text_->write(&canvas_, drawn, paint::Weight::SemiBold)}});
+        .title = {.type = paint::Type(text_, titled, paint::Weight::SemiBold), .scale = titleScale},
+        .chosen = {.type = paint::Type(text_, drawn, paint::Weight::SemiBold)}});
     options_.dress(&components_->dressing(), drawn);
 
     if (options_.immediate) {
         // built once and given the new text after that, so a rescale keeps where its windows
         // were dragged, what is folded and how far each list is scrolled
         if (immediate_) {
-            immediate_->text(text_->measure(drawn), text_->write(&canvas_, drawn));
+            immediate_->text(text_, drawn);
         } else {
-            immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
+            immediate_ = boost::make_shared<Immediate>(text_, drawn);
         }
-        immediate_->titles(text_->write(&canvas_, drawn, paint::Weight::SemiBold));
         immediate_->scale(built_);
         // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
         // the line height follows the text, so only it is copied across
@@ -115,7 +126,13 @@ bool Screen::begin(const Interface* ui) {
     }
     resized_ = false;
     glm::ivec2 frame(0, 0);
-    if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
+    if (options_.window) {
+        // another window's frame is begun with the renderer's own, so only its size is read
+        frame = glm::ivec2(options_.window->width(), options_.window->height());
+        if (frame.x <= 0 || frame.y <= 0) {
+            return false;
+        }
+    } else if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
         return false;
     }
     const auto width = static_cast<std::uint32_t>(frame.x);
@@ -129,6 +146,11 @@ bool Screen::begin(const Interface* ui) {
         }
     }
     canvas_.clear();
+    // a shared text renderer is begun by the screen that owns it, earlier in the frame, so the
+    // glyphs that screen drew are not made room over
+    if (!options_.text) {
+        text_->beginFrame();
+    }
 
     // real time rather than the simulation's, so a menu still eases open over a paused game.
     // The first frame starts the clock at zero
@@ -171,6 +193,12 @@ void Screen::display(float monitor) {
     if (factor() != built_) {
         build();
     }
+}
+
+/**
+ **/
+float Screen::display() const noexcept {
+    return display_;
 }
 
 /**

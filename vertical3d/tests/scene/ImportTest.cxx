@@ -7,12 +7,12 @@
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/interchange/Scene.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Import.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -86,13 +86,13 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
     scene.nodes.push_back(node("lamp", std::nullopt));
     scene.nodes.back().light = 0;
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 4U);
-    BOOST_CHECK(imported.items[0]->kind() == v3d::editor::scene::Item::Kind::Group);
-    BOOST_CHECK(imported.items[1]->kind() == v3d::editor::scene::Item::Kind::Mesh);
-    BOOST_CHECK(imported.items[2]->kind() == v3d::editor::scene::Item::Kind::Camera);
-    BOOST_CHECK(imported.items[3]->kind() == v3d::editor::scene::Item::Kind::Light);
+    BOOST_CHECK(imported.items[0]->kind() == v3d::editor::scene::item::Item::Kind::Group);
+    BOOST_CHECK(imported.items[1]->kind() == v3d::editor::scene::item::Item::Kind::Mesh);
+    BOOST_CHECK(imported.items[2]->kind() == v3d::editor::scene::item::Item::Kind::Camera);
+    BOOST_CHECK(imported.items[3]->kind() == v3d::editor::scene::item::Item::Kind::Light);
     BOOST_CHECK(!imported.parents[0]);
     BOOST_CHECK_EQUAL(*imported.parents[1], 0U);
     BOOST_CHECK_EQUAL(*imported.parents[2], 0U);
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
     BOOST_CHECK_EQUAL(imported.items[1]->name(), "box");
     BOOST_CHECK_EQUAL(imported.items[2]->name(), "shot");
     BOOST_CHECK_EQUAL(imported.items[3]->name(), "lamp");
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = v3d::editor::scene::as<v3d::editor::scene::Mesh>(imported.items[1]);
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(imported.items[1]);
     BOOST_CHECK_EQUAL(mesh->geometry()->faceCount(), 1U);
     BOOST_CHECK(imported.notes.empty());
 }
@@ -112,6 +112,28 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
  * half a turn. A child of the camera's node stays where the file put it, and so does the
  * camera's view under a key.
  **/
+/**
+ * A node that is not seen becomes an item hidden in the views and in renders, and one that is
+ * seen and not rendered an item hidden in renders alone. Any other is shown in both.
+ **/
+BOOST_AUTO_TEST_CASE(a_node_keeps_where_it_is_shown) {
+    Scene scene;
+    scene.nodes.push_back(node("plain", std::nullopt));
+    scene.nodes.push_back(node("hidden", std::nullopt));
+    scene.nodes.back().visible = false;
+    scene.nodes.back().renders = false;
+    scene.nodes.push_back(node("guide", std::nullopt));
+    scene.nodes.back().renders = false;
+
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
+
+    using Shown = v3d::editor::scene::item::Item::Shown;
+    BOOST_REQUIRE_EQUAL(imported.items.size(), 3U);
+    BOOST_CHECK(imported.items[0]->shown() == Shown{});
+    BOOST_CHECK(imported.items[1]->shown() == (Shown{ .views = false, .renders = false }));
+    BOOST_CHECK(imported.items[2]->shown() == (Shown{ .views = true, .renders = false }));
+}
+
 BOOST_AUTO_TEST_CASE(a_camera_is_turned_to_look_where_the_file_says) {
     Scene scene;
     scene.cameras.emplace_back();
@@ -128,10 +150,10 @@ BOOST_AUTO_TEST_CASE(a_camera_is_turned_to_look_where_the_file_says) {
     turn.values = { glm::vec4(0, 0, 0, 1), glm::vec4(0, 0, 0, 1) };
     scene.channels.push_back(turn);
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 2U);
-    const boost::shared_ptr<v3d::editor::scene::Item>& camera = imported.items[0];
+    const boost::shared_ptr<v3d::editor::scene::item::Item>& camera = imported.items[0];
     checkVector(camera->rotation() * glm::vec3(0.0F, 0.0F, 1.0F), glm::vec3(0.0F, 0.0F, -1.0F));
     checkVector(camera->rotation() * glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F));
     // the marker's place in the world is the camera's matrix applied to its own position
@@ -156,11 +178,11 @@ BOOST_AUTO_TEST_CASE(nodes_that_share_a_mesh_share_its_geometry) {
     scene.nodes.push_back(node("two", std::nullopt));
     scene.nodes.back().mesh = 0;
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 2U);
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Mesh>(imported.items[0])->geometry() ==
-        v3d::editor::scene::as<v3d::editor::scene::Mesh>(imported.items[1])->geometry());
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(imported.items[0])->geometry() ==
+        v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(imported.items[1])->geometry());
 }
 
 /**
@@ -183,14 +205,14 @@ BOOST_AUTO_TEST_CASE(a_node_keeps_what_it_can) {
     scene.nodes.back().mesh = 1;
     scene.nodes.back().light = 0;
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 3U);
-    BOOST_CHECK(imported.items[0]->kind() == v3d::editor::scene::Item::Kind::Group);
+    BOOST_CHECK(imported.items[0]->kind() == v3d::editor::scene::item::Item::Kind::Group);
     BOOST_REQUIRE_EQUAL(imported.notes.size(), 1U);
     BOOST_CHECK_NE(imported.notes[0].find("fin"), std::string::npos);
-    BOOST_CHECK(imported.items[1]->kind() == v3d::editor::scene::Item::Kind::Mesh);
-    BOOST_CHECK(imported.items[2]->kind() == v3d::editor::scene::Item::Kind::Light);
+    BOOST_CHECK(imported.items[1]->kind() == v3d::editor::scene::item::Item::Kind::Mesh);
+    BOOST_CHECK(imported.items[2]->kind() == v3d::editor::scene::item::Item::Kind::Light);
     BOOST_CHECK_EQUAL(*imported.parents[2], 1U);
     // the light shines along its mesh's -z, as the file's light did along the node's
     checkVector(imported.items[2]->rotation() * glm::vec3(0.0F, 0.0F, 1.0F), glm::vec3(0.0F, 0.0F, -1.0F));
@@ -219,7 +241,7 @@ BOOST_AUTO_TEST_CASE(keys_go_on_frames_at_the_timeline_rate) {
     grow.outTangents = { glm::vec4(24, 0, 0, 0), glm::vec4(0) };
     scene.channels.push_back(grow);
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     const v3d::editor::scene::Curves& curves = imported.curves[0];
     const v3d::animation::Curve& x = curves.at("translation.x");
@@ -264,18 +286,18 @@ BOOST_AUTO_TEST_CASE(a_lens_and_an_emission_are_the_editors) {
     scene.nodes.push_back(node("spot", std::nullopt));
     scene.nodes.back().light = 0;
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 3U);
-    const v3d::editor::scene::Camera::Lens& tall = v3d::editor::scene::as<v3d::editor::scene::Camera>(imported.items[0])->lens();
+    const v3d::editor::scene::item::Camera::Lens& tall = v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(imported.items[0])->lens();
     BOOST_CHECK_CLOSE(tall.fov, glm::degrees(2.0F * std::atan(0.5F)), 0.01F);
-    BOOST_CHECK_CLOSE(tall.clipping.y, v3d::editor::scene::Camera::defaultFar, 0.01F);
-    const v3d::editor::scene::Camera::Lens& flat = v3d::editor::scene::as<v3d::editor::scene::Camera>(imported.items[1])->lens();
-    BOOST_CHECK(flat.projection == v3d::editor::scene::Camera::Projection::Orthographic);
+    BOOST_CHECK_CLOSE(tall.clipping.y, v3d::editor::scene::item::Camera::defaultFar, 0.01F);
+    const v3d::editor::scene::item::Camera::Lens& flat = v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(imported.items[1])->lens();
+    BOOST_CHECK(flat.projection == v3d::editor::scene::item::Camera::Projection::Orthographic);
     BOOST_CHECK_CLOSE(flat.extent, 3.0F, 0.01F);
     BOOST_CHECK_CLOSE(flat.clipping.y, 20.0F, 0.01F);
-    const v3d::editor::scene::Light::Emission& spot = v3d::editor::scene::as<v3d::editor::scene::Light>(imported.items[2])->emission();
-    BOOST_CHECK(spot.type == v3d::editor::scene::Light::Type::Spot);
+    const v3d::editor::scene::item::Light::Emission& spot = v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(imported.items[2])->emission();
+    BOOST_CHECK(spot.type == v3d::editor::scene::item::Light::Type::Spot);
     BOOST_CHECK_CLOSE(spot.cone, 0.5F, 0.01F);
     BOOST_CHECK_CLOSE(spot.delta, 0.125F, 0.01F);
 }
@@ -299,17 +321,36 @@ BOOST_AUTO_TEST_CASE(curves_become_a_curve_item_that_renders) {
     scene.nodes.push_back(node("wire", std::nullopt));
     scene.nodes.back().curves = 1;
 
-    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, 24.0F);
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
 
     BOOST_REQUIRE_EQUAL(imported.items.size(), 2U);
-    const boost::shared_ptr<v3d::editor::scene::Curve> hair = v3d::editor::scene::as<v3d::editor::scene::Curve>(imported.items[0]);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> hair = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(imported.items[0]);
     BOOST_REQUIRE(hair);
     BOOST_CHECK_EQUAL(hair->geometry()->size(), 2U);
     BOOST_CHECK(hair->style().renders);
     BOOST_CHECK_EQUAL(hair->style().width, 0.5F);
-    const boost::shared_ptr<v3d::editor::scene::Curve> wire = v3d::editor::scene::as<v3d::editor::scene::Curve>(imported.items[1]);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> wire = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(imported.items[1]);
     BOOST_REQUIRE(wire);
-    BOOST_CHECK_EQUAL(wire->style().width, v3d::editor::scene::Curve::defaultWidth);
+    BOOST_CHECK_EQUAL(wire->style().width, v3d::editor::scene::item::Curve::defaultWidth);
+}
+
+/**
+ * A file is read in metres, so an import into a scene measured in centimetres places each item a
+ * hundred times as far, and leaves the file's scene as it was.
+ **/
+BOOST_AUTO_TEST_CASE(an_import_is_scaled_into_the_scenes_unit) {
+    Scene scene;
+    scene.nodes.push_back(node("marker", std::nullopt));
+    scene.nodes.back().placement.position = glm::vec3(1.5F, 0.0F, 0.0F);
+
+    const v3d::editor::scene::Import metres = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
+    const v3d::editor::scene::Import centimetres = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 0.01 });
+
+    BOOST_REQUIRE_EQUAL(metres.items.size(), 1U);
+    BOOST_REQUIRE_EQUAL(centimetres.items.size(), 1U);
+    BOOST_CHECK_CLOSE(metres.items[0]->translation().x, 1.5F, 0.001F);
+    BOOST_CHECK_CLOSE(centimetres.items[0]->translation().x, 150.0F, 0.001F);
+    BOOST_CHECK_CLOSE(scene.nodes[0].placement.position.x, 1.5F, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

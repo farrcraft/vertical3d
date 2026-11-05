@@ -1,0 +1,134 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "Globals.h"
+
+#include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
+
+#include <vector>
+
+namespace v3d::render::offline::sl::runtime {
+
+void Globals::put(runtime::Machine* machine, int reg, unsigned int lane, const glm::vec3 & value) {
+    if (reg >= 0) {
+        machine->value(reg).triple(lane, value);
+    }
+}
+
+void Globals::put(runtime::Machine* machine, int reg, unsigned int lane, float value) {
+    if (reg >= 0) {
+        machine->value(reg).number(lane, value);
+    }
+}
+
+Globals::Globals(const runtime::Program & program) :
+    position_(program.symbol("P")),
+    normal_(program.symbol("N")),
+    geometric_(program.symbol("Ng")),
+    incident_(program.symbol("I")),
+    eye_(program.symbol("E")),
+    surfaceColour_(program.symbol("Cs")),
+    surfaceOpacity_(program.symbol("Os")),
+    colour_(program.symbol("Ci")),
+    opacity_(program.symbol("Oi")),
+    alpha_(program.symbol("alpha")),
+    s_(program.symbol("s")),
+    t_(program.symbol("t")),
+    u_(program.symbol("u")),
+    v_(program.symbol("v")),
+    du_(program.symbol("du")),
+    dv_(program.symbol("dv")),
+    lit_(program.symbol("Ps")),
+    towards_(program.symbol("L")),
+    lightColour_(program.symbol("Cl")) {
+}
+
+void Globals::surface(runtime::Machine* machine, unsigned int lane, const Point & point) const {
+    put(machine, position_, lane, point.position);
+    put(machine, normal_, lane, point.normal);
+    put(machine, geometric_, lane, point.geometric);
+    put(machine, incident_, lane, point.incident);
+    put(machine, surfaceColour_, lane, point.colour);
+    put(machine, surfaceOpacity_, lane, point.opacity);
+    put(machine, opacity_, lane, point.opacity);
+    put(machine, s_, lane, point.s);
+    put(machine, t_, lane, point.t);
+    put(machine, u_, lane, point.u);
+    put(machine, v_, lane, point.v);
+    put(machine, du_, lane, point.du);
+    put(machine, dv_, lane, point.dv);
+}
+
+void Globals::eye(runtime::Machine* machine, const glm::vec3 & position) const {
+    put(machine, eye_, 0, position);
+}
+
+glm::vec3 Globals::position(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return position_ < 0 ? otherwise : machine.value(position_).triple(lane);
+}
+
+glm::vec3 Globals::normal(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return normal_ < 0 ? otherwise : machine.value(normal_).triple(lane);
+}
+
+glm::vec3 Globals::colour(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return colour_ < 0 ? otherwise : machine.value(colour_).triple(lane);
+}
+
+glm::vec3 Globals::opacity(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return opacity_ < 0 ? otherwise : machine.value(opacity_).triple(lane);
+}
+
+void Globals::pixel(runtime::Machine* machine, unsigned int lane, const glm::vec3 & colour, float coverage,
+    const glm::vec3 & position) const {
+    put(machine, colour_, lane, colour);
+    put(machine, opacity_, lane, glm::vec3(coverage));
+    put(machine, alpha_, lane, coverage);
+    put(machine, position_, lane, position);
+}
+
+float Globals::alpha(const runtime::Machine & machine, unsigned int lane, float otherwise) const {
+    return alpha_ < 0 ? otherwise : machine.value(alpha_).number(lane);
+}
+
+bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
+    const runtime::Cone & gathering, runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached,
+    bool* ambient, const std::vector<glm::vec3>* from) const {
+    if (!light.shader->write(machine, light.placement)) {
+        return false;
+    }
+    std::vector<glm::vec3> axes;
+    std::vector<float> angles;
+    if (gathering.axis != nullptr && gathering.angle != nullptr) {
+        for (unsigned int lane = 0; lane < batch; lane++) {
+            axes.push_back(gathering.axis->triple(lane));
+            angles.push_back(gathering.angle->number(lane));
+        }
+    }
+    machine->gather(axes, angles);
+
+    const glm::vec3 origin = ptransform(light.placement, glm::vec3(0.0F));
+    for (unsigned int lane = 0; lane < batch; lane++) {
+        put(machine, lit_, lane, surface.triple(lane));
+        put(machine, position_, lane, from != nullptr && lane < from->size() ? (*from)[lane] : origin);
+    }
+    if (!machine->run()) {
+        return false;
+    }
+
+    for (unsigned int lane = 0; lane < batch; lane++) {
+        direction->triple(lane, towards_ < 0 ? glm::vec3(0.0F) : machine->value(towards_).triple(lane));
+        colour->triple(lane, lightColour_ < 0 ? glm::vec3(0.0F) : machine->value(lightColour_).triple(lane));
+    }
+    *reached = machine->lit();
+    *ambient = light.shader->ambient();
+    return true;
+}
+
+};  // namespace v3d::render::offline::sl::runtime

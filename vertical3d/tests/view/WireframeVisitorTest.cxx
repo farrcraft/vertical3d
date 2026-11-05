@@ -9,14 +9,14 @@
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/Glyphs.h>
 #include <vertical3d/src/view/WireframeVisitor.h>
@@ -33,8 +33,8 @@ namespace {
 /**
  * A unit quad in the z = 0 plane. One face, so none of its four edges has a pair.
  **/
-boost::shared_ptr<v3d::editor::scene::Mesh> quad() {
-    boost::shared_ptr<v3d::editor::scene::Mesh> mesh = boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::item::Mesh> quad() {
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
     std::vector<glm::vec3> points;
     points.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
     points.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::view::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     wireframe.visit(cube, at(cube));
 
     // 24 half edges paired into the cube's 12 edges. A half edge and its pair are one
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::view::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = quad();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = quad();
     mesh->translation(glm::vec3(10.0F, 0.0F, 0.0F));
     wireframe.visit(mesh, at(mesh));
 
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::view::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = quad();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = quad();
     wireframe.visit(mesh, at(mesh));
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 
@@ -115,8 +115,8 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
 
     canvas.clear();
     mesh->selected(false);
-    v3d::editor::scene::Components picked;
-    picked.select(mesh->id(), v3d::editor::scene::Component::Edge, 0, true);
+    v3d::editor::scene::item::Components picked;
+    picked.select(mesh->id(), v3d::editor::scene::item::Component::Edge, 0, true);
     v3d::editor::view::WireframeVisitor selecting(&canvas, v3d::editor::view::WireframeVisitor::Shown{}, &picked);
     selecting.visit(mesh, at(mesh));
 
@@ -136,18 +136,18 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
  **/
 BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
     v3d::render::realtime::canvas::Line canvas;
-    v3d::editor::scene::Components picked;
+    v3d::editor::scene::item::Components picked;
     v3d::editor::view::WireframeVisitor wireframe(&canvas, v3d::editor::view::WireframeVisitor::Shown{}, &picked);
 
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     wireframe.visit(cube, at(cube));
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 
     for (v3d::brep::Index face = 0; face < cube->geometry()->faceCount(); face++) {
         canvas.clear();
-        picked.select(cube->id(), v3d::editor::scene::Component::Face, face, true);
+        picked.select(cube->id(), v3d::editor::scene::item::Component::Face, face, true);
         wireframe.visit(cube, at(cube));
-        picked.select(cube->id(), v3d::editor::scene::Component::Face, face, false);
+        picked.select(cube->id(), v3d::editor::scene::item::Component::Face, face, false);
 
         unsigned int highlighted = 0;
         for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
     v3d::editor::view::WireframeVisitor wireframe(&canvas);
 
     // a light is drawn as its glyph, through its translation
-    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> light = boost::make_shared<v3d::editor::scene::item::Light>();
     light->translation(glm::vec3(5.0F, 0.0F, 0.0F));
     wireframe.visit(light, at(light), light->emission());
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 6U);
@@ -194,14 +194,14 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
     const glm::vec4 selected = canvas.vertices()[0].colour;
     BOOST_CHECK((selected != unselected));
     canvas.clear();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = quad();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = quad();
     mesh->selected(true);
     wireframe.visit(mesh, at(mesh));
     BOOST_CHECK((canvas.vertices()[0].colour == selected));
 
     // a camera is drawn as its glyph too, and the transform is popped after it
     canvas.clear();
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
     wireframe.visit(camera, at(camera), camera->lens());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 22U);
     BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001F);
@@ -210,8 +210,9 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
 BOOST_AUTO_TEST_CASE(wireframe_shown_kinds_test) {
     v3d::editor::scene::Scene scene;
     scene.add(quad());
-    scene.add(boost::make_shared<v3d::editor::scene::Camera>());
-    scene.add(boost::make_shared<v3d::editor::scene::Light>());
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
+    scene.add(camera);
+    scene.add(boost::make_shared<v3d::editor::scene::item::Light>());
 
     // a quad of four segments, a camera of eleven, a point light of three
     const auto drawn = [&scene](const v3d::editor::view::WireframeVisitor::Shown& shown) {
@@ -225,6 +226,8 @@ BOOST_AUTO_TEST_CASE(wireframe_shown_kinds_test) {
     BOOST_CHECK_EQUAL(drawn({ .cameras = false }), 7U);
     BOOST_CHECK_EQUAL(drawn({ .lights = false }), 15U);
     BOOST_CHECK_EQUAL(drawn({ .meshes = false, .cameras = false, .lights = false }), 0U);
+    // a view through the camera does not draw the camera's own glyph
+    BOOST_CHECK_EQUAL(drawn({ .through = camera->documentId() }), 7U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {
@@ -232,13 +235,13 @@ BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {
 
     // a view that is not drawing meshes hands nothing to draw into
     wireframe.visit(quad(), at(quad()));
-    wireframe.visit(boost::shared_ptr<v3d::editor::scene::Mesh>(), at(boost::shared_ptr<v3d::editor::scene::Mesh>()));
+    wireframe.visit(boost::shared_ptr<v3d::editor::scene::item::Mesh>(), at(boost::shared_ptr<v3d::editor::scene::item::Mesh>()));
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_beneath_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = quad();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = quad();
     group->translation(glm::vec3(5.0F, 0.0F, 0.0F));
     group->scale(glm::vec3(4.0F));
     scene.add(group);
@@ -269,7 +272,7 @@ BOOST_AUTO_TEST_CASE(wireframe_curve_test) {
 
     // a Catmull-Rom curve of four points is three segments, each drawn in as many lines as the
     // geometry's resolution, through the item's world matrix
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = v3d::editor::scene::create_curve(v3d::editor::scene::CurveType::CatmullRom);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = v3d::editor::scene::item::create_curve(v3d::editor::scene::item::CurveType::CatmullRom);
     curve->translation(glm::vec3(10.0F, 0.0F, 0.0F));
     wireframe.visit(curve, at(curve));
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2U * 3U * v3d::curve::Curves::DEFAULT_RESOLUTION);
@@ -293,14 +296,14 @@ BOOST_AUTO_TEST_CASE(wireframe_curve_controls_test) {
     bezier.points.push_back({ .position = { 1.0F, 0.0F, 0.0F } });
     const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
     BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = boost::make_shared<v3d::editor::scene::Curve>(curves);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = boost::make_shared<v3d::editor::scene::item::Curve>(curves);
     const std::size_t line = std::size_t{ 2 } * v3d::curve::Curves::DEFAULT_RESOLUTION;
     // a box is drawn in twelve lines
     constexpr std::size_t box = std::size_t{ 2 } * 12U;
 
     // the controls of an unselected curve are not drawn, even when they are shown
     v3d::render::realtime::canvas::Line canvas;
-    v3d::editor::scene::Components components;
+    v3d::editor::scene::item::Components components;
     v3d::editor::view::WireframeVisitor shown(&canvas, { .controls = true, .handles = true }, &components);
     shown.visit(curve, at(curve));
     BOOST_CHECK_EQUAL(canvas.vertices().size(), line);
@@ -318,7 +321,7 @@ BOOST_AUTO_TEST_CASE(wireframe_curve_controls_test) {
     points.visit(curve, at(curve));
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), line + (2U * box));
     const glm::vec4 plain = canvas.vertices()[line].colour;
-    components.select(curve->id(), v3d::editor::scene::Component::Vertex, 0, true);
+    components.select(curve->id(), v3d::editor::scene::item::Component::Vertex, 0, true);
     canvas.clear();
     points.visit(curve, at(curve));
     BOOST_CHECK((canvas.vertices()[line].colour != plain));

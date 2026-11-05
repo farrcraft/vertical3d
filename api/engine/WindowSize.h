@@ -6,6 +6,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 #include <string_view>
 
 #include <boost/json/object.hpp>
@@ -29,5 +30,14 @@ inline constexpr std::string_view WINDOW_DOCUMENT = "window";
  *         dimension is not such a number
  **/
 std::optional<glm::ivec2> windowSize(const boost::json::object& document);
+
+/**
+ * The SVG a window document gives the window's icon, from {"window": {"icon": "icon.svg"}}. The
+ * name is resolved as every asset's is, against the app's data directory.
+ *
+ * @return the name, or nothing when the document has no window object, or it names no icon as
+ *         a string
+ **/
+std::optional<std::string> windowIcon(const boost::json::object& document);
 
 };  // namespace v3d::engine

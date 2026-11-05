@@ -4,13 +4,14 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -75,7 +76,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &silent));
     BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2U);
     BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2U);
-    BOOST_CHECK(silent.context().sampling().filter == v3d::render::offline::Filter::Gaussian);
+    BOOST_CHECK(silent.context().sampling().filter == v3d::render::offline::film::Filter::Gaussian);
     BOOST_CHECK_EQUAL(silent.context().sampling().width.x, 2.0F);
     BOOST_CHECK(silent.context().sampling().pinhole());
 }
@@ -119,7 +120,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
         "Polygon \"P\" [-0.4 -0.4 4  0.4 -0.4 4  0.4 0.4 4  -0.4 0.4 4]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
 
     unsigned int covered = 0;
     for (unsigned int row = 0; row < 48; row++) {
@@ -143,7 +144,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
         "Polygon \"P\" [-0.4 -0.4 8  0.4 -0.4 8  0.4 0.4 8  -0.4 0.4 8]\n"
         "WorldEnd\n", &distant));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> distantPlanes = distant.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> distantPlanes = distant.context().picture();
     unsigned int distantCovered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
@@ -172,7 +173,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
         "Polygon \"P\" [-0.5 -0.5 5  0.5 -0.5 5  0.5 0.5 5  -0.5 0.5 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
 
     unsigned int columns = 0;
     for (unsigned int column = 0; column < 64; column++) {
@@ -211,7 +212,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
         "Polygon \"P\" [-1.9 -1.9 5  1.9 -1.9 5  1.9 1.9 5  -1.9 1.9 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     // under a window of [-2, 2] the quad nearly fills the frame. The default [-4/3, 4/3] by
     // [-1, 1] would clip it at the top and bottom
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 1), 1.0F);
@@ -280,7 +281,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
         "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 16, 32), 0.5F);
     BOOST_CHECK_LT(planes->value(v3d::moya::state::Planes::RED, 48, 32), 0.5F);
 }

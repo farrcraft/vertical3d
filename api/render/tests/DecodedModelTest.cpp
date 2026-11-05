@@ -9,7 +9,7 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/DecodedModel.h>
+#include <api/render/realtime/resource/DecodedModel.h>
 
 #include <stdexcept>
 #include <optional>
@@ -20,9 +20,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
-using v3d::render::realtime::DecodedModel;
-using v3d::render::realtime::decodeAlbedos;
-using v3d::render::realtime::decodeModel;
+using v3d::render::realtime::resource::DecodedModel;
+using v3d::render::realtime::resource::decodeAlbedos;
+using v3d::render::realtime::resource::decodeModel;
 
 namespace {
 

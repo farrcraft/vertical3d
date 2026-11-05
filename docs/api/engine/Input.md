@@ -27,11 +27,15 @@ Each polled SDL event is offered to three places, in this order:
    This runs whatever `onEvent()` returned.
 
 On a resize the engine updates the window's size and publishes
-`event::kind::WindowResize`. On a focus change it publishes `event::kind::WindowFocus`. A key
-released while the window is unfocused never arrives, so an app that tracks held keys itself
-should drop them when focus is lost. When the monitor's scale changes, or the window moves to a
+`event::kind::WindowResize`, whose `window()` is the id of the window that changed. An app with
+windows of its own added acts only on its own window's resizes, and an added window's close
+arrives as `event::kind::WindowClose`, as [Window.md](Window.md#who-makes-it) describes. On a
+focus change it publishes `event::kind::WindowFocus`. A key released while the window is
+unfocused never arrives, so an app that tracks held keys itself should drop them when focus is
+lost. When the monitor's scale changes, or the window moves to a
 monitor with another, it publishes `event::kind::DisplayScale` with `Window::displayScale()`,
-which the shell passes to its screen.
+which the shell passes to its screen. `Window::refreshRate()` gives the rate in hertz of the
+monitor the window is on, or 0 when it cannot be read.
 
 Rules for `onEvent()`:
 
@@ -42,7 +46,7 @@ Rules for `onEvent()`:
 - **Keep it short.** It runs inside the poll loop, so a slow handler shows up as input latency.
 - The default returns false. An app that does not host a ui toolkit does not override it.
 
-Background: [ADR-0043](../../adr/0043-input-apps-see-raw-events-before-bindings.md)
+Background: [ADR-0043](../../adr/engine/0043-input-apps-see-raw-events-before-bindings.md)
 
 ### Keys and commands
 
@@ -64,6 +68,9 @@ this for mouse motion and resize.
   platform counts them: 1 for a single click, and 2 for the second press of a double click.
 - `MouseMotion::modifiers()` is the Ctrl, Shift and Alt held as the cursor moved, so a drag can
   change while one is held.
+- `MouseButton`, `MouseMotion` and `MouseWheel` each have a `window()`: the id of the window the
+  cursor was in, whose coordinates the position is in. `MouseState::window()` is the window of
+  the last mouse event.
 
 `event::publish()` sends a source event in two stages:
 
@@ -89,7 +96,7 @@ as its key is held, such as moving a tetris piece, takes repeats. A command that
 something, such as a menu or an overlay, ignores a command whose `repeat()` is true. Otherwise
 holding its key flicks it on and off.
 
-Background: [ADR-0081](../../adr/0081-input-key-events-and-commands-are-separate.md)
+Background: [ADR-0081](../../adr/engine/0081-input-key-events-and-commands-are-separate.md)
 
 ### Bindings
 
@@ -145,7 +152,7 @@ modifiers are all held, and of those only the ones that name the most modifiers.
 - A chord keeps its whole name wherever a source is named: in `sources()`, `bound()`, a rebind
   and a saved override.
 
-Background: [ADR-0133](../../adr/0133-input-the-most-specific-chord-wins-a-key.md)
+Background: [ADR-0133](../../adr/engine/0133-input-the-most-specific-chord-wins-a-key.md)
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
 rebinding screen. The command keeps the context and the edge the document gave it. The engine
@@ -217,7 +224,7 @@ AppEngine::AppEngine(const std::string& path) :
 }
 ```
 
-Background: [ADR-0090](../../adr/0090-input-commands-are-handled-through-one-registry.md)
+Background: [ADR-0090](../../adr/engine/0090-input-commands-are-handled-through-one-registry.md)
 
 ### Polling the keyboard and mouse
 

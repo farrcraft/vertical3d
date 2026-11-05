@@ -5,8 +5,8 @@
 
 #include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/store/Project.h>
 
@@ -59,8 +59,8 @@ boost::shared_ptr<v3d::log::Logger> logger() {
  **/
 boost::shared_ptr<v3d::editor::scene::Scene> sample() {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
-    scene->add(boost::make_shared<v3d::editor::scene::Light>());
+    scene->add(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube()));
+    scene->add(boost::make_shared<v3d::editor::scene::item::Light>());
     return scene;
 }
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(project_refuses_a_bad_manifest_test) {
             // nothing changes, the scene and the project included
             v3d::editor::store::Project project(logger(), elsewhere.path());
             const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-            scene->add(boost::make_shared<v3d::editor::scene::Light>());
+            scene->add(boost::make_shared<v3d::editor::scene::item::Light>());
             BOOST_CHECK(!project.open(scratch.path() / v3d::editor::store::Project::MANIFEST, scene));
             BOOST_CHECK(project.directory() == elsewhere.path());
             BOOST_CHECK_EQUAL(project.name(), "untitled");

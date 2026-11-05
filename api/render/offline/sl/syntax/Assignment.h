@@ -24,7 +24,7 @@ class Assignment final : public Statement {
         ExpressionPtr value;
     };
 
-    Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::Position & at);
+    Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::source::Position & at);
 
     std::string op;
     ExpressionPtr target;

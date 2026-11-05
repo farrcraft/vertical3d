@@ -65,6 +65,10 @@ No suite needs a window or a GPU. The renderers are not covered.
 Two paddles and a ball, for one player against the computer or two players at one keyboard.
 Sources are in `demos/pong/src/`.
 
+![Two paddles and a ball, with each side's score at the top](images/pong.png)
+
+*Captured by `node scripts/pictures.ts`, which starts pong with `--capture`.*
+
 **Controls:**
 
 | Key | Command | Effect |
@@ -131,6 +135,10 @@ captures the next key pressed. Escape is never captured; it leaves the menu.
 
 Falling tetrads on a board. Sources are in `demos/tetris/src/`.
 
+![A falling tetrad on an empty board, with the score and the next tetrad](images/tetris.png)
+
+*Captured by `node scripts/pictures.ts`, which starts tetris with `--capture`.*
+
 **Controls:**
 
 | Key | Command | Effect |
@@ -165,6 +173,10 @@ an app command (`ui::newGame`), a text file loaded through the asset manager
 
 A first-person walk over procedurally generated block terrain. Sources are in `demos/voxel/src/`.
 
+![Block terrain of hills under a blue sky](images/voxel.png)
+
+*Captured by `node scripts/pictures.ts`, which starts voxel with `--capture`.*
+
 **Controls:**
 
 | Input | Command | Effect |
@@ -179,10 +191,6 @@ A first-person walk over procedurally generated block terrain. Sources are in `d
 **Data files.** `demos/voxel/data/` holds `config.json`, `mappings.json`, `vgui.json` and
 `window.json`. The terrain shaders are `demos/voxel/shaders/voxel.vert` and `voxel.frag`. The build
 compiles them with `v3d_add_shader` and embeds them in the executable.
-
-**Building.** Voxel is the only target that needs libnoise, a git submodule built separately.
-Its test suite links libnoise too. [contributing/Dependencies.md](contributing/Dependencies.md)
-says how to build it.
 
 **What voxel is the reference for:**
 
@@ -219,6 +227,10 @@ says how to build it.
 A tile-based game: a player in a world of walls and crates, with line of sight. The world is made
 of regions, each a board of its own, loaded as the player approaches them. The game itself is not
 written yet. Sources are in `demos/odyssey/src/`.
+
+![The player standing on a floor of tiles, with walls around it](images/odyssey.png)
+
+*Captured by `node scripts/pictures.ts`, which starts odyssey with `--capture`.*
 
 **Controls:**
 
@@ -311,8 +323,15 @@ remembered ones that are out of sight.
 ## Diorama
 
 A small village seen from above: two houses, a ring of trees and a well on a square of grass,
-under a sun that goes around the sky once every two minutes. There is no game. Sources are in
-`demos/diorama/src/`.
+under a sun that goes around the sky once every two minutes. A sign reading "Village Well"
+stands over the well, drawn from its glyphs' curves and turned to face the camera. It is sharp
+from every side and at every zoom, and a house in front of it hides it. A dark outline and a
+soft shadow, drawn from its glyphs' distance fields, keep it readable against the grass. There
+is no game. Sources are in `demos/diorama/src/`.
+
+![A village of two houses, a ring of trees and a well, lit and shadowed from above](images/diorama.png)
+
+*Captured by `node scripts/pictures.ts`, which starts diorama with `--capture`.*
 
 **Controls:**
 

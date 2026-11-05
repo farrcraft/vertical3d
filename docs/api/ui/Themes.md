@@ -69,7 +69,7 @@ the contrast 1, and the defaults every app starts from are derived from them.
   the base's or the accent's, measured in the OKLCH colour space. The contrast multiplies every
   distance.
 - **One step per role.** Each colour role takes one step of one scale. The `ui` and `tools`
-  classes differ only in `track` and `tab`, which sit at the level of a widget in `tools`.
+  classes differ only in `track`, which sits at the level of a widget in `tools`.
 - **Shadows and backdrops are black.** `shadow` is black at 45% in a dark theme and 18% in a
   light one, where a shadow shows more. `backdrop` is black at 60% in either, because what it
   dims is the scene behind the ui and not the theme's own surfaces.
@@ -96,7 +96,7 @@ The built-in roles meet these contrasts, and the ui suite checks them:
 | `disabled-text`, `placeholder` | `panel`, `widget` | 3:1 |
 | `border`, `focus`, `mark`, `caret` | `panel` | 3:1 |
 
-Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md)
+Background: [ADR-0128](../../adr/ui/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md)
 
 | Key | What it colours or sizes | Drawn by |
 |---|---|---|
@@ -108,16 +108,17 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `track` | the unfilled part of a bar or a scrollbar, and the box a mark sits in | both |
 | `fill` | the filled part of a bar | both |
 | `thumb` | the part of a scrollbar or a slider that is taken hold of | both |
-| `mark` | the mark in a checked box or a chosen radio button | both |
+| `mark` | the mark in a checked box or a chosen radio button, and the line under the chosen tab of a strip | both |
 | `caret` | a text field's caret | both |
 | `placeholder` | what an empty text field shows in place of text | both |
-| `tab` | a tab that is not the chosen one | both |
+| `tab` | the recess a set of tabs sits in, which a tab that is not chosen shows | both |
+| `chosen` | the face of the chosen one of a set of choices, such as the chosen tab of a set | both |
 | `widget` | the face of a button, a field or a check box at rest | immediate |
-| `rule` | a separator, and the line under a tab strip | immediate |
+| `rule` | a separator | immediate |
 | `hairline` | a faint line that divides without drawing the eye, such as the edge of an area | the app, through `dressing()` |
 | `text` | ordinary text | both |
 | `active-text` | the text of the chosen or hovered item | both |
-| `secondary-text` | text that says less than the text beside it, such as a shortcut | the app, through `dressing()` |
+| `secondary-text` | text that says less than the text beside it, such as a shortcut | both |
 | `disabled-text` | the text of a control that cannot be used | both |
 | `highlight` | what is drawn behind the chosen item, and behind selected text | both |
 | `selected` | what is drawn behind an item that is chosen, under ordinary text | the app, through `dressing()` |
@@ -132,13 +133,13 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `padding` | the gap between text and the panel or widget around it | both |
 | `spacing` | the gap between one widget and the next | immediate |
 | `bar-height` | how tall a menu bar, a toolbar, a title bar, a tab or a button is | both |
-| `icon-size` | the side of a button's icon | retained |
+| `icon-size` | the side of a button's icon | both |
 | `panel-padding` | the gap above and below the items of a dropped panel | retained |
 | `scrollbar-width` | how thick a scrollbar is | both |
 | `mark-size` | the side of the box, or the width of the disc, a mark sits in | retained |
 | `border-width` | how thick an outline is | both |
 | `focus-width` | how thick the focus ring is | retained |
-| `radius` | how far corners are rounded, 0 for square | both |
+| `radius` | how far corners are rounded, 0 for square. A rounded corner fades to nothing across a pixel centred on its curve, so a small radius still reads as round | both |
 | `indent` | how far a bullet pushes its text in | immediate |
 | `shadow-size` | how far past a menu's edge its shadow fades out. Defaults to 12 | retained |
 | `shadow-offset` | how far down a menu's shadow is moved. Defaults to 4 | retained |
@@ -146,8 +147,8 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `hover-duration` | how long a change of fill or text colour eases over, in seconds. Defaults to 0.1, and 0 changes at once | both |
 | `open-duration` | how long a menu takes to open, in seconds. Defaults to 0.12, and 0 opens at once | retained |
 | `submenu-delay` | how long the cursor rests on a dropped panel's submenu item before it opens, in seconds. Defaults to 0.2 | retained |
-| `tooltip-delay` | how long the cursor rests on a component before its tooltip shows, in seconds. Defaults to 0.5 | retained |
-| `tooltip-quick-delay` | the same, when a tooltip was showing a moment before. Defaults to 0.1 | retained |
+| `tooltip-delay` | how long the cursor rests on a component before its tooltip shows, in seconds. Defaults to 0.5 | both |
+| `tooltip-quick-delay` | the same, when a tooltip was showing a moment before. Defaults to 0.1 | both |
 | `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu
@@ -197,7 +198,7 @@ beneath every game's document this way.
 | `checkbox` | `CheckBox` | `background`, `mark`, `border`, `text`, `border-width`, `mark-size` |
 | `radio` | `RadioButton` | as `checkbox` |
 | `list` | `SelectList` | `background`, `border`, `highlight`, `text`, `active-text`, `border-width`, `radius`, `line-height` |
-| `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `highlight`, `text`, `active-text`, `border`, `bar-height`, `radius` |
+| `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `chosen`, `mark`, `text`, `active-text`, `border`, `bar-height`, `radius` |
 | `textbox` | `TextBox` | `background`, `border`, `text`, `caret`, `placeholder`, `highlight`, `border-width`, `radius`, `line-height` |
 | `hud` | `ComponentRenderer::hud()`, the statistics overlay | `background`, `border`, `text`, `plate-opacity`, `border-width`, `padding`, `radius`, `line-height` |
 | `button` | `Button` | nine images and `corner`; see below |
@@ -215,6 +216,8 @@ its usual colour. An opaque highlight hides the selected text.
 
 `ComponentRenderer::hud(canvas, lines, place)` draws lines of text over the scene, such as a
 score or a label, on one plate. A game draws its HUD this way rather than in colours of its own.
+The lines are set in tabular figures, so a score that changes keeps its width. The statistics
+overlay is too.
 
 - **The `hud` class dresses it.** The plate is the panel's colour, or the style's `background`,
   with its alpha multiplied by `plate-opacity`. The lines are in `text`, inside `padding`, a

@@ -14,11 +14,12 @@
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/VerticalBox.h>
-#include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Number.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <cstddef>
 #include <string>
@@ -45,8 +46,8 @@ struct Row {
     std::size_t cells = 0;
 };
 
-v3d::ui::paint::Measure measure() {
-    return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
+v3d::ui::paint::Type measure() {
+    return v3d::ui::typeset::body();
 }
 
 boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
@@ -353,13 +354,14 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
     BOOST_CHECK_CLOSE(single->size().x, 18.0F * characterWidth, 0.001F);
     BOOST_CHECK_CLOSE(single->size().y, line, 0.001F);
 
-    // a percentage is a width like any other, and narrowing it takes more rows
+    // a percentage is a width like any other, and narrowing it takes more rows. Four characters
+    // hold one word a row, and "three", wider than the row, breaks at its edge
     const boost::shared_ptr<v3d::ui::component::Label> shared = label({.name = "shared", .text = "one two three four"});
     shared->layout().width = v3d::ui::Length(10.0F, v3d::ui::Length::Unit::Percent);
     arranger.walk(nullptr, shared, shared->layout().resolve(room, arranger.natural(*shared, room)),
         v3d::ui::Arranger::Paint());
     BOOST_CHECK_CLOSE(shared->size().x, 40.0F, 0.001F);
-    BOOST_CHECK_CLOSE(shared->size().y, 4.0F * line, 0.001F);
+    BOOST_CHECK_CLOSE(shared->size().y, 5.0F * line, 0.001F);
 
     // a named height is still the height it named - wrapping decides what Auto is offered
     const boost::shared_ptr<v3d::ui::component::Label> fixed = label({.name = "fixed", .text = "one two three four"});
@@ -464,9 +466,7 @@ BOOST_AUTO_TEST_CASE(a_list_measures_its_rows_again_under_a_new_measure) {
     const v3d::type::geometry::Bound2D room = canvasArea(800.0F, 600.0F);
 
     const float before = v3d::ui::Arranger(measure(), styles).natural(*list, room).x;
-    const v3d::ui::paint::Measure doubled = [](std::string_view text) {
-        return static_cast<float>(text.size()) * characterWidth * 2.0F;
-    };
+    const v3d::ui::paint::Type doubled = v3d::ui::typeset::body().scaled(2.0F);
     const float after = v3d::ui::Arranger(doubled, styles).natural(*list, room).x;
 
     // the widest row is six characters, and the padding is the same under both

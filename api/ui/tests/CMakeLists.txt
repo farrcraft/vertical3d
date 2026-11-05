@@ -5,11 +5,13 @@ v3d_add_test(ui
 	"ArrangerTest.cpp"
 	"CheckBoxTest.cpp"
 	"ComponentRendererTest.cpp"
+	"CurveTextTest.cpp"
 	"CursorTest.cpp"
 	"DocumentTest.cpp"
 	"FileChooserTest.cpp"
 	"FocusTest.cpp"
 	"GameMenuTest.cpp"
+	"GlyphPagesTest.cpp"
 	"ImageTest.cpp"
 	"ImmediateInputTest.cpp"
 	"ImmediatePanelTest.cpp"
@@ -20,6 +22,7 @@ v3d_add_test(ui
 	"ImmediateWindowTest.cpp"
 	"KeyboardDriveTest.cpp"
 	"LayoutTest.cpp"
+	"LineEditTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
 	"PaletteTest.cpp"
@@ -42,9 +45,10 @@ v3d_add_test(ui
 
 target_link_libraries(v3dtest_ui PRIVATE
 	v3dlib_ui
+	v3dlib_window
+	v3dlib_font
 	v3dlib_render
 	v3dlib_log
-	v3dlib_image
 	v3dlib_event
 	v3dlib_asset
 	v3dlib_type
@@ -56,3 +60,40 @@ target_link_libraries(v3dtest_ui PRIVATE
 
 # TextRendererTest packs real glyphs, so the shared font has to sit beside the executable.
 v3d_add_shared_data(v3dtest_ui)
+
+# The faces in fonts/ are fixtures: a monospaced face the cases measure predictably, and a face
+# that sets Hebrew. The editor's suite copies them too. The font library's colour fixtures beside
+# them draw an emoji's layers, its gradients, and its picture, and its variable fixture is drawn
+# at a weight.
+add_custom_command(TARGET v3dtest_ui POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${V3D_ROOT}/api/font/tests/fonts/colr0.ttf"
+		"${V3D_ROOT}/api/font/tests/fonts/colr1.ttf"
+		"${V3D_ROOT}/api/font/tests/fonts/cbdt.ttf"
+		"${V3D_ROOT}/api/font/tests/fonts/variable.ttf"
+		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
+	COMMENT "Copying ui test fonts"
+	VERBATIM)
+
+# The cases that draw text on a device, through the render device suite's headless device. Where
+# there is no device the binary exits with 77, which ctest reports as a skip.
+v3d_add_test(ui_device
+	"device/TestMain.cpp"
+	"device/ScriptTextTest.cpp"
+
+	"../../render/tests/device/Headless.cpp")
+
+target_link_libraries(v3dtest_ui_device PRIVATE
+	v3dlib_ui
+	v3dlib_font
+	v3dlib_render
+	v3dlib_image
+	v3dlib_asset
+	v3dlib_log)
+set_tests_properties(ui_device PROPERTIES SKIP_RETURN_CODE 77)
+
+# The text is drawn from the faces in the shared data directory.
+v3d_add_shared_data(v3dtest_ui_device)

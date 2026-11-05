@@ -4,8 +4,8 @@ This page is for someone writing an app against the api. It covers `api/image`: 
 type, reading, writing and comparing images, the texture atlas, and packing a sprite sheet.
 Terms are defined in the [glossary](README.md#glossary).
 
-`api/image` (`v3d::image`) reads, writes and compares images. It depends on libpng and libjpeg
-and on no device.
+`api/image` (`v3d::image`) reads, writes and compares images. It depends on libpng, libjpeg and
+NanoSVG, and on no device.
 
 ## Image
 
@@ -62,6 +62,23 @@ if (bytes) {
 **Every writer can write greyscale**: png as a grey image, tga as type 3, jpeg as
 `JCS_GRAYSCALE`, and bmp as 8-bit indices into a 256-entry grey ramp.
 
+### Drawing SVG
+
+`image::reader::Svg` ([api/image/reader/Svg.h](../../api/image/reader/Svg.h)) draws an SVG
+document into an RGBA image. The factory does not hold it, because a document is drawn at a size
+rather than decoded.
+
+- `read(data, size)` draws the document at the size it gives itself. Lengths are pixels at 96 to
+  the inch.
+- `read(data, size, into)` draws it scaled to fit inside `into`, keeping its proportions, and
+  centred.
+- Every pixel nothing is drawn on is transparent.
+- Only the subset NanoSVG draws is drawn: shapes, paths, fills, strokes and gradients, but no
+  text, filters or embedded images.
+- Each read returns null when the text is not SVG, the document gives itself no size, or the size
+  asked for is empty. A read at the document's own size also returns null when a side is longer
+  than `Svg::LARGEST_SIDE`, 16384 pixels, or is not finite.
+
 ## Other functions
 
 - `crop(source, x, y, width, height)` cuts a rectangle into a new image at the same depth. It
@@ -73,6 +90,21 @@ if (bytes) {
   `Difference`. It records the worst pixel even when the images match. `description()` gives
   one line saying what differed and where. Keep the tolerance for float rounding between
   compilers, not for "close enough".
+
+## Icons
+
+`image/Icon.h` makes an app's icon.
+
+- `drawIcon(svg, logger)` draws an SVG document at each side in `ICON_SIDES`, 16 to 256 pixels,
+  smallest first. It returns no images when the document cannot be read or gives itself no
+  size.
+- `encodeIcon(images, logger)` encodes a Windows `.ico` file. Each image is square, RGBA, from 1
+  to 256 pixels a side, and of a size no other image has. The 256 pixel image is stored as a
+  png, and each smaller one as a 32 bit bitmap with a mask of its clear pixels, which every
+  reader of the format takes. It returns nothing when an image breaks a rule.
+
+The engine draws a window's icon with `drawIcon`, and the build tool `appicon` writes each
+app's `.ico` with both.
 
 ## Texture atlas
 

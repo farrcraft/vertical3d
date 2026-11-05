@@ -54,8 +54,10 @@ const AreaLayout::Editor& AreaLayout::Area::editor() const {
 
 /**
  **/
-AreaLayout::AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger) :
-    logger_(logger) {
+AreaLayout::AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t first) :
+    logger_(logger),
+    nextArea_(first),
+    nextEditor_(first) {
 }
 
 /**
@@ -291,6 +293,12 @@ void AreaLayout::place(Node* node, const glm::vec4& region) {
         place(&node->children[index], child);
         offset += extent + metrics_.gap;
     }
+}
+
+/**
+ **/
+const glm::vec4& AreaLayout::region() const noexcept {
+    return region_;
 }
 
 /**

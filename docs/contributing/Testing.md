@@ -8,6 +8,8 @@ draw on a GPU.
 - [How the suites are organised](#how-the-suites-are-organised)
 - [Writing a test](#writing-a-test)
 - [Checking that a new test fails first](#checking-that-a-new-test-fails-first)
+- [Sanitizers](#sanitizers)
+- [Fuzz targets](#fuzz-targets)
 - [The render device suite](#the-render-device-suite)
 - [The render window suite](#the-render-window-suite)
 - [Reference images](#reference-images)
@@ -51,6 +53,10 @@ suites there too. [Build.md](Build.md#building-off-msvc) lists them.
   `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
 - **One suite per app that has logic worth testing**, in the app's `tests/` directory: moya,
   vertical3d, and the five demos under `demos/`.
+- **One more for the ui on a real device**, `ui_device`, from `api/ui/tests/device/`. It draws
+  text through the text renderer and its glyph pages with the render device suite's headless
+  device, whose `Headless.cpp` it compiles, from the faces in the shared data. It skips where
+  there is no device, and CI fails it on a skip.
 - **One more for the editor on a real device**, `vertical3d_device`, from
   `vertical3d/tests/device/`. It draws the editor's shaded pass through the render device
   suite's headless device, whose `Headless.cpp` it compiles. It skips where there is no device,
@@ -103,8 +109,8 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
-defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device` and
-`vertical3d_device`, whose `main` checks for a device first, and `render_window`, whose `main`
+defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, `ui_device`
+and `vertical3d_device`, whose `main` checks for a device first, and `render_window`, whose `main`
 checks for a window.
 
 A test file puts everything after its includes in one anonymous namespace, its suites and cases
@@ -117,11 +123,14 @@ rules a test file shares with the rest of the tree.
 
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
-to `data/`. Three copy something else:
+to `data/`. Some copy something else:
 
 - `engine` copies `api/engine/tests/fixtures/` to `fixtures/`.
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
 - `render_device` copies `api/render/tests/device/data/` to `data/`.
+- `ui` and `vertical3d` copy `api/ui/tests/fonts/` to `fonts/`: a monospaced face at which
+  `api/ui/tests/Typeset.h` sets every character ten pixels wide, and a face that sets Hebrew.
+  The helper's renderer tells a test each line it draws, through `TextRenderer::trace()`.
 
 Some suites take data through the build rule an app uses instead, which copies an edited file
 on the next build whether or not the suite relinks:
@@ -223,11 +232,95 @@ fail. A commit the base does not contain, including one the change made, does no
 case is a weak test. A reviewer reads how the code was broken. Breaking it has to fail the case
 for the reason the case is about, not by a crash.
 
+Two things make a build of hand-broken code test the old code:
+
+- **An incremental link can keep the old library code in the suite.** Delete the suite's `.exe`,
+  `.ilk` and `.pdb` before building the broken code, and again after restoring it.
+- **A file restored by copying keeps the copy's older timestamp.** ninja then sees the source as
+  older than its object and does not rebuild it. Restore the file by writing its text, or set
+  its modification time to now.
+
 The worktree build is separate from `out/build/x64-Debug`, or the build `--build` names, and
 installs no packages. It reuses the packages that build installed, and its link job pool if it
 has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and
 a `render_window` case a window too. Without one the case is reported as skipped. A case that
 fails only because it reads a fixture the change added has to be read by hand.
+
+## Sanitizers
+
+`-DV3D_SANITIZE=ON` builds the tree with AddressSanitizer, which reports an out of bounds
+access, a use after free and a leak. With Clang or GCC it adds the undefined behaviour
+sanitizer, which reports signed overflow, a misaligned access, an invalid shift and a null
+dereference. Its `vptr` check is off, because thorvg is built without the type information it
+reads. A report ends the program with a failure, so a suite that triggers one fails. Only the
+tree is instrumented, not the vcpkg packages, so a fault inside a package goes unreported.
+
+- **CI** builds the Linux job's libraries with both sanitizers, and every suite there runs
+  under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are.
+- **On Windows**, the `asan` preset builds the whole tree with MSVC's AddressSanitizer. MSVC has
+  no undefined behaviour sanitizer. Run it before a change to code that only Windows builds,
+  such as the renderer, the window or an app:
+
+  ```
+  cmake --preset asan
+  cmake --build --preset asan
+  ctest --preset asan
+  ```
+
+  The program finds the sanitizer's runtime DLL through the developer environment's `PATH`, so
+  run a sanitized executable from one. `scripts\test.cmd` does not reach this build directory.
+
+  The build defines `_DISABLE_STRING_ANNOTATION` and `_DISABLE_VECTOR_ANNOTATION`. The vcpkg
+  DLLs are not instrumented, and a string one of them grows would otherwise be reported as a
+  container overflow. The build also drops `/RTC`, which fills the stack with a pattern in
+  every other Debug build. A suite that reads an uninitialised value can pass in those builds
+  and fail in this one.
+
+Background: [ADR-0173](../adr/project/0173-testing-the-suites-also-run-under-the-sanitizers.md)
+
+## Fuzz targets
+
+A fuzz target passes one input to one of the parsers this tree writes itself, through the
+`LLVMFuzzerTestOneInput` entry point that libFuzzer calls. Each one checks only that no input
+makes its parser misbehave. Whether the parser accepts the input does not matter.
+
+| Target | Parser | Corpus |
+|---|---|---|
+| `v3dfuzz_tga` | `image::reader::Tga` | [api/image/tests/data](../../api/image/tests/data) |
+| `v3dfuzz_bmp` | `image::reader::Bmp` | [api/image/tests/data](../../api/image/tests/data) |
+| `v3dfuzz_rib` | `render::offline::rib::Reader` and its lexer | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+| `v3dfuzz_sl` | the shading language parser and compiler | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+
+**Every build builds the targets, and ctest runs each over its corpus once**, as the ctest entry
+`fuzz_<name>`, labelled `fuzz`. Without libFuzzer, a target links a small main that passes each
+file it is given to the entry point. `ctest -L fuzz` runs only these entries.
+
+**`-DV3D_FUZZ=ON` links the targets with libFuzzer** and instruments the tree for it. It needs
+Clang, so it builds only off MSVC. Given a corpus directory and no `-runs`, a target then fuzzes
+until it finds a failure or is stopped. The first directory it is given is where it keeps the
+inputs that reach new code.
+
+**CI fuzzes each target for 60 seconds**, in the Linux job, under both sanitizers.
+[scripts/portable/build.sh](../../scripts/portable/build.sh) runs them after the suites. It keeps
+the inputs it finds under the job's work directory, and `FUZZ_SECONDS` changes the time.
+`scripts\portable.cmd` runs the same script locally and keeps its work in a Docker volume, so
+each local run carries on from the corpus of the last.
+
+**A failure prints the input that caused it.** libFuzzer writes it to a file named
+`crash-<hash>` and prints it in the log. Fix the parser, then add the input to the library's
+suite as a test case that fails without the fix.
+
+**A new parser of a file format gets a target.** Write `api/<lib>/tests/fuzz/<Format>Fuzzer.cxx`,
+and register it in the suite's `CMakeLists.txt`:
+
+```
+v3d_add_fuzzer(<name> "fuzz/<Format>Fuzzer.cxx" LIBRARIES <target>... CORPUS <directory>...)
+```
+
+The corpus is the suite's fixtures, which hold a valid file of the format and the malformed
+ones its tests already check.
+
+Background: [ADR-0174](../adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 
 ## The render device suite
 
@@ -283,7 +376,7 @@ a skip is correct, since a machine may have no Vulkan device.
 This is a separate executable from `v3dtest_render`, which tests the renderer's CPU-side code,
 so that `v3dtest_render` runs on any machine.
 
-Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
+Background: [ADR-0007](../adr/project/0007-ci-render-tests-on-software-vulkan.md)
 
 ## The render window suite
 
@@ -341,7 +434,7 @@ reference.
 change a reference on purpose, copy that file over the committed one. The test never writes to
 `data/`.
 
-Background: [ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+Background: [ADR-0054](../adr/project/0054-testing-golden-images-hold-only-spec-exact-output.md)
 
 ### moya references
 
@@ -384,6 +477,22 @@ change locally by running an app and reading its log.
 4. **Look at the picture last.** Screenshots and the `data_out/` images are for checking what
    the log and the tests cannot.
 
+### Driving a running app
+
+- **Capture a window with `PrintWindow`, using flag 2.** It draws the window's own content,
+  swapchain output included, whatever window is in front. A capture of the screen area instead
+  records whatever is on top, unless the app's window is confirmed to be the foreground window.
+- **Send keys with `keybd_event`.** SDL reads the arrow keys sent by .NET's `SendKeys` as
+  nothing, though it reads Escape and Enter. Send each key's down and up as separate events.
+- **A mouse message posted to an SDL window does nothing.** SDL does not read the mouse from
+  posted messages. A click path is left to its tests.
+- **Close an app by posting `WM_CLOSE` to its window.** SDL turns it into a quit request, so
+  `release()` runs and the app writes what it writes on a clean exit. Ending the process skips
+  `release()`.
+- **A `debug` line is not evidence that code ran.** The log is flushed at `info` and above. Debug
+  lines wait in the buffer, and ending the process discards them. Log at `info`, or quit the app
+  cleanly, before reading the log.
+
 ## Traps
 
 - **A new or changed fixture is copied only when its suite relinks.** A suite copies its
@@ -397,9 +506,6 @@ change locally by running an app and reading its log.
   `BOOST_TEST(a == b)` reports unreadable bytes. Compare such enums with `BOOST_CHECK(a == b)`,
   or wrap the comparison in a second pair of parentheses, `BOOST_TEST((a == b))`. Neither
   prints the operands. A scoped enum does not compile in either printing form.
-- **voxel's suite must link libnoise**, even for cases that generate no noise. `Chunk` is built
-  against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
-  implementation. See [Dependencies.md](Dependencies.md#building-libnoise).
 - **Run the moya executable from its own directory.** It is
   `out/build/x64-Debug/moya/moya.exe`. Started from another directory it can stop on a
   missing-DLL dialog and use no CPU, which looks like a hung render.

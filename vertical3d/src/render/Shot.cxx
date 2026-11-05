@@ -9,8 +9,8 @@
 #include <api/render/offline/rib/Writer.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -26,13 +26,13 @@ namespace v3d::editor::render {
 /**
  **/
 v3d::type::camera::Profile shotFrom(const scene::Scene& scene, const v3d::type::camera::Profile& view) {
-    const std::vector<boost::shared_ptr<scene::Camera>> cameras = scene.selected<scene::Camera>();
+    const std::vector<boost::shared_ptr<scene::item::Camera>> cameras = scene.selected<scene::item::Camera>();
     return cameras.size() == 1 ? shotFrom(scene.evaluate(), cameras.front(), view) : view;
 }
 
 /**
  **/
-v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::Camera>& camera,
+v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::item::Camera>& camera,
     const v3d::type::camera::Profile& view) {
     if (!camera) {
         return view;
@@ -56,7 +56,7 @@ void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scen
 
     RIBExportVisitor visitor(handler);
     visitor.begin(camera, output);
-    scene.accept(&visitor, evaluation);
+    scene.accept(&visitor, evaluation, scene::Scene::Showing::Renders);
     visitor.end();
 }
 

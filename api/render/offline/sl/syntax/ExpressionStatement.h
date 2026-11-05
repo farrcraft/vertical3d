@@ -10,9 +10,12 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * An expression run as a statement for its effect, such as a call.
+ **/
 class ExpressionStatement final : public Statement {
  public:
-    ExpressionStatement(const ExpressionPtr & expression, const v3d::render::offline::Position & at);
+    ExpressionStatement(const ExpressionPtr & expression, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr expression;
 };

@@ -48,12 +48,12 @@ Notes:
   value, used when the pass names none. `Line`'s and `World`'s depth pipelines opt in. `Lit`'s
   do not, because a lit surface is opaque and always writes.
 
-  Background: [ADR-0085](../../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md)
+  Background: [ADR-0085](../../adr/rendering/0085-rendering-a-pass-chooses-whether-depth-is-written.md)
 - `layout(VkPipelineLayout)` compiles against a layout the caller owns, for several pipelines
   that share one layout under one bound set. `set()` is then read only to detect a set 2, and
   `push()` only for stage flags. The caller destroys that layout.
 - Shader modules belong to the builder and are destroyed with it. The pipeline and its layout are
-  returned for `Resources` to own. Building twice gives two identical pipelines.
+  returned for `resource::Resources` to own. Building twice gives two identical pipelines.
 
 **`rasterization()`, `colourBlend()` and `dynamics()`** return the state `build()` will use;
 `build()` calls these same functions. They exist because a compiled `VkPipeline` cannot be read
@@ -63,7 +63,7 @@ so `vkCmdSetDepthBias` does nothing. Test pipeline state through these functions
 
 **Two variants per depth state.** Dynamic rendering matches a pipeline to the attachments of the
 pass it draws into, so a pipeline built with no depth format cannot draw into a pass with one.
-Each renderer compiles its pipelines twice and picks by `Pass::depth()`.
+Each renderer compiles its pipelines twice and picks by `frame::Pass::depth()`.
 
 ## Descriptor sets and push constants
 
@@ -72,7 +72,7 @@ Sets are organised by how often their contents change.
 | Set | Changes | Holds | Owner |
 |---|---|---|---|
 | 0 | per pass, per frame | the camera: `view`, `projection`, `viewProjection` (three `mat4`) and `viewport` (`vec4`), 208 bytes std140 | `vulkan::frame::FrameUniforms` |
-| 1 | never, for a textured pipeline; per material for a full-screen one | a textured pipeline's: every texture, an array of combined image samplers at binding 0, fragment stage, indexed by slot. A full-screen pipeline's: one combined image sampler per source | `Textures`; `FullScreen`, `Grade` |
+| 1 | never, for a textured pipeline; per material for a full-screen one | a textured pipeline's: every texture, an array of combined image samplers at binding 0, fragment stage, indexed by slot. A full-screen pipeline's: one combined image sampler per source | `resource::Textures`; `FullScreen`, `renderer::Grade` |
 | 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2), object storage buffer (binding 3) | `renderer::Lit` |
 | push | per draw | a projection or an origin, and flags | the item |
 
@@ -87,12 +87,12 @@ Rules:
   lit scene pushes its per-object data. A lit pipeline pushes nothing, and reads its object from
   the scene's object buffer at set 2 by instance index. A lit draw names its object as its first
   instance, and `Lit::object()` returns that index.
-- **A texture is a slot, not a set.** Every textured item names the one material `Textures`
-  holds, so set 1 is bound once while the pipeline stays bound. The item carries its texture's
-  slot: a quad and a world quad in a push constant, a lit object in its `Lit::Object::albedo`.
-  The binding is partially bound and may be written while frames that bind it are in flight, so
-  a slot is written only when it is free: one released is freed through the ring. A device
-  without runtime descriptor arrays, partially bound bindings, updates while pending, and
+- **A texture is a slot, not a set.** Every textured item names the one material
+  `resource::Textures` holds, so set 1 is bound once while the pipeline stays bound. The item
+  carries its texture's slot: a quad and a world quad in a push constant, a lit object in its
+  `Lit::Object::albedo`. The binding is partially bound and may be written while frames that bind it
+  are in flight, so a slot is written only when it is free: one released is freed through the ring.
+  A device without runtime descriptor arrays, partially bound bindings, updates while pending, and
   dynamic and non-uniform indexing of sampled image arrays is not selected.
 - **A full-screen pass binds its sources in a set of its own** at set 1. A source mixes
   two-dimensional images, depth images in their read-only layout and a grade's volume table.
@@ -115,13 +115,13 @@ Who reads set 0:
 - voxel's terrain pipeline reads it and nothing else per draw except a 16-byte push constant
   (the chunk origin), with its block palette at set 1.
 
-**Push constants.** `DrawItem::pushCapacity` is 128 bytes, the Vulkan minimum guarantee.
+**Push constants.** `frame::DrawItem::pushCapacity` is 128 bytes, the Vulkan minimum guarantee.
 Current blocks:
 
 | Pipeline | Block | Size |
 |---|---|---|
-| Quad | `mat4 projection; uint text; uint texture` | 72 bytes |
-| World | `vec4 tint; uint texture` | 20 bytes |
+| Quad | `mat4 projection; uint text; uint texture; uint bands` | 76 bytes |
+| World | `vec4 tint; uint texture; uint bands; uint mode` | 28 bytes |
 | Line, FullScreen, Lit | none | |
 
 The block is copied into the item by value, so the unused part of the 128 bytes is copied per
@@ -136,33 +136,33 @@ writes it before binding.
 | Pool | Sets per Vulkan pool |
 |---|---|
 | set 0 (`FrameUniforms`) | 32 |
-| set 1 (`Textures`) | one set, the texture array, in a pool of its own |
+| set 1 (`resource::Textures`) | one set, the texture array, in a pool of its own |
 | `FullScreen` sources | 8 |
 | set 2 (`Lit` scenes) | frames in flight |
 
-Background: [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md),
-[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
-[ADR-0088](../../adr/0088-lit-per-object-data-in-a-storage-buffer.md),
-[ADR-0109](../../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
+Background: [ADR-0008](../../adr/rendering/0008-shaders-descriptor-sets-by-update-frequency.md),
+[ADR-0064](../../adr/rendering/0064-lighting-lit-passes-use-the-shared-recorder.md),
+[ADR-0088](../../adr/rendering/0088-lit-per-object-data-in-a-storage-buffer.md),
+[ADR-0109](../../adr/rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 
 ## Draw items and the sort key
 
-A `DrawItem` describes one draw: pipeline and material handles, vertex and index buffers with
+A `frame::DrawItem` describes one draw: pipeline and material handles, vertex and index buffers with
 offsets, index type, the push block and its size, vertex/index/instance counts and firsts, an
 optional scissor, and the optional `record` callback.
 
-**`SortKey`** packs four 16-bit fields into one `uint64_t`, coarsest first, so a pass sorts on a
-single comparison:
+**`frame::SortKey`** packs four 16-bit fields into one `uint64_t`, coarsest first, so a pass sorts
+on a single comparison:
 
 | Bits | Field | Set by |
 |---|---|---|
 | 63–48 | `layer` | the caller (painter order) |
-| 47–32 | `pipeline` | `Pass::submit`, from the pipeline handle's slot |
-| 31–16 | `material` | `Pass::submit`, from the material handle's slot |
+| 47–32 | `pipeline` | `frame::Pass::submit`, from the pipeline handle's slot |
+| 31–16 | `material` | `frame::Pass::submit`, from the material handle's slot |
 | 15–0 | `depth` | the caller (view depth quantised) |
 
 Layer is first because 2D content is painter ordered. Pipeline then material groups the items
-that can share bindings. `Pass::submit` overwrites the pipeline and material fields from the
+that can share bindings. `frame::Pass::submit` overwrites the pipeline and material fields from the
 item's handles, so a caller sets only layer and depth. Sorting is opt-in per pass and stable.
 
 Handles are used instead of pointers because a pointer's value depends on the allocator, which
@@ -188,10 +188,16 @@ that wants to replace them.
 | `linear_quad.frag` | `Quad` drawing into an `_SRGB` format: `quad.frag` compiled with `LINEARISE` |
 | `line.vert`, `line.frag` | `Line` |
 | `world.vert`, `world.frag` | `World` |
-| `fullscreen.vert`, `grade.frag` | `FullScreen`, `Grade` |
-| `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
+| `encoded_world.frag` | `World` drawing into an `_SRGB` format: `world.frag` compiled with `ENCODED_TARGET` |
+| `fullscreen.vert`, `grade.frag` | `FullScreen`, `renderer::Grade` |
+| `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `renderer::Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
 | `lit/mesh.vert`, `lit/cel.frag`, `lit/outline.vert`, `lit/outline.frag`, `lit/shadow.vert` | `Lit` |
 | `skinned_mesh.vert`, `skinned_outline.vert`, `skinned_shadow.vert` | `Lit`, the three lit vertex stages compiled with `SKINNED` |
+
+`curves.glsl` finds a curve glyph's coverage from its curves and bands, as the Slug algorithm
+does. `field.glsl` finds a distance field's coverage at a glyph's edge or through an effect's
+ramp. `text.glsl` applies text's contrast, and in an `_SRGB` target corrects its coverage to
+its display space weight. `quad.frag` and `world.frag` include all three.
 
 `srgb.glsl` holds the sRGB decode and encode. `quad.frag` and `grade.frag` include it, so the
 two agree to the bit.

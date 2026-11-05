@@ -131,10 +131,12 @@ boost::shared_ptr<Component> ComponentReader::buildComponent(const std::string& 
             return readLabel(entry);
         case component::Type::Icon:
             return readIcon(entry);
-        case component::Type::Panel:
-            // everything a panel is drawn with comes from its style, so there is nothing of
-            // its own to read
-            return boost::make_shared<component::Panel>();
+        case component::Type::Panel: {
+            // a panel's colours come from its style. It reads only whether it is a recess
+            const boost::shared_ptr<component::Panel> panel = boost::make_shared<component::Panel>();
+            panel->recess(optionalFlag(*logger_, entry, "recess", false));
+            return panel;
+        }
         case component::Type::Bar:
             return readBar(entry);
         case component::Type::Scrollbar:
@@ -280,6 +282,8 @@ boost::shared_ptr<component::Button> ComponentReader::readButton(const boost::js
         button->icon(*value);
     }
     button->toggle(optionalFlag(*logger_, entry, "toggle", false));
+    button->tab(optionalChoice(*logger_, entry, "tab", {
+        {"strip", component::Button::Tab::Strip}, {"choice", component::Button::Tab::Choice}}, component::Button::Tab::None));
     const v3d::event::Event command = readCommand(entry);
     if (command.context()) {
         button->event(command);
@@ -427,16 +431,17 @@ boost::shared_ptr<component::Label> ComponentReader::readLabel(const boost::json
 }
 
 boost::shared_ptr<component::Icon> ComponentReader::readIcon(const boost::json::object& entry) {
-    const std::optional<std::string> source = requiredString(*logger_, entry, "source", "An icon");
-    if (!source) {
-        return nullptr;
-    }
-    return boost::make_shared<component::Icon>(*source);
+    // an icon with no source shows nothing until the app gives it an image
+    return boost::make_shared<component::Icon>(optionalString(*logger_, entry, "source").value_or(std::string()));
 }
 
 boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
     bar->docked(optionalFlag(*logger_, entry, "docked", true));
+    bar->opacity(optionalNumber(*logger_, entry, "opacity").value_or(1.0F));
+    if (const std::optional<std::string> note = optionalString(*logger_, entry, "note")) {
+        bar->note(*note);
+    }
 
     const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
     if (menus == nullptr) {
@@ -459,6 +464,13 @@ boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost
         // a bar's menus are dropped rather than navigated, so none of them is a level and none
         // starts with an item active
         menu->active(-1);
+        if (const std::optional<std::string> icon = optionalString(*logger_, *menuEntry, "icon")) {
+            menu->icon(*icon);
+        }
+        menu->drop(optionalFlag(*logger_, *menuEntry, "drop", false));
+        menu->emphasis(optionalFlag(*logger_, *menuEntry, "emphasis", false));
+        menu->accent(optionalFlag(*logger_, *menuEntry, "accent", false));
+        menu->named(optionalFlag(*logger_, *menuEntry, "named", false));
         bar->add(*label, menu);
     }
     return bar;
@@ -588,6 +600,11 @@ boost::shared_ptr<component::Toolbar> ComponentReader::readToolbar(const boost::
         const boost::json::object* buttonEntry = requiredObject(*logger_, item, "A toolbar's buttons");
         if (buttonEntry == nullptr) {
             return nullptr;
+        }
+        // a separator is a rule before the next button, as it is between a menu's items
+        if (optionalString(*logger_, *buttonEntry, "type") == std::optional<std::string>("separator")) {
+            bar->separate();
+            continue;
         }
         // a toolbar button is read the same way as a button in a container, so "enabled",
         // "style", "name" and "visible" on one mean what they mean anywhere else

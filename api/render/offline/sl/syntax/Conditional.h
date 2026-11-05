@@ -10,6 +10,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * An if statement, with an optional else.
+ **/
 class Conditional final : public Statement {
  public:
     /** What runs when the condition holds, and what runs when it does not, which may be null. **/
@@ -18,7 +21,7 @@ class Conditional final : public Statement {
         StatementPtr whenFalse;
     };
 
-    Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::Position & at);
+    Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr condition;
     StatementPtr whenTrue;

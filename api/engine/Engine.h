@@ -16,6 +16,7 @@
 #include <api/window/Window.h>
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <string>
 #include <string_view>
@@ -24,11 +25,16 @@
 #include "Accumulator.h"
 #include "Feature.h"
 #include "Identity.h"
+#include "Launch.h"
 #include "Settings.h"
 #include "Statistics.h"
 
 #include <boost/json.hpp>
 #include <entt/entt.hpp>
+
+namespace v3d::image {
+class Image;
+};  // namespace v3d::image
 
 namespace v3d::engine {
 
@@ -159,9 +165,49 @@ class Engine {
     const Identity& identity() const noexcept;
 
     /**
+     * What the command line asked of the engine, before initialize(). run<T> does this when it
+     * is given the command line. The app reads its own options from Launch::rest.
+     **/
+    void launch(const Launch& launch);
+    const Launch& launch() const noexcept;
+
+    /**
+     * Writes the frame being rendered to a png file, and returns whether it asked for that. The
+     * capture is written when the frame is presented.
+     **/
+    using Capturer = std::function<bool(const std::string& file)>;
+
+    /**
+     * Name what writes a frame when the command line asks for a capture. The shell's present()
+     * names the app's renderer, and its release() clears it.
+     *
+     * @param capturer what writes the frame, or an empty function for nothing
+     **/
+    void capturer(const Capturer& capturer);
+
+    /**
      * @return Window
      **/
     boost::shared_ptr<v3d::window::Window> window() const;
+
+    /**
+     * Open another window beside the app's own, for an app that draws to more than one.
+     *
+     * The engine keeps its size as it is resized, and reports the resize as a WindowResize
+     * carrying its id. Closing it is reported as a WindowClose, and quits nothing. Its focus, its
+     * scale and its being minimised are not reported. The app removes it with removeWindow(),
+     * after releasing whatever presents to it. Any still open are destroyed with the engine's
+     * own window.
+     *
+     * @return the window, or null before the engine's own window is open and when it cannot be
+     *         created
+     **/
+    boost::shared_ptr<v3d::window::Window> addWindow(const glm::ivec2& size);
+
+    /**
+     * Destroy a window addWindow() opened. Anything presenting to it has to be released first.
+     **/
+    void removeWindow(const boost::shared_ptr<v3d::window::Window>& window);
 
     /**
      * What the engine built, for an app to build on. Each is null until initialize() runs.
@@ -358,6 +404,22 @@ class Engine {
     void route(const SDL_Event& event);
 
  private:
+     /**
+      * Ask the capturer to write the frame about to be rendered to the file the command line
+      * names.
+      *
+      * @return false, which is logged, when nothing is named to capture or it cannot capture
+      **/
+     bool requestCapture();
+
+     /**
+      * Render one frame, capturing it first when it is the frame the command line names, and
+      * clear the input edges it read.
+      *
+      * @return false when the capture or render() fails
+      **/
+     bool presentFrame();
+
      /** The settings key the player's key bindings are kept under. **/
      static constexpr const char* BINDINGS = "bindings";
 
@@ -380,6 +442,11 @@ class Engine {
      void handleEvent(const SDL_Event& event);
 
      /**
+      * Handle a window event for a window addWindow() opened: a close request or a resize.
+      **/
+     void handleAdded(v3d::window::Window& window, const SDL_Event& event);
+
+     /**
       * Quit, if the app does not hold the quit. Every request from the user comes here.
       **/
      void requestQuit();
@@ -397,6 +464,17 @@ class Engine {
      bool loadConfig();
      void startInput();
      bool openWindow();
+
+     /**
+      * Draw the icon the window config names, at each size a window's icon is given. An icon
+      * that cannot be read is logged, and the window keeps the platform's.
+      **/
+     void loadIcon(const std::string& name);
+
+     /**
+      * Give a window the icon loadIcon() drew, if it drew one.
+      **/
+     void showIcon(v3d::window::Window* window) const;
 
      entt::registry registry_;
 
@@ -420,11 +498,15 @@ class Engine {
      void loadSettings();
 
      template <typename T, typename... Args>
-     friend int run(const char* executable, const Identity& identity, Args&&... args);
+     friend int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::asset::Manifest> manifest_;
      boost::shared_ptr<v3d::window::Window> window_;
+     // the windows addWindow() opened, destroyed before the engine's own
+     std::vector<boost::shared_ptr<v3d::window::Window>> windows_;
+     // the app's icon at each size, which every window it opens shows
+     std::vector<boost::shared_ptr<v3d::image::Image>> icon_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
      boost::shared_ptr<v3d::event::Router> router_;
@@ -443,6 +525,10 @@ class Engine {
      bool quitting_;
      bool minimized_ = false;
      boost::shared_ptr<v3d::input::Devices> devices_;
+     Launch launch_{};
+     Capturer capturer_{};
+     /**< the frames rendered so far, counted for the capture the command line asks for **/
+     unsigned int frames_ = 0;
 };
 
 };  // namespace v3d::engine

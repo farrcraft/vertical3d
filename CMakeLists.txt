@@ -108,6 +108,49 @@ if(V3D_CLANG_TIDY)
 	endif()
 endif()
 
+# The sanitizers check what the code does when it runs, where the analysers above read it.
+# AddressSanitizer reports an out of bounds access, a use after free and a leak, and on Clang
+# and GCC the undefined behaviour sanitizer reports overflow, misalignment and bad shifts. A
+# report fails the program, so a test that triggers one fails. Only the tree is instrumented,
+# not the vcpkg packages.
+#
+# MSVC has AddressSanitizer alone. It does not work with the run-time checks or incremental
+# linking, which CMake's Debug flags turn on, so both come out of them.
+option(V3D_SANITIZE "Build with AddressSanitizer, and the undefined behaviour sanitizer where the compiler has one" OFF)
+# libFuzzer drives each fuzz target with generated input, guided by the coverage this
+# instrumentation records. It needs Clang. Without it a fuzz target still builds, and runs the
+# files it is given once each.
+option(V3D_FUZZ "Build the fuzz targets with libFuzzer, and instrument the tree for it" OFF)
+
+if(V3D_SANITIZE)
+	if(MSVC)
+		string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+		string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+		foreach(kind EXE SHARED MODULE)
+			string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO" CMAKE_${kind}_LINKER_FLAGS_DEBUG "${CMAKE_${kind}_LINKER_FLAGS_DEBUG}")
+		endforeach()
+		add_compile_options("/fsanitize=address")
+		# The standard library marks the unused capacity of a string or a vector so that a read
+		# of it is reported. The vcpkg packages are not instrumented, so a string that one of
+		# their DLLs grows keeps the old marks, and the next read of it is a false report.
+		add_compile_definitions("_DISABLE_STRING_ANNOTATION" "_DISABLE_VECTOR_ANNOTATION")
+	else()
+		# vptr checks a polymorphic object's dynamic type through its RTTI. thorvg is built without
+		# RTTI, so a class of its that this tree derives from or casts has no type information to
+		# link against.
+		add_compile_options("-fsanitize=address,undefined" "-fno-sanitize=vptr" "-fno-sanitize-recover=undefined" "-fno-omit-frame-pointer")
+		add_link_options("-fsanitize=address,undefined")
+	endif()
+endif()
+
+if(V3D_FUZZ)
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR MSVC)
+		message(FATAL_ERROR "V3D_FUZZ builds with libFuzzer, which needs Clang. Leave it off, and the fuzz targets run the files they are given.")
+	endif()
+	add_compile_options("-fsanitize=fuzzer-no-link")
+	add_link_options("-fsanitize=fuzzer-no-link")
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/World.h>
 
 #include <cstddef>
@@ -32,8 +32,8 @@ v3d::render::realtime::canvas::World::Corners tile(float x, float z) {
     };
 }
 
-v3d::render::realtime::TextureHandle handle(uint32_t id) {
-    return v3d::render::realtime::TextureHandle(id);
+v3d::render::realtime::resource::TextureHandle handle(uint32_t id) {
+    return v3d::render::realtime::resource::TextureHandle(id);
 }
 
 BOOST_AUTO_TEST_SUITE(worldcanvas_test)
@@ -221,6 +221,62 @@ BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
 
     canvas.quad(tile(0.0F, 0.0F), red);
     BOOST_TEST((canvas.vertices()[0].colour == red));
+}
+
+/**
+ * A glyph drawn from its curves is a quad whose corners carry its em corners and where its bands
+ * start, in a run of its own that names its bands.
+ **/
+BOOST_AUTO_TEST_CASE(a_glyph_is_a_quad_over_its_curves) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    const v3d::render::realtime::canvas::World::Glyph glyph{ .em = { glm::vec2(0.0F, 1.0F), glm::vec2(1.0F, 1.0F), glm::vec2(1.0F, 0.0F),
+        glm::vec2(0.0F, 0.0F) }, .bands = 7, .curveTexture = handle(1), .bandTexture = handle(2) };
+    canvas.glyph(tile(1.0F, 0.0F), glyph, red);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(canvas.batches()[1].bands == handle(2));
+    BOOST_CHECK(canvas.batches()[1].texture == handle(1));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 7U);
+    BOOST_CHECK(canvas.vertices()[6].uv == glm::vec2(1.0F, 0.0F));
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 0U);
+}
+
+/**
+ * An effect drawn from a distance field is a quad carrying its ramp, in a run of its own that
+ * does not merge with a picture of the same texture.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_is_a_quad_with_its_ramp) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    canvas.field(tile(1.0F, 0.0F), glm::vec2(0.25F, 0.25F), glm::vec2(0.5F, 0.5F), red, handle(1), 9);
+    canvas.field(tile(2.0F, 0.0F), glm::vec2(0.25F, 0.25F), glm::vec2(0.5F, 0.5F), red, handle(1), 9);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(!canvas.batches()[0].field);
+    BOOST_CHECK(canvas.batches()[1].field);
+    BOOST_CHECK(canvas.batches()[1].texture == handle(1));
+    BOOST_CHECK_EQUAL(canvas.batches()[1].indices, 12U);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 9U);
+    BOOST_CHECK(canvas.vertices()[6].uv == glm::vec2(0.5F, 0.5F));
+}
+
+/**
+ * A glyph's contrast reaches its vertices, and a field's too, while a quad is not text.
+ **/
+BOOST_AUTO_TEST_CASE(text_keeps_its_contrast) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), white);
+    const v3d::render::realtime::canvas::World::Glyph glyph{ .bands = 7, .curveTexture = handle(1), .bandTexture = handle(2), .contrast = 0.25F };
+    canvas.glyph(tile(1.0F, 0.0F), glyph, red);
+    canvas.field(tile(2.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), red, handle(3), 9, 0.75F);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_CHECK_LT(canvas.vertices()[0].contrast, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.25F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].contrast, 0.75F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -24,16 +24,20 @@ is SDL3.
 |---|---|
 | Anything, for the first time | [docs/api/README.md](docs/api/README.md): the libraries, how they fit, and a glossary |
 | Building, CMake, linking a target | [docs/contributing/Build.md](docs/contributing/Build.md) |
-| A dependency, vcpkg, the Vulkan SDK | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
+| A dependency, vcpkg, the Vulkan SDK, the overlay ports in `ports/` | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
 | Tests, or verifying a rendering change | [docs/contributing/Testing.md](docs/contributing/Testing.md) |
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
+| A review gate, or anything in `scripts/` | [docs/contributing/Gates.md](docs/contributing/Gates.md) |
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
+| The documentation site, `docs/SUMMARY.md`, the API reference | [Conventions.md](docs/contributing/Conventions.md#the-documentation-site) |
 | `api/engine`, `event`, `input`, `audio`, `log`, `window`, `shell` | [docs/api/engine/](docs/api/engine/README.md) |
 | `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs`, `api/curve` | [docs/api/Types.md](docs/api/Types.md), [Cameras.md](docs/api/Cameras.md), [Models.md](docs/api/Models.md), [Animation.md](docs/api/Animation.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md), [Curves.md](docs/api/Curves.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md), [Images.md](docs/api/Images.md), [Fonts.md](docs/api/Fonts.md) |
 | `api/interchange` | [docs/api/Interchange.md](docs/api/Interchange.md) |
 | `api/database` | [docs/api/Database.md](docs/api/Database.md) |
+| `api/script` | [docs/api/Scripting.md](docs/api/Scripting.md) |
+| An app in another repository that uses the api | [docs/api/UsingTheApi.md](docs/api/UsingTheApi.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
@@ -64,16 +68,17 @@ covered.
 ```
 ninja -C out/build/x64-Debug                       # build; one target by name
 ctest --test-dir out/build/x64-Debug --output-on-failure
-cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=demos/voxel/src/noise --recursive .
+cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --recursive .
+npm ci && npm run typecheck                        # type-check every TypeScript file
+node scripts/prose.ts                              # one review gate; Gates.md lists them all
 ```
 
 Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer
 environment, and `scripts\build.cmd` and `scripts\test.cmd` are the same commands with one
 entered. [docs/contributing/Build.md](docs/contributing/Build.md) covers configuring from a cold
 tree, the options, and what has to be installed first. The tree is clean at cpplint, at `/W4`
-with `/WX`, at `/analyze` and at the 199 clang-tidy checks left enabled, so **every finding is a
-new one**.
+with `/WX`, at `/analyze`, at the clang-tidy checks `.clang-tidy` enables, and at every review
+gate in `scripts/`, so **every finding is a new one**.
 
 ## Rules that cost the most when broken
 

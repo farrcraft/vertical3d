@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Image.h>
 #include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
@@ -15,18 +16,24 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::canvas {
 class Canvas;
 };  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
+
+namespace paint {
+class TextRenderer;
+};  // namespace paint
 
 namespace style {
 class Theme;
@@ -83,10 +90,10 @@ class Immediate {
     };
 
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param text what text is laid out and drawn through
+     * @param size the size text is drawn at, or 0 for the renderer's own
      **/
-    Immediate(const paint::Measure& measure, const paint::Write& write);
+    explicit Immediate(const boost::shared_ptr<paint::TextRenderer>& text, float size = 0.0F);
     ~Immediate();
 
     // what the layer holds is its own, so it moves and is not copied
@@ -96,18 +103,15 @@ class Immediate {
     Immediate& operator=(const Immediate&) = delete;
 
     /**
-     * Replace how strings are measured and drawn, as when the text is rescaled. Everything
+     * Replace what text is drawn through and its size, as when the text is rescaled. Everything
      * the layer remembers between frames - where windows were dragged, what is folded, how
-     * far a list is scrolled - is kept.
+     * far a list is scrolled - is kept. A window's title and a table's header are drawn in the
+     * semibold face when the dressing's titleWeight asks for it.
+     *
+     * @param text what text is laid out and drawn through
+     * @param size the size text is drawn at, or 0 for the renderer's own
      **/
-    void text(const paint::Measure& measure, const paint::Write& write);
-
-    /**
-     * How the app draws text in the semibold face. A window's title and a table's header are
-     * drawn through it when the dressing's titleWeight is semibold. Without one, they are drawn
-     * through the write given to text().
-     **/
-    void titles(const paint::Write& write);
+    void text(const boost::shared_ptr<paint::TextRenderer>& text, float size = 0.0F);
 
     /**
      * Draw larger or smaller. Every size of the dressing goes back to the built-in one at this
@@ -185,6 +189,7 @@ class Immediate {
      * Pair every call with endWindow(), whatever it returned. A collapsed window returns
      * false and still has to be closed.
      *
+     * @param title drawn in the title bar, and the window's id
      * @param area where the window's top left corner is, and its size
      * @param alpha what the window's background is drawn at, 1 for opaque
      * @return whether what goes in it should be drawn, false for a collapsed window
@@ -200,6 +205,7 @@ class Immediate {
      * cursor from what was drawn before it. Pair every call with endRegion().
      *
      * @param name the region's id, which is not drawn
+     * @param area where the region's top left corner is, and its size
      * @param alpha what its background is drawn at, 0 to draw none
      **/
     void region(const std::string& name, const v3d::type::geometry::Bound2D::Area& area, float alpha);
@@ -209,6 +215,17 @@ class Immediate {
      * One line of text at the pen.
      **/
     void text(const std::string& line);
+
+    /**
+     * One line of text at the pen, in a colour of its own, such as an axis's.
+     **/
+    void text(const std::string& line, const glm::vec4& colour);
+
+    /**
+     * An image at the pen, the size given, tinted by the colour. One shorter than a line is
+     * centred down the line, so it sits level with text beside it.
+     **/
+    void image(const Image& picture, const glm::vec2& size, const glm::vec4& tint = glm::vec4(1.0F));
 
     /**
      * A line of text in the disabled-text colour, for secondary text.
@@ -238,33 +255,81 @@ class Immediate {
     bool smallButton(const std::string& label);
 
     /**
+     * How a button drawn from an icon looks, and what its tooltip says.
+     **/
+    struct IconLook final {
+        Image icon;           /**< drawn in the middle at the dressing's icon size, or nothing when it is not valid **/
+        std::string tooltip;  /**< what the button does, shown once the cursor rests on it, or empty for no tooltip **/
+        std::string keys;     /**< the shortcut shown after the tooltip in secondary text, or empty for none **/
+        bool on = false;      /**< filled as a checked toggle is, for a button whose action is under way **/
+    };
+
+    /**
+     * A square button a bar high, drawn from an icon in the text colour.
+     *
+     * Once the cursor has rested on it for the dressing's tooltip delay, its tooltip is drawn
+     * at end(), over everything else. The plate hangs just under the button, or above it where
+     * it would leave the canvas. Moving along a row of such buttons shows each one's after the
+     * quick delay. A press puts the tooltip away until the cursor moves. A layer with no clock
+     * shows a tooltip at once.
+     *
+     * @param id the button's id within the scope
+     * @param look its icon, its tooltip and whether it is on
+     * @return whether it was clicked this frame
+     **/
+    bool iconButton(const std::string& id, const IconLook& look);
+
+    /**
      * A row that spans the width, drawn highlighted when it is the selected one.
      * @return whether it was clicked
      **/
     bool selectable(const std::string& label, bool selected);
 
     /**
-     * How a row of a tree sits: how deep it is, whether it folds, and whether it is chosen.
+     * How a row of a tree sits: how deep it is, whether it folds, whether it is chosen, and the
+     * icon it leads with.
      **/
     struct TreeRow final {
         unsigned int depth = 0;  /**< how many levels down, each indenting the row by a line **/
         bool* open = nullptr;    /**< read and written - whether what is beneath it shows, or null for a row with nothing beneath it **/
-        bool selected = false;   /**< drawn highlighted **/
+        bool selected = false;   /**< drawn on the selected tint **/
+        Image icon;              /**< drawn before the label, or nothing when it is not valid **/
+        glm::vec4 iconTint{1.0F};  /**< what the icon is tinted **/
+        bool dimmed = false;     /**< the label in disabled text and the icon at half its alpha, as for something hidden **/
+        Image end;               /**< drawn at the row's right end in secondary text, or nothing when it is not valid **/
+        bool* endClicked = nullptr;  /**< written - whether a click landed on the end icon, or null **/
     };
 
     /**
      * A row of a tree that spans the width, indented by its depth. A row with something
      * beneath it has a mark before its label, pointing right while folded and down while open,
-     * and a click on the mark folds or opens it.
+     * and a click on the mark folds or opens it. A row with an icon draws it between the mark's
+     * place and the label, at the dressing's icon size or a line, whichever is smaller. An end
+     * icon is drawn the same size in the last line of the row, and a click on it is its own,
+     * such as a toggle of whether the row's item shows.
      *
-     * @return whether the row was clicked anywhere but its mark
+     * @return whether the row was clicked anywhere but its mark and its end icon
      **/
     bool treeRow(const std::string& label, const TreeRow& row);
 
     /**
+     * A semibold line that heads a group of rows. A heading given open folds the group: it
+     * draws a tree row's mark before its label, and a click anywhere on it flips *open.
+     *
+     * @param label the heading's text, and its id
+     * @param open read and written - whether the group shows, or null for a heading that does
+     *        not fold
+     * @return whether to draw the group: *open, or true for a heading that does not fold
+     **/
+    bool heading(const std::string& label, bool* open = nullptr);
+
+    /**
      * An integer scrubbed by dragging across it.
      *
+     * @param label drawn before the value, and the widget's id
      * @param value read and written; left alone when nothing dragged
+     * @param low the least a drag sets the value to
+     * @param high the most a drag sets the value to
      * @return whether the value changed this frame
      **/
     bool dragInt(const std::string& label, int* value, int low, int high);
@@ -277,6 +342,7 @@ class Immediate {
      * for each pixel. A typed value is taken when the field gives up the keyboard, as a text
      * field does, unless escape gave it up or what was typed is not a finite number.
      *
+     * @param label drawn at the left, and the widget's id
      * @param value read and written; left alone when nothing changed it
      * @param speed how far the value moves for each pixel the cursor travels
      * @return whether the value changed this frame
@@ -284,8 +350,24 @@ class Immediate {
     bool dragFloat(const std::string& label, float* value, float speed);
 
     /**
+     * How a number's field is dressed beyond its label and value.
+     **/
+    struct NumberLook final {
+        std::optional<glm::vec4> labelColour;  /**< the label's colour in place of secondary text, such as an axis's **/
+        std::string unit;                      /**< written straight after the value, so one set apart by a space starts with it **/
+        std::optional<glm::vec4> edge;         /**< a rule down the field's left side, 2 pixels wide at a scale of 1, such as an axis's colour **/
+    };
+
+    /**
+     * A number as the other dragFloat draws it, with its label in a colour of its own and its
+     * unit after the value. A typed value is the number alone.
+     **/
+    bool dragFloat(const std::string& label, float* value, float speed, const NumberLook& look);
+
+    /**
      * A filled track spanning the width, with a line of text over it.
      * @param fraction how full, clamped to 0..1
+     * @param overlay the text centred over the track, or empty for none
      **/
     void progressBar(float fraction, const std::string& overlay);
 
@@ -293,6 +375,57 @@ class Immediate {
      * A rule across the width, and the gap around it.
      **/
     void separator();
+
+    /**
+     * What a surface did with the cursor this frame, and where it is.
+     **/
+    struct Surface final {
+        glm::vec2 min{ 0.0F };      /**< its top left corner **/
+        glm::vec2 max{ 0.0F };      /**< its bottom right corner **/
+        glm::vec2 cursor{ 0.0F };   /**< where the cursor is, inside it or not **/
+        glm::vec2 pressAt{ 0.0F };  /**< where the press it holds went down **/
+        bool hovered = false;       /**< the cursor is on it, and on nothing drawn over it **/
+        bool pressed = false;       /**< a press went down on it this frame **/
+        bool held = false;          /**< a press went down on it and has not come up **/
+        bool released = false;      /**< the press it held came up this frame, wherever the cursor is **/
+        float wheel = 0.0F;         /**< notches the wheel turned while the cursor was on it, away from the reader first **/
+    };
+
+    /**
+     * A box the width of the row that draws nothing of its own, for a caller that draws into it
+     * with fill(), line(), diamond() and textAt(), and acts on the cursor itself. A press that
+     * goes down on it holds it until the press comes up, wherever the cursor goes.
+     *
+     * @param id the surface's id within the scope
+     * @param height how tall it is
+     **/
+    Surface surface(const std::string& id, float height);
+
+    /**
+     * Draw a filled rectangle, clipped as the widgets around it are.
+     **/
+    void fill(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour);
+
+    /**
+     * Draw a straight line of a width, centred on the two points and with square ends.
+     **/
+    void line(const glm::vec2& from, const glm::vec2& to, float width, const glm::vec4& colour);
+
+    /**
+     * Draw a filled diamond: a square on its corner, reaching radius from its centre each way.
+     **/
+    void diamond(const glm::vec2& centre, float radius, const glm::vec4& colour);
+
+    /**
+     * Draw a line of text with its top left corner at a point, one line tall. It takes no place
+     * in the row.
+     **/
+    void textAt(const std::string& line, const glm::vec2& at, const glm::vec4& colour);
+
+    /**
+     * @return how wide a line of text is drawn, for a caller laying out widgets around it
+     **/
+    float measure(const std::string& line) const;
 
     /**
      * How wide the next widget should be, instead of the rest of the row.
@@ -303,6 +436,20 @@ class Immediate {
      * @param width in pixels, or nothing at all to go back to the rest of the row
      **/
     void nextItemWidth(float width);
+
+    /**
+     * @return how wide a row is from its margin to its right edge, which a widget given no width
+     *         of its own fills. A caller dividing a row between widgets takes the spacing between
+     *         them from it first
+     **/
+    float rowWidth() const noexcept;
+
+    /**
+     * @return how tall the next row can be and still end inside the window or region it is in,
+     *         so a widget given that height fills the rest of it without making it scroll. 0
+     *         outside a window, or when there is no room left
+     **/
+    float roomBelow() const noexcept;
 
     /**
      * Whether the cursor is over something this layer drew, or is dragging something it
@@ -342,6 +489,7 @@ class Immediate {
      * The label is the field's id, and is drawn in it in the placeholder colour while it is
      * empty and does not have the keyboard.
      *
+     * @param label the field's id, and its placeholder
      * @param value read and written. A change the caller makes while the field holds the
      *        keyboard replaces what is being edited
      * @param limit how many bytes the value may hold, or zero for no limit. Typing past it
@@ -351,8 +499,24 @@ class Immediate {
     bool textField(const std::string& label, std::string* value, std::size_t limit = 0);
 
     /**
+     * How a text field is dressed beyond its value and placeholder.
+     **/
+    struct FieldLook final {
+        Image icon;             /**< drawn at the left in the placeholder's colour, or nothing when it is not valid **/
+        bool labelled = false;  /**< the label drawn after the icon in secondary text, as a number's is, and not as a placeholder **/
+        std::size_t limit = 0;  /**< how many bytes the value may hold, or zero for no limit **/
+    };
+
+    /**
+     * A text field as the other textField draws it, led by an icon, by its label, or by both in
+     * that order. The text and the caret start past them.
+     **/
+    bool textField(const std::string& label, std::string* value, const FieldLook& look);
+
+    /**
      * A box that is ticked or not, with its label beside it.
      *
+     * @param label drawn beside the box, and the widget's id
      * @param value read and written; flipped by a click
      * @return whether it was clicked this frame
      **/
@@ -361,7 +525,10 @@ class Immediate {
     /**
      * A number between two ends, set by pressing on the track or dragging along it.
      *
+     * @param label drawn on the track before the value, and the widget's id
      * @param value read and written; left alone when nothing is held on it
+     * @param low the value at the left end of the track
+     * @param high the value at the right end of the track
      * @return whether the value changed this frame
      **/
     bool sliderFloat(const std::string& label, float* value, float low, float high);
@@ -369,12 +536,17 @@ class Immediate {
     /**
      * The chosen one of several items, which a click opens as a list under it.
      *
+     * The box shows the label at its left, and the chosen item at its right before a drop
+     * mark, so it reads as a field that opens a list.
+     *
      * The list is drawn at end(), over everything else, and is not clipped to the window
      * the combo is in. A click on an item takes effect on the next frame's call, as a click
      * on a tab does at endTabBar(). A press anywhere outside the list closes it, and so does
      * a frame that does not draw the combo.
      *
+     * @param label what the combo is for, drawn at its left, and its id
      * @param selected read and written - the index of the chosen item
+     * @param items what the list offers, in order. An index outside it shows no item
      * @return whether the choice changed this frame
      **/
     bool combo(const std::string& label, int* selected, const std::vector<std::string>& items);
@@ -394,6 +566,23 @@ class Immediate {
      * the whole edit as one change here.
      **/
     bool itemFinished() const noexcept;
+
+    /**
+     * Whether the field just drawn gave up the keyboard to a return this frame, as a line is
+     * entered. itemFinished() is true then too.
+     **/
+    bool itemEntered() const noexcept;
+
+    /**
+     * Whether the field just drawn holds the keyboard, once this frame's input has reached it.
+     **/
+    bool itemTyping() const noexcept;
+
+    /**
+     * Give the keyboard to the next text field drawn this frame, as a console keeps it for the
+     * line after one is entered. A frame that draws no field lets the request go.
+     **/
+    void focusNext() noexcept;
 
     /**
      * A key went down. A text field that holds the keyboard edits its line with it.
@@ -418,6 +607,14 @@ class Immediate {
      *      dropped
      **/
     bool typed(std::string_view utf8);
+
+    /**
+     * Characters an input method is composing, shown at the caret of the field that holds the
+     * keyboard until they are typed in. An empty string ends the composition.
+     *
+     * @return whether a field took them
+     **/
+    bool composing(std::string_view utf8);
 
     /**
      * Whether a text field holds the keyboard. While it does, the platform's text input
@@ -460,6 +657,11 @@ class Immediate {
     /**
      * Open a strip of tabs. The strip takes a row of its own, so what a selected tab holds
      * is drawn under the whole strip rather than beside the next tab.
+     *
+     * The strip is a recess across the row, in the dressing's `tab` colour, and its tabs share
+     * the row's width evenly. The chosen tab is raised to the `chosen` colour and set semibold.
+     * The shares come from how many tabs the strip held last frame, so a strip drawn for the
+     * first time sizes each tab to its label.
      *
      * @return true, so that the call reads like the ones it wraps
      **/
@@ -556,15 +758,26 @@ class Immediate {
      **/
     static constexpr float tickInset = 0.25F;
     /**
-     * How wide the mark at the right end of a combo is, as a fraction of a row.
+     * How wide the drop mark at the right end of a combo is, as a fraction of a row.
      **/
     static constexpr float comboMark = 0.4F;
+    /**
+     * How far a tab under the cursor is raised toward the chosen tab's colour, from 0 for not
+     * at all to 1 for all the way.
+     **/
+    static constexpr float hoverLift = 0.5F;
     /**
      * How far a press on a title bar has to travel before it moves the window instead of
      * folding it. Wide enough that a hand resting on the button does not drag,
      * and narrow enough that a move that was meant is never read as a fold.
      **/
     static constexpr float dragThreshold = 3.0F;
+
+    /**
+     * Draw a tree row's fold mark centred on a point, pointing down while open and right while
+     * folded.
+     **/
+    void foldMark(const glm::vec2& centre, bool open, const glm::vec4& ink);
 
     std::unique_ptr<immediate::Context> context_;
 };

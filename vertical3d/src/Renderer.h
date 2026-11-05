@@ -9,7 +9,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
@@ -17,16 +17,19 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/control/chrome/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
-#include <vertical3d/src/control/Notices.h>
-#include <vertical3d/src/control/Pointer.h>
-#include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/control/chrome/Notices.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/ConstructionPlane.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -34,6 +37,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -88,17 +92,17 @@ class Renderer final {
      * What decides the frame drawn around the areas: the active area and the lit divider. The
      * frame is drawn under the ui and over the views.
      **/
-    void pointer(const boost::shared_ptr<control::Pointer>& pointer);
+    void pointer(const boost::shared_ptr<control::chrome::Pointer>& pointer);
 
     /**
      * What the status bar along the foot of the window says this frame.
      **/
-    void status(const control::Status& status);
+    void status(const control::chrome::Status& status);
 
     /**
      * The notices drawn at the foot of the active area, or null for none.
      **/
-    void notices(const boost::shared_ptr<control::Notices>& notices);
+    void notices(const boost::shared_ptr<control::chrome::Notices>& notices);
 
     /**
      * The one scene every view draws.
@@ -118,9 +122,17 @@ class Renderer final {
 
     /**
      * The sheet an image source naming an icon is resolved from. Set it before the ui, whose
-     * images are resolved when it arrives.
+     * images are resolved when it arrives. The icons are drawn at once, at the ui's icon size,
+     * and drawn again whenever that size changes.
      **/
     void icons(const control::IconSheet& sheet);
+
+    /**
+     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
+     *         Any other source is the whole of the image it names, or nothing when the image
+     *         cannot be loaded
+     **/
+    v3d::ui::Image image(const std::string& source);
 
     /**
      * The ui drawn over every view, or null to draw none.
@@ -139,18 +151,57 @@ class Renderer final {
     void panels(const Panels& draw);
 
     /**
+     * Draws the panels of a window opened beside the editor's own, into that window's canvas,
+     * through its screen's immediate layer.
+     *
+     * @param window the window's id, as Window::id() gives it
+     **/
+    typedef std::function<void(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window)> Opened;
+
+    /**
+     * What draws each opened window's panels each frame, or empty for none.
+     **/
+    void opened(const Opened& draw);
+
+    /**
+     * What another window shows: the ui its headers are built in, its areas, and the pointer
+     * that says which area is active and which divider is lit.
+     **/
+    struct Shown final {
+        boost::shared_ptr<v3d::ui::Interface> ui;
+        boost::shared_ptr<view::AreaViews> views;
+        boost::shared_ptr<control::chrome::Pointer> pointer;
+    };
+
+    /**
+     * Draw to another window too, from the next frame, with a screen of its own that shares the
+     * ui's text, scale and dressing. Each frame its panels are drawn, then the frame around its
+     * areas, then its ui.
+     *
+     * @return whether the device can draw to the window
+     **/
+    bool open(const boost::shared_ptr<v3d::window::Window>& window, const Shown& shown);
+
+    /**
+     * @return the screen a window open() opened draws with, or null for any other window
+     **/
+    v3d::ui::shell::Screen* screen(const boost::shared_ptr<v3d::window::Window>& window) const;
+
+    /**
+     * Stop drawing to a window open() opened, before it is destroyed.
+     **/
+    void close(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
      * @return the immediate layer the panels draw through, which the keyboard offers keys to
      **/
     v3d::ui::Immediate* immediate() const noexcept;
 
     /**
-     * How wide a run of text is at the size the ui is drawn in.
-     *
-     * The cursor routing a press must measure text with the same function this draws
-     * with, or a click inside a text box would place the caret somewhere other than under
-     * the pointer. Taking it from the renderer guarantees the two are the same function.
+     * @return the type the ui's text is drawn in, which sizes the top bar's boxes and places a
+     *         press in a text box where a character is drawn
      **/
-    v3d::ui::paint::Measure measure() const;
+    v3d::ui::paint::Type type() const;
 
     /**
      * How much of the window's edges the menu bar and the toolbars cover. The views are
@@ -168,6 +219,11 @@ class Renderer final {
      *         is drawn
      **/
     float barHeight() const;
+
+    /**
+     * @return how thick the line around each area is, at the scale the ui is drawn
+     **/
+    float frameLine() const;
 
     /**
      * @return where each view's axis marker and gizmo sit, at the scale the ui is drawn and
@@ -191,7 +247,7 @@ class Renderer final {
      *
      * @return the texture, or an unset handle for no picture
      **/
-    v3d::render::realtime::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
+    v3d::render::realtime::resource::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -226,6 +282,68 @@ class Renderer final {
     static constexpr float NOTICE_MARGIN = 16.0F;
 
     /**
+     * A notice's marks for done and refused, the gap between its parts against the text, and the
+     * command whose key it names to undo a change.
+     **/
+    static constexpr std::string_view NOTICE_DONE = "icon:check";
+    static constexpr std::string_view NOTICE_REFUSED = "icon:cross";
+    static constexpr float NOTICE_GAP = 0.8F;
+    static constexpr std::string_view UNDO_COMMAND = "edit::undo";
+
+    /**
+     * How far a divider's hint sits from the cursor, right and down, at a scale of one.
+     **/
+    static constexpr glm::vec2 HINT_OFFSET{ 16.0F, 20.0F };
+
+    /**
+     * How much stronger an emphasised grid line is than an ordinary one, and how strongly the
+     * lines through the origin show their axis colours.
+     **/
+    static constexpr float GRID_MAJOR = 2.0F;
+    static constexpr float GRID_AXIS = 0.75F;
+
+    /**
+     * The largest side of an icon's cell, in pixels. A theme's icon size outside 1 to this draws
+     * no new sheet.
+     **/
+    static constexpr float LARGEST_ICON = 256.0F;
+
+    /**
+     * The status bar's text against the ui's, 11 pixels beside 12, and its mouse icons against
+     * its text.
+     **/
+    static constexpr float STATUS_TEXT = 11.0F / 12.0F;
+    static constexpr float STATUS_ICON = 1.4F;
+
+    /**
+     * A modifier's chip on the status bar: half its height against the text, the gap inside it
+     * either side against the padding, and the gaps after a chip and after a mouse against the
+     * text.
+     **/
+    static constexpr float STATUS_CHIP = 0.7F;
+    static constexpr float STATUS_CHIP_INSET = 0.25F;
+    static constexpr float STATUS_AFTER_CHIP = 0.4F;
+    static constexpr float STATUS_AFTER_ICON = 0.3F;
+
+    /**
+     * The frame rate's colour when it keeps up with the monitor, falls behind, and falls below
+     * half.
+     **/
+    static constexpr glm::vec4 HEALTH_GOOD{ 0.498F, 0.698F, 0.416F, 1.0F };
+    static constexpr glm::vec4 HEALTH_LOW{ 0.949F, 0.639F, 0.227F, 1.0F };
+    static constexpr glm::vec4 HEALTH_POOR{ 0.851F, 0.349F, 0.373F, 1.0F };
+
+    /**
+     * @return the image an icon of the sheet resolves to, or an unset one
+     **/
+    v3d::ui::Image icon(const std::string& source) const;
+
+    /**
+     * @return the colour the frame rate is written in
+     **/
+    static glm::vec4 healthColour(control::chrome::Status::Health health);
+
+    /**
      * What separates the parts of the right side of the status bar.
      **/
     static constexpr const char* STATUS_GAP = "     ";
@@ -253,39 +371,62 @@ class Renderer final {
     /**
      * The size the ui text is drawn at, and what the bar and its rows are sized from.
      **/
-    static constexpr float fontSize = 15.0F * uiScale;
+    static constexpr float fontSize = 12.0F * uiScale;
 
     /**
-     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 15 pixel
+     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 12 pixel
      * text.
      **/
-    static constexpr float iconScale = 1.2F;
+    static constexpr float iconScale = 1.5F;
 
     /**
-     * The ui's spacing, each a multiple of the text size.
+     * The ui's spacing, each a multiple of the text size. At 12 pixel text a row is 24 pixels,
+     * a header or bar 28, the gap around text 12, and the gap above and below a dropped panel's
+     * items 4. An icon button is as wide as its icon and the gap, 30 pixels.
      **/
-    static constexpr float lineHeightScale = 1.5F;
-    static constexpr float paddingScale = 1.4F;
-    static constexpr float barHeightScale = 1.8F;
-    static constexpr float panelPaddingScale = 0.3F;
+    static constexpr float lineHeightScale = 2.0F;
+    static constexpr float paddingScale = 1.0F;
+    static constexpr float barHeightScale = 28.0F / 12.0F;
+    static constexpr float panelPaddingScale = 1.0F / 3.0F;
 
     /**
-     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
-     *         Any other source is the whole of the image it names, or nothing when the image
-     *         cannot be loaded
+     * How far the corners of a panel, a button, a tab and a dropped menu are rounded, as a
+     * multiple of the text size: 4 pixels beside 12 pixel text, as the areas' corners are.
      **/
-    v3d::ui::Image image(const std::string& source);
+    static constexpr float radiusScale = 4.0F / 12.0F;
+
+    /**
+     * Draw the icon sheet at the ui's icon size in device pixels, when it was last drawn at
+     * another, and point every image the ui holds at the new texture.
+     **/
+    void drawIcons();
 
     /**
      * @return the texture an image becomes, uploading it the first time it is asked for, or an
      *         unset handle when the image cannot be loaded
      **/
-    v3d::render::realtime::TextureHandle texture(const std::string& source);
+    v3d::render::realtime::resource::TextureHandle texture(const std::string& source);
 
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
-    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+    void drawUi(const boost::shared_ptr<v3d::render::realtime::frame::Frame>& frame);
+
+    /**
+     * @return the colours of a view's grid: the theme's hairline over the view's background,
+     *         twice as strong on an emphasised line, and the axis colours on the lines through
+     *         the origin
+     **/
+    view::ConstructionPlane::Colours gridColours() const;
+
+    /**
+     * Keep the frame's passes to the views shown. A pass stays in the frame and clears its
+     * region every frame until it is removed, so the passes of a view no longer shown are
+     * removed. A new view's pass is added after the ui pass, so the ui pass is removed too, and
+     * is made again after every view's.
+     **/
+    static void retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views,
+        std::vector<std::string>* passes);
 
     /**
      * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
@@ -295,9 +436,15 @@ class Renderer final {
 
     /**
      * Draw the notice showing, if there is one, on a plate centred at the foot of the active
-     * area, faded as far as it has faded.
+     * area and kept inside the areas, faded as far as it has faded. It is marked with a check
+     * when done and a cross when refused, and a change undo takes back names the undo key.
      **/
     void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
+
+    /**
+     * Draw a lit divider's hint beside the cursor once it is due, on a tooltip's plate.
+     **/
+    void drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
@@ -313,27 +460,94 @@ class Renderer final {
     boost::shared_ptr<tool::Transform> transform_;
     boost::shared_ptr<tool::Select> select_;
     boost::shared_ptr<view::AreaViews> views_;
-    boost::shared_ptr<control::Pointer> pointer_;
-    control::Status status_;
-    boost::shared_ptr<control::Notices> notices_;
-    // one canvas per view shown. Each view fills its own and submits it before the next view
-    // draws, and the submit copies it
-    std::vector<v3d::render::realtime::canvas::Line> canvases_;
-    // one more canvas per view for the handles, which are drawn in a pass of their own
-    std::vector<v3d::render::realtime::canvas::Line> overlays_;
+    boost::shared_ptr<control::chrome::Pointer> pointer_;
+    control::chrome::Status status_;
+    boost::shared_ptr<control::chrome::Notices> notices_;
+    control::chrome::DividerHint dividerHint_;
+    /**
+     * What one window's views are drawn with. Each view fills its own canvas and submits it
+     * before the next view draws, and the submit copies it.
+     **/
+    struct ViewCanvases final {
+        std::vector<v3d::render::realtime::canvas::Line> scenes;   /**< one per view shown **/
+        std::vector<v3d::render::realtime::canvas::Line> handles;  /**< one per view, for the handles' pass **/
+        std::vector<std::string> passes;                           /**< the views the frame holds passes for **/
+    };
+
+    /**
+     * Draw each view shown into a pass of its own in a frame, with its handles over it.
+     **/
+    void drawViews(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views, ViewCanvases* canvases);
+
+    /**
+     * Dim what a view through a scene camera shows outside the render's frame.
+     **/
+    static void drawPassepartout(v3d::render::realtime::canvas::Canvas* canvas, const view::ViewPort& view, const view::OverlayLook& look);
+
+    /**
+     * Draw each view's axis marker and gizmo into a window's ui canvas, at its screen's scale. A
+     * view through a scene camera is dimmed outside the render's frame first.
+     **/
+    void drawOverlays(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen, const view::AreaViews& views,
+        const control::chrome::Pointer& pointer) const;
+
+    // the editor's own window's views
+    ViewCanvases drawn_;
+
+    /**
+     * A window drawn beside the editor's own: what is drawn to it, the screen it is drawn with,
+     * and what it shows.
+     **/
+    struct Other final {
+        boost::shared_ptr<v3d::window::Window> window;
+        boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output;
+        boost::shared_ptr<v3d::ui::shell::Screen> screen;
+        Shown shown;
+        ViewCanvases drawn;
+    };
+
+    /**
+     * Draw each other window's panels, the frame around its areas and its ui into its screen's
+     * canvas, and the canvas into its frame.
+     **/
+    void drawOthers();
+
+    /**
+     * @return how a screen of the editor's is built: its text size, an immediate layer, and the
+     *         dressing sized from the text
+     **/
+    static v3d::ui::shell::Screen::Options screenOptions();
+
+    /**
+     * Draw the frame around a layout's areas, as the theme dresses it at the screen's scale.
+     **/
+    static void drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen,
+        const view::AreaLayout& layout, const control::chrome::Pointer& pointer);
+
+    /**
+     * @return how thick the line around each area is at a scale: a whole number of pixels, and
+     *         never less than one
+     **/
+    static float frameLine(float factor);
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;
+    Opened opened_;
+    // declared after engine_, so each is let go of before the context it was opened on
+    std::vector<boost::shared_ptr<Other>> others_;
     control::IconSheet icons_;
+    // the icon sheet's texture, and the side of a cell it was drawn at
+    v3d::render::realtime::resource::TextureHandle iconTexture_;
+    unsigned int iconSide_ = 0;
     // the textures the ui's images became, by source, so a component built again reuses them
-    std::map<std::string, v3d::render::realtime::TextureHandle> images_;
+    std::map<std::string, v3d::render::realtime::resource::TextureHandle> images_;
     v3d::shell::Shell* shell_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;
 
     glm::vec4 background_;
     // the last rendered picture's texture, released when the next one arrives
-    v3d::render::realtime::TextureHandle picture_;
+    v3d::render::realtime::resource::TextureHandle picture_;
 };
 
 };  // namespace v3d::editor

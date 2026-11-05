@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Compiler.h>
-#include <api/render/offline/sl/Emitter.h>
-#include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
@@ -70,12 +70,12 @@ v3d::render::offline::sl::runtime::Machine & execute(v3d::render::offline::sl::r
     v3d::render::offline::sl::runtime::Machine* machine) {
     const std::string source = std::string("surface test() {\n") + body + "}\n";
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error());
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
     BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error());
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
     BOOST_REQUIRE_MESSAGE(emitter.emit(program), emitter.error());
     machine->renderer(renderer);
     machine->prepare(*program, 1);

@@ -8,20 +8,20 @@
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/type/camera/Camera.h>
@@ -48,13 +48,13 @@
 #include "Shapes.h"
 
 using v3d::ecs::component::Transform;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::MeshHandle;
-using v3d::render::realtime::MeshRegistry;
-using v3d::render::realtime::Pass;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::resource::MeshHandle;
+using v3d::render::realtime::resource::MeshRegistry;
+using v3d::render::realtime::frame::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::vulkan::frame::Timings;
 using v3d::render::realtime::renderer::Lit;
 using v3d::test::cube;
@@ -228,7 +228,7 @@ Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::str
         v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, casting.get(), {},
             {.cascade = cascade, .covers = cascades->bounds[cascade], .towards = settings.light});
         uint32_t drawnHere = 0;
-        for (const v3d::render::realtime::DrawItem& item : casting->items()) {
+        for (const v3d::render::realtime::frame::DrawItem& item : casting->items()) {
             drawnHere += item.instances;
         }
         drawn.casters.push_back(drawnHere);

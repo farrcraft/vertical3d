@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include <string>
 #include <vector>
@@ -53,6 +53,8 @@ class Tracer;
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
     /**
+     * @param tracer the scene and the rays this shader's trace() and transmission() calls go
+     *        to. Kept by pointer, and must outlive the HitShader
      * @param hits what to shade, which the Tracer grouped to share one run. Each is kept by
      *        pointer, and must outlive the HitShader
      * @param times when each hit's sample was taken
@@ -92,7 +94,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     bool trace(const v3d::render::offline::sl::runtime::Value & origin,
         const v3d::render::offline::sl::runtime::Value & direction,
         v3d::render::offline::sl::runtime::Value* colour) override;
-    const v3d::render::offline::Texture* texture(const std::string & name) override;
+    const v3d::render::offline::texture::Texture* texture(const std::string & name) override;
     /**
      * A light reads the surface being shaded, and a surface's illuminance loop reads the light
      * it is running for. A traced primitive was displaced when it was diced, so a hit has no

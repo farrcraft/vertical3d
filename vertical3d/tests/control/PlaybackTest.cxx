@@ -7,7 +7,7 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 
@@ -84,8 +84,8 @@ BOOST_AUTO_TEST_CASE(stepping_stays_in_the_range) {
  **/
 BOOST_AUTO_TEST_CASE(stepping_by_keys_goes_to_keyed_frames) {
     const boost::shared_ptr<v3d::editor::document::Document> document = shortTimeline();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh =
-        boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh =
+        boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
     document->create(mesh, "mesh");
     document->key({ mesh }, 2);
     document->key({ mesh }, 4);

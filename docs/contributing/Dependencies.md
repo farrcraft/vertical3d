@@ -7,7 +7,7 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 
 - [Packages from vcpkg](#packages-from-vcpkg)
 - [The Vulkan SDK](#the-vulkan-sdk)
-- [libnoise](#libnoise)
+- [TypeScript tooling from npm](#typescript-tooling-from-npm)
 - [Setting up vcpkg](#setting-up-vcpkg)
 - [Adding a package](#adding-a-package)
 - [Updating versions](#updating-versions)
@@ -34,12 +34,17 @@ builds TBB and OpenUSD from source, which takes a long time.
 | entt | |
 | freetype | |
 | glm | |
+| harfbuzz | `v3dlib_font` shapes text through it, over the faces FreeType holds open. **It must have its `freetype` feature**, which builds the integration with FreeType. It is the `harfbuzz::harfbuzz` target of the `harfbuzz` config package, linked PRIVATE because no public header includes it |
+| icu | `v3dlib_font` finds grapheme clusters, words and line breaks through it. It comes from the tree's [overlay port](#the-icu-overlay-port), not vcpkg's own. It is the `ICU::uc` and `ICU::data` targets of `find_package(ICU COMPONENTS uc data)`, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
+| nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
+| quickjs-ng | `v3dlib_script` runs scripts on it, as the `qjs` target of the `qjs` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
@@ -55,9 +60,42 @@ uses. Include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hp
 
 There is no OpenGL, and no package for it.
 
-Background: [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md),
-[ADR-0091](../adr/0091-platform-sdl3-replaces-sdl2.md),
-[ADR-0053](../adr/0053-memory-optional-vma-suballocation.md)
+### The ICU overlay port
+
+ICU's data holds every locale's formats, collations and conversions, and is about 30 MB. The
+font library reads only the break rules, the character properties they read, the word
+dictionaries and the normalization tables, and every app that draws text ships the data. The
+tree therefore builds ICU through its own port, in [ports/icu/](../../ports/icu/), which both
+[vcpkg-configuration.json](../../vcpkg-configuration.json) files name in `overlay-ports`.
+
+- The port is vcpkg's own, from the baseline commit, with one change to its portfile. It
+  downloads ICU's data sources beside the source archive and builds the data from them, filtered
+  by [data-filter.json](../../ports/icu/data-filter.json). The source archive's prebuilt data is
+  deleted, because ICU uses a prebuilt archive whatever filter it is given.
+- The filter is additive: a category ICU's data build names is left out unless the filter
+  includes it. Reading a new kind of ICU data, such as collation, means adding its category.
+- When the baseline moves ICU to a new version, copy the new port over `ports/icu/`, apply the
+  change again, and update the data archive's SHA512 from the release's `SHASUM512.txt`.
+
+### The thorvg overlay port
+
+thorvg replaces the global `operator new` and the unsized `operator delete` with its own
+allocator. Where vcpkg links it statically, as on Linux, the replacement covers every program
+that links the font library. Clang calls the sized `operator delete`, which thorvg does not
+replace. AddressSanitizer then reports a mismatch on every allocation, and a replacement
+`operator new` that returns null, as thorvg's can, breaks the standard's rule that it throws.
+
+- The port in [ports/thorvg/](../../ports/thorvg/) is vcpkg's own, from the baseline commit,
+  with one patch. [no-global-operator-new.patch](../../ports/thorvg/no-global-operator-new.patch)
+  deletes the four replacements from thorvg's `tvgInitializer.cpp`. thorvg's allocator calls
+  `std::malloc` and `std::free`, so nothing it allocates changes where its memory comes from.
+- When the baseline moves thorvg to a new version, copy the new port over `ports/thorvg/`,
+  add the patch to its `PATCHES` again, and remake the patch if the file has moved. Drop the
+  port once thorvg no longer replaces the operators.
+
+Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
+[ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),
+[ADR-0053](../adr/rendering/0053-memory-optional-vma-suballocation.md)
 
 ## The Vulkan SDK
 
@@ -102,32 +140,44 @@ Setting `V3D_FMOD_ROOT` back to empty builds the null backend alone again.
 With the SDK configured, the audio suite plays an event from the example banks the SDK ships.
 CI has no SDK, so that case never runs there.
 
-## libnoise
+## TypeScript tooling from npm
 
-[libnoise](https://github.com/eXpl0it3r/libnoise) is an unofficial fork of libnoise with CMake
-support. It is the tree's only git submodule, at `vendor/libnoise`. Only voxel and voxel's test
-suite link it, and neither links until libnoise has been built.
-
-### Building libnoise
-
-Build it out of source, with the commands below, from the repository root in a developer
-environment. Replace `<repo>` with the absolute path of your clone.
+The tree's TypeScript runs on Node 24 or later, which erases the types and checks none of them.
+That covers the review gates in `scripts/`, the fixture and asset generators, and the editor's
+scripts. The type checker comes from npm through [package.json](../../package.json):
 
 ```
-cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL \
-  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug
-cmake --build vendor/libnoise/build-ninja
+npm ci              # install exactly what package-lock.json names
+npm run typecheck   # check every TypeScript file in the tree
+npm test            # the review gates' own tests
 ```
 
-- **Do not build in the libnoise source directory.** libnoise commits a `CMakeCache.txt` that
-  names a "Visual Studio 17 2022" generator. Reusing that cache is the usual cause of a failed
-  libnoise build.
-- `CMAKE_POLICY_VERSION_MINIMUM=3.5` is required because libnoise declares
-  `cmake_minimum_required(VERSION 3.0)`, which current CMake rejects.
-- The archive must land in `vendor/libnoise/Debug`, because voxel's `target_link_directories`
-  looks there.
+The rules for `package.json`:
+
+- **It holds development dependencies only.** No code that runs imports a package, so a gate or
+  a generator runs with `node <file>.ts` and no install. A package that a gate would import at
+  run time is not added.
+- **Every version is exact,** and [package-lock.json](../../package-lock.json) is committed.
+  [.npmrc](../../.npmrc) saves exact versions and never runs a package's install scripts.
+- **Every locked package comes from the npm registry** with an integrity hash.
+- **CI installs with `npm ci`** and type-checks in
+  [review-gates.yml](../../.github/workflows/review-gates.yml), next to the gates.
+
+`scripts/npm.ts` checks these rules, and that no TypeScript file imports a package at run time.
+An `import type` statement is erased before the file runs, so it may name a package.
+
+Two projects divide the files. [tsconfig.json](../../tsconfig.json) at the root checks every
+`.ts` file that runs on Node, with Node's declarations. It names the directories it leaves out
+rather than the ones it reads, so a new generator is checked without being listed.
+[vertical3d/data/scripts/tsconfig.json](../../vertical3d/data/scripts/tsconfig.json) checks the
+editor's scripts against `editor.d.ts`, with no Node declarations, because the editor runs them
+on QuickJS. Both extend [tsconfig.base.json](../../tsconfig.base.json), which holds the strict
+options and allows only syntax that can be erased.
+
+To update a tool, run `npm install --save-dev <package>@<version>` with a version released at
+least two weeks earlier. Then run `npm run typecheck` and commit `package.json` with the lockfile.
+
+Background: [ADR-0158](../adr/project/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
 
 ## Setting up vcpkg
 
@@ -225,7 +275,6 @@ seven days old.
   `examples/starter/vcpkg.json` together;
 - the GitHub actions the workflows use, weekly and in one group. It moves each pinned sha and the
   release in its comment together;
-- the `vendor/libnoise` submodule, monthly;
 - the development container's base image in `.devcontainer/Dockerfile`, monthly.
 
 Each pull request runs CI like any other, so an update that breaks the build is found there.

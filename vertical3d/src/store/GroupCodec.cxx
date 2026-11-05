@@ -5,8 +5,8 @@
 
 #include "GroupCodec.h"
 
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstdint>
 #include <string>
@@ -23,8 +23,8 @@ namespace v3d::editor::store {
 
 /**
  **/
-scene::Item::Kind GroupCodec::kind() const noexcept {
-    return scene::Item::Kind::Group;
+scene::item::Item::Kind GroupCodec::kind() const noexcept {
+    return scene::item::Item::Kind::Group;
 }
 
 /**
@@ -41,14 +41,14 @@ std::int64_t GroupCodec::version() const noexcept {
 
 /**
  **/
-boost::json::object GroupCodec::payload(const scene::Item& /*item*/) const {
+boost::json::object GroupCodec::payload(const scene::item::Item& /*item*/) const {
     return boost::json::object();
 }
 
 /**
  **/
-boost::shared_ptr<scene::Item> GroupCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
-    return exactly(payload, {}, problem) ? boost::make_shared<scene::Group>() : nullptr;
+boost::shared_ptr<scene::item::Item> GroupCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
+    return exactly(payload, {}, problem) ? boost::make_shared<scene::item::Group>() : nullptr;
 }
 
 };  // namespace v3d::editor::store

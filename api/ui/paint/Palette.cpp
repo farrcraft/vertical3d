@@ -110,7 +110,9 @@ Palette::Roles Palette::roles(Use use) const noexcept {
         {.field = &Dressing::panel, .colour = grey[BASE_STEP]},
         {.field = &Dressing::titleBar, .colour = grey[TITLE_STEP]},
         {.field = &Dressing::track, .colour = tools ? grey[WIDGET_STEP] : grey[FIELD_STEP]},
-        {.field = &Dressing::tab, .colour = tools ? grey[WIDGET_STEP] : grey[BAR_STEP]},
+        // a set of tabs is a recess the chosen one is raised out of, to the level of a widget
+        {.field = &Dressing::tab, .colour = grey[BAR_STEP]},
+        {.field = &Dressing::chosen, .colour = grey[WIDGET_STEP]},
         {.field = &Dressing::widget, .colour = grey[WIDGET_STEP]},
         {.field = &Dressing::hover, .colour = grey[HOVER_STEP]},
         {.field = &Dressing::rule, .colour = grey[HOVER_STEP]},

@@ -59,15 +59,21 @@ class Prompt final {
     };
 
     /**
+     * Look the components up under the default Names.
+     *
      * @param engine the ui the components are looked up in, or null for none
-     * @param names what the components are called, which are Names' own when not given
      **/
     explicit Prompt(const boost::shared_ptr<Interface>& engine);
+    /**
+     * @param engine the ui the components are looked up in, or null for none
+     * @param names what the components are called
+     **/
     Prompt(const boost::shared_ptr<Interface>& engine, const Names& names);
 
     /**
      * Put the prompt up. A prompt already up is cancelled first, so its cancel handler runs.
      *
+     * @param question the text written into the question label
      * @param answers what the buttons offer, in order, up to most
      * @param cancelled called when the prompt is dismissed without an answer
      **/

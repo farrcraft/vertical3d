@@ -4,7 +4,7 @@
  **/
 
 #include <api/image/Compare.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/state/Planes.h>
 #include <moya/libmoya/state/RenderContext.h>
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
  * cosine of that angle. An unshaded quad would come out white.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 32, 24), 0.70710678F, 0.5F);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::BLUE, 32, 24), 0.70710678F, 0.5F);

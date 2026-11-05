@@ -140,6 +140,10 @@ class Overlay final {
     /**
      * Read a number as readMetric() does, and remember what it replaced.
      *
+     * @param target the style read, or null to read nothing
+     * @param name the number property's name
+     * @param dressing the dressing written to
+     * @param field the member of the dressing the number goes into
      * @param scale what the number is multiplied by, for a size the theme gives in logical pixels
      **/
     void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field,

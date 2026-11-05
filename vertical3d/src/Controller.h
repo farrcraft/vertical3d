@@ -8,6 +8,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/shell/Shell.h>
 #include <api/ui/component/Toolbar.h>
@@ -20,18 +21,30 @@
 #include <vertical3d/src/app/PlaybackCommands.h>
 #include <vertical3d/src/app/ProjectFiles.h>
 #include <vertical3d/src/app/RenderCommands.h>
+#include <vertical3d/src/app/Scripting.h>
 #include <vertical3d/src/app/ToolCommands.h>
 #include <vertical3d/src/app/ViewCommands.h>
 #include <vertical3d/src/app/WorkspaceSwitcher.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/ConsoleEditor.h>
+#include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
-#include <vertical3d/src/control/StatusBar.h>
-#include <vertical3d/src/control/TopBar.h>
+#include <vertical3d/src/control/RenderSettingsEditor.h>
+#include <vertical3d/src/control/RenderView.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
+#include <vertical3d/src/control/chrome/TopBar.h>
+#include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
+#include <vertical3d/src/view/ViewOverlay.h>
+#include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -97,6 +110,16 @@ class Controller final : public v3d::engine::Engine {
      * The window changed size, so the layout divides a different area between the views.
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
+
+    /**
+     * Close a window the editor opened, when the user asks to.
+     **/
+    void handleClose(const v3d::event::kind::WindowClose& event);
+
+    /**
+     * @return the declarations of the commands a script can run, as the editor ships them
+     **/
+    std::string declarations() const;
 
  protected:
     /**
@@ -235,10 +258,103 @@ class Controller final : public v3d::engine::Engine {
     void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
+     * @return whether any area or opened window shows an editor of a kind
+     **/
+    bool shows(std::string_view kind) const;
+
+    /**
+     * Show an editor of a kind in a window of its own: the first an opened window holds, or a
+     * new window holding it in one area.
+     * @return whether it is shown
+     **/
+    bool openWindow(std::string_view kind);
+
+    /**
+     * Open a window beside the editor's own, its areas laid out as a layout says.
+     * @return whether it opened
+     **/
+    bool openWindow(const boost::json::object& layout, const glm::ivec2& size);
+
+    /**
+     * @return the view a viewport editor shows, from the camera profile its state names, or null
+     *         when it names none that exists
+     **/
+    boost::shared_ptr<view::ViewPort> makeView(const view::AreaLayout::Editor& editor) const;
+
+    /**
+     * Close a window the editor opened.
+     **/
+    void closeWindow(std::uint32_t window);
+
+    /**
+     * @return each window the editor opened, as a workspace keeps it: its width, its height and
+     *         its layout
+     **/
+    boost::json::array keptWindows() const;
+
+    /**
+     * Close the windows the editor opened, and open those a workspace kept. Before the ui is
+     * built, they are held and opened once it is.
+     **/
+    void reopenWindows(const boost::json::array& windows);
+
+    /**
+     * Draw the panels of an opened window's areas, through its screen's layer.
+     **/
+    void drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window);
+
+    /**
+     * @return how a graph editor moves its view under a drag, from the camera move in force
+     **/
+    control::GraphEditor::Navigate graphNavigation() const;
+
+    /**
+     * Draw the panel of each area of a layout that shows an editor other than a view, under its
+     * header. The layer has the mouse while the pointer gives the panels the cursor in the
+     * window it is in.
+     **/
+    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+        control::chrome::Pointer* pointer, std::uint32_t window);
+
+    /**
+     * Lay out each opened window's areas in it, and build their headers again where they
+     * changed.
+     **/
+    void syncOpened();
+
+    /**
+     * Hand the scene's cameras to the areas' camera menus, and list them at the end of the View
+     * menu's Camera submenu for the active view, with the one it looks through checked.
+     **/
+    void syncCameras();
+
+    /**
+     * Turn a view to look down an axis, as a press on its gizmo asks. A view through a scene
+     * camera is freed first, or moves the camera when it is locked to it.
+     **/
+    void turn(view::ViewPort& view, const view::AxisEnd& end);
+
+    /**
+     * Act on what navigation did to a view through a scene camera: keep a freed view's editor
+     * state, or move and record the camera a locked view is navigated with.
+     **/
+    void navigated(view::ViewPort& view, tool::CameraControl::Navigated what);
+
+    /**
+     * Show a divider as the pointer over one window says it is lit.
+     **/
+    static void shapePointer(v3d::window::Window* window, const control::chrome::Pointer& pointer);
+
+    /**
+     * @return whether a mouse event in a window belongs to the editor's own window
+     **/
+    bool ownWindow(std::uint32_t window) const;
+
+    /**
      * @return what the top bar shows: the workspaces, the one shown, and the project's name and
      *         whether it has unsaved changes
      **/
-    control::TopBar::State topState() const;
+    control::chrome::TopBar::State topState() const;
 
     /**
      * Put the command search up over every command on the editor's menu bar and an area's
@@ -254,7 +370,7 @@ class Controller final : public v3d::engine::Engine {
     /**
      * @return what the status bar says this frame
      **/
-    control::Status status() const;
+    control::chrome::Status status() const;
 
     /**
      * Divide the window, less the ui's strips, between the views.
@@ -266,6 +382,8 @@ class Controller final : public v3d::engine::Engine {
     // the ui, the screen and the statistics overlay. The editor's menu is its own menu bar
     v3d::shell::Shell shell_;
     app::CommandTable table_;
+    // runs scripts and console lines against the commands in the table
+    app::Scripting scripting_;
     app::EditCommands edits_;
     app::ToolCommands toolCommands_;
     app::ViewCommands viewCommands_;
@@ -277,16 +395,68 @@ class Controller final : public v3d::engine::Engine {
 
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
+    // how many items the View menu's Camera submenu has before the scene's cameras, and the
+    // cameras it lists
+    std::optional<std::size_t> cameraItems_;
+    boost::shared_ptr<tool::CameraLock> cameraLock_;
+    std::optional<control::chrome::Area::Cameras> viewCameras_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     // what the caption was last set to
     std::string caption_;
     // each area's header and tabs
-    boost::shared_ptr<control::AreaChrome> chrome_;
+    boost::shared_ptr<control::chrome::Area> chrome_;
     boost::shared_ptr<control::CommandSearch> search_;
     control::Outliner outliner_;
     boost::shared_ptr<control::PropertiesEditor> properties_;
+    // every graph editor, which share the chosen key
+    boost::shared_ptr<control::GraphEditor> graph_;
+    boost::shared_ptr<control::ConsoleEditor> console_;
+    boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
+    // what a render view's buttons asked for in the last frame drawn
+    control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
+
+    /**
+     * A window the editor opened beside its own: its ui, its areas and their headers, and the
+     * pointer over them.
+     **/
+    struct Opened final {
+        boost::shared_ptr<v3d::window::Window> window;
+        boost::shared_ptr<v3d::ui::Interface> ui;
+        boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
+        boost::shared_ptr<control::chrome::Area> chrome;
+        boost::shared_ptr<control::chrome::Pointer> pointer;
+        // what the keyboard edits while it is in the window
+        boost::shared_ptr<v3d::ui::shell::Keyboard> keys;
+    };
+    std::vector<Opened> opened_;
+    // the window the last key or text event went to, as Window::id() names it
+    std::uint32_t keyWindow_ = 0;
+    // where the next opened window's layout starts giving out ids
+    std::size_t nextOpened_ = OPENED_IDS;
+
+    /**
+     * How far apart each opened window's layout starts its ids, past every one the editor's own
+     * layout gives out.
+     **/
+    static constexpr std::size_t OPENED_IDS = 1000000;
+
+    /**
+     * The size an opened window starts at.
+     **/
+    static constexpr int OPENED_WIDTH = 800;
+    static constexpr int OPENED_HEIGHT = 600;
+
+    /**
+     * The sides a kept window is opened again at, outside which it opens at its first size.
+     **/
+    static constexpr int MIN_OPENED = 64;
+    static constexpr int MAX_OPENED = 16384;
+
+    // the windows a workspace kept, held until there is a ui to open them in
+    boost::json::array pendingWindows_;
     // the workspaces, the project and the search, beside the menus
-    boost::shared_ptr<control::TopBar> topBar_;
+    boost::shared_ptr<control::chrome::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;
     boost::shared_ptr<Renderer> renderer_;
 
@@ -294,6 +464,7 @@ class Controller final : public v3d::engine::Engine {
     entt::scoped_connection motion_;
     entt::scoped_connection button_;
     entt::scoped_connection resize_;
+    entt::scoped_connection close_;
     // how many clicks in succession the last left press was, which view::drag hands the pointer
     unsigned int clicks_ = 1;
     // the ui scale the layout's metrics were last set for

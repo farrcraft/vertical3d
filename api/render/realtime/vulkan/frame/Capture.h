@@ -85,6 +85,7 @@ class Capture final {
      * used afterwards exactly as one that is not.
      *
      * @param commands a command buffer that is still recording
+     * @param source the image to copy, with its size, format, layout and aspect
      * @pre the image is in source.layout, and what wrote it is an attachment write
      * @throw std::runtime_error for a depth source in a format other than D32_SFLOAT
      **/
@@ -94,6 +95,7 @@ class Capture final {
      * Copy an acquired swapchain image into the readback buffer.
      *
      * @param commands the buffer the frame was recorded into, still recording
+     * @param swapchain the swapchain whose image is copied
      * @param image which of the swapchain's images was acquired
      * @pre the image is in PRESENT_SRC. Recorder::record leaves it there.
      * @throw std::runtime_error when the swapchain's images lack TRANSFER_SRC usage, because
@@ -130,6 +132,10 @@ class Capture final {
      * Needs no device, so a test can check the channel order without a swapchain.
      *
      * @param pixels one tightly packed 4 byte texel per pixel, as the copy left them
+     * @param width the image's width in pixels
+     * @param height the image's height in pixels
+     * @param format the format the pixels were copied from. A B8G8R8A8 format has its red and
+     *        blue swapped, and any other is read as RGBA
      **/
     static boost::shared_ptr<image::Image> convert(const unsigned char* pixels, uint32_t width, uint32_t height,
         VkFormat format);

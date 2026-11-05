@@ -61,6 +61,18 @@ class Toolbar : public Component {
     void add(const boost::shared_ptr<Button>& button);
 
     /**
+     * Put a rule before the next button added, to set apart the buttons on either side of it.
+     * A rule with no button after it is drawn nowhere.
+     **/
+    void separate();
+
+    /**
+     * @param index which button
+     * @return whether a rule comes before it
+     **/
+    bool separated(std::size_t index) const noexcept;
+
+    /**
      * @return how many buttons are in the strip
      **/
     std::size_t count() const noexcept;
@@ -118,6 +130,8 @@ class Toolbar : public Component {
  private:
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Button>> buttons_;
+    // the indices of the buttons a rule comes before, in order
+    std::vector<std::size_t> rules_;
     Edge edge_;
 };
 

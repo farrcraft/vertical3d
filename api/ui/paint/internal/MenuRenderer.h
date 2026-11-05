@@ -8,6 +8,7 @@
 #include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <functional>
 #include <string>
@@ -57,15 +58,14 @@ class MenuRenderer final {
     typedef std::function<std::string(const v3d::event::Event& command)> Shortcut;
 
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param body what the menus' text is measured and drawn through
      * @param styles where the base dressing comes from
      * @param arranger what places a menu's panels and items
      * @param easing the clock a highlight eases and a panel opens on
      *
      * The last three are held by reference, because the renderer owns them.
      **/
-    MenuRenderer(const Measure& measure, const Write& write, const style::Resolver& styles,
+    MenuRenderer(const Type& body, const style::Resolver& styles,
         const Arranger& arranger, const Easing& easing);
 
     /**
@@ -159,6 +159,47 @@ class MenuRenderer final {
      * What a row shows while a capture waits on its key.
      **/
     static constexpr std::string_view CAPTURE = "...";
+    /**
+     * How wide a menu bar title's drop mark is, as a fraction of a line, and the gap before it,
+     * as a fraction of the padding. A label stands further from its mark than an icon does,
+     * since an icon has room drawn into its own square.
+     **/
+    static constexpr float dropScale = 0.3F;
+    static constexpr float dropGapScale = 0.25F;
+    static constexpr float labelDropGapScale = 0.75F;
+
+    /**
+     * How much room a menu bar title takes: its icon or its label, its drop mark, and the gap
+     * before the mark, with the padding about them.
+     **/
+    struct Title final {
+        float content = 0.0F;  /**< the icon's side, or the label's width **/
+        float mark = 0.0F;     /**< the drop mark's width, or none **/
+        float name = 0.0F;     /**< the width of the label a named icon's title shows after it, or none **/
+        float extent = 0.0F;   /**< the whole title, padding and all **/
+    };
+
+    /**
+     * @return the room a menu bar title takes on a bar the height given. An icon is as large as
+     *         the dressing's icon size or the bar, whichever is smaller. A label set apart is
+     *         measured in the weight it is written in
+     **/
+    Title titled(const component::menu::Menu& menu, const std::string& label, float height) const;
+
+    /**
+     * @return the gap before a title's drop mark, as a fraction of the padding
+     **/
+    static float gap(const component::menu::Menu& menu);
+
+    /**
+     * Draw one menu's title on a bar, from a corner, and tell the bar where it lies. The title
+     * is any pill that sets it apart, its highlight while open or under the cursor, its icon or
+     * label, and its drop mark.
+     *
+     * @return how wide the title is, or nothing for a menu the bar does not hold
+     **/
+    float title(v3d::render::realtime::canvas::Canvas* canvas, component::menu::Bar& bar, std::size_t index, const glm::vec2& at,
+        float height) const;
 
     /**
      * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark
@@ -196,8 +237,7 @@ class MenuRenderer final {
      **/
     const Dressing& base() const noexcept;
 
-    Measure measure_;
-    Write write_;
+    Type type_;
     const style::Resolver& styles_;
     const Arranger& arranger_;
     const Easing& easing_;

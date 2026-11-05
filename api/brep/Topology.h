@@ -44,6 +44,7 @@ struct Segment {
  * A half edge names the vertex it ends at, so its segment starts where the one before it in
  * the loop ended.
  *
+ * @param mesh the mesh the loop was taken from
  * @param loop what faceLoop() returned
  * @param entry which entry of it
  * @return where the segment starts and ends, or nothing when either endpoint cannot be resolved

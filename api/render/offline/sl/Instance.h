@@ -74,6 +74,8 @@ class Instance final {
      * `point "shader" (0, 0, 1)`. The renderer resolves a space, so its value is not known
      * until a renderer is attached to the machine.
      *
+     * @param machine prepared for this program, with a renderer attached. Its registers are
+     *        written to, and it is given this instance's log
      * @param placement the matrix from the shader's own space to the machine's current
      *        space: the transform in force when the scene instanced this shader. A position
      *        a scene binds is stated in shader space, and is written in current space.

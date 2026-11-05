@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Film.h>
+#include <api/render/offline/film/Film.h>
 
 #include <vector>
 
@@ -22,7 +22,7 @@ class Pixel final {
     Spread spread;
     unsigned int taken = 0;
     bool settled = false;
-    std::vector<v3d::render::offline::Film::Sample> samples;
+    std::vector<v3d::render::offline::film::Film::Sample> samples;
 };
 
 };  // namespace v3d::moya::raytrace

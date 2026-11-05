@@ -14,6 +14,9 @@ constexpr uint16_t BMP_SIGNATURE = 19778;
 
 #pragma pack(push, 2)
 
+/**
+ * The file header at the start of every bmp, as the file stores it.
+ **/
 struct bmp_file_header {
     uint16_t type_;
     uint32_t size_;

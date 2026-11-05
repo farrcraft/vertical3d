@@ -78,7 +78,7 @@ Every game is drawn in one designed shell, and names only its title and its acce
 - **The game is paused while the menu is up**, through the `suspend` callback each game gives
   `start()`.
 
-Background: [ADR-0130](../../adr/0130-shell-games-share-one-designed-shell-with-their-own-accent.md)
+Background: [ADR-0130](../../adr/ui/0130-shell-games-share-one-designed-shell-with-their-own-accent.md)
 
 ## Drawing
 
@@ -105,4 +105,4 @@ in its own debug readout instead. The editor takes no game menu, because its men
 bar, and binds the statistics to `view::show::statistics`. An app that wants none of it does
 not hold a shell.
 
-Background: [ADR-0117](../../adr/0117-apps-the-game-shell-is-an-object-an-app-holds.md)
+Background: [ADR-0117](../../adr/engine/0117-apps-the-game-shell-is-an-object-an-app-holds.md)

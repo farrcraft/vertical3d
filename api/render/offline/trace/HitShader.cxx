@@ -5,10 +5,10 @@
 
 #include "HitShader.h"
 
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/texture/Texture.h>
 #include <api/type/geometry/Line.h>
 
 #include <algorithm>
@@ -176,7 +176,7 @@ bool HitShader::message(const std::string & shader, const std::string & name, Va
     return false;
 }
 
-const v3d::render::offline::Texture* HitShader::texture(const std::string & name) {
+const v3d::render::offline::texture::Texture* HitShader::texture(const std::string & name) {
     return tracer_->textures() == nullptr ? nullptr : tracer_->textures()->find(name);
 }
 
@@ -259,7 +259,7 @@ void HitShader::shade(std::vector<glm::vec3>* colours, std::vector<glm::vec3>* o
         const Hit* const stencil[Tracer::STENCIL] = { &centre, &alongU, &alongV };
         for (unsigned int lane = 0; lane < lanes_; lane++) {
             const Hit & at = *stencil[lane];
-            v3d::render::offline::sl::Point point;
+            v3d::render::offline::sl::runtime::Point point;
             point.position = at.point;
             point.normal = at.normal;
             point.geometric = at.geometric;

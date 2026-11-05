@@ -31,6 +31,11 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * present() submits the frame's commands. That submit signals the Ring's fence for the frame.
  *
+ * Another window's swapchain can be joined to the Presenter. A joined swapchain is acquired,
+ * drawn and presented in each of the Presenter's frames, with the same command buffer, one
+ * submission and one present. A joined swapchain that has no image to give is left out of that
+ * frame, and its own window is drawn without it.
+ *
  * The Presenter never recreates the swapchain. When acquire() or present() returns OutOfDate,
  * the caller recreates the swapchain at the window's new size, then calls reset().
  **/
@@ -46,6 +51,59 @@ class Presenter final {
     };
 
     /**
+     * Another window's swapchain, presented in the Presenter's frames, and the semaphores that
+     * order its steps. It keeps a semaphore per frame in flight and one per image, as the
+     * Presenter does for its own.
+     **/
+    class Joined final {
+     public:
+        /**
+         * @throw std::runtime_error if its semaphores cannot be made
+         **/
+        Joined(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Swapchain>& swapchain, uint32_t framesInFlight);
+        ~Joined();
+
+        Joined(const Joined&) = delete;
+        Joined& operator=(const Joined&) = delete;
+
+        /**
+         * @return the swapchain presented
+         **/
+        boost::shared_ptr<Swapchain> swapchain() const noexcept;
+
+        /**
+         * @return whether the swapchain no longer matches its surface, and has to be recreated
+         *         before it is drawn again. A recreate is followed by reset()
+         **/
+        bool stale() const noexcept;
+
+        /**
+         * Recreate the per-image semaphores after the swapchain is recreated.
+         **/
+        void reset();
+
+     private:
+        friend class Presenter;
+
+        void destroyImageSync() noexcept;
+        void destroySync() noexcept;
+
+        boost::shared_ptr<device::Device> device_;
+        boost::shared_ptr<Swapchain> swapchain_;
+        std::vector<VkSemaphore> imageAvailable_;
+        std::vector<VkSemaphore> renderFinished_;
+        bool stale_;
+    };
+
+    /**
+     * An image a joined swapchain gave a frame.
+     **/
+    struct Taken {
+        boost::shared_ptr<Joined> joined;
+        uint32_t image;  /**< index into that swapchain's images and views **/
+    };
+
+    /**
      * The image a frame was given, and the buffer its commands are recorded into.
      **/
     struct Acquisition {
@@ -53,6 +111,7 @@ class Presenter final {
 
         uint32_t image;           /**< index into the swapchain's images and views **/
         VkCommandBuffer commands; /**< begun and ready to record into **/
+        std::vector<Taken> joined;  /**< the images each joined swapchain that had one gave **/
     };
 
     /**
@@ -71,15 +130,28 @@ class Presenter final {
     Presenter& operator=(const Presenter&) = delete;
 
     /**
-     * Wait for the frame's previous submission to finish, acquire the next swapchain image,
-     * and begin the frame's command buffer.
+     * Join another window's swapchain, to be presented in each frame from the next.
+     * @throw std::runtime_error if its semaphores cannot be made
+     **/
+    boost::shared_ptr<Joined> join(const boost::shared_ptr<Swapchain>& swapchain);
+
+    /**
+     * Stop presenting a joined swapchain. It waits for the device, so no submission still uses
+     * the swapchain's semaphores when they go.
+     **/
+    void leave(const boost::shared_ptr<Joined>& joined);
+
+    /**
+     * Wait for the frame's previous submission to finish, acquire the next swapchain image and
+     * an image of each joined swapchain that has one, and begin the frame's command buffer.
      * @param acquisition filled in when the status is Ready
      * @throw std::runtime_error if the device fails. An out-of-date swapchain returns OutOfDate.
      **/
     Status acquire(Acquisition* acquisition);
 
     /**
-     * End the command buffer, submit it, and present the image it drew into.
+     * End the command buffer, submit it, and present the image it drew into and each joined
+     * image. A joined swapchain whose present finds it out of date is marked stale.
      * @return OutOfDate when the swapchain must be recreated before the next frame
      * @throw std::runtime_error if the submission fails
      **/
@@ -117,6 +189,7 @@ class Presenter final {
     boost::shared_ptr<Ring> ring_;
     std::vector<VkSemaphore> imageAvailable_;
     std::vector<VkSemaphore> renderFinished_;
+    std::vector<boost::shared_ptr<Joined>> joined_;
     bool suboptimal_;
 };
 

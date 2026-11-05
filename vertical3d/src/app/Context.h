@@ -12,12 +12,16 @@
 #include <api/type/camera/Profile.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Prompt.h>
-#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Playback.h>
-#include <vertical3d/src/control/Pointer.h>
-#include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
+#include <vertical3d/src/control/RenderView.h>
+#include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/script/Arguments.h>
+#include <vertical3d/src/script/Journal.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControl.h>
 #include <vertical3d/src/tool/Select.h>
@@ -28,8 +32,12 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
+#include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::editor::app {
@@ -41,7 +49,7 @@ namespace v3d::editor::app {
  **/
 struct Context final {
     /**
-     * Log what an operation said, and show it as a notice.
+     * Log what an operation said, show it as a notice, and list it in the journal.
      **/
     void report(const document::Outcome& outcome) const;
 
@@ -61,6 +69,42 @@ struct Context final {
     std::size_t areaOf(const v3d::event::Event& event) const;
 
     /**
+     * One window's areas: its layout and the views its areas show.
+     **/
+    struct Areas final {
+        boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
+    };
+
+    /**
+     * An area, the layout it is in, and the views of that layout's areas.
+     **/
+    struct Placed final {
+        boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
+        std::size_t area = 0;   /**< an index into the layout's areas, or their count when there is none **/
+    };
+
+    /**
+     * @return the area a command acts on, in whichever window's layout holds the area whose id
+     *         it carries. One that carries none, as a key's does, acts on the active area of the
+     *         window the keyboard is in
+     **/
+    Placed placeOf(const v3d::event::Event& event) const;
+
+    /**
+     * @return the area and layout an editor is in, by its id, or nothing when no layout holds it
+     **/
+    std::optional<Placed> editorOf(std::size_t editor) const;
+
+    /**
+     * Show an editor of a kind: the first one an area holds. When no area holds one, it is shown
+     * in a window of its own when windowed asks for one and a window can be opened, and as a new
+     * tab of the active area otherwise.
+     **/
+    void show(std::string_view kind, bool windowed = false) const;
+
+    /**
      * Run something that needs a view's camera, with the active view's. Without an active
      * view it says why nothing happened.
      * @param what what needs it, for the log
@@ -68,10 +112,21 @@ struct Context final {
     void atView(const std::string& what, const std::function<void(const v3d::type::camera::Profile&)>& run) const;
 
     /**
-     * Run an operation on the selected parts, when the select mask selects the parts it works
-     * on. Under any other mask it says so and does nothing.
+     * Run an operation on the parts a command's "parts" names, which are selected first, as
+     * script::select() does. When it names none, the operation runs on the selected parts if the
+     * select mask selects the kind it works on, and they fill the parameter. Under any other
+     * mask it says so and does nothing.
      **/
-    void masked(selection::SelectMask mask, const std::string& name, const std::function<document::Outcome()>& operation) const;
+    void masked(script::Arguments* arguments, selection::SelectMask mask, const std::string& name,
+        const std::function<document::Outcome()>& operation) const;
+
+    /**
+     * The items a command's parameter names, or the selected items when it names none, which
+     * then fill it. A name no item has is refused.
+     * @param what what the command does, for the refusal
+     * @return the items, or nothing when one was refused
+     **/
+    std::optional<scene::Items> items(script::Arguments* arguments, std::string_view parameter, const std::string& what) const;
 
     /**
      * The camera a render sees through: the one selected scene camera, or the active view.
@@ -93,19 +148,35 @@ struct Context final {
     // the workspaces kept, and the layout of the one shown
     boost::shared_ptr<control::Workspaces> workspaces;
     boost::shared_ptr<view::AreaLayout> layout;
+    // the areas of the windows the editor opened beside its own
+    std::vector<Areas> others;
     boost::shared_ptr<view::AreaViews> views;
     // what commands said, shown at the foot of the active area
-    boost::shared_ptr<control::Notices> notices;
+    boost::shared_ptr<control::chrome::Notices> notices;
+    // what was run and what was said, which the console lists
+    boost::shared_ptr<script::Journal> journal;
     boost::shared_ptr<tool::CameraControl> cameraTool;
     boost::shared_ptr<tool::Select> selectTool;
     boost::shared_ptr<tool::Transform> transformTool;
-    boost::shared_ptr<control::Pointer> pointer;
+    boost::shared_ptr<control::chrome::Pointer> pointer;
     boost::shared_ptr<control::Playback> playback;
-    boost::shared_ptr<control::RenderWindow> renderWindow;
+    // every timeline editor, which share the chosen keys
+    boost::shared_ptr<control::TimelineEditor> timeline;
+    boost::shared_ptr<control::RenderView> renderView;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser;
     boost::shared_ptr<v3d::ui::shell::Prompt> prompt;
     // run after the areas change, so the views take their regions again
     std::function<void()> areasChanged;
+    // shows an editor of a kind in a window of its own, the one already open or a new one, and
+    // says whether it could
+    std::function<bool(std::string_view kind)> window;
+    // the windows the editor opened, as a workspace keeps them: each one's size and layout
+    std::function<boost::json::array()> keptWindows;
+    // closes the windows the editor opened, and opens those a workspace kept
+    std::function<void(const boost::json::array& windows)> reopen;
+    // the active area of the window the editor opened that the keyboard is in, or nothing while
+    // it is in the editor's own window
+    std::function<std::optional<Placed>()> keyed;
 };
 
 };  // namespace v3d::editor::app

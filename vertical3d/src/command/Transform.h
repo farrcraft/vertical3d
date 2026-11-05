@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <string>
 #include <vector>
@@ -30,7 +30,7 @@ class Transform final : public Command {
  public:
     /** One item, where it was before the change, and where it is after it. **/
     struct Change {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         v3d::type::Transform before;
         v3d::type::Transform after;
     };

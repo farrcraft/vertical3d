@@ -7,9 +7,9 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -19,7 +19,7 @@
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -37,7 +37,6 @@ class Image;
 
 namespace v3d::render::realtime {
 class DeviceContext;
-class RenderTarget;
 };  // namespace v3d::render::realtime
 
 namespace v3d::render::realtime::renderer {
@@ -78,6 +77,7 @@ class Quad final {
      * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
      *        the quads are built on and drawn through. Set 0's layout is declared so that a
      *        pass can bind one camera across the quads and every other pipeline
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines or their resources cannot be created
      **/
     Quad(const DeviceContext& context, const Spec& spec);
@@ -101,7 +101,7 @@ class Quad final {
      *        that sorts. An unsorted pass records in submission order, and within one
      *        canvas, submission order decides what is on top
      **/
-    void submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const canvas::Canvas& canvas, frame::Pass* pass, uint16_t layer = 0);
 
     /**
      * Whether a quad drawn into this format is decoded to linear before it is written.
@@ -131,9 +131,18 @@ class Quad final {
      **/
     struct Push final {
         glm::mat4 projection;
-        uint32_t text;
+        uint32_t text;       /**< how the batch is drawn: PICTURE, DISTANCE or CURVES **/
         uint32_t texture;
+        uint32_t bands = 0;  /**< a curve batch's bands **/
     };
+
+    /**
+     * How a batch is drawn, as the fragment stage reads it: a picture multiplied into the colour,
+     * a distance field thresholded, or glyphs found from their curves.
+     **/
+    static constexpr uint32_t PICTURE = 0;
+    static constexpr uint32_t DISTANCE = 1;
+    static constexpr uint32_t CURVES = 2;
 
     /**
      * Compile the quad pipeline twice: once for a pass with a depth attachment and once for a
@@ -148,13 +157,13 @@ class Quad final {
 
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Cache> cache_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<Textures> textures_;
+    boost::shared_ptr<resource::Textures> textures_;
 
-    PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
-    PipelineHandle depthPipeline_;          /**< for a pass with one **/
+    resource::PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+    resource::PipelineHandle depthPipeline_;          /**< for a pass with one **/
 
     boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };

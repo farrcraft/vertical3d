@@ -7,6 +7,9 @@
 
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -16,12 +19,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Components.h"
 #include "Evaluation.h"
-#include "Item.h"
-#include "Mesh.h"
 #include "RenderSettings.h"
 #include "Timeline.h"
+#include "Units.h"
 #include "Visitor.h"
 
 #include <boost/shared_ptr.hpp>
@@ -31,12 +32,12 @@ namespace v3d::editor::scene {
 /**
  * A set of items of any kind, in the order the scene holds them.
  **/
-using Items = std::vector<boost::shared_ptr<Item>>;
+using Items = std::vector<boost::shared_ptr<item::Item>>;
 
 /**
  * A set of mesh items, in the order the scene holds them.
  **/
-using Meshes = std::vector<boost::shared_ptr<Mesh>>;
+using Meshes = std::vector<boost::shared_ptr<item::Mesh>>;
 
 /**
  * The curves of one item, each by the path of the property it drives.
@@ -55,6 +56,11 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
  *
  * The scene also gives each item its document id. Ids are never reused within a document, so
  * the scene keeps the next one to give, and a saved document keeps it too.
+ *
+ * **Names.** No two items in a scene share a name, so a script can name an item by it. An item
+ * added with a name another holds takes the lowest free number after it, as "Cube.001" follows
+ * "Cube". An item added with no name is called by its kind. A name typed into the properties
+ * editor may match another while it is typed, and is made unique when the edit ends.
  *
  * **The hierarchy.** Any item may be the parent of others, and each item has at most one
  * parent, so the items form a set of trees. The scene holds each link, naming both ends by
@@ -75,12 +81,13 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
 class Scene final {
  public:
     /**
-     * Append an item, and give it the next document id if it has none.
+     * Append an item, give it the next document id if it has none, and give it a name no other
+     * item has, as available() makes one from its own.
      *
      * @return the id of the item, or 0 for an empty pointer. A selection names an item by
      *         this id.
      **/
-    unsigned int add(const boost::shared_ptr<Item>& item);
+    unsigned int add(const boost::shared_ptr<item::Item>& item);
 
     /**
      * Take an item out of the scene, and everything beneath it. The links among them and their
@@ -103,7 +110,7 @@ class Scene final {
     /**
      * @return the item's parent, or an empty pointer when it has none or is not in the scene
      **/
-    boost::shared_ptr<Item> parent(unsigned int child) const;
+    boost::shared_ptr<item::Item> parent(unsigned int child) const;
 
     /**
      * @return the items directly beneath one, in the scene's order. An id of 0 gives the
@@ -160,6 +167,12 @@ class Scene final {
     void renderSettings(const RenderSettings& settings) noexcept;
 
     /**
+     * The unit of length the document measures in.
+     **/
+    Length length() const noexcept;
+    void length(Length unit) noexcept;
+
+    /**
      * Evaluate the current frame, as the views show it: each keyed property takes its curve's
      * value unless an edit to it is pending, and every other property its item's value. Each
      * item's world matrix is its parent's world matrix times its own local one, each parent
@@ -176,13 +189,26 @@ class Scene final {
     /**
      * @return the item of that id, or an empty pointer
      **/
-    boost::shared_ptr<Item> item(unsigned int id) const;
+    boost::shared_ptr<item::Item> item(unsigned int id) const;
+
+    /**
+     * @return the item of that name, or an empty pointer
+     **/
+    boost::shared_ptr<item::Item> named(const std::string& name) const;
+
+    /**
+     * A name for an item that no other item in the scene has. The name wanted is kept when it is
+     * free. Otherwise a number of three or more digits after its last dot is taken off, and the
+     * lowest free one from ".001" is put on. An empty name is the item's kind.
+     * @param item the item the name is for, whose own name does not count as taken
+     **/
+    std::string available(const std::string& wanted, const item::Item& item) const;
 
     /**
      * @return the mesh item of that id, or an empty pointer when there is none or the item
      *         of that id is another kind
      **/
-    boost::shared_ptr<Mesh> mesh(unsigned int id) const;
+    boost::shared_ptr<item::Mesh> mesh(unsigned int id) const;
 
     /**
      * @return every selected item, of every kind, in insertion order
@@ -195,7 +221,7 @@ class Scene final {
     template <typename T>
     std::vector<boost::shared_ptr<T>> selected() const {
         std::vector<boost::shared_ptr<T>> found;
-        for (const boost::shared_ptr<Item>& item : items_) {
+        for (const boost::shared_ptr<item::Item>& item : items_) {
             const boost::shared_ptr<T> kind = as<T>(item);
             if (kind && kind->selected()) {
                 found.push_back(kind);
@@ -229,23 +255,35 @@ class Scene final {
     const Items& items() const noexcept;
 
     /**
+     * Where an item is shown once its ancestors are counted: in the views while it and every
+     * item above it are, and in renders likewise. Neither, for an item not in the scene.
+     **/
+    item::Item::Shown shown(unsigned int id) const;
+
+    /**
+     * Which items a walk visits: all of them, those shown in the views, or those shown in
+     * renders. A walk that leaves an item out leaves out everything beneath it too.
+     **/
+    enum class Showing : std::uint8_t { Every, Views, Renders };
+
+    /**
      * Walk the items depth first, each through the visit() for its kind, with what an
      * evaluation of the current frame found for it. Each parent comes before its children, and
      * siblings come in insertion order.
      **/
-    void accept(Visitor* visitor) const;
+    void accept(Visitor* visitor, Showing showing = Showing::Every) const;
 
     /**
      * Walk the items as accept(visitor) does, with what a given evaluation of the scene found.
      **/
-    void accept(Visitor* visitor, const Evaluation& evaluation) const;
+    void accept(Visitor* visitor, const Evaluation& evaluation, Showing showing = Showing::Every) const;
 
     /**
      * Which parts of each mesh item are selected. Removing an item, or clearing the scene,
      * drops its parts too.
      **/
-    Components& components() noexcept;
-    const Components& components() const noexcept;
+    item::Components& components() noexcept;
+    const item::Components& components() const noexcept;
 
     /**
      * Clear the selection of every item, and of every component of every mesh.
@@ -273,14 +311,26 @@ class Scene final {
     using Tree = std::unordered_map<std::int64_t, Items>;
 
     /**
-     * Visit one item through the visit() for its kind, then everything beneath it.
+     * What one walk is given: the visitor, the evaluation it reads, the tree, and which items it
+     * visits.
      **/
-    static void walk(Visitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree);
+    struct Walk final {
+        Visitor* visitor;
+        const Evaluation& evaluation;
+        const Tree& tree;
+        Showing showing;
+    };
+
+    /**
+     * Visit one item through the visit() for its kind, then everything beneath it. An item the
+     * walk does not show is left out with everything beneath it.
+     **/
+    static void walk(const Walk& walk, const boost::shared_ptr<item::Item>& item);
 
     /**
      * The item of a document id, or an empty pointer.
      **/
-    boost::shared_ptr<Item> document(std::int64_t id) const;
+    boost::shared_ptr<item::Item> document(std::int64_t id) const;
 
     /**
      * Evaluate a frame, with the pending edits or without them.
@@ -291,12 +341,12 @@ class Scene final {
      * @return the paths of an item's properties whose values have changed since it was last
      *         settled. A changed rotation names all three of its angles
      **/
-    std::set<std::string> edited(const Item& item) const;
+    std::set<std::string> edited(const item::Item& item) const;
 
     /**
      * Remember an item's values as they stand, which no edit is pending against.
      **/
-    void settle(const Item& item);
+    void settle(const item::Item& item);
 
     Items items_;
     // each child's parent, both named by document id
@@ -307,8 +357,9 @@ class Scene final {
     std::unordered_map<std::int64_t, std::map<std::string, float>> settled_;
     Timeline timeline_;
     RenderSettings renderSettings_;
+    Length length_ = Length::Metre;
     std::int64_t nextDocumentId_ = 1;
-    Components components_;
+    item::Components components_;
 };
 
 };  // namespace v3d::editor::scene

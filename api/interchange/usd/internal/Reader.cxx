@@ -26,6 +26,7 @@
 #include <pxr/usd/usdGeom/basisCurves.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/curves.h>
+#include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
@@ -229,6 +230,23 @@ void Reader::reverseFaces(Mesh* mesh) {
     }
 }
 
+void Reader::shownOf(const pxr::UsdPrim& prim, Node* node) const {
+    const pxr::UsdGeomImageable imageable(prim);
+    if (!imageable) {
+        return;
+    }
+    // each prim's own values are read, since what a node hides it hides beneath it too
+    pxr::TfToken visibility;
+    if (imageable.GetVisibilityAttr().Get(&visibility, rest_) && visibility == pxr::UsdGeomTokens->invisible) {
+        node->visible = false;
+        node->renders = false;
+    }
+    pxr::TfToken purpose;
+    if (imageable.GetPurposeAttr().Get(&purpose) && (purpose == pxr::UsdGeomTokens->guide || purpose == pxr::UsdGeomTokens->proxy)) {
+        node->renders = false;
+    }
+}
+
 void Reader::addPrim(const pxr::UsdPrim& prim) {
     Node node;
     node.name = prim.GetName().GetString();
@@ -252,6 +270,7 @@ void Reader::addPrim(const pxr::UsdPrim& prim) {
         }
     }
     node.placement = placementOf(local);
+    shownOf(prim, &node);
 
     if (prim.IsA<pxr::UsdGeomMesh>()) {
         node.mesh = addMesh(pxr::UsdGeomMesh(prim), node.name);

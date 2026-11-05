@@ -6,9 +6,9 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -16,7 +16,7 @@
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -66,6 +66,7 @@ class Line final {
      * @param context the device, pipeline cache, resources, ring and frame uniforms the lines
      *        are built on and drawn through. Both pipelines read set 0. A line canvas is in
      *        world space, so the pass's camera is its only transform
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines cannot be created
      **/
     Line(const DeviceContext& context, const Spec& spec);
@@ -88,7 +89,7 @@ class Line final {
      * @param layer the layer the item's sort key carries, which only has an effect in a pass
      *        that sorts
      **/
-    void submit(const canvas::Line& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const canvas::Line& canvas, frame::Pass* pass, uint16_t layer = 0);
 
  private:
     /**
@@ -111,12 +112,12 @@ class Line final {
 
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Cache> cache_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
 
-    PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
-    PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests against it **/
+    resource::PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
+    resource::PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests against it **/
 
     boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };

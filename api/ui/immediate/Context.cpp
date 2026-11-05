@@ -8,9 +8,11 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/TextRenderer.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <string_view>
 #include <string>
 
 #include <glm/vec2.hpp>
@@ -27,6 +29,7 @@ clicked(false) {
 Retained::Retained() noexcept :
 frame(0),
 tab(0),
+tabs(0),
 scroll(0.0F),
 content(0.0F),
 offset(0.0F, 0.0F),
@@ -71,6 +74,7 @@ id(0),
 open(false),
 pen(0.0F),
 top(0.0F),
+share(0.0F),
 index(0),
 wanted(0),
 changed(false),
@@ -90,9 +94,9 @@ contentTop(0.0F),
 clipped(false) {
 }
 
-Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
-    measure(measurer),
-    write(writer),
+Context::Context(const boost::shared_ptr<paint::TextRenderer>& renderer, float size) :
+    text(renderer),
+    textSize(size),
     scale(1.0F),
     timed(false),
     dressing(paint::Dressing::tools()),
@@ -110,11 +114,21 @@ Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     typing(0),
     letGo(false),
     escaped(false),
+    entered(false),
+    focusNext(false),
     typingDrawn(false),
     itemMin(0.0F, 0.0F),
     itemMax(0.0F, 0.0F),
     itemOwner(0),
-    itemFinished(false) {
+    itemFinished(false),
+    itemEntered(false),
+    itemTyping(false) {
+}
+
+void Context::claim(Id field, const std::string& value) {
+    focus(field);
+    edit.text(value);
+    written = value;
 }
 
 void Context::focus(Id field) {
@@ -122,6 +136,7 @@ void Context::focus(Id field) {
     typing = field;
     letGo = false;
     escaped = false;
+    entered = false;
     if (field == 0) {
         written.clear();
     }
@@ -179,6 +194,8 @@ glm::vec2 Context::place(const glm::vec2& size) {
     itemMax = corner + size;
     itemOwner = window.open ? window.id : 0;
     itemFinished = false;
+    itemEntered = false;
+    itemTyping = false;
     return corner;
 }
 
@@ -225,22 +242,28 @@ glm::vec4 Context::face(bool lit, bool under) const {
     return under ? dressing.hover : dressing.widget;
 }
 
+float Context::measure(std::string_view line) const {
+    return text ? text->width(line, textSize) : 0.0F;
+}
+
 void Context::label(const std::string& line, const glm::vec2& min, const glm::vec2& size,
     const glm::vec4& colour) const {
+    if (!text) {
+        return;
+    }
     // the baseline sits a quarter of a line below the box's middle, which is three quarters
     // of the way down a box one line tall. A font with ordinary descenders looks centred there
     const glm::vec2 pen(min.x, min.y + ((size.y + (dressing.lineHeight * 0.5F)) * 0.5F));
-    write(line, pen, colour);
+    text->draw(canvas, line, pen, colour, textSize);
 }
 
 void Context::title(const std::string& line, const glm::vec2& min, const glm::vec2& size,
     const glm::vec4& colour) const {
-    if (!strong || paint::weight(dressing.titleWeight) != paint::Weight::SemiBold) {
-        label(line, min, size, colour);
+    if (!text) {
         return;
     }
     const glm::vec2 pen(min.x, min.y + ((size.y + (dressing.lineHeight * 0.5F)) * 0.5F));
-    strong(line, pen, colour);
+    text->draw(canvas, line, pen, colour, textSize, paint::weight(dressing.titleWeight));
 }
 
 };  // namespace v3d::ui::immediate

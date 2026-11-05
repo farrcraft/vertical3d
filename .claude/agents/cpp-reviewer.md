@@ -78,9 +78,8 @@ most often Major.
 - **A source file added without being added to its `CMakeLists.txt`.** Every source list in
   this repo is hand-written. A missing entry is a link error at best and a silently
   unbuilt file at worst.
-- **An `#include` or a reference to `v3dlibs/`, `luxa/`, `rigel/` or `vault/`.** All four
-  trees were deleted on 2026-09-04. Nothing can name them any more, and a diff that does is
-  either stale or was written against a checkout that predates the deletion.
+- **An `#include` or a reference to `v3dlibs/`, `luxa/`, `rigel/` or `vault/`.** Those trees
+  do not exist, so a diff that names one was written against an old checkout.
 
 ## Conventions
 
@@ -116,27 +115,20 @@ them. Run it, and report what it reports in the changed files. The fifth needs y
 
 ### Boundaries
 
-- **The offline renderer must not acquire a realtime dependency.** `moya` is offline and
-  consumes only the non-realtime libraries — `render_offline`, `image`, `log`
-  and `type`. A change that pulls `render`, `ui`, `input` or Vulkan into that set,
-  or into that app, is a design finding even if it links.
+- **The offline renderer must not acquire a realtime dependency.** `moya`, `v3dlib_moya` and
+  `v3dlib_render_offline` link no Vulkan and no SDL, so their suites run in CI with no GPU. A
+  change that pulls `render`, `ui`, `input`, `window`, Vulkan or SDL into any of them, directly or
+  through another library, is a finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The
   test is whether a second app would want it.
 
 ### Against the ADRs
 
-The records are load-bearing and easy to break without noticing:
-
-- **ADR-0001** — no OpenGL. The tree has none, and none may be added.
-- **ADR-0002** — the renderer targets Vulkan 1.3. Code guarded on a lower version, or a
-  feature enabled without the `VkPhysicalDeviceFeatures2` chain, contradicts it.
-- **ADR-0003** — one engine, with the render pass as the unit of variation. A new
-  `Engine2D`-shaped path, or a per-engine setting that should be per-pass, is a finding.
-- **ADR-0004** — operations are draw data; the engine sorts, merges and records. An
-  operation that issues its own draw calls, or a per-sprite operation where a batch was
-  intended, contradicts it. 2D submissions must carry an explicit layer field.
-- **ADR-0005** — one quad primitive with an optional texture. A second pipeline or vertex
-  format for the untextured case is a finding; untextured quads sample the 1x1 white texture.
+The records are easy to break without noticing. For each area the diff touches, scan that
+area's table in `docs/adr/README.md` and read the Decision of each accepted record. A change
+that contradicts an accepted record without a new ADR that amends or supersedes it is a finding.
+The reference document for the area states the resulting rules; check the diff against those
+too.
 
 ## Process obligations the change created
 
@@ -182,13 +174,13 @@ Only where real, and never at length:
 You have Bash. Prefer evidence over assertion.
 
 ```
-ninja -C out/build/x64-Debug <target>
-ctest --test-dir out/build/x64-Debug --output-on-failure
-cpplint --linelength=180 <files>
+./scripts/build.cmd <target>                 # ninja inside the MSVC developer environment
+./scripts/test.cmd -R <suite>                # ctest, the same way
+python -m cpplint --linelength=180 <files>
+node scripts/<gate>.ts                       # each review gate; Gates.md lists them
 ```
 
-Building needs an MSVC Developer environment first. The tree is clean at that lint command,
-so every finding is a real one.
+The tree is clean at the lint command and at every gate, so every finding is a real one.
 
 There is a test suite — one binary per api library and per app with logic worth covering —
 so a change with a testable cpu half that brings no cases is a finding. CI renders the

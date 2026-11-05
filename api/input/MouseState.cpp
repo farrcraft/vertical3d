@@ -6,6 +6,7 @@
 #include "MouseState.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -89,6 +90,18 @@ void MouseState::wheel(float notches) {
  **/
 float MouseState::wheel() const noexcept {
     return wheel_;
+}
+
+/**
+ **/
+void MouseState::window(std::uint32_t id) noexcept {
+    window_ = id;
+}
+
+/**
+ **/
+std::uint32_t MouseState::window() const noexcept {
+    return window_;
 }
 
 };  // namespace v3d::input

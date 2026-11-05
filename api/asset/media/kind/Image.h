@@ -14,6 +14,7 @@
 
 namespace v3d::asset::media::kind {
 /**
+ * A decoded image loaded from an image file, as the asset manager hands it out.
  **/
 class Image : public Asset {
  public:

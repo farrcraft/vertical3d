@@ -78,7 +78,7 @@ add [api/log/Utf8.manifest](../../../api/log/Utf8.manifest) to its own sources.
 - A narrow string written to a console is shown in the console's own code page, which the
   manifest does not change. The log file is UTF-8.
 
-Background: [ADR-0089](../../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md)
+Background: [ADR-0089](../../adr/engine/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md)
 
 ## Writing files
 

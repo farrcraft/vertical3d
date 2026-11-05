@@ -3,23 +3,26 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/animation/Curve.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 
+#include <cstddef>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -72,21 +75,71 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
 
     const v3d::editor::document::Outcome made = edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
     BOOST_CHECK(made.done);
+    BOOST_CHECK(made.undoable);
     BOOST_CHECK_EQUAL(made.message, "created a cube - 1 item");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
     BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "Cube");
     BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
     BOOST_CHECK(edited.dirty());
 
+    // an undo is not itself undone, and a redo is
     const v3d::editor::document::Outcome undone = edited.undo();
     BOOST_CHECK(undone.done);
+    BOOST_CHECK(!undone.undoable);
     BOOST_CHECK_EQUAL(undone.message, "undo create cube");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);
     BOOST_CHECK(!edited.dirty());
 
-    BOOST_CHECK(edited.redo().done);
+    const v3d::editor::document::Outcome redone = edited.redo();
+    BOOST_CHECK(redone.done);
+    BOOST_CHECK(redone.undoable);
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
-    BOOST_CHECK(!edited.redo().done);
+    const v3d::editor::document::Outcome nothing = edited.redo();
+    BOOST_CHECK(!nothing.done);
+    BOOST_CHECK(!nothing.undoable);
+}
+
+/**
+ * Hide takes items out of the views, show all brings every one back, and each is one change. An
+ * isolation shows the items and what is above them, leaves what is beneath them as it is, and
+ * hides the rest. None of them touches where an item is rendered.
+ **/
+BOOST_AUTO_TEST_CASE(items_are_hidden_shown_and_isolated) {
+    const Scratch scratch("shown");
+    v3d::editor::document::Document edited = document(scratch.path());
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = edited.scene();
+    for (int made = 0; made < 4; made++) {
+        edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    }
+    const v3d::editor::scene::Items items = scene->items();
+    // the first holds the second, which holds the third. The fourth stands alone
+    scene->parent(items[1]->id(), items[0]->id());
+    scene->parent(items[2]->id(), items[1]->id());
+    const std::size_t depth = edited.history()->undoDepth();
+
+    const v3d::editor::document::Outcome hid = edited.hide({ items[3] });
+    BOOST_CHECK(hid.done);
+    BOOST_CHECK(hid.undoable);
+    BOOST_CHECK(!items[3]->shown().views);
+    BOOST_CHECK(items[3]->shown().renders);
+    BOOST_CHECK(!edited.hide({ items[3] }).done);
+    BOOST_CHECK(edited.showAll().done);
+    BOOST_CHECK(items[3]->shown().views);
+    BOOST_CHECK(!edited.showAll().done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), depth + 2);
+
+    items[2]->shown({ .views = false, .renders = true });
+    BOOST_CHECK(edited.isolate({ items[1] }).done);
+    BOOST_CHECK(items[0]->shown().views);
+    BOOST_CHECK(items[1]->shown().views);
+    BOOST_CHECK(!items[2]->shown().views);
+    BOOST_CHECK(!items[3]->shown().views);
+    BOOST_CHECK(!edited.isolate({}).done);
+
+    edited.undo();
+    BOOST_CHECK(items[3]->shown().views);
+    BOOST_CHECK(edited.show({ items[2] }).done);
+    BOOST_CHECK(items[2]->shown().views);
 }
 
 /**
@@ -95,13 +148,13 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
 BOOST_AUTO_TEST_CASE(a_curve_is_created_as_one_change) {
     const Scratch scratch("curve");
     v3d::editor::document::Document edited = document(scratch.path());
-    const v3d::editor::document::Outcome made = edited.createCurve(v3d::editor::scene::CurveType::Nurbs);
+    const v3d::editor::document::Outcome made = edited.createCurve(v3d::editor::scene::item::CurveType::Nurbs);
     BOOST_CHECK(made.done);
     BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 item");
     BOOST_REQUIRE_EQUAL(edited.scene()->count(), 1U);
     // a new item is named for its kind, each word begun in capitals
     BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "NURBS Curve");
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = v3d::editor::scene::as<v3d::editor::scene::Curve>(edited.scene()->items()[0]);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(edited.scene()->items()[0]);
     BOOST_REQUIRE(curve);
     BOOST_REQUIRE_EQUAL(curve->geometry()->size(), 1U);
     BOOST_CHECK(std::holds_alternative<v3d::curve::Nurbs>(curve->geometry()->curve(0).shape));
@@ -140,7 +193,7 @@ BOOST_AUTO_TEST_CASE(an_operation_acts_on_what_it_is_given) {
     const Scratch scratch("arguments");
     v3d::editor::document::Document edited = document(scratch.path());
     const v3d::type::camera::Profile at("Perspective");
-    edited.createCamera(at, v3d::editor::scene::Camera::Projection::Perspective);
+    edited.createCamera(at, v3d::editor::scene::item::Camera::Projection::Perspective);
     edited.createPrimitive(v3d::editor::document::Document::Primitive::Plane);
     const v3d::editor::scene::Items items = edited.scene()->items();
     BOOST_REQUIRE_EQUAL(items.size(), 2U);
@@ -219,6 +272,102 @@ BOOST_AUTO_TEST_CASE(going_to_a_frame_holds_it_in_the_range) {
 }
 
 /**
+ * Auto key is turned on and off as a change to the document, which undo takes back. Asking for
+ * it as it is changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(auto_key_is_a_change) {
+    const Scratch scratch("auto_key");
+    v3d::editor::document::Document edited = document(scratch.path());
+    BOOST_CHECK(!edited.scene()->timeline().autoKey);
+
+    const v3d::editor::document::Outcome on = edited.autoKey(true);
+    BOOST_CHECK(on.done);
+    BOOST_CHECK(on.undoable);
+    BOOST_CHECK_EQUAL(on.message, "turned auto key on");
+    BOOST_CHECK(edited.scene()->timeline().autoKey);
+    BOOST_CHECK(edited.dirty());
+
+    const v3d::editor::document::Outcome again = edited.autoKey(true);
+    BOOST_CHECK(!again.done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
+
+    edited.undo();
+    BOOST_CHECK(!edited.scene()->timeline().autoKey);
+}
+
+/**
+ * The rate and range are set as one change, and one that cannot be a timeline is refused.
+ **/
+BOOST_AUTO_TEST_CASE(the_range_is_a_change) {
+    const Scratch scratch("timing");
+    v3d::editor::document::Document edited = document(scratch.path());
+
+    const v3d::editor::document::Outcome set = edited.timing(30.0F, 10, 50);
+    BOOST_CHECK(set.done);
+    BOOST_CHECK(set.undoable);
+    BOOST_CHECK_EQUAL(set.message, "set frames 10 to 50");
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().rate, 30.0F);
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().frame, 10);
+
+    BOOST_CHECK(!edited.timing(30.0F, 10, 50).done);
+    BOOST_CHECK(!edited.timing(30.0F, 50, 10).done);
+    BOOST_CHECK(!edited.timing(0.0F, 1, 10).done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
+
+    edited.undo();
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().end, v3d::editor::scene::Timeline::DEFAULT_END);
+}
+
+/**
+ * Keys are moved and deleted as one change each, and with nothing to act on nothing changes.
+ **/
+BOOST_AUTO_TEST_CASE(keys_are_moved_and_deleted) {
+    const Scratch scratch("keys");
+    v3d::editor::document::Document edited = document(scratch.path());
+    edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    const unsigned int cube = edited.scene()->items()[0]->id();
+    edited.key(edited.scene()->items(), 5);
+
+    const v3d::editor::document::Outcome moved = edited.moveKeys({ { .item = cube, .frame = 5.0F } }, -2);
+    BOOST_CHECK(moved.done);
+    BOOST_CHECK_EQUAL(moved.message, "moved 1 key 2 frames earlier");
+    BOOST_CHECK(edited.scene()->keyedFrames(edited.scene()->items()) == std::vector<float>({ 3.0F }));
+    BOOST_CHECK(!edited.moveKeys({ { .item = cube, .frame = 3.0F } }, 0).done);
+    BOOST_CHECK(!edited.moveKeys({ { .item = cube, .frame = 9.0F } }, 1).done);
+
+    const v3d::editor::document::Outcome deleted = edited.deleteKeys({ { .item = cube, .frame = 3.0F } });
+    BOOST_CHECK(deleted.done);
+    BOOST_CHECK(deleted.undoable);
+    BOOST_CHECK(edited.scene()->curves(cube).empty());
+    BOOST_CHECK(!edited.deleteKeys({}).done);
+
+    edited.undo();
+    BOOST_CHECK(edited.scene()->keyedFrames(edited.scene()->items()) == std::vector<float>({ 3.0F }));
+}
+
+/**
+ * A curve is reshaped as one change, and a curve the same as the one there changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_curve_is_reshaped) {
+    const Scratch scratch("reshape");
+    v3d::editor::document::Document edited = document(scratch.path());
+    edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    const unsigned int cube = edited.scene()->items()[0]->id();
+    edited.key(edited.scene()->items(), 5);
+    v3d::animation::Curve curve = edited.scene()->curves(cube).at("translation.y");
+    curve.set(5.0F, 2.0F);
+
+    const v3d::editor::document::Outcome reshaped = edited.reshape(cube, "translation.y", curve);
+    BOOST_CHECK(reshaped.done);
+    BOOST_CHECK(reshaped.undoable);
+    BOOST_CHECK_EQUAL(reshaped.message, "edited translation.y");
+    BOOST_CHECK(!edited.reshape(cube, "translation.y", curve).done);
+
+    edited.undo();
+    BOOST_CHECK_EQUAL(edited.scene()->curves(cube).at("translation.y").keys()[0].value, 0.0F);
+}
+
+/**
  * A glTF file comes in as one change: its nodes become items with their hierarchy, its
  * triangles are joined back into quads, and its keys become curves. Undo takes every item out,
  * and redo brings back the items with their parents and curves.
@@ -235,17 +384,17 @@ BOOST_AUTO_TEST_CASE(a_gltf_file_imports_as_one_change) {
     const auto check = [&edited]() {
         const boost::shared_ptr<v3d::editor::scene::Scene>& scene = edited.scene();
         BOOST_REQUIRE_EQUAL(scene->count(), 4U);
-        boost::shared_ptr<v3d::editor::scene::Mesh> box;
-        for (const boost::shared_ptr<v3d::editor::scene::Item>& item : scene->items()) {
-            if (item->kind() == v3d::editor::scene::Item::Kind::Mesh) {
-                box = v3d::editor::scene::as<v3d::editor::scene::Mesh>(item);
+        boost::shared_ptr<v3d::editor::scene::item::Mesh> box;
+        for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : scene->items()) {
+            if (item->kind() == v3d::editor::scene::item::Item::Kind::Mesh) {
+                box = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(item);
             }
         }
         BOOST_REQUIRE(box);
         BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
-        const boost::shared_ptr<v3d::editor::scene::Item> rig = scene->parent(box->id());
+        const boost::shared_ptr<v3d::editor::scene::item::Item> rig = scene->parent(box->id());
         BOOST_REQUIRE(rig);
-        BOOST_CHECK(rig->kind() == v3d::editor::scene::Item::Kind::Group);
+        BOOST_CHECK(rig->kind() == v3d::editor::scene::item::Item::Kind::Group);
         BOOST_CHECK(rig->selected());
         BOOST_CHECK_EQUAL(scene->curves(box->id()).count("translation.x"), 1U);
     };
@@ -271,15 +420,15 @@ BOOST_AUTO_TEST_CASE(a_usd_stage_imports_as_one_change) {
     BOOST_CHECK_EQUAL(imported.message, "imported 8 items from scene.usda");
 
     const boost::shared_ptr<v3d::editor::scene::Scene>& scene = edited.scene();
-    boost::shared_ptr<v3d::editor::scene::Mesh> box;
-    for (const boost::shared_ptr<v3d::editor::scene::Item>& item : scene->items()) {
-        if (item->kind() == v3d::editor::scene::Item::Kind::Mesh) {
-            box = v3d::editor::scene::as<v3d::editor::scene::Mesh>(item);
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> box;
+    for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : scene->items()) {
+        if (item->kind() == v3d::editor::scene::item::Item::Kind::Mesh) {
+            box = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(item);
         }
     }
     BOOST_REQUIRE(box);
     BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
-    const boost::shared_ptr<v3d::editor::scene::Item> holder = scene->parent(box->id());
+    const boost::shared_ptr<v3d::editor::scene::item::Item> holder = scene->parent(box->id());
     BOOST_REQUIRE(holder);
     BOOST_CHECK_EQUAL(scene->curves(holder->id()).count("translation.x"), 1U);
     BOOST_CHECK(edited.undo().done);

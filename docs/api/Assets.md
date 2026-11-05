@@ -80,7 +80,7 @@ void MyApp::tick(unsigned int delta) {
 - Whatever a job captures must outlive it. A job that captures `this` is unsafe unless the
   worker is destroyed before the object.
 
-Background: [ADR-0086](../adr/0086-loading-one-worker-thread-polled-from-the-main-thread.md)
+Background: [ADR-0086](../adr/engine/0086-loading-one-worker-thread-polled-from-the-main-thread.md)
 
 ## Loaders
 
@@ -126,8 +126,8 @@ Splitting the loaders this way keeps each library's dependencies small. A librar
 documents needs only the JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an
 app that links `audio` pulls in SDL3_mixer.
 
-Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md),
-[ADR-0118](../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md)
+Background: [ADR-0079](../adr/engine/0079-assets-loaders-are-registered.md),
+[ADR-0118](../adr/engine/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md)
 
 ## JSON documents
 
@@ -210,7 +210,7 @@ disk. `engine::Settings`, the editor's project manifests and `asset::media::Spri
 through them. The editor's scene documents are SQLite databases, written in a transaction rather
 than by a rename. See [editor/Files.md](../editor/Files.md#scene-documents).
 
-Background: [ADR-0041](../adr/0041-files-write-documents-atomically.md)
+Background: [ADR-0041](../adr/engine/0041-files-write-documents-atomically.md)
 
 ## Reading old documents forward
 
@@ -254,4 +254,4 @@ The rules:
 - A step is plain code with no schema behind it. Write a test for each one.
 - A step can never be removed while documents of the version before it may still exist.
 
-Background: [ADR-0073](../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)
+Background: [ADR-0073](../adr/engine/0073-files-migrate-old-documents-one-version-at-a-time.md)

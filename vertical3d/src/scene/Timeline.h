@@ -10,9 +10,9 @@
 namespace v3d::editor::scene {
 
 /**
- * A document's time: how many frames play in a second, the range of frames that plays, and the
- * frame the scene is posed at. Keys sit on frames, so a change of rate leaves every key on its
- * frame and changes how fast they play.
+ * A document's time: how many frames play in a second, the range of frames that plays, the
+ * frame the scene is posed at, and whether an edit sets a key. Keys sit on frames, so a change of
+ * rate leaves every key on its frame and changes how fast they play.
  **/
 struct Timeline final {
     /** Film's rate, which a new document plays at. **/
@@ -24,6 +24,8 @@ struct Timeline final {
     int start = 1;
     int end = DEFAULT_END;
     int frame = 1;
+    /** Whether an edit to a number a curve can drive keys it at the current frame. **/
+    bool autoKey = false;
 
     /**
      * @return whether the rate is a positive number, the range runs forwards, and the frame is
@@ -34,6 +36,16 @@ struct Timeline final {
     }
 
     bool operator==(const Timeline& other) const = default;
+};
+
+/**
+ * One item's keys on one frame, which the timeline shows, moves and deletes as one key.
+ **/
+struct FrameKey final {
+    unsigned int item = 0;  /**< the item's id in the scene **/
+    float frame = 0.0F;
+
+    bool operator==(const FrameKey& other) const = default;
 };
 
 };  // namespace v3d::editor::scene

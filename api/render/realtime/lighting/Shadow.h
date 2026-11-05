@@ -77,8 +77,10 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds,
  * Each position is the one drawn: alpha of the way from the caster's previous step to its
  * current one, as the lit pass draws it.
  *
+ * @param registry the entities whose casters are fitted
  * @param alsoCover points that should be inside the map whether or not anything stands there,
  *        such as where a character will walk to
+ * @param fit the margin added to the radius, and the alpha positions are read at
  * @return nothing when no entity casts a shadow, so a caller keeps the bounds it had
  **/
 std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit);
@@ -173,6 +175,7 @@ struct Cascades final {
  *        direction, increasing and above zero, from 1 to maximumCascades of them. splitView()
  *        gives them, and a game can give its own
  * @param towards the direction towards the light, as shadowLight() takes it
+ * @param fit each layer's width in texels, the blend between cascades, and the camera's hand
  * @return nothing when a value is out of range or the matrix cannot be inverted
  **/
 std::optional<Cascades> fitCascades(const glm::mat4& viewProjection, std::span<const float> splits, const glm::vec3& towards,

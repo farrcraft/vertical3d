@@ -6,13 +6,10 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import process from 'node:process';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { files, unpinned } from '../pinned.ts';
 
@@ -94,12 +91,4 @@ test('pinned reads .yml and .yaml workflows and the actions defined in the repos
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
-});
-
-test('pinned.ts runs when Node is started with it', () => {
-    const root = fileURLToPath(new URL('../../', import.meta.url));
-    const run = spawnSync(process.execPath, [join(root, 'scripts', 'pinned.ts'), '--no-such-option'],
-        { cwd: root, encoding: 'utf8' });
-    assert.equal(run.status, 2, run.stderr);
-    assert.match(run.stderr, /usage/);
 });

@@ -7,8 +7,8 @@
 
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
@@ -46,7 +46,7 @@ glm::mat4 glyphPlacement(const glm::mat4& world);
  * angle of view. An orthographic camera is a box as tall as twice its extent, GLYPH_LENGTH deep.
  * A triangle above the far picture points up.
  **/
-void drawCamera(const scene::Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+void drawCamera(const scene::item::Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 /**
  * A light, in its own space.
@@ -56,7 +56,7 @@ void drawCamera(const scene::Camera::Lens& lens, const glm::vec4& colour, v3d::r
  * position along +z, GLYPH_LENGTH along each side, with a ring at its edge and a second ring
  * where its soft edge begins.
  **/
-void drawLight(const scene::Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+void drawLight(const scene::item::Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 /**
  * A group, in its own space: a box GROUP_REACH from its origin along each axis.

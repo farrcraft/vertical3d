@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -95,6 +96,17 @@ class MouseState final {
      **/
     float wheel() const noexcept;
 
+    /**
+     * Say which window the cursor is in, as each mouse event names it.
+     **/
+    void window(std::uint32_t id) noexcept;
+
+    /**
+     * @return the id of the window the cursor was last in, as Window::id() gives it, whose
+     *         coordinates position() is in. 0 before any mouse event
+     **/
+    std::uint32_t window() const noexcept;
+
  private:
     std::vector<std::string> buttons_;
     /**< what went down since the last flush, and what came up **/
@@ -103,6 +115,7 @@ class MouseState final {
     glm::vec2 position_;
     /**< notches turned since the last flush, which is an edge and not a position **/
     float wheel_;
+    std::uint32_t window_ = 0;
 };
 
 };  // namespace v3d::input

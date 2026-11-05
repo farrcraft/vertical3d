@@ -5,7 +5,7 @@
 
 #include "Recorder.h"
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <string>
 #include <vector>
@@ -82,7 +82,7 @@ void Recorder::pixelSamples(const glm::uvec2 & samples) {
     requests_.emplace_back([samples](Handler & to) { to.pixelSamples(samples); });
 }
 
-void Recorder::pixelFilter(Filter filter, float xwidth, float ywidth) {
+void Recorder::pixelFilter(film::Filter filter, float xwidth, float ywidth) {
     requests_.emplace_back([filter, xwidth, ywidth](Handler & to) { to.pixelFilter(filter, xwidth, ywidth); });
 }
 

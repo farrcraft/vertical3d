@@ -5,6 +5,7 @@ v3d_add_api_library(engine
 	"Statistics.h" "Statistics.cpp"
 	"Engine.h" "Engine.cpp"
 	"Identity.h"
+	"Launch.h" "Launch.cpp"
 	"Settings.h" "Settings.cpp"
 	"Main.h"
 	"IsometricController.h" "IsometricController.cpp"
@@ -36,7 +37,7 @@ target_link_libraries(v3dlib_engine PUBLIC
 # appPath() derives a path from argv[0] with boost::filesystem.
 # No header here includes boost::filesystem. The run() template calls appPath(), so an app that
 # includes Application.h does not need it.
-target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media)
+target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media v3dlib_image)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

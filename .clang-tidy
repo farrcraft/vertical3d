@@ -1,15 +1,19 @@
-# The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
+# The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Five families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 199 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 324 of the 334 checks in these families
 # are live, and the tree is clean at all of them.
+#
+# clang-analyzer is the Clang Static Analyzer. It follows each path through a function, so it
+# finds a null dereference, a use after move or a leak that only one branch reaches. MSVC's
+# /analyze covers some of the same ground, and each finds faults the other misses.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
 # a convention this tree has settled - boost::shared_ptr over the std equivalents, a namespace
 # body that is not indented, .h for every header - and a gate is worth nothing if reading it
 # means deciding which findings to believe.
 #
-# Seven of the subtractions are settled rather than pending, and are not backlog:
+# Ten of the subtractions are settled rather than pending, and are not backlog:
 #
 #  - bugprone-invalid-enum-default-initialization fires on every VkSomethingCreateInfo x{},
 #    because a Vulkan flag bits enum has no zero enumerator. Value initialising the struct and
@@ -33,6 +37,19 @@
 #    boost::program_options::variables_map inherits contains() from std::map, but the built
 #    boost does not export that instantiation - the call compiles and then fails to link
 #    with an unresolved __declspec(dllimport). count() is what those two keep.
+#  - clang-analyzer-cplusplus.NewDelete cannot follow a reference count. It reports a use after
+#    free inside boost::shared_ptr, and inside OpenUSD's counted pointers, wherever a function
+#    drops one reference while another still holds the object. The report lands in the
+#    package's header, where no comment in this tree can mark it. AddressSanitizer reports a
+#    real use after free when the suites run.
+#  - clang-analyzer-optin.core.EnumCastOutOfRange reports a cast to an enum of a value it does
+#    not name. An enum class with a fixed underlying type takes every value of that type, and
+#    this tree uses one as a typed id: an audio Voice or Instance names only None, and every
+#    other value is a handle.
+#  - readability-redundant-member-init reports the {} on a record field whose type's default
+#    constructor gives the same value. That {} is what tells Clang and GCC that a designated
+#    initialiser may leave the field out. Without it, -Wextra reports every initialiser that
+#    does.
 #
 # One check is off in part of the tree rather than all of it. Each tests directory has a
 # .clang-tidy of its own that turns off readability-magic-numbers, because a test's literal is
@@ -41,28 +58,26 @@
 Checks: >
   -*,
   bugprone-*,
+  clang-analyzer-*,
   performance-*,
   misc-*,
   readability-*,
   -bugprone-invalid-enum-default-initialization,
+  -clang-analyzer-cplusplus.NewDelete,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   -misc-multiple-inheritance,
   -misc-no-recursion,
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
   -readability-make-member-function-const,
-  -readability-non-const-parameter
+  -readability-non-const-parameter,
+  -readability-redundant-member-init
 
 # A header is diagnosed wherever it is included from, so an api header is covered by whichever
 # library compiles it. The third party trees are not this repository's to fix, and each would
-# be reported once per source that reaches it. noiseutils.h is among them because it is vendored
-# where the tree's own sources are: SKIP_LINTING takes noiseutils.cpp out of the run and does
-# nothing for the header, which voxel's own sources include.
-#
-# The pattern is matched against the include as spelled rather than against a resolved path, so
-# the vendored header is named by its own last two segments - what reaches the filter is
-# demos\voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
+# be reported once per source that reaches it.
 HeaderFilterRegex: '.*'
-ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)|(.*[\\/]noise[\\/]noiseutils\.h)'
+ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)'
 
 # clang-tidy would otherwise print a fix reformatted to LLVM's brace and indent style, which is
 # not this tree's. Nothing here applies one - -fix is not passed.

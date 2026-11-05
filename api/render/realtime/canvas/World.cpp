@@ -16,6 +16,7 @@ namespace v3d::render::realtime::canvas {
 /**
  **/
 World::Batch::Batch() noexcept :
+field(false),
 firstIndex(0),
 indices(0) {
 }
@@ -78,20 +79,46 @@ const glm::vec4& World::tint() const noexcept {
  **/
 void World::quad(const Corners& corners, const glm::vec4& colour) {
     // the whole of the white texture, so the sample is opaque white wherever it lands
-    quad(corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
+    quad(corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, resource::TextureHandle());
 }
 
 /**
  **/
 void World::quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-    const glm::vec4& colour, const TextureHandle& texture) {
+    const glm::vec4& colour, const resource::TextureHandle& texture) {
     open(texture);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex(corners[0], glm::vec2(uv0.x, uv0.y), colour);
-    vertex(corners[1], glm::vec2(uv1.x, uv0.y), colour);
-    vertex(corners[2], glm::vec2(uv1.x, uv1.y), colour);
-    vertex(corners[3], glm::vec2(uv0.x, uv1.y), colour);
+    vertex({.position = corners[0], .uv = glm::vec2(uv0.x, uv0.y), .colour = colour});
+    vertex({.position = corners[1], .uv = glm::vec2(uv1.x, uv0.y), .colour = colour});
+    vertex({.position = corners[2], .uv = glm::vec2(uv1.x, uv1.y), .colour = colour});
+    vertex({.position = corners[3], .uv = glm::vec2(uv0.x, uv1.y), .colour = colour});
+    fan(first);
+}
+
+/**
+ **/
+void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& colour) {
+    open(glyph.curveTexture, glyph.bandTexture);
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    for (std::size_t corner = 0; corner < corners.size(); corner++) {
+        vertex({.position = corners[corner], .uv = glyph.em[corner], .colour = colour, .glyph = glyph.bands, .contrast = glyph.contrast});
+    }
+    fan(first);
+}
+
+/**
+ **/
+void World::field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
+    const resource::TextureHandle& texture, uint32_t ramp, float contrast) {
+    open(texture, resource::TextureHandle(), true);
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    vertex({.position = corners[0], .uv = glm::vec2(uv0.x, uv0.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[1], .uv = glm::vec2(uv1.x, uv0.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[2], .uv = glm::vec2(uv1.x, uv1.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[3], .uv = glm::vec2(uv0.x, uv1.y), .colour = colour, .glyph = ramp, .contrast = contrast});
     fan(first);
 }
 
@@ -121,12 +148,14 @@ bool World::empty() const noexcept {
 
 /**
  **/
-void World::open(const TextureHandle& texture) {
-    if (!batches_.empty() && batches_.back().texture == texture) {
+void World::open(const resource::TextureHandle& texture, const resource::TextureHandle& bands, bool field) {
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().bands == bands && batches_.back().field == field) {
         return;
     }
     Batch batch;
     batch.texture = texture;
+    batch.bands = bands;
+    batch.field = field;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
     batch.indices = 0;
     batches_.push_back(batch);
@@ -134,11 +163,10 @@ void World::open(const TextureHandle& texture) {
 
 /**
  **/
-void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour) {
-    Vertex added;
-    added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0F));
-    added.uv = uv;
-    added.colour = colour * tint_;
+void World::vertex(const Vertex& untransformed) {
+    Vertex added = untransformed;
+    added.position = glm::vec3(transforms_.top() * glm::vec4(untransformed.position, 1.0F));
+    added.colour = untransformed.colour * tint_;
     vertices_.push_back(added);
 }
 

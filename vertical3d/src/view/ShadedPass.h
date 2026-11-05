@@ -7,9 +7,9 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Mesh.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <array>
@@ -30,7 +30,8 @@
 namespace v3d::editor::view {
 
 /**
- * The scene's meshes as shaded triangles, drawn into a view's pass before its lines.
+ * The scene's meshes as shaded triangles, drawn into a view's pass before its lines. A mesh the
+ * views do not show is not drawn.
  *
  * Each mesh is triangulated and uploaded once for each shading a view asks for, and uploaded
  * again only when its geometry's change count has moved. A mesh's placement is not part of
@@ -66,7 +67,7 @@ class ShadedPass final {
      * display says. The pass gets the depth bias the surfaces are drawn at. Anything submitted
      * to the pass after this draws over the surfaces.
      **/
-    void submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass);
+    void submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::frame::Pass* pass);
 
     /**
      * Let go of every upload no submit has drawn since the last call, so a mesh that has left
@@ -128,7 +129,7 @@ class ShadedPass final {
     struct Upload {
         boost::weak_ptr<v3d::brep::BRep> geometry;
         std::uint64_t changes = 0;
-        boost::shared_ptr<v3d::render::realtime::Mesh> mesh;
+        boost::shared_ptr<v3d::render::realtime::resource::Mesh> mesh;
         bool drawn = false;
     };
 
@@ -146,7 +147,7 @@ class ShadedPass final {
 
     boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
     // by side, front then back, and by fill, in the order ViewPort::Fill names them
-    std::array<std::array<v3d::render::realtime::PipelineHandle, 3>, 2> pipelines_;
+    std::array<std::array<v3d::render::realtime::resource::PipelineHandle, 3>, 2> pipelines_;
     bool nonSolid_;
     std::size_t built_ = 0;
     std::map<std::pair<const v3d::brep::BRep*, Shading>, Upload> uploads_;

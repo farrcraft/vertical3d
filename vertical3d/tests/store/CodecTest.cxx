@@ -7,12 +7,12 @@
 #include <api/brep/Primitives.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/store/Blob.h>
 #include <vertical3d/src/store/Codec.h>
 
@@ -36,7 +36,7 @@ namespace {
 /**
  * An item's blobs as a document's row would hold them.
  **/
-v3d::editor::store::Blobs blobsOf(const v3d::editor::scene::Item& item) {
+v3d::editor::store::Blobs blobsOf(const v3d::editor::scene::item::Item& item) {
     v3d::editor::store::Blobs blobs;
     for (const v3d::editor::store::Buffer& buffer : v3d::editor::store::codecOf(item.kind()).buffers(item)) {
         blobs[buffer.role] = v3d::editor::store::Blob{ .count = static_cast<std::int64_t>(buffer.count), .data = buffer.data };
@@ -47,14 +47,14 @@ v3d::editor::store::Blobs blobsOf(const v3d::editor::scene::Item& item) {
 /**
  * An item's payload as a document's row would hold it.
  **/
-boost::json::object payloadOf(const v3d::editor::scene::Item& item) {
+boost::json::object payloadOf(const v3d::editor::scene::item::Item& item) {
     return boost::json::parse(boost::json::serialize(v3d::editor::store::codecOf(item.kind()).payload(item))).as_object();
 }
 
 /**
  * Write an item through its kind's codec and read it back, as a document's row would hold it.
  **/
-boost::shared_ptr<v3d::editor::scene::Item> roundTrip(const v3d::editor::scene::Item& item, std::string* problem) {
+boost::shared_ptr<v3d::editor::scene::item::Item> roundTrip(const v3d::editor::scene::item::Item& item, std::string* problem) {
     return v3d::editor::store::codecOf(item.kind()).read(payloadOf(item), blobsOf(item), problem);
 }
 
@@ -63,7 +63,7 @@ boost::shared_ptr<v3d::editor::scene::Item> roundTrip(const v3d::editor::scene::
  * Bezier curve with a handle of each type, and a weighted NURBS curve with knots of its own. It
  * renders, at a width and resolution away from the defaults.
  **/
-boost::shared_ptr<v3d::editor::scene::Curve> everyCurve() {
+boost::shared_ptr<v3d::editor::scene::item::Curve> everyCurve() {
     const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
     curves->resolution(5);
     const std::vector<glm::vec3> points{ { 0, 0, 0 }, { 1, 2, 0 }, { 3, 1, 1 }, { 4, 4, 0 } };
@@ -87,7 +87,7 @@ boost::shared_ptr<v3d::editor::scene::Curve> everyCurve() {
     nurbs.knots = { 0, 0, 0, 1.5F, 4, 4, 4 };
     BOOST_REQUIRE(curves->add({ .shape = nurbs }).empty());
 
-    const boost::shared_ptr<v3d::editor::scene::Curve> item = boost::make_shared<v3d::editor::scene::Curve>(curves);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> item = boost::make_shared<v3d::editor::scene::item::Curve>(curves);
     item->style({ .renders = true, .width = 0.125F });
     return item;
 }
@@ -95,8 +95,8 @@ boost::shared_ptr<v3d::editor::scene::Curve> everyCurve() {
 BOOST_AUTO_TEST_CASE(codec_every_kind_test) {
     // every kind has one codec, under a name no other has, and the name finds it again
     std::set<std::string_view> names;
-    for (const v3d::editor::scene::Item::Kind kind : { v3d::editor::scene::Item::Kind::Mesh, v3d::editor::scene::Item::Kind::Camera,
-        v3d::editor::scene::Item::Kind::Light, v3d::editor::scene::Item::Kind::Group, v3d::editor::scene::Item::Kind::Curve }) {
+    for (const v3d::editor::scene::item::Item::Kind kind : { v3d::editor::scene::item::Item::Kind::Mesh, v3d::editor::scene::item::Item::Kind::Camera,
+        v3d::editor::scene::item::Item::Kind::Light, v3d::editor::scene::item::Item::Kind::Group, v3d::editor::scene::item::Item::Kind::Curve }) {
         const v3d::editor::store::Codec& codec = v3d::editor::store::codecOf(kind);
         BOOST_CHECK(codec.kind() == kind);
         BOOST_CHECK(names.insert(codec.name()).second);
@@ -107,36 +107,36 @@ BOOST_AUTO_TEST_CASE(codec_every_kind_test) {
     BOOST_CHECK(v3d::editor::store::codecNamed("spline") == nullptr);
 
     // only a mesh and a curve write blobs
-    BOOST_CHECK(v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Mesh).buffered());
-    BOOST_CHECK(v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Curve).buffered());
-    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Light).buffered());
+    BOOST_CHECK(v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Mesh).buffered());
+    BOOST_CHECK(v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Curve).buffered());
+    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Light).buffered());
 }
 
 BOOST_AUTO_TEST_CASE(codec_round_trip_test) {
     std::string problem;
 
     // each codec reads what it writes, and the item comes back as its kind
-    v3d::editor::scene::Light light;
-    light.emission({ .type = v3d::editor::scene::Light::Type::Spot, .colour = glm::vec3(0.5F, 0.25F, 1.0F), .intensity = 3.0F });
-    const boost::shared_ptr<v3d::editor::scene::Light> lit = v3d::editor::scene::as<v3d::editor::scene::Light>(roundTrip(light, &problem));
+    v3d::editor::scene::item::Light light;
+    light.emission({ .type = v3d::editor::scene::item::Light::Type::Spot, .colour = glm::vec3(0.5F, 0.25F, 1.0F), .intensity = 3.0F });
+    const boost::shared_ptr<v3d::editor::scene::item::Light> lit = v3d::editor::scene::item::as<v3d::editor::scene::item::Light>(roundTrip(light, &problem));
     BOOST_REQUIRE_MESSAGE(lit, problem);
-    BOOST_CHECK(lit->emission().type == v3d::editor::scene::Light::Type::Spot);
+    BOOST_CHECK(lit->emission().type == v3d::editor::scene::item::Light::Type::Spot);
     BOOST_CHECK(lit->emission().colour == glm::vec3(0.5F, 0.25F, 1.0F));
 
-    v3d::editor::scene::Camera camera;
-    camera.lens({ .projection = v3d::editor::scene::Camera::Projection::Orthographic, .extent = 4.0F });
-    const boost::shared_ptr<v3d::editor::scene::Camera> seen = v3d::editor::scene::as<v3d::editor::scene::Camera>(roundTrip(camera, &problem));
+    v3d::editor::scene::item::Camera camera;
+    camera.lens({ .projection = v3d::editor::scene::item::Camera::Projection::Orthographic, .extent = 4.0F });
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> seen = v3d::editor::scene::item::as<v3d::editor::scene::item::Camera>(roundTrip(camera, &problem));
     BOOST_REQUIRE_MESSAGE(seen, problem);
-    BOOST_CHECK(seen->lens().projection == v3d::editor::scene::Camera::Projection::Orthographic);
+    BOOST_CHECK(seen->lens().projection == v3d::editor::scene::item::Camera::Projection::Orthographic);
     BOOST_CHECK_EQUAL(seen->lens().extent, 4.0F);
 
-    const v3d::editor::scene::Mesh mesh(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::scene::Mesh> shape = v3d::editor::scene::as<v3d::editor::scene::Mesh>(roundTrip(mesh, &problem));
+    const v3d::editor::scene::item::Mesh mesh(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> shape = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(roundTrip(mesh, &problem));
     BOOST_REQUIRE_MESSAGE(shape, problem);
     BOOST_CHECK_EQUAL(shape->geometry()->faceCount(), mesh.geometry()->faceCount());
     BOOST_CHECK_EQUAL(shape->geometry()->edgeCount(), mesh.geometry()->edgeCount());
 
-    BOOST_CHECK(v3d::editor::scene::as<v3d::editor::scene::Group>(roundTrip(v3d::editor::scene::Group(), &problem)));
+    BOOST_CHECK(v3d::editor::scene::item::as<v3d::editor::scene::item::Group>(roundTrip(v3d::editor::scene::item::Group(), &problem)));
 }
 
 BOOST_AUTO_TEST_CASE(codec_refuses_test) {
@@ -146,21 +146,21 @@ BOOST_AUTO_TEST_CASE(codec_refuses_test) {
     // one of its blobs
     boost::json::object extra;
     extra["colour"] = 1.0;
-    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Group).read(extra, {}, &problem));
+    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Group).read(extra, {}, &problem));
     BOOST_CHECK(!problem.empty());
 
     problem.clear();
-    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Mesh).read(boost::json::object(), {}, &problem));
+    BOOST_CHECK(!v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Mesh).read(boost::json::object(), {}, &problem));
     BOOST_CHECK(!problem.empty());
 }
 
 BOOST_AUTO_TEST_CASE(codec_curve_round_trip_test) {
     // every curve comes back as it was written, with its type, closure, handles, weights and
     // knots, and so do the style and the resolution
-    const boost::shared_ptr<v3d::editor::scene::Curve> made = everyCurve();
-    const v3d::editor::scene::Curve& written = *made;
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> made = everyCurve();
+    const v3d::editor::scene::item::Curve& written = *made;
     std::string problem;
-    const boost::shared_ptr<v3d::editor::scene::Curve> read = v3d::editor::scene::as<v3d::editor::scene::Curve>(roundTrip(written, &problem));
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> read = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(roundTrip(written, &problem));
     BOOST_REQUIRE_MESSAGE(read, problem);
     BOOST_CHECK(read->style() == written.style());
     BOOST_CHECK_EQUAL(read->geometry()->resolution(), 5U);
@@ -171,9 +171,9 @@ BOOST_AUTO_TEST_CASE(codec_curve_round_trip_test) {
 }
 
 BOOST_AUTO_TEST_CASE(codec_curve_refuses_test) {
-    const boost::shared_ptr<v3d::editor::scene::Curve> made = everyCurve();
-    const v3d::editor::scene::Curve& written = *made;
-    const v3d::editor::store::Codec& codec = v3d::editor::store::codecOf(v3d::editor::scene::Item::Kind::Curve);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> made = everyCurve();
+    const v3d::editor::scene::item::Curve& written = *made;
+    const v3d::editor::store::Codec& codec = v3d::editor::store::codecOf(v3d::editor::scene::item::Item::Kind::Curve);
     std::string problem;
 
     // a points blob one point short of what the curves hold

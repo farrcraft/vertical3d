@@ -5,6 +5,7 @@
 
 #include <api/engine/Application.h>
 #include <api/engine/Identity.h>
+#include <api/engine/Launch.h>
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 
@@ -32,11 +33,14 @@ struct Built final {
     std::string label;
     v3d::engine::Identity identity;
     bool namedFirst = false;
+    v3d::engine::Launch launch;
+    bool launchedFirst = false;
 };
 
 /**
- * What run<T> requires of an engine: a constructor, identity(), initialize(), eventLoop() and
- * shutdown(). It does not require a v3d::engine::Engine, which cannot run its loop in a test.
+ * What run<T> requires of an engine: a constructor, identity(), launch(), initialize(),
+ * eventLoop() and shutdown(). It does not require a v3d::engine::Engine, which cannot run its
+ * loop in a test.
  **/
 struct StubEngine final {
     StubEngine(const std::string& path, Built* built, int option = 0, std::string label = std::string()) :
@@ -49,6 +53,11 @@ struct StubEngine final {
     void identity(const v3d::engine::Identity& identity) {
         built_->identity = identity;
         built_->namedFirst = !initialized_;
+    }
+
+    void launch(const v3d::engine::Launch& launch) {
+        built_->launch = launch;
+        built_->launchedFirst = !initialized_;
     }
 
     bool initialize() {
@@ -78,6 +87,8 @@ struct PathOnlyEngine final {
     }
 
     static void identity(const v3d::engine::Identity& /*identity*/) {
+    }
+    static void launch(const v3d::engine::Launch& /*launch*/) {
     }
     bool initialize() const {
         return !path_.empty();
@@ -180,6 +191,21 @@ BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
     BOOST_CHECK_EQUAL(record.option, 7);
     BOOST_CHECK_EQUAL(record.label, "scene.gltf");
     BOOST_CHECK(!record.path.empty());
+}
+
+/**
+ * Given the command line, run<T> reads it and gives the engine what it asks for before the
+ * engine starts. The arguments the engine does not read are kept for the app.
+ **/
+BOOST_AUTO_TEST_CASE(run_gives_the_engine_its_command_line_before_it_starts) {
+    Built record;
+    const char* arguments[] = { "stub.exe", "--capture", "frame.png", "--script", "scene.ts" };
+
+    BOOST_TEST(v3d::engine::run<StubEngine>(5, const_cast<char**>(arguments), stub(), &record) == EXIT_SUCCESS);
+
+    BOOST_CHECK_EQUAL(record.launch.capture, "frame.png");
+    BOOST_CHECK_EQUAL(record.launch.option("--script").value_or(""), "scene.ts");
+    BOOST_CHECK(record.launchedFirst);
 }
 
 /**

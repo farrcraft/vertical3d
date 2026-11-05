@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/SortKey.h>
+#include <api/render/realtime/frame/SortKey.h>
 
 #include <algorithm>
 #include <vector>
@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_SUITE(sortkey_test)
  * an arbitrary place.
  **/
 BOOST_AUTO_TEST_CASE(default_key_is_zero) {
-    const v3d::render::realtime::SortKey key;
+    const v3d::render::realtime::frame::SortKey key;
 
     BOOST_CHECK_EQUAL(key.packed(), 0U);
 }
@@ -29,10 +29,10 @@ BOOST_AUTO_TEST_CASE(default_key_is_zero) {
  * one whatever pipeline or material either uses.
  **/
 BOOST_AUTO_TEST_CASE(layer_outranks_every_other_field) {
-    v3d::render::realtime::SortKey lower;
+    v3d::render::realtime::frame::SortKey lower;
     lower.layer = 1;
 
-    v3d::render::realtime::SortKey higher;
+    v3d::render::realtime::frame::SortKey higher;
     higher.layer = 2;
     // the lower layer has the highest value in every other field
     lower.pipeline = 0xFFFF;
@@ -47,14 +47,14 @@ BOOST_AUTO_TEST_CASE(layer_outranks_every_other_field) {
  * Within a layer the order is pipeline, then material, then depth.
  **/
 BOOST_AUTO_TEST_CASE(fields_order_coarsest_first) {
-    v3d::render::realtime::SortKey pipeline;
+    v3d::render::realtime::frame::SortKey pipeline;
     pipeline.pipeline = 1;
 
-    v3d::render::realtime::SortKey material;
+    v3d::render::realtime::frame::SortKey material;
     material.material = 1;
     material.depth = 0xFFFF;
 
-    v3d::render::realtime::SortKey depth;
+    v3d::render::realtime::frame::SortKey depth;
     depth.depth = 1;
 
     BOOST_CHECK(depth < material);
@@ -65,13 +65,13 @@ BOOST_AUTO_TEST_CASE(fields_order_coarsest_first) {
  * Two different classifications never pack to the same key.
  **/
 BOOST_AUTO_TEST_CASE(fields_do_not_collide) {
-    v3d::render::realtime::SortKey first;
+    v3d::render::realtime::frame::SortKey first;
     first.layer = 3;
     first.pipeline = 7;
     first.material = 11;
     first.depth = 13;
 
-    v3d::render::realtime::SortKey second;
+    v3d::render::realtime::frame::SortKey second;
     second.layer = 3;
     second.pipeline = 7;
     second.material = 11;
@@ -85,19 +85,19 @@ BOOST_AUTO_TEST_CASE(fields_do_not_collide) {
  * Sorting a queue by key groups items so that the recorder can merge adjacent ones.
  **/
 BOOST_AUTO_TEST_CASE(sorting_groups_by_pipeline_within_a_layer) {
-    std::vector<v3d::render::realtime::SortKey> keys;
+    std::vector<v3d::render::realtime::frame::SortKey> keys;
 
-    v3d::render::realtime::SortKey second;
+    v3d::render::realtime::frame::SortKey second;
     second.layer = 0;
     second.pipeline = 2;
     keys.push_back(second);
 
-    v3d::render::realtime::SortKey first;
+    v3d::render::realtime::frame::SortKey first;
     first.layer = 0;
     first.pipeline = 1;
     keys.push_back(first);
 
-    v3d::render::realtime::SortKey overlay;
+    v3d::render::realtime::frame::SortKey overlay;
     overlay.layer = 1;
     overlay.pipeline = 1;
     keys.push_back(overlay);

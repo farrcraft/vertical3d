@@ -6,8 +6,8 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE(viewport_shows_cameras_and_lights_test) {
     BOOST_CHECK(view.shows(v3d::editor::view::ViewPort::SHOW_LIGHT));
 
     v3d::editor::scene::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::scene::Camera>());
-    scene.add(boost::make_shared<v3d::editor::scene::Light>());
+    scene.add(boost::make_shared<v3d::editor::scene::item::Camera>());
+    scene.add(boost::make_shared<v3d::editor::scene::item::Light>());
     view.show(v3d::editor::view::ViewPort::SHOW_GRID, false);
     const auto drawn = [&]() {
         v3d::render::realtime::canvas::Line canvas;
@@ -89,6 +89,18 @@ BOOST_AUTO_TEST_CASE(viewport_display_test) {
     first.display().cull = v3d::editor::view::ViewPort::Cull::None;
     BOOST_CHECK(second.display().shading == v3d::editor::view::Shading::Flat);
     BOOST_CHECK(second.display().cull == v3d::editor::view::ViewPort::Cull::Back);
+}
+
+/**
+ * A shading has a name a viewport's state keeps it by, and a name that is neither gives none.
+ **/
+BOOST_AUTO_TEST_CASE(a_shading_is_named_in_a_state) {
+    for (const v3d::editor::view::Shading each : { v3d::editor::view::Shading::Flat, v3d::editor::view::Shading::Smooth }) {
+        BOOST_CHECK(v3d::editor::view::shading(v3d::editor::view::name(each)) == each);
+    }
+    BOOST_CHECK_EQUAL(v3d::editor::view::name(v3d::editor::view::Shading::Smooth), "smooth");
+    BOOST_CHECK(!v3d::editor::view::shading("Smooth"));
+    BOOST_CHECK(!v3d::editor::view::shading(""));
 }
 
 };  // namespace

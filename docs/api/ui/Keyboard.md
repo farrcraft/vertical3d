@@ -117,8 +117,10 @@ a menu item captures a key, which the app routes through `GameMenu::capture()`.
 A `TextBox`, and the immediate layer's `textField()`, edit one line of UTF-8 text the same way,
 through `input::LineEdit` and `input::edit()`. The line holds the text, a **caret** (where
 typing goes) and an **anchor**.
-Both are byte offsets. The selection is the run of text between the anchor and the caret.
-Nothing is selected when the two are equal.
+Both are byte offsets, and each stands at the edge of a **grapheme cluster**. A cluster is
+what a reader sees as one character, such as a letter with its accents or an emoji sequence, as
+Unicode's rules divide them. The selection is the run of text between the anchor and the
+caret. Nothing is selected when the two are equal.
 
 Every operation that moves the caret either brings the anchor with it, which leaves nothing
 selected, or leaves the anchor behind, which selects the run the caret crossed.
@@ -126,15 +128,15 @@ selected, or leaves the anchor behind, which selects the run the caret crossed.
 | Input | Effect |
 |---|---|
 | a character | replaces the selection, or is inserted at the caret |
-| `backspace`, `delete` | remove the selection, or one character before or after the caret |
-| `arrow_left`, `arrow_right`, `home`, `end` | move the caret; with nothing held, an arrow over a selection lands on its end |
+| `backspace`, `delete` | remove the selection, or one cluster before or after the caret |
+| `arrow_left`, `arrow_right`, `home`, `end` | move the caret backwards or forwards through the text, a cluster at a time; with nothing held, an arrow over a selection lands on its end |
 | `shift` + any of those | move the caret and leave the anchor, extending the selection |
 | `return` | a `TextBox` sends its command, and the app reads `text()`. A `textField()` gives the keyboard up |
 | `control` + `a` | selects all |
 | `control` + `c` | copies the selection |
 | `control` + `x` | copies the selection and removes it |
 | `control` + `v` | replaces the selection with the clipboard's text |
-| a press | puts the caret and the anchor at the character under the point |
+| a press | puts the caret and the anchor at the nearest edge of the cluster under the point |
 | a drag | moves the caret with the cursor, selecting from where the press landed. A `TextBox` only |
 
 - `limit` caps the text's length in bytes. A character or paste that would pass it is
@@ -146,4 +148,14 @@ selected, or leaves the anchor behind, which selects the run the caret crossed.
   supplies SDL's, to its `input::Keys` and to an immediate layer it is offered. Without a
   `write`, a cut does not remove the text. Without a `read`, a paste inserts nothing.
 - A copy or a cut with nothing selected does nothing, so the clipboard keeps what it had.
-- Placing the caret by clicking needs the `Measure` passed to `Cursor`.
+- Placing the caret by clicking needs the `paint::Type` passed to `Cursor`.
+- The caret, the selection and a press are found from the line laid out as a paragraph, so they
+  are exact through kerned, joined and reordered text. In text read right to left the line's
+  start is its right edge, and a selection that crosses text read both ways is drawn as more
+  than one run. The caret goes with the character before it after typing or moving forwards,
+  and with the one after it after moving backwards, which decides its side where the two are
+  drawn apart.
+- An input method's **composition**, the characters it is building before they are typed in,
+  is shown at the caret, underlined, and shaped with the line. `shell::Keyboard` passes SDL's
+  text editing events to `Keys::composing()` and to an immediate layer's `composing()`. Typing
+  the characters in, or moving the caret, ends it.

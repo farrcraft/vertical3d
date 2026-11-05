@@ -10,7 +10,7 @@
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
-#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 #include <api/render/realtime/renderer/Line.h>
@@ -19,11 +19,12 @@
 #include <api/window/Window.h>
 
 #include "DeviceContext.h"
-#include "Frame.h"
-#include "Present.h"
-#include "Textures.h"
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Present.h>
+#include <api/render/realtime/resource/Textures.h>
 #include "WindowContext.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -42,7 +43,7 @@ WindowRenderer::WindowRenderer(const boost::shared_ptr<v3d::log::Logger>& logger
     clearColour_(DEFAULT_CLEAR_COLOUR),
     preferred_(preferred),
     allocations_(allocations),
-    present_(Present::Uncapped) {
+    present_(frame::Present::Uncapped) {
 }
 
 /**
@@ -54,13 +55,16 @@ void WindowRenderer::initialize(const boost::shared_ptr<v3d::window::Window>& wi
     context_ = boost::make_shared<WindowContext>(logger_, window, preferred_, allocations_, present_);
     pendingPresent_.reset();
 
-    frame_ = boost::make_shared<Frame>();
+    frame_ = boost::make_shared<frame::Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);
 }
 
 /**
  **/
 void WindowRenderer::shutdown() {
+    while (!outputs_.empty()) {
+        close(outputs_.back());
+    }
     if (context_) {
         // every submitted frame has to finish before the swapchain, the device and the
         // window are destroyed
@@ -79,13 +83,59 @@ void WindowRenderer::shutdown() {
 
 /**
  **/
+boost::shared_ptr<frame::Frame> WindowRenderer::Output::frame() const {
+    return frame_;
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::window::Window> WindowRenderer::Output::window() const {
+    return attached_->window();
+}
+
+/**
+ **/
+boost::shared_ptr<vulkan::frame::DepthBuffer> WindowRenderer::Output::depth() const {
+    return depth_;
+}
+
+/**
+ **/
+boost::shared_ptr<WindowRenderer::Output> WindowRenderer::open(const boost::shared_ptr<v3d::window::Window>& window) {
+    if (!context_) {
+        return nullptr;
+    }
+    const boost::shared_ptr<WindowContext::Attached> attached = context_->attach(window);
+    if (!attached) {
+        return nullptr;
+    }
+    const boost::shared_ptr<Output> output = boost::make_shared<Output>();
+    output->attached_ = attached;
+    output->frame_ = boost::make_shared<frame::Frame>();
+    output->frame_->pass(colourPass)->clearColour(clearColour_);
+    outputs_.push_back(output);
+    return output;
+}
+
+/**
+ **/
+void WindowRenderer::close(const boost::shared_ptr<Output>& output) {
+    if (!output || !context_) {
+        return;
+    }
+    context_->detach(output->attached_);
+    std::erase(outputs_, output);
+}
+
+/**
+ **/
 boost::shared_ptr<DeviceContext> WindowRenderer::context() {
     return context_;
 }
 
 /**
  **/
-boost::shared_ptr<Frame> WindowRenderer::frame() const {
+boost::shared_ptr<frame::Frame> WindowRenderer::frame() const {
     return frame_;
 }
 
@@ -104,8 +154,8 @@ boost::shared_ptr<renderer::Quad> WindowRenderer::quads() const {
 
 /**
  **/
-boost::shared_ptr<Textures> WindowRenderer::textures() const {
-    return context_ ? context_->textures() : boost::shared_ptr<Textures>();
+boost::shared_ptr<resource::Textures> WindowRenderer::textures() const {
+    return context_ ? context_->textures() : boost::shared_ptr<resource::Textures>();
 }
 
 /**
@@ -160,7 +210,7 @@ bool WindowRenderer::beginFrame(glm::ivec2* size) {
 
 /**
  **/
-void WindowRenderer::present(Present present) {
+void WindowRenderer::present(frame::Present present) {
     present_ = present;
     if (context_) {
         pendingPresent_ = present;
@@ -169,8 +219,8 @@ void WindowRenderer::present(Present present) {
 
 /**
  **/
-Present WindowRenderer::presenting() const noexcept {
-    return context_ ? granted(context_->swapchain()->presenting()) : present_;
+frame::Present WindowRenderer::presenting() const noexcept {
+    return context_ ? frame::granted(context_->swapchain()->presenting()) : present_;
 }
 
 /**
@@ -218,7 +268,7 @@ void WindowRenderer::renderFrame() {
 
     const boost::shared_ptr<vulkan::frame::Swapchain> swapchain = context_->swapchain();
 
-    Recorder::Target target;
+    frame::Recorder::Target target;
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
@@ -239,8 +289,9 @@ void WindowRenderer::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(context_->ring()->frame());
 
-    Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
+    frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
+    recordOutputs(acquisition, uniforms.get());
 
     // a swapchain recreated since the request may have lost TRANSFER_SRC, and Capture throws
     // for that
@@ -275,8 +326,50 @@ void WindowRenderer::renderFrame() {
 
 /**
  **/
+void WindowRenderer::recordOutputs(const vulkan::frame::Presenter::Acquisition& acquisition, vulkan::frame::FrameUniforms* uniforms) {
+    for (const vulkan::frame::Presenter::Taken& taken : acquisition.joined) {
+        const auto opened = std::ranges::find_if(outputs_, [&taken](const boost::shared_ptr<Output>& output) {
+            return output->attached_->swapchain() == taken.joined->swapchain();
+        });
+        if (opened == outputs_.end()) {
+            continue;
+        }
+        Output& output = **opened;
+        const vulkan::frame::Swapchain& chain = *taken.joined->swapchain();
+        frame::Recorder::Target target;
+        target.image = chain.images()[taken.image];
+        target.view = chain.views()[taken.image];
+        target.extent = chain.extent();
+        target.format = chain.format();
+        if (output.frame_->swapchainDepth()) {
+            const VkExtent2D& had = output.depth_ ? output.depth_->extent() : VkExtent2D{ 0, 0 };
+            if (had.width != target.extent.width || had.height != target.extent.height) {
+                // a frame in flight may still be testing against the old one
+                const boost::shared_ptr<vulkan::frame::DepthBuffer> outgrown = output.depth_;
+                output.depth_ = boost::make_shared<vulkan::frame::DepthBuffer>(context_->device(), target.extent.width, target.extent.height);
+                context_->ring()->retire([outgrown]() {});
+            }
+            if (output.depth_->valid()) {
+                target.depthImage = output.depth_->image();
+                target.depthView = output.depth_->view();
+                target.depthFormat = output.depth_->format();
+            }
+        }
+        frame::Recorder::record(acquisition.commands, *output.frame_, target, *context_->resources(), uniforms,
+            &context_->ring()->timings());
+    }
+}
+
+/**
+ **/
 void WindowRenderer::endFrame() {
     frame_->reset();
+    for (const boost::shared_ptr<Output>& output : outputs_) {
+        output->frame_->reset();
+        // a window whose swapchain went out of date, or that has an area again, is drawn into
+        // a new swapchain from the next frame
+        context_->refresh(output->attached_);
+    }
 }
 
 };  // namespace v3d::render::realtime

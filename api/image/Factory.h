@@ -16,7 +16,8 @@
 
 namespace v3d::image {
 /**
- * 
+ * Readers and writers, each registered under a format key such as "png". It reads images from
+ * files and from bytes, and encodes images to bytes.
  **/
 class Factory {
  public:
@@ -34,6 +35,8 @@ class Factory {
      * A buffer has no file name to take an extension from, so the caller names the format.
      * An embedded image's mime type or its container tells the caller which format it is.
      *
+     * @param data the encoded image
+     * @param size how many bytes data holds
      * @param kind the format's key, as the readers were registered under: "png", "jpg",
      *        "jpeg", "bmp", "tga"
      * @return the image, or null when nothing reads that format or the bytes do not decode
@@ -46,6 +49,7 @@ class Factory {
      * Nothing here writes a file. A caller writes the bytes through asset::writeFile, which
      * replaces a file atomically.
      *
+     * @param img the image to encode
      * @param kind the format's key, as kind() gives it for a file name
      * @return the encoded file, or nothing when no writer has that key or the image does not
      *         encode

@@ -24,27 +24,22 @@
  *                        to its library's own sources and tests.
  *
  * A file is a test file when its path has a tests directory in it. The check reads code through
- * scripts/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor lines.
- * It does not parse C++. It follows braces, and sorts what comes before each brace or semicolon
- * at namespace scope by its first words. A variable initialised in parentheses is read as one
- * when the parentheses open on a literal, as in `std::atomic<int> next(1);`. One that opens on a
- * name, such as `Foo foo(bar);`, reads as a function declaration and is not reported.
+ * scripts/lib/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor
+ * lines. It does not parse C++. It follows braces, and sorts what comes before each brace or
+ * semicolon at namespace scope by its first words. A variable initialised in parentheses is read
+ * as one when the parentheses open on a literal, as in `std::atomic<int> next(1);`. One that opens
+ * on a name, such as `Foo foo(bar);`, reads as a function declaration and is not reported.
  *
  * Usage: node scripts/filelocal.ts
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { codeLines } from './lexer.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
-
-/** Directories whose files are not this tree's code. */
-const VENDORED = ['vendor/', 'demos/voxel/src/noise/'];
+import { options, report, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { codeLines } from './lib/lexer.ts';
+import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
 export type Rule = 'type-in-source' | 'mutable-variable' | 'mutable-static-local' | 'outside-anonymous' | 'second-anonymous' | 'anonymous-late'
     | 'after-function' | 'internal-include';
@@ -70,7 +65,7 @@ export interface Kind {
 
 /** The kind of a repository path. */
 export function kindOf(file: string, externs: ReadonlySet<string> = new Set()): Kind {
-    return { path: file, source: /\.(cpp|cxx)$/.test(file), test: /(^|\/)tests\//.test(file), externs };
+    return { path: file, source: /\.(cpp|cxx)$/.test(file), test: isTestPath(file), externs };
 }
 
 /**
@@ -86,12 +81,12 @@ export function mayInclude(file: string, header: string): boolean {
 export function externNames(text: string): string[] {
     const names: string[] = [];
     for (const statement of codeLines(text).join('\n').split(';')) {
-        const match = /(?:^|[{}\s])extern\s+(?!"")([^;{}]*)$/.exec(statement);
-        if (match === null || match[1].includes('(')) {
+        const declared = /(?:^|[{}\s])extern\s+(?!"")([^;{}]*)$/.exec(statement)?.[1];
+        if (declared === undefined || declared.includes('(')) {
             continue;
         }
         // each declarator in a list such as `extern RtToken RI_A, RI_B;` is a name
-        for (const declarator of match[1].split(',')) {
+        for (const declarator of declared.split(',')) {
             names.push(variableName(declarator));
         }
     }
@@ -138,14 +133,14 @@ function stripPrefixes(text: string): string {
 
 /** The name a type definition's head gives, such as Reader for `class Reader final : Base`. */
 function typeName(head: string): string | null {
-    const match = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(head);
-    return match === null ? null : (match[1] === '' ? '(unnamed)' : match[1]);
+    const name = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(head)?.[1];
+    return name === undefined ? null : (name === '' ? '(unnamed)' : name);
 }
 
 /** The name a variable declaration defines: the last identifier before its initialiser. */
 function variableName(declarator: string): string {
     const names = declarator.replace(/\[[^\]]*\]/g, '').match(/[\w:]+/g);
-    return names === null ? '' : names[names.length - 1];
+    return names?.at(-1) ?? '';
 }
 
 /**
@@ -206,7 +201,7 @@ function isConstant(declarator: string): boolean {
 /** Every finding in a file's text. */
 export function findings(text: string, kind: Kind): Finding[] {
     const found: Finding[] = [];
-    const report = (line: number, rule: Rule, message: string): void => {
+    const add = (line: number, rule: Rule, message: string): void => {
         found.push({ line, rule, message });
     };
     const stack: Scope[] = [];
@@ -235,7 +230,7 @@ export function findings(text: string, kind: Kind): Finding[] {
         }
         if (/^(using|typedef)\b/.test(text)) {
             if (firstFunction > 0) {
-                report(line, 'after-function', `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${firstFunction}`);
+                add(line, 'after-function', `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${firstFunction}`);
             }
             return;
         }
@@ -255,7 +250,7 @@ export function findings(text: string, kind: Kind): Finding[] {
         }
         const member = name.includes('::');
         if (!isConstant(declarator)) {
-            report(line, 'mutable-variable', member
+            add(line, 'mutable-variable', member
                 ? `the static data member ${name} is mutable`
                 : `${name} is a mutable variable at namespace scope`);
         }
@@ -263,10 +258,10 @@ export function findings(text: string, kind: Kind): Finding[] {
             return;
         }
         if (kind.source && !kind.test && !inAnonymous()) {
-            report(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
+            add(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
         }
         if (firstFunction > 0) {
-            report(line, 'after-function', `${name} is declared below the function definition on line ${firstFunction}`);
+            add(line, 'after-function', `${name} is declared below the function definition on line ${firstFunction}`);
         }
     };
 
@@ -276,10 +271,10 @@ export function findings(text: string, kind: Kind): Finding[] {
         if (/^namespace\s*$/.test(text)) {
             anonymous++;
             if (anonymous > 1) {
-                report(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
+                add(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
             }
             if (firstFunction > 0) {
-                report(line, 'anonymous-late', `the anonymous namespace opens below the function definition on line ${firstFunction}`);
+                add(line, 'anonymous-late', `the anonymous namespace opens below the function definition on line ${firstFunction}`);
             }
             return 'anonymous';
         }
@@ -292,10 +287,10 @@ export function findings(text: string, kind: Kind): Finding[] {
         const type = typeName(text);
         if (type !== null && !text.includes('(')) {
             if (kind.source && !kind.test) {
-                report(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
+                add(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
             }
             if (firstFunction > 0) {
-                report(line, 'after-function', `${type} is defined below the function definition on line ${firstFunction}`);
+                add(line, 'after-function', `${type} is defined below the function definition on line ${firstFunction}`);
             }
             afterTypedef = /^typedef\b/.test(text);
             return 'type';
@@ -319,17 +314,17 @@ export function findings(text: string, kind: Kind): Finding[] {
         if (preprocessor) {
             // a quoted include names a header beside the file, so only the root-relative form
             // can reach another directory's internal/
-            const include = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index]);
-            if (include !== null && !mayInclude(kind.path, include[1])) {
-                report(line, 'internal-include', `${include[1]} is internal to its library, and this file is outside it`);
+            const header = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index] ?? '')?.[1];
+            if (header !== undefined && !mayInclude(kind.path, header)) {
+                add(line, 'internal-include', `${header} is internal to its library, and this file is outside it`);
             }
             return;
         }
         // a static declared in a function body, rather than in a class
-        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code);
-        if (local !== null && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local[1])
-            && !/\/\/\s*process-wide:/.test(raw[index])) {
-            report(line, 'mutable-static-local', `the static local ${variableName(local[1])} is mutable`);
+        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code)?.[1];
+        if (local !== undefined && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local)
+            && !/\/\/\s*process-wide:/.test(raw[index] ?? '')) {
+            add(line, 'mutable-static-local', `the static local ${variableName(local)} is mutable`);
         }
         for (const c of code) {
             if (!atNamespaceScope()) {
@@ -385,33 +380,17 @@ export function findings(text: string, kind: Kind): Finding[] {
 
 /** The tracked C++ files the check reads, relative to the root. */
 export function files(): string[] {
-    return execFileSync('git', ['ls-files', '-z', '--', '*.h', '*.cpp', '*.cxx'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
-        .filter((f) => f !== '' && !VENDORED.some((v) => f.startsWith(v)));
+    return tracked('*.h', '*.cpp', '*.cxx').filter((f) => !isThirdParty(f));
 }
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/filelocal.ts');
-        return 2;
-    }
-    const tracked = files();
-    const externs = new Set(tracked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
-    let count = 0;
-    for (const file of tracked) {
-        for (const { line, rule, message } of findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))) {
-            console.log(`${file}:${line}: ${rule}: ${message}`);
-            count++;
-        }
-    }
-    if (count > 0) {
-        console.log(`::error::${count} findings above break "What a source file keeps to itself" in docs/contributing/Conventions.md.`);
-        return 1;
-    }
-    return 0;
+    options('usage: node scripts/filelocal.ts', {});
+    const checked = files();
+    const externs = new Set(checked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
+    const found = checked.flatMap((file) => findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))
+        .map(({ line, rule, message }) => ({ path: file, line, rule, message })));
+    return report(found, 'breaks "What a source file keeps to itself" in docs/contributing/Conventions.md.');
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

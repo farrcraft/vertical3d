@@ -26,10 +26,14 @@
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>
 #include <api/ui/style/property/Number.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/paint/TextRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -43,14 +47,9 @@
 namespace {
 
 /**
- * What the renderer asked to be written, so a test can check where a label went without
- * a font, an atlas or a device.
+ * A line the ui drew.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A fixed width per character, so a label's width is predictable.
@@ -82,15 +81,7 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     // the shadow under the panel is counted by its own case
     renderer.dressing().shadow = glm::vec4(0.0F);
 
@@ -103,8 +94,8 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     BOOST_CHECK_EQUAL(written[0].text, "One");
     BOOST_CHECK_EQUAL(written[2].text, "Three");
     // four edges, the panel, the highlight behind the active item and the ring's four edges
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 10 * 4);
-    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 10 * 4);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 1);
 }
 
 /**
@@ -112,9 +103,7 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
  * corners, which takes more geometry than square ones.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_is_drawn_with_the_dressing_radius) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     v3d::render::realtime::canvas::Canvas square;
     square.resize(glm::uvec2(800, 600));
     renderer.draw(&square, buildMenu({"One", "Two", "Three"}));
@@ -132,9 +121,7 @@ BOOST_AUTO_TEST_CASE(a_menu_is_drawn_with_the_dressing_radius) {
  * in the shadow's colour, with a fade around it.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_casts_a_shadow_under_its_panel) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     const v3d::ui::paint::Dressing& dress = renderer.dressing();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -147,9 +134,9 @@ BOOST_AUTO_TEST_CASE(a_menu_casts_a_shadow_under_its_panel) {
     const glm::vec2 drop(0.0F, dress.shadowOffset);
     const glm::vec2 min = menu->position() - rim + drop;
     const glm::vec2 max = menu->position() + static_cast<const v3d::ui::Component&>(*menu).size() + rim + drop;
-    BOOST_REQUIRE_GE(canvas.vertices().size(), 4U);
+    BOOST_REQUIRE_GE(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
     for (std::size_t index = 0; index < 4; index++) {
-        const v3d::render::realtime::canvas::Canvas::Vertex& vertex = canvas.vertices()[index];
+        const v3d::render::realtime::canvas::Canvas::Vertex vertex = v3d::ui::typeset::shapeVertices(canvas)[index];
         BOOST_CHECK(vertex.colour == dress.shadow);
         BOOST_CHECK(vertex.position.x == min.x || vertex.position.x == max.x);
         BOOST_CHECK(vertex.position.y == min.y || vertex.position.y == max.y);
@@ -158,7 +145,7 @@ BOOST_AUTO_TEST_CASE(a_menu_casts_a_shadow_under_its_panel) {
     const auto reaches = [&](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
         return vertex.position.y >= max.y + dress.shadowSize - 0.001F;
     };
-    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), reaches));
+    BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapeVertices(canvas), reaches));
 }
 
 /**
@@ -166,9 +153,7 @@ BOOST_AUTO_TEST_CASE(a_menu_casts_a_shadow_under_its_panel) {
  * components, and one that does not draws none.
  **/
 BOOST_AUTO_TEST_CASE(a_container_with_a_backdrop_dims_the_canvas_first) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     v3d::ui::Container plain("plain", true);
     plain.add(buildMenu({"One"}));
@@ -197,9 +182,7 @@ BOOST_AUTO_TEST_CASE(a_container_with_a_backdrop_dims_the_canvas_first) {
  * from nothing, and eases out again in its own colour.
  **/
 BOOST_AUTO_TEST_CASE(a_hovered_button_eases_its_fill) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     renderer.dressing().hoverDuration = 0.1F;
     const glm::vec4 hover = renderer.dressing().hover;
 
@@ -217,26 +200,26 @@ BOOST_AUTO_TEST_CASE(a_hovered_button_eases_its_fill) {
 
     // at rest there is no fill at all
     drawAt(0.0F, 1);
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
     button->state(v3d::ui::component::Button::STATE_HOVER);
     drawAt(1.0F, 2);
     drawAt(1.05F, 3);
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, hover.a * 0.5F, 0.1F);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.r, hover.r, 0.1F);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[0].colour.a, hover.a * 0.5F, 0.1F);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[0].colour.r, hover.r, 0.1F);
 
     drawAt(1.2F, 4);
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK(canvas.vertices()[0].colour == hover);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK(v3d::ui::typeset::shapeVertices(canvas)[0].colour == hover);
 
     button->state(v3d::ui::component::Button::STATE_NORMAL);
     drawAt(2.0F, 5);
     drawAt(2.05F, 6);
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, hover.a * 0.5F, 0.1F);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[0].colour.a, hover.a * 0.5F, 0.1F);
     drawAt(2.2F, 7);
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 }
 
 /**
@@ -244,9 +227,7 @@ BOOST_AUTO_TEST_CASE(a_hovered_button_eases_its_fill) {
  * the open duration has passed. Its boxes, which the cursor picks against, never move.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_opens_faded_and_lifted) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     renderer.dressing().shadow = glm::vec4(0.0F);
     renderer.dressing().openDuration = 0.2F;
     renderer.dressing().openDistance = 8.0F;
@@ -257,12 +238,12 @@ BOOST_AUTO_TEST_CASE(a_menu_opens_faded_and_lifted) {
     const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two"});
 
     // the panel's fill is the fifth rectangle, inside its four edges
-    const auto fill = [&canvas]() { return canvas.vertices()[16]; };
+    const auto fill = [&canvas]() { return v3d::ui::typeset::shapeVertices(canvas)[16]; };
 
     renderer.clock({.now = 1.0F, .frame = 1});
     renderer.draw(&canvas, menu);
     const glm::vec2 placed = menu->position();
-    BOOST_REQUIRE_GE(canvas.vertices().size(), 20U);
+    BOOST_REQUIRE_GE(v3d::ui::typeset::shapeVertices(canvas).size(), 20U);
     BOOST_CHECK_SMALL(fill().colour.a, 0.001F);
     BOOST_CHECK_CLOSE(fill().position.y, placed.y - 8.0F, 0.01F);
 
@@ -286,11 +267,7 @@ BOOST_AUTO_TEST_CASE(a_menu_opens_faded_and_lifted) {
  **/
 BOOST_AUTO_TEST_CASE(a_tooltip_hangs_under_its_box) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
-        });
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     const v3d::ui::paint::Dressing& dress = renderer.dressing();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -319,11 +296,7 @@ BOOST_AUTO_TEST_CASE(a_tooltip_hangs_under_its_box) {
  **/
 BOOST_AUTO_TEST_CASE(a_tooltip_can_hang_beside_its_box) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
-        });
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
 
@@ -345,9 +318,7 @@ BOOST_AUTO_TEST_CASE(a_tooltip_can_hang_beside_its_box) {
  * A renderer never given a clock draws every change at once, whatever its durations.
  **/
 BOOST_AUTO_TEST_CASE(without_a_clock_a_change_shows_at_once) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     renderer.dressing().hoverDuration = 10.0F;
 
     v3d::render::realtime::canvas::Canvas canvas;
@@ -359,8 +330,8 @@ BOOST_AUTO_TEST_CASE(without_a_clock_a_change_shows_at_once) {
     button->state(v3d::ui::component::Button::STATE_HOVER);
     canvas.clear();
     renderer.draw(&canvas, button);
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK(canvas.vertices()[0].colour == renderer.dressing().hover);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK(v3d::ui::typeset::shapeVertices(canvas)[0].colour == renderer.dressing().hover);
 }
 
 /**
@@ -369,15 +340,7 @@ BOOST_AUTO_TEST_CASE(without_a_clock_a_change_shows_at_once) {
  **/
 BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -400,15 +363,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
     renderer.dressing().disabledText = greyed;
 
@@ -431,15 +386,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
  **/
 BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -463,9 +410,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
  * The panel is as wide as its widest label and no wider, and it is centred on the canvas.
  **/
 BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     // the panel is found by where its vertices fall, after nothing but its edges
     renderer.dressing().shadow = glm::vec4(0.0F);
 
@@ -474,12 +419,12 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
 
     renderer.draw(&canvas, buildMenu({"a", "abcdefghij"}));
 
-    BOOST_REQUIRE(canvas.vertices().size() >= 20);
+    BOOST_REQUIRE(v3d::ui::typeset::shapeVertices(canvas).size() >= 20);
     // vertices 16..19 are the panel, filled inside the four edges: min at [16], max at [18]
     const float padding = renderer.dressing().padding;
     const float expectedWidth = (10.0F * characterWidth) + (padding * 2.0F);
-    const float left = canvas.vertices()[16].position.x;
-    const float right = canvas.vertices()[18].position.x;
+    const float left = v3d::ui::typeset::shapeVertices(canvas)[16].position.x;
+    const float right = v3d::ui::typeset::shapeVertices(canvas)[18].position.x;
 
     BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01F);
     BOOST_CHECK_CLOSE((left + right) * 0.5F, 400.0F, 0.01F);
@@ -490,15 +435,15 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
  * make room for it, and is wide enough for a title wider than any item.
  **/
 BOOST_AUTO_TEST_CASE(a_centred_menu_writes_its_title_above_its_items) {
-    std::vector<Written> body;
-    std::vector<Written> titles;
-    const auto record = [](std::vector<Written>* into) {
-        return [into](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            into->push_back({.text = std::string(text), .pen = pen, .colour = colour});
-        };
+    std::vector<Written> written;
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = v3d::ui::typeset::mono(&written);
+    // the title is semibold and the body regular, so each is found in the trace by its weight
+    const auto weighed = [&written](v3d::ui::paint::Weight weight) {
+        std::vector<Written> found;
+        std::ranges::copy_if(written, std::back_inserter(found), [weight](const Written& line) { return line.weight == weight; });
+        return found;
     };
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; }, record(&body));
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::paint::Type(text, 0.0F));
     renderer.dressing().shadow = glm::vec4(0.0F);
 
     v3d::render::realtime::canvas::Canvas untitled;
@@ -506,18 +451,19 @@ BOOST_AUTO_TEST_CASE(a_centred_menu_writes_its_title_above_its_items) {
     const boost::shared_ptr<v3d::ui::component::menu::Menu> plain = buildMenu({"One", "Two"});
     renderer.draw(&untitled, plain);
     const float plainTop = plain->position().y;
-    BOOST_REQUIRE_EQUAL(body.size(), 2U);
-    const float firstPen = body[0].pen.y;
-    body.clear();
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    const float firstPen = written[0].pen.y;
+    written.clear();
 
     renderer.emphasis({.title = {
-        .measure = [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth * 2.0F; },
-        .write = record(&titles), .scale = 2.0F}});
+        .type = v3d::ui::paint::Type(text, v3d::ui::typeset::monoSize * 2.0F, v3d::ui::paint::Weight::SemiBold), .scale = 2.0F}});
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
     const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two"});
     menu->title("Paused");
     renderer.draw(&canvas, menu);
+    const std::vector<Written> titles = weighed(v3d::ui::paint::Weight::SemiBold);
+    const std::vector<Written> body = weighed(v3d::ui::paint::Weight::Regular);
 
     BOOST_REQUIRE_EQUAL(titles.size(), 1U);
     BOOST_CHECK_EQUAL(titles[0].text, "Paused");
@@ -533,18 +479,15 @@ BOOST_AUTO_TEST_CASE(a_centred_menu_writes_its_title_above_its_items) {
 }
 
 /**
- * The chosen item's label is written in the chosen item's setting and the others in the body
- * text, and the menu is as wide as the chosen setting makes its widest label.
+ * The chosen item's label is written in the chosen item's setting, semibold, and the others in
+ * the body text, and the menu is as wide as the chosen setting makes its widest label.
  **/
 BOOST_AUTO_TEST_CASE(the_chosen_item_is_written_in_its_own_setting) {
-    std::vector<std::string> body;
-    std::vector<std::string> chosen;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&body](std::string_view text, const glm::vec2&, const glm::vec4&) { body.emplace_back(text); });
-    renderer.emphasis({.chosen = {
-        .measure = [](std::string_view text) { return static_cast<float>(text.size()) * (characterWidth + 1.0F); },
-        .write = [&chosen](std::string_view text, const glm::vec2&, const glm::vec4&) { chosen.emplace_back(text); }}});
+    std::vector<Written> written;
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = v3d::ui::typeset::mono(&written);
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::paint::Type(text, 0.0F));
+    // a tenth larger, so a chosen character is eleven pixels wide
+    renderer.emphasis({.chosen = {.type = v3d::ui::paint::Type(text, v3d::ui::typeset::monoSize * 1.1F, v3d::ui::paint::Weight::SemiBold)}});
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -552,10 +495,13 @@ BOOST_AUTO_TEST_CASE(the_chosen_item_is_written_in_its_own_setting) {
     menu->active(1);
     renderer.draw(&canvas, menu);
 
-    BOOST_CHECK(chosen == std::vector<std::string>({"Three"}));
-    BOOST_CHECK(body == std::vector<std::string>({"One"}));
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "One");
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::Regular);
+    BOOST_CHECK_EQUAL(written[1].text, "Three");
+    BOOST_CHECK(written[1].weight == v3d::ui::paint::Weight::SemiBold);
     const float width = static_cast<const v3d::ui::Component&>(*menu).size().x;
-    BOOST_CHECK_CLOSE(width, (5.0F * (characterWidth + 1.0F)) + (renderer.dressing().padding * 2.0F), 0.01F);
+    BOOST_CHECK_CLOSE(width, (5.0F * (characterWidth + 1.0F)) + (renderer.dressing().padding * 2.0F), 0.1F);
 }
 
 /**
@@ -563,13 +509,11 @@ BOOST_AUTO_TEST_CASE(the_chosen_item_is_written_in_its_own_setting) {
  * none.
  **/
 BOOST_AUTO_TEST_CASE(the_chosen_item_is_ringed_in_the_focus_colour) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     const glm::vec4 focus(0.0F, 1.0F, 0.0F, 1.0F);
     renderer.dressing().focus = focus;
     const auto ringed = [&focus](const v3d::render::realtime::canvas::Canvas& canvas) {
-        return std::ranges::count_if(canvas.vertices(),
+        return std::ranges::count_if(v3d::ui::typeset::shapeVertices(canvas),
             [&focus](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) { return vertex.colour == focus; });
     };
 
@@ -590,9 +534,7 @@ BOOST_AUTO_TEST_CASE(the_chosen_item_is_ringed_in_the_focus_colour) {
  * A menu too tall for the safe area starts at the safe area's top, rather than above it.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_too_tall_for_the_safe_area_starts_at_its_top) {
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 100));
     const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three", "Four"});
@@ -609,11 +551,7 @@ BOOST_AUTO_TEST_CASE(a_menu_too_tall_for_the_safe_area_starts_at_its_top) {
  **/
 BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     renderer.shortcuts([](const v3d::event::Event& command) {
         return command.name() == "up" ? std::string("W") : std::string();
     });
@@ -681,11 +619,7 @@ BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
  **/
 BOOST_AUTO_TEST_CASE(hud_text_sits_on_a_plate_placed_by_its_anchor) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
     v3d::ui::paint::Dressing& dress = renderer.dressing();
     dress.panel = glm::vec4(0.1F, 0.2F, 0.3F, 1.0F);
     dress.plateOpacity = 0.5F;
@@ -706,8 +640,8 @@ BOOST_AUTO_TEST_CASE(hud_text_sits_on_a_plate_placed_by_its_anchor) {
     BOOST_CHECK_CLOSE(box.position().x, 400.0F - (box.size().x * 0.5F), 0.001F);
     BOOST_CHECK_CLOSE(box.position().y, 100.0F, 0.001F);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK(canvas.vertices()[0].colour == glm::vec4(0.1F, 0.2F, 0.3F, 0.5F));
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK(v3d::ui::typeset::shapeVertices(canvas)[0].colour == glm::vec4(0.1F, 0.2F, 0.3F, 0.5F));
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
     BOOST_CHECK_EQUAL(written[1].text, "120");
     BOOST_CHECK(written[0].colour == dress.text);
@@ -720,9 +654,7 @@ BOOST_AUTO_TEST_CASE(hud_text_sits_on_a_plate_placed_by_its_anchor) {
  * way, without taking it apart.
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -735,7 +667,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     v3d::ui::Container visible("visible", true);
     visible.add(buildMenu({"One"}));
     renderer.draw(&canvas, visible);
-    const std::size_t drawn = canvas.vertices().size();
+    const std::size_t drawn = v3d::ui::typeset::shapeVertices(canvas).size();
     BOOST_CHECK(drawn > 0);
 
     canvas.clear();
@@ -745,23 +677,21 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     withHidden.add(hidden);
     renderer.draw(&canvas, withHidden);
 
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 }
 
 /**
  * A menu with no items draws no panel either.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({}));
 
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 }
 
 /**
@@ -770,15 +700,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -813,9 +735,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
  * is one quad per edge on top of whatever the component drew.
  **/
 BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -830,15 +750,15 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
     container.add(button);
 
     renderer.draw(&canvas, container);
-    const std::size_t plain = canvas.vertices().size();
+    const std::size_t plain = v3d::ui::typeset::shapeVertices(canvas).size();
 
     canvas.clear();
     button->focused(true);
     renderer.draw(&canvas, container);
 
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), plain + static_cast<std::size_t>(4 * 4));
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), plain + static_cast<std::size_t>(4 * 4));
     // untextured like everything else the ui draws, so the ring costs no batch of its own
-    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 1);
 }
 
 /**
@@ -848,9 +768,7 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
  * A theme naming nothing still gets the base's ring for every control.
  **/
 BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     const glm::vec4 ringColour(0.0F, 1.0F, 0.0F, 1.0F);
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -879,9 +797,9 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
 
     // the ring is traced after the component it rings, so the last four quads are its
     const std::size_t ringVertices = static_cast<std::size_t>(4 * 4);
-    BOOST_REQUIRE(canvas.vertices().size() >= ringVertices);
-    for (std::size_t back = canvas.vertices().size() - ringVertices; back < canvas.vertices().size(); back++) {
-        BOOST_CHECK(canvas.vertices()[back].colour == ringColour);
+    BOOST_REQUIRE(v3d::ui::typeset::shapeVertices(canvas).size() >= ringVertices);
+    for (std::size_t back = v3d::ui::typeset::shapeVertices(canvas).size() - ringVertices; back < v3d::ui::typeset::shapeVertices(canvas).size(); back++) {
+        BOOST_CHECK(v3d::ui::typeset::shapeVertices(canvas)[back].colour == ringColour);
     }
 }
 
@@ -891,15 +809,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
 
     const glm::vec4 ordinary(0.8F, 0.8F, 0.8F, 1.0F);
     const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
@@ -928,7 +838,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
     BOOST_CHECK(written.front().colour == greyed);
     // no highlight under it either: a disabled button is never lit
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 }
 
 /**
@@ -938,15 +848,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            Written line;
-            line.text = text;
-            line.pen = pen;
-            line.colour = colour;
-            written.push_back(line);
-        });
+    v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body(&written));
 
     const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
     renderer.dressing().text = glm::vec4(0.8F, 0.8F, 0.8F, 1.0F);

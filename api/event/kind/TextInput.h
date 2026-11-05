@@ -23,6 +23,7 @@ class TextInput final : public Event {
  public:
     /**
      * @param text one or more characters, utf-8 encoded
+     * @param context the context the event belongs to, the keyboard's
      **/
     TextInput(const std::string& text, const boost::shared_ptr<Context>& context);
 

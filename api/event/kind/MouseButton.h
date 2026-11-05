@@ -7,6 +7,7 @@
 
 #include <api/event/Event.h>
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -25,13 +26,24 @@ namespace v3d::event::kind {
 class MouseButton : public Event {
  public:
     /**
+     * Where the cursor was, which way the button went, how many presses in quick succession the
+     * edge belongs to, and the id of the window the cursor was in, as Window::id() gives it. The
+     * platform counts clicks: 1 for a single click, 2 for the second of a double click.
+     **/
+    struct Edge {
+        glm::vec2 position{0.0F};
+        bool pressed = false;
+        unsigned int clicks = 1;
+        std::uint32_t window = 0;
+    };
+
+    /**
      * @param button the button's name, one of the names a binding config uses
-     * @param clicks how many presses in quick succession this edge belongs to, as the platform
-     *        counts them: 1 for a single click, 2 for the second of a double click
+     * @param edge where the cursor was, which way the button went, the clicks and the window
+     * @param context the context the event belongs to, the mouse's
      **/
     // not noexcept: the base takes the event name as a std::string, which allocates
-    MouseButton(const std::string& button, const glm::vec2& position, const boost::shared_ptr<Context>& context, bool pressed,
-        unsigned int clicks = 1);
+    MouseButton(const std::string& button, const Edge& edge, const boost::shared_ptr<Context>& context);
 
     /**
      * @return the button's name
@@ -52,9 +64,15 @@ class MouseButton : public Event {
      **/
     unsigned int clicks() const noexcept;
 
+    /**
+     * @return the id of the window the cursor was in, whose coordinates the position is in
+     **/
+    std::uint32_t window() const noexcept;
+
  private:
     glm::vec2 position_;
     bool pressed_;
     unsigned int clicks_;
+    std::uint32_t window_;
 };
 };  // namespace v3d::event::kind

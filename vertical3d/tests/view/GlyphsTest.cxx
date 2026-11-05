@@ -4,8 +4,8 @@
  **/
 
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/view/Glyphs.h>
 
 #include <algorithm>
@@ -43,7 +43,7 @@ float highest(const v3d::render::realtime::canvas::Line& canvas, int axis) {
 
 BOOST_AUTO_TEST_CASE(glyph_perspective_camera_test) {
     v3d::render::realtime::canvas::Line canvas;
-    v3d::editor::scene::Camera::Lens lens;
+    v3d::editor::scene::item::Camera::Lens lens;
     lens.fov = 60.0F;
     v3d::editor::view::drawCamera(lens, colour, &canvas);
 
@@ -73,8 +73,8 @@ BOOST_AUTO_TEST_CASE(glyph_perspective_camera_test) {
 
 BOOST_AUTO_TEST_CASE(glyph_orthographic_camera_test) {
     v3d::render::realtime::canvas::Line canvas;
-    v3d::editor::scene::Camera::Lens lens;
-    lens.projection = v3d::editor::scene::Camera::Projection::Orthographic;
+    v3d::editor::scene::item::Camera::Lens lens;
+    lens.projection = v3d::editor::scene::item::Camera::Projection::Orthographic;
     lens.extent = 3.0F;
     v3d::editor::view::drawCamera(lens, colour, &canvas);
 
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(glyph_orthographic_camera_test) {
 
 BOOST_AUTO_TEST_CASE(glyph_point_and_distant_light_test) {
     v3d::render::realtime::canvas::Line point;
-    v3d::editor::view::drawLight({ .type = v3d::editor::scene::Light::Type::Point }, colour, &point);
+    v3d::editor::view::drawLight({ .type = v3d::editor::scene::item::Light::Type::Point }, colour, &point);
 
     // three lines through the light, a quarter unit each way
     BOOST_CHECK_EQUAL(segments(point), 3U);
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(glyph_point_and_distant_light_test) {
     }
 
     v3d::render::realtime::canvas::Line distant;
-    v3d::editor::view::drawLight({ .type = v3d::editor::scene::Light::Type::Distant }, colour, &distant);
+    v3d::editor::view::drawLight({ .type = v3d::editor::scene::item::Light::Type::Distant }, colour, &distant);
 
     // three rays and the arrowhead's two strokes, all between the light and one unit along +z
     BOOST_CHECK_EQUAL(segments(distant), 5U);
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(glyph_spot_light_test) {
     for (const float cone : { 0.3F, 2.0F }) {
         BOOST_TEST_CONTEXT("cone " << cone) {
             v3d::render::realtime::canvas::Line canvas;
-            v3d::editor::view::drawLight({ .type = v3d::editor::scene::Light::Type::Spot, .cone = cone, .delta = 0.1F }, colour, &canvas);
+            v3d::editor::view::drawLight({ .type = v3d::editor::scene::item::Light::Type::Spot, .cone = cone, .delta = 0.1F }, colour, &canvas);
 
             // two rings of 24 and four sides
             BOOST_CHECK_EQUAL(segments(canvas), 52U);
@@ -133,12 +133,12 @@ BOOST_AUTO_TEST_CASE(glyph_spot_light_test) {
 
     // a light with no soft edge has one ring
     v3d::render::realtime::canvas::Line hard;
-    v3d::editor::view::drawLight({ .type = v3d::editor::scene::Light::Type::Spot, .cone = 0.5F, .delta = 0.0F }, colour, &hard);
+    v3d::editor::view::drawLight({ .type = v3d::editor::scene::item::Light::Type::Spot, .cone = 0.5F, .delta = 0.0F }, colour, &hard);
     BOOST_CHECK_EQUAL(segments(hard), 28U);
 }
 
 BOOST_AUTO_TEST_CASE(glyph_placement_test) {
-    v3d::editor::scene::Light light;
+    v3d::editor::scene::item::Light light;
     light.translation(glm::vec3(5.0F, 0.0F, 2.0F));
     light.rotation(glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 1.0F, 0.0F)));
     light.scale(glm::vec3(10.0F));
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(glyph_placement_test) {
 
     // and nothing is drawn without a canvas
     v3d::editor::view::drawLight(light.emission(), colour, nullptr);
-    v3d::editor::view::drawCamera(v3d::editor::scene::Camera::Lens(), colour, nullptr);
+    v3d::editor::view::drawCamera(v3d::editor::scene::item::Camera::Lens(), colour, nullptr);
 }
 
 };  // namespace

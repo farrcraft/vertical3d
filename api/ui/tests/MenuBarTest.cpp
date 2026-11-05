@@ -5,10 +5,12 @@
 
 #include <api/event/Context.h>
 #include <api/event/Event.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/menu/Menu.h>
@@ -16,6 +18,10 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -38,13 +44,9 @@ namespace {
 const float characterWidth = 10.0F;
 
 /**
- * Where the labels went, so a test can check the layout without a font or a device.
+ * A line the ui drew.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * The dispatcher, the events sent to it, and the bar they came from, all of which have to
@@ -55,15 +57,7 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
         bar(boost::make_shared<v3d::ui::component::menu::Bar>()),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-                Written line;
-                line.text = text;
-                line.pen = pen;
-                line.colour = colour;
-                written.push_back(line);
-            }) {
+        renderer(v3d::ui::typeset::body(&written)) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
     }
@@ -164,7 +158,164 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
     BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
     BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
     // the strip and the rule under it, and no panel
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), 2 * 4);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), 2 * 4);
+}
+
+/**
+ * A bar's strip is drawn at its opacity, which is held between none and whole.
+ **/
+BOOST_AUTO_TEST_CASE(a_bar_strip_is_drawn_at_its_opacity) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->opacity(0.8F);
+    fixture.draw();
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(fixture.canvas)[0].colour.a, fixture.renderer.dressing().panel.a * 0.8F, 0.001F);
+
+    fixture.bar->opacity(2.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->opacity(), 1.0F);
+    fixture.bar->opacity(-1.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->opacity(), 0.0F);
+}
+
+/**
+ * A title with a drop mark is wider by the mark and the gap before it, and draws the mark as
+ * two strokes after its label. Each stroke is smoothed along its sides, so it is four lines of
+ * two vertices.
+ **/
+BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    const std::size_t drawn = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
+
+    fixture.bar->menu(0)->drop(true);
+    fixture.draw();
+    BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), drawn + std::size_t{16});
+}
+
+/**
+ * A title keeps one width whether it is set apart or not, so setting it apart moves nothing
+ * after it, even where the chosen item's setting is wider than the plain one.
+ **/
+BOOST_AUTO_TEST_CASE(emphasis_moves_nothing_after_a_title) {
+    Fixture fixture;
+    build(&fixture);
+    v3d::ui::paint::Emphasis sets;
+    sets.chosen.type = v3d::ui::paint::Type(v3d::ui::typeset::mono(&fixture.written), v3d::ui::typeset::monoSize * 1.5F);
+    fixture.renderer.emphasis(sets);
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    const float after = fixture.bar->bound(1).position().x;
+
+    fixture.bar->menu(0)->emphasis(true);
+    fixture.draw();
+    BOOST_CHECK_EQUAL(fixture.bar->bound(0).size().x, plain);
+    BOOST_CHECK_EQUAL(fixture.bar->bound(1).position().x, after);
+}
+
+/**
+ * A title with a resolved icon draws the icon in place of its label, tinted the label's colour,
+ * and is as wide as the icon and the padding.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.renderer.dressing().iconSize = 16.0F;
+    fixture.bar->menu(0)->icon("icon:viewport");
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
+    fixture.draw();
+
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.written[0].text, "View");
+    const v3d::ui::paint::Dressing& dressing = fixture.renderer.dressing();
+    BOOST_CHECK_CLOSE(fixture.bar->bound(0).size().x, std::min(dressing.iconSize, dressing.barHeight) + dressing.padding, 0.001F);
+    BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapes(fixture.canvas), [](const auto& batch) { return batch.texture.id() == 3U; }));
+}
+
+/**
+ * A named icon's title shows its label too, semibold, after the icon. The title is wider by the
+ * label and a gap.
+ **/
+BOOST_AUTO_TEST_CASE(a_named_icon_title_shows_its_label_after_the_icon) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    BOOST_CHECK(std::ranges::none_of(fixture.written, [](const auto& line) { return line.text == "File"; }));
+
+    fixture.bar->menu(0)->named(true);
+    fixture.written.clear();
+    fixture.draw();
+    BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
+    const auto file = std::ranges::find_if(fixture.written, [](const auto& line) { return line.text == "File"; });
+    BOOST_REQUIRE(file != fixture.written.end());
+    BOOST_CHECK(file->weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK_GT(file->pen.x, fixture.bar->bound(0).position().x);
+}
+
+/**
+ * A bar's note is drawn after its last title in the secondary text colour, and an empty one
+ * draws nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_note_follows_the_last_title) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    const std::size_t plain = fixture.written.size();
+
+    fixture.bar->note("Ctrl+Space restores the areas");
+    fixture.written.clear();
+    fixture.draw();
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), plain + 1U);
+    const auto& note = fixture.written.back();
+    BOOST_CHECK_EQUAL(note.text, "Ctrl+Space restores the areas");
+    BOOST_CHECK(note.colour == fixture.renderer.dressing().secondaryText);
+    const v3d::type::geometry::Bound2D last = fixture.bar->bound(1);
+    BOOST_CHECK_GE(note.pen.x, last.position().x + last.size().x);
+}
+
+/**
+ * A title's icon takes the label's colour, or the accent when the menu asks for it.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
+    const glm::vec4 accent = fixture.renderer.dressing().fill;
+    const auto tinted = [&fixture, &accent]() {
+        return std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&accent](const auto& vertex) { return vertex.colour == accent; });
+    };
+    fixture.draw();
+    BOOST_CHECK(!tinted());
+
+    fixture.bar->menu(0)->accent(true);
+    fixture.draw();
+    BOOST_CHECK(tinted());
+}
+
+/**
+ * A title set apart is on a pill of the widget colour, and written in the bar's own setting, so
+ * its text does not change as it is set apart and back.
+ **/
+BOOST_AUTO_TEST_CASE(a_title_set_apart_is_on_a_pill) {
+    Fixture fixture;
+    build(&fixture);
+    v3d::ui::paint::Emphasis sets;
+    sets.chosen.type = v3d::ui::typeset::body(&fixture.written).in(v3d::ui::paint::Weight::SemiBold);
+    fixture.renderer.emphasis(sets);
+    fixture.bar->menu(1)->emphasis(true);
+    fixture.draw();
+
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
+    BOOST_CHECK(fixture.written[0].weight == v3d::ui::paint::Weight::Regular);
+    BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
+    BOOST_CHECK(fixture.written[1].weight == v3d::ui::paint::Weight::Regular);
+    const glm::vec4 widget = fixture.renderer.dressing().widget;
+    BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&widget](const auto& vertex) { return vertex.colour == widget; }));
 }
 
 /**
@@ -510,7 +661,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     fixture.bar->press(fixture.label(0));
 
     fixture.draw();
-    const std::size_t unchecked = fixture.canvas.vertices().size();
+    const std::size_t unchecked = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
 
     const boost::shared_ptr<v3d::ui::component::menu::Item> grid = fixture.bar->find("test::grid");
     BOOST_REQUIRE(grid);
@@ -518,7 +669,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     grid->checked(true);
 
     fixture.draw();
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unchecked + 4);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), unchecked + 4);
 
     // activating it sends the command and leaves the mark where it was
     const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
@@ -538,7 +689,7 @@ BOOST_AUTO_TEST_CASE(an_action_item_draws_no_mark) {
     fixture.bar->press(fixture.label(0));
 
     fixture.draw();
-    const std::size_t unmarked = fixture.canvas.vertices().size();
+    const std::size_t unmarked = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
 
     const boost::shared_ptr<v3d::ui::component::menu::Item> open = fixture.bar->find("test::open");
     BOOST_REQUIRE(open);
@@ -546,7 +697,7 @@ BOOST_AUTO_TEST_CASE(an_action_item_draws_no_mark) {
     BOOST_CHECK(!open->checked());
 
     fixture.draw();
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unmarked);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), unmarked);
 }
 
 /**
@@ -729,6 +880,30 @@ BOOST_AUTO_TEST_CASE(escape_backs_out_of_an_open_bar) {
     BOOST_CHECK(fixture.bar->key("escape"));
     BOOST_CHECK(!fixture.bar->active());
     BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * Taking a menu's items from an index on leaves the ones before it, releases the ones taken, and
+ * clears the active item when it was taken. An index past the end takes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_takes_its_last_items_out) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = fixture.menu();
+    std::vector<boost::shared_ptr<v3d::ui::component::menu::Item>> items;
+    for (const char* label : { "Front", "Wide", "Close" }) {
+        items.push_back(fixture.item(v3d::ui::component::menu::ItemType::Radio, { .label = label, .name = std::string() }));
+        menu->addItem(items.back());
+    }
+    menu->active(2);
+    BOOST_CHECK(items[2]->parent() == menu.get());
+
+    menu->removeFrom(5);
+    BOOST_CHECK_EQUAL(menu->count(), 3U);
+    menu->removeFrom(1);
+    BOOST_REQUIRE_EQUAL(menu->count(), 1U);
+    BOOST_CHECK((*menu)[0] == items[0]);
+    BOOST_CHECK(!menu->active());
+    BOOST_CHECK(items[2]->parent() == nullptr);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

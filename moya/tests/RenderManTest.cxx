@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/RenderMan.h>
 #include <moya/libmoya/state/Planes.h>
@@ -50,7 +50,7 @@ void beginCovered() {
 }
 
 void checkRed() {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = context().picture();
     BOOST_REQUIRE(planes);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 4, 3), 1.0F, 0.01F);
     BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 4, 3), 0.001F);
@@ -121,10 +121,10 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
     RiDepthOfField(8.0F, 0.1F, 3.0F);
     RiShutter(0.0F, 0.5F);
 
-    const v3d::render::offline::Sampling & sampling = context().sampling();
+    const v3d::render::offline::film::Sampling & sampling = context().sampling();
     BOOST_CHECK_EQUAL(sampling.samples.x, 4U);
     BOOST_CHECK_EQUAL(sampling.samples.y, 4U);
-    BOOST_CHECK(sampling.filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK(sampling.filter == v3d::render::offline::film::Filter::CatmullRom);
     BOOST_CHECK_EQUAL(sampling.width.x, 3.0F);
     BOOST_CHECK_EQUAL(sampling.fstop, 8.0F);
     BOOST_CHECK_EQUAL(sampling.focalLength, 0.1F);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
     BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5F);
 
     RiPixelFilter(nullptr, 1.0F, 1.0F);
-    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::film::Filter::CatmullRom);
     BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0F);
     RiEnd();
 }
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     RiPixelFilter(RiGaussianFilter, std::nanf(""), 1.0F);
     RiPixelFilter(RiGaussianFilter, 0.0F, 1.0F);
     RiPixelFilter(RiGaussianFilter, 1.0F, -1.0F);
-    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::Box);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::film::Filter::Box);
     BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0F);
     BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0F);
 
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0F);
     RiWorldBegin();
     RiWorldEnd();
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = context().picture();
     BOOST_REQUIRE(planes);
     BOOST_CHECK_EQUAL(planes->width(), 32U);
     BOOST_CHECK_EQUAL(planes->height(), 16U);

@@ -27,7 +27,7 @@ class AppEngine : public v3d::engine::Engine {
 #include <api/engine/Main.h>
 
 int main(int argc, char* argv[]) {
-    return v3d::engine::run<AppEngine>(argv[0], { .organization = "Vertical3D", .application = "MyApp" });
+    return v3d::engine::run<AppEngine>(argc, argv, { .organization = "Vertical3D", .application = "MyApp" });
 }
 ```
 
@@ -38,17 +38,19 @@ translation unit. An app does not include `SDL_main.h` itself.
 
 ### The run function
 
-`v3d::engine::run<T>(argv[0], identity, args...)` in
+`v3d::engine::run<T>(argc, argv, identity, args...)` in
 [api/engine/Application.h](../../../api/engine/Application.h) is the whole of `main`. It does this,
 in order:
 
-1. Works out the app path, the directory the executable is in, from `argv[0]`.
-2. Opens the log, as [Logging](README.md#logging) describes.
+1. Reads the command line into an `engine::Launch`, as [The command line](#the-command-line)
+   describes. A command line it refuses is logged, and the app does not start.
+2. Works out the app path, the directory the executable is in, from `argv[0]`, and opens the
+   log, as [Logging](README.md#logging) describes.
 3. Constructs `T` with the app path, followed by any extra `args` you passed. Use those for
    options parsed from the command line before the engine exists.
-4. Gives the engine the app's `engine::Identity`: the organization and the application the
-   player's files are kept under. [Files.md](Files.md#settings-and-the-players-files) says how
-   to choose them.
+4. Gives the engine the `Launch`, and the app's `engine::Identity`: the organization and the
+   application the player's files are kept under.
+   [Files.md](Files.md#settings-and-the-players-files) says how to choose them.
 5. Calls `initialize()` and then `eventLoop()` inside a `try` block. An exception is written to
    the log as `"<application> failed: <message>"`. A windowed app has no console, so the log is the
    only place an error is readable.
@@ -60,6 +62,33 @@ in order:
 
 It returns `EXIT_FAILURE` if startup, the loop or shutdown failed, and `EXIT_SUCCESS`
 otherwise.
+
+`run<T>(argv[0], identity, args...)` does the same and reads no command line. An app that reads
+none may call it.
+
+### The command line
+
+`run<T>` reads two options of its own, which every app built on the engine takes:
+
+| Option | Effect |
+|---|---|
+| `--capture <file>` | Write one presented frame of the app's window to a png file, then quit |
+| `--capture-after <frames>` | The frame to write, counted from 1 at the first frame rendered. Default 60 |
+
+- **The frame is written as it is presented, and the loop ends after it.** The quit does not go
+  through `quitRequested()`, so an app that would ask about unsaved work does not ask.
+- **Whatever presents to the window takes the capture.** `shell::Shell::present()` hands the
+  engine its renderer through `Engine::capturer()`, and `Shell::release()` takes it back. An app
+  that presents without the shell names a capturer itself.
+- **A capture nothing can take fails the loop**, and the app exits with `EXIT_FAILURE`. A
+  command line that names no file after `--capture`, or a `--capture-after` that is not a whole
+  number from 1 up, stops the app before it starts.
+- **Every other argument is the app's.** `Engine::launch().rest` holds them in order, and
+  `Launch::option(name)` gives the value after one. The editor reads `--script` there.
+- The frame is a count, not a time, so a scene that moves shows the state its frame rate
+  reached by then.
+
+Background: [ADR-0163](../../adr/engine/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md)
 
 ### Startup
 
@@ -123,4 +152,4 @@ are already destroyed when a base class destructor runs.
   arrives while the app is still asking reaches `quitRequested()` again, so the override decides
   what a second request does.
 
-Background: [ADR-0080](../../adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md)
+Background: [ADR-0080](../../adr/engine/0080-apps-the-engine-owns-startup-and-shutdown-order.md)

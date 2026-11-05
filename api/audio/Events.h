@@ -83,6 +83,7 @@ class Events {
      * Start an event as a one shot at a point in the world. An event authored as 2D ignores
      * the position.
      *
+     * @param event the event's path, such as "event:/Ambience/Country"
      * @param position where the event plays, in the coordinates listener() is given
      * @return whether it started
      **/
@@ -148,6 +149,7 @@ class Events {
      * A path is found through the strings bank, so the bank that holds the names has to be
      * loaded first. A level set before then is refused, and the app sets it again afterwards.
      *
+     * @param path the bus or VCA, such as "bus:/Music" or "vca:/SFX"
      * @param level 1 as authored and 0 silent. A level below 0 is taken as 0
      * @return whether the path exists and took the level
      **/

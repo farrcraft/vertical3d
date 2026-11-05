@@ -36,8 +36,12 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
-| `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
-| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
+| `paint::Weight` | [paint/Text.h](../../../api/ui/paint/Text.h) | a face's weight, and where a line's baseline sits |
+| `paint::Type`, `paint::Setting`, `paint::Emphasis` | [paint/Type.h](../../../api/ui/paint/Type.h) | a text renderer at one size and weight, which the retained ui measures and draws through, and the settings a centred menu sets apart |
+| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, the glyph store, and the callbacks over them |
+| `paint::CurveText`, `paint::CurvePages` | [paint/CurveText.h](../../../api/ui/paint/CurveText.h) | text drawn from its curves, and the device's copy of the curve store |
+| `paint::GlyphPages` | [paint/GlyphPages.h](../../../api/ui/paint/GlyphPages.h) | the device's copy of the glyph store's pages |
+| `paint::internal::effectQuad` | [paint/internal/EffectQuad.h](../../../api/ui/paint/internal/EffectQuad.h) | the quad an effect is drawn over from its glyph's distance field, shared by both text renderers |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
 | `style::Resolver` | [style/Resolver.h](../../../api/ui/style/Resolver.h) | turns a theme into a cached `Dressing` per class and style name |
 | `input::Cursor` | [input/Cursor.h](../../../api/ui/input/Cursor.h) | routes mouse points: hover, press, drag, focus, caret placement |
@@ -60,8 +64,8 @@ Boundaries the split keeps:
   joined by an `Arranger::Paint` callback. The renderer contains no layout arithmetic, and
   the arranger names no renderer.
 - **No `api/ui` header names a Vulkan or SDL type.** `shell::Screen` declares `WindowRenderer`
-  rather than including it. `shell::Keyboard` declares `SDL_Event`. `TextRenderer` takes its
-  atlas upload as a callback. The clipboard and the text measure are callbacks. This keeps
+  rather than including it. `shell::Keyboard` declares `SDL_Event`. `GlyphPages` takes its
+  uploads as callbacks. The clipboard and the text measure are callbacks. This keeps
   the library testable without a window or a device.
 - **`v3dlib_ui` links `v3dlib_render` and `v3dlib_input`.** `shell::Screen` therefore cannot
   live in `api/render`, which would make a cycle. `v3dlib_input` is linked for
@@ -242,7 +246,7 @@ rebuilds, and goes with its component or with its id when that ages out.
 To animate something new, give its colour a `Transition` in `Motion` or in `Retained`, and pass
 the colour to draw each frame through it. A field added to `Motion` costs every component.
 
-Background: [ADR-0132](../../adr/0132-ui-transition-state-lives-on-what-it-animates.md)
+Background: [ADR-0132](../../adr/ui/0132-ui-transition-state-lives-on-what-it-animates.md)
 
 ## Parents and held items
 
@@ -307,7 +311,7 @@ A registry of per-type functions was considered as a way to reduce the number of
 was not adopted, because `paint()` and `natural()` read private state of the renderer and the
 arranger.
 
-Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
+Background: [ADR-0047](../../adr/project/0047-code-exhaustive-enum-switches.md)
 
 ## Known limitations
 
@@ -333,8 +337,6 @@ Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
 - **Drawing calls `usable()` per component per frame**, walking the parent chain.
 - **A per-state button style carries images only.** A theme cannot name a disabled plate
   colour.
-- **`TextBox::at()` calls `Measure` once per character boundary**, which is quadratic in the
-  line length. It runs per click, not per frame.
 - **Selected text keeps its colour.** The selection is a highlight behind a line drawn whole.
 - **Radio menu items use the same square mark as check items.**
 - **A tooltip hangs under its component**, so on a vertical toolbar it covers the next button.
@@ -345,5 +347,3 @@ Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
 - **A button in the tree has a hover state, but no other tree component does.**
 - **`Immediate` stores one `Retained` per id**, so ids built from changing text churn the
   map until `retention` ages them out.
-- **`TextRenderer`'s upload has no test.** Its measuring and drawing are tested with a
-  stand-in upload, and the upload itself needs a device.

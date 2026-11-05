@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <cstdint>
 #include <functional>
@@ -74,12 +75,12 @@ class Arranger final {
     static const float ruleWidth;
 
     /**
-     * @param measure how wide a string is when the app draws it, which sizes a
+     * @param body what the ui's text is measured and wrapped through, which sizes a
      *      label, a button and a tab
      * @param styles where a component's colours and metrics come from. Held by reference,
      *      because the renderer owns it, and a theme change must reach the arranger
      **/
-    Arranger(const paint::Measure& measure, const style::Resolver& styles);
+    Arranger(const paint::Type& body, const style::Resolver& styles);
 
     /**
      * Lay a component out inside a box that has already been resolved, and draw it and
@@ -88,6 +89,8 @@ class Arranger final {
      * The canvas and the paint are both optional. Given neither, this resolves every box
      * and draws nothing.
      *
+     * @param canvas what is drawn into and clipped against, or null to place and not draw
+     * @param component the component laid out, which does nothing when null or hidden
      * @param bounds where this component goes, which its parent worked out
      * @param paint what fills each box as it is written, or empty to place and not draw
      **/
@@ -104,6 +107,7 @@ class Arranger final {
      * The component is not const because a select list caches the width of its widest row
      * on itself.
      *
+     * @param component the component measured
      * @param room the room the component is offered. A flow box offers no room along the
      *      line it lays out, because its children share the line. An Auto extent along
      *      that line is then the component's natural size and nothing more
@@ -121,6 +125,7 @@ class Arranger final {
      * Both the draw and ComponentRenderer::insets() use this, so the area an app is told it
      * has always matches where the strips are drawn.
      *
+     * @param container the container whose visible strips are stacked
      * @param strips filled with one toolbar and its top left corner per strip, in the
      *      order they are drawn; null when only the total is wanted
      * @param bars filled with the container's menu bars; null when only the total is
@@ -165,6 +170,8 @@ class Arranger final {
      * Place a toolbar and every button on it. A row spans the room from its corner and is a
      * strip high; a column is as wide as its widest button and runs the height of the room.
      *
+     * @param bar the toolbar placed
+     * @param corner the strip's top left corner, in pixels
      * @param room the extent of what the strip is drawn into, the canvas
      **/
     void strip(component::Toolbar& bar, const glm::vec2& corner, const glm::vec2& room) const;
@@ -173,6 +180,9 @@ class Arranger final {
      * Place a menu bar's open panel and its items, hanging from an origin and moved back into
      * the room where it would hang off an edge.
      *
+     * @param menu the menu whose panel is placed. One with no items is left where it is
+     * @param origin where the panel's top left corner goes when it fits, in pixels
+     * @param room the extent of what the panel is drawn into, the canvas
      * @param shortcuts how wide the panel's widest shortcut is, which a column right of the
      *        labels makes room for. Zero leaves no column
      **/
@@ -187,6 +197,8 @@ class Arranger final {
      * wide as the wider of the body text and the chosen item's setting, so the level does not
      * change width as the choice moves.
      *
+     * @param level the level placed. One with no items is left where it is
+     * @param room the extent of what the level is drawn into, the canvas
      * @param values how wide the level's widest value is, which a column right of the labels
      *        makes room for. Zero leaves no column
      **/
@@ -299,7 +311,7 @@ class Arranger final {
      **/
     float choice(const component::menu::Item* item) const;
 
-    paint::Measure measure_;
+    paint::Type type_;
     paint::Emphasis emphasis_;
     const style::Resolver& styles_;
     /**

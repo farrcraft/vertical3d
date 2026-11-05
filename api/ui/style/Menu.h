@@ -11,6 +11,9 @@
 
 namespace v3d::ui::style {
 
+/**
+ * A style of the "menu" class, under the name it is built with.
+ **/
 class Menu : public Style {
  public:
     explicit Menu(const std::string & str);

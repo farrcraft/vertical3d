@@ -9,9 +9,12 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A number literal. SL has no integer type, so every number is a float.
+ **/
 class Number final : public Expression {
  public:
-    Number(float value, const v3d::render::offline::Position & at);
+    Number(float value, const v3d::render::offline::source::Position & at);
 
     float value = 0.0F;
 };

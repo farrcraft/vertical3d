@@ -68,8 +68,8 @@ BOOST_AUTO_TEST_CASE(a_rectangle_is_two_triangles) {
  **/
 BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
     v3d::render::realtime::canvas::Canvas canvas;
-    const v3d::render::realtime::TextureHandle first(3);
-    const v3d::render::realtime::TextureHandle second(7);
+    const v3d::render::realtime::resource::TextureHandle first(3);
+    const v3d::render::realtime::resource::TextureHandle second(7);
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
     canvas.rect(glm::vec2(2.0F, 0.0F), glm::vec2(3.0F, 1.0F), red);
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
  **/
 BOOST_AUTO_TEST_CASE(returning_to_a_texture_does_not_reopen_its_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
-    const v3d::render::realtime::TextureHandle atlas(1);
+    const v3d::render::realtime::resource::TextureHandle atlas(1);
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, atlas);
     canvas.rect(glm::vec2(2.0F, 0.0F), glm::vec2(3.0F, 1.0F), white);
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(a_fade_multiplies_the_alpha_of_what_is_drawn_under_it) {
     for (int corner = 0; corner < 4; corner++) {
         glyph.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
     }
-    canvas.text(glyph, std::vector<uint32_t>{0, 2, 1, 0, 3, 2}, v3d::render::realtime::TextureHandle(4));
+    canvas.text(glyph, std::vector<uint32_t>{0, 2, 1, 0, 3, 2}, v3d::render::realtime::resource::TextureHandle(4));
     canvas.unfade();
     canvas.rect(low, high, red);
     canvas.unfade();
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(clearing_drops_what_is_faded) {
  **/
 BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
     v3d::render::realtime::canvas::Canvas canvas;
-    const v3d::render::realtime::TextureHandle atlas(4);
+    const v3d::render::realtime::resource::TextureHandle atlas(4);
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
 
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
-    canvas.text({}, {}, v3d::render::realtime::TextureHandle(9));
+    canvas.text({}, {}, v3d::render::realtime::resource::TextureHandle(9));
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
 }
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(text_with_an_index_past_its_vertices_draws_nothing) {
     const std::vector<v3d::render::realtime::canvas::Canvas::Vertex> one = {
         {.position = glm::vec2(0.0F), .uv = glm::vec2(0.0F), .colour = white}};
     const std::vector<uint32_t> order = {0, 0, 1};
-    canvas.text(one, order, v3d::render::realtime::TextureHandle(9));
+    canvas.text(one, order, v3d::render::realtime::resource::TextureHandle(9));
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 4);
@@ -786,6 +786,28 @@ BOOST_AUTO_TEST_CASE(a_segment_with_no_length_or_width_draws_nothing) {
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK(canvas.batches().empty());
+}
+
+/**
+ * Coverage glyphs are a run of pictures that joins a picture of the same page, and each keeps
+ * its contrast, which marks it as text. A rectangle is not text.
+ **/
+BOOST_AUTO_TEST_CASE(coverage_glyphs_keep_their_contrast) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const v3d::render::realtime::resource::TextureHandle page(4);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, page);
+    const std::vector<v3d::render::realtime::canvas::Canvas::Vertex> glyph{
+        { .position = glm::vec2(2.0F, 0.0F), .colour = white, .contrast = 0.5F },
+        { .position = glm::vec2(2.0F, 1.0F), .colour = white, .contrast = 0.5F },
+        { .position = glm::vec2(3.0F, 1.0F), .colour = white, .contrast = 0.5F } };
+    canvas.glyphs(glyph, std::vector<uint32_t>{ 0, 1, 2 }, page);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK(!canvas.batches()[0].text);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].indices, 9);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 7);
+    BOOST_CHECK_LT(canvas.vertices()[0].contrast, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.5F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

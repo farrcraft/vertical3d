@@ -5,9 +5,10 @@
 
 #include "Outliner.h"
 
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/control/Text.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -25,26 +26,50 @@ namespace v3d::editor::control {
 
 /**
  **/
-std::string Outliner::label(const scene::Item& item) {
-    return item.name().empty() ? kind(item.kind()) : item.name();
+std::string Outliner::label(const scene::item::Item& item) {
+    return item.name().empty() ? scene::item::name(item.kind()) : item.name();
 }
 
 /**
  **/
-std::string Outliner::kind(scene::Item::Kind kind) {
+Outliner::Mark Outliner::mark(scene::item::Item::Kind kind) {
     switch (kind) {
-        case scene::Item::Kind::Mesh:
-            return "Mesh";
-        case scene::Item::Kind::Camera:
-            return "Camera";
-        case scene::Item::Kind::Light:
-            return "Light";
-        case scene::Item::Kind::Group:
-            return "Group";
-        case scene::Item::Kind::Curve:
-            return "Curve";
+        case scene::item::Item::Kind::Mesh:
+            return { .icon = "icon:item-mesh", .colour = MESH };
+        case scene::item::Item::Kind::Camera:
+            return { .icon = "icon:item-camera", .colour = CAMERA };
+        case scene::item::Item::Kind::Light:
+            return { .icon = "icon:item-light", .colour = LIGHT };
+        case scene::item::Item::Kind::Group:
+            return { .icon = "icon:item-group", .colour = GROUP };
+        case scene::item::Item::Kind::Curve:
+            return { .icon = "icon:item-curve", .colour = CURVE };
     }
-    return std::string();
+    return {};
+}
+
+/**
+ **/
+Outliner::Mark Outliner::sceneMark() {
+    return { .icon = "icon:item-scene", .colour = GROUP };
+}
+
+/**
+ **/
+void Outliner::icons(const Icons& resolve) {
+    icons_ = resolve;
+}
+
+/**
+ **/
+void Outliner::eye(const Eye& clicked) {
+    eye_ = clicked;
+}
+
+/**
+ **/
+v3d::ui::Image Outliner::image(const Mark& mark) const {
+    return icons_ ? icons_(mark.icon) : v3d::ui::Image();
 }
 
 /**
@@ -53,7 +78,7 @@ std::vector<Outliner::Row> Outliner::rows(const scene::Scene& scene, const std::
     const std::vector<std::string> wanted = words(filter);
     const Walk walk{ .scene = scene, .words = wanted, .folded = folded };
     std::vector<Row> made;
-    for (const boost::shared_ptr<scene::Item>& item : scene.children(0)) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.children(0)) {
         gather(walk, item, 0, &made);
     }
     return made;
@@ -67,13 +92,27 @@ void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t edi
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     // two outliners draw the same labels, so each draws under its own id
     ui->pushId(id);
-    ui->textField("Filter", &state.filter);
+    ui->textField("Filter", &state.filter,
+        v3d::ui::Immediate::FieldLook{ .icon = icons_ ? icons_("icon:search") : v3d::ui::Image(), .labelled = false, .limit = 0 });
     ui->separator();
-    for (const Row& row : rows(*scene, state.filter, state.folded)) {
+    // the Scene row folds every item and selects nothing
+    bool sceneOpen = !state.sceneFolded;
+    const Mark scened = sceneMark();
+    ui->treeRow("Scene", { .depth = 0, .open = &sceneOpen, .selected = false, .icon = image(scened), .iconTint = scened.colour });
+    state.sceneFolded = !sceneOpen;
+    const std::vector<Row> shown = sceneOpen ? rows(*scene, state.filter, state.folded) : std::vector<Row>();
+    for (const Row& row : shown) {
         ui->pushId(static_cast<int>(row.item->documentId()));
         bool open = row.open;
-        const bool clicked = ui->treeRow(label(*row.item),
-            { .depth = row.depth, .open = row.parent ? &open : nullptr, .selected = row.item->selected() });
+        const Mark marked = mark(row.item->kind());
+        bool eyed = false;
+        const v3d::ui::Image eye = image({ .icon = row.item->shown().views ? "icon:eye" : "icon:eye-closed", .colour = glm::vec4(1.0F) });
+        const bool clicked = ui->treeRow(label(*row.item), { .depth = row.depth + 1, .open = row.parent ? &open : nullptr,
+            .selected = row.item->selected(), .icon = image(marked), .iconTint = marked.colour,
+            .dimmed = !scene->shown(row.item->id()).views, .end = eye, .endClicked = &eyed });
+        if (eyed && eye_) {
+            eye_(row.item);
+        }
         if (open != row.open) {
             if (open) {
                 state.folded.erase(row.item->documentId());
@@ -101,11 +140,11 @@ void Outliner::keep(const std::vector<std::size_t>& editors) {
 
 /**
  **/
-bool Outliner::gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into) {
+bool Outliner::gather(const Walk& walk, const boost::shared_ptr<scene::item::Item>& item, unsigned int depth, std::vector<Row>* into) {
     const scene::Items children = walk.scene.children(item->id());
     std::vector<Row> below;
     bool any = false;
-    for (const boost::shared_ptr<scene::Item>& child : children) {
+    for (const boost::shared_ptr<scene::item::Item>& child : children) {
         any = gather(walk, child, depth + 1, &below) || any;
     }
     const std::string named = lower(label(*item));

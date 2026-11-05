@@ -38,9 +38,9 @@ renderer_ = boost::make_shared<WindowRenderer>(logger(), VK_FORMAT_UNDEFINED,
 | `WindowRenderer` | The renderer. It holds the frame being built and draws it with `renderFrame()`. |
 | `DeviceContext` | Everything that needs only the GPU: textures, renderers, the frames in flight. `WindowRenderer::context()` returns it. |
 | `WindowContext` | A `DeviceContext` that draws into a window. It adds the swapchain and presenting. An app rarely names it. |
-| `Frame` | Everything to draw for one image, as a list of passes. `WindowRenderer::frame()` returns it. |
-| `Pass` | One pass of a frame: where it draws, how it clears, its camera, and the draw items in it. |
-| `DrawItem` | A description of one draw. The drawing primitives create these for you. |
+| `frame::Frame` | Everything to draw for one image, as a list of passes. `WindowRenderer::frame()` returns it. |
+| `frame::Pass` | One pass of a frame: where it draws, how it clears, its camera, and the draw items in it. |
+| `frame::DrawItem` | A description of one draw. The drawing primitives create these for you. |
 
 A *frame in flight* is a frame the CPU has finished recording but the GPU may still be drawing.
 There are two. Anything an app hands to the renderer can still be in use by the GPU for up to
@@ -60,10 +60,10 @@ pays nothing for it. `quads()` and `textures()` are null before `initialize()`.
 
 ## Cameras
 
-A pass draws through the view and projection given to `Pass::camera(view, projection)`. Lines,
-world quads and lit meshes use it; canvas quads do not. Build both matrices with
-`v3d::type::camera::Camera`, which produces Vulkan clip space (y down, depth from 0 to 1).
-The camera's conventions, including its handedness, are in [Cameras.md](../Cameras.md).
+A pass draws through the view and projection given to `frame::Pass::camera(view, projection)`.
+Lines, world quads and lit meshes use it; canvas quads do not. Build both matrices with
+`v3d::type::camera::Camera`, which produces Vulkan clip space (y down, depth from 0 to 1). The
+camera's conventions, including its handedness, are in [Cameras.md](../Cameras.md).
 
 To draw billboards, the entity functions in [Entities.md](Entities.md) need the camera's right
 and up vectors and a depth axis.
@@ -78,6 +78,6 @@ and up vectors and a depth axis.
   has its own depth.
 - **Wide lines.** Lines are one pixel.
 - **A transfer queue.** Uploads run on the graphics queue. None waits for the GPU, and
-  `Textures` and `MeshRegistry` spread theirs over frames under a budget.
+  `resource::Textures` and `resource::MeshRegistry` spread theirs over frames under a budget.
 - **A lit scene in an app.** The lit pass, shadows and the grade are exercised by the device
   tests in `api/render/tests/device`; no app in the tree draws one.

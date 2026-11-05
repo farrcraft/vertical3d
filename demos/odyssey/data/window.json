@@ -1,6 +1,7 @@
 {
   "window": {
     "width": 1280,
-    "height": 768
+    "height": 768,
+    "icon": "icon.svg"
   }
 }

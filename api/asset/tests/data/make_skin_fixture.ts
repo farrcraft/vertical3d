@@ -122,7 +122,7 @@ function strip(writer: Writer, z: number, skinIndex: number[], storage: Storage)
             while (pairs.length < 4) {
                 pairs.push([0, 0]);
             }
-            joints.push(storage.joints(pairs.map(([joint]) => skinIndex[joint])));
+            joints.push(storage.joints(pairs.map(([joint]) => skinIndex[joint] ?? 0)));
             weights.push(storage.weights(pairs.map(([, weight]) => weight)));
         }
     }
@@ -149,7 +149,7 @@ function strip(writer: Writer, z: number, skinIndex: number[], storage: Storage)
 
 /** The inverse bind matrices of the skeleton's joints, in the order the skin lists them. */
 function inverseBinds(writer: Writer, skinOrder: number[], armatureZ: number): number {
-    const matrices = skinOrder.flatMap((joint) => translation(0, -BIND_Y[joint], -armatureZ));
+    const matrices = skinOrder.flatMap((joint) => translation(0, -(BIND_Y[joint] ?? 0), -armatureZ));
     return writer.accessor(f32(...matrices), FLOAT, skinOrder.length, 'MAT4');
 }
 

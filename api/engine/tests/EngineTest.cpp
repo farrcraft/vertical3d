@@ -16,12 +16,14 @@
 #include <api/engine/WindowSize.h>
 #include <api/event/State.h>
 #include <api/event/Type.h>
+#include <api/event/kind/WindowResize.h>
 #include <api/log/Logger.h>
 
 #include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -253,6 +255,34 @@ class MinimizedEngine final : public v3d::engine::Engine {
     }
 };
 
+/**
+ * An engine with no features that counts the frames it renders. It stops itself after
+ * LIMIT frames, so a loop the capture does not end still returns.
+ **/
+class CapturingEngine final : public v3d::engine::Engine {
+ public:
+    static constexpr int LIMIT = 20;
+
+    explicit CapturingEngine(const std::string& path) :
+        Engine(path) {
+    }
+
+    bool render() override {
+        rendered_++;
+        if (rendered_ == LIMIT) {
+            quit();
+        }
+        return true;
+    }
+
+    int rendered_ = 0;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+};
+
 v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
     return v3d::event::Source(name, context, state);
@@ -470,6 +500,43 @@ BOOST_AUTO_TEST_CASE(engine_a_closed_window_can_be_held_test) {
 
     engine.quit();
     BOOST_CHECK(engine.quitting());
+}
+
+/**
+ * No window can be added before the engine's own is open, and removing one it never added
+ * changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_adds_no_window_without_its_own_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_CHECK(!engine.addWindow(glm::ivec2(160, 120)));
+    engine.removeWindow(nullptr);
+}
+
+/**
+ * A resize names the window that changed size.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_resize_names_its_window_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    std::vector<v3d::event::kind::WindowResize> resized;
+    struct Resizes {
+        std::vector<v3d::event::kind::WindowResize>* into;
+        void take(const v3d::event::kind::WindowResize& event) const {
+            into->push_back(event);
+        }
+    } resizes{ &resized };
+    engine.dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Resizes::take>(resizes);
+
+    SDL_Event resize{};
+    resize.type = SDL_EVENT_WINDOW_RESIZED;
+    resize.window.windowID = 4;
+    resize.window.data1 = 300;
+    resize.window.data2 = 200;
+    engine.offer(resize);
+    BOOST_REQUIRE_EQUAL(resized.size(), 1U);
+    BOOST_CHECK_EQUAL(resized[0].window(), 4U);
+    BOOST_CHECK_EQUAL(resized[0].width(), 300);
 }
 
 /**
@@ -878,6 +945,58 @@ BOOST_AUTO_TEST_CASE(engine_waits_while_the_window_is_minimized_test) {
         BOOST_CHECK_EQUAL(engine.ticks_, 2);
     }
     SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * The frame the command line names is handed to the capturer just before it is rendered, and
+ * the loop ends once that frame is done. The capturer is given the file the command line names.
+ **/
+BOOST_AUTO_TEST_CASE(engine_captures_the_named_frame_and_then_quits_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        CapturingEngine engine(appPath("good"));
+        engine.launch({ .capture = "frame.png", .captureAfter = 3 });
+        std::vector<std::pair<std::string, int>> captured;
+        engine.capturer([&engine, &captured](const std::string& file) {
+            captured.emplace_back(file, engine.rendered_);
+            return true;
+        });
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(engine.eventLoop());
+
+        BOOST_REQUIRE_EQUAL(captured.size(), 1U);
+        BOOST_CHECK_EQUAL(captured[0].first, "frame.png");
+        BOOST_CHECK_EQUAL(captured[0].second, 2);
+        BOOST_CHECK_EQUAL(engine.rendered_, 3);
+        BOOST_TEST(engine.quitting());
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * A capture asked for when nothing that draws has taken it fails the loop, rather than ending
+ * with no picture and a success.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_capture_nothing_can_take_fails_the_loop_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        CapturingEngine engine(appPath("good"));
+        engine.launch({ .capture = "frame.png", .captureAfter = 3 });
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(!engine.eventLoop());
+        BOOST_CHECK_EQUAL(engine.rendered_, 2);
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * run() given a command line the engine refuses logs it and starts nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_run_refuses_a_command_line_it_cannot_read_test) {
+    Lifecycle counts;
+    const char* arguments[] = { "engine_test.exe", "--capture-after", "soon" };
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>(3, const_cast<char**>(arguments), lifecycle(), &counts), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(counts.started, 0);
 }
 
 };  // namespace

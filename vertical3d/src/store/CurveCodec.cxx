@@ -7,8 +7,8 @@
 
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cmath>
 #include <cstddef>
@@ -198,8 +198,8 @@ bool CurveCodec::decode(const Blobs& blobs, v3d::curve::Curves* curves, std::str
 
 /**
  **/
-scene::Item::Kind CurveCodec::kind() const noexcept {
-    return scene::Item::Kind::Curve;
+scene::item::Item::Kind CurveCodec::kind() const noexcept {
+    return scene::item::Item::Kind::Curve;
 }
 
 /**
@@ -222,8 +222,8 @@ bool CurveCodec::buffered() const noexcept {
 
 /**
  **/
-boost::json::object CurveCodec::payload(const scene::Item& item) const {
-    const scene::Curve& curve = static_cast<const scene::Curve&>(item);
+boost::json::object CurveCodec::payload(const scene::item::Item& item) const {
+    const scene::item::Curve& curve = static_cast<const scene::item::Curve&>(item);
     boost::json::object payload;
     payload["renders"] = curve.style().renders;
     payload["width"] = curve.style().width;
@@ -233,8 +233,8 @@ boost::json::object CurveCodec::payload(const scene::Item& item) const {
 
 /**
  **/
-std::vector<Buffer> CurveCodec::buffers(const scene::Item& item) const {
-    const v3d::curve::Curves& curves = *static_cast<const scene::Curve&>(item).geometry();
+std::vector<Buffer> CurveCodec::buffers(const scene::item::Item& item) const {
+    const v3d::curve::Curves& curves = *static_cast<const scene::item::Curve&>(item).geometry();
     Buffer records{ .role = "curves", .count = curves.size() };
     Buffer points{ .role = "points" };
     Buffer handles{ .role = "handles" };
@@ -291,11 +291,11 @@ std::vector<Buffer> CurveCodec::buffers(const scene::Item& item) const {
 
 /**
  **/
-boost::shared_ptr<scene::Item> CurveCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
+boost::shared_ptr<scene::item::Item> CurveCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
     if (!exactly(payload, { "renders", "width", "resolution" }, problem)) {
         return nullptr;
     }
-    scene::Curve::Style style;
+    scene::item::Curve::Style style;
     float resolution = 0.0F;
     if (!payload.at("renders").is_bool() || !numbers(payload.at("width"), 1, &style.width) ||
         !numbers(payload.at("resolution"), 1, &resolution)) {
@@ -317,7 +317,7 @@ boost::shared_ptr<scene::Item> CurveCodec::read(const boost::json::object& paylo
     if (!decode(blobs, geometry.get(), problem)) {
         return nullptr;
     }
-    const boost::shared_ptr<scene::Curve> curve = boost::make_shared<scene::Curve>(geometry);
+    const boost::shared_ptr<scene::item::Curve> curve = boost::make_shared<scene::item::Curve>(geometry);
     curve->style(style);
     return curve;
 }

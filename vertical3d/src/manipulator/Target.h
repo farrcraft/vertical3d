@@ -8,11 +8,11 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/type/Transform.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 
@@ -75,7 +75,7 @@ class Target final {
      * them, whose normals a move changes.
      **/
     struct Part {
-        boost::shared_ptr<scene::Mesh> mesh;
+        boost::shared_ptr<scene::item::Mesh> mesh;
         std::vector<v3d::brep::Index> vertices;
         std::vector<v3d::brep::Index> faces;
         // where the mesh is in the world
@@ -87,7 +87,7 @@ class Target final {
      * by its part number.
      **/
     struct CurvePart {
-        boost::shared_ptr<scene::Curve> curve;
+        boost::shared_ptr<scene::item::Curve> curve;
         std::vector<v3d::brep::Index> points;
         std::vector<v3d::brep::Index> handles;
         // where the curve is in the world
@@ -122,7 +122,7 @@ class Target final {
      * @param components which parts of each item are selected
      * @param evaluation where the items are
      **/
-    static Target components(const scene::Items& items, selection::SelectMask kind, const scene::Components& components,
+    static Target components(const scene::Items& items, selection::SelectMask kind, const scene::item::Components& components,
         const scene::Evaluation& evaluation);
 
     /**
@@ -188,7 +188,7 @@ class Target final {
      * The vertices the selected components of one kind of a mesh item bring, each once, in index
      * order. A part the geometry does not hold brings nothing.
      **/
-    static std::vector<v3d::brep::Index> selectedVertices(const scene::Mesh& item, selection::SelectMask kind, const scene::Components& components);
+    static std::vector<v3d::brep::Index> selectedVertices(const scene::item::Mesh& item, selection::SelectMask kind, const scene::item::Components& components);
     /**
      * The faces any of the vertices is a corner of, each once, in index order.
      **/
@@ -197,12 +197,12 @@ class Target final {
      * The selected control points of a curve item, by part number, rising. A part the geometry does
      * not hold is left out.
      **/
-    static std::vector<v3d::brep::Index> selectedPoints(const scene::Curve& item, const scene::Components& components);
+    static std::vector<v3d::brep::Index> selectedPoints(const scene::item::Curve& item, const scene::item::Components& components);
     /**
      * The selected Bezier handles of a curve item, by part number, rising. A part that names no
      * handle the geometry holds is left out.
      **/
-    static std::vector<v3d::brep::Index> selectedHandles(const scene::Curve& item, const scene::Components& components);
+    static std::vector<v3d::brep::Index> selectedHandles(const scene::item::Curve& item, const scene::item::Components& components);
 
     scene::Items items_;
     // for an object target, the world matrix of each object's parent, in the order of items_

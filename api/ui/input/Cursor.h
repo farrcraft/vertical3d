@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <vector>
 
@@ -48,21 +48,21 @@ namespace v3d::ui::input {
  * Everything is tested against the boxes the last draw left on the components, so nothing
  * is picked until something has been drawn.
  *
- * A cursor measures text so that a press inside a text box can place the caret. It takes
- * the same Measure that ComponentRenderer and Immediate take. A cursor given none still
- * routes every press, and a text box then keeps its caret where it was.
+ * A cursor lays text out so that a press inside a text box can place the caret. It takes
+ * the same type ComponentRenderer draws the ui's text in. A cursor given none still routes
+ * every press, and a text box then keeps its caret where it was.
  **/
 class Cursor final {
  public:
     /**
      * @param ui the containers to offer a point to, in the order they were loaded
      * @param dispatcher where a picked component's event is sent
-     * @param measure how wide a run of text is when the app draws it, so that a point
-     *        inside a text box becomes a caret position. Pass the callback the renderer
-     *        drawing this ui was given, so that the two agree about where a character is
+     * @param type what the ui's text is drawn in, so that a point inside a text box becomes a
+     *        caret position. Pass the type the renderer drawing this ui was given, so that the
+     *        two agree about where a character is
      **/
     Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-        const paint::Measure& measure = paint::Measure());
+        const paint::Type& type = paint::Type());
 
     /**
      * The cursor moved.
@@ -148,6 +148,13 @@ class Cursor final {
     void act(const boost::shared_ptr<Component>& component, const glm::vec2& point);
 
     /**
+     * @return what in a container is under a point, as the container picks it, or nothing.
+     *         A closed menu bar's strip beside its labels is nothing, so what a later container
+     *         sets there takes the cursor
+     **/
+    static boost::shared_ptr<Component> picked(const Container& container, const glm::vec2& point);
+
+    /**
      * Send a component's bound event, if it has one bound.
      **/
     void dispatch(const boost::shared_ptr<Component>& component) const;
@@ -162,7 +169,7 @@ class Cursor final {
      * Put a box's caret where a point landed, or take the selection out to there when the
      * press that started it is still down.
      *
-     * A cursor with no Measure leaves the box alone.
+     * A cursor with no type leaves the box alone.
      *
      * @param extend whether the anchor stays where it was, as it does during a drag
      **/
@@ -171,7 +178,7 @@ class Cursor final {
 
     boost::shared_ptr<Interface> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
-    paint::Measure measure_;
+    paint::Type type_;
     // weak, because the component belongs to the container it was loaded into. A held press
     // must not keep alive a component whose container was unloaded
     boost::weak_ptr<Component> held_;

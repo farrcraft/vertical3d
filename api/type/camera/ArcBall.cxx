@@ -54,19 +54,11 @@ void ArcBall::click(const glm::vec2& point) {
 glm::quat ArcBall::drag(const glm::vec2& point) {
     end_ = map(point);
 
-    glm::quat rot;
-    glm::vec3 perp;
-
-    perp = glm::cross(start_, end_);
-
-    if (glm::length(perp) > glm::epsilon<float>()) {
-        rot[0] = perp[0];
-        rot[1] = perp[1];
-        rot[2] = perp[2];
-        rot[3] = glm::dot(start_, end_);
-    } else {
-        rot[0] = rot[1] = rot[2] = rot[3] = 0.0F;
-    }
+    const glm::vec3 perp = glm::cross(start_, end_);
+    // glm::quat takes w first, then x, y and z
+    const glm::quat rot = glm::length(perp) > glm::epsilon<float>()
+        ? glm::quat(glm::dot(start_, end_), perp.x, perp.y, perp.z)
+        : glm::quat(0.0F, 0.0F, 0.0F, 0.0F);
     start_ = end_;
     return rot;
 }

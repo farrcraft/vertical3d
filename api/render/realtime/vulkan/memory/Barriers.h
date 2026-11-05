@@ -56,6 +56,15 @@ VkImageMemoryBarrier2 depthForSampling(VkImage image);
 VkImageMemoryBarrier2 forUpload(VkImage image);
 
 /**
+ * Out of SHADER_READ_ONLY into TRANSFER_DST, for an upload to copy into a region of a texture
+ * that frames already submitted may still be sampling. What the image held is kept.
+ *
+ * Its first scope reaches every command submitted before it on the queue, so the copy waits on
+ * the device for the fragment shaders of those frames, and the host never waits.
+ **/
+VkImageMemoryBarrier2 forRegionUpload(VkImage image);
+
+/**
  * Out of TRANSFER_DST once an upload has copied in, into SHADER_READ_ONLY.
  **/
 VkImageMemoryBarrier2 uploadedForSampling(VkImage image);
@@ -66,7 +75,9 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image);
  * A depth readback names only the depth aspect. For a format that also has stencil, moving one
  * aspect alone relies on the device enabling separateDepthStencilLayouts.
  *
+ * @param image the image to read back
  * @param aspect colour or depth, which decides what writes are waited on
+ * @param from the layout the frame left the image in
  **/
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from);
 

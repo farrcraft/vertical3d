@@ -66,6 +66,9 @@ const boost::json::array* optionalArray(const v3d::log::Logger& logger, const bo
  * A string member the document cannot do without, or nothing when it is missing or not a
  * string.
  *
+ * @param logger where a missing or mistyped member is reported as an error
+ * @param entry the object the member is read from
+ * @param key the member's name
  * @param what the thing that needs it, for the log
  **/
 std::optional<std::string> requiredString(const v3d::log::Logger& logger, const boost::json::object& entry,
@@ -80,6 +83,8 @@ const boost::json::array* requiredArray(const v3d::log::Logger& logger, const bo
 /**
  * An entry of an array that has to be an object, or null when it is not one.
  *
+ * @param logger where an entry that is not an object is reported as an error
+ * @param entry the array entry read
  * @param what what the array holds, for the log
  **/
 const boost::json::object* requiredObject(const v3d::log::Logger& logger, const boost::json::value& entry,

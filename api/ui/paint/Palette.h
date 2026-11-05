@@ -40,8 +40,8 @@ class Palette final {
     using Scale = std::array<glm::vec4, steps>;
 
     /**
-     * Which ui model the roles are for. The immediate layer's tracks and tabs sit at the level
-     * of its widgets, a step above the retained ui's.
+     * Which ui model the roles are for. The immediate layer's tracks sit at the level of its
+     * widgets, a step above the retained ui's.
      **/
     enum class Use : std::uint8_t {
         Chrome,
@@ -57,7 +57,7 @@ class Palette final {
     };
 
     /** How many colour roles a Dressing has, each of which a palette gives a colour. **/
-    static constexpr std::size_t roleCount = 26;
+    static constexpr std::size_t roleCount = 27;
 
     using Roles = std::array<Role, roleCount>;
 

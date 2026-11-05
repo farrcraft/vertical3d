@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 
 #include "AreaLayout.h"
 
@@ -31,10 +32,19 @@ struct FrameLook final {
 };
 
 /**
+ * A box the frame fills, such as an area's header or its strip of tabs.
+ **/
+struct Band final {
+    glm::vec4 box{ 0.0F };     /**< x, y, width, height in pixels **/
+    glm::vec4 colour{ 0.0F };
+};
+
+/**
  * Draw the frame around a layout's areas, over the views they show.
  *
- * The gaps are filled, and each area's corners are rounded by covering what lies outside the
- * rounding in the gap's colour. A line runs just inside each area's edge: a hairline, or the
+ * The gaps are filled, then the bands, which lie across the tops of areas. Each area's corners
+ * are rounded by covering what lies outside the rounding in the gap's colour, which rounds a
+ * band at an area's corner with it. A line runs just inside each area's edge: a hairline, or the
  * accent for the active area. A lit divider, such as one under the cursor or held, is filled
  * with the accent. Where a dragged tab would land is covered in the landing colour, over the
  * rest. An area with no room draws nothing.
@@ -42,9 +52,10 @@ struct FrameLook final {
  * @param active the index of the active area, or nothing
  * @param lit the divider to light, or nothing
  * @param landing where a dragged tab would land, or nothing
+ * @param bands the boxes filled under the lines
  **/
 void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& layout, const FrameLook& look,
     std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit,
-    const std::optional<glm::vec4>& landing = std::nullopt);
+    const std::optional<glm::vec4>& landing = std::nullopt, std::span<const Band> bands = {});
 
 };  // namespace v3d::editor::view

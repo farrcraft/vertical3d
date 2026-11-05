@@ -6,6 +6,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -128,6 +129,116 @@ BOOST_AUTO_TEST_CASE(a_slider_follows_the_cursor_along_its_track) {
     frame(&ui, &canvas, release(glm::vec2(500.0F, 80.0F)), panel);
     frame(&ui, &canvas, hover(glm::vec2(100.0F, 10.0F)), panel);
     BOOST_CHECK_CLOSE(volume, 2.0F, 0.001F);
+}
+
+/**
+ * A surface says where the cursor is and what its press did: it goes down on the surface, stays
+ * held off it, and comes up wherever the cursor is.
+ **/
+BOOST_AUTO_TEST_CASE(a_surface_reports_its_press) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    v3d::ui::Immediate::Surface seen;
+    const auto panel = [&]() { seen = ui.surface("track", 40.0F); };
+
+    // hover is found from the frame before, as every widget's is
+    frame(&ui, &canvas, hover(glm::vec2(100.0F, 10.0F)), panel);
+    frame(&ui, &canvas, hover(glm::vec2(100.0F, 10.0F)), panel);
+    BOOST_CHECK(seen.max.x - seen.min.x > 300.0F);
+    BOOST_CHECK_EQUAL(seen.max.y - seen.min.y, 40.0F);
+    BOOST_CHECK(seen.hovered);
+    BOOST_CHECK(!seen.held);
+
+    frame(&ui, &canvas, press(glm::vec2(100.0F, 10.0F)), panel);
+    BOOST_CHECK(seen.pressed);
+    BOOST_CHECK(seen.held);
+
+    // a drag off the surface keeps hold of it, and says where the press went down
+    frame(&ui, &canvas, hold(glm::vec2(150.0F, 200.0F)), panel);
+    BOOST_CHECK(!seen.pressed);
+    BOOST_CHECK(!seen.hovered);
+    BOOST_CHECK(seen.held);
+    BOOST_CHECK(seen.cursor == glm::vec2(150.0F, 200.0F));
+    BOOST_CHECK(seen.pressAt == glm::vec2(100.0F, 10.0F));
+
+    frame(&ui, &canvas, release(glm::vec2(150.0F, 200.0F)), panel);
+    BOOST_CHECK(seen.released);
+    frame(&ui, &canvas, hover(glm::vec2(150.0F, 200.0F)), panel);
+    BOOST_CHECK(!seen.held);
+    BOOST_CHECK(!seen.released);
+}
+
+/**
+ * A surface given the room below fills the rest of its region without making it scroll, and
+ * reads the wheel only while the cursor is on it.
+ **/
+BOOST_AUTO_TEST_CASE(a_surface_fills_the_room_below) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    v3d::ui::Immediate::Surface seen;
+    float width = 0.0F;
+    float outside = -1.0F;
+    const auto panel = [&]() {
+        outside = ui.roomBelow();
+        ui.region("panel", { .position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(300.0F, 200.0F) }, 1.0F);
+        ui.button("Above");
+        width = ui.rowWidth();
+        seen = ui.surface("plot", ui.roomBelow());
+        ui.endRegion();
+    };
+    v3d::ui::Immediate::Input turned = hover(glm::vec2(100.0F, 150.0F));
+    turned.wheel = 2.0F;
+
+    frame(&ui, &canvas, turned, panel);
+    const float before = width;
+    frame(&ui, &canvas, turned, panel);
+    frame(&ui, &canvas, turned, panel);
+    BOOST_CHECK_EQUAL(outside, 0.0F);
+    BOOST_CHECK(seen.max.y > 150.0F);
+    BOOST_CHECK(seen.max.y <= 200.0F);
+    // a region that scrolled would have taken its bar's width out of the row
+    BOOST_CHECK_EQUAL(width, before);
+    BOOST_CHECK(seen.hovered);
+    BOOST_CHECK_EQUAL(seen.wheel, 2.0F);
+
+    turned.cursor = glm::vec2(350.0F, 150.0F);
+    frame(&ui, &canvas, turned, panel);
+    frame(&ui, &canvas, turned, panel);
+    BOOST_CHECK_EQUAL(seen.wheel, 0.0F);
+}
+
+/**
+ * A surface's shapes and text are drawn where they are asked for, and a shape with nothing to
+ * fill draws nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_surface_is_drawn_into) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    std::vector<Written> written;
+    v3d::ui::Immediate ui = build(&written);
+    std::size_t before = 0;
+    std::size_t after = 0;
+    std::size_t empty = 0;
+    const auto panel = [&]() {
+        const v3d::ui::Immediate::Surface track = ui.surface("track", 40.0F);
+        before = canvas.vertices().size();
+        ui.fill(track.min, track.max, glm::vec4(1.0F));
+        ui.line(track.min, track.max, 1.0F, glm::vec4(1.0F));
+        ui.diamond(glm::vec2(50.0F, 20.0F), 5.0F, glm::vec4(1.0F));
+        after = canvas.vertices().size();
+        ui.diamond(glm::vec2(50.0F, 20.0F), 0.0F, glm::vec4(1.0F));
+        empty = canvas.vertices().size();
+        ui.textAt("24", glm::vec2(30.0F, 5.0F), glm::vec4(1.0F));
+    };
+
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_CHECK(after > before);
+    BOOST_CHECK_EQUAL(empty, after);
+    BOOST_REQUIRE(wrote(written, "24"));
+    BOOST_CHECK_EQUAL(written.back().pen.x, 30.0F);
+    BOOST_CHECK_EQUAL(ui.measure("24"), 2.0F * characterWidth);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

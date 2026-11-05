@@ -9,8 +9,8 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/Polygon.h>
@@ -182,7 +182,7 @@ struct Run {
 /**
  * How many pixels along a row are partly covered. That count is the width of an edge.
  **/
-unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, const Run & run);
+unsigned int partial(const v3d::render::offline::film::FrameBuffer & planes, unsigned int coverage, const Run & run);
 
 /** The first and last columns of a block, inclusive. **/
 struct Columns {
@@ -193,7 +193,7 @@ struct Columns {
 /**
  * The largest difference between two frames over every plane of a block of columns.
  **/
-float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
+float largest(const v3d::render::offline::film::FrameBuffer & first, const v3d::render::offline::film::FrameBuffer & second,
     const Columns & columns);
 
 /**
@@ -215,7 +215,7 @@ void motionScene(v3d::moya::state::RenderContext & rc);
  * right edge reaches pixels 32 to 43. Under a one pixel box the coverage climbs a twelfth a
  * pixel from 8, falls a twelfth a pixel from 32, and is whole between.
  **/
-void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row);
+void checkRamp(const v3d::render::offline::film::FrameBuffer & planes, unsigned int coverage, unsigned int row);
 
 /**
  * Write what a case rendered to a file under data_out, so a failure can be looked at.
@@ -237,7 +237,7 @@ struct Scene {
 /**
  * A frame read from a file, under the hider the file names unless the caller names one first.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene);
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> read(const Scene & scene);
 
 boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::state::RenderContext & rc);
 

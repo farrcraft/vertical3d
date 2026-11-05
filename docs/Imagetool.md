@@ -39,3 +39,16 @@ match the files they came from.
 **An unpack writes one png for each sprite**, to `<sheet>/<sprite>.png` beside the document.
 The sheet's image is read from beside the document, and has to be the size the sheet states. A
 sheet or sprite name with a directory in it is refused.
+
+## appicon
+
+imagetool's directory also builds `appicon`, which the build runs to make each app's `.ico`.
+It draws an SVG at each size an icon file holds and writes the file:
+
+```
+appicon icon.svg app.ico
+```
+
+It exits with a failure status and a message when the SVG cannot be read or the file cannot
+be written. It is a step of the build rather than an app, so it has no icon of its own.
+[Build.md](contributing/Build.md#app-icons) says where each app's SVG lives.

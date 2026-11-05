@@ -8,8 +8,8 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -102,7 +102,7 @@ struct Headless {
      * @param capture where the copy goes
      * @param read which of the target's images is copied
      **/
-    void draw(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+    void draw(const render::realtime::frame::Frame& frame, const render::realtime::frame::RenderTarget& target,
         render::realtime::vulkan::frame::Capture* capture, Read read = Read::Colour);
 
     /**
@@ -114,7 +114,7 @@ struct Headless {
      * @param path where the png is written
      * @return the picture, or null when the png cannot be written or read
      **/
-    boost::shared_ptr<image::Image> picture(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+    boost::shared_ptr<image::Image> picture(const render::realtime::frame::Frame& frame, const render::realtime::frame::RenderTarget& target,
         const std::string& path);
 
     /**

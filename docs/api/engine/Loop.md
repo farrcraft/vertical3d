@@ -97,4 +97,4 @@ runs. Two scopes with the same name in one frame add together.
 
 `ui::shell::StatisticsOverlay` draws these numbers. See [ui/](../ui/README.md).
 
-Background: [ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)
+Background: [ADR-0032](../../adr/engine/0032-loop-fixed-step-simulation-variable-rate-rendering.md)

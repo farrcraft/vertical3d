@@ -7,8 +7,8 @@
 
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -18,10 +18,8 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/mat3x3.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::editor::command {
@@ -30,13 +28,13 @@ namespace v3d::editor::command {
  **/
 Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& items) :
     scene_(scene),
-    group_(boost::make_shared<scene::Group>()) {
+    group_(boost::make_shared<scene::item::Group>()) {
     group_->name("Group");
     if (!scene_) {
         return;
     }
     scene::Items gathered;
-    for (const boost::shared_ptr<scene::Item>& item : scene_->uppermost(items)) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene_->uppermost(items)) {
         if (scene_->item(item->id()) == item) {
             gathered.push_back(item);
         }
@@ -45,9 +43,9 @@ Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& i
         return;
     }
 
-    const boost::shared_ptr<scene::Item> first = scene_->parent(gathered.front()->id());
+    const boost::shared_ptr<scene::item::Item> first = scene_->parent(gathered.front()->id());
     const bool shared = std::all_of(gathered.begin(), gathered.end(),
-        [&](const boost::shared_ptr<scene::Item>& item) { return scene_->parent(item->id()) == first; });
+        [&](const boost::shared_ptr<scene::item::Item>& item) { return scene_->parent(item->id()) == first; });
     if (shared) {
         parent_ = first;
     }
@@ -59,7 +57,7 @@ Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& i
     const scene::Evaluation evaluation = scene_->evaluate();
     glm::vec3 centre(0.0F);
     std::vector<v3d::type::Transform> shown;
-    for (const boost::shared_ptr<scene::Item>& item : gathered) {
+    for (const boost::shared_ptr<scene::item::Item>& item : gathered) {
         const Member member{ .item = item, .parent = scene_->parent(item->id()), .before = item->placement() };
         shown.push_back(evaluation.pose(*item).placement);
         centre += member.parent == parent_ ? shown.back().position : glm::vec3(evaluation.placed(item->id()).world[3]);
@@ -76,13 +74,8 @@ Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& i
             member.after.position -= centre;
             continue;
         }
-        // taken apart into a rotation and the scale along the item's own axes. Whatever the
-        // two cannot hold is a shear, and is lost
-        const glm::mat4& world = evaluation.placed(member.item->id()).world;
-        member.after.position = glm::vec3(world[3]) - centre;
-        member.after.rotation = scene::orientation(world);
-        const glm::mat3 stretch = glm::transpose(glm::mat3_cast(member.after.rotation)) * glm::mat3(world);
-        member.after.scale = glm::vec3(stretch[0][0], stretch[1][1], stretch[2][2]);
+        // the world matrix less the group's offset, taken apart. Any shear it holds is lost
+        member.after = scene::placement(glm::translate(glm::mat4(1.0F), -centre) * evaluation.placed(member.item->id()).world);
     }
 }
 
@@ -126,7 +119,7 @@ std::string Group::name() const {
 
 /**
  **/
-const boost::shared_ptr<scene::Group>& Group::group() const noexcept {
+const boost::shared_ptr<scene::item::Group>& Group::group() const noexcept {
     return group_;
 }
 

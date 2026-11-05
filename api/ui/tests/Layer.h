@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <functional>
@@ -28,7 +29,7 @@ namespace v3d::ui::layer {
  * A fixed width per character, so a widget's width, and where a press lands in a line, is
  * predictable.
  **/
-const float characterWidth = 10.0F;
+const float characterWidth = v3d::ui::typeset::characterWidth;
 
 /**
  * Where a field's line starts: the default padding in from the widget's left edge, which is
@@ -47,33 +48,22 @@ constexpr glm::vec2 firstRow(100.0F, 10.0F);
 constexpr glm::vec2 nowhere(390.0F, 290.0F);
 
 /**
- * What the layer asked to be written, so a test can read a panel back without a font, an
- * atlas or a device.
+ * What the layer wrote, so a test can read a panel back without a device.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A layer that measures at ten pixels a character and records what it wrote.
  **/
 inline v3d::ui::Immediate build(std::vector<Written>* written) {
-    return v3d::ui::Immediate(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written->push_back(Written{std::string(text), pen, colour});
-        });
+    return v3d::ui::Immediate(v3d::ui::typeset::mono(written));
 }
 
 /**
- * A layer that measures at ten pixels a character and writes nothing.
+ * A layer that measures at ten pixels a character.
  **/
 inline v3d::ui::Immediate build() {
-    return v3d::ui::Immediate(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    return v3d::ui::Immediate(v3d::ui::typeset::mono());
 }
 
 /**

@@ -6,7 +6,7 @@
 #include "WindowContext.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Present.h>
+#include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/SharedInstance.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -39,11 +40,11 @@ boost::shared_ptr<vulkan::device::Device> WindowContext::deviceFor(const boost::
 /**
  **/
 WindowContext::WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
-    VkFormat preferred, vulkan::memory::Allocator::Kind allocations, Present present) :
+    VkFormat preferred, vulkan::memory::Allocator::Kind allocations, frame::Present present) :
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
     swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device(), static_cast<uint32_t>(window_->width()),
-        static_cast<uint32_t>(window_->height()), preferred, presentModes(present));
+        static_cast<uint32_t>(window_->height()), preferred, frame::presentModes(present));
     presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, swapchain_, ring());
     describe(swapchain_->format(), swapchain_->extent());
 }
@@ -82,9 +83,74 @@ void WindowContext::resize() {
 
 /**
  **/
-void WindowContext::present(Present present) {
-    swapchain_->request(presentModes(present));
+void WindowContext::present(frame::Present present) {
+    swapchain_->request(frame::presentModes(present));
     resize();
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::window::Window> WindowContext::Attached::window() const noexcept {
+    return window_;
+}
+
+/**
+ **/
+boost::shared_ptr<vulkan::frame::Swapchain> WindowContext::Attached::swapchain() const noexcept {
+    return swapchain_;
+}
+
+/**
+ **/
+boost::shared_ptr<WindowContext::Attached> WindowContext::attach(const boost::shared_ptr<v3d::window::Window>& window) {
+    if (!window || window->sdl() == nullptr) {
+        throw std::runtime_error("A window is presented to only once it has been created");
+    }
+    const boost::shared_ptr<vulkan::device::Surface> surface =
+        boost::make_shared<vulkan::device::Surface>(sharedInstance(logger()), window->sdl());
+    if (!device()->presents(*surface)) {
+        logger()->get()->error("The device cannot present to another window's surface");
+        return nullptr;
+    }
+    // every pipeline is built against the context's format, so the window has to take it
+    const boost::shared_ptr<vulkan::frame::Swapchain> swapchain = boost::make_shared<vulkan::frame::Swapchain>(logger(), device(),
+        static_cast<uint32_t>(window->width()), static_cast<uint32_t>(window->height()), swapchain_->format(),
+        std::vector<VkPresentModeKHR>{ swapchain_->presenting() }, surface);
+    if (swapchain->valid() && swapchain->format() != swapchain_->format()) {
+        logger()->get()->error("Another window's surface does not offer the format the context draws in");
+        return nullptr;
+    }
+    const boost::shared_ptr<Attached> attached = boost::make_shared<Attached>();
+    attached->window_ = window;
+    attached->swapchain_ = swapchain;
+    attached->joined_ = presenter_->join(swapchain);
+    attached_.push_back(attached);
+    return attached;
+}
+
+/**
+ **/
+void WindowContext::detach(const boost::shared_ptr<Attached>& attached) {
+    if (!attached) {
+        return;
+    }
+    presenter_->leave(attached->joined_);
+    std::erase(attached_, attached);
+}
+
+/**
+ **/
+void WindowContext::refresh(const boost::shared_ptr<Attached>& attached) {
+    const int width = attached->window_->width();
+    const int height = attached->window_->height();
+    const bool regained = !attached->swapchain_->valid() && width > 0 && height > 0;
+    if (!attached->joined_->stale() && !regained) {
+        return;
+    }
+    // a swapchain is recreated only once the device has finished with its images
+    ring()->waitIdle();
+    attached->swapchain_->recreate(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    attached->joined_->reset();
 }
 
 };  // namespace v3d::render::realtime

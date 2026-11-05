@@ -111,7 +111,7 @@ BOOST_FIXTURE_TEST_CASE(statement_failure_test, Values) {
 BOOST_FIXTURE_TEST_CASE(statement_move_test, Values) {
     v3d::database::Statement first = database.prepare("SELECT 42");
     v3d::database::Statement second(std::move(first));
-    BOOST_CHECK(!first.valid());  // NOLINT(bugprone-use-after-move) - a moved-from statement is defined to be invalid
+    BOOST_CHECK(!first.valid());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move) - a moved-from statement is defined to be invalid
     BOOST_REQUIRE(second.valid());
 
     v3d::database::Statement third;

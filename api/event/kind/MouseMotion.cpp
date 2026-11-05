@@ -9,6 +9,8 @@
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 
+#include <cstdint>
+
 namespace v3d::event::kind {
 /**
  **/
@@ -16,7 +18,8 @@ MouseMotion::MouseMotion(const Moved& moved, const boost::shared_ptr<Context>& c
     Event("motion", context),
     position_(moved.position),
     motion_(moved.motion),
-    modifiers_(moved.modifiers) {
+    modifiers_(moved.modifiers),
+    window_(moved.window) {
 }
 
 /**
@@ -35,6 +38,12 @@ glm::vec2 MouseMotion::motion() const noexcept {
  **/
 const Modifiers& MouseMotion::modifiers() const noexcept {
     return modifiers_;
+}
+
+/**
+ **/
+std::uint32_t MouseMotion::window() const noexcept {
+    return window_;
 }
 
 };  // namespace v3d::event::kind

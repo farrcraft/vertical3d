@@ -12,6 +12,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A break, continue or return statement.
+ **/
 class Jump final : public Statement {
  public:
     enum class Where : std::uint8_t {
@@ -20,7 +23,7 @@ class Jump final : public Statement {
         RETURN
     };
 
-    Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::Position & at);
+    Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::source::Position & at);
 
     Where where = Where::RETURN;
     /** What a return returns, or null for a bare one and for the other two. **/

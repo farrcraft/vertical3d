@@ -7,7 +7,7 @@
 
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/ri/RIBHandler.h>

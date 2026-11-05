@@ -12,9 +12,12 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A call by name to one of the shader's own functions or to a standard library function.
+ **/
 class Call final : public Expression {
  public:
-    Call(const std::string & name, const v3d::render::offline::Position & at);
+    Call(const std::string & name, const v3d::render::offline::source::Position & at);
 
     std::string name;
     std::vector<ExpressionPtr> arguments;

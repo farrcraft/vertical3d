@@ -10,6 +10,7 @@ v3d_add_test(vertical3d
 	"view/ViewOverlayTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
+	"view/ThroughTest.cxx"
 
 	"scene/ItemTest.cxx"
 	"scene/ComponentsTest.cxx"
@@ -19,6 +20,9 @@ v3d_add_test(vertical3d
 	"scene/PropertiesTest.cxx"
 	"scene/CreateItemTest.cxx"
 	"scene/ImportTest.cxx"
+	"script/ArgumentsTest.cxx"
+	"script/TextTest.cxx"
+	"script/DeclarationsTest.cxx"
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
@@ -34,23 +38,39 @@ v3d_add_test(vertical3d
 	"control/AreaChromeTest.cxx"
 	"control/CommandSearchTest.cxx"
 	"control/IconSheetTest.cxx"
+	"control/DividerHintTest.cxx"
 	"control/NoticesTest.cxx"
 	"control/OutlinerTest.cxx"
 	"control/PropertiesEditorTest.cxx"
+	"control/TimelineEditorTest.cxx"
+	"control/GraphEditorTest.cxx"
+	"control/ConsoleEditorTest.cxx"
+	"app/CommandTableTest.cxx"
+	"app/ScriptingTest.cxx"
+	"app/ContextTest.cxx"
+	"app/WorkspaceSwitcherTest.cxx"
+	"control/RenderSettingsEditorTest.cxx"
+	"control/RenderViewTest.cxx"
 	"control/StatusBarTest.cxx"
 	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"
 
 	"command/StackTest.cxx"
 	"command/GroupTest.cxx"
+	"command/ParentTest.cxx"
+	"command/ShowTest.cxx"
 	"command/KeyTest.cxx"
+	"command/KeyedTest.cxx"
+	"command/KeysTest.cxx"
+	"command/TimelineTest.cxx"
 	"command/SettingsTest.cxx"
+	"command/UnitsTest.cxx"
 
 	"render/DelegateTest.cxx"
 	"render/BatchTest.cxx"
-	"render/PanelsTest.cxx"
 
 	"tool/CameraControlTest.cxx"
+	"tool/CameraLockTest.cxx"
 	"tool/PickerTest.cxx"
 	"tool/SelectTest.cxx"
 	"tool/RouterTest.cxx"
@@ -62,6 +82,7 @@ v3d_add_test(vertical3d
 target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_editor
 	v3dlib_animation
+	v3dlib_asset
 	v3dlib_brep
 	v3dlib_curve
 	v3dlib_database
@@ -101,3 +122,11 @@ target_link_libraries(v3dtest_vertical3d_device PRIVATE
 	v3dlib_render
 	v3dlib_type)
 set_tests_properties(vertical3d_device PROPERTIES SKIP_RETURN_CODE 77)
+
+# The panels' cases measure through the ui suite's monospaced fixture face.
+add_custom_command(TARGET v3dtest_vertical3d POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_SOURCE_DIR}/api/ui/tests/fonts"
+		"$<TARGET_FILE_DIR:v3dtest_vertical3d>/fonts"
+	COMMENT "Copying ui test fonts"
+	VERBATIM)

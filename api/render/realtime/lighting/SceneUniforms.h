@@ -38,6 +38,7 @@ struct SceneUniforms final {
  * The scene uniform for one frame, with a shadow map of one layer drawn through one matrix. The
  * one cascade reaches every distance, as fitShadowToView() or fitShadow() fits it.
  *
+ * @param settings the light, its bands and colours, and the shadow's strength and normal bias
  * @param lightViewProjection the matrix the shadow pass drew through, or the identity with a
  *        strength of zero when there is no shadow
  * @param texel the size of one shadow map texel in uv, which the shadow lookup steps by
@@ -47,6 +48,8 @@ SceneUniforms pack(const Settings& settings, const glm::mat4& lightViewProjectio
 /**
  * The scene uniform for one frame, with a shadow map of a layer for each cascade.
  *
+ * @param settings the light, its bands and colours, and the shadow's strength and normal bias
+ * @param cascades each cascade's matrix, sphere and far end, and the blend between them
  * @param texel the size of one texel in uv, the same in every layer
  **/
 SceneUniforms pack(const Settings& settings, const Cascades& cascades, float texel);

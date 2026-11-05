@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -69,6 +70,61 @@ void ViewPort::look(const v3d::type::camera::Profile& profile) {
  **/
 const glm::vec4& ViewPort::region() const noexcept {
     return region_;
+}
+
+/**
+ **/
+const ViewPort::Through& ViewPort::through() const noexcept {
+    return through_;
+}
+
+/**
+ **/
+void ViewPort::through(const Through& through) noexcept {
+    through_ = through;
+    if (free()) {
+        looking_ = 0;
+        frame_.reset();
+    }
+}
+
+/**
+ **/
+std::int64_t ViewPort::looking() const noexcept {
+    return looking_;
+}
+
+/**
+ **/
+void ViewPort::looking(std::int64_t camera) noexcept {
+    looking_ = camera;
+}
+
+/**
+ **/
+bool ViewPort::free() const noexcept {
+    return through_.camera == 0 && !through_.scene;
+}
+
+/**
+ **/
+void ViewPort::letGo() {
+    through_ = Through{};
+    looking_ = 0;
+    frame_.reset();
+    camera_->profile().name(std::string(FREE_VIEW));
+}
+
+/**
+ **/
+const std::optional<glm::vec4>& ViewPort::frame() const noexcept {
+    return frame_;
+}
+
+/**
+ **/
+void ViewPort::frame(const std::optional<glm::vec4>& frame) noexcept {
+    frame_ = frame;
 }
 
 /**
@@ -137,10 +193,10 @@ void ViewPort::draw(const scene::Scene& scene, v3d::render::realtime::canvas::Li
     // a curve's control points are shown while they can be picked
     const bool controls = mask == selection::SelectMask::Vertex || mask == selection::SelectMask::Handle;
     const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
-        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
+        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE), .through = looking_ };
     if (shown.meshes || shown.cameras || shown.lights) {
         WireframeVisitor wireframe(canvas, shown, &scene.components());
-        scene.accept(&wireframe);
+        scene.accept(&wireframe, scene::Scene::Showing::Views);
     }
 }
 

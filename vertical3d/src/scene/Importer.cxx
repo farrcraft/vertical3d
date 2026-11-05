@@ -12,13 +12,13 @@
 #include <api/curve/Curves.h>
 #include <api/interchange/Scene.h>
 #include <api/type/Transform.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Group.h>
 #include <vertical3d/src/scene/Import.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 
 #include <algorithm>
@@ -74,10 +74,10 @@ glm::quat Importer::halfTurn() {
 
 /**
  **/
-Camera::Lens Importer::lensOf(const interchange::Camera& camera) {
-    Camera::Lens lens;
+item::Camera::Lens Importer::lensOf(const interchange::Camera& camera) {
+    item::Camera::Lens lens;
     if (camera.projection == interchange::Camera::Projection::Orthographic) {
-        lens.projection = Camera::Projection::Orthographic;
+        lens.projection = item::Camera::Projection::Orthographic;
         lens.extent = camera.magnification.y;
     } else {
         float fov = camera.yfov;
@@ -96,12 +96,12 @@ Camera::Lens Importer::lensOf(const interchange::Camera& camera) {
 
 /**
  **/
-Light::Emission Importer::emissionOf(const interchange::Light& light) {
-    Light::Emission emission;
+item::Light::Emission Importer::emissionOf(const interchange::Light& light) {
+    item::Light::Emission emission;
     if (light.type == interchange::Light::Type::Distant) {
-        emission.type = Light::Type::Distant;
+        emission.type = item::Light::Type::Distant;
     } else if (light.type == interchange::Light::Type::Spot) {
-        emission.type = Light::Type::Spot;
+        emission.type = item::Light::Type::Spot;
         emission.cone = light.outerCone;
         emission.delta = light.outerCone - light.innerCone;
     }
@@ -119,16 +119,16 @@ glm::quat Importer::parentCorrection(const interchange::Node& node) const {
 /**
  **/
 std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, const std::vector<std::size_t>& itemOf) {
-    std::vector<boost::shared_ptr<Item>> made;
+    std::vector<boost::shared_ptr<item::Item>> made;
     if (node.mesh) {
         const boost::shared_ptr<v3d::brep::BRep> geometry = mesh(*node.mesh);
         if (geometry) {
-            made.push_back(boost::make_shared<Mesh>(geometry));
+            made.push_back(boost::make_shared<item::Mesh>(geometry));
         }
     }
     if (node.camera && *node.camera < scene_.cameras.size()) {
-        const boost::shared_ptr<Camera> camera = boost::make_shared<Camera>();
-        const Camera::Lens lens = lensOf(scene_.cameras[*node.camera]);
+        const boost::shared_ptr<item::Camera> camera = boost::make_shared<item::Camera>();
+        const item::Camera::Lens lens = lensOf(scene_.cameras[*node.camera]);
         if (lens.valid()) {
             camera->lens(lens);
         } else {
@@ -137,12 +137,12 @@ std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, 
         made.push_back(camera);
     }
     if (node.light && *node.light < scene_.lights.size()) {
-        const boost::shared_ptr<Light> light = boost::make_shared<Light>();
-        Light::Emission emission = emissionOf(scene_.lights[*node.light]);
+        const boost::shared_ptr<item::Light> light = boost::make_shared<item::Light>();
+        item::Light::Emission emission = emissionOf(scene_.lights[*node.light]);
         if (!emission.valid()) {
             import_.notes.push_back("light " + scene_.lights[*node.light].name + " has a value the editor cannot use, so it has a new light's");
-            const Light::Type type = emission.type;
-            emission = Light::Emission();
+            const item::Light::Type type = emission.type;
+            emission = item::Light::Emission();
             emission.type = type;
         }
         light->emission(emission);
@@ -152,11 +152,13 @@ std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, 
         made.push_back(curves(scene_.curves[*node.curves]));
     }
     if (made.empty()) {
-        made.push_back(boost::make_shared<Group>());
+        made.push_back(boost::make_shared<item::Group>());
     }
-    for (const boost::shared_ptr<Item>& item : made) {
+    for (const boost::shared_ptr<item::Item>& item : made) {
         item->name(node.name);
     }
+    // the others go beneath the first, so its flags hide them too
+    made.front()->shown({ .views = node.visible, .renders = node.visible && node.renders });
 
     corrections_[index] = turned(*made.front()) ? halfTurn() : glm::identity<glm::quat>();
     const glm::quat back = glm::inverse(parentCorrection(node));
@@ -182,13 +184,13 @@ std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, 
 
 /**
  **/
-boost::shared_ptr<v3d::editor::scene::Curve> Importer::curves(const interchange::Curves& read) {
+boost::shared_ptr<v3d::editor::scene::item::Curve> Importer::curves(const interchange::Curves& read) {
     const boost::shared_ptr<v3d::curve::Curves> geometry = boost::make_shared<v3d::curve::Curves>();
     for (const v3d::curve::Curve& each : read.curves) {
         geometry->add(each);
     }
-    const boost::shared_ptr<v3d::editor::scene::Curve> item = boost::make_shared<v3d::editor::scene::Curve>(geometry);
-    v3d::editor::scene::Curve::Style style{ .renders = true };
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> item = boost::make_shared<v3d::editor::scene::item::Curve>(geometry);
+    v3d::editor::scene::item::Curve::Style style{ .renders = true };
     if (std::isfinite(read.width) && read.width > 0.0F) {
         style.width = read.width;
     }
@@ -198,13 +200,13 @@ boost::shared_ptr<v3d::editor::scene::Curve> Importer::curves(const interchange:
 
 /**
  **/
-bool Importer::turned(const Item& item) {
-    return item.kind() == Item::Kind::Camera || item.kind() == Item::Kind::Light;
+bool Importer::turned(const item::Item& item) {
+    return item.kind() == item::Item::Kind::Camera || item.kind() == item::Item::Kind::Light;
 }
 
 /**
  **/
-std::size_t Importer::add(const boost::shared_ptr<Item>& item, std::optional<std::size_t> parent) {
+std::size_t Importer::add(const boost::shared_ptr<item::Item>& item, std::optional<std::size_t> parent) {
     import_.items.push_back(item);
     import_.parents.push_back(parent);
     import_.curves.emplace_back();

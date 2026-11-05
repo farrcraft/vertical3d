@@ -3,15 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/animation/Curve.h>
 #include <api/brep/Primitives.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Units.h>
 
 #include <optional>
 #include <string>
@@ -33,10 +36,7 @@ using v3d::editor::control::PropertiesEditor;
 /**
  * What the editor wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A properties editor over a scene of a cube and a camera, drawn into a 300 by 600 region at
@@ -45,14 +45,14 @@ struct Written final {
 struct Panel {
     Panel() :
         history(boost::make_shared<v3d::editor::command::Stack>()),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        camera(boost::make_shared<v3d::editor::scene::Camera>()),
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }),
+        scene(boost::make_shared<v3d::editor::scene::Scene>()),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        camera(boost::make_shared<v3d::editor::scene::item::Camera>()),
+        layer(v3d::ui::typeset::mono(&written)),
         editor(history) {
         cube->name("Cube");
-        scene.add(cube);
-        scene.add(camera);
+        scene->add(cube);
+        scene->add(camera);
         canvas.resize(glm::uvec2(400, 700));
     }
 
@@ -62,7 +62,7 @@ struct Panel {
     void frame(const v3d::ui::Immediate::Input& input) {
         written.clear();
         layer.begin(&canvas, input);
-        editor.draw(&layer, &scene, 1, glm::vec4(0.0F, 0.0F, 300.0F, 600.0F));
+        editor.draw(&layer, scene, 1, glm::vec4(0.0F, 0.0F, 300.0F, 600.0F));
         layer.end();
     }
 
@@ -104,9 +104,9 @@ struct Panel {
     }
 
     boost::shared_ptr<v3d::editor::command::Stack> history;
-    v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
-    boost::shared_ptr<v3d::editor::scene::Camera> camera;
+    boost::shared_ptr<v3d::editor::scene::Scene> scene;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Camera> camera;
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     v3d::ui::Immediate layer;
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(a_path_is_shown_under_its_heading) {
  * only in the last bits of a placement are the same.
  **/
 BOOST_AUTO_TEST_CASE(an_edit_command_puts_either_end_back) {
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
     const Edit::Values before = Edit::of(*camera);
     Edit::Values after = before;
     after.name = "Shot";
@@ -160,11 +160,14 @@ BOOST_AUTO_TEST_CASE(an_edit_command_puts_either_end_back) {
 }
 
 /**
- * With nothing selected, or more than one item, the editor says so and shows no item.
+ * With nothing selected the editor shows the scene's settings, with more than one item it says
+ * so, and with one it shows that item.
  **/
 BOOST_FIXTURE_TEST_CASE(it_shows_one_selected_item, Panel) {
     frame({});
-    BOOST_CHECK(wrote("Nothing is selected"));
+    BOOST_CHECK(wrote("Scene"));
+    BOOST_CHECK(wrote("Metres"));
+    BOOST_CHECK(!wrote("Translation"));
     cube->selected(true);
     camera->selected(true);
     frame({});
@@ -178,6 +181,74 @@ BOOST_FIXTURE_TEST_CASE(it_shows_one_selected_item, Panel) {
     BOOST_CHECK(wrote("Rotation"));
     BOOST_CHECK(wrote("Scale"));
     BOOST_CHECK(!wrote("Lens"));
+}
+
+/**
+ * A group along x, y and z is one row of three. A distance is shown in the scene's unit, which
+ * follows the scene, and an angle with a degree sign.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_placement_is_a_row_of_three_in_its_units, Panel) {
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> x = at("X");
+    const std::optional<glm::vec2> y = at("Y");
+    const std::optional<glm::vec2> z = at("Z");
+    BOOST_REQUIRE(x.has_value());
+    BOOST_REQUIRE(y.has_value());
+    BOOST_REQUIRE(z.has_value());
+    const glm::vec2 first = x.value_or(glm::vec2(0.0F));
+    const glm::vec2 second = y.value_or(glm::vec2(0.0F));
+    const glm::vec2 third = z.value_or(glm::vec2(0.0F));
+    BOOST_CHECK_EQUAL(first.y, second.y);
+    BOOST_CHECK_EQUAL(second.y, third.y);
+    BOOST_CHECK_LT(first.x, second.x);
+    BOOST_CHECK_LT(second.x, third.x);
+    BOOST_CHECK(wrote("0 m"));
+    BOOST_CHECK(wrote("0°"));
+
+    scene->length(v3d::editor::scene::Length::Centimetre);
+    frame({});
+    BOOST_CHECK(wrote("0 cm"));
+    BOOST_CHECK(!wrote("0 m"));
+}
+
+/**
+ * Each path is shown with its unit: a distance in the scene's, an angle in degrees, a cone in
+ * radians, and a scale with none.
+ **/
+BOOST_AUTO_TEST_CASE(a_path_is_shown_with_its_unit) {
+    BOOST_CHECK_EQUAL(PropertiesEditor::unit("translation.y", v3d::editor::scene::Length::Foot), " ft");
+    BOOST_CHECK_EQUAL(PropertiesEditor::unit("lens.near", v3d::editor::scene::Length::Metre), " m");
+    BOOST_CHECK_EQUAL(PropertiesEditor::unit("rotation.z", v3d::editor::scene::Length::Metre), "°");
+    BOOST_CHECK_EQUAL(PropertiesEditor::unit("lens.fov", v3d::editor::scene::Length::Metre), "°");
+    BOOST_CHECK_EQUAL(PropertiesEditor::unit("emission.cone", v3d::editor::scene::Length::Metre), " rad");
+    BOOST_CHECK(PropertiesEditor::unit("scale.x", v3d::editor::scene::Length::Metre).empty());
+}
+
+/**
+ * The Keys tab lists each curve the item has, by the property it drives, with its count of keys.
+ * A mesh has a Mesh tab that counts its vertices and faces.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_tabs_show_keys_and_counts, Panel) {
+    v3d::animation::Curve curve;
+    curve.set(1.0F, 0.0F);
+    curve.set(10.0F, 2.0F);
+    BOOST_REQUIRE(scene->curve(cube->id(), "translation.x", curve));
+    cube->selected(true);
+    // the tabs share the strip's width from the second frame, once the first has counted them
+    frame({});
+    frame({});
+    BOOST_CHECK(wrote("Item"));
+    BOOST_CHECK(wrote("Mesh"));
+    const std::optional<glm::vec2> keysTab = at("Keys");
+    BOOST_REQUIRE(keysTab.has_value());
+    const glm::vec2 onKeys = keysTab.value_or(glm::vec2(0.0F));
+    frame(input(onKeys, false, false, false));
+    frame(input(onKeys, true, true, false));
+    frame(input(onKeys, false, false, true));
+    frame({});
+    BOOST_CHECK(wrote("Translation X  2 keys"));
+    BOOST_CHECK(!wrote("Name"));
 }
 
 /**
@@ -255,6 +326,35 @@ BOOST_FIXTURE_TEST_CASE(a_rename_is_one_change, Panel) {
 }
 
 /**
+ * A name may match another item's while it is typed, and is made unique when the edit ends.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_rename_ends_with_a_unique_name, Panel) {
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> other = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    other->name("Cubes");
+    scene->add(other);
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> start = at("Cube");
+    BOOST_REQUIRE(start);
+    const std::optional<glm::vec2> name = *start + glm::vec2(60.0F, 0.0F);
+    frame(input(*name, false, false, false));
+    frame(input(*name, true, true, false));
+    frame(input(*name, false, false, true));
+    BOOST_REQUIRE(layer.typing());
+    BOOST_CHECK(layer.typed("s"));
+    frame(input(*name, false, false, false));
+    BOOST_CHECK_EQUAL(cube->name(), "Cubes");
+    BOOST_CHECK(layer.press("return"));
+    frame(input(*name, false, false, false));
+    BOOST_CHECK_EQUAL(cube->name(), "Cubes.001");
+    BOOST_CHECK_EQUAL(other->name(), "Cubes");
+
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    history->undo()->undo();
+    BOOST_CHECK_EQUAL(cube->name(), "Cube");
+}
+
+/**
  * A rename still open when its item stops being the one shown is one change, under its own
  * name, as soon as the editor is drawn without it.
  **/
@@ -277,6 +377,98 @@ BOOST_FIXTURE_TEST_CASE(a_rename_ends_when_its_item_is_no_longer_shown, Panel) {
     frame({});
     BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
     BOOST_CHECK_EQUAL(history->undo()->name(), "rename");
+}
+
+/**
+ * The Item tab has three headings: Transform over the placement, Camera over what a camera has
+ * of its own, and Item over the name and parent. A click on a heading folds what is under it,
+ * and leaves the rest. A fold stays when another item is shown.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_item_tab_is_under_headings_that_fold, Panel) {
+    camera->selected(true);
+    frame({});
+    BOOST_CHECK(wrote("Transform"));
+    BOOST_CHECK(wrote("Camera"));
+    BOOST_CHECK(wrote("Name"));
+    BOOST_CHECK(wrote("Parent"));
+    BOOST_CHECK(wrote("Translation"));
+
+    const std::optional<glm::vec2> heading = at("Transform");
+    BOOST_REQUIRE(heading);
+    frame(input(*heading, false, false, false));
+    frame(input(*heading, true, true, false));
+    frame(input(*heading, false, false, true));
+    frame({});
+    BOOST_CHECK(wrote("Transform"));
+    BOOST_CHECK(!wrote("Translation"));
+    BOOST_CHECK(wrote("Lens"));
+    BOOST_CHECK(wrote("Name"));
+
+    // a mesh has nothing of its own to head
+    camera->selected(false);
+    cube->selected(true);
+    frame({});
+    BOOST_CHECK(!wrote("Lens"));
+    BOOST_CHECK(!wrote("Translation"));
+}
+
+/**
+ * The Parent combo offers None and every item but the one shown and what is beneath it. A choice
+ * puts the item beneath the one chosen as one change, which undo takes back.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_new_parent_is_one_change, Panel) {
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> child = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    child->name("Child");
+    scene->add(child);
+    scene->parent(child->id(), cube->id());
+    cube->selected(true);
+    frame({});
+    BOOST_CHECK(wrote("None"));
+
+    const std::optional<glm::vec2> combo = at("Parent");
+    BOOST_REQUIRE(combo);
+    frame(input(*combo, false, false, false));
+    frame(input(*combo, true, true, false));
+    frame(input(*combo, false, false, true));
+    frame({});
+    BOOST_CHECK(wrote("Camera"));
+    BOOST_CHECK(!wrote("Child"));
+
+    const std::optional<glm::vec2> choice = at("Camera");
+    BOOST_REQUIRE(choice);
+    frame(input(*choice, false, false, false));
+    frame(input(*choice, true, true, false));
+    frame(input(*choice, false, false, true));
+    frame({});
+    BOOST_CHECK(scene->parent(cube->id()) == camera);
+    BOOST_CHECK(scene->parent(child->id()) == cube);
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+
+    const boost::shared_ptr<v3d::editor::command::Command> undone = history->undo();
+    BOOST_CHECK_EQUAL(undone->name(), "parent");
+    undone->undo();
+    BOOST_CHECK(!scene->parent(cube->id()));
+}
+
+/**
+ * The Shown in renders check takes the item out of renders as one change, and leaves it in the
+ * views.
+ **/
+BOOST_FIXTURE_TEST_CASE(shown_in_renders_is_one_change, Panel) {
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> check = at("Shown in renders");
+    BOOST_REQUIRE(check);
+    frame(input(*check, false, false, false));
+    frame(input(*check, true, true, false));
+    frame(input(*check, false, false, true));
+    BOOST_CHECK(!cube->shown().renders);
+    BOOST_CHECK(cube->shown().views);
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    const boost::shared_ptr<v3d::editor::command::Command> undone = history->undo();
+    BOOST_CHECK_EQUAL(undone->name(), "shown in renders");
+    undone->undo();
+    BOOST_CHECK(cube->shown().renders);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

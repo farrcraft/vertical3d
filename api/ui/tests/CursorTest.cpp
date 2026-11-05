@@ -28,6 +28,7 @@
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <string>
 #include <string_view>
@@ -54,9 +55,7 @@ struct Fixture final {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
 
@@ -272,6 +271,36 @@ BOOST_AUTO_TEST_CASE(only_the_topmost_component_takes_a_press) {
     BOOST_CHECK(fixture.cursor->press(glm::vec2(100.0F, 100.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::over");
+}
+
+/**
+ * A closed menu bar takes a press only on its labels. A press beside them reaches a container
+ * listed after the bar's, as a button an app sets on the bar's strip, and so does the cursor
+ * resting there.
+ **/
+BOOST_AUTO_TEST_CASE(a_closed_menu_bar_lets_a_press_beside_its_labels_through) {
+    Fixture fixture;
+    BOOST_REQUIRE(fixture.ui->add(boost::json::parse(R"({ "containers": [ { "name": "strip", "visible": true, "components": [)"
+        R"({ "type": "menubar", "name": "bar", "position": [0, 0], "size": [800, 28],)"
+        R"(  "menus": [ { "label": "File", "items": [ { "label": "Quit", "type": "action", "context": "test", "command": "quit" } ] } ] } ] } ] })").as_object(),
+        "hud"));
+    const boost::shared_ptr<v3d::ui::component::Button> beside = boost::make_shared<v3d::ui::component::Button>();
+    beside->event(v3d::event::Event("beside", fixture.context));
+    fixture.place(beside, glm::vec2(400.0F, 2.0F), glm::vec2(100.0F, 24.0F));
+    fixture.canvas.clear();
+    fixture.renderer.draw(&fixture.canvas, *fixture.ui->container("strip"));
+    fixture.renderer.draw(&fixture.canvas, *fixture.container);
+
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(450.0F, 14.0F)));
+    BOOST_CHECK_EQUAL(fixture.cursor->hovered(), beside);
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(450.0F, 14.0F)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent.front(), "test::beside");
+
+    // and nothing under the bar's empty strip takes a press there
+    fixture.sent.clear();
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(700.0F, 14.0F)));
+    BOOST_CHECK(fixture.sent.empty());
 }
 
 /**

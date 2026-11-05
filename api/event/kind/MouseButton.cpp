@@ -9,20 +9,21 @@
 #include <api/event/Event.h>
 #include <api/event/State.h>
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
 namespace v3d::event::kind {
 /**
  **/
-MouseButton::MouseButton(const std::string& button, const glm::vec2& position,
-    const boost::shared_ptr<Context>& context, bool pressed, unsigned int clicks) :
+MouseButton::MouseButton(const std::string& button, const Edge& edge, const boost::shared_ptr<Context>& context) :
     Event(button, context),
-    position_(position),
-    pressed_(pressed),
-    clicks_(clicks) {
+    position_(edge.position),
+    pressed_(edge.pressed),
+    clicks_(edge.clicks),
+    window_(edge.window) {
     // the edge belongs in the event's state; data is reserved for a parameter
-    state(pressed ? State::Pressed : State::Released);
+    state(edge.pressed ? State::Pressed : State::Released);
 }
 
 /**
@@ -47,6 +48,12 @@ bool MouseButton::pressed() const noexcept {
  **/
 unsigned int MouseButton::clicks() const noexcept {
     return clicks_;
+}
+
+/**
+ **/
+std::uint32_t MouseButton::window() const noexcept {
+    return window_;
 }
 
 };  // namespace v3d::event::kind

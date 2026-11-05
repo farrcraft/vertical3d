@@ -23,6 +23,9 @@ namespace v3d::animation {
  * root for a joint with none.
  **/
 struct Skeleton final {
+    /**
+     * One joint: its name, its parent, its rest pose and its inverse bind.
+     **/
     struct Joint final {
         std::string name;
         int32_t parent{ -1 };  /**< an index into joints, always lower than this one's, or -1 **/

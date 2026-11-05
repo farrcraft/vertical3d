@@ -11,16 +11,16 @@
 #include <api/brep/Vertex.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/tests/device/Headless.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/Shading.h>
@@ -89,15 +89,15 @@ boost::shared_ptr<v3d::brep::BRep> facing() {
 glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::view::ShadedPass* shaded, const v3d::editor::scene::Scene& scene,
     const v3d::editor::view::ViewPort::Display& display, const std::string& name) {
     using v3d::render::realtime::vulkan::frame::Capture;
-    using v3d::render::realtime::Recorder;
-    using v3d::render::realtime::RenderTarget;
+    using v3d::render::realtime::frame::Recorder;
+    using v3d::render::realtime::frame::RenderTarget;
 
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
         RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat, .depth = true});
     const v3d::type::camera::Camera view = camera();
 
-    v3d::render::realtime::Frame frame;
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("view");
+    v3d::render::realtime::frame::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame.pass("view");
     pass->clearColour(background);
     pass->depth(true);
     pass->camera(view.view(), view.projection());
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(a_face_toward_the_view_is_its_front) {
     v3d::test::Headless headless(colourFormat, size, size);
     v3d::editor::view::ShadedPass shaded(headless.context);
     v3d::editor::scene::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(facing()));
+    scene.add(boost::make_shared<v3d::editor::scene::item::Mesh>(facing()));
 
     v3d::editor::view::ViewPort::Display display;
     display.cull = v3d::editor::view::ViewPort::Cull::Back;
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(every_fill_and_shading_draws_cleanly) {
     v3d::test::Headless headless(colourFormat, size, size);
     v3d::editor::view::ShadedPass shaded(headless.context);
     v3d::editor::scene::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(facing()));
+    scene.add(boost::make_shared<v3d::editor::scene::item::Mesh>(facing()));
 
     for (const v3d::editor::view::Shading shading : { v3d::editor::view::Shading::Flat, v3d::editor::view::Shading::Smooth }) {
         for (const v3d::editor::view::ViewPort::Fill fill :
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_is_uploaded_again_only_when_it_changes) {
     v3d::test::Headless headless(colourFormat, size, size);
     v3d::editor::view::ShadedPass shaded(headless.context);
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> item = boost::make_shared<v3d::editor::scene::Mesh>(facing());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> item = boost::make_shared<v3d::editor::scene::item::Mesh>(facing());
     scene.add(item);
     const v3d::editor::view::ViewPort::Display display;
 

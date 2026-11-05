@@ -56,6 +56,18 @@ void Menu::addItem(const boost::shared_ptr<Item>& item) {
     items_.push_back(item);
 }
 
+void Menu::removeFrom(std::size_t index) {
+    while (items_.size() > index) {
+        if (items_.back()) {
+            disown(*items_.back());
+        }
+        items_.pop_back();
+    }
+    if (active_ >= 0 && static_cast<std::size_t>(active_) >= items_.size()) {
+        active_ = -1;
+    }
+}
+
 boost::shared_ptr<Item> Menu::active() const {
     if (active_ < 0 || static_cast<size_t>(active_) >= items_.size()) {
         return nullptr;
@@ -176,6 +188,58 @@ void Menu::title(const std::string& words) {
 
 const std::string& Menu::title() const noexcept {
     return title_;
+}
+
+void Menu::icon(const std::string& source) {
+    if (source == icon_) {
+        return;
+    }
+    icon_ = source;
+    image_ = v3d::ui::Image();
+}
+
+std::string_view Menu::icon() const {
+    return icon_;
+}
+
+const v3d::ui::Image& Menu::image() const noexcept {
+    return image_;
+}
+
+void Menu::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
+}
+
+void Menu::drop(bool shown) noexcept {
+    drop_ = shown;
+}
+
+bool Menu::drop() const noexcept {
+    return drop_;
+}
+
+void Menu::emphasis(bool set) noexcept {
+    emphasis_ = set;
+}
+
+bool Menu::emphasis() const noexcept {
+    return emphasis_;
+}
+
+void Menu::accent(bool tinted) noexcept {
+    accent_ = tinted;
+}
+
+bool Menu::accent() const noexcept {
+    return accent_;
+}
+
+void Menu::named(bool shown) noexcept {
+    named_ = shown;
+}
+
+bool Menu::named() const noexcept {
+    return named_;
 }
 
 size_t Menu::count() const {

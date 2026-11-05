@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstdint>
 #include <optional>
@@ -44,7 +44,7 @@ bool selectsItems(SelectMask mask);
 /**
  * @return whether the mask selects whole items of this kind
  **/
-bool takes(SelectMask mask, scene::Item::Kind kind);
+bool takes(SelectMask mask, scene::item::Item::Kind kind);
 
 /**
  * @param name one of "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve" or
@@ -63,6 +63,6 @@ const char* selectMaskName(SelectMask mask);
  * @return the kind of part a component mask selects, or nothing for a mask that selects whole
  *         items
  **/
-std::optional<scene::Component> componentOf(SelectMask mask);
+std::optional<scene::item::Component> componentOf(SelectMask mask);
 
 };  // namespace v3d::editor::selection

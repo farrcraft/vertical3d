@@ -5,13 +5,13 @@
 
 #include "Ternary.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
 namespace v3d::render::offline::sl::syntax {
 
-Ternary::Ternary(const Branches & branches, const v3d::render::offline::Position & at) :
+Ternary::Ternary(const Branches & branches, const v3d::render::offline::source::Position & at) :
     Expression(Kind::TERNARY, at),
     condition(branches.condition),
     whenTrue(branches.whenTrue),

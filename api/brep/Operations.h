@@ -21,6 +21,7 @@ namespace v3d::brep {
  * beyond the new vertex is a new half edge, which follows it in its loop. The new parts are
  * appended, so no existing index changes.
  *
+ * @param mesh changed in place
  * @param edge either half of the edge
  * @return the new vertex, or nothing when the mesh holds no such half edge
  **/
@@ -62,6 +63,8 @@ std::optional<std::vector<Index>> extrudeFaces(BRep & mesh, const std::vector<In
  * way from the face's corner to the face's centre. The ring's quads lie in the face's plane, and
  * each gets its normal from its points. The new parts are appended, so no existing index changes.
  *
+ * @param mesh changed in place. It is left as it was when a face is not there.
+ * @param faces the faces to inset
  * @param fraction how far toward the centre each corner moves, from 0 to 1
  * @return the rings' new faces, or nothing when a face is not there
  **/

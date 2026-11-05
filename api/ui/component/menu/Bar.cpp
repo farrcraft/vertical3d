@@ -14,6 +14,7 @@
 #include "Menu.h"
 #include "Type.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -302,7 +303,8 @@ bool Bar::motion(const glm::vec2& cursor) {
             truncate(1);
         }
     }
-    return true;
+    // the rest of a closed bar is room for what an app puts beside the labels, as a press there is
+    return hover_ >= 0 || open_ >= 0;
 }
 
 /**
@@ -342,6 +344,30 @@ void Bar::docked(bool along) noexcept {
  **/
 bool Bar::docked() const noexcept {
     return docked_;
+}
+
+/**
+ **/
+void Bar::opacity(float drawn) noexcept {
+    opacity_ = std::clamp(drawn, 0.0F, 1.0F);
+}
+
+/**
+ **/
+float Bar::opacity() const noexcept {
+    return opacity_;
+}
+
+/**
+ **/
+void Bar::note(const std::string& text) {
+    note_ = text;
+}
+
+/**
+ **/
+const std::string& Bar::note() const noexcept {
+    return note_;
 }
 
 /**

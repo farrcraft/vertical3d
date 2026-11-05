@@ -12,7 +12,9 @@
 #include <cstddef>
 #include <string>
 
+#include <glm/common.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 
@@ -29,10 +31,15 @@ bool Immediate::tabBar(const std::string& id) {
     // holds is drawn under the whole strip rather than beside the next tab
     context_->tabs.top = context_->row.penY;
     context_->tabs.pen = context_->row.margin;
-    context_->row.penY = context_->tabs.top + context_->dressing.barHeight;
-    context_->canvas->rect(glm::vec2(context_->row.margin, context_->row.penY),
-        glm::vec2(context_->row.right, context_->row.penY + immediate::Context::ruleWidth), context_->dressing.rule);
-    context_->row.penY += immediate::Context::ruleWidth + context_->dressing.spacing;
+    // the strip is a recess across the row, which its tabs share out evenly. How many there
+    // are is known only once they have been drawn, so the shares are last frame's, and a strip
+    // drawn for the first time sizes each tab to its label
+    const unsigned int count = context_->retain(context_->tabs.id).tabs;
+    const float room = std::max(context_->row.right - context_->row.margin, 0.0F);
+    context_->tabs.share = count == 0 ? 0.0F : room / static_cast<float>(count);
+    paint::fillBox(context_->canvas, glm::vec2(context_->row.margin, context_->tabs.top),
+        glm::vec2(context_->row.right, context_->tabs.top + context_->dressing.barHeight), context_->dressing.radius, context_->dressing.tab);
+    context_->row.penY = context_->tabs.top + context_->dressing.barHeight + context_->dressing.spacing;
     context_->row.sameLine = false;
     return true;
 }
@@ -43,9 +50,10 @@ bool Immediate::tab(const std::string& label) {
     }
     const immediate::Retained& retained = context_->retain(context_->tabs.id);
     const unsigned int index = context_->tabs.index++;
-    const glm::vec2 size(context_->measure(label) + (context_->dressing.padding * 2.0F), context_->dressing.barHeight);
+    const float natural = context_->measure(label) + (context_->dressing.padding * 2.0F);
+    const glm::vec2 size(context_->tabs.share > 0.0F ? context_->tabs.share : natural, context_->dressing.barHeight);
     const glm::vec2 min(context_->tabs.pen, context_->tabs.top);
-    context_->tabs.pen += size.x + context_->dressing.spacing;
+    context_->tabs.pen += size.x;
 
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, min + size);
@@ -56,11 +64,22 @@ bool Immediate::tab(const std::string& label) {
     const bool selected = retained.tab == index;
     context_->tabs.taken = context_->tabs.taken || selected;
 
-    // a tab at rest is drawn as a tab, not as a widget's face
-    const bool lit = context_->disabled == 0 && (selected || reaction.hovered);
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, lit ? context_->face(selected, reaction.hovered) : context_->dressing.tab));
-    context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size,
-        selected ? context_->dressing.activeText : context_->dressing.text);
+    // the chosen tab is raised out of the recess and set semibold, as the place shown, not
+    // filled as a toggle that is on would be. One under the cursor is raised halfway
+    const bool usable = context_->disabled == 0;
+    glm::vec4 face = context_->dressing.tab;
+    if (selected) {
+        face = context_->dressing.chosen;
+    } else if (usable && reaction.hovered) {
+        face = glm::mix(context_->dressing.tab, context_->dressing.chosen, hoverLift);
+    }
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, face));
+    const glm::vec2 at(min.x + std::max((size.x - natural) * 0.5F, 0.0F) + context_->dressing.padding, min.y);
+    if (selected) {
+        context_->title(label, at, size, context_->ink(context_->dressing.activeText));
+    } else {
+        context_->label(label, at, size, context_->ink(context_->dressing.text));
+    }
     return selected;
 }
 
@@ -68,12 +87,14 @@ void Immediate::endTabBar() {
     if (!context_->tabs.open) {
         return;
     }
+    immediate::Retained& retained = context_->retain(context_->tabs.id);
+    retained.tabs = context_->tabs.index;
     if (context_->tabs.changed) {
-        context_->retain(context_->tabs.id).tab = context_->tabs.wanted;
+        retained.tab = context_->tabs.wanted;
     } else if (!context_->tabs.taken && context_->tabs.index > 0) {
         // a strip whose selected tab is no longer there falls back to the first, so a bar
         // is never drawn with nothing chosen
-        context_->retain(context_->tabs.id).tab = 0;
+        retained.tab = 0;
     }
     context_->tabs.open = false;
 }

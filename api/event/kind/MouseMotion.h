@@ -8,6 +8,8 @@
 #include <api/event/Chord.h>
 #include <api/event/Event.h>
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 
 namespace v3d::event::kind {
@@ -18,11 +20,15 @@ namespace v3d::event::kind {
  **/
 class MouseMotion final : public Event {
  public:
-    /** Where the cursor is, how far it moved, and the modifier keys held as it did. **/
+    /**
+     * Where the cursor is, how far it moved, the modifier keys held as it did, and the id of the
+     * window it moved in, as Window::id() gives it.
+     **/
     struct Moved {
         glm::vec2 position{0.0F};
         glm::vec2 motion{0.0F};
         Modifiers modifiers;
+        std::uint32_t window = 0;
     };
 
     // not noexcept: the base takes the event name as a std::string, which allocates
@@ -43,9 +49,15 @@ class MouseMotion final : public Event {
      **/
     const Modifiers& modifiers() const noexcept;
 
+    /**
+     * @return the id of the window the cursor moved in, whose coordinates the position is in
+     **/
+    std::uint32_t window() const noexcept;
+
  private:
     glm::vec2 position_;
     glm::vec2 motion_;
     Modifiers modifiers_;
+    std::uint32_t window_;
 };
 };  // namespace v3d::event::kind

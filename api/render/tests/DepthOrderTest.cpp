@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/canvas/World.h>
 
@@ -18,7 +18,7 @@
 #include <glm/vec4.hpp>
 
 using v3d::render::realtime::canvas::DepthOrder;
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -153,6 +153,62 @@ BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
     BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0F);
     BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0F);
     BOOST_CHECK_EQUAL(quadAt(canvas, 3), 2.0F);
+}
+
+/**
+ * A glyph sorts among quads by its key, and comes out as a glyph.
+ **/
+BOOST_AUTO_TEST_CASE(a_glyph_is_sorted_with_the_quads) {
+    DepthOrder order;
+    order.quad(1.0F, tile(0.0F, 0.0F), white);
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::resource::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::resource::TextureHandle(2) };
+    order.glyph(2.0F, tile(1.0F, 0.0F), glyph, white);
+
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 1.0F);
+    BOOST_CHECK(canvas.batches()[0].bands.valid());
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 3U);
+}
+
+/**
+ * At equal keys, effects drawn from fields come before the glyphs they lie beneath, whatever
+ * order they were added in and whatever their textures, and a lower layer before a higher.
+ * A field further away is still drawn before them all.
+ **/
+BOOST_AUTO_TEST_CASE(fields_lie_beneath_glyphs_by_layer) {
+    DepthOrder order;
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::resource::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::resource::TextureHandle(2) };
+    const glm::vec2 none(0.0F);
+    order.glyph(1.0F, tile(0.0F, 0.0F), glyph, white);
+    order.field(1.0F, 1, tile(1.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(9), 11);
+    order.field(1.0F, 0, tile(2.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(8), 10);
+    order.field(2.0F, 1, tile(3.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(9), 12);
+
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 12U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 10U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].glyph, 11U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[12].glyph, 3U);
+    BOOST_CHECK(canvas.batches()[0].field);
+    BOOST_CHECK(canvas.batches().back().bands.valid());
+}
+
+/**
+ * A field's contrast comes through the sort to the canvas.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_keeps_its_contrast) {
+    DepthOrder order;
+    order.field(1.0F, 0, tile(0.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, v3d::render::realtime::resource::TextureHandle(8), 10, 0.5F);
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.5F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

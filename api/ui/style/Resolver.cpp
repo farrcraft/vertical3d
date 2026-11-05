@@ -106,6 +106,7 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->colour(style, "caret", dressing, &paint::Dressing::caret);
     overlay->colour(style, "placeholder", dressing, &paint::Dressing::placeholder);
     overlay->colour(style, "tab", dressing, &paint::Dressing::tab);
+    overlay->colour(style, "chosen", dressing, &paint::Dressing::chosen);
     overlay->colour(style, "widget", dressing, &paint::Dressing::widget);
     overlay->colour(style, "rule", dressing, &paint::Dressing::rule);
     overlay->colour(style, "hairline", dressing, &paint::Dressing::hairline);
@@ -269,7 +270,8 @@ void Resolver::readClass(Class className, const boost::shared_ptr<Style>& style,
         case Class::Tabs:
             readColour(style, "background", &dressing.panel);
             readColour(style, "tab", &dressing.tab);
-            readColour(style, "highlight", &dressing.highlight);
+            readColour(style, "chosen", &dressing.chosen);
+            readColour(style, "mark", &dressing.mark);
             readColour(style, "text", &dressing.text);
             readColour(style, "active-text", &dressing.activeText);
             readColour(style, "border", &dressing.border);

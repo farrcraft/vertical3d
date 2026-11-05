@@ -7,13 +7,15 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   cpplint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
     # pinned: a newer cpplint can add checks, so a version bump can turn the tree red without
     # a code change
     - run: pip install cpplint==2.0.2
-    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=demos/voxel/src/noise --recursive .
+    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --recursive .

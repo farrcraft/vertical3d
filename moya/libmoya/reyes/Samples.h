@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <limits>
 #include <vector>
@@ -71,9 +71,9 @@ class Samples final {
     };
 
     /**
-     * Places every pixel's samples where offline::Sampler puts them, with nothing hidden yet.
+     * Places every pixel's samples where offline::film::Sampler puts them, with nothing hidden yet.
      **/
-    Samples(const glm::uvec2 & size, const v3d::render::offline::Sampling & sampling);
+    Samples(const glm::uvec2 & size, const v3d::render::offline::film::Sampling & sampling);
 
     unsigned int width() const;
     unsigned int height() const;
@@ -99,14 +99,14 @@ class Samples final {
      * passes through: each lets through what the nearer ones did not stop, scaled by
      * `1 - Oi`. Its depth is its nearest surface's.
      **/
-    void resolve(v3d::render::offline::FrameBuffer * planes, unsigned int red, unsigned int coverage,
+    void resolve(v3d::render::offline::film::FrameBuffer * planes, unsigned int red, unsigned int coverage,
         unsigned int depth) const;
 
  private:
     unsigned int width_;
     unsigned int height_;
     unsigned int perPixel_;
-    v3d::render::offline::Sampling sampling_;
+    v3d::render::offline::film::Sampling sampling_;
     std::vector<Sample> samples_;
     unsigned int surfaces_ = 0;
 };

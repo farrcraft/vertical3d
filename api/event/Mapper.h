@@ -15,6 +15,7 @@
 
 namespace v3d::event {
 /**
+ * A named set of bindings, each from a source event to a destination event.
  **/
 class Mapper {
  public:

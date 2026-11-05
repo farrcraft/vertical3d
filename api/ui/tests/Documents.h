@@ -7,10 +7,11 @@
 
 #include <api/event/Router.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/ui/Image.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <map>
 #include <string>
@@ -33,21 +34,17 @@ namespace v3d::ui::documents {
  */
 
 /**
- * What the renderer asked to be written, for the cases that are about a label.
+ * A line the ui drew.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * Hands every source the same texture, and says which sources it was asked for.
  **/
 struct Uploader final {
-    v3d::render::realtime::TextureHandle operator()(const std::string& source) {
+    v3d::render::realtime::resource::TextureHandle operator()(const std::string& source) {
         asked.push_back(source);
-        return v3d::render::realtime::TextureHandle(7);
+        return v3d::render::realtime::resource::TextureHandle(7);
     }
 
     std::vector<std::string> asked;
@@ -68,7 +65,7 @@ struct Sheet final {
         if (found == regions.end()) {
             return v3d::ui::Image();
         }
-        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9), {.min = found->second.first, .max = found->second.second});
+        return v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(9), {.min = found->second.first, .max = found->second.second});
     }
 };
 
@@ -125,9 +122,7 @@ inline boost::shared_ptr<v3d::ui::Interface> load(const std::string& document, b
  * where a label went.
  **/
 inline v3d::ui::paint::ComponentRenderer renderer() {
-    return v3d::ui::paint::ComponentRenderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    return v3d::ui::paint::ComponentRenderer(v3d::ui::typeset::body());
 }
 
 };  // namespace v3d::ui::documents

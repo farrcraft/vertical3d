@@ -80,6 +80,29 @@ BOOST_AUTO_TEST_CASE(a_press_outside_a_combo_closes_it) {
     BOOST_CHECK_EQUAL(chosen, 1);
 }
 
+/**
+ * A combo reads as a field that opens a list: its label at the left, and the chosen item at
+ * the right, ending before the drop mark at the box's right end.
+ **/
+BOOST_AUTO_TEST_CASE(a_combo_shows_its_label_and_its_choice) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    int chosen = 1;
+    frame(&ui, &canvas, hover(nowhere), [&]() { ui.combo("Hider", &chosen, {"Reyes", "Ray trace"}); });
+
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "Hider");
+    BOOST_CHECK_CLOSE(written[0].pen.x, lineStart, 0.001F);
+    BOOST_CHECK_EQUAL(written[1].text, "Ray trace");
+    // the box runs the canvas's width, and the item ends a padding short of the mark, which
+    // takes the last padding and a mark's width
+    const float itemEnd = written[1].pen.x + (characterWidth * 9.0F);
+    BOOST_CHECK(written[1].pen.x > written[0].pen.x + (characterWidth * 5.0F));
+    BOOST_CHECK(itemEnd < 400.0F - (lineStart * 2.0F));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

@@ -38,6 +38,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
+| [`script`](../../api/script/) | TypeScript run on QuickJS: a runtime that strips a script's types and runs it, with the functions a host binds into it. See [Scripting.md](Scripting.md). |
 | [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
@@ -71,16 +72,17 @@ Boost.
 | `asset_media` | log, animation, asset, image, interchange, model | glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
+| `script` | none | QuickJS-ng |
 | `window` | log | **SDL3**, glm |
 | `render` | log, animation, asset, asset_media, ecs, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
 | `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
-| `shell` | engine, ui, asset | none of its own |
+| `shell` | engine, event, ui, asset, render, window | EnTT |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   animation   grid   database   curve   no device, no window
+log   type   animation   grid   database   curve   script   no device, no window
 image  asset  ecs  brep  model
 interchange
 interchange_usd                            OpenUSD
@@ -113,6 +115,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | To do this | Read |
 |---|---|
 | Set up a project of your own against the api | [UsingTheApi.md](UsingTheApi.md) |
+| Look up a class or a function | The [API reference](https://farrcraft.github.io/vertical3d/reference/), built from the headers |
 | Write the app: lifecycle, loop, input, config, settings, logging, audio | [engine/](engine/README.md) |
 | Draw: frames, passes, canvases, sprites, meshes, lighting | [rendering/](rendering/README.md) |
 | Build menus and HUDs | [ui/](ui/README.md) |
@@ -123,6 +126,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Read a glTF file or a USD stage as a scene of nodes, meshes, cameras and lights | [Interchange.md](Interchange.md) |
 | Use animation or particle effects | [Animation.md](Animation.md) |
 | Draw, evaluate or convert curves: poly, Bezier, Catmull-Rom and NURBS | [Curves.md](Curves.md) |
+| Run TypeScript, and let it call your own functions | [Scripting.md](Scripting.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
 | Load files and JSON documents, or write them | [Assets.md](Assets.md) |
 | Read, write or pack images | [Images.md](Images.md) |
@@ -264,8 +268,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   tick and recorded by `WindowRenderer::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Pass** — one drawing operation into one target, with its own camera, clear, depth test and
   list of draw items. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
-- **Draw item** — `DrawItem`, a description of one draw: pipeline and material handles, push
-  constants and a sort key. The renderer records it later. See [rendering/](rendering/README.md).
+- **Draw item** — `realtime::frame::DrawItem`, a description of one draw: pipeline and material
+  handles, push constants and a sort key. The renderer records it later. See
+  [rendering/](rendering/README.md).
 - **Sort key** — the value a pass sorts its draw items by when sorting is on: layer, then
   pipeline, then material, then depth. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Canvas** — a buffer of 2D quads an app fills during the tick and submits to a pass.

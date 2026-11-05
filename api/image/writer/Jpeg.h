@@ -11,6 +11,9 @@
 #include <string>
 
 namespace v3d::image::writer {
+/**
+ * Encodes an image as a jpeg file, through libjpeg.
+ **/
 class Jpeg final : public v3d::image::Writer {
  public:
     Jpeg(const boost::shared_ptr<v3d::log::Logger> & logger);

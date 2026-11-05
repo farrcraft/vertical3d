@@ -1,0 +1,31 @@
+##RenderMan RIB-Structure 1.1
+##Scene The ripple displacement shader from Displacement.md on a panel standing on the floor
+version 3.03
+Hider "raytrace"
+Format 320 240 1
+Display "ripple.png" "file" "rgb"
+Projection "perspective" "fov" [40]
+Clipping 0.1 100
+Imager "background" "background" [0.55 0.65 0.8]
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [0.9] "to" [1 -0.4 0.5]
+
+AttributeBegin
+Color [0.8 0.8 0.75]
+Surface "matte"
+Polygon "P" [-5 0 -5  5 0 -5  5 0 6  -5 0 6]
+AttributeEnd
+
+# moya displaces polygons, not spheres. The ridges run up the panel, one for each wave of
+# the sine across x, and the light from the left shades one side of each
+AttributeBegin
+Color [0.85 0.55 0.3]
+Surface "plastic" "Ks" [0.4] "roughness" [0.1]
+Attribute "displacementbound" "float sphere" [0.1]
+Displacement "ripple" "float height" [0.08] "float frequency" [10]
+Polygon "P" [-1.4 0 1  1.4 0 1  1.4 1.8 1  -1.4 1.8 1]
+AttributeEnd
+WorldEnd

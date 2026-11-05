@@ -46,6 +46,8 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
  *
  * @param style the base style, or null to read nothing
  * @param use which ui model the roles are derived for
+ * @param overlay records each value the style replaces, and what it held before
+ * @param dressing written to with what the style names
  * @param scale what the style's sizes are multiplied by. An outline's width is rounded as
  *      Dressing::outline() rounds it
  **/
@@ -121,6 +123,7 @@ class Resolver final {
     /**
      * The colours and metrics a component of this class, naming this style, is drawn with.
      *
+     * @param className the class of style the component is drawn with
      * @param name what the component's style() returns, which may be empty. A component
      *      naming no style is drawn with the first style of the class the theme holds
      **/

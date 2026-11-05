@@ -4,25 +4,25 @@
  **/
 
 /*
-    The bodies behind the signatures in sl/Builtins.h: what a CALL instruction does.
+    The bodies behind the signatures in sl/compiler/Builtins.h: what a CALL instruction does.
 
     These are Machine member functions, in a second translation unit. Every body here reads
     the live mask, writes the register file and reports what it could not do, and all three
     are Machine's state. Control flow and masking are in Machine.cxx.
 */
 
+#include <api/render/offline/Units.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/compiler/Builtins.h>
+#include <api/render/offline/sl/runtime/internal/Range.h>
+#include <api/render/offline/sl/runtime/internal/Site.h>
+#include <api/render/offline/texture/Noise.h>
+#include <api/render/offline/texture/Texture.h>
+
 #include "Instruction.h"
 #include "Machine.h"
 #include "Renderer.h"
 #include "Value.h"
-
-#include <api/render/offline/Noise.h>
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/Units.h>
-#include <api/render/offline/sl/Builtins.h>
-#include <api/render/offline/sl/Types.h>
-#include <api/render/offline/sl/runtime/internal/Range.h>
-#include <api/render/offline/sl/runtime/internal/Site.h>
 
 #include <cmath>
 #include <cstddef>
@@ -40,7 +40,7 @@ namespace v3d::render::offline::sl::runtime {
 
 namespace {
 
-typedef Signature::Body Body;
+typedef compiler::Signature::Body Body;
 
 float sign(float value) {
     if (value < 0.0F) {
@@ -183,6 +183,11 @@ glm::vec3 Machine::refract(const glm::vec3 & incident, const glm::vec3 & normal,
 }
 
 void Machine::fresnel(const internal::Site & site, unsigned int point) {
+    // the reflected and transmitted fractions go to two output arguments, so a call that
+    // names fewer has nowhere to put them
+    if (site.outputs == nullptr || site.outputs->size() < 2) {
+        return;
+    }
     const glm::vec3 incident = unit(site.argument(0).triple(point));
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);
@@ -226,7 +231,7 @@ void Machine::pattern(const internal::Site & site, unsigned int point) {
     }
     for (unsigned int i = 0; i < site.target->components() && i < 3; i++) {
         const glm::vec3 stream(STREAMS[i][0], STREAMS[i][1], STREAMS[i][2]);
-        site.target->component(point, i, offline::noise(at + stream));
+        site.target->component(point, i, offline::texture::noise(at + stream));
     }
 }
 
@@ -575,7 +580,7 @@ void Machine::colourSpaces(const std::vector<const Value*> & given) {
 }
 
 void Machine::builtin(const Instruction & instruction) {
-    const std::vector<Signature> & table = builtins();
+    const std::vector<compiler::Signature> & table = compiler::builtins();
     const std::size_t index = static_cast<std::size_t>(instruction.left);
     if (instruction.left < 0 || index >= table.size()) {
         report("a call names no standard library function");
@@ -662,7 +667,7 @@ std::vector<Value*> Machine::written(const Instruction & instruction, int first)
     return outputs;
 }
 
-const Texture* Machine::texture(const std::vector<const Value*> & given, Coordinates* coordinates) {
+const texture::Texture* Machine::texture(const std::vector<const Value*> & given, Coordinates* coordinates) {
     if (given.size() == 3) {
         coordinates->s = given[1];
         coordinates->t = given[2];
@@ -672,7 +677,7 @@ const Texture* Machine::texture(const std::vector<const Value*> & given, Coordin
     }
     // a name is uniform, so the image is found once for the batch
     const std::string & name = given[0]->text();
-    const Texture* found = renderer_ == nullptr ? nullptr : renderer_->texture(name);
+    const texture::Texture* found = renderer_ == nullptr ? nullptr : renderer_->texture(name);
     if (found == nullptr) {
         report("the texture \"" + name + "\" cannot be read, so it answers black");
     }
@@ -709,7 +714,7 @@ void Machine::ambient(Value* target) {
     }
 }
 
-bool Machine::answered(const Signature & signature, const Instruction & instruction,
+bool Machine::answered(const compiler::Signature & signature, const Instruction & instruction,
     const std::vector<const Value*> & given, Value* answer) {
     if (signature.body == Body::TRANSMISSION || signature.body == Body::TRACE) {
         shadowed(signature.body == Body::TRACE, *given[0], *given[1], answer);

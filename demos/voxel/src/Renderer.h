@@ -151,7 +151,7 @@ class Renderer {
     /**
      * One draw item per meshed chunk in the camera's view, submitted to the terrain pass.
      **/
-    void drawTerrain(v3d::render::realtime::Pass* pass);
+    void drawTerrain(v3d::render::realtime::frame::Pass* pass);
 
     /**
      * The debug readout, toggled by voxel::debug: the build, what the loop measured, where the
@@ -170,8 +170,8 @@ class Renderer {
     boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
     boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::DescriptorPool> scenePool_;
     boost::shared_ptr<v3d::render::realtime::vulkan::memory::DeviceBuffer> uniforms_;
-    v3d::render::realtime::PipelineHandle pipeline_;
-    v3d::render::realtime::MaterialHandle material_;
+    v3d::render::realtime::resource::PipelineHandle pipeline_;
+    v3d::render::realtime::resource::MaterialHandle material_;
 
     boost::shared_ptr<ChunkMeshPool> meshes_;
     boost::shared_ptr<MeshBuilder> builder_;

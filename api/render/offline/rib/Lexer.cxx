@@ -5,7 +5,7 @@
 
 #include "Lexer.h"
 
-#include <api/render/offline/Characters.h>
+#include <api/render/offline/source/Characters.h>
 
 #include "Token.h"
 
@@ -47,10 +47,10 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
 void Lexer::skipSpace() {
     for (;;) {
         const int character = in_.look();
-        if (Characters::space(character)) {
+        if (source::Characters::space(character)) {
             in_.get();
         } else if (character == '#') {
-            while (in_.look() != Characters::END && in_.look() != '\n') {
+            while (in_.look() != source::Characters::END && in_.look() != '\n') {
                 in_.get();
             }
         } else {
@@ -61,7 +61,7 @@ void Lexer::skipSpace() {
 
 Token Lexer::fail(const std::string & message, unsigned int line, unsigned int column) {
     if (error_.empty()) {
-        error_ = message + Characters::position(line, column);
+        error_ = message + source::Characters::position(line, column);
     }
     return Token(Token::Kind::END, {.line = line, .column = column});
 }
@@ -81,13 +81,13 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
     if (in_.look() == '+' || in_.look() == '-') {
         text += static_cast<char>(in_.get());
     }
-    while (Characters::digit(in_.look())) {
+    while (source::Characters::digit(in_.look())) {
         text += static_cast<char>(in_.get());
         digits = true;
     }
     if (in_.look() == '.') {
         text += static_cast<char>(in_.get());
-        while (Characters::digit(in_.look())) {
+        while (source::Characters::digit(in_.look())) {
             text += static_cast<char>(in_.get());
             digits = true;
         }
@@ -97,7 +97,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
         if (in_.look() == '+' || in_.look() == '-') {
             text += static_cast<char>(in_.get());
         }
-        while (Characters::digit(in_.look())) {
+        while (source::Characters::digit(in_.look())) {
             text += static_cast<char>(in_.get());
         }
     }
@@ -109,7 +109,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
 
 Token Lexer::scanIdentifier(unsigned int line, unsigned int column) {
     std::string text;
-    while (Characters::alpha(in_.look()) || Characters::digit(in_.look())) {
+    while (source::Characters::alpha(in_.look()) || source::Characters::digit(in_.look())) {
         text += static_cast<char>(in_.get());
     }
     return Token(Token::Kind::IDENTIFIER, text, {.line = line, .column = column});
@@ -124,7 +124,7 @@ Token Lexer::scan() {
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
     const int character = in_.look();
-    if (character == Characters::END) {
+    if (character == source::Characters::END) {
         return Token(Token::Kind::END, {.line = line, .column = column});
     }
     if (character == '[') {
@@ -138,10 +138,10 @@ Token Lexer::scan() {
     if (character == '"') {
         return scanString(line, column);
     }
-    if (character == '+' || character == '-' || character == '.' || Characters::digit(character)) {
+    if (character == '+' || character == '-' || character == '.' || source::Characters::digit(character)) {
         return scanNumber(line, column);
     }
-    if (Characters::alpha(character)) {
+    if (source::Characters::alpha(character)) {
         return scanIdentifier(line, column);
     }
     in_.get();

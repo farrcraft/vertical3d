@@ -5,25 +5,41 @@
 
 #pragma once
 
-#include <demos/voxel/src/noise/noiseutils.h>
+#include <vector>
 
 #include <glm/vec2.hpp>
 
 /**
- * The perlin noise behind a TerrainMap, rendered once to a 256x256 greyscale image. Only
- * TerrainMap's source includes this header, so only that source compiles against libnoise.
+ * The fractal perlin noise behind a TerrainMap, sampled once into a 256x256 grid of heights.
  **/
 class TerrainNoise final {
  public:
     void generate();
+    /**
+     * @param column the column's position in the grid
+     * @return the column's height, a whole number from zero to 255, or zero outside the grid
+     **/
     float height(const glm::uvec2& column);
 
  private:
     /**
-     * How far the height map reaches into the noise on each axis, in the noise's own units.
-     * More of the noise in the same 256 samples makes the hills smaller and closer together.
+     * The number of samples along each side of the grid.
      **/
-    static constexpr double NOISE_EXTENT = 4.0;
+    static constexpr unsigned int SIZE = 256;
+    /**
+     * The height of a column where the noise is at its highest.
+     **/
+    static constexpr float MAX_HEIGHT = 255.0F;
+    /**
+     * How far the grid reaches into the noise on each axis, in the noise's own units. More of the
+     * noise in the same 256 samples makes the hills smaller and closer together.
+     **/
+    static constexpr float NOISE_EXTENT = 4.0F;
+    /**
+     * The number of octaves summed. Each has twice the frequency and half the amplitude of the one
+     * before it.
+     **/
+    static constexpr int OCTAVES = 6;
 
-    noise::utils::Image image_;
+    std::vector<float> heights_;
 };

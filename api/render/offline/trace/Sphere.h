@@ -33,6 +33,7 @@ class Sphere final : public Primitive {
      * @param shape its radius, the slab it is cut to, which is clamped to the radius, and its
      *        sweep about z in degrees
      * @param placement object to world, at the reference end of its motion
+     * @param colour the colour that was current, which is SL's Cs
      **/
     Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour);
 
@@ -42,6 +43,9 @@ class Sphere final : public Primitive {
      * The line is in world space and need not be unit length: the parameter is in its
      * units, which an affine placement keeps.
      *
+     * @param line the line, in world space
+     * @param from the parameter a hit must lie beyond
+     * @param along written with the hit's parameter along the line
      * @param point the hit in the sphere's own space, where the normal and the surface
      *        parameters are read off
      **/

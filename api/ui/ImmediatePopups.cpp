@@ -7,11 +7,14 @@
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Painter.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 
@@ -48,14 +51,18 @@ bool Immediate::combo(const std::string& label, int* selected, const std::vector
         context_->popup.selected = *selected;
     }
 
+    // the label at the left, as a field's is, and the chosen item at the right against the
+    // drop mark, which says a click opens a list
     paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->eased(id, context_->face(open || reaction.held, reaction.hovered)));
+    const glm::vec4 ink = context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text);
     const float mark = context_->dressing.lineHeight * comboMark;
-    const glm::vec2 markMin(max.x - context_->dressing.padding - mark, min.y + ((size.y - mark) * 0.5F));
-    paint::fillBox(context_->canvas, markMin, markMin + glm::vec2(mark, mark), 0.0F,
-        context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
+    const float markLeft = max.x - context_->dressing.padding - mark;
+    paint::dropMark(context_->canvas, glm::vec2(markLeft + (mark * 0.5F), min.y + (size.y * 0.5F)), mark, ink);
+    context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size, context_->ink(context_->dressing.text));
     if (*selected >= 0 && static_cast<std::size_t>(*selected) < items.size()) {
-        context_->label(items[static_cast<std::size_t>(*selected)], min + glm::vec2(context_->dressing.padding, 0.0F), size,
-            context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
+        const std::string& item = items[static_cast<std::size_t>(*selected)];
+        const float left = markLeft - context_->dressing.padding - context_->measure(item);
+        context_->label(item, glm::vec2(left, min.y), size, ink);
     }
     return changed;
 }
@@ -108,6 +115,63 @@ void immediate::Context::drawPopup() {
     if (close) {
         popup.id = 0;
     }
+}
+
+void immediate::Context::askTip(Id id, const std::string& line, const std::string& keys, const glm::vec2& min, const glm::vec2& max) {
+    if (tip.id != id) {
+        tip.id = id;
+        tip.since = clock.now;
+        tip.hidden = false;
+    }
+    // a press puts the tooltip away until the cursor moves off where it went down
+    if (input.pressed) {
+        tip.hidden = true;
+        tip.pressAt = input.cursor;
+    } else if (tip.hidden && input.cursor != tip.pressAt) {
+        tip.hidden = false;
+    }
+    tip.asked = true;
+    tip.text = line;
+    tip.keys = keys;
+    tip.boxMin = min;
+    tip.boxMax = max;
+}
+
+void immediate::Context::drawTip() {
+    if (!tip.asked) {
+        tip.id = 0;
+        return;
+    }
+    tip.asked = false;
+    if (tip.hidden || canvas == nullptr) {
+        return;
+    }
+    // a tooltip shown a moment ago makes the next one quick, so a row of buttons reads at once
+    if (timed) {
+        const bool recent = tip.shown.has_value() && clock.now - tip.shown.value_or(0.0F) <= dressing.tooltipDelay;
+        const float wait = recent ? dressing.tooltipQuickDelay : dressing.tooltipDelay;
+        if (clock.now - tip.since < wait) {
+            return;
+        }
+    }
+    const float line = dressing.lineHeight;
+    const float inset = line * tipInset;
+    const float gap = tip.keys.empty() || tip.text.empty() ? 0.0F : inset;
+    const glm::vec2 size(measure(tip.text) + gap + measure(tip.keys) + (inset * 2.0F), line);
+    const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
+
+    // just under the widget, above it where it would leave the canvas, and kept on it across
+    glm::vec2 corner(tip.boxMin.x, tip.boxMax.y + dressing.spacing);
+    if (corner.y + size.y > room.y) {
+        corner.y = tip.boxMin.y - dressing.spacing - size.y;
+    }
+    corner = glm::vec2(std::clamp(corner.x, 0.0F, std::max(0.0F, room.x - size.x)), std::max(corner.y, 0.0F));
+    paint::plateBox(canvas, corner, corner + size, dressing.radius, dressing.borderWidth, {.inside = dressing.panel, .outline = dressing.border});
+    label(tip.text, corner + glm::vec2(inset, 0.0F), size, dressing.text);
+    if (!tip.keys.empty()) {
+        label(tip.keys, glm::vec2(corner.x + size.x - inset - measure(tip.keys), corner.y), size, dressing.secondaryText);
+    }
+    tip.shown = clock.now;
 }
 
 };  // namespace v3d::ui

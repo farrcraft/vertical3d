@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -35,13 +35,13 @@ class MeshCodec final : public Codec {
  public:
     static constexpr std::int64_t VERSION = 1;
 
-    scene::Item::Kind kind() const noexcept override;
+    scene::item::Item::Kind kind() const noexcept override;
     std::string_view name() const noexcept override;
     std::int64_t version() const noexcept override;
     bool buffered() const noexcept override;
-    std::vector<Buffer> buffers(const scene::Item& item) const override;
-    boost::json::object payload(const scene::Item& item) const override;
-    boost::shared_ptr<scene::Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const override;
+    std::vector<Buffer> buffers(const scene::item::Item& item) const override;
+    boost::json::object payload(const scene::item::Item& item) const override;
+    boost::shared_ptr<scene::item::Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const override;
 
  private:
     /**

@@ -61,7 +61,7 @@ C system header. The order in a file is therefore:
 4. Third-party headers such as boost and glm. Their names end in `.hpp` or have no extension, so
    cpplint does not treat them as C headers.
 
-Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-root.md)
+Background: [ADR-0048](../adr/project/0048-includes-name-headers-from-the-repository-root.md)
 
 ### One class per header
 
@@ -72,9 +72,13 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
 - A class nested inside another class stays in its owner's header.
 - **A header that only its own library's sources include goes in an `internal/` directory** of
   the directory it serves, such as `api/interchange/usd/internal/Reader.h`. Under `api/` it takes
-  the namespace that directory gives it. Only files in the directory that holds `internal/` may
-  include it, so what it includes is linked PRIVATE. This holds for an app library such as
-  `v3dlib_editor` too, whose executable and suites include its other headers.
+  the namespace that directory gives it. Only files in the directory that holds `internal/`, or in
+  a directory below it, may include it, so what it includes is linked PRIVATE. This holds for an
+  app library such as `v3dlib_editor` too, whose executable and suites include its other headers.
+- A header that several subdirectories of one library share goes in the `internal/` of the
+  directory above them. `api/font/internal/` holds the FreeType handles that `face/`, `text/`,
+  `glyph/` and `texture/` all use. A header that one subdirectory uses goes in that
+  subdirectory's own `internal/`.
 - A typedef or an enum goes in the header of the class that gives it meaning.
 - When splitting leaves a family of headers that are only used together, such as an AST's node
   types or an app's ECS components, put them in a subdirectory of their own.
@@ -137,14 +141,22 @@ fixture and helper before the first case. A fixture that two test files share ge
 its `internal/` headers. The review gates run it on the whole tree. Rule 3 is a judgment, and review
 checks it.
 
-Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md)
+Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-local.md)
 
 ### Directories
 
-- **Split a directory when its files serve different purposes, not when it reaches a certain
-  size.** `api/grid` has sixteen files that all implement one concept, so it stays one
-  directory. `api/ui` is split into `paint/`, `input/`, `shell/` and `style/` because those are
-  separate jobs.
+- **Split a directory when its files serve different purposes.** `api/ui` is split into
+  `paint/`, `input/`, `shell/` and `style/` because those are separate jobs. `api/font` is split
+  into `face/`, `text/`, `glyph/` and `texture/` for the same reason. `api/grid` has thirteen
+  headers that all implement one concept, so it stays one directory.
+- **A directory holds at most 15 headers, not counting those under `tests/`.** A directory past
+  that size almost always does several jobs, so split it by them. The exception is a directory
+  whose headers all belong to one family that is used together, such as
+  `api/render/offline/sl/syntax`, which holds one header for each kind of syntax tree node. List
+  such a directory in `COHESIVE` in `scripts/dirsize.ts`, with the family it holds. Headers are
+  counted rather than sources, because each class has one header and may have no source of its
+  own. `scripts/dirsize.ts` reports a directory over the limit that is not listed, and a listed
+  directory that is back within the limit.
 - A namespace follows its directory. A class in a subdirectory drops the subdirectory's name
   from its own name: `pipeline::Builder`, not `pipeline::PipelineBuilder`. When the subdirectory
   name is the class's noun, the class keeps it: `device::Device`.
@@ -154,10 +166,10 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 - **A function is at most 100 lines.** A longer one does several steps that each deserve a
   name. Give each step a function of its own, named for what it does. clang-tidy's
   `readability-function-size` reports a longer function.
-- **A C++ file is at most 1000 lines, unless it is a test.** A longer file is a class doing
-  several jobs. Split it into classes with one job each, rather than spreading one class's
-  definitions over several files. `scripts/filelength.ts` reports a longer file. A test file is
-  exempt, because its cases are independent of each other.
+- **A C++ or TypeScript file is at most 1000 lines, unless it is a test.** A longer file is a
+  class or a module doing several jobs. Split it into classes or modules with one job each,
+  rather than spreading one class's definitions over several files. `scripts/filelength.ts`
+  reports a longer file. A test file is exempt, because its cases are independent of each other.
 - An app does not register every command in one place, because that place then holds every
   job the commands do. Each part of the app has a class that registers that part's commands.
 
@@ -185,6 +197,12 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
   protected accessor, such as `logger()` or `registry()`. A struct whose data members are all
   public is a record, and is exempt. clang-tidy's `misc-non-private-member-variables-in-classes`
   reports a protected data member, and a public one in a class that also has private data.
+- **A record field that a designated initialiser may leave out has a default member
+  initialiser.** Write `{}` when the type's default is the value wanted:
+  `std::vector<ColourStop> stops{};`. A field with no initialiser is one every initialiser has to
+  name. Clang and GCC both report a designated initialiser that leaves such a field out, under
+  `-Wextra`. MSVC does not, so the Clang build on Linux is where it fails. clang-tidy's
+  `readability-redundant-member-init` would remove the `{}`, and is turned off for that reason.
 - **A number whose meaning is not plain from its line is a named constant.** The name says
   what the number means, not its value. Numbers that are one value, such as a colour or a
   table, are one constant. A count or a length is derived, with `std::size` or `sizeof`,
@@ -209,6 +227,8 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 - **Log through the spdlog wrapper:** `logger_->get()->info("... {}", value)`. Do not use the
   old `LOG_INFO` and `LOG_ERROR` macros. They appear only in commented-out or non-compiling code.
 - Doc comments are `/** **/` blocks. Many trivial members have an empty one.
+
+Background: [ADR-0161](../adr/project/0161-code-a-field-a-caller-may-omit-has-a-default.md)
 
 ## Writing
 
@@ -262,6 +282,21 @@ the commit, or describe a later phase.
   something now reads, is fixed in the same change.
 - Doc comments are `/** **/` blocks, often left empty above trivial members.
 
+### Doc comments in a public header
+
+The API reference is built from the headers outside `internal/` and `tests/`. Three rules hold
+there, and `node scripts/docs.ts` reports a break of each:
+
+- **Each class, struct and enum has a doc comment** saying what it is or holds.
+- **A function that documents one parameter with `@param` documents each of them**, in the order
+  of the signature. A template parameter is documented with `@tparam`.
+- **A doc comment is true of the declaration it is on.** It names no parameter the function does
+  not take, and documents no return value for a function that returns nothing. A name in angle
+  brackets, such as `<T>`, and a preprocessor word such as `#include`, are written in backticks.
+
+A member is documented when it holds something its declaration cannot say, as any other comment
+is. An empty block above a trivial member is allowed.
+
 ## Documents
 
 A reference document states how a thing works and the rules a reader must follow, completely.
@@ -271,6 +306,57 @@ single `Background:` line, for a reader who wants the reasoning.
 Each document serves one kind of reader, and [README.md](../README.md) says which. A subject can
 appear twice: once for the people who use it and once for the people who change it. Each fact
 still has one home per reader, and the other document links to it rather than copying it.
+
+### READMEs
+
+GitHub shows a directory's README to someone browsing the tree, so each component has one. A
+component is:
+
+- each directory at the repository root, other than those whose names start with a dot;
+- each directory under `demos/` or `examples/` that holds a `CMakeLists.txt`;
+- each api library's directory, as `cmake/v3dApiLibraries.cmake` names it.
+
+A README is an entry point, not a reference document. It starts with a `# ` heading, says in a
+few sentences what the directory holds, and links the documents that cover it. It does not
+restate what those documents say, such as a list of options or dependencies.
+
+An api library's README starts with the library's description from the table in
+[docs/api/README.md](../api/README.md#the-libraries), word for word, with any link pointed from
+the README's own directory. It then names the library's CMake target and links its documents.
+When a library's description changes, change it in both places.
+
+`scripts/readmes.ts` checks that each component has a README, that its links resolve, and that a
+library's README starts with the table's description.
+
+### The documentation site
+
+`node scripts/docs.ts` builds the documents in `docs/` into a site in `out/docs/`, with mdBook. The
+script fetches mdBook at a pinned version and checks it against a pinned SHA-256. Open
+`out/docs/index.html` to read the result.
+
+- **The site holds the pages [SUMMARY.md](../SUMMARY.md) lists.** A new page is added there, under
+  its reader's group and after the page that leads to it. `scripts/summary.ts` reports a page under
+  `docs/` that is not listed, other than the records under a `completed/` directory.
+- **A document is written for GitHub, and the site follows it.** Links stay relative. On the
+  site, a link to a file outside `docs/`, or to a record under `completed/`, goes to that file on
+  GitHub. A link to a directory goes to its README.
+- **A link that names nothing stops the build.** Anchors are not checked.
+- **The API reference is built from the public headers**, by Doxygen at a pinned version, into
+  `reference/` in the site. A header under `internal/` or `tests/` is left out.
+  [scripts/docs/Doxyfile](../../scripts/docs/Doxyfile) holds its settings. A document links the
+  reference by its published address, because the reference is not in the repository.
+- **A picture in a document is made by `node scripts/pictures.ts`**, and the line under it names
+  what it was made from. moya's pictures are rendered from scenes under `docs/`. A picture of an
+  app is the app's own capture of its window, taken with `--capture` as
+  [api/engine/Lifecycle.md](../api/engine/Lifecycle.md#the-command-line) describes. A new picture
+  is added to the script's list, so that one command makes every picture again after a change.
+  No picture is taken from the screen.
+- **The site is published from `main`.** [docs.yml](../../.github/workflows/docs.yml) builds it
+  on each pull request, so a broken link fails the pull request. It builds and publishes it to
+  GitHub Pages on each push to `main`, at https://farrcraft.github.io/vertical3d/. A branch is
+  never published.
+
+Background: [ADR-0162](../adr/project/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
 
 ## API design
 

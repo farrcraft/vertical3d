@@ -133,6 +133,32 @@ function(v3d_add_app_data target)
 	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data")
 endfunction()
 
+# An app's icon is an SVG. On Windows the build draws it into an .ico with appicon and embeds
+# that in the executable as its first icon resource, which Explorer, shortcuts and the taskbar
+# show. The window's own icon comes from the window config at run time, from the same SVG.
+#
+# The .ico and the resource script are written to the target's binary directory. The script
+# compiles again when the .ico changes, because the resource compiler does not track it.
+#
+# @param target the executable the icon is embedded in
+# @param svg the icon's SVG, relative to the calling directory
+function(v3d_add_app_icon target svg)
+	if(NOT WIN32)
+		return()
+	endif()
+	set(source "${CMAKE_CURRENT_SOURCE_DIR}/${svg}")
+	set(icon "${CMAKE_CURRENT_BINARY_DIR}/${target}.ico")
+	set(script "${CMAKE_CURRENT_BINARY_DIR}/${target}_icon.rc")
+	add_custom_command(OUTPUT "${icon}"
+		COMMAND appicon "${source}" "${icon}"
+		DEPENDS appicon "${source}"
+		COMMENT "Drawing ${target}'s icon"
+		VERBATIM)
+	file(GENERATE OUTPUT "${script}" CONTENT "1 ICON \"${icon}\"\n")
+	set_source_files_properties("${script}" PROPERTIES OBJECT_DEPENDS "${icon}")
+	target_sources(${target} PRIVATE "${script}" "${icon}")
+endfunction()
+
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
 # /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's
@@ -153,6 +179,35 @@ function(v3d_add_test lib)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
 	# down, so any test that builds a Logger reports the same permanent false positive.
 	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+endfunction()
+
+# A fuzz target passes one input to a parser through LLVMFuzzerTestOneInput, the entry point
+# libFuzzer calls. Each one is a ctest entry that runs its CORPUS once, file by file, so an
+# input that once broke the parser keeps being checked by every build. With V3D_FUZZ the target
+# links libFuzzer, and run with a corpus directory and no -runs it fuzzes until it finds a
+# failure or is stopped. Without it the target links v3dFuzzMain.cxx, which only runs the files
+# it is given.
+#
+#   v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)
+#
+# The executable is v3dfuzz_<name>, and its ctest entry is fuzz_<name>, labelled fuzz.
+function(v3d_add_fuzzer name source)
+	cmake_parse_arguments(PARSE_ARGV 2 arg "" "" "LIBRARIES;CORPUS")
+	set(target "v3dfuzz_${name}")
+	add_executable(${target} ${source})
+	target_include_directories(${target} PRIVATE ${V3D_ROOT})
+	target_link_libraries(${target} PRIVATE ${arg_LIBRARIES})
+	if(V3D_FUZZ)
+		target_link_options(${target} PRIVATE "-fsanitize=fuzzer")
+	else()
+		target_sources(${target} PRIVATE "${V3D_ROOT}/cmake/v3dFuzzMain.cxx")
+		target_link_libraries(${target} PRIVATE Boost::filesystem)
+	endif()
+	if(MSVC)
+		target_compile_options(${target} PRIVATE /EHsc /utf-8)
+	endif()
+	add_test(NAME fuzz_${name} COMMAND ${target} -runs=0 ${arg_CORPUS})
+	set_tests_properties(fuzz_${name} PROPERTIES LABELS fuzz)
 endfunction()
 
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with

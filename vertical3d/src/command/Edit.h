@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 
 #include <string>
@@ -34,19 +34,19 @@ class Edit final : public Command {
     struct Values {
         std::string name;
         scene::Pose pose;
-        scene::Curve::Style style;
+        scene::item::Curve::Style style;
     };
 
     /**
      * @return the item's own values
      **/
-    static Values of(const scene::Item& item);
+    static Values of(const scene::item::Item& item);
 
     /**
      * Write values into an item: the name and the placement, and the lens, emission or style
      * its kind has.
      **/
-    static void apply(scene::Item* item, const Values& values);
+    static void apply(scene::item::Item* item, const Values& values);
 
     /**
      * @return whether two sets of values are the same, within the tolerance a placement is
@@ -59,14 +59,14 @@ class Edit final : public Command {
      *        item now
      * @param what what to call the change, such as "rename"
      **/
-    Edit(const boost::shared_ptr<scene::Item>& item, const Values& before, const std::string& what);
+    Edit(const boost::shared_ptr<scene::item::Item>& item, const Values& before, const std::string& what);
 
     void undo() override;
     void redo() override;
     std::string name() const override;
 
  private:
-    boost::shared_ptr<scene::Item> item_;
+    boost::shared_ptr<scene::item::Item> item_;
     Values before_;
     Values after_;
     std::string what_;

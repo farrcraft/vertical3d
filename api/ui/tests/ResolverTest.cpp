@@ -11,6 +11,7 @@
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>
 #include <api/ui/style/property/Number.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <string>
 #include <string_view>
@@ -299,9 +300,7 @@ BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
     resolver.theme(theme);
     BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0F, 0.001F);
 
-    v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate ui(v3d::ui::typeset::mono());
     ui.theme(theme);
     BOOST_CHECK_CLOSE(ui.dressing().lineHeight, 18.0F, 0.001F);
 }
@@ -367,9 +366,7 @@ BOOST_AUTO_TEST_CASE(both_ways_of_writing_a_ui_read_the_same_keys) {
 
     Resolver resolver;
     resolver.theme(theme);
-    v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate ui(v3d::ui::typeset::mono());
     ui.theme(theme);
 
     value = 101.0F;
@@ -400,9 +397,7 @@ BOOST_AUTO_TEST_CASE(a_theme_that_dresses_one_side_leaves_the_other_alone) {
     metric(chrome, "line-height", 34.0F);
     theme->addStyle(chrome);
 
-    v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate ui(v3d::ui::typeset::mono());
     const float before = ui.dressing().lineHeight;
     ui.theme(theme);
     BOOST_CHECK_CLOSE(ui.dressing().lineHeight, before, 0.001F);
@@ -456,9 +451,7 @@ BOOST_AUTO_TEST_CASE(the_immediate_layer_reads_the_indent_test) {
     metric(tools, "indent", 31.0F);
     theme->addStyle(tools);
 
-    v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate ui(v3d::ui::typeset::mono());
     ui.theme(theme);
     BOOST_CHECK_CLOSE(ui.dressing().indent, 31.0F, 0.001F);
 }
@@ -472,9 +465,7 @@ BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name
     colour(loud, "text", red);
     first->addStyle(loud);
 
-    v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate ui(v3d::ui::typeset::mono());
     const glm::vec4 text = ui.dressing().text;
 
     ui.theme(first);

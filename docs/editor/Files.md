@@ -38,7 +38,7 @@ A file the project refers to is named by its path relative to the project direct
 makes every directory of the layout that is missing, then writes the scene, then the manifest,
 so a manifest never names a scene that was not written.
 
-Background: [ADR-0100](../adr/0100-editor-a-project-is-a-directory-with-a-manifest.md)
+Background: [ADR-0100](../adr/editor/0100-editor-a-project-is-a-directory-with-a-manifest.md)
 
 ## Scene documents
 
@@ -47,13 +47,13 @@ A scene document is a SQLite database, read and written by `v3d::editor::store::
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`store::Scene::SCHEMA_VERSION`, which is 4.
+`store::Scene::SCHEMA_VERSION`, which is 5.
 
 **The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
 | Table | Column | Holds |
 |---|---|---|
-| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing |
+| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `auto_key`: 1 when an edit sets a key, and off when it is 0 or missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
 | | `kind` | `mesh`, `camera`, `light`, `group` or `curve` |
@@ -64,6 +64,8 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `payload` | A JSON object of what the kind adds. The table checks that it is JSON |
 | | `parent` | The document id of the item's parent, or `NULL` for an item with none. It references `items(id)`, checked when the write commits |
 | | `name` | What the item is called, which may be empty |
+| | `views` | 1 when the item itself is shown in the views, and 0 when it is hidden |
+| | `renders` | 1 when the item itself is shown in renders, and 0 when it is left out |
 | `buffers` | `item` | The item the blob belongs to. Deleting the item deletes its blobs |
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
@@ -132,6 +134,7 @@ the scene untouched, if:
   interpolation that is not step, linear or Bezier
 - the timeline's rate is not a positive number, its range runs backwards, or its frame is
   outside the range
+- the unit of length is a symbol this build does not have
 
 **Writing.** `store::Scene::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
@@ -150,7 +153,7 @@ write to that document:
 - writes the row of each curve that is new or whose keys changed, and deletes the row of each
   curve the scene no longer has. A curve belongs to the scene rather than to its item, so a key
   does not move the item's revision
-- writes `next_id` and the timeline
+- writes `next_id`, the timeline, the render settings and the unit of length
 
 A write to any other path, a document the store has neither written nor read, is written whole:
 everything it held is deleted and every item is written. The next write after a write that
@@ -169,22 +172,24 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, and versions 1
-to 3 have no `name` column. A read takes an older document as it is. Every item of a version 1
-document is at the top of the scene, and nothing in a version 1 or 2 document is animated.
-Every item of a version 1 to 3 document has an empty name. The first write to it adds what it
-lacks and sets the version to 4, in the same transaction as the rest of the write. Every kind
+Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, versions 1
+to 3 have no `name` column, and versions 1 to 4 have no `views` or `renders` column. A read
+takes an older document as it is. Every item of a version 1 document is at the top of the scene,
+and nothing in a version 1 or 2 document is animated. Every item of a version 1 to 3 document has
+an empty name, and every item of a version 1 to 4 document is shown in the views and in renders.
+The first write to it adds what it lacks and sets the version to 5, in the same transaction as
+the rest of the write. Every kind
 and the curves are at version 1.
 
 **Reading sets the frame.** Once a document is read, its timeline's frame is the current one,
 and no edit is pending. A read changes no item's values, which
 [Animation.md](Animation.md#evaluating-a-frame) describes.
 
-Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md),
-[ADR-0102](../adr/0102-editor-scene-records-are-rows-with-json-payloads.md),
-[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md),
-[ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md),
-[ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)
+Background: [ADR-0101](../adr/editor/0101-editor-a-scene-document-is-a-sqlite-database.md),
+[ADR-0102](../adr/editor/0102-editor-scene-records-are-rows-with-json-payloads.md),
+[ADR-0103](../adr/editor/0103-editor-items-have-persistent-document-ids.md),
+[ADR-0104](../adr/editor/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md),
+[ADR-0105](../adr/editor/0105-editor-animation-is-scalar-curves-on-item-properties.md)
 
 ## Open, Save and Save As
 
@@ -245,7 +250,8 @@ The file is read by `interchange::readGltf()` or `interchange::usd::read()`, des
 
 - **Kinds.** Each node becomes one item: a mesh, a camera, a light or a curve when it carries
   one, in that order, and a group when it carries none. A node that carries more than one
-  becomes the first, with the others as its children. Each item takes its node's name.
+  becomes the first, with the others as its children. Each item takes its node's name, with a
+  number after it when another item has it, as [Scene.md](Scene.md#the-scene) says.
 - **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
   that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
   give items that share one geometry. A mesh that cannot be built, such as one with three faces
@@ -262,12 +268,17 @@ The file is read by `interchange::readGltf()` or `interchange::usd::read()`, des
   step keys keep their interpolation. A cubic spline becomes Bezier keys, with the file's
   tangents as slopes for a translation or a scale, and automatic slopes for a rotation. The
   timeline's range is not changed.
+- **Units.** A file is read in metres, a USD stage scaled by its own `metersPerUnit`. Every
+  length is then scaled into the document's unit of length by `interchange::rescale()`: points,
+  positions, translation keys, curves and their width, and a camera's clipping and extent.
+
+Background: [ADR-0140](../adr/editor/0140-editor-a-project-names-its-unit-of-length.md)
 
 What the file holds that the editor cannot, such as a skin or a mesh of lines, is logged as a
 warning, one line each, and the outcome counts them. A file that cannot be read is refused, and
 the document is left as it was.
 
-Background: [ADR-0122](../adr/0122-editor-import-gltf-and-usd-as-scenes-of-items.md)
+Background: [ADR-0122](../adr/editor/0122-editor-import-gltf-and-usd-as-scenes-of-items.md)
 
 ## RIB export
 
@@ -299,8 +310,9 @@ the offline renderer reads RIB.
 - then the hierarchy, as nested `AttributeBegin` blocks. Each item's block has an identifier
   name, such as `group1` or `mesh2`, and a `ConcatTransform` of its local matrix. A mesh's block
   then has a three-cornered `Polygon` for each triangle of each face, and the blocks of the items
-  beneath it follow inside it. A block is written only when a mesh is inside it, so a camera, a
-  light, or a group with no mesh beneath it writes none
+  beneath it follow inside it. A curve item that renders writes its curves as RI `Curves` in
+  its block. A block is written only when a mesh or a curve that renders is inside it, so a
+  camera, a light, or a group with neither beneath it writes none
 - every face is cut into triangles as `brep::triangulateFace()` cuts it, because RI draws a
   `Polygon` only when it is convex and flat, and a face of more than three corners need be
   neither. Each triangle winds as its face's loop does
@@ -313,4 +325,4 @@ its default colour. RI treats a polygon as planar and convex without checking. m
 first four vertices of a polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.
 
-Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md)
+Background: [ADR-0023](../adr/offline/0023-offline-rib-is-the-scene-format.md)

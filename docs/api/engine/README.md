@@ -53,7 +53,7 @@ makes it that game. Do not write your own version of these:
 - **The app path** — `v3d::engine::appPath(argv[0])`.
 - **The shell** — `v3d::shell::Shell` builds the ui, the screen, the pause menu and the statistics
   overlay below, and declares their commands. An app holds one. See [Shell.md](Shell.md).
-- **Text** — `v3d::ui::paint::TextRenderer` owns the font, the glyph atlas and text drawing.
+- **Text** — `v3d::ui::paint::TextRenderer` owns the font, the glyph store and text drawing.
 - **The pause menu** — `v3d::ui::shell::GameMenu` is the menu the escape key opens over a game.
   It pauses the game through a callback and handles its own navigation commands.
 - **Frame statistics** — `v3d::ui::shell::StatisticsOverlay` draws the loop's measurements. It
@@ -65,13 +65,16 @@ makes it that game. Do not write your own version of these:
 
 [ui/](../ui/README.md) describes how to use each of these.
 
-Background: [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
+Background: [ADR-0028](../../adr/engine/0028-apps-the-shared-app-shell-lives-in-the-api.md)
 
 ## Logging
 
 There is one log per process, written by spdlog. `run<T>` opens it as `v3d.log` beside the
 executable before anything logs. A test or a tool that never calls `log::Logger::open()` writes
 `v3d.log` in its working directory.
+
+The log is flushed after every line at `info` and above. A `debug` line waits in the buffer until
+a later line flushes it, so a process that is ended rather than quit loses it.
 
 `Logger::open(path)` returns whether the log is written to `path`. A path that cannot be opened,
 such as one in a directory the process cannot write to, does not throw: the log goes to stderr

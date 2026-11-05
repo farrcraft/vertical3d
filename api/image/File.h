@@ -16,6 +16,7 @@ namespace v3d::image {
  * The path is UTF-8, as every narrow path in the api is. The caller closes the file with
  * std::fclose.
  *
+ * @param path the file's path, in UTF-8
  * @param mode as std::fopen takes it, such as "rb" or "wb"
  * @return the file, or null when it cannot be opened
  **/

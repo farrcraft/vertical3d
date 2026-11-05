@@ -6,7 +6,7 @@
 #include "AppEngine.h"
 
 #include <api/engine/Feature.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 
 #include <string>
 
@@ -53,7 +53,7 @@ bool AppEngine::render() {
         glm::vec2(static_cast<float>(size.x) - 40.0F, static_cast<float>(size.y) - 40.0F),
         glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
-    boost::shared_ptr<v3d::render::realtime::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
+    boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());
 
     renderer_->renderFrame();

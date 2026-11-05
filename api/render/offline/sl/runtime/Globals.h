@@ -1,0 +1,150 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Value.h>
+
+#include <vector>
+
+#include <glm/vec3.hpp>
+
+namespace v3d::render::offline::sl::runtime {
+
+/**
+ * The values a hider has for one shading point, which a surface shader reads as its globals.
+ * Every hider fills in the same fields, so a shader sees the same thing under either.
+ **/
+class Point final {
+ public:
+    glm::vec3 position = glm::vec3(0.0F);   /**< P **/
+    glm::vec3 normal = glm::vec3(0.0F);     /**< N **/
+    glm::vec3 geometric = glm::vec3(0.0F);  /**< Ng **/
+    glm::vec3 incident = glm::vec3(0.0F);   /**< I **/
+    glm::vec3 colour = glm::vec3(1.0F);     /**< Cs **/
+    glm::vec3 opacity = glm::vec3(1.0F);    /**< Os, and Oi until the shader sets it **/
+    float s = 0.0F;
+    float t = 0.0F;
+    float u = 0.0F;
+    float v = 0.0F;
+    float du = 0.0F;                        /**< zero for a hider with no neighbouring point to difference **/
+    float dv = 0.0F;
+};
+
+/**
+ * The register holding each global a renderer writes or reads, in one program. They are
+ * looked up once, when this is constructed, and not by name at every point. A global the
+ * program does not have is -1. Writing it does nothing, and reading it returns the default
+ * the caller gave.
+ **/
+class Globals final {
+ public:
+    /**
+     * Every global absent, for a machine not yet prepared.
+     **/
+    Globals() = default;
+
+    /**
+     **/
+    explicit Globals(const runtime::Program & program);
+
+    /**
+     * Write a surface point into one lane of the batch.
+     **/
+    void surface(runtime::Machine* machine, unsigned int lane, const Point & point) const;
+
+    /**
+     * Write E, which is one value for the whole batch.
+     **/
+    void eye(runtime::Machine* machine, const glm::vec3 & position) const;
+
+    /**
+     * P and N where a displacement shader left them, or `otherwise` when the program has
+     * none. A displacement shader writes both.
+     **/
+    glm::vec3 position(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+    glm::vec3 normal(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+
+    /**
+     * @return what the shader left in Ci at a lane, or otherwise when it has no Ci
+     **/
+    glm::vec3 colour(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+
+    /**
+     * @return what the shader left in Oi at a lane, or otherwise when it has no Oi
+     **/
+    glm::vec3 opacity(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+
+    /**
+     * Write a pixel into one lane, for an imager: its colour as Ci, its coverage as Oi and
+     * alpha, and its centre in raster space as P, for an imager that varies across the
+     * frame.
+     **/
+    void pixel(runtime::Machine* machine, unsigned int lane, const glm::vec3 & colour, float coverage,
+        const glm::vec3 & position) const;
+
+    /**
+     * @return what an imager left in alpha at a lane, or otherwise when it has no alpha
+     **/
+    float alpha(const runtime::Machine & machine, unsigned int lane, float otherwise) const;
+
+    /**
+     * Run a light over a batch of surface points and read back what it shone on each.
+     *
+     * The light's parameters are written through its placement, and its P is the origin of
+     * that space, so a light placed by a transform lands where the scene put it. An area
+     * light's P is instead the point sampled on its surface for each shading point. While this
+     * runs, the renderer resolves "shader" space from the light's placement.
+     *
+     * @param light the light shader and the transform that placed it
+     * @param machine prepared for the light's program, whose globals these are
+     * @param batch how many surface points there are
+     * @param surface the points being lit, in the renderer's current space
+     * @param gathering the cone the surface's illuminance loop gathers from, which a `solar`
+     *        with an angle chooses its direction against
+     * @param direction written with the light's L at each point, or zero when the light has
+     *        no L
+     * @param colour written with the light's Cl at each point, or zero when the light has no
+     *        Cl
+     * @param reached written with which points the light lit, nonzero for a lit point
+     * @param ambient written with whether the light has neither `illuminate` nor `solar`
+     * @param from for an area light, the point it shines from at each shading point, in the
+     *        renderer's current space. Null for any other light
+     * @return whether the light ran
+     **/
+    bool shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
+        const runtime::Cone & gathering, runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached,
+        bool* ambient, const std::vector<glm::vec3>* from = nullptr) const;
+
+ private:
+    static void put(runtime::Machine* machine, int reg, unsigned int lane, const glm::vec3 & value);
+
+    static void put(runtime::Machine* machine, int reg, unsigned int lane, float value);
+
+    int position_ = -1;
+    int normal_ = -1;
+    int geometric_ = -1;
+    int incident_ = -1;
+    int eye_ = -1;
+    int surfaceColour_ = -1;
+    int surfaceOpacity_ = -1;
+    int colour_ = -1;
+    int opacity_ = -1;
+    int alpha_ = -1;
+    int s_ = -1;
+    int t_ = -1;
+    int u_ = -1;
+    int v_ = -1;
+    int du_ = -1;
+    int dv_ = -1;
+    int lit_ = -1;          /**< Ps, the surface point a light shader is lighting **/
+    int towards_ = -1;      /**< L **/
+    int lightColour_ = -1;  /**< Cl **/
+};
+
+};  // namespace v3d::render::offline::sl::runtime

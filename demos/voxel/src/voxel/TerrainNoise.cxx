@@ -5,39 +5,39 @@
 
 #include "TerrainNoise.h"
 
-#include <demos/voxel/src/noise/noiseutils.h>
+#include <cmath>
+#include <cstddef>
 
-#include <noise.h>
+#include <glm/common.hpp>
+#include <glm/gtc/noise.hpp>
+#include <glm/vec3.hpp>
 
 void TerrainNoise::generate() {
-    const noise::module::Perlin perlinModule;
-    noise::utils::NoiseMap heightMap;
-    noise::utils::NoiseMapBuilderPlane heightMapBuilder;
-
-    heightMapBuilder.SetSourceModule(perlinModule);
-    heightMapBuilder.SetDestNoiseMap(heightMap);
-
-    heightMapBuilder.SetDestSize(256, 256);
-    // lower x, upper x, lower z, upper z
-    heightMapBuilder.SetBounds(0.0, NOISE_EXTENT, 0.0, NOISE_EXTENT);
-
-    heightMapBuilder.Build();
-
-    // render to image
-    noise::utils::RendererImage renderer;
-
-    renderer.SetSourceNoiseMap(heightMap);
-    renderer.SetDestImage(image_);
-    // resulting image is greyscale
-    renderer.Render();
+    heights_.assign(static_cast<std::size_t>(SIZE) * SIZE, 0.0F);
+    const float step = NOISE_EXTENT / static_cast<float>(SIZE);
+    for (unsigned int y = 0; y < SIZE; ++y) {
+        for (unsigned int x = 0; x < SIZE; ++x) {
+            // the grid is a plane through three-dimensional noise, which varies less than the
+            // two-dimensional kind and so stays inside the clamp more often
+            const glm::vec3 point(static_cast<float>(x) * step, 0.0F, static_cast<float>(y) * step);
+            float value = 0.0F;
+            float amplitude = 1.0F;
+            float frequency = 1.0F;
+            for (int octave = 0; octave < OCTAVES; ++octave) {
+                value += amplitude * glm::perlin(point * frequency);
+                amplitude *= 0.5F;
+                frequency *= 2.0F;
+            }
+            // the sum is about -1 to 1, and is clamped where it reaches past either end
+            const float shade = glm::clamp((value + 1.0F) * 0.5F, 0.0F, 1.0F);
+            heights_[(static_cast<std::size_t>(y) * SIZE) + x] = std::floor(shade * MAX_HEIGHT);
+        }
+    }
 }
 
 float TerrainNoise::height(const glm::uvec2& column) {
-    const unsigned int x = column.x;
-    const unsigned int y = column.y;
-    noise::utils::Color color;
-    color = image_.GetValue(static_cast<int>(x), static_cast<int>(y));
-
-    // r,g,b should be all equal for a greyscale image so any one will work
-    return static_cast<float>(color.blue);
+    if (column.x >= SIZE || column.y >= SIZE) {
+        return 0.0F;
+    }
+    return heights_[(static_cast<std::size_t>(column.y) * SIZE) + column.x];
 }

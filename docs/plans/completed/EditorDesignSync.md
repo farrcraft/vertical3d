@@ -1,0 +1,351 @@
+# Editor Design Sync — The Editor and Its Mockups Brought Into Agreement
+
+Drafted 2026-11-03 against `c3bc40a9`. The editor was built to a set of mockups, the combined
+model of tiled areas with tabs where an area holds several editors. Since then the code and the
+mockups have moved apart. Some differences are gaps in the code. Others are choices the code
+made on purpose that the mockups never caught up with. This plan settles each difference one way
+or the other. When it closes, each state of the editor matches its mockup, and each mockup
+shows what the editor does.
+
+The mockups are the "Editor Pane Models" design canvas. Its combined-model boards and its shared
+parts are the target. Its areas-only and docks boards are options that were not chosen, and are
+not changed.
+
+The editor is described in [editor/](../editor/README.md), and `api/ui` in
+[api/ui/](../api/ui/README.md) and [internals/ui/](../internals/ui/README.md). A step with a
+testable CPU half brings test cases with it. A step that changes how something looks is checked
+by running the editor and reading a screenshot, as [Testing.md](../contributing/Testing.md)
+describes.
+
+## What the survey found
+
+The editor was built at `c3bc40a9` and photographed in ten states. They are startup, a cube
+created, the command search, a divider under the cursor, Front maximised, each of the five
+workspaces, and Modelling again after a switch. Each picture was set beside the mockup of the
+same state, and colours were read from the pixels. The pictures and a note on each are on the
+canvas.
+
+**What matches:**
+
+- the text size, the editor's mark, and the viewport header's menus and Overlays button
+- the axis colours and the amber selection
+- the outliner's icons and Scene row, and the units and axis letters in Properties
+- the notice's mark and undo shortcut, and the status bar's mouse buttons and chips
+- the timeline, graph editor and console as tabs, and the divider's hint
+
+## Decisions
+
+- **Where the code made a choice on purpose, the mockup changes.** The editor finish work
+  recorded these choices and the reasons for them:
+  - The current view's name sits on a pill in the control colour.
+  - Properties has no Shading tab, because an item has no shading of its own.
+  - Rendering puts the render view beside the render settings as two areas.
+- **A chosen tab is marked as a place, not as a setting that is on.** Decided 2026-11-03. The
+  accent fill marks a checked toggle and nothing else. A pill of choices, the workspaces or
+  the Properties groups, marks the chosen one in the control colour and semibold. A tab strip
+  marks its current tab with a 2 pixel accent underline on the panel colour. Blender's theme
+  keeps the same split: a chosen tab is a lighter neutral, and only a checked toggle or radio
+  button is blue. This replaces the editor finish rule that a chosen workspace keeps the
+  accent fill. The rule binds every app that draws tabs, so step 1 records it in an ADR.
+- **An item is shown in the views, and shown in renders, by two flags of its own.** Decided
+  2026-11-03. Both are on by default, and a child is hidden wherever its parent is. Blender,
+  Houdini, USD and glTF all keep what the views show apart from what is rendered, and the files
+  the editor reads carry both. Step 5 adds the flags and records them in an ADR.
+- **The timeline's transport controls are icons, each with a tooltip.** Decided 2026-11-03.
+  Blender, Maya and Houdini all draw them as icons. Their controls also grow past five, which in
+  words would crowd the frame and range fields out of a narrow area.
+- **The Animation workspace shows a working view beside the view through the scene's camera.**
+  Decided 2026-11-03. Animation is judged through the camera that renders it, and a quad above
+  the timeline leaves each view too small to judge motion in. Maya, Houdini and Blender each let
+  a viewport look through a scene camera, and step 7 adds it.
+- **A tabbed area's tab strip holds what acts on the area, and the row under it what acts on the
+  editor.** Decided 2026-11-03. The strip holds the area menu, the tabs, a + that adds an
+  editor, and maximise. The row under it shows only for an editor with controls of its own. An
+  area with one editor keeps its header as it is. Houdini's panes split their controls the same
+  way. The mockup's single row would lose Split, Join, Swap and Close Tab, and has no place for
+  a tabbed viewport's menus.
+- **Where no choice was recorded, the code changes to match the mockup.**
+- **Facts the mockup got wrong change in the mockup.** The editor is Y-up, so Front shows X and
+  Y, Top shows X and Z, and Left shows Z and Y. The mockups were drawn Z-up. The status bar's
+  actions are the editor's bindings, Dolly, Truck and Orbit. There are five workspaces, and the
+  F3 command search has no mockup.
+
+## What blocks what
+
+- Step 1 comes before steps 2, 3, 4, 6 and 8. Steps 2, 3 and 4 draw chosen tabs through its
+  new role. Steps 4, 6 and 8 add or label combos: the Parent row, the menu of rates and the
+  hider.
+- Step 5 comes before step 4's eye and check, which edit its flags. The rest of step 4 does not
+  wait for it.
+- Steps 2 to 8 are otherwise independent of each other.
+- Step 9 can run beside any of them, since each difference it redraws is settled.
+- Step 10 comes last, because it checks every other step.
+
+## Steps
+
+### Step 1 — A chosen tab has a look of its own, and a combo shows its label
+
+**Done.** The theme has a `chosen` role, and the `tab` role is the recess a set of tabs sits in,
+at the bar's step in both ui models. `mark` also draws the line under a strip's chosen tab. An
+immediate tab bar is a recess across its row, shared evenly by its tabs from the second frame it
+is drawn. A `TabBar` and a toggle button with the `strip` look mark the chosen tab with the
+page's colour and the line. One with the `choice` look raises it to `chosen`. Each chosen tab is
+semibold. A combo draws its label at the left, its choice at the right and a chevron from the
+painter, which the menu bar's drop mark now shares. ADR-0167 records the rule. The area tabs
+keep the toggle look until step 3 draws the recess behind them. The Properties tabs and both
+combos were photographed in the editor.
+
+A chosen tab is drawn as a pressed widget. `Immediate::tab()` fills it with the pressed face,
+and the editor builds an area's tabs as toggle buttons. Both fill with the accent's highlight,
+as a checked toggle does.
+
+- The theme gains the roles a chosen tab is drawn with: the control colour for a chosen pill,
+  and an accent underline on the panel colour for a chosen tab in a strip.
+  `Immediate::tab()` and `TabBar` draw through them, and a toggle button can take either
+  look.
+- An ADR records the rule in the decision above, with the toggle-alike rule it replaces as the
+  rejected option. [Themes.md](../api/ui/Themes.md) states the roles.
+
+`Immediate::combo()` uses its label only as an id. It draws the chosen item, and a filled square
+where the mark that opens the list belongs. A combo then reads as a ticked checkbox: the Scene's
+unit shows "Metres" and a square, and the render settings' hider shows "Reyes" and a square.
+
+- The combo draws its label, as `checkbox()` and the sliders do, and a chevron for its mark.
+- The immediate suite covers the label's placement and the mark, and each tab's chosen look.
+- [ImmediateMode.md](../api/ui/ImmediateMode.md) states what a combo draws.
+
+### Step 2 — The top bar and the tool shelf
+
+**Done.** The workspace tabs lie in a `panel` with the new `recess` flag, each a toggle with the
+`choice` look. The project's name is followed by an amber dot, an icon in the selection's amber,
+while it has unsaved changes, and the window's caption keeps ` *`. The search is a plate with a
+magnifier, "Search commands" and the key bound to `search::open` on a recessed cap, under a
+button that takes the press. On a bar too short for the words, as at 1024 pixels with five
+workspaces, it keeps the magnifier and the key. The top bar now resolves the images of what it
+adds, as an area does. A toolbar reads `{ "type": "separator" }` as a faint rule before the next
+button, and the tool shelf has one after Scale. The bar and the shelf were photographed in the
+editor.
+
+- The chosen workspace is in the control colour and semibold, on a filled pill, in place of
+  the accent fill in an outlined box.
+- Search is a button with a magnifier, "Search commands" and an F3 chip. Today it is the word
+  "Search".
+- An unsaved project shows an amber dot after its name. Today it shows an asterisk. The window's
+  caption keeps the asterisk, because a caption cannot be coloured.
+- The tool shelf has a rule between the transform tools and the modelling operations.
+
+### Step 3 — Area headers and tab strips
+
+**Done.** A tabbed area's strip is a recess holding the area's menu, the tabs with a strip's look,
+a + whose menu adds a tab of each kind through the new `area::tab::add::` commands, and
+maximise. Under it only a viewport has a header, so the timeline, graph editor and console
+start straight under their tabs. A panel's area menu names its editor after the icon, through
+a menu's new `named` flag. Every area menu is named as the Editor menu names its kind, which
+closed the TODO entry about "Render-view". A maximised area shows the restore icon and a note,
+a menu bar's new `note`, saying "Ctrl+Space restores the areas". It says the areas rather than
+the quad, since a layout need not be one. A menu bar with no band draws no rule. The strip, a
+panel's header and a maximised view were photographed in the editor.
+
+- A panel header names its editor after the editor-type button: Outliner, Properties.
+- A maximised area shows the restore icon in place of the maximise icon, and the hint
+  "Ctrl+Space restores the quad" in its header.
+- The area tabs take the strip look, over a recess the editor draws behind the strip, in
+  place of the accent fill.
+- An area with two or more editors draws one strip: the area menu, named for the current
+  tab's editor, then the tabs, a + and maximise. The area menu holds Editor, which changes the
+  current tab's kind, then Split, Join, Swap and Close Tab. The + opens a list of the kinds of
+  editor and adds a tab of the one chosen.
+- Under the strip, a row shows only for an editor with controls of its own. Today that is a
+  viewport, with its camera, shading, mask and Overlays menus. A timeline, graph editor or
+  console under a strip has no header row.
+- An area with one editor keeps its header as it is.
+- The area suite covers which header buttons each kind of area has, tabbed and untabbed.
+- [editor/](../editor/README.md) states what an area's strip and header hold.
+
+### Step 4 — The outliner and Properties
+
+**Done.** A text field takes a `FieldLook`,
+which can lead it with an icon in the placeholder colour, with its label drawn as a number's is,
+or with both. The outliner's filter leads with the magnifier. A number's `NumberLook` takes an
+edge, and each field of a row along x, y and z is edged in its axis's colour. `Immediate` gains
+a semibold `heading()` that folds. The Item tab is under Transform, the kind's name for a camera,
+a light or a curve, and Item, and each Properties editor keeps its own folds. The Item heading
+holds the name, labelled in its field, and a Parent combo. A choice there is a new
+`command::Parent`, which keeps the item where it is in the world, as grouping does. The
+Properties tabs took the chosen pill in step 1. With step 5, each outliner row ends in an eye,
+through a tree row's new end icon, and a hidden item's row is dimmed. The Item heading has a
+Shown in renders check, and a curve's own render check is labelled Ribbons so that the two are
+not confused.
+
+- The outliner's filter field leads with a magnifier.
+- The current Properties tab is in the control colour and semibold, on a filled pill, in place
+  of the accent fill.
+- Each Properties field has a 2 pixel left edge in its axis colour.
+- Properties groups its rows under Transform and Item headings. The Item group has a Name row,
+  where the editor now labels the field with the item's kind, and a Parent row, a combo of the
+  items that can be its parent. The scene already holds the hierarchy.
+- Each outliner row ends in a visibility eye, and the Item group has a "Shown in renders" check.
+  Both edit step 5's flags.
+
+### Step 5 — An item can be hidden, and left out of renders
+
+**Done.** `Item::shown()` holds the two flags, and `Scene::shown()` folds in the items above.
+`Scene::accept()` takes which flag a walk honours, and the views, the picker and a shot each walk
+by theirs. The shaded pass skips a hidden mesh. `command::Show` sets the flags of a set of items
+and deselects what it hides. Edit > Hide (Ctrl+H), Show All (Ctrl+Shift+H) and Isolate (Alt+H)
+build it. H already shows handles, and the chords follow Maya's. The store is at schema version
+5, with a column for each flag. The interchange `Node` gains `visible` and `renders`. The glTF
+reader reads `KHR_node_visibility` from the extension's JSON, and the USD reader reads
+`visibility` and `purpose`. ADR-0168 records the decision.
+
+No item carries visibility. The importers drop the visibility a USD or glTF file holds, and RIB
+export writes every item.
+
+- An item carries two flags, shown in the views and shown in renders, both on by default. A
+  child is hidden in the views, or left out of renders, wherever its parent is.
+- An item hidden in the views is not drawn there and cannot be picked. The outliner still lists
+  it, dimmed, with its eye closed.
+- RIB export leaves out an item that is not shown in renders.
+- The USD importer reads `visibility` and `purpose`. An invisible prim is hidden in both. A
+  guide or proxy prim is shown in the views and left out of renders. The glTF importer reads
+  `KHR_node_visibility`.
+- Commands hide the selection, show every hidden item, and isolate the selection, each with a
+  key and undo. H shows handles today, so the step chooses the keys.
+- The scene store writes both flags, and its version moves.
+- An ADR records the two flags, their inheritance and what export does with each. The options
+  it weighs include RenderMan's split of render visibility into camera, indirect and
+  transmission. [Scene.md](../editor/Scene.md) states the rules.
+- The item, store, importer, export, picking and command suites cover the flags.
+
+### Step 6 — The timeline's controls
+
+**Done.** `Immediate::iconButton()` draws a bar square from an icon and gives it a tooltip,
+which waits out the theme's delay and is drawn at `end()`, as a component's tooltip is. The
+transport is five of them, drawn from new icons, and Stop is filled as a checked toggle while the
+scene plays. Each tooltip names the action and the key bound to its command. Playback is bound
+as in Blender: Space plays and stops through a new `timeline::playback::toggle`, Shift+Left and
+Shift+Right go to the ends of the range, and Up and Down step between keys. The frame, the range
+and a menu of rates follow, each as wide as it needs, and the row wraps in a narrow area with the
+range's two ends kept together. The timeline was photographed in a narrow area, with Play's
+tooltip showing.
+
+- The frame, the range and the rate sit in one compact row, as the mockup sets them: a frame
+  field, a pair of fields for the range, and a menu of rates. Today they are four wide fields.
+- `api/ui`: `Immediate` gains an icon button, drawn from an SVG icon, with a tooltip.
+  [ImmediateMode.md](../api/ui/ImmediateMode.md) states it, and the immediate suite covers it.
+- The transport draws five icons through it: first frame, previous key, play, next key and last
+  frame. The key buttons carry a key diamond. Play turns to Stop while the scene plays. Each
+  tooltip names the action and its key.
+
+### Step 7 — A view through a scene camera, and the Animation workspace
+
+**Done but for a photograph.** A view holds what it looks through, a scene camera by its
+document id or the scene's camera, and whether it is locked. `view::follow()` sets the view from
+the camera each frame, framed to the render's picture, and the renderer dims what is outside the
+frame. The header's camera menu and the View menu list the scene's cameras, the View menu's
+through a new `Menu::removeFrom()`, with Lock Camera to View. Navigation frees a view, or with
+the lock moves the camera through `tool::CameraLock`, one change a drag. A layout's viewport may
+name `scene-camera`, and Animation shows a free view beside one. ADR-0169 records the choice. The
+editor restores the workspaces a user last saved over the shipped ones, so the new Animation
+layout and a view through a camera were not photographed.
+
+A viewport shows only the fixed views, Front to Perspective. Nothing shows what a scene camera
+frames until it renders.
+
+- A viewport header's camera menu lists the scene's cameras after the fixed views. Choosing one
+  makes the view look through it, framed to the render's aspect, with the area outside the
+  frame dimmed. The View menu does the same for the active view.
+- Navigating a view that looks through a camera turns it back into a free perspective view at
+  the same place. A lock in the camera menu makes navigation move the camera instead, as an
+  edit with undo. An ADR records the choice between the two.
+- A layout's viewport may name `scene-camera`: the selected camera, else the first in the
+  scene, else a free perspective view until a camera exists.
+- Animation's views are a free perspective view and a `scene-camera` view, side by side above
+  the timeline area.
+- The viewport, camera, command and area layout suites cover the menu, the framing, the drop
+  back to a free view, the lock and the layout.
+- [Scene.md](../editor/Scene.md) states how a view looks through a camera.
+
+### Step 8 — The render settings
+
+**Done, with no change of its own.** Step 1's combo draws its label, so the hider reads Hider
+and Reyes, and the width, the height and the samples were already labelled numbers. The render
+settings were photographed in an area. The frame range goes from the mockup in step 9.
+
+- The render settings' fields carry labels through step 1's combo and the existing fields.
+- The mockup lists a frame range, which the render settings do not hold. The scene's range is
+  set in the timeline, and a batch renders every frame of it. Step 9 takes the range out of the
+  mockup's render settings.
+
+### Step 9 — The mockups
+
+**Done.** The canvas's viewport part is Y-up in every view, its marker and its gizmo. It puts the
+view's name on a control-colour pill, adds the mask menu and the editor's maximised note, and can
+draw a camera view's dimmed frame and a tabbed viewport's strip. The top bar has five
+workspaces, the status bar the editor's bindings, and Properties no Shading tab. The combined
+board is the Animation workspace, a free view beside the scene camera's, with Properties standing
+alone and an area menu on the foot's strip. New boards show the F3 command search, a divider with
+its hint, Rendering as two areas with no frame range, and a tabbed viewport. The summary note lists
+what is left different, which is nothing.
+
+Each difference settled as "the mockup changes" is redrawn on the canvas:
+
+- Axes Y-up in every view, the axis marker and the gizmo.
+- Five workspaces.
+- The current view's name pill in the control colour.
+- Properties without a Shading tab.
+- Rendering as two areas, and its render settings without a frame range.
+- The status bar's actions as the editor's bindings.
+- The divider's hint in the editor's words.
+- A board for the F3 command search.
+- Animation with its two views.
+- A tabbed area's strip with the area menu, the tabs, the + and maximise, and a tabbed
+  viewport with its menus on the row below.
+
+The canvas's summary note is rewritten to list what this plan left different, which should be
+nothing.
+
+### Step 10 — The closing survey
+
+**Done.** The editor was photographed in the ten states, and each picture replaced the one on
+the canvas, with a note on what it matches. The survey found three faults and two differences.
+The top bar took no click, because the cursor picked the closed menu bar beneath it, and that
+was fixed in `api/ui`. The screenshot script sent keys without their scan codes, which the
+editor never read, and that was fixed. A view through a camera drew the camera's own glyph, and
+that was fixed. A clicked button keeping the focus ring, and a maximised orthographic view's
+grey x axis and missing selection outline, went to [TODO.md](../TODO.md). The Rendering board
+gained the render view's Render row, the viewport part kept its gizmo in a camera view, and
+Properties' numbers were redrawn as rows of three.
+
+The editor is built and photographed in the same ten states as the first survey, and in each
+state a step above changed. Each picture replaces the one on the canvas, beside its mockup. Any
+difference still found is fixed in this plan or recorded in [TODO.md](../TODO.md) before the
+plan closes.
+
+## Outcome
+
+Closed 2026-11-04. Each state of the editor matches its board on the canvas, and each board
+shows what the editor does, but for two differences that [TODO.md](../TODO.md) records.
+
+**Delivered:**
+
+- A chosen tab marked as a place, a labelled combo with a chevron, and the top bar's recess,
+  search and unsaved dot (ADR-0167).
+- Tab strips with the area menu, a + and maximise, panel headers with their names, and the
+  maximised view's restore icon and note.
+- The outliner's magnifier and eye, and Properties under folding headings with axis edges, a
+  Parent combo and a Shown in renders check.
+- Two visibility flags on every item, inherited, saved, read from glTF and USD, and honoured by
+  the views, picking and renders, with hide, show all and isolate (ADR-0168).
+- The timeline's icon transport with tooltips, its compact row, a rate menu, and playback keys.
+- A view through a scene camera, framed to the render, with a lock that moves the camera, and
+  the Animation workspace's camera view (ADR-0169).
+- The mockups redrawn where the editor chose, and boards for the command search, a divider,
+  Rendering and a tabbed viewport.
+
+**Turned out differently:** step 8 needed no code, since step 1's combo labelled the hider. The
+closing survey found that nothing beside the main menus took a click, which the plan did not
+expect.
+
+**Left open:** the focus ring after a click, and the maximised orthographic view's x axis and
+selection outline, both in [TODO.md](../TODO.md).

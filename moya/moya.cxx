@@ -4,7 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 
@@ -32,7 +32,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
         const int x = var_map["width"].as<int>();
         const int y = var_map["height"].as<int>();
         if (!handler->resolution(x, y)) {
-            std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::largestResolution
+            std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::film::largestResolution
                 << ", so the scene's Format is used" << "\n";
         }
     } else if (width || height) {

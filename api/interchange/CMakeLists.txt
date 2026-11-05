@@ -1,6 +1,7 @@
 v3d_add_api_library(interchange
 	"Scene.h"
 	"Placement.h" "Placement.cxx"
+	"Rescale.h" "Rescale.cxx"
 	"Gltf.h" "Gltf.cxx"
 	"CgltfImpl.cxx"
 	"internal/Reader.h" "internal/Reader.cxx")
@@ -11,6 +12,9 @@ target_link_libraries(v3dlib_interchange PUBLIC v3dlib_curve v3dlib_type glm::gl
 
 # PRIVATE: the glTF reader reads its document and buffers through asset::readFile.
 target_link_libraries(v3dlib_interchange PRIVATE v3dlib_asset)
+
+# PRIVATE: the glTF reader parses the JSON text cgltf keeps for an extension it has no struct for.
+target_link_libraries(v3dlib_interchange PRIVATE Boost::json)
 
 # PRIVATE: only the glTF reader and the translation unit owning cgltf's implementation include
 # the header, and no header here names a cgltf type but internal/Reader.h, which only this

@@ -10,11 +10,11 @@ reads besides the common ones:
 
 | `type` | Class | Draws | Keys | Pickable / focusable |
 |---|---|---|---|---|
-| `panel` | `Panel` | a filled box with a border, optionally rounded | none | no / no |
+| `panel` | `Panel` | a filled box with a border, optionally rounded, or a recess in the `tab` colour with no border | `recess` (false) | no / no |
 | `label` | `Label` | its text, wrapped to the width it was given, or one line when the width is `Auto` | `label` | no / no |
-| `icon` | `Icon` | an image at the component's size | `source` (required) | no / no |
+| `icon` | `Icon` | an image at the component's size, or nothing until it has one | `source`; with none, the app gives it an image with `Icon::image()` | no / no |
 | `bar` | `Bar` | a track and the filled fraction of it | `fraction` (0 to 1), `direction` (`vertical`, else horizontal) | no / no |
-| `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `command`, `context` | yes / yes |
+| `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `tab` (`strip` or `choice`), `command`, `context` | yes / yes |
 | `checkbox` | `CheckBox` | a square mark and a label beside it | `label`, `checked`, `command`, `context` | yes / yes |
 | `radio` | `RadioButton` | a round mark and a label beside it | as `checkbox`, plus `group` | yes / yes |
 | `scrollbar` | `Scrollbar` | a track and a thumb | `direction` (`horizontal`, else vertical), `content` and `page` (together), `offset` | yes / yes |
@@ -24,8 +24,8 @@ reads besides the common ones:
 | `tab` | `TabPage` | the components it holds | `label` | no / no |
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
-| `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
-| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, `docked` (true) | yes / no |
+| `toolbar` | `Toolbar` | a row or column of buttons at an edge, with a faint rule between groups | `edge` (`top` or `left`), `buttons` (array of button entries, and `{ "type": "separator" }` for a rule before the next button) | yes / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false), `emphasis` (false), `accent` (false) and `named` (false, a title that shows its label after its icon too); `docked` (true); `opacity` (1, and a bar at 0 draws no rule either); `note` (text after the titles, in the secondary text colour) | yes / no |
 | `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
 Notes on individual components:
@@ -55,17 +55,38 @@ Notes on individual components:
   the rows its box shows and clips them to its plate.
 - **A `TabBar`** draws and lays out only the selected page. Components on other pages have no
   box that frame, so they are not picked or focused.
+- **A chosen tab is marked as the place shown, not filled as a setting that is on.** A
+  `TabBar`'s strip is a recess in the `tab` colour. Its chosen tab is in the page's `panel`
+  colour with a line in the `mark` colour under it, and its label is semibold. A toggle
+  button given a `tab` look is drawn the same way while it is checked: `strip` as a
+  `TabBar`'s tab, `choice` raised to the `chosen` colour, as one of a set of choices. The app
+  draws the recess behind a row of such buttons, such as a `panel` with `recess` set. A tab
+  under the cursor is raised halfway. Its label is measured semibold, so choosing it moves
+  nothing. A plain toggle is filled with the `highlight` while it is checked.
+  Background: [ADR-0167](../../adr/ui/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md).
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
   with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an
   icon is square, as tall as the strip is wide, and one without is a line tall. A toolbar
-  button falls back to its label when its icon is not resolved. A hidden button takes no room
+  button falls back to its label when its icon is not resolved. A button's icon is tinted the
+  colour its label would be drawn in, and a menu item's icon the colour of its label, so an icon
+  drawn in white takes the theme's text colours. An `icon` component is not tinted, because it
+  shows a picture. A hidden button takes no room
   in its strip, is not drawn and takes no press, and the buttons after it close up.
 - **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
   `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
   `check`, `radio`, `input`, `numeric_input`, `key_input`, `slider` and `separator`. A check and
   a radio item are marked by the app, the same as a check box. Radio items are drawn with the
   same square mark as check items.
+- **A `menu::Bar`'s title** is its menu's label, or the menu's `icon` once that is resolved,
+  tinted the colour the label would be, or the theme's accent with `accent`, as an app's mark
+  is. A title with `drop` is followed by a chevron pointing down, in the `secondaryText`
+  colour until the title is under the cursor. A label stands three quarters of the padding
+  from its chevron, and an icon a quarter. A title with `emphasis` is set on a pill of the
+  `widget` colour, in the bar's own weight, so neither its text nor anything after it moves as
+  it is set apart and back. An app sets it as the editor sets its active view's name. A bar's
+  `opacity` multiplies the strip's alpha, so a bar can lie over a view and let it show
+  through. The titles are drawn whole.
 - **A centred menu** is drawn one level at a time in the middle of the canvas's safe area. The
   safe area is 5% of the width in from each side and 4% of the height in from the top and the
   bottom. A level too large for the safe area keeps its top left corner inside it.
@@ -113,7 +134,8 @@ Notes on individual components:
   from the first panel. A menu opened from the keys chooses its first item. Return and space act
   on the chosen item as a press would, and escape closes the deepest submenu, or the bar.
 - **A closed menu bar takes a press only on a label.** A press on the rest of its band is not
-  taken, so a container listed after the bar's can put buttons beside the labels.
+  taken, and neither is the cursor resting there. A container listed after the bar's can put
+  buttons beside the labels, which take their presses, their hover and their tooltips.
 
 ## Tooltips
 

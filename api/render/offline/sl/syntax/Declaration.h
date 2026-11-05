@@ -14,9 +14,13 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A declaration of one or more variables of one storage class and type, each of which may have an
+ * initialiser.
+ **/
 class Declaration final : public Statement {
  public:
-    Declaration(Storage storage, Type type, const v3d::render::offline::Position & at);
+    Declaration(Storage storage, Type type, const v3d::render::offline::source::Position & at);
 
     Storage storage = Storage::UNSPECIFIED;
     Type type = Type::FLOAT;

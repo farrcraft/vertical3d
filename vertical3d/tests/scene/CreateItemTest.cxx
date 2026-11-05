@@ -5,9 +5,9 @@
 
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -50,8 +50,8 @@ float apart(const glm::mat4& left, const glm::mat4& right) {
 
 BOOST_AUTO_TEST_CASE(create_camera_at_the_view_test) {
     const v3d::type::camera::Profile view = corner(v3d::type::camera::Profile::Hand::UpCrossDirection);
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera =
-        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera =
+        v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Perspective);
 
     // at the view's eye, its +z where the view looks and its +y the view's up
     BOOST_CHECK_SMALL(glm::distance(camera->translation(), view.eye()), 0.0001F);
@@ -64,30 +64,30 @@ BOOST_AUTO_TEST_CASE(create_camera_at_the_view_test) {
     BOOST_CHECK(camera->lens().clipping == glm::vec2(0.25F, 400.0F));
 
     // and the projection asked for, whatever the view's
-    BOOST_CHECK(v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Orthographic)->lens().projection ==
-        v3d::editor::scene::Camera::Projection::Orthographic);
+    BOOST_CHECK(v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Orthographic)->lens().projection ==
+        v3d::editor::scene::item::Camera::Projection::Orthographic);
 }
 
 BOOST_AUTO_TEST_CASE(create_camera_from_an_unreadable_lens_test) {
     // a lens a document could not read back gives the default lens, so the camera can be saved
     v3d::type::camera::Profile view = corner(v3d::type::camera::Profile::Hand::UpCrossDirection);
     view.fov(200.0F);
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera =
-        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Orthographic);
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera =
+        v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Orthographic);
     BOOST_CHECK(camera->lens().valid());
-    BOOST_CHECK_EQUAL(camera->lens().fov, v3d::editor::scene::Camera::defaultFov);
-    BOOST_CHECK(camera->lens().projection == v3d::editor::scene::Camera::Projection::Orthographic);
+    BOOST_CHECK_EQUAL(camera->lens().fov, v3d::editor::scene::item::Camera::defaultFov);
+    BOOST_CHECK(camera->lens().projection == v3d::editor::scene::item::Camera::Projection::Orthographic);
 }
 
 BOOST_AUTO_TEST_CASE(profile_of_a_camera_test) {
     for (const v3d::type::camera::Profile::Hand hand :
         { v3d::type::camera::Profile::Hand::UpCrossDirection, v3d::type::camera::Profile::Hand::DirectionCrossUp }) {
         const v3d::type::camera::Profile view = corner(hand);
-        const boost::shared_ptr<v3d::editor::scene::Camera> camera =
-            v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Perspective);
+        const boost::shared_ptr<v3d::editor::scene::item::Camera> camera =
+            v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Perspective);
 
         // a camera made from a view is seen through that view again, its picture's size included
-        const v3d::type::camera::Profile back = v3d::editor::scene::profile_of(camera->lens(), camera->matrix(), view);
+        const v3d::type::camera::Profile back = v3d::editor::scene::item::profile_of(camera->lens(), camera->matrix(), view);
         v3d::type::camera::Camera expected(view);
         v3d::type::camera::Camera actual(back);
         expected.createView();
@@ -103,13 +103,13 @@ BOOST_AUTO_TEST_CASE(profile_of_a_camera_test) {
 
 BOOST_AUTO_TEST_CASE(create_light_at_the_view_test) {
     const v3d::type::camera::Profile view = corner(v3d::type::camera::Profile::Hand::UpCrossDirection);
-    const boost::shared_ptr<v3d::editor::scene::Light> light = v3d::editor::scene::create_light(view, v3d::editor::scene::Light::Type::Spot);
+    const boost::shared_ptr<v3d::editor::scene::item::Light> light = v3d::editor::scene::item::create_light(view, v3d::editor::scene::item::Light::Type::Spot);
 
     // a spot light at the view shines where the view looks, with RI's default spot
     BOOST_CHECK_SMALL(glm::distance(light->translation(), view.eye()), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(light->rotation() * glm::vec3(0.0F, 0.0F, 1.0F), glm::normalize(view.direction())), 0.001F);
-    BOOST_CHECK(light->emission().type == v3d::editor::scene::Light::Type::Spot);
-    BOOST_CHECK_EQUAL(light->emission().cone, v3d::editor::scene::Light::defaultCone);
+    BOOST_CHECK(light->emission().type == v3d::editor::scene::item::Light::Type::Spot);
+    BOOST_CHECK_EQUAL(light->emission().cone, v3d::editor::scene::item::Light::defaultCone);
 }
 
 };  // namespace

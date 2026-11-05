@@ -57,21 +57,29 @@ app's Canvas  <--  ComponentRenderer::draw(canvas, engine)   the retained tree
 
 ### Text is supplied by the app
 
-Both models take text through two callbacks declared in [`paint/Text.h`](../../../api/ui/paint/Text.h):
+Both models measure, wrap and draw their text through a `paint::TextRenderer`, which the app's
+screen owns and passes to them. Each piece of text is laid out as a `font::text::Paragraph`.
 
-| Callback | Signature | Does |
-|---|---|---|
-| `paint::Measure` | `float(std::string_view)` | returns how wide a string is when drawn, in pixels |
-| `paint::Write` | `void(std::string_view, const glm::vec2& pen, const glm::vec4& colour)` | draws a string with its pen on the baseline |
+- **`paint::Type`** ([`paint/Type.h`](../../../api/ui/paint/Type.h)) is a renderer at one size
+  and in one weight. `width(text)` measures a string, `rows(text, width)` breaks it as a
+  paragraph lays it out, and `draw(canvas, text, pen, colour)` draws it with its pen on the
+  baseline. `in(weight)` and `scaled(factor)` give the same renderer in another weight or at
+  another size. A type with no renderer measures nothing and draws nothing.
+- **`ComponentRenderer(body)`** takes the `Type` the retained ui's text is set in.
+  `emphasis(sets)` takes a `paint::Emphasis`: the `Setting` a centred menu's title is set in,
+  with how large its band is against the body text, and the `Setting` of its chosen item. A
+  setting with no type is set as the body text is.
+- **`Immediate(text, size)`** takes the renderer and the size it draws at, and `text(text,
+  size)` rescales it. `textWrapped()` breaks its rows through `TextRenderer::rows()`.
 
-Neither renderer names a font type. This keeps `api/ui` testable without a window or a GPU.
-The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
-must stay valid for the length of the call.
+A text renderer needs no device, so `api/ui` stays testable without a window or a GPU. A test
+reads back what was drawn through `TextRenderer::trace()`, which is told each line drawn with its
+text, pen, colour, weight and size.
 
-`v3d::ui::paint::TextRenderer` supplies the pair. It holds one typeface in two weights, packed
-into one atlas of signed distance field glyphs. `measure(size, weight)` and
-`write(canvas, size, weight)` return callbacks for one drawn size and one `paint::Weight`, regular
-or semibold. Every size and weight from one `TextRenderer` shares the same atlas.
+`input::Cursor` takes the same `Type`, to place a text box's caret where it is clicked.
+
+`v3d::ui::paint::TextRenderer` holds one typeface in two weights. Every size and weight from one
+`TextRenderer` shares one glyph store, and one store of colour glyphs.
 
 The faces are in the shared data directory:
 
@@ -80,23 +88,130 @@ The faces are in the shared data directory:
 | Regular | `fonts/Inter-Regular.ttf` | all text, unless a role asks for semibold |
 | SemiBold | `fonts/Inter-SemiBold.ttf` | a role whose weight is semibold, such as a window's title |
 | Fallback | `fonts/NotoSans-Regular.ttf` | a character the two Inter faces lack, in either weight |
+| Arabic | `fonts/NotoSansArabic.ttf` | Arabic script, which Noto Sans lacks |
+| Hebrew | `fonts/NotoSansHebrew.ttf` | Hebrew |
+| Devanagari | `fonts/NotoSansDevanagari.ttf` | Devanagari |
+| Thai | `fonts/NotoSansThai.ttf` | Thai |
+| CJK | `fonts/NotoSansCJKsc-Regular.otf` | Chinese, Japanese kana and Korean Hangul, in every region's forms |
+| Emoji | `fonts/NotoColorEmoji.ttf` | an emoji, in colour, from Noto Color Emoji's COLR version 1 build |
 
-`TextRenderer::Faces` names other files. A semibold face that cannot be loaded sets semibold text
-in the regular face, and a fallback that cannot be loaded leaves the missing glyph in place. Both
-are logged. Each face's licence is beside it in `fonts/`.
+The faces are tried in the table's order. The four script faces are variable, so their weight
+follows the text's. `TextRenderer::Faces` names other files, its `scripts` in the order they are
+tried, and `scriptFonts()` gives the default list. A semibold face that cannot be loaded sets
+semibold text in the regular face, and a fallback, script or emoji face that cannot be loaded
+leaves the missing glyph in place. Each is logged. Each face's licence is beside it in `fonts/`.
 
-Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md)
+A Han character is drawn in the forms of the text's language: the style's `language`, or the
+renderer's shaping cache's locale when the style names none. With neither, it takes the CJK
+face's Simplified Chinese forms.
 
-The glyphs a `TextRenderer` can draw are the characters of the UTF-8 charset given to its
-constructor, which defaults to printable ascii. Each weight packs them all. They are packed and
-uploaded once, and the atlas is not added to afterwards.
-Text is UTF-8, and `v3d::font` decodes it and lays it out. A code point outside the packed set
-measures as zero width and draws nothing. An app that shows other characters passes them in the
-charset, and may need a larger atlas to hold them.
+Background: [ADR-0129](../../adr/ui/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md),
+[ADR-0151](../../adr/ui/0151-ui-noto-faces-for-each-script-in-the-tree.md)
 
-`TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
-`api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
-can supply its own `Upload`.
+Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::text::Paragraph`. Any character
+the faces have is drawn, with no set of glyphs named up front: a glyph is rasterized the first
+time it is drawn, at the size it is drawn at, into a `font::glyph::Store`. Its pen is kept to a
+quarter of a pixel and each line's baseline is on a whole pixel. It is hinted vertically, so
+text on the pixel grid is drawn at its exact size and sharp. A change of scale draws at the new
+size. A `Screen` calls `beginFrame()` on its text renderer each frame, so a glyph unused since
+the frame before may make room for another.
+
+A glyph its face draws in colour, such as an emoji, is painted at its size into the store of
+colour glyphs, as [Fonts.md](../Fonts.md#colour-glyphs) describes. It is painted in its face's
+first palette, any layer in the text's colour taking the text's red, green and blue. It is
+drawn as a picture in its own colours, faded by the text's alpha, and not corrected as text is.
+How a face draws each glyph is read once and kept.
+
+`width()` counts the space at the end of a string, so a caret placed after it lands past it.
+`draw()` starts a new line below at a newline.
+
+`draw(canvas, paragraph, pen)` draws a `font::text::Paragraph`, each glyph in its style's colour,
+placed as a string is. Build the paragraph with `shaping()`, the renderer's cache, and a style from
+`style(size, weight)`, which names the renderer's faces. A style's effects are drawn beneath the
+text from each glyph's distance field, kept in the same glyph store, as
+[Fonts.md](../Fonts.md#effect-fields) describes. Each glyph carries its style's contrast, so it
+looks one weight in any target, as [Canvas.md](../rendering/Canvas.md#text-weight) describes.
+
+A variable face's glyphs are rasterized, and their effects' fields made, at the coordinates
+each run was shaped at, as [Fonts.md](../Fonts.md#variable-fonts) describes. A style's weight
+and size set its weight and optical size axes, and its `variations` set any axis over them.
+
+No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
+callbacks, as below. An app that draws the canvas through its own renderer supplies its own.
+
+Background: [ADR-0145](../../adr/text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+
+### Curve text
+
+`paint::CurveText` draws a `font::text::Paragraph` from its glyphs' curves, sharp at any size and
+under any transform: scaled, turned or animated. **`draw(canvas, paragraph, transform)`** places the
+paragraph, in pixels with y downwards, through an affine `glm::mat3` into the canvas.
+
+- Each glyph is a quad over its outline, a pixel of the canvas wider on every side so its edge
+  is not cut. Its corners carry their place in the em square, and the quad shader finds each
+  pixel's coverage from the curves that cross it.
+- Each glyph is drawn in its style's colour, and the ellipsis of a cut line in the style before
+  the cut.
+- A glyph its face draws in colour is drawn from its layers' curves, through a program the
+  curve store keeps, in the face's first palette. A layer in the text's colour takes the
+  style's colour, and the style's alpha fades the glyph. A glyph whose colour is a picture,
+  from a bitmap table, is painted at its size onto a page of four channels. It is drawn as a
+  picture through the same transform, so it softens when it is scaled up.
+- A style's effects are drawn beneath the text from each glyph's distance field, every glyph's
+  effects before any glyph. The fields are kept in a `font::glyph::Store` of the curve text's own,
+  whose pages reach the device through the `GlyphPages` given with the `CurvePages`, as are the
+  pictures of colour glyphs. Call
+  `beginFrame()` once a frame, so the store can make room for new fields.
+- The curves come from a `font::glyph::CurveStore`, read the first time a glyph is drawn at any
+  size. A variable face's glyph is read at its run's coordinates, and each point on its axes is kept
+  apart.
+  `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three
+  callbacks as `GlyphPages` does. With a context's `Textures`, create is
+  `textures->texture({ .data, .width, .height })`, update is `textures->update()` of texels, and
+  release is `textures->release()`.
+- `CurvePages::sync()` makes an array's texture again, whole, when the array has outgrown it, and
+  otherwise copies the rows the store changed. `draw()` syncs before it hands the quads to the
+  canvas.
+
+**Text in the world.** `draw(world, paragraph, transform)` stands the paragraph in a
+`canvas::World`, and `draw(order, key, paragraph, transform)` adds it to a `canvas::DepthOrder`
+with every glyph at one key. Each effect goes in at the same key, in a layer that is its place
+among its glyph's effects, so the order draws it beneath the glyphs. The transform is a
+`glm::mat4` from the paragraph's space, in pixels with y downwards on the plane z = 0, into the
+world. A glyph there is wider than its outline by
+`WORLD_MARGIN`, a sixteenth of an em on every side, because a screen pixel is not known there.
+That is enough for text drawn larger than sixteen pixels to the em. To face the camera, build the
+transform from the camera's right and the world's up.
+
+Background: [ADR-0145](../../adr/text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+
+### Glyph pages
+
+`paint::GlyphPages` keeps the device's copy of a `font::glyph::Store`'s pages, one texture for
+each, in the store's channels: one byte a pixel, or four for colour glyphs. A `TextRenderer`
+copies the pages it is given, one for each of its stores. `sync(store)` is called once a frame,
+after the frame's glyphs have been asked of the store and before the frame is submitted:
+
+- A page the store added becomes a texture, made whole from its pixels.
+- A plot the store changed is copied into its page's texture. Earlier frames may still draw the
+  page, and draw what it held before.
+- A page the store let go has its texture released.
+
+`texture(page)` gives a page's texture, and an unset handle for a page not yet synced. Like
+`Upload`, the device is reached through three callbacks, so the ui names no renderer. With a
+context's `Textures`:
+
+```cpp
+GlyphPages pages(
+    [textures](const unsigned char* pixels, uint32_t side, uint32_t channels) {
+        return textures->texture(pixels, side, side, channels);
+    },
+    [textures](const TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+        uint32_t channels) {
+        textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
+    },
+    [textures](const TextureHandle& page) { textures->release(page); });
+```
 
 ## Commands
 

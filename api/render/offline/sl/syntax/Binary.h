@@ -23,7 +23,7 @@ class Binary final : public Expression {
         ExpressionPtr right;
     };
 
-    Binary(const std::string & op, const Operands & operands, const v3d::render::offline::Position & at);
+    Binary(const std::string & op, const Operands & operands, const v3d::render::offline::source::Position & at);
 
     std::string op;
     ExpressionPtr left;

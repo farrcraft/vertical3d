@@ -5,16 +5,18 @@
 
 #pragma once
 
+#include <api/animation/Curve.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Topology.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 
 #include <cstddef>
@@ -33,6 +35,7 @@ namespace v3d::editor::document {
 struct Outcome final {
     bool done = false;    /**< whether it did what it was asked, rather than refusing **/
     std::string message;  /**< what to tell the user, whether it changed or not **/
+    bool undoable = false;  /**< whether it is a change undo takes back **/
 };
 
 /**
@@ -70,24 +73,46 @@ class Document final {
      * Put a new item into the scene.
      * @param name what the history calls the change
      **/
-    Outcome create(const boost::shared_ptr<scene::Item>& item, const std::string& name);
+    Outcome create(const boost::shared_ptr<scene::item::Item>& item, const std::string& name);
     Outcome createPrimitive(Primitive primitive);
 
     /**
      * Make a camera or a light where a view is, facing the way it looks.
      **/
-    Outcome createCamera(const v3d::type::camera::Profile& at, scene::Camera::Projection projection);
-    Outcome createLight(const v3d::type::camera::Profile& at, scene::Light::Type type);
+    Outcome createCamera(const v3d::type::camera::Profile& at, scene::item::Camera::Projection projection);
+    Outcome createLight(const v3d::type::camera::Profile& at, scene::item::Light::Type type);
 
     /**
      * Make one curve of a type at the origin.
      **/
-    Outcome createCurve(scene::CurveType type);
+    Outcome createCurve(scene::item::CurveType type);
 
     /**
      * Gather items beneath a new group.
      **/
     Outcome group(const scene::Items& items);
+
+    /**
+     * Hide items from the views as one change. What they hide is deselected.
+     **/
+    Outcome hide(const scene::Items& items);
+
+    /**
+     * Show items in the views as one change. An item beneath one that is hidden stays hidden.
+     **/
+    Outcome show(const scene::Items& items);
+
+    /**
+     * Show every item hidden from the views as one change.
+     **/
+    Outcome showAll();
+
+    /**
+     * Show only some items in the views, as one change. The items and every item above them are
+     * shown, so that the items show. What is beneath them keeps its own flags, and every other
+     * item is hidden.
+     **/
+    Outcome isolate(const scene::Items& items);
 
     /**
      * Read a glTF file (.gltf, .glb) or a USD stage (.usd, .usda, .usdc, .usdz), and put its
@@ -101,6 +126,32 @@ class Document final {
      * Key every property of each item at a frame.
      **/
     Outcome key(const scene::Items& items, int frame);
+
+    /**
+     * Turn auto key on or off. While it is on, an edit to a number a curve can drive keys that
+     * number at the current frame, in the same change. Setting it as it is changes nothing.
+     **/
+    Outcome autoKey(bool on);
+
+    /**
+     * Take a new frame rate and range. The frame stays where it is, held within the new range.
+     * The same rate and range change nothing, and a rate that is not a positive number or a
+     * range that runs backwards is refused.
+     **/
+    Outcome timing(float rate, int start, int end);
+
+    /**
+     * Move keys along by whole frames, or delete them. A key is every key one item has on one
+     * frame. A key no curve has is skipped, and with none left nothing changes.
+     **/
+    Outcome moveKeys(const std::vector<scene::FrameKey>& keys, int offset);
+    Outcome deleteKeys(const std::vector<scene::FrameKey>& keys);
+
+    /**
+     * Give one of an item's curves new keys, as a graph's drag leaves it. A path the item has no
+     * curve on, or a curve the same as the one it has, changes nothing.
+     **/
+    Outcome reshape(unsigned int item, const std::string& path, const v3d::animation::Curve& curve);
 
     /**
      * Take new render settings. The same settings change nothing.
@@ -198,6 +249,11 @@ class Document final {
      * @return a count of items, singular for one: "1 item", "3 items"
      **/
     static std::string items(std::size_t count);
+
+    /**
+     * @return a count of keys, singular for one: "1 key", "3 keys"
+     **/
+    static std::string keys(std::size_t count);
 
     /**
      * @return a kind's name with each word begun in capitals, as a new item is named: "point light"

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 
 #include <cstdint>
 
@@ -43,7 +43,7 @@ class Planes final {
      * An empty picture of a size. Its depth plane holds the farthest depth, because the film
      * writes a depth only into a pixel some sample hit.
      **/
-    static boost::shared_ptr<v3d::render::offline::FrameBuffer> make(unsigned int width, unsigned int height);
+    static boost::shared_ptr<v3d::render::offline::film::FrameBuffer> make(unsigned int width, unsigned int height);
 };
 
 };  // namespace v3d::moya::state

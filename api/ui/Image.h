@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <glm/glm.hpp>
 
@@ -32,7 +32,7 @@ struct Image final {
      *
      * @param tex the texture
      **/
-    Image(const v3d::render::realtime::TextureHandle& tex) noexcept;  // NOLINT(runtime/explicit) - a handle is the whole texture
+    Image(const v3d::render::realtime::resource::TextureHandle& tex) noexcept;  // NOLINT(runtime/explicit) - a handle is the whole texture
     /**
      * The texture coordinates at the image's top left corner and at its bottom right corner.
      **/
@@ -45,14 +45,14 @@ struct Image final {
      * @param tex the texture
      * @param corners the part of it the image is
      **/
-    Image(const v3d::render::realtime::TextureHandle& tex, const Corners& corners) noexcept;
+    Image(const v3d::render::realtime::resource::TextureHandle& tex, const Corners& corners) noexcept;
 
     /**
      * @return whether there is anything to draw
      **/
     bool valid() const noexcept;
 
-    v3d::render::realtime::TextureHandle texture;
+    v3d::render::realtime::resource::TextureHandle texture;
     glm::vec2 uv0;
     glm::vec2 uv1;
 };

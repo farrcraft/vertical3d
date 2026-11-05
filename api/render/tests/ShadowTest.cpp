@@ -107,7 +107,7 @@ void caster(entt::registry* registry, const glm::vec3& position, bool castsShado
     Transform transform;
     transform.position = position;
     registry->emplace<Transform>(entity, transform);
-    registry->emplace<Mesh>(entity, Mesh{v3d::render::realtime::MeshHandle(), castsShadow});
+    registry->emplace<Mesh>(entity, Mesh{v3d::render::realtime::resource::MeshHandle(), castsShadow});
 }
 
 /**

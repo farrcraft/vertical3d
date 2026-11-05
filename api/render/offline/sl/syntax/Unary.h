@@ -16,7 +16,7 @@ namespace v3d::render::offline::sl::syntax {
  **/
 class Unary final : public Expression {
  public:
-    Unary(const std::string & op, const ExpressionPtr & operand, const v3d::render::offline::Position & at);
+    Unary(const std::string & op, const ExpressionPtr & operand, const v3d::render::offline::source::Position & at);
 
     std::string op;
     ExpressionPtr operand;

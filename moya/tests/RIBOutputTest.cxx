@@ -4,9 +4,10 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -61,7 +62,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
  * A red quad that covers an 8 by 6 picture, under the crop window's left half, with the hider
  * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string & hider) {
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> cropped(const std::string & hider) {
     v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Format 8 6 1\n"
@@ -77,7 +78,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string &
     return handler.context().picture();
 }
 
-void checkCropped(const v3d::render::offline::FrameBuffer & planes) {
+void checkCropped(const v3d::render::offline::film::FrameBuffer & planes) {
     for (unsigned int row = 0; row < planes.height(); row++) {
         for (unsigned int column = 0; column < planes.width(); column++) {
             const bool inside = column < 4;
@@ -156,7 +157,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
             BOOST_REQUIRE(read(covered(hider), &handler));
             BOOST_CHECK_EQUAL(told, 1U);
             BOOST_CHECK(handler.context().stopped());
-            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+            const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
             BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 60, 44), 0.0F);
         }
     }

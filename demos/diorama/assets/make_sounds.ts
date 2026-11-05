@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const RATE = 22050;
 const SECONDS = 4;
-const CROSSFADE = RATE / 4;
+// a quarter second, in whole samples
+const CROSSFADE = Math.floor(RATE / 4);
 const LEVEL = 0.35;
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -43,21 +44,23 @@ for (let index = 0; index < total; index++) {
 }
 
 // the samples past the loop's end fade into its start, and the loop is the first `length`
-let peak = 0;
-const loop = new Float64Array(length);
-for (let index = 0; index < length; index++) {
-    loop[index] = raw[index];
-    if (index < CROSSFADE) {
-        const across = index / CROSSFADE;
-        loop[index] = raw[index] * across + raw[length + index] * (1 - across);
+const loop = raw.subarray(0, length).map((sample, index) => {
+    if (index >= CROSSFADE) {
+        return sample;
     }
-    peak = Math.max(peak, Math.abs(loop[index]));
+    const across = index / CROSSFADE;
+    return sample * across + (raw[length + index] ?? 0) * (1 - across);
+});
+const peak = loop.reduce((most, sample) => Math.max(most, Math.abs(sample)), 0);
+// a peak that is not a positive number would scale every sample to silence
+if (!(peak > 0)) {
+    throw new Error(`the loop's peak is ${peak}, so the file would be silent`);
 }
 
 const data = Buffer.alloc(length * 2);
-for (let index = 0; index < length; index++) {
-    data.writeInt16LE(Math.round((loop[index] / peak) * LEVEL * 32767), index * 2);
-}
+loop.forEach((sample, index) => {
+    data.writeInt16LE(Math.round((sample / peak) * LEVEL * 32767), index * 2);
+});
 
 const header = Buffer.alloc(44);
 header.write('RIFF', 0, 'ascii');

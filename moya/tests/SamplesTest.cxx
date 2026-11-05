@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <moya/libmoya/reyes/Samples.h>
 #include <moya/libmoya/state/Planes.h>
 
@@ -21,16 +21,16 @@ typedef v3d::moya::reyes::Samples Samples;
 
 /** A frame of one pixel and one sample at its centre, which the film gives back exactly. **/
 Samples one() {
-    v3d::render::offline::Sampling sampling;
+    v3d::render::offline::film::Sampling sampling;
     sampling.samples = glm::uvec2(1, 1);
-    sampling.filter = v3d::render::offline::Filter::Box;
+    sampling.filter = v3d::render::offline::film::Filter::Box;
     sampling.width = glm::vec2(1.0F, 1.0F);
     return Samples(glm::uvec2(1, 1), sampling);
 }
 
 /** What one pixel resolves to, red, green and blue. **/
 glm::vec3 resolved(const Samples & samples) {
-    v3d::render::offline::FrameBuffer planes(1, 1, v3d::moya::state::Planes::COVERAGE + 1);
+    v3d::render::offline::film::FrameBuffer planes(1, 1, v3d::moya::state::Planes::COVERAGE + 1);
     samples.resolve(&planes, v3d::moya::state::Planes::RED, v3d::moya::state::Planes::COVERAGE, v3d::moya::state::Planes::DEPTH);
     return { planes.value(v3d::moya::state::Planes::RED, 0, 0), planes.value(v3d::moya::state::Planes::RED + 1, 0, 0),
         planes.value(v3d::moya::state::Planes::RED + 2, 0, 0) };

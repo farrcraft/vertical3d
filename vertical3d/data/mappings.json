@@ -306,6 +306,105 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f5",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::viewport"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f7",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::properties"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f9",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::outliner"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f12",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::timeline"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f4",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::console"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f6",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::graph"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f11",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::render-view"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f10",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::render-settings"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "delete",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "delete_keys"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+pagedown",
         "state": "pressed"
       },
@@ -328,12 +427,100 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "space",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::toggle"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+arrow_left",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::first"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+arrow_right",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::last"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::next_key"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::previous_key"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+z",
         "state": "pressed"
       },
       "destination": {
         "context": "edit",
         "name": "undo"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "ctrl+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "hide"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "ctrl+shift+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "show_all"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "alt+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "isolate"
       }
     },
     {

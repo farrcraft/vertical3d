@@ -1,0 +1,26 @@
+# The documentation site. node scripts/docs.ts builds it, from the Markdown in docs/, into
+# out/docs/. Paths here are relative to this directory.
+
+[book]
+title = "Vertical3D"
+src = "../../docs"
+language = "en"
+
+[build]
+build-dir = "../../out/docs"
+# SUMMARY.md lists only pages that exist, and scripts/summary.ts checks it
+create-missing = false
+# the links preprocessor expands {{#include}}, which no document uses, and the index
+# preprocessor renames README.md, which would break the links that name it
+use-default-preprocessors = false
+
+[preprocessor.outside]
+command = "node outside.ts"
+repository = "https://github.com/farrcraft/vertical3d"
+branch = "main"
+
+[output.html]
+git-repository-url = "https://github.com/farrcraft/vertical3d"
+# {path} is the page's path from this directory, ../../docs/..., and a browser resolves the ..
+edit-url-template = "https://github.com/farrcraft/vertical3d/edit/main/scripts/docs/{path}"
+site-url = "/vertical3d/"

@@ -51,6 +51,10 @@ let go, a field gives up the keyboard, or a choice is made. It holds the item's 
 lens, emission and style from the start and the end of the edit, and undo and redo write either
 end back whole. An edit that changed nothing records nothing.
 
+While auto key is on, a `command::Transform` or a `command::Edit` is recorded inside a
+`command::Keyed` with the key it set, as [Animation.md](Animation.md#auto-key) describes.
+Undo takes back the key and then the edit, and redo makes the edit and then the key.
+
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
@@ -84,9 +88,9 @@ right parts when it is undone. Undo and redo of a topology change clear that mes
 selection, because after a renumbering an old flag could name another part. The object stays
 selected.
 
-Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
+Background: [ADR-0098](../adr/editor/0098-editor-topology-changes-undone-from-snapshots.md)
 
-Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
+Background: [ADR-0016](../adr/editor/0016-editor-undo-records-completed-changes.md)
 
 ### The saved position
 
@@ -119,7 +123,7 @@ controller fills the context in at start.
 
 | Class | Commands |
 |---|---|
-| `EditCommands` | `create::*`, `timeline::set`, `transform::poly::*`, `edit::undo` and `edit::redo` |
+| `EditCommands` | `create::*`, `timeline::set`, `timeline::delete_keys`, `timeline::auto_key`, `transform::poly::*`, `edit::undo` and `edit::redo` |
 | `ToolCommands` | `select::mask::*`, `select::add`, `camera::*`, `transform::<mode>` and the held `view::camera::*` |
 | `ViewCommands` | How a view draws: `view::shade::*`, `view::cull::*`, `view::rendermode::*`, `view::show::*` and the fixed views |
 | `AreaCommands` | `area::*` |
@@ -140,10 +144,14 @@ The table registers a handler in one of three ways:
 - `add(name, handler)` registers a handler that receives the whole event and is not followed
   by the read back below. The area and workspace commands use it, and give the views their
   regions again instead.
+- `script(name, parameters, handler)` registers a command a script can run too. It runs on a
+  press, as `press()` does, and its handler fills each parameter a script left out from the
+  context. `script(name, handler)` registers one that takes nothing. The journal lists every
+  run of one, as [Scripting.md](Scripting.md) describes.
 
-A command registered with `press()` or `hold()` is followed by `syncUi()`. That sets the check
-marks on menu items and toolbar toggles from the editor's state: the active view's show flags,
-the select mask and the transform mode.
+A command registered with `press()`, `hold()` or `script()` is followed by `syncUi()`. That
+sets the check marks on menu items and toolbar toggles from the editor's state: the active
+view's show flags, the select mask and the transform mode.
 
 **How a command arrives.** Three sources produce the same `event::Event`, so all three reach
 the same handler:
@@ -190,16 +198,18 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 1. If it changes the document, add an operation to `Document` that applies itself, records
    itself and returns an `Outcome`.
 2. Register a handler in the `registerCommands()` of the part's class in `src/app/`, with
-   `press()` or `hold()`. A handler that runs an operation passes it what it acts on, and
-   reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
+   `script()` when a script should be able to run it, and `press()` or `hold()` otherwise. A
+   command that acts on items, parts or a frame declares a parameter for each, and fills it from
+   the context when it is left out. A handler that runs an operation passes it what it acts on,
+   and reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
    `Context::refuse()` does the same for a request the handler turns down itself. A command for
    a part with no class yet gets a class of its own.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
    with the same context and name. A command on a menu can be searched for.
 4. If it describes on/off state, mark it in `syncUi()`.
 
-Playback, the Render menu and the mouse each have a controller in `src/control/`: `Playback`,
-`RenderWindow` and `Pointer`. A command for one of them calls it.
+Playback, the Render menu and the mouse each have a controller: `Playback` and `RenderView` in
+`src/control/`, and `Pointer` in `src/control/chrome/`. A command for one of them calls it.
 
 ### The command search
 
@@ -241,5 +251,5 @@ each one takes.
 `command::Stack` and `Tool` are in the editor rather than the api. No other app has a document
 to undo.
 
-Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md),
-[ADR-0090](../adr/0090-input-commands-are-handled-through-one-registry.md)
+Background: [ADR-0081](../adr/engine/0081-input-key-events-and-commands-are-separate.md),
+[ADR-0090](../adr/engine/0090-input-commands-are-handled-through-one-registry.md)

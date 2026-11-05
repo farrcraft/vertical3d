@@ -9,12 +9,16 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <fstream>
 #include <initializer_list>
+#include <map>
 #include <optional>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include <boost/json/parse.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 #include <glm/vec4.hpp>
@@ -122,12 +126,32 @@ BOOST_FIXTURE_TEST_CASE(a_point_falls_in_the_area_under_it_and_a_gap_in_none, Qu
     BOOST_CHECK_EQUAL(layout.areaAt(2000.0F, 10.0F), 4U);
 }
 
+/**
+ * A layout gives its areas and editors ids from the first it is told, so two windows' layouts
+ * never give out the same one.
+ **/
+BOOST_AUTO_TEST_CASE(ids_start_where_the_layout_is_told) {
+    AreaLayout layout(logger(), 5000);
+    BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));
+    BOOST_REQUIRE_EQUAL(layout.areas().size(), 1U);
+    BOOST_CHECK_EQUAL(layout.areas()[0].id, 5000U);
+    BOOST_CHECK_EQUAL(layout.areas()[0].editor().id, 5000U);
+}
+
 BOOST_AUTO_TEST_CASE(one_area_needs_no_split) {
     AreaLayout layout(logger());
     BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));
     layout.resize(glm::vec4(0.0F, 0.0F, 800.0F, 600.0F));
     BOOST_REQUIRE_EQUAL(layout.areas().size(), 1U);
     BOOST_CHECK(layout.areas()[0].region == glm::vec4(3.0F, 3.0F, 794.0F, 594.0F));
+}
+
+BOOST_AUTO_TEST_CASE(the_region_is_what_resize_was_given) {
+    AreaLayout layout(logger());
+    BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));
+    layout.resize(glm::vec4(40.0F, 30.0F, 800.0F, -5.0F));
+    // a negative extent is held as none
+    BOOST_CHECK(layout.region() == glm::vec4(40.0F, 30.0F, 800.0F, 0.0F));
 }
 
 BOOST_AUTO_TEST_CASE(a_layout_that_cannot_be_read_is_refused) {
@@ -607,6 +631,45 @@ BOOST_AUTO_TEST_CASE(the_metrics_set_the_gap) {
     BOOST_CHECK_EQUAL(layout.areas()[1].region.x, 103.0F);
     BOOST_CHECK(!layout.divider(94.0F, 50.0F));
     BOOST_CHECK(layout.divider(95.0F, 50.0F));
+}
+
+/**
+ * Every workspace the editor ships loads. Animation holds the timeline, the graph editor and the
+ * console as tabs along its foot, Shading a smooth view beside the properties, and Rendering the
+ * render view beside its settings.
+ **/
+BOOST_AUTO_TEST_CASE(the_shipped_workspaces_load) {
+    const std::ifstream file("data/layout.json");
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+    std::map<std::string, std::vector<std::vector<std::string>>> kinds;
+    std::map<std::string, AreaLayout> loaded;
+    for (const boost::json::value& workspace : boost::json::parse(text.str()).at("workspaces").as_array()) {
+        AreaLayout layout(logger());
+        BOOST_REQUIRE(layout.load(workspace.as_object()));
+        layout.resize(glm::vec4(0.0F, 0.0F, 1024.0F, 768.0F));
+        std::vector<std::vector<std::string>>& areas = kinds[layout.name()];
+        for (const AreaLayout::Area& area : layout.areas()) {
+            areas.emplace_back();
+            for (const AreaLayout::Editor& editor : area.editors) {
+                areas.back().push_back(editor.kind);
+            }
+        }
+        loaded.emplace(layout.name(), std::move(layout));
+    }
+    using Areas = std::vector<std::vector<std::string>>;
+    BOOST_CHECK(kinds.at("Modelling").size() == 6U);
+    BOOST_CHECK(kinds.at("Perspective") == (Areas{ { "viewport" } }));
+    BOOST_CHECK(kinds.at("Animation") == (Areas{ { "viewport" }, { "viewport" }, { "outliner" }, { "properties" }, { "timeline", "graph", "console" } }));
+    BOOST_CHECK(kinds.at("Shading") == (Areas{ { "viewport" }, { "properties" } }));
+    BOOST_CHECK(kinds.at("Rendering") == (Areas{ { "render-view" }, { "render-settings" } }));
+
+    // the foot is a quarter of the window, tall enough for the timeline under its tabs
+    const AreaLayout::Area& foot = loaded.at("Animation").areas().back();
+    BOOST_CHECK_GE(foot.content.w, 132.0F);
+    BOOST_CHECK_LT(foot.region.w, 768.0F / 3.0F);
+    BOOST_CHECK_EQUAL(std::string(loaded.at("Shading").areas().front().editor().state.at("shading").as_string()), "smooth");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

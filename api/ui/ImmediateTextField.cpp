@@ -8,6 +8,7 @@
 #include <api/ui/immediate/Context.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Painter.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <charconv>
@@ -24,6 +25,24 @@
 
 namespace v3d::ui {
 
+namespace {
+
+/**
+ * @return a number as a field shows it: to three places, with the zeros and the point a whole
+ *         number does not need dropped, and nothing that reads as a negative zero
+ **/
+std::string numeral(float value) {
+    std::string shown = std::format("{:.3f}", value);
+    const std::size_t point = shown.find('.');
+    if (point != std::string::npos) {
+        const std::size_t last = shown.find_last_not_of('0');
+        shown.erase(last == point ? point : last + 1);
+    }
+    return shown == "-0" ? "0" : shown;
+}
+
+};  // namespace
+
 bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
     if (!typing() || key.empty()) {
         return false;
@@ -33,6 +52,7 @@ bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
         // was typed
         context_->letGo = true;
         context_->escaped = key == "escape";
+        context_->entered = key == "return";
         return true;
     }
     return input::edit(&context_->edit, key, shifted, controlled, context_->clipboard);
@@ -44,6 +64,14 @@ bool Immediate::typed(std::string_view utf8) {
     }
     // taken even when the limit refused it, so it never reaches the app's bindings
     context_->edit.insert(utf8);
+    return true;
+}
+
+bool Immediate::composing(std::string_view utf8) {
+    if (!typing()) {
+        return false;
+    }
+    context_->edit.compose(utf8);
     return true;
 }
 
@@ -60,16 +88,29 @@ void Immediate::clipboard(const input::Clipboard& clipboard) {
 }
 
 bool Immediate::textField(const std::string& label, std::string* value, std::size_t limit) {
+    return textField(label, value, FieldLook{.icon = Image(), .labelled = false, .limit = limit});
+}
+
+bool Immediate::textField(const std::string& label, std::string* value, const FieldLook& look) {
     if (context_->canvas == nullptr || value == nullptr) {
         return false;
     }
+    const std::size_t limit = look.limit;
     const glm::vec2 size(context_->itemWidth(), context_->dressing.barHeight);
     const glm::vec2 min = context_->place(size);
     const glm::vec2 max = min + size;
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, max);
 
-    const glm::vec2 low(min.x + context_->dressing.padding, min.y + context_->dressing.borderWidth);
+    // the text starts past the icon and the label, so a press is placed against the line where
+    // it is drawn
+    float icon = 0.0F;
+    if (look.icon.valid()) {
+        icon = std::min(context_->dressing.iconSize, size.y);
+    }
+    const float start = min.x + context_->dressing.padding + (icon > 0.0F ? icon + (context_->dressing.padding * 0.5F) : 0.0F);
+    const float lead = look.labelled ? context_->measure(label) + context_->dressing.spacing : 0.0F;
+    const glm::vec2 low(start + lead, min.y + context_->dressing.borderWidth);
     const glm::vec2 high(max.x - context_->dressing.padding, max.y - context_->dressing.borderWidth);
     const float room = std::max(high.x - low.x, 0.0F);
 
@@ -79,17 +120,18 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         context_->edit.text(*value);
         context_->written = *value;
     }
-    if (reaction.hovered && context_->input.pressed) {
-        if (context_->typing != id) {
-            context_->focus(id);
-            context_->edit.text(*value);
-            context_->written = *value;
-        }
+    const bool asked = context_->focusNext && context_->disabled == 0;
+    context_->focusNext = false;
+    const bool pressed = reaction.hovered && context_->input.pressed;
+    if ((pressed || asked) && context_->typing != id) {
+        context_->claim(id, *value);
+    }
+    if (pressed) {
         // the press is measured against the line as it was drawn, slid as far as the caret
         // had pushed it
-        const float caret = context_->measure(context_->edit.text().substr(0, context_->edit.caret()));
-        const float slid = std::max(caret - room, 0.0F);
-        context_->edit.caret(context_->edit.at(context_->input.cursor.x - (low.x - slid), context_->measure));
+        const paint::Type type(context_->text, context_->textSize);
+        const float slid = std::max(context_->edit.layout(type).caret - room, 0.0F);
+        context_->edit.at(context_->input.cursor.x - (low.x - slid), type);
     }
 
     bool changed = false;
@@ -104,34 +146,54 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         // a press anywhere else, a disabled field, and a return, tab or escape all give the
         // keyboard up. What was typed has been written by then
         if (context_->letGo || context_->disabled > 0 || (context_->input.pressed && !reaction.hovered)) {
+            context_->itemEntered = context_->letGo && context_->entered;
             context_->focus(0);
             context_->itemFinished = true;
         }
     }
 
-    const bool focused = context_->typing == id;
-    paint::plateBox(context_->canvas, min, max, context_->dressing.radius, context_->dressing.borderWidth,
-        {.inside = context_->eased(id, context_->face(false, reaction.hovered && !focused)), .outline = focused ? context_->dressing.focus : context_->dressing.border});
-    if (high.x <= low.x) {
-        return changed;
-    }
-    context_->canvas->clip(low, high);
-    if (!focused && value->empty()) {
-        context_->label(label, low, glm::vec2(room, size.y - (context_->dressing.borderWidth * 2.0F)), context_->dressing.placeholder);
-        context_->canvas->unclip();
-        return changed;
-    }
-
-    if (focused) {
-        context_->drawEdit(low, high);
-    } else {
-        context_->label(*value, low, glm::vec2(room, high.y - low.y), context_->ink(context_->dressing.text));
-    }
-    context_->canvas->unclip();
+    context_->itemTyping = context_->typing == id;
+    context_->drawField({.id = id, .label = label, .value = value, .min = min, .max = max, .icon = look.icon, .iconSide = icon, .start = start,
+        .labelled = look.labelled, .low = low, .high = high}, reaction);
     return changed;
 }
 
+void immediate::Context::drawField(const Field& field, const Reaction& reaction) {
+    const bool focused = typing == field.id;
+    paint::plateBox(canvas, field.min, field.max, dressing.radius, dressing.borderWidth,
+        {.inside = eased(field.id, face(false, reaction.hovered && !focused)), .outline = focused ? dressing.focus : dressing.border});
+    if (field.iconSide > 0.0F) {
+        const glm::vec2 corner(field.min.x + dressing.padding, field.min.y + ((field.max.y - field.min.y - field.iconSide) * 0.5F));
+        canvas->rect(corner, corner + glm::vec2(field.iconSide), field.icon.uv0, field.icon.uv1, ink(dressing.placeholder), field.icon.texture);
+    }
+    const glm::vec2& low = field.low;
+    const glm::vec2& high = field.high;
+    if (field.labelled) {
+        const glm::vec2 from(field.start, low.y);
+        canvas->clip(from, high);
+        label(field.label, from, glm::vec2(std::max(high.x - field.start, 0.0F), high.y - low.y), ink(dressing.secondaryText));
+        canvas->unclip();
+    }
+    if (high.x <= low.x) {
+        return;
+    }
+    const glm::vec2 room(high.x - low.x, high.y - low.y);
+    canvas->clip(low, high);
+    if (focused) {
+        drawEdit(low, high);
+    } else if (!field.value->empty()) {
+        label(*field.value, low, room, ink(dressing.text));
+    } else if (!field.labelled) {
+        label(field.label, low, room, dressing.placeholder);
+    }
+    canvas->unclip();
+}
+
 bool Immediate::dragFloat(const std::string& label, float* value, float speed) {
+    return dragFloat(label, value, speed, NumberLook{});
+}
+
+bool Immediate::dragFloat(const std::string& label, float* value, float speed, const NumberLook& look) {
     if (context_->canvas == nullptr || value == nullptr) {
         return false;
     }
@@ -147,7 +209,9 @@ bool Immediate::dragFloat(const std::string& label, float* value, float speed) {
     } else {
         changed = context_->dragNumber(id, reaction, value, speed);
     }
-    context_->drawNumber({.id = id, .label = label, .value = *value, .min = min, .max = max}, reaction);
+    context_->drawNumber(
+        {.id = id, .label = label, .value = *value, .min = min, .max = max, .labelColour = look.labelColour, .unit = look.unit, .edge = look.edge},
+        reaction);
     return changed;
 }
 
@@ -208,6 +272,12 @@ void immediate::Context::drawNumber(const Number& field, const Reaction& reactio
     } else {
         paint::fillBox(canvas, field.min, field.max, dressing.radius, eased(field.id, face(dragging, reaction.hovered)));
     }
+    if (field.edge) {
+        // the field's own box cut to its left side, so the edge follows the rounded corners
+        canvas->clip(field.min, glm::vec2(field.min.x + (edgeWidth * scale), field.max.y));
+        paint::fillBox(canvas, field.min, field.max, dressing.radius, *field.edge);
+        canvas->unclip();
+    }
     const glm::vec2 low(field.min.x + dressing.padding, field.min.y + dressing.borderWidth);
     const glm::vec2 high(field.max.x - dressing.padding, field.max.y - dressing.borderWidth);
     if (high.x <= low.x) {
@@ -218,9 +288,11 @@ void immediate::Context::drawNumber(const Number& field, const Reaction& reactio
         drawEdit(low, high);
     } else {
         const glm::vec2 room(high.x - low.x, high.y - low.y);
-        label(field.label, low, room, ink(dressing.secondaryText));
-        const std::string shown = std::format("{:.3f}", field.value);
-        label(shown, glm::vec2(high.x - measure(shown), low.y), room, ink(dressing.text));
+        label(field.label, low, room, ink(field.labelColour.value_or(dressing.secondaryText)));
+        const std::string shown = numeral(field.value) + field.unit;
+        // the value sits at the right, and never starts before the label has ended
+        const float left = std::max(high.x - measure(shown), low.x + measure(field.label) + dressing.spacing);
+        label(shown, glm::vec2(left, low.y), room, ink(dressing.text));
     }
     canvas->unclip();
 }
@@ -229,20 +301,21 @@ void immediate::Context::drawEdit(const glm::vec2& low, const glm::vec2& high) {
     // the line slides left when the caret would be past the far edge, so a full field can
     // still be typed into
     const float room = std::max(high.x - low.x, 0.0F);
-    const std::string_view line = edit.text();
-    const float caret = measure(line.substr(0, edit.caret()));
-    const float pen = low.x - std::max(caret - room, 0.0F);
-    if (edit.selected()) {
-        // the highlight goes behind the line, which is drawn whole in one colour, so the
-        // runs either side of it cannot measure differently from the prefix that places the
-        // caret
-        const float from = measure(line.substr(0, std::min(edit.anchor(), edit.caret())));
-        const float to = measure(line.substr(0, std::max(edit.anchor(), edit.caret())));
-        paint::fillBox(canvas, glm::vec2(pen + from, low.y), glm::vec2(pen + to, high.y), 0.0F, dressing.highlight);
+    const input::LineEdit::Layout laid = edit.layout(paint::Type(text, textSize));
+    const float pen = low.x - std::max(laid.caret - room, 0.0F);
+    // the highlight goes behind the line, which is drawn whole in one colour
+    for (const glm::vec2& run : laid.selected) {
+        paint::fillBox(canvas, glm::vec2(pen + run.x, low.y), glm::vec2(pen + run.y, high.y), 0.0F, dressing.highlight);
     }
-    label(std::string(line), glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), ink(dressing.text));
+    const glm::vec4 inked = ink(dressing.text);
+    label(laid.text, glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), inked);
     const float stem = std::max(dressing.borderWidth, 1.0F);
-    canvas->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing.caret);
+    // a composition is underlined where it stands in the line, below its baseline
+    const float baseline = low.y + (((high.y - low.y) + (dressing.lineHeight * 0.5F)) * 0.5F);
+    for (const glm::vec2& run : laid.composed) {
+        canvas->rect(glm::vec2(pen + run.x, baseline + stem), glm::vec2(pen + run.y, baseline + (stem * 2.0F)), inked);
+    }
+    canvas->rect(glm::vec2(pen + laid.caret, low.y), glm::vec2(pen + laid.caret + stem, high.y), dressing.caret);
 }
 
 std::optional<float> immediate::Context::number(std::string_view text) {

@@ -19,9 +19,9 @@
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/Stack.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/Transform.h>
@@ -55,8 +55,8 @@ glm::vec2 screen(const v3d::editor::view::ViewPort& view, const glm::vec3& point
 struct TwoCubes {
     TwoCubes() :
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        left(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        right(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        left(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
         history(boost::make_shared<v3d::editor::command::Stack>()),
         transformTool(tool(scene)) {
         left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
@@ -98,8 +98,8 @@ struct TwoCubes {
     }
 
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> left;
-    boost::shared_ptr<v3d::editor::scene::Mesh> right;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> left;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> right;
     boost::shared_ptr<v3d::editor::command::Stack> history;
     boost::shared_ptr<v3d::editor::tool::Transform> transformTool;
 };
@@ -132,7 +132,7 @@ struct Snapshot {
 struct Components {
     explicit Components(v3d::editor::selection::SelectMask mask) :
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
         history(boost::make_shared<v3d::editor::command::Stack>()),
         transformTool(tool(scene)) {
         cube->selected(true);
@@ -198,7 +198,7 @@ struct Components {
     }
 
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
     boost::shared_ptr<v3d::editor::command::Stack> history;
     boost::shared_ptr<v3d::editor::tool::Transform> transformTool;
 };
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
  **/
 BOOST_AUTO_TEST_CASE(transform_tool_takes_a_press_on_a_handle_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_takes_a_press_on_a_handle_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -385,9 +385,38 @@ BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
     BOOST_CHECK_CLOSE(cube->translation().x, 0.5F, 0.5F);
 }
 
+BOOST_AUTO_TEST_CASE(transform_tool_auto_key_test) {
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    cube->selected(true);
+    scene->add(cube);
+    scene->timeline({ .frame = 12, .autoKey = true });
+
+    const boost::shared_ptr<v3d::editor::command::Stack> history = boost::make_shared<v3d::editor::command::Stack>();
+    const boost::shared_ptr<v3d::editor::tool::Transform> transform = tool(scene);
+    transform->commands(history);
+    transform->activate("translate");
+
+    // with auto key on, a gesture keys what it moved at the current frame, in the same change
+    transform->button(1, true, glm::vec2(centre.x + 45.0F, centre.y));
+    transform->motion(glm::vec2(centre.x + 145.0F, centre.y));
+    transform->button(1, false, glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_EQUAL(history->undoDepth(), 1U);
+    const v3d::editor::scene::Curves curves = scene->curves(cube->id());
+    BOOST_REQUIRE(curves.contains("translation.x"));
+    BOOST_CHECK(!curves.contains("scale.x"));
+    BOOST_CHECK_EQUAL(curves.at("translation.x").keys()[0].frame, 12.0F);
+    BOOST_CHECK_CLOSE(curves.at("translation.x").keys()[0].value, 0.5F, 0.5F);
+
+    // one undo takes back the key and the move
+    BOOST_CHECK_EQUAL(history->undo()->name(), "translate");
+    BOOST_CHECK(scene->curves(cube->id()).empty());
+    BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+}
+
 BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -409,7 +438,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -468,7 +497,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_set_kept_test) {
 BOOST_AUTO_TEST_CASE(transform_tool_vertex_test) {
     const Components components(v3d::editor::selection::SelectMask::Vertex);
     const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
-    components.scene->components().select(components.cube->id(), v3d::editor::scene::Component::Vertex, vertex, true);
+    components.scene->components().select(components.cube->id(), v3d::editor::scene::item::Component::Vertex, vertex, true);
     components.check({vertex});
 }
 
@@ -481,7 +510,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_edge_test) {
     for (v3d::brep::Index id = 0; id < components.cube->geometry()->edgeCount() && !found; id++) {
         const v3d::brep::HalfEdge* edge = components.cube->geometry()->edge(id);
         if (edge->vertex() == from && components.cube->geometry()->edge(edge->next())->vertex() == to) {
-            components.scene->components().select(components.cube->id(), v3d::editor::scene::Component::Edge, edge->next(), true);
+            components.scene->components().select(components.cube->id(), v3d::editor::scene::item::Component::Edge, edge->next(), true);
             found = true;
         }
     }
@@ -501,7 +530,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_face_test) {
             }
         }
         if (corners.size() == 4) {
-            components.scene->components().select(components.cube->id(), v3d::editor::scene::Component::Face, face, true);
+            components.scene->components().select(components.cube->id(), v3d::editor::scene::item::Component::Face, face, true);
             front = corners;
         }
     }
@@ -511,7 +540,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_face_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_component_no_gesture_test) {
     const Components components(v3d::editor::selection::SelectMask::Vertex);
-    components.scene->components().select(components.cube->id(), v3d::editor::scene::Component::Vertex, components.corner(glm::vec3(0.5F, 0.5F, -0.5F)), true);
+    components.scene->components().select(components.cube->id(), v3d::editor::scene::item::Component::Vertex, components.corner(glm::vec3(0.5F, 0.5F, -0.5F)), true);
 
     // a handle grabbed and let go without moving changed nothing
     const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +
@@ -529,7 +558,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_component_no_gesture_test) {
 BOOST_AUTO_TEST_CASE(transform_tool_mask_change_test) {
     const Components components(v3d::editor::selection::SelectMask::Vertex);
     const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
-    components.scene->components().select(components.cube->id(), v3d::editor::scene::Component::Vertex, vertex, true);
+    components.scene->components().select(components.cube->id(), v3d::editor::scene::item::Component::Vertex, vertex, true);
     const glm::vec3 start = components.cube->geometry()->vertex(vertex)->point();
 
     const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +
@@ -558,10 +587,10 @@ BOOST_AUTO_TEST_CASE(transform_tool_curve_handle_test) {
     const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
     BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = boost::make_shared<v3d::editor::scene::Curve>(curves);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = boost::make_shared<v3d::editor::scene::item::Curve>(curves);
     curve->selected(true);
     scene->add(curve);
-    scene->components().select(curve->id(), v3d::editor::scene::Component::Handle, 1, true);
+    scene->components().select(curve->id(), v3d::editor::scene::item::Component::Handle, 1, true);
     const boost::shared_ptr<v3d::editor::command::Stack> history = boost::make_shared<v3d::editor::command::Stack>();
     const boost::shared_ptr<v3d::editor::tool::Transform> transformTool = tool(scene);
     transformTool->commands(history);

@@ -14,6 +14,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
@@ -25,6 +26,11 @@ constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
  * A translucent colour, so an outline drawn under a plate would show through it.
  **/
 constexpr glm::vec4 translucent(0.1F, 0.1F, 0.1F, 0.5F);
+
+/**
+ * How far a curved edge reaches either side of the curve as it fades.
+ **/
+constexpr float smoothed = 0.5F;
 
 constexpr glm::vec2 low(20.0F, 30.0F);
 constexpr glm::vec2 high(140.0F, 90.0F);
@@ -94,7 +100,9 @@ float covered(const v3d::render::realtime::canvas::Canvas& canvas) {
 BOOST_AUTO_TEST_SUITE(painter_test)
 
 /**
- * An outline traces the edges of a box and covers nothing inside them, square or rounded.
+ * An outline traces the edges of a box and covers nothing inside them, square or rounded. A
+ * rounded corner's inner edge fades across a pixel centred on its curve, so it reaches half a
+ * pixel further in.
  *
  * This lets a plate's interior carry an alpha. An outline drawn as a box behind the fill
  * would show through it as a tint, and would stop whatever the plate covers showing through
@@ -112,7 +120,9 @@ BOOST_AUTO_TEST_CASE(an_outline_covers_nothing_inside_it) {
     v3d::render::realtime::canvas::Canvas rounded;
     v3d::ui::paint::strokeBox(&rounded, low, high, 8.0F, width, white);
     BOOST_CHECK(!rounded.empty());
-    BOOST_CHECK(!anythingInside(rounded, low + inset, high - inset, 4.0F));
+    const glm::vec2 fade(smoothed, smoothed);
+    BOOST_CHECK(!anythingInside(rounded, low + inset + fade, high - inset - fade, 4.0F - smoothed));
+    BOOST_CHECK(anythingInside(rounded, low + inset, high - inset, 4.0F));
 
     // and one whose outline is thicker than the corner it turns, which squares its corners
     // off rather than folding them over
@@ -240,6 +250,69 @@ BOOST_AUTO_TEST_CASE(a_shadow_with_no_reach_is_its_box) {
 
     BOOST_CHECK_EQUAL(shadow.vertices().size(), box.vertices().size());
     BOOST_CHECK_EQUAL(shadow.indices().size(), box.indices().size());
+}
+
+/**
+ * A rounded corner fades to nothing across a pixel centred on its curve, so a small radius reads
+ * as round. Each edge along an axis stays hard, and so does a square box.
+ **/
+BOOST_AUTO_TEST_CASE(a_rounded_corner_fades_across_its_curve) {
+    const float radius = 6.0F;
+    v3d::render::realtime::canvas::Canvas rounded;
+    v3d::ui::paint::fillBox(&rounded, low, high, radius, white);
+    float reach = 0.0F;
+    for (const v3d::render::realtime::canvas::Canvas::Vertex& vertex : rounded.vertices()) {
+        const float past = beyond(low, high, radius, glm::vec2(vertex.position));
+        reach = std::max(reach, past);
+        // solid inside the fade, and clear at its outer edge
+        if (past > 0.001F) {
+            BOOST_CHECK_SMALL(vertex.colour.a, 0.001F);
+        }
+    }
+    BOOST_CHECK_CLOSE(reach, smoothed, 0.01F);
+    BOOST_CHECK(std::ranges::any_of(rounded.vertices(), [](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
+        return vertex.colour.a == 0.0F;
+    }));
+
+    v3d::render::realtime::canvas::Canvas square;
+    v3d::ui::paint::fillBox(&square, low, high, 0.0F, white);
+    BOOST_CHECK(std::ranges::all_of(square.vertices(), [](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
+        return vertex.colour.a == 1.0F;
+    }));
+}
+
+/**
+ * A drop mark's strokes are smoothed along their sides: each is a solid core between two bands
+ * that fade to nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_drop_mark_is_smoothed) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    v3d::ui::paint::dropMark(&canvas, glm::vec2(50.0F, 50.0F), 10.0F, white);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+    const auto clear = std::ranges::count_if(canvas.vertices(), [](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
+        return vertex.colour.a == 0.0F;
+    });
+    BOOST_CHECK_EQUAL(clear, 8);
+}
+
+/**
+ * A chevron's strokes run on past its tip until their outer edges meet, so the bend comes to a
+ * point. In a right angle bend each stroke runs on by half its width.
+ **/
+BOOST_AUTO_TEST_CASE(a_chevron_comes_to_a_point) {
+    const float width = 2.0F;
+    v3d::render::realtime::canvas::Canvas canvas;
+    v3d::ui::paint::chevron(&canvas, {.from = glm::vec2(0.0F, 0.0F), .tip = glm::vec2(10.0F, 10.0F), .to = glm::vec2(20.0F, 0.0F), .width = width},
+        white);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+
+    // the first stroke's centre line, which its first and last lines' vertices straddle
+    const glm::vec2 into = glm::normalize(glm::vec2(1.0F, 1.0F));
+    float reach = 0.0F;
+    for (std::size_t index = 0; index < 8; index++) {
+        reach = std::max(reach, glm::dot(glm::vec2(canvas.vertices()[index].position), into));
+    }
+    BOOST_CHECK_CLOSE(reach, glm::length(glm::vec2(10.0F, 10.0F)) + (width * 0.5F), 0.01F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -19,6 +19,8 @@
 
 namespace v3d::event {
 /**
+ * Turns each source event no listener consumed into the destination events its bindings make
+ * of it, and sends those through the dispatcher. It also holds the event contexts by name.
  **/
 class Router {
  public:

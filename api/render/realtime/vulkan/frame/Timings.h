@@ -60,6 +60,8 @@ class Timings final {
      * command buffer it is beginning. Ring::begin() calls it once the slot's fence has
      * signalled.
      *
+     * @param commands the command buffer being begun, which the query reset is recorded into
+     * @param slot which frame in flight, wrapped to the count given at construction
      * @param submitted false when the slot's last use was abandoned before its submit, so it
      *        recorded nothing that can be read
      **/

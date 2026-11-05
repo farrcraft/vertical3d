@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <vector>
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -77,13 +78,35 @@ BOOST_FIXTURE_TEST_CASE(the_gaps_are_filled, Pair) {
 }
 
 /**
- * Each corner of an area is covered outside its rounding, from the rounding outwards.
+ * Each corner of an area is covered outside its rounding. The cover fades in across a pixel
+ * centred on the rounding, and is the gap's colour from there outwards.
  **/
 BOOST_FIXTURE_TEST_CASE(the_corners_are_rounded, Pair) {
     draw();
+    const glm::vec4 clear(gap.r, gap.g, gap.b, 0.0F);
     for (const glm::vec2 centre : { glm::vec2(7.0F, 7.0F), glm::vec2(94.0F, 93.0F), glm::vec2(193.0F, 7.0F) }) {
-        BOOST_CHECK(any(gap, [centre](const glm::vec2& point) { return std::abs(glm::distance(point, centre) - 4.0F) < 0.01F; }));
+        BOOST_CHECK(any(gap, [centre](const glm::vec2& point) { return std::abs(glm::distance(point, centre) - 4.5F) < 0.01F; }));
+        BOOST_CHECK(any(clear, [centre](const glm::vec2& point) { return std::abs(glm::distance(point, centre) - 3.5F) < 0.01F; }));
     }
+}
+
+/**
+ * The bands are filled after the gaps and before the corners and lines, so an area's corner
+ * rounds a band across its top and the area's line runs over it.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_bands_go_under_the_lines, Pair) {
+    const glm::vec4 band(1.0F, 0.0F, 1.0F, 0.8F);
+    const v3d::editor::view::Band bands[] = { { .box = glm::vec4(3.0F, 3.0F, 95.0F, 20.0F), .colour = band } };
+    v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, 1, std::nullopt,
+        std::nullopt, bands);
+    const std::vector<Canvas::Vertex>& drawn = canvas.vertices();
+    const auto first = [&drawn](const glm::vec4& colour) {
+        return std::ranges::find_if(drawn, [&colour](const Canvas::Vertex& vertex) { return vertex.colour == colour; }) - drawn.begin();
+    };
+    BOOST_REQUIRE(any(band, [](const glm::vec2& point) { return at(point, 3.0F, 3.0F); }));
+    BOOST_CHECK_LT(first(gap), first(band));
+    BOOST_CHECK_LT(first(band), first(hairline));
+    BOOST_CHECK_LT(first(band), first(accent));
 }
 
 /**

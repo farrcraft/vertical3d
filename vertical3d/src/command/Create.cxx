@@ -5,7 +5,7 @@
 
 #include "Create.h"
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -17,7 +17,7 @@ namespace v3d::editor::command {
 /**
  **/
 Create::Create(const boost::shared_ptr<scene::Scene>& scene,
-    const boost::shared_ptr<scene::Item>& item,
+    const boost::shared_ptr<scene::item::Item>& item,
     const std::string& kind) :
     scene_(scene),
     item_(item),

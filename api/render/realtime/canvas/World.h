@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <array>
 #include <cstdint>
@@ -49,6 +49,20 @@ class World final {
         glm::vec3 position;
         glm::vec2 uv;
         glm::vec4 colour;
+        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
+        float contrast = -1.0F;  /**< for text, how much its coverage is strengthened, from 0 to 1. Below 0 for what is not text **/
+    };
+
+    /**
+     * A glyph drawn from its curves, as Canvas::curves() draws one: the place in the em square
+     * each corner of its quad carries, with y upwards, and where its data starts among the bands.
+     **/
+    struct Glyph final {
+        std::array<glm::vec2, 4> em{};
+        uint32_t bands = 0;
+        resource::TextureHandle curveTexture;  /**< the float texture of the glyph's curves **/
+        resource::TextureHandle bandTexture;   /**< and of its bands **/
+        float contrast = 0.0F;       /**< how much its coverage is strengthened, from 0 to 1 **/
     };
 
     /**
@@ -58,7 +72,9 @@ class World final {
     struct Batch final {
         Batch() noexcept;
 
-        TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        resource::TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        resource::TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
+        bool field;             /**< whether the run samples a distance field **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };
@@ -132,12 +148,37 @@ class World final {
      * The uv rectangle is laid over the corners in the order they are given, so the first
      * corner takes uv0 and the third takes uv1 and the other two take one of each.
      *
+     * @param corners the quad's corners in perimeter order, placed through the current transform
      * @param uv0 the texture coordinate at the first corner
      * @param uv1 the texture coordinate at the third
      * @param colour multiplied with what is sampled, so white leaves the texture alone
+     * @param texture the texture to sample. An unset handle samples the renderer's white texture
      **/
     void quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture);
+        const glm::vec4& colour, const resource::TextureHandle& texture);
+
+    /**
+     * A glyph drawn from its curves over a quad, sharp at any distance and angle. Its corners
+     * take the glyph's em corners in the order they are given. A run of glyphs never merges with
+     * quads drawn another way.
+     **/
+    void glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& colour);
+
+    /**
+     * An effect drawn from a glyph's distance field over a quad, such as an outline, a shadow
+     * or a glow, with quad()'s meaning for the corners and the uv rectangle. A run of fields
+     * never merges with quads drawn another way.
+     *
+     * @param corners the quad's corners in perimeter order, placed through the current transform
+     * @param uv0 the field's texture coordinate at the first corner
+     * @param uv1 the field's texture coordinate at the third
+     * @param colour the effect's colour, whose alpha is multiplied by the effect's coverage
+     * @param texture the atlas holding the glyph's distance field
+     * @param ramp where the effect is whole and where it is gone, from fieldRamp()
+     * @param contrast how much its coverage is strengthened, as text's is
+     **/
+    void field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
+        const resource::TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
 
     /**
      * @return the vertex stream, in the layout the world quad pipeline declares
@@ -164,14 +205,15 @@ class World final {
     static constexpr uint32_t QUAD_INDICES = 6;
 
     /**
-     * Start a batch, or extend the open one when it draws against the same texture.
+     * Start a batch, or extend the open one when it draws against the same texture and bands,
+     * and is a field or not as it is.
      **/
-    void open(const TextureHandle& texture);
+    void open(const resource::TextureHandle& texture, const resource::TextureHandle& bands = resource::TextureHandle(), bool field = false);
 
     /**
-     * Add a vertex with the current transform applied.
+     * Add a vertex with the current transform and tint applied.
      **/
-    void vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour);
+    void vertex(const Vertex& untransformed);
 
     /**
      * Index the four vertices starting at first as two triangles, fanned from the first

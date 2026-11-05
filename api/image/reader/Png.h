@@ -11,6 +11,7 @@
 
 namespace v3d::image::reader {
 /**
+ * Reads a png file into an image, through libpng.
  **/
 class Png : public v3d::image::Reader {
  public:

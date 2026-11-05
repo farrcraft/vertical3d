@@ -17,7 +17,7 @@ class Tetrad {
  public:
         class ShapeInfo {
          public:
-            uint8_t layout_[4][4];  // internal bitmap
+            uint8_t layout_[4][4]{};  // internal bitmap, empty until a shape is set
             std::string color_;  // texture name
         };
 

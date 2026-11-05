@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Requests.h>
 
 #include <string>
@@ -52,7 +52,7 @@ class Display final {
      * skipped. An empty pixel has nothing in any plane, and the depth plane at the farthest
      * depth.
      **/
-    void finish(v3d::render::offline::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const;
+    void finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const;
 
  private:
     // an empty name writes no file. RI's default display is a framebuffer, which moya does

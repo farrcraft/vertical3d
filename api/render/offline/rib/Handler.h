@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <string>
 #include <vector>
@@ -67,7 +67,7 @@ class Handler {
 
     // how a pixel is sampled
     virtual void pixelSamples(const glm::uvec2 & samples) { (void)samples; }
-    virtual void pixelFilter(Filter filter, float xwidth, float ywidth) {
+    virtual void pixelFilter(film::Filter filter, float xwidth, float ywidth) {
         (void)filter;
         (void)xwidth;
         (void)ywidth;
@@ -99,6 +99,8 @@ class Handler {
     }
     /**
      * @param angle in degrees, counter clockwise about the axis
+     * @param axis the direction to turn about, through the origin of the current space. It
+     *        need not be unit length
      **/
     virtual void rotate(float angle, const glm::vec3 & axis) {
         (void)angle;

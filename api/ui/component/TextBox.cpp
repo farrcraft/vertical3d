@@ -9,7 +9,7 @@
 #include <api/event/Type.h>
 #include <api/ui/Component.h>
 #include <api/ui/input/LineEdit.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include "Type.h"
 
@@ -116,8 +116,12 @@ bool TextBox::end(bool extend) {
     return line_.end(extend);
 }
 
-std::size_t TextBox::at(const glm::vec2& point, const paint::Measure& measure) const {
-    return line_.at(point.x - pen_, measure);
+void TextBox::place(const glm::vec2& point, const paint::Type& type, bool extend) {
+    line_.at(point.x - pen_, type, extend);
+}
+
+void TextBox::compose(std::string_view composing) {
+    line_.compose(composing);
 }
 
 input::LineEdit* TextBox::line() noexcept {

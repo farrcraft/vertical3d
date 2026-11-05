@@ -11,7 +11,7 @@
 #include <api/event/State.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 
@@ -41,7 +41,8 @@ void AreaCommands::registerCommands(CommandTable* table) const {
     registerTabs(table);
     change(table, "area::maximise", [this](const v3d::event::Event& event) {
         if (event.state() != v3d::event::State::Released) {
-            context_.layout->maximise(context_.areaOf(event));
+            const Context::Placed at = context_.placeOf(event);
+            at.layout->maximise(at.area);
         }
     });
 }
@@ -64,15 +65,16 @@ void AreaCommands::registerEdges(CommandTable* table) const {
     };
     for (const auto& [word, edge] : edges) {
         change(table, std::string("area::split::") + word, [this, edge](const v3d::event::Event& event) {
-            context_.layout->split(context_.areaOf(event), edge);
+            const Context::Placed at = context_.placeOf(event);
+            at.layout->split(at.area, edge);
         });
         change(table, std::string("area::join::") + word, [this, edge](const v3d::event::Event& event) {
-            const std::size_t area = context_.areaOf(event);
-            context_.layout->join(area, context_.layout->neighbour(area, edge));
+            const Context::Placed at = context_.placeOf(event);
+            at.layout->join(at.area, at.layout->neighbour(at.area, edge));
         });
         change(table, std::string("area::swap::") + word, [this, edge](const v3d::event::Event& event) {
-            const std::size_t area = context_.areaOf(event);
-            context_.layout->swap(area, context_.layout->neighbour(area, edge));
+            const Context::Placed at = context_.placeOf(event);
+            at.layout->swap(at.area, at.layout->neighbour(at.area, edge));
         });
     }
 }
@@ -82,20 +84,33 @@ void AreaCommands::registerEdges(CommandTable* table) const {
 void AreaCommands::registerTabs(CommandTable* table) const {
     const Context& context = context_;
     change(table, "area::tab::new", [&context](const v3d::event::Event& event) {
-        const std::size_t area = context.areaOf(event);
-        if (area >= context.layout->areas().size()) {
+        const Context::Placed at = context.placeOf(event);
+        if (at.area >= at.layout->areas().size()) {
             return;
         }
         // a new tab shows the camera the area shows, or the perspective view
-        const view::AreaLayout::Editor& shown = context.layout->areas()[area].editor();
+        const view::AreaLayout::Editor& shown = at.layout->areas()[at.area].editor();
         const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
-        context.layout->add(area, boost::json::object{ { "kind", view::AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
+        at.layout->add(at.area, boost::json::object{ { "kind", view::AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
     });
-    for (const control::AreaChrome::Kind& kind : control::AreaChrome::kinds()) {
+    for (const control::chrome::Area::Kind& kind : control::chrome::Area::kinds()) {
         const std::string named = kind.kind;
+        // the + on a tabbed area's strip adds a tab of each kind. A viewport starts from the
+        // perspective view
+        change(table, "area::tab::add::" + named, [&context, named](const v3d::event::Event& event) {
+            const Context::Placed at = context.placeOf(event);
+            if (at.area >= at.layout->areas().size()) {
+                return;
+            }
+            boost::json::object state{ { "kind", named } };
+            if (named == view::AreaViews::KIND) {
+                state["camera"] = "Perspective";
+            }
+            at.layout->add(at.area, state);
+        });
         change(table, "area::editor::" + named, [&context, named](const v3d::event::Event& event) {
-            const std::size_t area = context.areaOf(event);
-            if (area >= context.layout->areas().size() || context.layout->areas()[area].editor().kind == named) {
+            const Context::Placed at = context.placeOf(event);
+            if (at.area >= at.layout->areas().size() || at.layout->areas()[at.area].editor().kind == named) {
                 return;
             }
             // a viewport made this way starts from the perspective view
@@ -103,13 +118,13 @@ void AreaCommands::registerTabs(CommandTable* table) const {
             if (named == view::AreaViews::KIND) {
                 state["camera"] = "Perspective";
             }
-            context.layout->replace(area, state);
+            at.layout->replace(at.area, state);
         });
     }
     change(table, "area::tab::close", [&context](const v3d::event::Event& event) {
-        const std::size_t area = context.areaOf(event);
-        if (area < context.layout->areas().size()) {
-            context.layout->close(area, context.layout->areas()[area].chosen);
+        const Context::Placed at = context.placeOf(event);
+        if (at.area < at.layout->areas().size()) {
+            at.layout->close(at.area, at.layout->areas()[at.area].chosen);
         }
     });
     change(table, "area::tab::choose", [&context](const v3d::event::Event& event) {
@@ -118,14 +133,13 @@ void AreaCommands::registerTabs(CommandTable* table) const {
             return;
         }
         const std::size_t editor = static_cast<std::size_t>(std::get<int>(*data));
-        for (std::size_t area = 0; area < context.layout->areas().size(); area++) {
-            const std::vector<view::AreaLayout::Editor>& editors = context.layout->areas()[area].editors;
-            const auto found = std::ranges::find(editors, editor, &view::AreaLayout::Editor::id);
-            if (found != editors.end()) {
-                context.layout->choose(area, static_cast<std::size_t>(found - editors.begin()));
-                return;
-            }
+        const std::optional<Context::Placed> at = context.editorOf(editor);
+        if (!at) {
+            return;
         }
+        const std::vector<view::AreaLayout::Editor>& editors = at->layout->areas()[at->area].editors;
+        const auto found = std::ranges::find(editors, editor, &view::AreaLayout::Editor::id);
+        at->layout->choose(at->area, static_cast<std::size_t>(found - editors.begin()));
     });
 }
 

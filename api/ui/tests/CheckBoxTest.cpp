@@ -14,6 +14,7 @@
 #include <api/ui/component/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -34,22 +35,12 @@ namespace {
 const float characterWidth = 10.0F;
 
 /**
- * What the renderer asked to be written, so a test can read a row back without a font.
+ * A line the ui drew.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
-    return v3d::ui::paint::ComponentRenderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            if (written != nullptr) {
-                written->push_back(Written{std::string(text), pen, colour});
-            }
-        });
+    return v3d::ui::paint::ComponentRenderer(v3d::ui::typeset::body(written));
 }
 
 /**
@@ -88,7 +79,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     container.add(box);
     renderer.draw(&canvas, container);
 
-    const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
+    const v3d::ui::paint::Dressing& style = renderer.dressing();
     BOOST_CHECK_CLOSE(box->size().x,
         style.markSize + (style.padding * 0.5F) + (7.0F * characterWidth), 0.001F);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001F);

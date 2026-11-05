@@ -7,7 +7,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/camera/Camera.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <array>
 #include <cstddef>
@@ -65,14 +65,18 @@ struct OverlayLook final {
     static constexpr glm::vec4 Y_AXIS{ 0.447F, 0.690F, 0.322F, 1.0F };
     static constexpr glm::vec4 Z_AXIS{ 0.333F, 0.565F, 0.910F, 1.0F };
     static constexpr glm::vec4 LABEL{ 0.067F, 0.071F, 0.078F, 1.0F };
-    static constexpr glm::vec4 HOVER{ 1.0F, 1.0F, 1.0F, 0.08F };
+    static constexpr glm::vec4 REST{ 1.0F, 1.0F, 1.0F, 0.05F };
+    static constexpr glm::vec4 HOVER{ 1.0F, 1.0F, 1.0F, 0.10F };
+    static constexpr glm::vec4 PASSEPARTOUT{ 0.0F, 0.0F, 0.0F, 0.45F };
     static constexpr float TEXT = 11.0F;
     static constexpr float LINE = 2.0F;
 
     std::array<glm::vec4, 3> axes{ X_AXIS, Y_AXIS, Z_AXIS };   /**< x, y and z **/
     glm::vec4 label = LABEL;                                  /**< a letter on a ball **/
+    glm::vec4 rest = REST;                                    /**< the disc behind the gizmo **/
     glm::vec4 hover = HOVER;                                  /**< the disc behind the gizmo under the cursor **/
     glm::vec4 lit{ 1.0F };                                    /**< the ring around the ball under the cursor **/
+    glm::vec4 passepartout = PASSEPARTOUT;                    /**< laid over a camera's view outside the render's frame **/
     float text = TEXT;                                        /**< how large a letter is drawn, in pixels **/
     float line = LINE;                                        /**< how thick a line is, and a ring around a ball **/
 };
@@ -130,13 +134,13 @@ void lookAlong(v3d::type::camera::Camera* camera, const AxisEnd& end);
  * letter beyond the line's end. An axis seen end on, whose line is shorter than a quarter of
  * the marker's, has no letter. The gizmo is a ball at each end of each axis: a filled one with
  * its letter at a positive end, and a ring at a negative one. A line joins the centre to each
- * positive ball. A disc lies behind the gizmo while the cursor is over it, and a ring around the
- * ball under the cursor.
+ * positive ball. A faint disc lies behind the gizmo, brighter while the cursor is over it, and a
+ * ring goes around the ball under the cursor.
  *
  * @param cursor where the cursor is, or nothing when it is not over the view
  **/
 void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& view, const OverlayMetrics& metrics,
-    const OverlayLook& look, const v3d::ui::paint::Measure& measure, const v3d::ui::paint::Write& write,
+    const OverlayLook& look, const v3d::ui::paint::Type& type,
     const std::optional<glm::vec2>& cursor);
 
 };  // namespace v3d::editor::view

@@ -7,8 +7,9 @@
 # CMAKE_SOURCE_DIR differs from V3D_ROOT.
 #
 # Its vcpkg.json and vcpkg-configuration.json are copies of the tree's, as a consumer
-# repository would carry. CI does not install from them. It points the configure at the vcpkg
-# install the ctest job has already made, so the copies only document what a consumer needs.
+# repository would carry, with overlay-ports pointed at the tree's ports/ from here. CI does
+# not install from them. It points the configure at the vcpkg install the ctest job has already
+# made, so the copies only document what a consumer needs.
 
 cmake_minimum_required(VERSION 3.21)
 

@@ -130,4 +130,4 @@ file as a scene that keeps its nodes, cameras and lights apart, use
 A `model::Model` holds no device resources. To draw it, register it with the renderer's
 `MeshRegistry`, which uploads it once per path. [rendering/](rendering/README.md) covers that.
 
-Background: [ADR-0069](../adr/0069-models-material-parts-over-one-vertex-buffer.md)
+Background: [ADR-0069](../adr/scene/0069-models-material-parts-over-one-vertex-buffer.md)

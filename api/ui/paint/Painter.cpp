@@ -40,6 +40,18 @@ const float threeQuarterTurn = quarterTurn * 3.0F;
 const unsigned int fadeBands = 3;
 
 /**
+ * How thick a drop mark's strokes are, as a fraction of its width.
+ **/
+const float dropStroke = 0.26F;
+
+/**
+ * How wide the fade is that smooths a curved or slanted edge, in pixels, centred on the edge.
+ * A pixel's worth makes the edge read as smooth without blurring it. A straight edge along an
+ * axis is left hard.
+ **/
+const float smoothing = 1.0F;
+
+/**
  * How much of a shadow's colour is left at a share of the way out across its fade. All of it is
  * left at the box's edge and none at the far end, and it falls fastest in the middle. It is half
  * a turn of a cosine, lifted to run from one down to zero.
@@ -69,8 +81,29 @@ void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, 
  * @param start where the quarter turn begins, as arc() takes it
  **/
 void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - a radius, a width, then an angle
     float radius, float width, float start, const glm::vec4& colour) {
-    canvas->ring({.centre = corner + towards * radius, .outer = radius, .inner = radius - width, .sides = cornerSides, .start = start, .sweep = quarterTurn}, colour);
+    const glm::vec2 centre = corner + towards * radius;
+    const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);
+    const auto band = [&](float from, float to, const glm::vec4& in, const glm::vec4& out) {
+        if (to > from) {
+            canvas->ring({.centre = centre, .outer = to, .inner = from, .sides = cornerSides, .start = start, .sweep = quarterTurn},
+                {.inner = in, .outer = out});
+        }
+    };
+    // each curved edge fades across the smoothing, centred on it. A band thinner than that has
+    // no solid core, and fades out both ways from its middle. An inner edge with no hole inside
+    // it has nothing to fade into
+    const float half = smoothing * 0.5F;
+    const float inner = radius - width;
+    const float middle = radius - (width * 0.5F);
+    const float solid = inner > 0.0F ? std::min(inner + half, middle) : 0.0F;
+    const float outer = std::max(radius - half, middle);
+    if (inner > 0.0F) {
+        band(std::max(0.0F, inner - half), solid, clear, colour);
+    }
+    band(solid, outer, colour, colour);
+    band(outer, radius + half, colour, clear);
     // the turn fills a square of the radius. An outline thicker than that leaves the rest
     // of a square of its own width, and two rectangles beside the turn fill it
     if (width <= radius) {
@@ -81,10 +114,11 @@ void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner
         corner + glm::vec2(towards.x * radius, towards.y * width), colour);
 }
 
-};  // namespace
-
-void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, const glm::vec4& colour) {
+/**
+ * Fill a box with rounded corners, each corner's curved edge smoothed or left hard.
+ **/
+void fill(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, const glm::vec4& colour, bool smooth) {
     const glm::vec2 size = max - min;
     if (canvas == nullptr || size.x <= 0.0F || size.y <= 0.0F || colour.a <= 0.0F) {
         return;
@@ -102,10 +136,28 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
     canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
     canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);
 
-    canvas->arc({.centre = glm::vec2(min.x + corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = halfTurn, .sweep = quarterTurn}, colour);
-    canvas->arc({.centre = glm::vec2(max.x - corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = threeQuarterTurn, .sweep = quarterTurn}, colour);
-    canvas->arc({.centre = glm::vec2(max.x - corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = noTurn, .sweep = quarterTurn}, colour);
-    canvas->arc({.centre = glm::vec2(min.x + corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = quarterTurn, .sweep = quarterTurn}, colour);
+    // a smoothed corner is solid to half the smoothing inside its rounding, and fades to nothing
+    // half the smoothing outside it
+    const float half = smooth ? std::min(smoothing * 0.5F, corner) : 0.0F;
+    const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);
+    const auto wedge = [&](const glm::vec2& centre, float start) {
+        canvas->arc({.centre = centre, .radius = corner - half, .sides = cornerSides, .start = start, .sweep = quarterTurn}, colour);
+        if (half > 0.0F) {
+            canvas->ring({.centre = centre, .outer = corner + half, .inner = corner - half, .sides = cornerSides, .start = start, .sweep = quarterTurn},
+                {.inner = colour, .outer = clear});
+        }
+    };
+    wedge(glm::vec2(min.x + corner, min.y + corner), halfTurn);
+    wedge(glm::vec2(max.x - corner, min.y + corner), threeQuarterTurn);
+    wedge(glm::vec2(max.x - corner, max.y - corner), noTurn);
+    wedge(glm::vec2(min.x + corner, max.y - corner), quarterTurn);
+}
+
+};  // namespace
+
+void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, const glm::vec4& colour) {
+    fill(canvas, min, max, radius, colour, true);
 }
 
 void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
@@ -167,10 +219,12 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
         return;
     }
     const float corner = std::max(0.0F, std::min(shadow.radius, std::min(size.x, size.y) * 0.5F));
-    fillBox(canvas, min, max, corner, colour);
     if (width <= 0.0F) {
+        fillBox(canvas, min, max, corner, colour);
         return;
     }
+    // the fade starts at the box's edge, so the box under it is left hard
+    fill(canvas, min, max, corner, colour, false);
 
     // each band runs from near to far past the box's edge. The straight runs stop where the
     // corners' squares start, and the corners turn about the box's own corner centres, so no
@@ -205,6 +259,39 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
         bend(glm::vec2(max.x - corner, max.y - corner), noTurn);
         bend(glm::vec2(min.x + corner, max.y - corner), quarterTurn);
     }
+}
+
+void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour) {
+    if (canvas == nullptr) {
+        return;
+    }
+    const float half = width * 0.5F;
+    const float stroke = std::max(width * dropStroke, 1.0F);
+    const glm::vec2 tip(centre.x, centre.y + (half * 0.5F));
+    chevron(canvas, {.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .tip = tip,
+        .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke}, colour);
+}
+
+void chevron(v3d::render::realtime::canvas::Canvas* canvas, const Chevron& shape, const glm::vec4& colour) {
+    if (canvas == nullptr) {
+        return;
+    }
+    const glm::vec2 first = shape.tip - shape.from;
+    const glm::vec2 second = shape.to - shape.tip;
+    const float firstLength = std::hypot(first.x, first.y);
+    const float secondLength = std::hypot(second.x, second.y);
+    if (firstLength <= 0.0F || secondLength <= 0.0F) {
+        return;
+    }
+    const glm::vec2 into = first / firstLength;
+    const glm::vec2 out = second / secondLength;
+    // each stroke runs on past the tip until its outer edge meets the other's, so the outside of
+    // the bend is a point rather than a notch. Half the width, by the tangent of half the turn
+    const float cross = std::abs((into.x * out.y) - (into.y * out.x));
+    const float along = (into.x * out.x) + (into.y * out.y);
+    const float mitre = along > -1.0F ? shape.width * 0.5F * cross / (1.0F + along) : 0.0F;
+    canvas->segment({.from = shape.from, .to = shape.tip + (into * mitre), .width = shape.width, .feather = smoothing}, colour);
+    canvas->segment({.from = shape.tip - (out * mitre), .to = shape.to, .width = shape.width, .feather = smoothing}, colour);
 }
 
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept {

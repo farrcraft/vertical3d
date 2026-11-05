@@ -7,16 +7,17 @@ The four checks are cpplint, the compiler's warnings, MSVC `/analyze` and clang-
 is clean at all four**, so every finding is new and should be fixed. cpplint runs in CI. The
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
-A fifth check, the prose gate, applies the writing rules. It reads only the lines a change adds.
-It runs in CI with the link rule and boundary gates. [Review.md](Review.md) lists every gate.
+The review gates in `scripts/` check the rules a compiler cannot, such as the writing rules and
+the linking rules. [Gates.md](Gates.md) lists them and says how they run.
 
 - [cpplint](#cpplint)
 - [The compiler](#the-compiler)
 - [MSVC /analyze](#msvc-analyze)
 - [clang-tidy](#clang-tidy)
 - [Prose](#prose)
+- [Comments only](#comments-only)
+- [CodeQL](#codeql)
 - [CI](#ci)
-- [The review gates' environment](#the-review-gates-environment)
 
 ## cpplint
 
@@ -28,26 +29,23 @@ version:
 pip install cpplint==2.0.2
 ```
 
-CI installs the same version. This is the community fork of cpplint, which renames checks between
-releases. Do not upgrade it without checking the tree again.
+CI installs the same version, and the pre-commit hooks in [Gates.md](Gates.md#before-a-commit)
+run it on the staged files at that version. This is the community fork of cpplint, which renames
+checks between releases. Do not upgrade it without checking the tree again. An upgrade moves the
+pin in `cpplint.yml` and in `.pre-commit-config.yaml` together.
 
 Run it on the whole tree from the repository root:
 
 ```
 cpplint --linelength=180 \
-  --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=demos/voxel/src/noise --recursive .
+  --exclude=out --exclude=vendor --exclude=vcpkg_installed --recursive .
 ```
 
 **The expected output is zero errors.**
 
-The excludes:
-
-- `out`, `vendor` and `vcpkg_installed` exist only on a developer machine. They hold far more
-  files than the project, mostly third-party headers. CI checks out no submodules and installs no
-  packages, so it has none of them.
-- `demos/voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
-  too.
+The excludes, `out`, `vendor` and `vcpkg_installed`, exist only on a developer machine. They hold
+far more files than the project, mostly third-party headers. CI installs no packages, so it has
+none of them.
 
 `--exclude` removes files from the lint, not from the directory walk, so a run still walks the
 excluded directories.
@@ -93,11 +91,12 @@ they look the same.
   `api/ui` relies on this for `component::Type`. A `switch` that needs a catch-all case writes
   `default:` and is not checked.
 
-Background: [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md)
+Background: [ADR-0047](../adr/project/0047-code-exhaustive-enum-switches.md)
 
 ## MSVC /analyze
 
-Turn it on with `-DV3D_ANALYZE=ON`. It is off by default because it makes a build several times
+Turn it on with `-DV3D_ANALYZE=ON`, or build the `analyze` or `verify` preset, which turn it on
+in a build directory of their own. It is off by default because it makes a build several times
 slower. Its findings are the C6xxx and C26xxx warnings, and `/WX` turns them into errors like any
 other warning. The tree has no findings.
 
@@ -106,11 +105,7 @@ directories to MSVC as `/external:I`. Without `/analyze:external-`, the analyser
 and glm headers. That takes longer than the whole tree and reports findings in code this
 repository does not own.
 
-Two third-party files are excluded from both analysers:
-
-- `demos/voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
-  compile the same file.
-- `api/interchange/CgltfImpl.cxx`.
+One third-party file is excluded from both analysers, `api/interchange/CgltfImpl.cxx`.
 
 `/analyze-` removes a file from MSVC's analysis, and `SKIP_LINTING TRUE` removes it from
 clang-tidy. Do not fix findings in these files, because a fix would be lost when the package is
@@ -118,13 +113,18 @@ updated.
 
 ## clang-tidy
 
-Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost reason. The check
+Turn it on with `-DV3D_CLANG_TIDY=ON`, or build the `tidy` or `verify` preset. It is off by
+default for the same cost reason. The check
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 7 checks by name. The tree is clean at
-the 199 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
-finding is fixed, never answered by widening an exclusion or an option.
+`.clang-tidy` enables whole check families and subtracts some checks by name. The families are
+`bugprone`, `clang-analyzer`, `performance`, `misc` and `readability`. `clang-analyzer` is the
+Clang Static Analyzer, which follows each path through a function. It finds a null dereference,
+a use after move or a leak that only one branch reaches, and overlaps `/analyze` only in part.
+The tree is clean
+at every check that remains. Each subtraction is settled, and the `.clang-tidy` comment says why.
+A new finding is fixed, never answered by widening an exclusion or an option.
 
 `misc-include-cleaner` ignores every header installed outside the tree: vcpkg, the vendored
 trees, the Vulkan SDK and the toolchain. A library such as glm or Vulkan is included through its
@@ -154,6 +154,28 @@ Two traps, both silent:
 - **clang-tidy ignores a check name it does not recognise.** `.clang-tidy` enables whole families
   and subtracts checks by name, so a subtracted name that stops matching a check turns that check
   back on.
+
+### Fixing one check across the tree
+
+With warnings as errors, a finding stops its target, and every target that depends on it is
+not compiled. A first pass then reports only some of the sites. To find every site of one check:
+
+1. Configure an analysis build with `-DV3D_WARNINGS_AS_ERRORS=OFF`, and narrow `.clang-tidy` to
+   that one check. The build then runs to the end, and its log holds only that check's sites.
+2. Fix the sites. Restore `.clang-tidy`, turn warnings as errors back on, and build again to
+   verify.
+3. Confirm the analyser compiled each changed file, by finding its `.obj` under the analysis
+   build's `CMakeFiles/<target>.dir/`. A build that never ran prints no finding either, and
+   reads as clean.
+
+Fixing one check can move sites into another. For example, making a member function static
+leaves its callers calling it through an instance, which
+`readability-static-accessed-through-instance` reports. Expect more than one pass.
+
+`run-clang-tidy -fix` applies more than the one check. It also applies the compiler's own
+fix-its, such as reordered member initialisers. It can apply one edit twice to a header that two
+sources include. `misc-const-correctness` writes the `const` after the type. Review its diff
+line by line, keep only the check's own edits, and fix the rest by hand.
 
 ## Prose
 
@@ -220,6 +242,23 @@ lines, and reports:
 Other files are not read. It is not a CI gate, because most changes move code. A comment change
 can still break the build in a way the script does not see, so build and run the tests as well.
 
+## CodeQL
+
+[.github/workflows/codeql.yml](../../.github/workflows/codeql.yml) scans the C++, the TypeScript
+and the workflows with GitHub's CodeQL. It runs on each pull request, on each push to `main`
+and once a week, since CodeQL's queries change while the code does not. Its findings are the
+repository's code scanning alerts, and a pull request shows the ones it adds beside the lines.
+
+- **The C++ is read without a build.** CodeQL reads every source file, including the code only
+  Windows builds, and does not see a macro or an include exactly as the compiler does. A
+  finding that rests on what a macro expands to can therefore be wrong.
+- **Its queries are mostly about security**: input that reaches a buffer, a format string or a
+  path unchecked, and arithmetic on a size that can overflow. clang-tidy and `/analyze` cover
+  the rest.
+- **A finding is fixed in the code**, like any other check's. One that is wrong is dismissed in
+  the alert with the reason, not by changing the workflow's queries.
+- CodeQL does not run locally.
+
 ## CI
 
 [.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on
@@ -228,22 +267,14 @@ an Ubuntu runner and runs the command above. It runs on each pull request and on
 
 It is a separate workflow from [ctest.yml](../../.github/workflows/ctest.yml), which builds the
 tree on a Windows runner and runs the tests. cpplint needs only Python. The build needs MSVC, the
-Vulkan SDK, a vcpkg install and the libnoise submodule.
+Vulkan SDK and a vcpkg install.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
+CodeQL runs only in CI, in a workflow of its own. See [CodeQL](#codeql).
 
-[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs four of the
-review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), the library
-table (`scripts/librarytable.ts`), prose (`scripts/prose.ts`) and boundary input
-(`scripts/boundary.ts`). It runs on each pull request and on each push to `main`. The link rule
-and the library table check the whole tree. The prose and boundary gates
-read only the lines added since a base:
-
-- on a pull request, the base is the branch the pull request merges into;
-- on a push to `main`, the base is the previous tip of `main`. When the push names no previous
-  tip, as on a new branch, or names one the checkout does not have, as after some force pushes,
-  the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
-  with a message.
+[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs the review
+gates on each pull request and on each push to `main`. [Gates.md](Gates.md#in-ci) says what it
+runs and what each gate compares against.
 
 **Every action a workflow uses is pinned to a full commit sha**, with the release it came from in
 a comment:
@@ -260,27 +291,15 @@ path in this repository, is exempt. To find the sha for a release, read the comm
 points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
 the tag is annotated. Updating an action means changing both the sha and the comment.
 
-The workflow first runs the gates' own tests in `scripts/tests/`, which cover the C++ lexer the
-gates share in `scripts/lexer.ts`. Run them locally with `node --test "scripts/tests/*.test.ts"`
-from the repository root.
+**Every workflow states the permissions of its token.** A workflow that states none gets the
+repository's defaults, which can write. A workflow that only reads the checkout says so at the
+top:
 
-The fails-first gate, `scripts/failsfirst.ts`, runs in
-[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's last step
-on each pull request. It needs the compiler, the packages and the software Vulkan driver, which
-that job already has. It compares against the branch the pull request merges into, and fails
-the job when a new case passes without the change or was not run. Its scratch directory is under
-`RUNNER_TEMP`, which the job excludes from Defender. A link that a scan breaks would mark every new
-case as failing to build, and the gate would pass them. Run it locally as well, before review: see
-[Testing.md](Testing.md#checking-that-a-new-test-fails-first).
+```yaml
+permissions:
+  contents: read
+```
 
-## The review gates' environment
+A job that needs more names it in a `permissions:` block of its own, as `codeql.yml` does to
+write its findings and `docs.yml` does to publish. CodeQL reports a workflow with no block.
 
-The review gates in `scripts/` support one environment:
-
-- Node 24 or later. An earlier Node that can run TypeScript stops a gate with exit 2 and a
-  message. A Node too old to run TypeScript fails to load the gate at all.
-- A checkout of this repository with its full history, so a gate can find a merge base.
-- The repository root as the working directory, as CI and these documents run them.
-- For `scripts/failsfirst.ts` only, the Windows developer environment `scripts\build.cmd` uses.
-
-[Review.md](Review.md) grades a fault in the gates by whether it arises in this environment.

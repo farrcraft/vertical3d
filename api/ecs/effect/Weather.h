@@ -40,8 +40,12 @@ struct Weather final {
  * comes back in at the opposite side, and its previous position moves with it. The region
  * therefore keeps its density as it moves, and no particle is drawn streaking across it.
  *
+ * @param emitter what the particles look like and how they launch, and their cap
+ * @param weather the weather to step, whose intensity is written
+ * @param state the particles, which are moved, removed and added to
  * @param minimum the region's lowest corner, which is the ground
  * @param maximum its highest, whose height is where the weather is born
+ * @param seconds how far to step
  **/
 void fall(const Emitter& emitter, Weather* weather, State* state, const glm::vec3& minimum,
     const glm::vec3& maximum, float seconds);

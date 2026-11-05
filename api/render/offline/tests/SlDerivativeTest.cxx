@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Compiler.h>
-#include <api/render/offline/sl/Emitter.h>
-#include <api/render/offline/sl/Globals.h>
-#include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
@@ -55,21 +55,21 @@ class Shaped final : public Renderer {
 class Run final {
  public:
     Run(const std::string & body, const Renderer::Shape & shape,
-        const std::function<v3d::render::offline::sl::Point(const glm::uvec2 & index)> & at) : renderer_(shape) {
+        const std::function<v3d::render::offline::sl::runtime::Point(const glm::uvec2 & index)> & at) : renderer_(shape) {
         const std::string source = "surface test() {\n" + body + "\n}\n";
         std::istringstream stream(source);
-        v3d::render::offline::sl::Parser parser(stream);
+        v3d::render::offline::sl::compiler::Parser parser(stream);
         std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
         BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + body);
-        v3d::render::offline::sl::Compiler compiler(shaders[0]);
+        v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
         BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + body);
-        v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+        v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
         const unsigned int along = shape.layout == Renderer::Shape::Layout::STENCIL ? 3U * shape.along : shape.along;
         const unsigned int across = shape.layout == Renderer::Shape::Layout::STENCIL ? 1U : shape.across;
         machine_.renderer(&renderer_);
         machine_.prepare(program_, along * across);
-        const v3d::render::offline::sl::Globals globals(program_);
+        const v3d::render::offline::sl::runtime::Globals globals(program_);
         for (unsigned int i = 0; i < along; i++) {
             for (unsigned int j = 0; j < across; j++) {
                 globals.surface(&machine_, (i * across) + j, at(glm::uvec2(i, j)));
@@ -112,8 +112,8 @@ Renderer::Shape grid(unsigned int size) {
 }
 
 /** A point at a grid index of a grid of a given span, with u and v and s and t from it. **/
-v3d::render::offline::sl::Point parameters(const glm::uvec2 & index, float span) {
-    v3d::render::offline::sl::Point point;
+v3d::render::offline::sl::runtime::Point parameters(const glm::uvec2 & index, float span) {
+    v3d::render::offline::sl::runtime::Point point;
     point.u = static_cast<float>(index.x) / span;
     point.v = static_cast<float>(index.y) / span;
     point.s = point.u;
@@ -137,12 +137,12 @@ glm::vec3 acrossV() {
  **/
 v3d::render::offline::sl::runtime::Program emitted(const std::string & source) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + source);
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
     BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + source);
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
     v3d::render::offline::sl::runtime::Program program;
     BOOST_REQUIRE_MESSAGE(emitter.emit(&program), emitter.error() + " in: " + source);
     return program;
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_plane_test) {
     const float span = static_cast<float>(size - 1);
     const Run run("vector across = Du(P);\nvector down = Dv(P);\nnormal facing = calculatenormal(P);",
         grid(size), [span](const glm::uvec2 & index) {
-            v3d::render::offline::sl::Point point = parameters(index, span);
+            v3d::render::offline::sl::runtime::Point point = parameters(index, span);
             point.position = glm::vec3(1.0F, 2.0F, 5.0F) + (acrossU() * point.u) + (acrossV() * point.v);
             return point;
         });
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_on_the_last_row_difference_backwards_test) {
     const float span = static_cast<float>(size - 1);
     const Run run("vector across = Du(P);\nvector down = Dv(P);", grid(size),
         [span](const glm::uvec2 & index) {
-            v3d::render::offline::sl::Point point = parameters(index, span);
+            v3d::render::offline::sl::runtime::Point point = parameters(index, span);
             const float x = static_cast<float>(index.x);
             point.position = glm::vec3(x, static_cast<float>(index.y), x * x);
             return point;
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(sl_deriv_and_area_test) {
     const Run run("float f = s * s;\nfloat rate = Deriv(f, u);\nfloat ratio = Du(f) / Du(u);\n"
         "float patch = area(P);\nfloat byv = Deriv(f, v);", grid(size),
         [span](const glm::uvec2 & index) {
-            v3d::render::offline::sl::Point point = parameters(index, span);
+            v3d::render::offline::sl::runtime::Point point = parameters(index, span);
             point.position = (acrossU() * point.u) + (acrossV() * point.v);
             return point;
         });
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_of_a_uniform_and_of_lone_points_test) {
     const unsigned int size = 3;
     const float span = static_cast<float>(size - 1);
     const auto placed = [span](const glm::uvec2 & index) {
-        v3d::render::offline::sl::Point point = parameters(index, span);
+        v3d::render::offline::sl::runtime::Point point = parameters(index, span);
         point.position = glm::vec3(point.u, point.v, 0.0F);
         return point;
     };
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_stencil_test) {
     stencil.dv = 0.02F;
     const Run run("vector across = Du(P);\nvector down = Dv(P);", stencil,
         [](const glm::uvec2 & index) {
-            v3d::render::offline::sl::Point point;
+            v3d::render::offline::sl::runtime::Point point;
             const glm::vec3 offsets[3] = { glm::vec3(0.0F), acrossU() * 0.01F, acrossV() * 0.02F };
             point.position = glm::vec3(1.0F, 1.0F, 1.0F) + offsets[index.x];
             return point;
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_stencil_of_groups_test) {
             const glm::vec3 u = group == 0 ? acrossU() : acrossV();
             const glm::vec3 v = group == 0 ? acrossV() : acrossU();
             const glm::vec3 offsets[3] = { glm::vec3(0.0F), u * step.x, v * step.y };
-            v3d::render::offline::sl::Point point;
+            v3d::render::offline::sl::runtime::Point point;
             point.position = glm::vec3(1.0F + (4.0F * static_cast<float>(group))) + offsets[index.x % 3U];
             return point;
         });

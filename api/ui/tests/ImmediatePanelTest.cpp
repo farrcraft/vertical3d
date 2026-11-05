@@ -3,14 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/paint/Text.h>
 
+#include <algorithm>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 #include "Layer.h"
 
@@ -148,7 +154,8 @@ BOOST_AUTO_TEST_CASE(a_tree_rows_mark_folds_it) {
 }
 
 /**
- * A chosen row writes its label in the active text colour.
+ * A chosen row is drawn on the selected tint, not the solid highlight, and writes its label in
+ * the active text colour.
  **/
 BOOST_AUTO_TEST_CASE(a_chosen_tree_row_is_highlighted) {
     std::vector<Written> written;
@@ -164,6 +171,333 @@ BOOST_AUTO_TEST_CASE(a_chosen_tree_row_is_highlighted) {
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
     BOOST_CHECK(written[0].colour == ui.dressing().activeText);
     BOOST_CHECK(written[1].colour == ui.dressing().text);
+    const glm::vec4 tint = ui.dressing().selected;
+    const glm::vec4 solid = ui.dressing().highlight;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; }));
+    BOOST_CHECK(std::ranges::none_of(canvas.vertices(), [&solid](const auto& vertex) { return vertex.colour == solid; }));
+}
+
+/**
+ * A row with an icon draws it after the mark's place, tinted, and moves its label past it.
+ **/
+BOOST_AUTO_TEST_CASE(a_tree_row_leads_with_its_icon) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 tint(0.9F, 0.6F, 0.2F, 1.0F);
+    const v3d::ui::Image icon(v3d::render::realtime::resource::TextureHandle(5));
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.treeRow("Cube", {.depth = 0, .open = nullptr, .selected = false, .icon = icon, .iconTint = tint});
+    ui.end();
+
+    const float line = ui.dressing().lineHeight;
+    const float side = std::min(ui.dressing().iconSize, line);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_CLOSE(written[0].pen.x, line + side + (ui.dressing().padding * 0.5F), 0.001F);
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_CLOSE(drawn->position.x, line, 0.001F);
+}
+
+/**
+ * A row with an end icon draws it in the row's last line in secondary text, and a click on it is
+ * the icon's and not the row's. A dimmed row writes its label in disabled text.
+ **/
+BOOST_AUTO_TEST_CASE(a_tree_row_ends_with_its_icon) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const v3d::ui::Image eye(v3d::render::realtime::resource::TextureHandle(5));
+    bool ended = false;
+    bool clicked = false;
+    const auto panel = [&]() {
+        clicked = ui.treeRow("Cube", {.depth = 0, .open = nullptr, .selected = false, .icon = v3d::ui::Image(), .iconTint = glm::vec4(1.0F),
+            .dimmed = true, .end = eye, .endClicked = &ended});
+    };
+
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written[0].colour == ui.dressing().disabledText);
+    const glm::vec4 ink = ui.dressing().secondaryText;
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&ink](const auto& vertex) { return vertex.colour == ink; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_GT(drawn->position.x, 400.0F - (2.0F * ui.dressing().lineHeight));
+
+    const float line = ui.dressing().lineHeight;
+    bool any = false;
+    const auto watched = [&]() {
+        panel();
+        any = any || ended;
+    };
+    click(&ui, &canvas, glm::vec2(400.0F - (line * 0.5F), line * 0.5F), watched);
+    BOOST_CHECK(any);
+    BOOST_CHECK(!clicked);
+    any = false;
+    click(&ui, &canvas, glm::vec2(line * 2.0F, line * 0.5F), watched);
+    BOOST_CHECK(!any);
+}
+
+/**
+ * An icon button is a bar square, with its icon in the middle. One that is on is filled as a
+ * checked toggle is.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_button_is_a_square_of_its_icon) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    const v3d::ui::Image icon(v3d::render::realtime::resource::TextureHandle(5));
+    const float bar = ui.dressing().barHeight;
+    bool clicked = false;
+    const auto panel = [&]() { clicked = ui.iconButton("play", {.icon = icon, .tooltip = std::string(), .keys = std::string(), .on = true}); };
+
+    frame(&ui, &canvas, hover(nowhere), panel);
+    const glm::vec4 lit = ui.dressing().highlight;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&lit](const auto& vertex) { return vertex.colour == lit; }));
+    const glm::vec4 ink = ui.dressing().activeText;
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&ink](const auto& vertex) { return vertex.colour == ink; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_CLOSE(drawn->position.x, (bar - std::min(ui.dressing().iconSize, bar)) * 0.5F, 0.001F);
+
+    bool any = false;
+    click(&ui, &canvas, glm::vec2(bar * 0.5F), [&]() {
+        panel();
+        any = any || clicked;
+    });
+    BOOST_CHECK(any);
+}
+
+/**
+ * An icon button's tooltip shows once the cursor has rested on it for the tooltip delay, with
+ * its keys after it in secondary text. A press puts it away until the cursor moves.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_buttons_tooltip_shows_after_a_rest) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const float bar = ui.dressing().barHeight;
+    const auto panel = [&]() {
+        ui.iconButton("play", {.icon = v3d::ui::Image(), .tooltip = "Play", .keys = "Space", .on = false});
+    };
+    const auto at = [&](float now, const v3d::ui::Immediate::Input& input) {
+        written.clear();
+        ui.clock({.now = now, .frame = 0});
+        frame(&ui, &canvas, input, panel);
+    };
+    const glm::vec2 middle(bar * 0.5F);
+
+    at(0.0F, hover(middle));
+    at(0.1F, hover(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.1F, hover(middle));
+    BOOST_CHECK(wrote(written, "Play"));
+    BOOST_CHECK(wrote(written, "Space"));
+    for (const Written& each : written) {
+        if (each.text == "Space") {
+            BOOST_CHECK(each.colour == ui.dressing().secondaryText);
+            BOOST_CHECK_GT(each.pen.y, bar);
+        }
+    }
+
+    // a press puts it away, and moving the cursor brings it back
+    at(ui.dressing().tooltipDelay + 0.2F, press(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.3F, release(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.4F, hover(middle + glm::vec2(1.0F, 0.0F)));
+    BOOST_CHECK(wrote(written, "Play"));
+}
+
+/**
+ * Text can be written in a colour of its own, and an image is drawn the size given, tinted,
+ * and centred down a line when it is shorter than one.
+ **/
+BOOST_AUTO_TEST_CASE(text_in_a_colour_and_an_image_at_the_pen) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 red(0.85F, 0.35F, 0.37F, 1.0F);
+    const glm::vec4 tint(0.2F, 0.7F, 0.3F, 1.0F);
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(5)), glm::vec2(10.0F, 10.0F), tint);
+    ui.text("X", red);
+    ui.end();
+
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written[0].colour == red);
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    // the first item is at the origin, and the image is centred down its line
+    BOOST_CHECK_CLOSE(drawn->position.x, 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(drawn->position.y, (ui.dressing().lineHeight - 10.0F) * 0.5F, 0.001F);
+}
+
+/**
+ * A number dressed with a look writes its label in the look's colour and its unit straight
+ * after the value. One without a look writes its label in secondary text and the value alone.
+ **/
+BOOST_AUTO_TEST_CASE(a_number_shows_its_labels_colour_and_its_unit) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 red(0.85F, 0.35F, 0.37F, 1.0F);
+    float length = 1.5F;
+    float plain = 2.0F;
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.dragFloat("X", &length, 0.01F, {.labelColour = red, .unit = " m"});
+    ui.dragFloat("Y", &plain, 0.01F);
+    ui.end();
+
+    BOOST_CHECK(wrote(written, "1.5 m"));
+    BOOST_CHECK(wrote(written, "2"));
+
+    // a value is shown to three places with the zeros it does not need dropped, and a value
+    // that rounds to nothing is not shown as a negative zero
+    float fine = 1.25F;
+    float nothing = -0.0001F;
+    float many = 0.12345F;
+    written.clear();
+    ui.begin(&canvas, hover(nowhere));
+    ui.dragFloat("A", &fine, 0.01F);
+    ui.dragFloat("B", &nothing, 0.01F);
+    ui.dragFloat("C", &many, 0.01F);
+    ui.end();
+    BOOST_CHECK(wrote(written, "1.25"));
+    BOOST_CHECK(wrote(written, "0"));
+    BOOST_CHECK(wrote(written, "0.123"));
+    for (const Written& each : written) {
+        if (each.text == "X") {
+            BOOST_CHECK(each.colour == red);
+        } else if (each.text == "Y") {
+            BOOST_CHECK(each.colour == ui.dressing().secondaryText);
+        }
+    }
+}
+
+/**
+ * A number with an edge draws a rule of the edge's colour down its left side, 2 pixels wide at a
+ * scale of 1. One without draws none.
+ **/
+BOOST_AUTO_TEST_CASE(a_number_draws_its_edge_down_its_left_side) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    const glm::vec4 red(0.85F, 0.35F, 0.37F, 1.0F);
+    float value = 1.0F;
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.dragFloat("Y", &value, 0.01F);
+    ui.end();
+    BOOST_CHECK(std::ranges::none_of(canvas.vertices(), [&red](const auto& vertex) { return vertex.colour == red; }));
+
+    v3d::render::realtime::canvas::Canvas edged;
+    edged.resize(glm::uvec2(400, 300));
+    ui.begin(&edged, hover(nowhere));
+    ui.dragFloat("X", &value, 0.01F, {.labelColour = std::nullopt, .unit = std::string(), .edge = red});
+    ui.end();
+    BOOST_CHECK(std::ranges::any_of(edged.vertices(), [&red](const auto& vertex) { return vertex.colour == red; }));
+    const auto cut = std::ranges::find_if(edged.batches(), [](const auto& batch) { return batch.clipped && batch.clip.z - batch.clip.x < 3.0F; });
+    BOOST_REQUIRE(cut != edged.batches().end());
+    BOOST_CHECK_CLOSE(cut->clip.x, 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(cut->clip.z, 2.0F, 0.001F);
+}
+
+/**
+ * A heading is a semibold line. One given open draws a fold mark before its label, and a click
+ * anywhere on it folds the group, which it then says not to draw.
+ **/
+BOOST_AUTO_TEST_CASE(a_heading_folds_its_group) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    bool open = true;
+    bool shown = false;
+    bool fixed = false;
+    const auto panel = [&]() {
+        shown = ui.heading("Transform", &open);
+        fixed = ui.heading("Item");
+    };
+
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_CHECK(shown);
+    BOOST_CHECK(fixed);
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK(written[1].weight == v3d::ui::paint::Weight::SemiBold);
+    // the folding heading's label starts past its mark, and the other's at the margin
+    BOOST_CHECK_CLOSE(written[0].pen.x, ui.dressing().lineHeight, 0.001F);
+    BOOST_CHECK_CLOSE(written[1].pen.x, 0.0F, 0.001F);
+
+    // a click on the label, not only the mark, folds it
+    click(&ui, &canvas, glm::vec2(ui.dressing().lineHeight * 3.0F, ui.dressing().lineHeight * 0.5F), panel);
+    BOOST_CHECK(!open);
+    BOOST_CHECK(!shown);
+    BOOST_CHECK(fixed);
+}
+
+/**
+ * A field led by an icon draws it at the left in the placeholder's colour, and starts its text
+ * past it.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_leads_with_its_icon) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const v3d::ui::Image icon(v3d::render::realtime::resource::TextureHandle(5));
+    std::string filter;
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.textField("Filter", &filter, v3d::ui::Immediate::FieldLook{.icon = icon, .labelled = false, .limit = 0});
+    ui.end();
+
+    const float padding = ui.dressing().padding;
+    const float side = std::min(ui.dressing().iconSize, ui.dressing().barHeight);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_EQUAL(written[0].text, "Filter");
+    BOOST_CHECK_CLOSE(written[0].pen.x, padding + side + (padding * 0.5F), 0.001F);
+    const glm::vec4 dim = ui.dressing().placeholder;
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&dim](const auto& vertex) { return vertex.colour == dim; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_CLOSE(drawn->position.x, padding, 0.001F);
+}
+
+/**
+ * A labelled field draws its label at the left in secondary text, whether or not it holds
+ * anything, and its value past it.
+ **/
+BOOST_AUTO_TEST_CASE(a_labelled_field_shows_its_label_before_its_value) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    std::string name = "Cube";
+    std::string empty;
+    const v3d::ui::Immediate::FieldLook look{.icon = v3d::ui::Image(), .labelled = true, .limit = 0};
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.textField("Name", &name, look);
+    ui.textField("Other", &empty, look);
+    ui.end();
+
+    const float padding = ui.dressing().padding;
+    BOOST_REQUIRE_EQUAL(written.size(), 3U);
+    BOOST_CHECK_EQUAL(written[0].text, "Name");
+    BOOST_CHECK(written[0].colour == ui.dressing().secondaryText);
+    BOOST_CHECK_CLOSE(written[0].pen.x, padding, 0.001F);
+    BOOST_CHECK_EQUAL(written[1].text, "Cube");
+    BOOST_CHECK_CLOSE(written[1].pen.x, padding + ui.measure("Name") + ui.dressing().spacing, 0.001F);
+    // an empty one shows its label and nothing more, with no placeholder
+    BOOST_CHECK_EQUAL(written[2].text, "Other");
+    BOOST_CHECK(written[2].colour == ui.dressing().secondaryText);
 }
 
 /**

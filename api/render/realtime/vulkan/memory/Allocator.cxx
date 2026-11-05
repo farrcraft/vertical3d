@@ -56,6 +56,10 @@ VkResult Allocator::suballocate(VkBuffer buffer, VkImage image, VkMemoryProperty
     request.requiredFlags = properties;
     request.usage = VMA_MEMORY_USAGE_UNKNOWN;
 
+    // a call binds a buffer or an image, and one with neither has nothing to bind
+    if (buffer == VK_NULL_HANDLE && image == VK_NULL_HANDLE) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
     VmaAllocation handle = VK_NULL_HANDLE;
     VmaAllocationInfo info{};
     const VkResult result = buffer != VK_NULL_HANDLE

@@ -1,0 +1,36 @@
+# The API reference of the documentation site. node scripts/docs.ts runs Doxygen with this file
+# after mdBook, from this directory, so the reference lands inside the built site. Settings not
+# named here keep Doxygen's defaults.
+
+PROJECT_NAME           = "Vertical3D API"
+OUTPUT_DIRECTORY       = ../../out/docs
+HTML_OUTPUT            = reference
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+HAVE_DOT               = NO
+QUIET                  = YES
+
+# the public headers of each api library; a header under internal/ or tests/ is not public
+INPUT                  = ../../api
+FILE_PATTERNS          = *.h
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */internal/* */tests/*
+EXCLUDE_SYMBOLS        = *::internal::*
+
+# a header is shown by the path it is included by, <api/...>
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = ../..
+STRIP_FROM_INC_PATH    = ../..
+
+# every public declaration is listed, documented or not; Doxyfile.check reports the types that
+# have no comment, and a comment that documents some parameters of a function but not all
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_INCOMPLETE_DOC = YES
+JAVADOC_AUTOBRIEF      = YES
+SOURCE_BROWSER         = NO

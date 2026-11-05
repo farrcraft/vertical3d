@@ -43,10 +43,11 @@ the wait, or a frame abandoned because recording threw, leaves nothing waiting o
   a non-linear sRGB colour space; otherwise a 32-bit `UNORM` format (`B8G8R8A8` or `R8G8B8A8`);
   otherwise the first offered. A missed preference logs a warning. The function needs no device
   and has a unit test.
-- `choosePresentMode(modes, wanted)` takes the request's mode where the surface offers it and
-  falls back as `Present` describes, ending at FIFO, which every implementation offers. It needs no
-  device and has a unit test. `granted()` maps the chosen mode back to the request it answers, and
-  `presenting()` holds that for the last build. The default request, `Uncapped`, is mailbox.
+- `choosePresentMode(modes, wanted)` takes the request's mode where the surface offers it and falls
+  back as `frame::Present` describes, ending at FIFO, which every implementation offers. It needs no
+  device and has a unit test. `frame::granted()` maps the chosen mode back to the request it
+  answers, and `presenting()` holds that for the last build. The default request, `Uncapped`, is
+  mailbox.
 - `request(present)` changes the mode the next build asks for. `WindowContext::present()` calls
   it and then `resize()`. `WindowRenderer::present()` holds a change made after `initialize()`
   until the start of the next `renderFrame()`, which applies it and drops that frame.
@@ -63,6 +64,32 @@ and the chain is rebuilt before the next one. `Presenter` never recreates the ch
 caller (`WindowContext::resize()`) rebuilds it and calls `Presenter::reset()`, since a new chain can
 hold a different number of images.
 
+### Other windows
+
+**Every window is drawn by the one device.** `WindowContext::attach(window)` makes a surface for
+another window, checks that the device's present queue can present to it with
+`Device::presents()`, and builds a swapchain on it in the context's format. A surface that cannot
+be presented to, or that does not offer that format, is refused and `attach()` returns null. The
+device stays the one picked for the first window's surface.
+
+**An attached swapchain is joined to the presenter.** `Presenter::join()` gives it a semaphore for
+each frame in flight and one for each image, as the presenter keeps for its own. In each frame:
+
+- `acquire()` acquires the main image first, then an image of each joined swapchain. One that is
+  stale, has no area or reports out of date gives no image and sits the frame out. The images taken
+  are listed in `Acquisition::joined`.
+- Every image is drawn into with the one command buffer.
+- `present()` submits once, waiting on every image's available semaphore and signalling every
+  image's finished semaphore, and presents every swapchain in one `vkQueuePresentKHR`. Each
+  swapchain's own result is read from `pResults`. A joined swapchain that is out of date or
+  suboptimal is marked `stale()`. The main swapchain's result is what `present()` returns.
+- `WindowContext::refresh()` rebuilds a stale joined swapchain, or one that had no area when its
+  window has one again, after waiting for the device, and calls `Joined::reset()`.
+
+`Presenter::leave()` waits for the device before the joined swapchain's semaphores go.
+
+Background: [ADR-0155](../../adr/rendering/0155-rendering-one-device-presents-to-every-window.md)
+
 ### What `WindowRenderer::renderFrame()` does
 
 1. A present mode asked for since the last frame is applied through `WindowContext::present()`, and
@@ -70,10 +97,13 @@ hold a different number of images.
 2. `Presenter::acquire()` waits on the frame's fence, acquires the next image, and begins the
    command buffer. `OutOfDate` rebuilds the chain and drops the frame. `Skip` rebuilds the chain
    if the window has an area again, and drops the frame.
-3. It fills a `Recorder::Target` with the swapchain image, view, extent and format, plus the
+3. It fills a `frame::Recorder::Target` with the swapchain image, view, extent and format, plus the
    context's depth buffer if any pass on the swapchain tests depth.
 4. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
-5. `Recorder::record()` records every pass.
+5. `frame::Recorder::record()` records every pass. Then each other window that gave the frame an
+   image has its own frame recorded into that image. An `Output` keeps a depth buffer of its own,
+   made when a pass of its frame first tests depth and replaced through the ring when the
+   swapchain's extent changes.
 6. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
    `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
    instead, since `Capture` throws for it.
@@ -82,7 +112,8 @@ hold a different number of images.
    the file, and the request is cleared whether or not the write succeeded. The submit stands
    when presenting reports the chain out of date, so the file is written in that case too.
 9. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
-10. `Frame::reset()` drops every pass's items.
+10. `frame::Frame::reset()` drops every pass's items, in every window's frame, and each other
+    window's swapchain is rebuilt if it went stale.
 
 A frame dropped at step 1 or 2 never reaches step 6, so a capture request waits for a frame that
 presents.
@@ -92,13 +123,13 @@ turns the loop over.
 
 ## Recording a frame
 
-`Recorder` is the only code that writes draw commands into a command buffer.
+`frame::Recorder` is the only code that writes draw commands into a command buffer.
 
-`Recorder::record(commands, frame, target, resources, uniforms, timings)`:
+`frame::Recorder::record(commands, frame, target, resources, uniforms, timings)`:
 
 1. Transitions the swapchain image (if any) for drawing, and the window's depth image if a pass
    on the swapchain uses depth.
-2. Walks `Frame::ordered()`. For each pass:
+2. Walks `frame::Frame::ordered()`. For each pass:
    - if it draws into a target and is that target's first writer this frame, opens the target;
    - opens a timing span under the pass name;
    - writes the pass camera into the next `FrameUniforms` slot;
@@ -112,10 +143,10 @@ turns the loop over.
 enabled, so a headless frame names another, usually `SHADER_READ_ONLY_OPTIMAL`. A frame given
 no image is one whose every pass has its own target.
 
-**Pass order.** `Frame::ordered()` places every pass that writes a target before every pass that
-`reads()` it, and otherwise keeps creation order. Passes into the same target, the swapchain
-included, always keep creation order. A pass that reads its own target is reading `previous()`
-and is ordered only by creation. A cycle throws. `Frame::order(nodes)` is the same ordering over
+**Pass order.** `frame::Frame::ordered()` places every pass that writes a target before every pass
+that `reads()` it, and otherwise keeps creation order. Passes into the same target, the swapchain
+included, always keep creation order. A pass that reads its own target is reading `previous()` and
+is ordered only by creation. A cycle throws. `frame::Frame::order(nodes)` is the same ordering over
 plain identities, so it is unit tested without a device.
 
 **Binding.** The recorder remembers what the last item bound: pipeline, set 0, set 1, set 2,
@@ -128,7 +159,7 @@ cut; one turned inside out cuts the draw to nothing. A NaN left or top edge is t
 image's edge, and a NaN right or bottom edge cuts the draw to nothing. Every edge is held within
 2^24 pixels, far past any image, so each converts to an integer exactly (`renderer/Clip.h`).
 
-**`Recorder::check(pass, pipeline, into)`** runs each time a pipeline is bound. It throws,
+**`frame::Recorder::check(pass, pipeline, into)`** runs each time a pipeline is bound. It throws,
 naming the pass, when:
 
 - the pipeline's layout declares a set 2 and the pass names no `scene()`;
@@ -140,24 +171,24 @@ A format is checked only where both sides state one. Vulkan would otherwise read
 left bound, draw at the last bias set, or (for formats) report a validation error per draw. The
 check needs no device and has a unit test.
 
-**Set 2 and depth bias** belong to the pass. The recorder binds `Pass::scene()` once per pass,
-only for pipelines whose layout declares a third set, so a quad in a lit pass binds nothing
-extra. `Pass::depthBias()` is recorded with `vkCmdSetDepthBias` whenever a pipeline built with
-`Builder::depthBias(true)` is bound, and ignored for other pipelines.
+**Set 2 and depth bias** belong to the pass. The recorder binds `frame::Pass::scene()` once per
+pass, only for pipelines whose layout declares a third set, so a quad in a lit pass binds nothing
+extra. `frame::Pass::depthBias()` is recorded with `vkCmdSetDepthBias` whenever a pipeline built
+with `Builder::depthBias(true)` is bound, and ignored for other pipelines.
 
 **Depth writing** is set the same way. Whenever a pipeline built with
 `Builder::depthWriteDynamic(true)` is bound, the recorder calls `vkCmdSetDepthWriteEnable` with
-`Pass::depthWrite()`, or with the pipeline's own value when the pass names none. It sets the
+`frame::Pass::depthWrite()`, or with the pipeline's own value when the pass names none. It sets the
 state even when the pass names nothing, because a pipeline that declares the state and draws
 without it set is a validation error. Other pipelines ignore the pass's choice.
 
-**`DrawItem::record`** is an escape hatch: a callback the recorder calls instead of issuing its
-own draw. It exists for work the item fields cannot describe. Reaching for it routinely means
+**`frame::DrawItem::record`** is an escape hatch: a callback the recorder calls instead of issuing
+its own draw. It exists for work the item fields cannot describe. Reaching for it routinely means
 the item model needs extending.
 
-Background: [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md),
-[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
-[ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)
+Background: [ADR-0004](../../adr/rendering/0004-rendering-submit-draw-items-as-data.md),
+[ADR-0064](../../adr/rendering/0064-lighting-lit-passes-use-the-shared-recorder.md),
+[ADR-0068](../../adr/rendering/0068-rendering-order-passes-by-what-they-read.md)
 
 ## Layout transitions
 
@@ -173,10 +204,12 @@ cannot disagree. Add a function there rather than writing a barrier inline.
 | `depthForDrawing` | `UNDEFINED` → `DEPTH_ATTACHMENT_OPTIMAL` | depth before the first pass |
 | `depthForSampling` | `DEPTH_ATTACHMENT_OPTIMAL` → `DEPTH_READ_ONLY_OPTIMAL` | sampled depth after its last writer |
 | `forUpload`, `uploadedForSampling` | `UNDEFINED` → `TRANSFER_DST` → `SHADER_READ_ONLY_OPTIMAL` | texture uploads |
+| `forRegionUpload`, `uploadedForSampling` | `SHADER_READ_ONLY_OPTIMAL` → `TRANSFER_DST` → `SHADER_READ_ONLY_OPTIMAL` | a region of a texture frames may be sampling, keeping the rest |
 | `forReadback`, `afterReadback` | any → `TRANSFER_SRC` → back | frame capture |
 | `record(commands, {...})` | | records several as one dependency |
 
 Every transition into an attachment layout starts from `UNDEFINED` and discards the contents.
+A region upload starts from `SHADER_READ_ONLY_OPTIMAL` and keeps them.
 Nothing carries between frames, so the first pass to use an image in a frame must clear it.
 
 **A target costs one pair of barriers per frame** however many passes draw into it: opened before
@@ -200,8 +233,9 @@ its own row, and `ui::shell::StatisticsOverlay` draws a line per span it is give
 
 ## Frame capture
 
-`vulkan::frame::Capture` copies an image into a host-visible `Buffer` and writes a PNG. Its use
-is in [api/rendering/FramesAndTargets.md](../../api/rendering/FramesAndTargets.md#reading-a-frame-back).
+`vulkan::frame::Capture` copies an image into a host-visible `Buffer` and writes a PNG. Its use is
+in
+[api/rendering/FramesAndTargets.md](../../api/rendering/FramesAndTargets.md#reading-a-frame-back).
 Inside:
 
 - `record()` takes a `Capture::Source` (image, extent, format, layout, depth flag), so one code
@@ -219,4 +253,4 @@ Inside:
 - A depth source must be `D32_SFLOAT`, since its copy is exactly the float a test compares; any
   other depth format throws.
 
-Background: [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+Background: [ADR-0054](../../adr/project/0054-testing-golden-images-hold-only-spec-exact-output.md)

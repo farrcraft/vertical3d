@@ -115,8 +115,8 @@ std::vector<TileCoord> route = v3d::grid::findPath(loaded, playerTile, goalTile)
   its own `Sight`, and each is looked at in turn, so a viewer by a seam sees into the region beside
   it and remembers what it saw.
 
-Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md),
-[ADR-0111](../adr/0111-grid-a-search-may-span-a-set-of-placed-grids.md)
+Background: [ADR-0087](../adr/scene/0087-grid-a-region-is-a-grid-placed-by-its-corner.md),
+[ADR-0111](../adr/scene/0111-grid-a-search-may-span-a-set-of-placed-grids.md)
 
 ## Movement
 
@@ -154,7 +154,7 @@ on:
 - The goal of a `DistanceField` is not tested against the grid or the filter, in the same way
   `findPath()` does not test its start. An occupied goal is still reachable.
 
-Background: [ADR-0029](../adr/0029-grid-8-way-movement-symmetric-line-of-sight.md)
+Background: [ADR-0029](../adr/scene/0029-grid-8-way-movement-symmetric-line-of-sight.md)
 
 ## Line of sight
 
@@ -237,7 +237,7 @@ a map means belong to the game: props, spawns, items, objectives and the start p
 game finds those among the unknown glyphs or in its own records. Anything a glyph means beyond
 passability and cover, such as its appearance, the game looks up again from the same picture.
 
-Background: [ADR-0062](../adr/0062-grid-parse-terrain-not-map-files.md)
+Background: [ADR-0062](../adr/scene/0062-grid-parse-terrain-not-map-files.md)
 
 ## Drawing an overlay
 

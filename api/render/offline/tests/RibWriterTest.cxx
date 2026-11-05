@@ -4,7 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -59,7 +59,7 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->depthOfField({.fstop = 8, .focalLength = 0.1F, .focalDistance = 3});
     to->shutter({.open = 0, .close = 0.5F});
     to->pixelSamples(glm::uvec2(4, 2));
-    to->pixelFilter(v3d::render::offline::Filter::CatmullRom, 3, 2);
+    to->pixelFilter(v3d::render::offline::film::Filter::CatmullRom, 3, 2);
     to->pixelVariance(0.01F);
     to->display({.name = "out.tif", .type = "file", .mode = "rgba"}, none);
     to->frameBegin(7);

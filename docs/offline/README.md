@@ -1,6 +1,7 @@
 # The offline renderer
 
 These pages are for anyone changing `moya` or the library under it, `api/render/offline`.
+Someone who renders with moya reads the [moya manual](../manual/moya/README.md) instead.
 
 moya is the only offline renderer in the tree. It reads a RenderMan scene file and writes an
 image file. It shares no code with the realtime Vulkan renderer: nothing it links names Vulkan
@@ -9,8 +10,8 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | Page | Read it to |
 |---|---|
 | This page | Learn the terms, and how a RIB scene becomes an image |
-| [RunningAndTesting.md](RunningAndTesting.md) | Run moya, and build and test it |
-| [Rib.md](Rib.md) | See which RIB requests are read, and the rules for reading them |
+| [RunningAndTesting.md](RunningAndTesting.md) | See how moya is laid out, and build and test it |
+| [Rib.md](Rib.md) | Change the RIB reader, writer or handler |
 | [CamerasAndSampling.md](CamerasAndSampling.md) | Change raster space, sampling, the film, cameras, depth of field or motion blur |
 | [ShadingLanguage.md](ShadingLanguage.md) | Change the shading language compiler, runtime, built-ins or normals |
 | [Reyes.md](Reyes.md) | Change the reyes hider: bucketing, splitting, dicing and hiding |
@@ -51,7 +52,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
   one value per point.
 - **Sample**: a point inside a pixel where visibility is decided. It also carries a time within
   the shutter and a point on the lens.
-- **Film**: `offline::Film`. It weights samples into pixels with a pixel filter.
+- **Film**: `offline::film::Film`. It weights samples into pixels with a pixel filter.
 - **Pixel filter**: the weighting function: box, triangle, catmull-rom, gaussian or sinc.
 - **Imager**: a shader run over the finished picture, one row of pixels at a time.
 - **Raster space**: pixel coordinates, with the origin at the image's upper left.
@@ -63,7 +64,7 @@ scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics sta
                                                       |  WorldEnd
                                reyes::Hider ("hidden") or raytrace::Hider ("raytrace")
                                                       |  samples
-                                   offline::Film -> planes -> imager -> image file
+                                   offline::film::Film -> planes -> imager -> image file
 ```
 
 1. The reader parses each request and calls the matching `RIBHandler` method, with its
@@ -135,13 +136,13 @@ the shading language and the ray tracer. They differ in these ways:
 | Default | Yes | No |
 | Spheres | Not drawn. The first in a scene is logged | Intersected exactly |
 | Curves | Split, then diced into ribbons facing the eye | Intersected as ribbons facing each ray |
-| A shader's `Oi` | Ignored: every sample is opaque | Composited front to back |
+| A shader's `Oi` | Composited front to back, at each sample | Composited front to back, along each ray |
 | A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
 | `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
 | Time of shadow and traced rays | Shutter open | Each sample's own time |
 | Storage of a primitive | In a bucket, and in the traced scene until rendering starts if no shader traces | Once, in the traced scene |
 
-Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
+Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
 
 ## What is not built
 

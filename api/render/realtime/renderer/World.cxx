@@ -5,12 +5,14 @@
 
 #include "World.h"
 
+#include "Quad.h"
+
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Resources.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Resources.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -43,6 +45,18 @@ const uint32_t vertexShader[] =
 const uint32_t fragmentShader[] =
 #include "shaders/world.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
+
+// the fragment stage for an _SRGB target, which corrects text's coverage to its display weight
+const uint32_t encodedFragmentShader[] =
+#include "shaders/encoded_world.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
+/**
+ * How world.frag draws a batch, as its push constants name it.
+ **/
+constexpr uint32_t PICTURE = 0;
+constexpr uint32_t CURVES = 1;
+constexpr uint32_t DISTANCE = 2;
 
 };  // namespace
 
@@ -78,17 +92,21 @@ void World::createPipelines(const vulkan::pipeline::Formats & formats) {
 
 /**
  **/
-PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
+resource::PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
+    const bool encoded = Quad::linearises(colour);
     vulkan::pipeline::Builder builder(device_);
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
+        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, encoded ? encodedFragmentShader : fragmentShader,
+            encoded ? sizeof(encodedFragmentShader) : sizeof(fragmentShader))
         .vertexBinding({.binding = 0, .stride = sizeof(canvas::World::Vertex)})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::World::Vertex, position)})
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::World::Vertex, uv)})
         .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::World::Vertex, colour)})
+        .vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R32_UINT, .offset = offsetof(canvas::World::Vertex, glyph)})
+        .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32_SFLOAT, .offset = offsetof(canvas::World::Vertex, contrast)})
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
@@ -118,7 +136,7 @@ PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipe
 
 /**
  **/
-void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend, const glm::vec4& tint) {
+void World::submit(const canvas::World& canvas, frame::Pass* pass, uint16_t layer, Blend blend, const glm::vec4& tint) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
@@ -131,7 +149,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    resource::PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
     if (blend == Blend::Additive) {
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
@@ -141,9 +159,15 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
             continue;
         }
         // an unset texture is the untextured case, drawn against white
-        const Push constants{.tint = tint, .texture = textures_->slot(batch.texture)};
+        // a run with bands draws curves, and the shader takes the curves from its texture
+        uint32_t mode = batch.bands.valid() ? CURVES : PICTURE;
+        if (batch.field) {
+            mode = DISTANCE;
+        }
+        const Push constants{.tint = tint, .texture = textures_->slot(batch.texture), .bands = batch.bands.valid() ? textures_->slot(batch.bands) : 0U,
+            .mode = mode};
 
-        DrawItem item;
+        frame::DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
         item.material = textures_->material();

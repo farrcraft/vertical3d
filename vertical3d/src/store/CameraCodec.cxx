@@ -5,8 +5,8 @@
 
 #include "CameraCodec.h"
 
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstdint>
 #include <string>
@@ -24,8 +24,8 @@ namespace v3d::editor::store {
 
 /**
  **/
-scene::Item::Kind CameraCodec::kind() const noexcept {
-    return scene::Item::Kind::Camera;
+scene::item::Item::Kind CameraCodec::kind() const noexcept {
+    return scene::item::Item::Kind::Camera;
 }
 
 /**
@@ -42,10 +42,10 @@ std::int64_t CameraCodec::version() const noexcept {
 
 /**
  **/
-boost::json::object CameraCodec::payload(const scene::Item& item) const {
-    const scene::Camera::Lens& lens = static_cast<const scene::Camera&>(item).lens();
+boost::json::object CameraCodec::payload(const scene::item::Item& item) const {
+    const scene::item::Camera::Lens& lens = static_cast<const scene::item::Camera&>(item).lens();
     boost::json::object payload;
-    payload["projection"] = lens.projection == scene::Camera::Projection::Orthographic ? "orthographic" : "perspective";
+    payload["projection"] = lens.projection == scene::item::Camera::Projection::Orthographic ? "orthographic" : "perspective";
     payload["fov"] = lens.fov;
     payload["extent"] = lens.extent;
     payload["clipping"] = boost::json::array{ lens.clipping.x, lens.clipping.y };
@@ -54,16 +54,16 @@ boost::json::object CameraCodec::payload(const scene::Item& item) const {
 
 /**
  **/
-boost::shared_ptr<scene::Item> CameraCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
+boost::shared_ptr<scene::item::Item> CameraCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
     if (!exactly(payload, { "projection", "fov", "extent", "clipping" }, problem)) {
         return nullptr;
     }
-    scene::Camera::Lens lens;
+    scene::item::Camera::Lens lens;
     const std::string_view projection = word(payload.at("projection"));
     if (projection == "perspective") {
-        lens.projection = scene::Camera::Projection::Perspective;
+        lens.projection = scene::item::Camera::Projection::Perspective;
     } else if (projection == "orthographic") {
-        lens.projection = scene::Camera::Projection::Orthographic;
+        lens.projection = scene::item::Camera::Projection::Orthographic;
     } else {
         *problem = "its projection is neither perspective nor orthographic";
         return nullptr;
@@ -79,7 +79,7 @@ boost::shared_ptr<scene::Item> CameraCodec::read(const boost::json::object& payl
         *problem = "its lens is out of range";
         return nullptr;
     }
-    const boost::shared_ptr<scene::Camera> camera = boost::make_shared<scene::Camera>();
+    const boost::shared_ptr<scene::item::Camera> camera = boost::make_shared<scene::item::Camera>();
     camera->lens(lens);
     return camera;
 }

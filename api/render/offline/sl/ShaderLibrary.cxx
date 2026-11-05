@@ -6,10 +6,13 @@
 #include "ShaderLibrary.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/SearchPath.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/texture/SearchPath.h>
 
 #include <fstream>
 #include <sstream>
@@ -18,10 +21,7 @@
 
 #include <boost/make_shared.hpp>
 
-#include "Compiler.h"
-#include "Emitter.h"
 #include "Instance.h"
-#include "Parser.h"
 #include "Types.h"
 
 namespace v3d::render::offline::sl {
@@ -193,7 +193,7 @@ ShaderLibrary::ShaderLibrary(const boost::shared_ptr<v3d::log::Logger> & logger)
 }
 
 void ShaderLibrary::searchpath(const std::string & path) {
-    directories_ = offline::searchpath(path, directories_);
+    directories_ = offline::texture::searchpath(path, directories_);
 }
 
 std::string ShaderLibrary::file(const std::string & name, std::string* where) const {
@@ -217,7 +217,7 @@ std::string ShaderLibrary::file(const std::string & name, std::string* where) co
 ProgramPtr ShaderLibrary::compile(const std::string & name, const Source & source) {
     const std::string & where = source.where;
     std::istringstream stream(source.text);
-    Parser parser(stream);
+    compiler::Parser parser(stream);
     const syntax::ShaderPtr shader = find(parser.parse(), name);
     if (!shader) {
         // a source that would not parse and a source that holds no shader of that name are
@@ -230,14 +230,14 @@ ProgramPtr ShaderLibrary::compile(const std::string & name, const Source & sourc
         }
         return ProgramPtr();
     }
-    Compiler compiler(shader);
+    compiler::Compiler compiler(shader);
     if (!compiler.compile()) {
         logger_->get()->error("the shader '{}' in {} does not compile - {}",
             name, where, compiler.error());
         return ProgramPtr();
     }
     ProgramPtr program = boost::make_shared<runtime::Program>();
-    Emitter emitter(shader, compiler.symbols());
+    compiler::Emitter emitter(shader, compiler.symbols());
     if (!emitter.emit(program.get())) {
         logger_->get()->error("the shader '{}' in {} does not compile - {}",
             name, where, emitter.error());

@@ -20,12 +20,15 @@ std::string resultString(VkResult result);
 
 /**
  * What a failed call throws: what was being attempted, then the result in words.
+ * @param result the code the failed call returned
  * @param what the attempt, as "Unable to ..."
  **/
 std::runtime_error failure(VkResult result, const std::string& what);
 
 /**
  * Throw failure() unless the call succeeded.
+ * @param result the code the call returned
+ * @param what the attempt, as "Unable to ...", named in what is thrown
  * @param tolerated a second result that is not a failure, such as VK_INCOMPLETE for a call
  *        that filled what it was given and had more
  **/

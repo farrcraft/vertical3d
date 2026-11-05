@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Lexer.h>
-#include <api/render/offline/sl/Token.h>
+#include <api/render/offline/sl/compiler/Lexer.h>
+#include <api/render/offline/sl/compiler/Token.h>
 
 #include <cstddef>
 #include <sstream>
@@ -15,11 +15,11 @@
 
 namespace {
 
-typedef v3d::render::offline::sl::Token Token;
+typedef v3d::render::offline::sl::compiler::Token Token;
 
 std::vector<Token> lex(const std::string & source, std::string * error = nullptr) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Lexer lexer(stream);
+    v3d::render::offline::sl::compiler::Lexer lexer(stream);
     std::vector<Token> tokens;
     for (;;) {
         const Token token = lexer.next();
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(sllexer_half_an_operator_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllexer_error_ends_the_stream_test) {
     std::istringstream stream("a @ b");
-    v3d::render::offline::sl::Lexer lexer(stream);
+    v3d::render::offline::sl::compiler::Lexer lexer(stream);
 
     BOOST_CHECK(lexer.next().kind() == Token::Kind::IDENTIFIER);
     BOOST_CHECK(lexer.next().kind() == Token::Kind::END);
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(sllexer_error_ends_the_stream_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllexer_peek_test) {
     std::istringstream stream("surface matte");
-    v3d::render::offline::sl::Lexer lexer(stream);
+    v3d::render::offline::sl::compiler::Lexer lexer(stream);
 
     BOOST_CHECK_EQUAL(lexer.peek().text(), "surface");
     BOOST_CHECK_EQUAL(lexer.peek().text(), "surface");

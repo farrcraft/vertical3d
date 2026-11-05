@@ -52,6 +52,7 @@ class SpriteSheet final {
      *
      * @param name the sheet's name
      * @param image the file the packed image is written to, which the sheet names
+     * @param packing the result of image::pack(), whose sheet sets the size
      * @return an empty sheet, with no name, when the packing refused its sprites
      **/
     static SpriteSheet packed(const std::string& name, const std::string& image, const v3d::image::Packing& packing);

@@ -9,11 +9,11 @@
 #include <api/brep/Index.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/CurveParts.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveParts.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -31,15 +31,15 @@ namespace v3d::editor::tool {
 
 /**
  **/
-bool Select::holds(const v3d::brep::BRep& mesh, scene::Component kind, v3d::brep::Index index) {
+bool Select::holds(const v3d::brep::BRep& mesh, scene::item::Component kind, v3d::brep::Index index) {
     switch (kind) {
-        case scene::Component::Vertex:
+        case scene::item::Component::Vertex:
             return index < mesh.vertexCount();
-        case scene::Component::Edge:
+        case scene::item::Component::Edge:
             return index < mesh.edgeCount();
-        case scene::Component::Face:
+        case scene::item::Component::Face:
             return index < mesh.faceCount();
-        case scene::Component::Handle:
+        case scene::item::Component::Handle:
             break;
     }
     return false;
@@ -47,14 +47,14 @@ bool Select::holds(const v3d::brep::BRep& mesh, scene::Component kind, v3d::brep
 
 /**
  **/
-bool Select::holds(const v3d::curve::Curves& curves, scene::Component kind, v3d::brep::Index index) {
+bool Select::holds(const v3d::curve::Curves& curves, scene::item::Component kind, v3d::brep::Index index) {
     switch (kind) {
-        case scene::Component::Vertex:
-            return scene::pointAt(curves, index).has_value();
-        case scene::Component::Handle:
-            return scene::handleAt(curves, index).has_value();
-        case scene::Component::Edge:
-        case scene::Component::Face:
+        case scene::item::Component::Vertex:
+            return scene::item::pointAt(curves, index).has_value();
+        case scene::item::Component::Handle:
+            return scene::item::handleAt(curves, index).has_value();
+        case scene::item::Component::Edge:
+        case scene::item::Component::Face:
             break;
     }
     return false;
@@ -62,11 +62,11 @@ bool Select::holds(const v3d::curve::Curves& curves, scene::Component kind, v3d:
 
 /**
  **/
-bool Select::holds(const boost::shared_ptr<scene::Item>& item, scene::Component kind, v3d::brep::Index index) {
-    if (const boost::shared_ptr<scene::Mesh> mesh = as<scene::Mesh>(item)) {
+bool Select::holds(const boost::shared_ptr<scene::item::Item>& item, scene::item::Component kind, v3d::brep::Index index) {
+    if (const boost::shared_ptr<scene::item::Mesh> mesh = as<scene::item::Mesh>(item)) {
         return holds(*mesh->geometry(), kind, index);
     }
-    if (const boost::shared_ptr<scene::Curve> curve = as<scene::Curve>(item)) {
+    if (const boost::shared_ptr<scene::item::Curve> curve = as<scene::item::Curve>(item)) {
         return holds(*curve->geometry(), kind, index);
     }
     return false;
@@ -74,15 +74,15 @@ bool Select::holds(const boost::shared_ptr<scene::Item>& item, scene::Component 
 
 /**
  **/
-bool Select::componentSelected(const scene::Components& components, const boost::shared_ptr<scene::Item>& item, const Picker::Hit& hit) {
-    const std::optional<scene::Component> kind = componentOf(hit.kind);
+bool Select::componentSelected(const scene::item::Components& components, const boost::shared_ptr<scene::item::Item>& item, const Picker::Hit& hit) {
+    const std::optional<scene::item::Component> kind = componentOf(hit.kind);
     return kind && holds(item, *kind, hit.component) && components.selected(item->id(), *kind, hit.component);
 }
 
 /**
  **/
-void Select::markComponent(scene::Components* components, const boost::shared_ptr<scene::Item>& item, const Picker::Hit& hit, bool wanted) {
-    const std::optional<scene::Component> kind = componentOf(hit.kind);
+void Select::markComponent(scene::item::Components* components, const boost::shared_ptr<scene::item::Item>& item, const Picker::Hit& hit, bool wanted) {
+    const std::optional<scene::item::Component> kind = componentOf(hit.kind);
     if (kind && holds(item, *kind, hit.component)) {
         components->select(item->id(), *kind, hit.component, wanted);
     }
@@ -263,7 +263,7 @@ void Select::selectObject(unsigned int id) {
     if (id == 0) {
         return;
     }
-    const boost::shared_ptr<scene::Item> item = scene_->item(id);
+    const boost::shared_ptr<scene::item::Item> item = scene_->item(id);
     if (!item) {
         return;
     }
@@ -277,7 +277,7 @@ void Select::selectObject(unsigned int id) {
 /**
  **/
 void Select::selectComponent(const Picker::Hit& hit) {
-    const boost::shared_ptr<scene::Item> item = scene_->item(hit.item);
+    const boost::shared_ptr<scene::item::Item> item = scene_->item(hit.item);
     if (!item) {
         return;
     }
@@ -306,13 +306,13 @@ void Select::selectInside() {
     const std::vector<Picker::Hit> hits = picker_.inside(*scene_, *view_, anchor_, cursor_, mask_);
     for (const Picker::Hit& hit : hits) {
         if (selectsItems(hit.kind)) {
-            const boost::shared_ptr<scene::Item> item = scene_->item(hit.item);
+            const boost::shared_ptr<scene::item::Item> item = scene_->item(hit.item);
             if (item) {
                 item->selected(true);
             }
             continue;
         }
-        const boost::shared_ptr<scene::Item> item = scene_->item(hit.item);
+        const boost::shared_ptr<scene::item::Item> item = scene_->item(hit.item);
         if (item) {
             markComponent(&scene_->components(), item, hit, true);
         }

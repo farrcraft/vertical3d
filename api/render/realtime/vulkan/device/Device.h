@@ -112,6 +112,12 @@ class Device final {
     bool presenting() const noexcept;
 
     /**
+     * @return whether the device's present queue can present to a surface, as one made for a
+     *         second window has to. False on a headless device
+     **/
+    bool presents(const Surface& surface) const;
+
+    /**
      * @return the queue families backing the device
      **/
     const QueueFamilies& families() const noexcept;

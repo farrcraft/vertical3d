@@ -7,7 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -26,15 +26,17 @@ namespace v3d::editor::store {
  *
  * Every item is a row of typed columns for what all items share, with a JSON payload for what
  * its kind adds. What all items share includes the item's parent, as a reference to the
- * parent's row, which is empty for an item with no parent. A kind's Codec writes and reads its
- * payload, and any blobs it adds in a table of its own, as a mesh's topology is.
+ * parent's row, which is empty for an item with no parent, and where the item is shown. A
+ * kind's Codec writes and reads its payload, and any blobs it adds in a table of its own, as a
+ * mesh's topology is.
  *
  * The database's header carries APPLICATION_ID, so a database another program wrote is
  * refused, and SCHEMA_VERSION, the version of its tables. Each kind's codec has a version of
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
  *
  * Each curve is a row of its own, which names its owner's row and the property it drives, with
- * its keys in a blob. The document's timeline is in its meta table.
+ * its keys in a blob. The document's timeline, render settings and unit of length are in its meta
+ * table, and a document that names no unit measures in metres.
  *
  * **A save writes only what changed.** The store remembers each item it last wrote or read,
  * with its revision, its place in the order and its parent, for the one document it last wrote
@@ -58,7 +60,7 @@ class Scene final {
      * have no curves table, so nothing they hold is animated. Versions 1 to 3 have no name
      * column, so every item they hold has an empty name.
      **/
-    static constexpr std::int32_t SCHEMA_VERSION = 4;
+    static constexpr std::int32_t SCHEMA_VERSION = 5;
 
     /**
      * The version of a curve's keys, which a curve's row stores beside them.
@@ -118,7 +120,7 @@ class Scene final {
      * its parent's document id, which is 0 for none.
      **/
     struct Saved {
-        boost::weak_ptr<scene::Item> item;
+        boost::weak_ptr<scene::item::Item> item;
         std::uint64_t revision = 0;
         std::int64_t position = 0;
         std::int64_t parent = 0;
@@ -152,7 +154,9 @@ class Scene final {
         "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
         "  payload TEXT NOT NULL CHECK (json_valid(payload)),"
         "  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
-        "  name TEXT NOT NULL DEFAULT '') STRICT;"
+        "  name TEXT NOT NULL DEFAULT '',"
+        "  views INTEGER NOT NULL DEFAULT 1 CHECK (views IN (0, 1)),"
+        "  renders INTEGER NOT NULL DEFAULT 1 CHECK (renders IN (0, 1))) STRICT;"
         "CREATE TABLE buffers ("
         "  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
         "  role TEXT NOT NULL,"

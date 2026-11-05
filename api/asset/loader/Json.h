@@ -9,6 +9,8 @@
 
 namespace v3d::asset::loader {
 /**
+ * Reads a file as a JSON object and gives a kind::Json. A file that cannot be read, or that
+ * holds anything but an object, gives no asset.
  **/
 class Json final : public Loader {
  public:

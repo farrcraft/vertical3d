@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Manifest.h>
 #include <api/asset/kind/Json.h>
@@ -14,8 +15,11 @@
 #include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/DisplayScale.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
+#include <api/image/Icon.h>
+#include <api/image/Image.h>
 #include <api/input/DeviceType.h>
 #include <api/input/Devices.h>
 #include <api/input/KeyState.h>
@@ -23,19 +27,23 @@
 #include <api/input/Mouse.h>
 #include <api/input/MouseState.h>
 #include <api/log/Logger.h>
+#include <api/window/Window.h>
 
 #include <SDL3/SDL.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "Feature.h"
 #include "Identity.h"
+#include "Launch.h"
 #include "Settings.h"
 #include "Statistics.h"
 #include "WindowSize.h"
@@ -129,6 +137,39 @@ void Engine::identity(const Identity& identity) {
  **/
 const Identity& Engine::identity() const noexcept {
     return identity_;
+}
+
+/**
+ **/
+void Engine::launch(const Launch& launch) {
+    launch_ = launch;
+}
+
+/**
+ **/
+const Launch& Engine::launch() const noexcept {
+    return launch_;
+}
+
+/**
+ **/
+void Engine::capturer(const Capturer& capturer) {
+    capturer_ = capturer;
+}
+
+/**
+ **/
+bool Engine::requestCapture() {
+    if (!capturer_) {
+        logger_->get()->error("Frame {} cannot be captured: nothing that draws took the capture", frames_);
+        return false;
+    }
+    if (!capturer_(launch_.capture)) {
+        logger_->get()->error("Frame {} cannot be captured to {}", frames_, launch_.capture);
+        return false;
+    }
+    logger_->get()->info("Capturing frame {} to {}", frames_, launch_.capture);
+    return true;
 }
 
 /**
@@ -265,6 +306,7 @@ bool Engine::openWindow() {
     // config, or none carrying dimensions, still gets a window
     int width = -1;
     int height = -1;
+    std::optional<std::string> icon;
     if (features_.has(Feature::Config)) {
         const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = manifest_->get(WINDOW_DOCUMENT);
         if (windowConfig) {
@@ -278,15 +320,54 @@ bool Engine::openWindow() {
             }
             width = size->x;
             height = size->y;
+            icon = windowIcon(doc);
         }
     }
-    return window_->create(glm::ivec2(width, height));
+    if (!window_->create(glm::ivec2(width, height))) {
+        return false;
+    }
+    if (icon) {
+        loadIcon(*icon);
+        showIcon(window_.get());
+    }
+    return true;
+}
+
+/**
+ **/
+void Engine::loadIcon(const std::string& name) {
+    const std::optional<std::string> text = v3d::asset::readFile(assetManager_->path(name));
+    if (!text) {
+        logger_->get()->warn("The window's icon {} could not be read", name);
+        return;
+    }
+    icon_ = v3d::image::drawIcon(*text, logger_);
+    if (icon_.empty()) {
+        logger_->get()->warn("The window's icon {} is not an SVG with a size", name);
+    }
+}
+
+/**
+ **/
+void Engine::showIcon(v3d::window::Window* window) const {
+    if (icon_.empty()) {
+        return;
+    }
+    std::vector<v3d::window::Window::Picture> pictures;
+    for (const boost::shared_ptr<v3d::image::Image>& image : icon_) {
+        const std::size_t bytes = static_cast<std::size_t>(image->width()) * image->height() * 4;
+        pictures.push_back({ .side = image->width(), .rgba = std::span<const unsigned char>(image->data(), bytes) });
+    }
+    window->icon(pictures);
 }
 
 /**
  **/
 Engine::~Engine() {
     if (needShutdown_) {
+        for (const boost::shared_ptr<v3d::window::Window>& added : windows_) {
+            added->destroy();
+        }
         window_->destroy();
         SDL_Quit();
     }
@@ -342,6 +423,10 @@ bool Engine::shutdown() {
         return released;
     }
     logger_->get()->info("Shutting down engine...");
+    for (const boost::shared_ptr<v3d::window::Window>& added : windows_) {
+        added->destroy();
+    }
+    windows_.clear();
     window_->destroy();
     SDL_Quit();
     needShutdown_ = false;
@@ -419,6 +504,17 @@ bool Engine::onEvent(const SDL_Event& event) {
 /**
  **/
 void Engine::handleEvent(const SDL_Event& event) {
+    // a window the app added reports its own close and size, and nothing else of its own
+    const bool windowEvent = event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST;
+    if (windowEvent) {
+        const auto added = std::ranges::find_if(windows_, [&event](const boost::shared_ptr<v3d::window::Window>& each) {
+            return each->id() == event.window.windowID;
+        });
+        if (added != windows_.end()) {
+            handleAdded(**added, event);
+            return;
+        }
+    }
     switch (event.type) {
     case SDL_EVENT_QUIT:
     // SDL turns the last window closing into a quit only once that window is destroyed,
@@ -431,7 +527,7 @@ void Engine::handleEvent(const SDL_Event& event) {
         if (window_) {
             window_->resize(glm::ivec2(event.window.data1, event.window.data2));
         }
-        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2)));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2), event.window.windowID));
         break;
     // a key released while the window is unfocused never arrives. WindowFocus lets an app
     // drop held input when focus goes
@@ -459,6 +555,49 @@ void Engine::handleEvent(const SDL_Event& event) {
     default:
         break;
     }
+}
+
+/**
+ **/
+void Engine::handleAdded(v3d::window::Window& window, const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+        dispatcher_->trigger(v3d::event::kind::WindowClose(window.id()));
+        break;
+    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        window.resize(glm::ivec2(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2), window.id()));
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::window::Window> Engine::addWindow(const glm::ivec2& size) {
+    if (!window_ || !window_->created()) {
+        return nullptr;
+    }
+    boost::shared_ptr<v3d::window::Window> made = boost::make_shared<v3d::window::Window>(logger_);
+    if (!made->create(size)) {
+        return nullptr;
+    }
+    showIcon(made.get());
+    windows_.push_back(made);
+    return made;
+}
+
+/**
+ **/
+void Engine::removeWindow(const boost::shared_ptr<v3d::window::Window>& window) {
+    const auto found = std::ranges::find(windows_, window);
+    if (found == windows_.end()) {
+        return;
+    }
+    window->destroy();
+    windows_.erase(found);
 }
 
 /**
@@ -505,14 +644,32 @@ bool Engine::eventLoop() {
                 return false;
             }
         }
-        if (!render()) {
+        if (!presentFrame()) {
             return false;
         }
-        // the edges belong to this frame, and everything that reads them has now run. The
-        // loop clears them so that an app does not have to
-        if (devices_) {
-            devices_->flush();
-        }
+    }
+    return true;
+}
+
+/**
+ **/
+bool Engine::presentFrame() {
+    // the frame the command line names is written as it is presented, and the loop ends after
+    // it without asking the app
+    const bool capturing = launch_.due(++frames_);
+    if (capturing && !requestCapture()) {
+        return false;
+    }
+    if (!render()) {
+        return false;
+    }
+    // the edges belong to this frame, and everything that reads them has now run. The loop
+    // clears them so that an app does not have to
+    if (devices_) {
+        devices_->flush();
+    }
+    if (capturing) {
+        quit();
     }
     return true;
 }

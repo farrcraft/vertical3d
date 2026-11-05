@@ -12,6 +12,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -21,8 +22,8 @@
 
 namespace v3d::window {
 /**
- * An OS window, and the platform calls that act on it: its size, caption, focus, full screen,
- * text input, the mouse and the pointer's shape.
+ * An OS window, and the platform calls that act on it: its size, caption, icon, focus, full
+ * screen, text input, the mouse and the pointer's shape.
  *
  * The window is made for presenting with Vulkan, which SDL loads when the window is created. It
  * holds no Vulkan object: a renderer makes the surface it presents to from sdl(), and has to be
@@ -68,6 +69,12 @@ class Window final {
     SDL_Window* sdl() noexcept;
 
     /**
+     * @return the platform's id for the window, which every window event and mouse event
+     *         carries, or 0 before create() and after destroy()
+     **/
+    std::uint32_t id() const noexcept;
+
+    /**
      * Record a size the window has already been given.
      *
      * The loop calls this when SDL reports a resize that has already happened. It updates
@@ -100,6 +107,25 @@ class Window final {
     void caption(const std::string_view& cap);
 
     /**
+     * One size of a window's icon: its side in pixels, and its pixels as four bytes each, red,
+     * green, blue and alpha, row by row from the top.
+     **/
+    struct Picture final {
+        unsigned int side = 0;
+        std::span<const unsigned char> rgba;
+    };
+
+    /**
+     * Set the icon the title bar and the taskbar show. The platform picks the size nearest what
+     * it draws, so an icon is given at several. The pictures are copied.
+     *
+     * @param sizes the icon at each size, which is square and holds side by side by 4 bytes
+     * @return whether the platform took it; false for a window not yet created, no sizes, or a
+     *         picture that does not hold its side's bytes
+     **/
+    bool icon(std::span<const Picture> sizes);
+
+    /**
      * Whether the window has keyboard focus.
      *
      * An app that steers with the pointer checks this, so that a move made over whatever
@@ -117,6 +143,13 @@ class Window final {
      * @return the scale, and 1 while there is no window or the scale cannot be read
      **/
     float displayScale() const;
+
+    /**
+     * How many times a second the monitor the window is on shows a new picture.
+     *
+     * @return the rate in hertz, or 0 while there is no window or the rate cannot be read
+     **/
+    float refreshRate() const;
 
     /**
      * Fill the display the window is on, or go back to a window.

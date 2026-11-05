@@ -28,8 +28,11 @@ struct Clip final {
  *
  * A time before a channel's first key holds that key, and one after its last holds the last.
  *
+ * @param clip the channels to sample. A channel that is malformed, or whose joint lies past the
+ *        end of the pose, is skipped.
  * @param time a time within the clip. Clock::sample() turns a playback's unwrapped time into
  *        one.
+ * @param pose written to. It is sized by the caller, usually from rest().
  **/
 void sample(const Clip& clip, float time, Pose* pose);
 

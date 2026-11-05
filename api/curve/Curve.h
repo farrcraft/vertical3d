@@ -155,7 +155,10 @@ enum class Side : std::uint8_t { Left, Right };
  * point's other handle when it is Automatic. When the moved handle is Aligned and so is the
  * other, the other turns to lie on the far side of the point, in line, and keeps its length.
  *
+ * @param bezier the curve, changed in place
  * @param point an index into bezier->points
+ * @param side which of the point's handles moves
+ * @param position where the handle moves to, in the same space as the point
  **/
 void moveHandle(Bezier* bezier, std::size_t point, Side side, const glm::vec3& position);
 

@@ -5,7 +5,7 @@
 
 #include "Renderer.h"
 
-#include <api/render/offline/Texture.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include "Value.h"
 
@@ -49,7 +49,7 @@ bool Renderer::trace(const Value & /* origin */, const Value & /* direction */,
     return false;
 }
 
-const Texture* Renderer::texture(const std::string & /* name */) {
+const texture::Texture* Renderer::texture(const std::string & /* name */) {
     return nullptr;
 }
 

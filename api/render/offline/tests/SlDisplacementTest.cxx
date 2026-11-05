@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Compiler.h>
-#include <api/render/offline/sl/Emitter.h>
-#include <api/render/offline/sl/Globals.h>
-#include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/syntax/Shader.h>
@@ -26,16 +26,16 @@ namespace {
  **/
 std::string compiled(const std::string & source, v3d::render::offline::sl::runtime::Program* program) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         return parser.error();
     }
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
     if (!compiler.compile()) {
         return compiler.error();
     }
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
     return emitter.emit(program) ? "" : emitter.error();
 }
 
@@ -53,10 +53,10 @@ BOOST_AUTO_TEST_CASE(sl_a_displacement_moves_p_along_n_test) {
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
-    const v3d::render::offline::sl::Globals globals(program);
+    const v3d::render::offline::sl::runtime::Globals globals(program);
     const glm::vec3 normals[2] = { glm::vec3(0.0F, 0.0F, -2.0F), glm::vec3(0.0F, 3.0F, 0.0F) };
     for (unsigned int lane = 0; lane < 2; lane++) {
-        v3d::render::offline::sl::Point point;
+        v3d::render::offline::sl::runtime::Point point;
         point.position = glm::vec3(static_cast<float>(lane), 1.0F, 5.0F);
         point.normal = normals[lane];
         globals.surface(&machine, lane, point);

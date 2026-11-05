@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	animation asset asset_media audio brep curve database ecs engine event font grid image input
-	interchange interchange_usd log model render render_offline shell type ui window)
+	interchange interchange_usd log model render render_offline script shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -58,7 +58,7 @@ set(V3D_API_ecs_REQUIRES animation type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media ecs event input type window)
+set(V3D_API_engine_REQUIRES log asset asset_media ecs event image input type window)
 set(V3D_API_engine_PACKAGES SDL3 EnTT glm)
 
 set(V3D_API_event_PATH "event")
@@ -67,7 +67,7 @@ set(V3D_API_event_PACKAGES glm EnTT)
 
 set(V3D_API_font_PATH "font")
 set(V3D_API_font_REQUIRES log image)
-set(V3D_API_font_PACKAGES Freetype glm)
+set(V3D_API_font_PACKAGES Freetype harfbuzz ICU glm thorvg)
 
 set(V3D_API_grid_PATH "grid")
 set(V3D_API_grid_REQUIRES)
@@ -75,7 +75,7 @@ set(V3D_API_grid_PACKAGES glm)
 
 set(V3D_API_image_PATH "image")
 set(V3D_API_image_REQUIRES log)
-set(V3D_API_image_PACKAGES PNG JPEG glm)
+set(V3D_API_image_PACKAGES PNG JPEG NanoSVG glm)
 
 set(V3D_API_input_PATH "input")
 set(V3D_API_input_REQUIRES event type)
@@ -110,10 +110,15 @@ set(V3D_API_render_offline_PATH "render/offline")
 set(V3D_API_render_offline_REQUIRES log image type)
 set(V3D_API_render_offline_PACKAGES glm)
 
+# TypeScript run on QuickJS. It names no window and no device.
+set(V3D_API_script_PATH "script")
+set(V3D_API_script_REQUIRES)
+set(V3D_API_script_PACKAGES qjs)
+
 # What every app builds around its own code: the ui, the screen, the menu and the statistics
 # overlay. It joins engine and ui, which do not depend on each other.
 set(V3D_API_shell_PATH "shell")
-set(V3D_API_shell_REQUIRES engine event ui asset window)
+set(V3D_API_shell_REQUIRES engine event ui asset render window)
 set(V3D_API_shell_PACKAGES EnTT)
 
 set(V3D_API_type_PATH "type")
@@ -121,7 +126,7 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image input type window)
+set(V3D_API_ui_REQUIRES log render asset event font input type window)
 set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
 
 # The OS window and its platform calls. It names no graphics API, so a selection that needs a
@@ -139,12 +144,19 @@ set(V3D_PACKAGE_TARGETS
 	"SDL3::SDL3=SDL3"
 	"SDL3_mixer::SDL3_mixer=SDL3_mixer"
 	"Freetype::Freetype=Freetype"
+	"harfbuzz::harfbuzz=harfbuzz"
+	"thorvg::thorvg=thorvg"
+	"ICU::uc=ICU"
+	"ICU::data=ICU"
 	"PNG::PNG=PNG"
 	"JPEG::JPEG=JPEG"
+	"NanoSVG::nanosvg=NanoSVG"
+	"NanoSVG::nanosvgrast=NanoSVG"
 	"glm::glm=glm"
 	"EnTT::EnTT=EnTT"
 	"spdlog::spdlog=spdlog"
 	"unofficial::sqlite3::sqlite3=unofficial-sqlite3"
+	"qjs=qjs"
 	"usd=pxr"
 	"usdGeom=pxr"
 	"usdLux=pxr")
@@ -268,8 +280,8 @@ function(v3d_api_verify_manifest)
 endfunction()
 
 # Which api library owns a path under api/: the one whose PATH is the longest prefix of it, so
-# render/offline/Film.h is render_offline's and render/realtime/canvas/Canvas.h is render's. Sets
-# out_var to the library, or to nothing for a path no library owns.
+# render/offline/film/Film.h is render_offline's and render/realtime/canvas/Canvas.h is render's.
+# Sets out_var to the library, or to nothing for a path no library owns.
 function(v3d_api_owner relative out_var)
 	set(owner)
 	set(longest 0)

@@ -9,6 +9,7 @@
 
 namespace v3d::asset::loader {
 /**
+ * Reads a whole file as text and gives a kind::Text. A file that cannot be read gives no asset.
  **/
 class Text final : public Loader {
  public:

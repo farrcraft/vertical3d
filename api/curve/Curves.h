@@ -53,6 +53,7 @@ class Curves final {
      * Replace the curve at an index.
      *
      * @param index below size()
+     * @param curve the curve to store in its place
      * @return why the curve was refused, or empty when it replaced the one there
      **/
     std::string set(std::size_t index, Curve curve);

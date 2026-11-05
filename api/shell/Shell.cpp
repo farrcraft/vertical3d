@@ -15,6 +15,7 @@
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/event/kind/DisplayScale.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/window/Window.h>
 #include <api/ui/Interface.h>
 #include <api/ui/shell/GameMenu.h>
@@ -106,6 +107,8 @@ void Shell::present(v3d::render::realtime::WindowRenderer* renderer, const v3d::
         screen_->display(engine_->window()->displayScale());
     }
     scaled_ = engine_->dispatcher()->sink<v3d::event::kind::DisplayScale>().connect<&Shell::rescale>(*this);
+    // a capture the command line asks for is a frame of the window this renderer presents to
+    engine_->capturer([renderer](const std::string& file) { return renderer->capture(file); });
 }
 
 /**
@@ -119,6 +122,7 @@ void Shell::rescale(const v3d::event::kind::DisplayScale& event) {
 /**
  **/
 void Shell::release() {
+    engine_->capturer({});
     scaled_.release();
     screen_.reset();
     menu_.reset();

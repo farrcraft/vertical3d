@@ -36,26 +36,26 @@ BOOST_AUTO_TEST_CASE(arcball_test) {
 
     // dragging to where the click started is no rotation at all
     ball.click(glm::vec2(kCentreX, kCentreY));
-    glm::quat still = ball.drag(glm::vec2(kCentreX, kCentreY));
-    BOOST_CHECK_EQUAL(still[0], 0.0F);
-    BOOST_CHECK_EQUAL(still[1], 0.0F);
-    BOOST_CHECK_EQUAL(still[2], 0.0F);
-    BOOST_CHECK_EQUAL(still[3], 0.0F);
+    const glm::quat still = ball.drag(glm::vec2(kCentreX, kCentreY));
+    BOOST_CHECK_EQUAL(still.x, 0.0F);
+    BOOST_CHECK_EQUAL(still.y, 0.0F);
+    BOOST_CHECK_EQUAL(still.z, 0.0F);
+    BOOST_CHECK_EQUAL(still.w, 0.0F);
 
     // dragging left of the click rotates about the y axis - the two mapped points and the
     // axis they turn about all lie in the xz plane
     ball.click(glm::vec2(kCentreX, kCentreY));
-    glm::quat rotation = ball.drag(glm::vec2(0.0F, kCentreY));
-    BOOST_CHECK_EQUAL(rotation[0], 0.0F);
-    BOOST_CHECK(rotation[1] != 0.0F);
-    BOOST_CHECK_EQUAL(rotation[2], 0.0F);
+    const glm::quat rotation = ball.drag(glm::vec2(0.0F, kCentreY));
+    BOOST_CHECK_EQUAL(rotation.x, 0.0F);
+    BOOST_CHECK(rotation.y != 0.0F);
+    BOOST_CHECK_EQUAL(rotation.z, 0.0F);
 
     // drag leaves the end point as the new start, so an immediate repeat is a no-op
-    glm::quat repeated = ball.drag(glm::vec2(0.0F, kCentreY));
-    BOOST_CHECK_EQUAL(repeated[0], 0.0F);
-    BOOST_CHECK_EQUAL(repeated[1], 0.0F);
-    BOOST_CHECK_EQUAL(repeated[2], 0.0F);
-    BOOST_CHECK_EQUAL(repeated[3], 0.0F);
+    const glm::quat repeated = ball.drag(glm::vec2(0.0F, kCentreY));
+    BOOST_CHECK_EQUAL(repeated.x, 0.0F);
+    BOOST_CHECK_EQUAL(repeated.y, 0.0F);
+    BOOST_CHECK_EQUAL(repeated.z, 0.0F);
+    BOOST_CHECK_EQUAL(repeated.w, 0.0F);
 
     // bounds clamps a degenerate viewport rather than dividing by zero
     v3d::type::camera::ArcBall degenerate;

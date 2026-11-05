@@ -106,6 +106,26 @@ class Button : public Component {
     bool toggle() const;
 
     /**
+     * How a toggle is drawn. A tab is marked as the place shown while it is checked, where a
+     * plain toggle is filled as a setting that is on.
+     **/
+    enum class Tab : std::uint8_t {
+        None,    /**< a plain toggle, filled with the highlight while it is checked **/
+        Strip,   /**< a tab of a strip: the page's colour and a line under it while chosen **/
+        Choice   /**< one of a set of choices: raised to the chosen colour while chosen **/
+    };
+
+    /**
+     * @param look how the button is drawn while it is a toggle
+     **/
+    void tab(Tab look) noexcept;
+
+    /**
+     * @return how the button is drawn while it is a toggle
+     **/
+    Tab tab() const noexcept;
+
+    /**
       * Set whether a toggle button draws its mark.
       * @param on whether the button is checked
       */
@@ -124,6 +144,7 @@ class Button : public Component {
     v3d::event::Event event_;
     bool toggle_;
     bool checked_;
+    Tab tab_;
 };
 
 };  // namespace v3d::ui::component

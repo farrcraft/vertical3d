@@ -12,6 +12,7 @@
 namespace v3d::event::kind {
 
 /**
+ * A key went down. The event's name is the key's name.
  **/
 class KeyDown final : public Key {
  public:

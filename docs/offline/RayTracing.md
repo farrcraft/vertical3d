@@ -36,7 +36,7 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   puts on a box's face is still inside it. The hierarchy therefore finds exactly the hit a
   search of every primitive finds, and adding it changed no picture.
 
-Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md).
+Background: [ADR-0092](../adr/offline/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md).
 - **Every primitive a scene gives moya is added to the traced scene as it arrives**, in world
   space, before any split or dice. A polygon becomes a fan of triangles, since RI defines a
   polygon as planar and convex. The reyes hider reads the scene for `trace()` and
@@ -66,7 +66,7 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   than the grid is lost. The displacement runs once, so one that varies with time does not move.
   A sphere is not diced, and is traced undisplaced.
 
-  Background: [ADR-0095](../adr/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md)
+  Background: [ADR-0095](../adr/offline/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md)
 - **A sphere is intersected where it is defined**, cut to its slab of heights and its sweep,
   with RI's outward normal and its `u` and `v`. Its silhouette is exact at any size. A sphere
   whose radius is not positive is logged and not drawn.
@@ -76,7 +76,6 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   ([CamerasAndSampling.md](CamerasAndSampling.md#motion-blur)). `Scene::nearest()` takes the
   poses at a time: a ray is carried back into the stored pose, and its hit is carried forward
   again.
-- **`Scene::nearest()` tests every primitive.** There is no acceleration structure.
 
 ### The tracer
 
@@ -136,8 +135,8 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 ### Shadows and traced rays
 
 - **`transmission()` is how a shader casts a shadow.** The three standard directional lights call
-  it. It multiplies the light by every occluder's `Os`, read off the primitive without running
-  its shader, so a shadow ray never shades anything. A renderer that cannot answer
+  it. It multiplies the light by one minus every occluder's `Os`, read off the primitive without
+  running its shader, so a shadow ray never shades anything. A renderer that cannot answer
   `transmission()` lets all the light through.
 - **A ray leaving a surface is offset along the geometric normal, toward its target.** A ray
   started exactly on the surface hits that surface, and every lit pixel turns black in a
@@ -154,4 +153,4 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   quad may hit the exact polygon the grid was diced from, because the two agree only when the
   polygon is planar.
 
-Background: [ADR-0077](../adr/0077-offline-one-shared-ray-tracer.md)
+Background: [ADR-0077](../adr/offline/0077-offline-one-shared-ray-tracer.md)

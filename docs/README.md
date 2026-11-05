@@ -3,6 +3,17 @@
 The documents here describe the tree as it is now. Each one is written for one kind of reader,
 so start from the section that matches what you are doing.
 
+## Using the editor and moya
+
+For anyone modelling with the editor or rendering with moya, rather than changing them. Each
+manual starts with a tutorial, then has a guide for each task and a reference. Its first page
+says which kind each page is.
+
+| Document | Covers |
+|---|---|
+| [manual/editor/](manual/editor/README.md) | Modelling, the scene, animating, rendering, projects, the workspace, the menus and the key bindings |
+| [manual/moya/](manual/moya/README.md) | Rendering a RIB scene: hiders, lights, shaders, the camera, output and quality, the command line, RIB and the shading language |
+
 ## Working in this repository
 
 For anyone building, testing or changing the tree.
@@ -20,6 +31,7 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 |---|---|
 | [api/README.md](api/README.md) | What each library is for, how they depend on each other, and a glossary |
 | [api/UsingTheApi.md](api/UsingTheApi.md) | Starting a project in another repository and choosing libraries |
+| [API reference](https://farrcraft.github.io/vertical3d/reference/) | Every public class and function of the libraries, built from their headers |
 | [api/engine/](api/engine/README.md) | The app lifecycle, the game loop, input, config files, settings, logging and audio |
 | [api/rendering/](api/rendering/README.md) | Drawing: frames and passes, 2D and world primitives, meshes, lighting, capture |
 | [api/ui/](api/ui/README.md) | Building a UI from documents or in immediate mode, themes, focus and input |

@@ -8,6 +8,6 @@
 
 #include "PongEngine.h"
 
-int main(int /* argc */, char *argv[]) {
-    return v3d::engine::run<PongEngine>(argv[0], { .organization = "Vertical3D", .application = "Pong" });
+int main(int argc, char* argv[]) {
+    return v3d::engine::run<PongEngine>(argc, argv, { .organization = "Vertical3D", .application = "Pong" });
 }

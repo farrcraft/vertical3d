@@ -16,6 +16,7 @@ target_link_libraries(v3dtest_diorama PRIVATE
 	v3dlib_audio
 	v3dlib_ecs
 	v3dlib_engine
+	v3dlib_font
 	v3dlib_input
 	v3dlib_log
 	v3dlib_render

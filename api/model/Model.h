@@ -24,7 +24,7 @@ namespace v3d::model {
  * is drawn with.
  *
  * A brep::BRep is the topology the editor models with, and a
- * render::realtime::Mesh is a pair of device buffers. A Model is what a file on
+ * render::realtime::resource::Mesh is a pair of device buffers. A Model is what a file on
  * disk is loaded into before it is uploaded. It holds no handle and no device type, so a
  * renderer that never opens a window can read one.
  *

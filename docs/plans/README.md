@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-There is no open plan.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [DocsSite](DocsSite.md) | Documents, CI, editor, moya | A searchable site of the documents with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps |
 
 ## Completed plans
 
@@ -28,6 +30,10 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [EditorDesignSync](completed/EditorDesignSync.md) | Editor, UI, design | 2026-11-04 | The editor and its mockups in agreement: chosen tabs, tab strips, Properties headings, visibility flags, the timeline's transport, views through a scene camera, and the mockups redrawn where the editor chose |
+| [ScriptTooling](completed/ScriptTooling.md) | Review gates, TypeScript, CI | 2026-11-03 | TypeScript type-checked through pinned npm tools, the review gates on shared modules and split by job with every rule tested, one output format, example editor scripts that run in a test, and a reference page for the gates |
+| [EditorFinish](completed/EditorFinish.md) | Editor, UI, script | 2026-11-02 | The editor's views, headers, outliner, properties, status bar and notices as designed; a timeline, graph editor, console, render view and render settings as area editors; scripts in TypeScript on QuickJS against the editor's commands; and the Animation, Shading and Rendering workspaces |
+| [TextStack](completed/TextStack.md) | Text, UI, realtime rendering, editor, demos | 2026-11-02 | Text shaped by OpenType's rules, laid out in lines in any direction, rasterized at its exact size on the pixel grid or drawn from its curves elsewhere, with effects, colour glyphs and variable fonts, held by the ui and games as one text object |
 | [UiPolish](completed/UiPolish.md) | UI, shell, editor, demos | 2026-10-31 | A theme derived from a few colours, Inter at two weights, display scaling, shadows, transitions and tooltips; an editor of tiled areas holding editors as tabs, with a status bar and command search; and a titled game menu with settings and HUD text in each game's accent |
 | [EditorScene](completed/EditorScene.md) | Editor, brep, curve, interchange, moya | 2026-10-27 | Cameras, lights, groups and curves in the scene, a SQLite project store with autosave, shaded views, glTF and USD import, rendering with moya, keyed playback, and curve points and handles edited through the manipulators |
 | [Reshaping](completed/Reshaping.md) | All of the tree, documents | 2026-10-27 | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the demos in `demos/` with a lit one, and each reference fact in one place |

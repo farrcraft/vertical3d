@@ -17,7 +17,7 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Bar.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <vector>
@@ -27,10 +27,10 @@
 namespace v3d::ui::input {
 
 Cursor::Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-    const paint::Measure& measure) :
+    const paint::Type& type) :
     ui_(ui),
     dispatcher_(dispatcher),
-    measure_(measure) {
+    type_(type) {
 }
 
 boost::shared_ptr<Component> Cursor::held() const {
@@ -97,7 +97,7 @@ bool Cursor::motion(const glm::vec2& point) {
             }
         }
         if (!taken) {
-            over = container->pick(point);
+            over = picked(*container, point);
             taken = static_cast<bool>(over);
         }
     }
@@ -158,7 +158,7 @@ bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec
         }
     }
 
-    const boost::shared_ptr<Component> picked = container->pick(point);
+    const boost::shared_ptr<Component> picked = Cursor::picked(*container, point);
     if (!picked) {
         return false;
     }
@@ -309,11 +309,18 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
 
 void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
     bool extend) const {
-    if (!box || !measure_) {
-        // a cursor with no Measure cannot find a character, so the caret stays where it was
+    if (!box || !type_.set()) {
+        // a cursor with no type cannot find a character, so the caret stays where it was
         return;
     }
-    box->caret(box->at(point, measure_), extend);
+    box->place(point, type_, extend);
+}
+
+boost::shared_ptr<Component> Cursor::picked(const Container& container, const glm::vec2& point) {
+    // a closed menu bar that declined the point leaves the rest of its strip to what is set
+    // beside its labels, in this container or a later one
+    const boost::shared_ptr<Component> found = container.pick(point);
+    return found && found->type() == component::Type::MenuBar ? nullptr : found;
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {

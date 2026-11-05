@@ -5,22 +5,23 @@ items.
 
 ## The renderers
 
-Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `Grade` and
-`RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
+Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `renderer::Grade` and
+`frame::RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
 resources, ring, frame uniforms and textures. It holds no pointer to the context, because the
 context owns the `Quad`, `Line` and `World` it builds. `Quad`, `Line` and `World` take the
 colour and depth formats they draw into, and each of them compiles a variant per depth state.
 
-- `Quad`, `World` and `Lit` bind the textures they sample through the context's `Textures`.
+- `Quad`, `World` and `Lit` bind the textures they sample through the context's
+  `resource::Textures`.
 - `Lit` also takes the shadow map's format, its shaders and the front face.
 - `FullScreen` takes its fragment shader, how many images it samples, and the formats
   of the pass it draws in.
 
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|
-| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
+| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph, contrast); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
-| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
+| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph and a contrast, and the `mode` push value selects a picture, the curve branch or the distance-field branch, as `Quad`'s `text` does; into an `_SRGB` format, `world.frag` is compiled with `ENCODED_TARGET` |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
@@ -28,9 +29,20 @@ colour and depth formats they draw into, and each of them compiles a variant per
 `depthFormat()`. `Quad` is lazy too, because `WindowContext` has no format until the
 swapchain exists.
 
-**Quad text.** A batch carries a text flag, and `Canvas` never merges across it. The fragment
-shader thresholds a text batch's sampled distance at 0.5 with `smoothstep`, using `fwidth` for a
-one-pixel edge at any scale. Other batches return `colour * texel`.
+**Quad text.** A batch carries a text flag and a bands texture, and `Canvas` never merges across
+either. The push constant's `text` value says how the fragment stage draws the batch:
+
+- `PICTURE` returns `colour * texel`, or for a coverage glyph, whose contrast is 0 or more, the
+  colour with its alpha times the corrected coverage in the texel's alpha.
+- `DISTANCE` thresholds the sampled distance. A vertex whose `glyph` is 0 is thresholded at
+  0.5, with the distance's screen gradient for a one-pixel edge at any scale. Any other `glyph`
+  is an effect's ramp. Its low 16 bits are the value at which the effect is whole, its high 16
+  the value at which it is gone, and coverage fades between the two. `World` draws a field batch
+  the same way, through the same `field.glsl`.
+- `CURVES` finds the coverage from the glyph's curves. The batch's `texture` is the slot of its
+  curves and `bands` the slot of its bands. A vertex's uv is the sample's place in em units, and
+  its `glyph` is where the glyph's bands start, passed to the fragment stage flat. Both textures
+  are float textures, read with `texelFetch`.
 
 **Lit front faces are clockwise by default.** A model is wound counter-clockwise seen from
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
@@ -53,23 +65,24 @@ one layer and one texel that `Lit` owns, cleared to the far plane at constructio
 therefore always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
 own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
 
-**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes) followed by
-`model::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
+**Skinned vertex.** `resource::MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes)
+followed by `model::Model::Influence`: four joints as unsigned shorts and four float weights, 56
+bytes in all.
 
-**`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
-A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the
-`FullScreen` goes, since the set belongs to its pool. `Grade` holds two `FullScreen`s, one for a
-scene that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built
-for the grade's target, so they decode the result before an `_SRGB` target stores it. A source
-belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
+**`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source. A
+depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the `FullScreen`
+goes, since the set belongs to its pool. `renderer::Grade` holds two `FullScreen`s, one for a scene
+that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built for
+the grade's target, so they decode the result before an `_SRGB` target stores it. A source belongs
+to the one that matches its scene's format. `renderer::Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::submit`, which does not wait for the upload. `Grade`'s
-destructor releases its table and every source still in the map, before its `FullScreen` goes.
-`source()` releases the scene's registration if binding the material throws.
+`Uploader::submit`, which does not wait for the upload. `renderer::Grade`'s destructor releases its
+table and every source still in the map, before its `FullScreen` goes. `source()` releases the
+scene's registration if binding the material throws.
 
-Background: [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
-[ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md),
-[ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md),
-[ADR-0042](../../adr/0042-rendering-world-space-sprites.md),
-[ADR-0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)
+Background: [ADR-0005](../../adr/rendering/0005-2d-one-batched-quad-pipeline.md),
+[ADR-0011](../../adr/rendering/0011-rendering-lines-as-a-world-space-primitive.md),
+[ADR-0036](../../adr/text/0036-text-sdf-glyphs-through-the-quad-shader.md),
+[ADR-0042](../../adr/rendering/0042-rendering-world-space-sprites.md),
+[ADR-0071](../../adr/rendering/0071-skinning-joint-matrices-in-one-storage-buffer.md)

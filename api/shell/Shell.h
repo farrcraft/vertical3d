@@ -42,6 +42,9 @@ namespace v3d::shell {
  **/
 class Shell final {
  public:
+    /**
+     * Which parts of the shell an app has, and the theme it is drawn in.
+     **/
     struct Options final {
         /**
          * Put up the menu the ui document names under GameMenu's default names, which pauses
@@ -70,6 +73,8 @@ class Shell final {
 
     /**
      * @param engine the app the shell serves, which outlives it
+     * @param options copied. The constructor declares the menu's commands and the statistics
+     *        command
      **/
     Shell(v3d::engine::Engine* engine, const Options& options);
 
@@ -93,6 +98,7 @@ class Shell final {
     /**
      * Build the screen over the app's renderer, which outlives it until release().
      *
+     * @param renderer the app's renderer, which the screen draws through
      * @param options how the screen draws text, and which of its parts it builds
      **/
     void present(v3d::render::realtime::WindowRenderer* renderer, const v3d::ui::shell::Screen::Options& options);

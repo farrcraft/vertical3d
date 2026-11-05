@@ -5,7 +5,7 @@
 
 #include "Poses.h"
 
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/entity/internal/Track.h>
 #include <api/animation/Clip.h>
@@ -29,7 +29,7 @@ namespace {
  * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
  * not one the skin has.
  **/
-animation::Pose sampled(const MeshRegistry::Skin& skin, const internal::Track& track) {
+animation::Pose sampled(const resource::MeshRegistry::Skin& skin, const internal::Track& track) {
     const uint32_t clip = track.clip;
     const float time = track.time;
     const float duration = track.duration;
@@ -45,7 +45,7 @@ animation::Pose sampled(const MeshRegistry::Skin& skin, const internal::Track& t
 /**
  * The pose a playback stands in, faded out of the clip it is leaving.
  **/
-animation::Pose posed(const MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
+animation::Pose posed(const resource::MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
     animation::Pose current = sampled(skin, {.clip = playback.clip, .time = playback.time, .duration = playback.duration, .loops = playback.loops});
     if (playback.from == ecs::component::Playback::none || playback.fade >= 1.0F) {
         return current;
@@ -83,16 +83,16 @@ void Poses::add(entt::entity entity, const std::vector<glm::mat4>& joints) {
 
 /**
  **/
-Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& meshes) {
+Poses poses(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes) {
     Poses result;
     std::vector<glm::mat4> joints;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
-        const MeshRegistry::Entry* entry = meshes.resolve(view.get<const component::Mesh>(entity).mesh);
+        const resource::MeshRegistry::Entry* entry = meshes.resolve(view.get<const component::Mesh>(entity).mesh);
         if (entry == nullptr || !entry->skin) {
             continue;
         }
-        const MeshRegistry::Skin& skin = *entry->skin;
+        const resource::MeshRegistry::Skin& skin = *entry->skin;
         const animation::Pose pose = registry.all_of<ecs::component::Playback>(entity)
             ? posed(skin, ecs::interpolated<ecs::component::Playback>(registry, entity, alpha))
             : animation::rest(skin.skeleton);

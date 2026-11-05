@@ -6,7 +6,9 @@
 #pragma once
 
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -139,6 +141,14 @@ class Menu : public Component {
     void addItem(const boost::shared_ptr<Item>& item);
 
     /**
+     * Take every item from an index on out of the menu, for a menu whose end lists things that
+     * come and go, such as the scene's cameras. The active item is cleared if it was one of them.
+     *
+     * @param index the first item to take, which may be past the last, taking nothing
+     **/
+    void removeFrom(std::size_t index);
+
+    /**
      * Get the currently active menu level.
      * There may be a hierarchy of active menus and menu items that leads
      * all the way to the lowest active submenu.  Level points to that menu.
@@ -172,6 +182,49 @@ class Menu : public Component {
     void title(const std::string& words);
     const std::string& title() const noexcept;
 
+    /**
+     * As a menu bar's menu, the image its title on the bar shows in place of its label. Naming a
+     * different image drops what the old name resolved to.
+     *
+     * @param source the name of the image, for whatever resolves sources to images
+     **/
+    void icon(const std::string& source);
+    std::string_view icon() const;
+
+    /**
+     * @return what icon() resolved to, unset until something has resolved it
+     **/
+    const v3d::ui::Image& image() const noexcept;
+    void image(const v3d::ui::Image& resolved) noexcept;
+
+    /**
+     * As a menu bar's menu, whether a drop mark follows its title on the bar, to say a menu
+     * opens from it.
+     **/
+    void drop(bool shown) noexcept;
+    bool drop() const noexcept;
+
+    /**
+     * As a menu bar's menu, whether its title is set apart on the bar: semibold, on a pill of the
+     * widget colour, as the name of what is active.
+     **/
+    void emphasis(bool set) noexcept;
+    bool emphasis() const noexcept;
+
+    /**
+     * As a menu bar's menu, whether its title's icon is tinted the theme's accent rather than the
+     * colour of a label, as an app's mark is.
+     **/
+    void accent(bool tinted) noexcept;
+    bool accent() const noexcept;
+
+    /**
+     * As a menu bar's menu with an icon, whether its title also names it: the label, semibold,
+     * after the icon and its drop mark. A menu without an icon shows its label either way.
+     **/
+    void named(bool shown) noexcept;
+    bool named() const noexcept;
+
  private:
     /**
      * Move the active item on past any separators, in the direction of a step of 1 or -1,
@@ -190,6 +243,12 @@ class Menu : public Component {
     // level the item belongs to
     boost::shared_ptr<Item> capture_;
     std::string title_;
+    std::string icon_;
+    v3d::ui::Image image_;
+    bool drop_ = false;
+    bool emphasis_ = false;
+    bool accent_ = false;
+    bool named_ = false;
 };
 
 };  // namespace v3d::ui::component::menu

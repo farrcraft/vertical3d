@@ -5,10 +5,10 @@
 
 #include "Edit.h"
 
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/Properties.h>
 
 #include <string>
@@ -21,31 +21,31 @@ namespace v3d::editor::command {
 
 /**
  **/
-Edit::Values Edit::of(const scene::Item& item) {
-    Values made{ .name = item.name(), .pose = pose(item) };
-    if (item.kind() == scene::Item::Kind::Curve) {
-        made.style = static_cast<const scene::Curve&>(item).style();
+Edit::Values Edit::of(const scene::item::Item& item) {
+    Values made{ .name = item.name(), .pose = scene::pose(item) };
+    if (item.kind() == scene::item::Item::Kind::Curve) {
+        made.style = static_cast<const scene::item::Curve&>(item).style();
     }
     return made;
 }
 
 /**
  **/
-void Edit::apply(scene::Item* item, const Values& values) {
+void Edit::apply(scene::item::Item* item, const Values& values) {
     item->name(values.name);
     item->placement(values.pose.placement);
     switch (item->kind()) {
-        case scene::Item::Kind::Camera:
-            static_cast<scene::Camera*>(item)->lens(values.pose.lens);
+        case scene::item::Item::Kind::Camera:
+            static_cast<scene::item::Camera*>(item)->lens(values.pose.lens);
             break;
-        case scene::Item::Kind::Light:
-            static_cast<scene::Light*>(item)->emission(values.pose.emission);
+        case scene::item::Item::Kind::Light:
+            static_cast<scene::item::Light*>(item)->emission(values.pose.emission);
             break;
-        case scene::Item::Kind::Curve:
-            static_cast<scene::Curve*>(item)->style(values.style);
+        case scene::item::Item::Kind::Curve:
+            static_cast<scene::item::Curve*>(item)->style(values.style);
             break;
-        case scene::Item::Kind::Mesh:
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Group:
             break;
     }
 }
@@ -53,10 +53,10 @@ void Edit::apply(scene::Item* item, const Values& values) {
 /**
  **/
 bool Edit::same(const Values& first, const Values& second) {
-    const scene::Camera::Lens& left = first.pose.lens;
-    const scene::Camera::Lens& right = second.pose.lens;
-    const scene::Light::Emission& lit = first.pose.emission;
-    const scene::Light::Emission& other = second.pose.emission;
+    const scene::item::Camera::Lens& left = first.pose.lens;
+    const scene::item::Camera::Lens& right = second.pose.lens;
+    const scene::item::Light::Emission& lit = first.pose.emission;
+    const scene::item::Light::Emission& other = second.pose.emission;
     return first.name == second.name && v3d::editor::command::same(first.pose.placement, second.pose.placement) &&
         left.projection == right.projection && left.fov == right.fov && left.extent == right.extent &&
         left.clipping == right.clipping && lit.type == other.type && lit.colour == other.colour &&
@@ -66,7 +66,7 @@ bool Edit::same(const Values& first, const Values& second) {
 
 /**
  **/
-Edit::Edit(const boost::shared_ptr<scene::Item>& item, const Values& before, const std::string& what) :
+Edit::Edit(const boost::shared_ptr<scene::item::Item>& item, const Values& before, const std::string& what) :
     item_(item),
     before_(before),
     after_(item ? of(*item) : before),

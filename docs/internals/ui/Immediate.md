@@ -29,11 +29,14 @@ The layer keeps almost nothing between frames. These are members of the context:
 - `typing`, `edit` and `written`: the text field that has the keyboard, the line it is
   editing, and what it last wrote to the caller's string. A caller's string that differs from
   `written` was changed by the caller, and replaces the line. `escaped` says the keyboard is
-  being given up by escape, which a number takes as no change
+  being given up by escape, which a number takes as no change, and `entered` that it is being
+  given up by return. `focusNext` asks the next field drawn to take the keyboard, and `end()`
+  clears it
 - `popup`: the combo whose list is open, and what the list holds
 - `itemMin`, `itemMax` and `itemOwner`: the box of the item placed last, and which id had to
   hold the cursor last frame for `itemHovered()` to be true. `itemFinished` says an edit of it
-  ended this frame, and `place()` clears it
+  ended this frame, `itemEntered` that a return ended it, and `itemTyping` that it is a field
+  holding the keyboard. `place()` clears all three
 
 `end()` draws the open combo's list, then takes the keyboard from a field that was not drawn
 this frame, then ages out any `Retained` entry not touched for `retention` frames. The list is

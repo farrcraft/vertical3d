@@ -5,12 +5,13 @@
 
 #include "Canvas.h"
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <span>
 #include <vector>
 
@@ -209,17 +210,18 @@ float Canvas::opacity() const noexcept {
 
 /**
  **/
-void Canvas::open(const TextureHandle& texture, bool text) {
+void Canvas::open(const resource::TextureHandle& texture, bool text, const resource::TextureHandle& bands) {
     const bool clipped = clips_.clipped();
     const glm::vec4 clip = clips_.top();
 
-    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text &&
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text && batches_.back().bands == bands &&
         batches_.back().clipped == clipped && batches_.back().clip == clip) {
         return;
     }
     Batch batch;
     batch.texture = texture;
     batch.text = text;
+    batch.bands = bands;
     batch.clipped = clipped;
     batch.clip = clip;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
@@ -239,6 +241,8 @@ void Canvas::vertex(const Vertex& untransformed) {
     added.uv = untransformed.uv;
     added.colour = untransformed.colour;
     added.colour.a *= opacity();
+    added.glyph = untransformed.glyph;
+    added.contrast = untransformed.contrast;
     vertices_.push_back(added);
 }
 
@@ -257,13 +261,13 @@ void Canvas::quad(uint32_t first) {
 void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour) {
     // an unset handle means the renderer's white texture, so untextured quads all batch
     // together
-    rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
+    rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, resource::TextureHandle());
 }
 
 /**
  **/
 void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& uv0, const glm::vec2& uv1,
-    const glm::vec4& colour, const TextureHandle& texture) {
+    const glm::vec4& colour, const resource::TextureHandle& texture) {
     open(texture);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
@@ -277,7 +281,7 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 /**
  **/
 void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const Corners& colours) {
-    open(TextureHandle());
+    open(resource::TextureHandle());
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     vertex({.position = glm::vec2(min.x, min.y), .uv = glm::vec2(0.0F, 0.0F), .colour = colours.topLeft});
@@ -298,15 +302,43 @@ void Canvas::segment(const Segment& shape, const glm::vec4& colour) {
     // the side the corners are offset to, half the width long. It is the line's direction
     // turned a quarter, so for a line drawn left to right it points down the canvas, and the
     // corners go in the order rect() puts them
-    const glm::vec2 side = glm::vec2(-along.y, along.x) * (shape.width * 0.5F / length);
-    open(TextureHandle());
+    const glm::vec2 across = glm::vec2(-along.y, along.x) / length;
+    open(resource::TextureHandle());
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex({.position = shape.from - side, .uv = glm::vec2(0.0F, 0.0F), .colour = colour});
-    vertex({.position = shape.from + side, .uv = glm::vec2(0.0F, 1.0F), .colour = colour});
-    vertex({.position = shape.to + side, .uv = glm::vec2(1.0F, 1.0F), .colour = colour});
-    vertex({.position = shape.to - side, .uv = glm::vec2(1.0F, 0.0F), .colour = colour});
-    quad(first);
+    if (shape.feather <= 0.0F) {
+        const glm::vec2 side = across * (shape.width * 0.5F);
+        vertex({.position = shape.from - side, .uv = glm::vec2(0.0F, 0.0F), .colour = colour});
+        vertex({.position = shape.from + side, .uv = glm::vec2(0.0F, 1.0F), .colour = colour});
+        vertex({.position = shape.to + side, .uv = glm::vec2(1.0F, 1.0F), .colour = colour});
+        vertex({.position = shape.to - side, .uv = glm::vec2(1.0F, 0.0F), .colour = colour});
+        quad(first);
+        return;
+    }
+
+    // four lines along the segment, from one side to the other: the outer edge of a fade, the
+    // solid core's two edges, and the other fade's outer edge. Each is one vertex at each end
+    const float core = std::max(0.0F, (shape.width - shape.feather) * 0.5F);
+    const float reach = (shape.width + shape.feather) * 0.5F;
+    const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);
+    const float offsets[] = { -reach, -core, core, reach };
+    const glm::vec4 colours[] = { clear, colour, colour, clear };
+    for (std::size_t line = 0; line < std::size(offsets); line++) {
+        const glm::vec2 side = across * offsets[line];
+        vertex({.position = shape.from + side, .uv = glm::vec2(0.5F, 0.5F), .colour = colours[line]});
+        vertex({.position = shape.to + side, .uv = glm::vec2(0.5F, 0.5F), .colour = colours[line]});
+    }
+    // a quad between each line and the next
+    for (uint32_t band = 0; band + 1 < static_cast<uint32_t>(std::size(offsets)); band++) {
+        const uint32_t edge = first + (band * 2);
+        indices_.push_back(edge);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 3);
+    }
+    batches_.back().indices += static_cast<uint32_t>(std::size(offsets) - 1) * QUAD_INDICES;
 }
 
 /**
@@ -333,7 +365,7 @@ void Canvas::ring(const Ring& shape, const Blend& colours) {
         fan({.centre = centre, .radius = outer, .sides = sides, .start = start, .sweep = sweep}, colours);
         return;
     }
-    open(TextureHandle());
+    open(resource::TextureHandle());
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     const float step = sweep / static_cast<float>(sides);
@@ -370,7 +402,7 @@ void Canvas::fan(const Arc& shape, const Blend& colours) {
     if (sides < 3) {
         return;
     }
-    open(TextureHandle());
+    open(resource::TextureHandle());
 
     const uint32_t centreIndex = static_cast<uint32_t>(vertices_.size());
     vertex({.position = centre, .uv = glm::vec2(0.5F, 0.5F), .colour = colours.inner});
@@ -393,21 +425,38 @@ void Canvas::fan(const Arc& shape, const Blend& colours) {
 
 /**
  **/
-void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas) {
-    if (vertices.empty() || indices.empty()) {
+void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& atlas) {
+    if (!fits(vertices, indices)) {
         return;
     }
+    open(atlas, true);
+    append(vertices, indices);
+}
+
+/**
+ **/
+void Canvas::glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& page) {
+    if (!fits(vertices, indices)) {
+        return;
+    }
+    open(page);
+    append(vertices, indices);
+}
+
+/**
+ **/
+bool Canvas::fits(std::span<const Vertex> vertices, std::span<const uint32_t> indices) {
     // an index past the run would name a vertex this run did not add, so a run with one
     // draws nothing
     const auto outside = [&vertices](uint32_t index) {
         return index >= vertices.size();
     };
-    if (std::ranges::any_of(indices, outside)) {
-        return;
-    }
+    return !vertices.empty() && !indices.empty() && !std::ranges::any_of(indices, outside);
+}
 
-    open(atlas, true);
-
+/**
+ **/
+void Canvas::append(std::span<const Vertex> vertices, std::span<const uint32_t> indices) {
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (const Vertex& laid : vertices) {
         vertex(laid);
@@ -416,6 +465,16 @@ void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> in
         indices_.push_back(first + index);
     }
     batches_.back().indices += static_cast<uint32_t>(indices.size());
+}
+
+/**
+ **/
+void Canvas::curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& curves, const resource::TextureHandle& bands) {
+    if (!fits(vertices, indices)) {
+        return;
+    }
+    open(curves, false, bands);
+    append(vertices, indices);
 }
 
 /**

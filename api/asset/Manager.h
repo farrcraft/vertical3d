@@ -66,6 +66,7 @@ class Manager final {
      * extensions given. A second loader of the same kind replaces the first for a file whose
      * extension no loader reads, and an extension registered again moves to the new loader.
      *
+     * @param loader the loader, shared with the manager
      * @param extensions with the dot and in lower case, as ".png"; a file's own extension is
      *        lowered before it is looked up
      **/

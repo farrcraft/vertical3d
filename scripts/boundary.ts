@@ -1,57 +1,60 @@
-// Checks the lines a changeset adds for boundary input converted without a check.
-//
-// A value read from a file, the command line or a caller goes through the checked helpers.
-// api/type/Checked.h makes a float into a count or an integer, and api/asset/Json.h reads a
-// member of a JSON object. This script reports two shapes that bypass them, on added lines only:
-//
-//   value-to     any boost::json::value_to<...>. The helpers test a value's type before they
-//                convert it, and value_to throws when the type is wrong.
-//   float-cast   a static_cast to an integer type whose operand contains something that gives a
-//                float: floor, ceil, round, trunc, fmod and their kin, sqrt or pow, .value(),
-//                as_double(), a cast to float or double, or a float literal.
-//
-// Lines in the helper files themselves are not checked, and neither is a test file: a test
-// converts values it chose, not input. Comments and the insides of string and character
-// literals are not read. A line inside a block comment is known from the whole file, not only
-// from the lines the change added.
-//
-// A line the heuristic reports and that is safe for a reason the text does not show carries a
-// trailing comment naming the reason, and is then accepted:
-//
-//   const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite
-//
-// The reason has to say why the conversion is defined. A clamp alone is not a reason, because
-// std::clamp passes a NaN through.
-//
-// Rule float-cast is a heuristic. It reads the text of the operand, not its type, so it cannot
-// see:
-//   - a float held in a plain variable, such as static_cast<int>(width) where width is a float;
-//   - a C-style cast, a functional cast such as int(x), or an implicit narrowing conversion;
-//   - a call that returns a float without a name on the list above.
-// It also reports an operand that names one of those things without producing a float, such as
-// static_cast<int>(count.value()) where count holds an integer, or a float that is clamped
-// before the cast. A report is a line to read, not a proof of a defect.
-//
-// Usage: node scripts/boundary.ts [--base REF]
-//
-// The changeset is every commit since the merge base with origin/main, or with main when there
-// is no origin/main, plus the working tree and untracked source files. --base names another
-// branch or commit, and the changeset starts at its merge base with HEAD. A --base that names no
-// commit, or that shares no history with HEAD, stops the script with exit status 2.
-//
-// Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
-// report, and 0 otherwise.
-//
-// Node runs this file directly: it uses only node: modules, scripts/lexer.ts, scripts/entry.ts and
-// type annotations Node can strip.
+/**
+ * Checks the lines a changeset adds for boundary input converted without a check.
+ *
+ * A value read from a file, the command line or a caller goes through the checked helpers.
+ * api/type/Checked.h makes a float into a count or an integer, and api/asset/Json.h reads a
+ * member of a JSON object. This script reports two shapes that bypass them, on added lines only:
+ *
+ *   value-to     any boost::json::value_to<...>. The helpers test a value's type before they
+ *                convert it, and value_to throws when the type is wrong.
+ *   float-cast   a static_cast to an integer type whose operand contains something that gives a
+ *                float: floor, ceil, round, trunc, fmod and their kin, sqrt or pow, .value(),
+ *                as_double(), a cast to float or double, or a float literal.
+ *
+ * Lines in the helper files themselves are not checked, and neither is a test file: a test
+ * converts values it chose, not input. Comments and the insides of string and character
+ * literals are not read. A line inside a block comment is known from the whole file, not only
+ * from the lines the change added.
+ *
+ * A line the heuristic reports and that is safe for a reason the text does not show carries a
+ * trailing comment naming the reason, and is then accepted:
+ *
+ *   const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite
+ *
+ * The reason has to say why the conversion is defined. A clamp alone is not a reason, because
+ * std::clamp passes a NaN through.
+ *
+ * Rule float-cast is a heuristic. It reads the text of the operand, not its type, so it cannot
+ * see:
+ *   - a float held in a plain variable, such as static_cast<int>(width) where width is a float;
+ *   - a C-style cast, a functional cast such as int(x), or an implicit narrowing conversion;
+ *   - a call that returns a float without a name on the list above.
+ * It also reports an operand that names one of those things without producing a float, such as
+ * static_cast<int>(count.value()) where count holds an integer, or a float that is clamped
+ * before the cast. A report is a line to read, not a proof of a defect.
+ *
+ * Usage: node scripts/boundary.ts [--base REF]
+ *
+ * The changeset is every commit since the merge base with origin/main, or with main when there
+ * is no origin/main, plus the working tree and untracked source files. --base names another
+ * branch or commit, and the changeset starts at its merge base with HEAD. A --base that names no
+ * commit, or that shares no history with HEAD, stops the script with exit status 2.
+ *
+ * Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
+ * report, and 0 otherwise.
+ *
+ * Node runs this file directly: it uses only node: modules, the gates' modules in scripts/lib,
+ * and type annotations Node can strip.
+ */
 
-import { spawnSync } from 'node:child_process';
-import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { codeLines } from './lexer.ts';
+import { options, report, runGate } from './lib/cli.ts';
+import { changeSince } from './lib/diff.ts';
+import { mergeBase } from './lib/git.ts';
+import { codeLines } from './lib/lexer.ts';
+import { ROOT, isGenerated, isTestPath, isThirdParty } from './lib/tree.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
 export type Line = { path: string; number: number; text: string; code: string };
@@ -65,11 +68,6 @@ const HELPERS = new Set([
     'api/asset/Json.h',
     'api/asset/Json.cpp',
 ]);
-
-const SKIPPED = ['vendor/', 'demos/voxel/src/noise/', 'out/', 'vcpkg_installed/'];
-
-/** A test file, which converts values it chose rather than input. */
-const TEST = /(^|\/)tests\//;
 
 /** The comment that accepts a reported line, with the reason the conversion is defined. */
 const CHECKED = /\/\/\s*checked:\s*\S/;
@@ -92,151 +90,29 @@ const FLOATY = new RegExp([
     '(?<![\\w.])\\d+[fF](?![\\w.])',
 ].join('|'));
 
-/**
- * The options that make git print a diff this script can read, whatever the user's
- * configuration. They fix the a/ and b/ prefixes, and turn off colour, external and
- * text-converting drivers, and rename detection.
- */
-const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames'];
-
-/** Runs git and returns its standard output, or null when it fails. */
-function git(...args: string[]): string | null {
-    const result = spawnSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30 });
-    if (result.status !== 0 || result.error) {
-        return null;
-    }
-    return result.stdout;
-}
-
-function stop(message: string): never {
-    process.stderr.write('boundary.ts: ' + message + '\n');
-    process.exit(2);
-}
-
-/** Returns the commit the changeset is measured from. */
-function mergeBase(override: string | null): string {
-    if (override !== null) {
-        if (git('rev-parse', '--verify', '--quiet', override + '^{commit}') === null) {
-            stop(`--base ${override}: not a commit`);
-        }
-        const base = git('merge-base', 'HEAD', override);
-        return base === null ? stop(`--base ${override}: no merge base with HEAD`) : base.trim();
-    }
-    // the changeset starts where it left the branch it is compared with, so commits that branch
-    // has gained since are not counted as the changeset's
-    for (const branch of ['origin/main', 'main']) {
-        const base = git('merge-base', 'HEAD', branch);
-        if (base) {
-            return base.trim();
-        }
-    }
-    return stop('no merge base with origin/main or main; pass --base REF');
-}
-
-/** The escapes git's C-style quoting of a path uses, other than an octal byte. */
-const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
-
-/**
- * Returns the path a diff header line such as "+++ b/name" names, or null for /dev/null. Git
- * quotes a name that holds a control character, a quote, a backslash or a byte above 127, and
- * ends an unquoted name that holds a space with a tab.
- */
-function headerPath(header: string): string | null {
-    let name = header.slice(4);
-    const quoted = /^"((?:[^"\\]|\\.)*)"/.exec(name);
-    if (quoted) {
-        const bytes: number[] = [];
-        const body = quoted[1];
-        for (let index = 0; index < body.length; index++) {
-            if (body[index] !== '\\') {
-                bytes.push(...Buffer.from(body[index], 'utf8'));
-            } else if (/[0-7]{3}/.test(body.slice(index + 1, index + 4))) {
-                bytes.push(parseInt(body.slice(index + 1, index + 4), 8));
-                index += 3;
-            } else {
-                index += 1;
-                bytes.push(ESCAPES[body[index]] ?? body.charCodeAt(index));
-            }
-        }
-        name = Buffer.from(bytes).toString('utf8');
-    } else {
-        name = name.replace(/\t$/, '');
-    }
-    return name.startsWith('b/') ? name.slice(2) : null;
-}
-
-/** Returns every added line in a C++ source or header, with its path and line number. */
+/** Every line a change adds to a C++ source or header since the base, with its code. */
 function addedLines(base: string): Line[] {
-    const diff = git('diff', '--unified=0', ...DIFF_OPTIONS, base);
-    if (diff === null) {
-        stop('git diff against ' + base + ' failed');
-    }
     const added: Array<{ path: string; number: number; text: string }> = [];
-    let path: string | null = null;
-    let number = 0;
-    // the lines left in the current hunk, from its header; a line inside a hunk is never a file
-    // header, even when it is an added line that starts "++ "
-    let oldLeft = 0;
-    let newLeft = 0;
-    for (const raw of diff.split(/\r?\n/)) {
-        if (oldLeft > 0 || newLeft > 0) {
-            if (raw.startsWith('+')) {
-                if (path !== null) {
-                    added.push({ path, number, text: raw.slice(1) });
-                }
-                number += 1;
-                newLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith('-')) {
-                oldLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith(' ')) {
-                number += 1;
-                oldLeft -= 1;
-                newLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith('\\')) {
-                continue;
-            }
-            oldLeft = 0;
-            newLeft = 0;
-        }
-        if (raw.startsWith('+++ ')) {
-            path = headerPath(raw);
-            if (path !== null && !SOURCE.test(path)) {
-                path = null;
-            }
-        } else if (raw.startsWith('@@')) {
-            const match = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(raw);
-            number = match ? Number(match[2]) : 0;
-            oldLeft = match ? Number(match[1] ?? 1) : 0;
-            newLeft = match ? Number(match[3] ?? 1) : 0;
-        }
-    }
-    const untracked = git('ls-files', '-z', '--others', '--exclude-standard') ?? '';
-    for (const name of untracked.split('\0')) {
-        if (!SOURCE.test(name)) {
+    const contents = new Map<string, string>();
+    for (const [path, lines] of changeSince(base).added) {
+        if (!SOURCE.test(path)) {
             continue;
         }
         let content: string;
         try {
-            content = readFileSync(name, 'utf8');
-        } catch {
-            continue;
-        }
-        content.split(/\r?\n/).forEach((text, index) => added.push({ path: name, number: index + 1, text }));
-    }
-    return attachCode(added, (name) => {
-        try {
-            return readFileSync(name, 'utf8');
+            content = readFileSync(path, 'utf8');
         } catch {
             // a file the diff names and the working tree lacks has no added lines to read
-            return '';
+            continue;
         }
-    });
+        contents.set(path, content);
+        content.split(/\r?\n/).forEach((text, index) => {
+            if (lines === null || lines.has(index + 1)) {
+                added.push({ path, number: index + 1, text });
+            }
+        });
+    }
+    return attachCode(added, (path) => contents.get(path) ?? '');
 }
 
 /**
@@ -281,7 +157,8 @@ export function check(lines: Line[]): Report[] {
     const reports: Report[] = [];
     lines.forEach((line, position) => {
         const { path, number, text, code } = line;
-        if (HELPERS.has(path) || !SOURCE.test(path) || TEST.test(path) || SKIPPED.some((prefix) => path.startsWith(prefix))) {
+        // a test converts values it chose, not input
+        if (HELPERS.has(path) || !SOURCE.test(path) || isTestPath(path) || isThirdParty(path) || isGenerated(path)) {
             return;
         }
         if (CHECKED.test(text)) {
@@ -296,11 +173,14 @@ export function check(lines: Line[]): Report[] {
         for (const cast of code.matchAll(CAST)) {
             let { body, closed } = operand(code, (cast.index ?? 0) + cast[0].length - 1);
             // an operand that runs onto the next line is read from the added lines that follow
-            let following = position + 1;
-            while (!closed && following < lines.length && lines[following].path === path &&
-                lines[following].number === lines[following - 1].number + 1) {
-                ({ body, closed } = operand('(' + body + lines[following].code, 0));
-                following += 1;
+            let previous = number;
+            for (let following = position + 1; !closed; following++) {
+                const next = lines[following];
+                if (next === undefined || next.path !== path || next.number !== previous + 1) {
+                    break;
+                }
+                ({ body, closed } = operand('(' + body + next.code, 0));
+                previous = next.number;
             }
             if (FLOATY.test(body)) {
                 reports.push({ path, number, rule: 'float-cast', excerpt: text.trim() });
@@ -312,33 +192,11 @@ export function check(lines: Line[]): Report[] {
 }
 
 function main(): number {
-    const args = process.argv.slice(2);
-    const usage = 'usage: node scripts/boundary.ts [--base REF]';
-    let base: string | null = null;
-    for (let index = 0; index < args.length; index++) {
-        if (args[index] === '--base' && index + 1 < args.length) {
-            base = args[++index];
-        } else if (args[index].startsWith('--base=')) {
-            base = args[index].slice('--base='.length);
-        } else {
-            stop(usage);
-        }
-        if (base.trim() === '') {
-            stop(usage);
-        }
-    }
-    const root = git('rev-parse', '--show-toplevel');
-    if (root === null) {
-        stop('not inside a git repository');
-    }
-    process.chdir(root.trim());
-    const reports = check(addedLines(mergeBase(base)));
-    for (const report of reports) {
-        process.stdout.write(`${report.path}:${report.number}: ${report.rule}: ${report.excerpt}\n`);
-    }
-    return reports.length > 0 ? 1 : 0;
+    const { values } = options('usage: node scripts/boundary.ts [--base REF]', { base: { type: 'string' } });
+    process.chdir(ROOT);
+    const found = check(addedLines(mergeBase(values.base)))
+        .map(({ path, number, rule, excerpt }) => ({ path, line: number, rule, message: excerpt }));
+    return report(found, 'converts boundary input without a check. Use the helpers in api/type/Checked.h and api/asset/Json.h, or name why the conversion is defined in a // checked: comment.');
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

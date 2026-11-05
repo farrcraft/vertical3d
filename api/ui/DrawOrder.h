@@ -24,6 +24,7 @@ namespace v3d::ui {
  * means a control on a hidden page is neither picked nor focused, and a child is picked
  * where it was drawn.
  *
+ * @param component the component whose children are visited
  * @param visit called with each live child, as a boost::shared_ptr<Component>
  **/
 template <typename Visit>

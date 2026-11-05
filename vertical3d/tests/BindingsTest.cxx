@@ -7,7 +7,7 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/Controller.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -15,6 +15,7 @@
 
 #include <fstream>
 #include <initializer_list>
+#include <ios>
 #include <set>
 #include <sstream>
 #include <string>
@@ -68,6 +69,19 @@ BOOST_AUTO_TEST_CASE(every_binding_sends_a_handled_command) {
 }
 
 /**
+ * The declarations the editor ships are those of the commands it registers, so a script an
+ * author's editor checks against them can run.
+ **/
+BOOST_AUTO_TEST_CASE(the_shipped_declarations_match_the_commands) {
+    const v3d::editor::Controller engine("");
+    const std::ifstream file("data/scripts/editor.d.ts", std::ios::binary);
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+    BOOST_CHECK(text.str() == engine.declarations());
+}
+
+/**
  * The dialogs the editor puts up, the file chooser, the prompt and the command search, send
  * only commands the editor registers. A button that sent anything else would leave its dialog
  * up for good.
@@ -96,7 +110,8 @@ BOOST_AUTO_TEST_CASE(every_dialog_button_sends_a_handled_command) {
 
 /**
  * Each fixed view the editor offers names a camera profile the editor ships, and the menu's camera
- * items are those views and the projection switch, each handled.
+ * items are those views, the projection switch and the lock, each handled. The scene's cameras are
+ * added to the menu as the editor runs.
  **/
 BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
     const std::ifstream cameras("data/cameras.json");
@@ -107,14 +122,15 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
     BOOST_REQUIRE(profiles.load(boost::json::parse(text.str()).as_object()));
 
     const v3d::editor::Controller engine("");
-    std::set<std::string> offered{"view::camera::orthographic"};
-    for (const v3d::editor::control::AreaChrome::FixedView& view : v3d::editor::control::AreaChrome::fixedViews()) {
+    std::set<std::string> offered{ "view::camera::orthographic", "view::camera::lock" };
+    for (const v3d::editor::control::chrome::Area::FixedView& view : v3d::editor::control::chrome::Area::fixedViews()) {
         BOOST_TEST(profiles.has(view.profile), "no camera profile is called " << view.profile);
         offered.insert(view.command);
     }
     for (const std::string& command : offered) {
         BOOST_TEST(engine.commands().has(command), "nothing handles " << command);
     }
+    BOOST_TEST(engine.commands().has("view::camera::scene"));
 
     const std::ifstream ui("data/vgui.json");
     BOOST_REQUIRE(ui.is_open());
@@ -145,7 +161,7 @@ BOOST_AUTO_TEST_CASE(every_header_command_is_handled) {
     BOOST_REQUIRE(views.sync());
 
     std::vector<std::string> commands;
-    sent(v3d::editor::control::AreaChrome::document(views, v3d::editor::selection::SelectMask::Object).at("containers"), &commands);
+    sent(v3d::editor::control::chrome::Area::document(views, v3d::editor::selection::SelectMask::Object).at("containers"), &commands);
     BOOST_TEST(commands.size() >= 30U);
     const v3d::editor::Controller engine("");
     for (const std::string& command : commands) {

@@ -29,6 +29,7 @@ template <typename T>
 class Track final {
  public:
     /**
+     * A value and the time it is reached, in the same unit as the period.
      **/
     struct Key final {
         float time;

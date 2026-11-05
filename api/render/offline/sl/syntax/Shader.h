@@ -18,6 +18,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * One shader parsed from a source: its type, name, parameters, functions and body.
+ **/
 class Shader final {
  public:
     /**

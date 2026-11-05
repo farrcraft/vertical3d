@@ -11,6 +11,7 @@
 
 namespace v3d::image::reader {
 /**
+ * Reads a tga file into an image.
  **/
 class Tga : public v3d::image::Reader {
  public:

@@ -5,8 +5,8 @@
 
 #include "LightCodec.h"
 
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <cstdint>
 #include <string>
@@ -24,8 +24,8 @@ namespace v3d::editor::store {
 
 /**
  **/
-scene::Item::Kind LightCodec::kind() const noexcept {
-    return scene::Item::Kind::Light;
+scene::item::Item::Kind LightCodec::kind() const noexcept {
+    return scene::item::Item::Kind::Light;
 }
 
 /**
@@ -42,17 +42,17 @@ std::int64_t LightCodec::version() const noexcept {
 
 /**
  **/
-boost::json::object LightCodec::payload(const scene::Item& item) const {
-    const scene::Light::Emission& emission = static_cast<const scene::Light&>(item).emission();
+boost::json::object LightCodec::payload(const scene::item::Item& item) const {
+    const scene::item::Light::Emission& emission = static_cast<const scene::item::Light&>(item).emission();
     boost::json::object payload;
     switch (emission.type) {
-        case scene::Light::Type::Point:
+        case scene::item::Light::Type::Point:
             payload["type"] = "point";
             break;
-        case scene::Light::Type::Distant:
+        case scene::item::Light::Type::Distant:
             payload["type"] = "distant";
             break;
-        case scene::Light::Type::Spot:
+        case scene::item::Light::Type::Spot:
             payload["type"] = "spot";
             break;
     }
@@ -65,18 +65,18 @@ boost::json::object LightCodec::payload(const scene::Item& item) const {
 
 /**
  **/
-boost::shared_ptr<scene::Item> LightCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
+boost::shared_ptr<scene::item::Item> LightCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
     if (!exactly(payload, { "type", "colour", "intensity", "cone", "delta" }, problem)) {
         return nullptr;
     }
-    scene::Light::Emission emission;
+    scene::item::Light::Emission emission;
     const std::string_view type = word(payload.at("type"));
     if (type == "point") {
-        emission.type = scene::Light::Type::Point;
+        emission.type = scene::item::Light::Type::Point;
     } else if (type == "distant") {
-        emission.type = scene::Light::Type::Distant;
+        emission.type = scene::item::Light::Type::Distant;
     } else if (type == "spot") {
-        emission.type = scene::Light::Type::Spot;
+        emission.type = scene::item::Light::Type::Spot;
     } else {
         *problem = "its type is not point, distant or spot";
         return nullptr;
@@ -92,7 +92,7 @@ boost::shared_ptr<scene::Item> LightCodec::read(const boost::json::object& paylo
         *problem = "its emission is out of range";
         return nullptr;
     }
-    const boost::shared_ptr<scene::Light> light = boost::make_shared<scene::Light>();
+    const boost::shared_ptr<scene::item::Light> light = boost::make_shared<scene::item::Light>();
     light->emission(emission);
     return light;
 }

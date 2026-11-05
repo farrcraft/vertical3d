@@ -7,7 +7,7 @@
 #include "RIBHandler.h"
 #include "Renderer.h"
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Requests.h>
 #include <moya/libmoya/ri/internal/Converter.h>
 
@@ -188,23 +188,23 @@ RtInt RiLastError;
 // RI subroutines. The RenderMan Interface sets every signature below, including the order of
 // parameters that share a type, so each that the swappable parameter check reports is marked.
 RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
-    return v3d::render::offline::filter(v3d::render::offline::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
+    return v3d::render::offline::film::filter(v3d::render::offline::film::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtFloat RiBoxFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
-    return v3d::render::offline::filter(v3d::render::offline::Filter::Box, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
+    return v3d::render::offline::film::filter(v3d::render::offline::film::Filter::Box, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtFloat RiTriangleFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
-    return v3d::render::offline::filter(v3d::render::offline::Filter::Triangle, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
+    return v3d::render::offline::film::filter(v3d::render::offline::film::Filter::Triangle, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtFloat RiCatmullRomFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
-    return v3d::render::offline::filter(v3d::render::offline::Filter::CatmullRom, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
+    return v3d::render::offline::film::filter(v3d::render::offline::film::Filter::CatmullRom, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
-    return v3d::render::offline::filter(v3d::render::offline::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
+    return v3d::render::offline::film::filter(v3d::render::offline::film::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -329,11 +329,11 @@ RtVoid RiPixelVariance(RtFloat variation) {
 
 RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
     handler().pixelSamples(glm::uvec2(
-        v3d::render::offline::sampleCount(xsamples), v3d::render::offline::sampleCount(ysamples)));
+        v3d::render::offline::film::sampleCount(xsamples), v3d::render::offline::film::sampleCount(ysamples)));
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-    if (const std::optional<v3d::render::offline::Filter> filter = Converter::filter(filterfunc, xwidth, ywidth)) {
+    if (const std::optional<v3d::render::offline::film::Filter> filter = Converter::filter(filterfunc, xwidth, ywidth)) {
         handler().pixelFilter(*filter, xwidth, ywidth);
     }
 }

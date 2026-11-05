@@ -6,7 +6,7 @@
 #include "Import.h"
 
 #include <vertical3d/src/scene/Import.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -32,7 +32,7 @@ void Import::redo() {
     }
     scene_->deselect();
     for (std::size_t index = 0; index < imported_.items.size(); index++) {
-        const boost::shared_ptr<scene::Item>& item = imported_.items[index];
+        const boost::shared_ptr<scene::item::Item>& item = imported_.items[index];
         scene_->add(item);
         item->selected(!imported_.parents[index]);
         if (imported_.parents[index]) {

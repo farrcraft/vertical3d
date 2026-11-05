@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/type/Transform.h>
+#include <vertical3d/src/command/Keyed.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Transform.h>
@@ -17,7 +18,8 @@
 #include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/Translate.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -275,7 +277,13 @@ void Transform::commit() {
         changes.push_back({.item = items[index], .before = before[index], .after = after});
     }
     if (moved) {
-        commands_->push(boost::make_shared<command::Transform>(changes, modeName(mode_)));
+        std::vector<command::Keyed::Change> keyed;
+        for (const command::Transform::Change& change : changes) {
+            scene::Pose was = scene::pose(*change.item);
+            was.placement = change.before;
+            keyed.push_back({ .item = change.item, .before = was, .after = scene::pose(*change.item) });
+        }
+        commands_->push(command::Keyed::record(scene_, boost::make_shared<command::Transform>(changes, modeName(mode_)), keyed));
         return;
     }
     // a drag that measured nothing still wrote each placement, from where the evaluation put
@@ -372,7 +380,7 @@ void Transform::button(unsigned int button, bool pressed, const glm::vec2& posit
             outlines_.push_back(command::Vertex::Outline::of(part));
         }
     } else {
-        for (const boost::shared_ptr<scene::Item>& item : target.items()) {
+        for (const boost::shared_ptr<scene::item::Item>& item : target.items()) {
             before_.push_back(item->placement());
         }
     }

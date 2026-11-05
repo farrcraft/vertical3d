@@ -21,9 +21,9 @@
 #include "Renderer.h"
 #include "Value.h"
 
-namespace v3d::render::offline::sl {
+namespace v3d::render::offline::sl::compiler {
 class Signature;
-};  // namespace v3d::render::offline::sl
+};  // namespace v3d::render::offline::sl::compiler
 
 namespace v3d::render::offline::sl::runtime::internal {
 class Site;
@@ -374,7 +374,7 @@ class Machine final {
      * the shader's s and t when it was given only the name. Null, and reported once, when the
      * renderer cannot read it.
      **/
-    const Texture* texture(const std::vector<const Value*> & given, Coordinates* coordinates);
+    const texture::Texture* texture(const std::vector<const Value*> & given, Coordinates* coordinates);
     /**
      * transmission() and trace(), which the renderer computes along a line between two
      * points. When the renderer cannot answer, transmission() lets all the light through,
@@ -386,7 +386,7 @@ class Machine final {
      *
      * @return false when the built-in is not one of those, and the machine computes it
      **/
-    bool answered(const Signature & signature, const Instruction & instruction,
+    bool answered(const compiler::Signature & signature, const Instruction & instruction,
         const std::vector<const Value*> & given, Value* answer);
     /**
      * A message passing call: the renderer reads the named shader's output parameter, and the

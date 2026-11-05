@@ -5,7 +5,7 @@
 
 #include "Writer.h"
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <array>
 #include <charconv>
@@ -182,8 +182,8 @@ void Writer::pixelSamples(const glm::uvec2 & samples) {
     end();
 }
 
-void Writer::pixelFilter(Filter filter, float xwidth, float ywidth) {
-    start("PixelFilter").text(filterName(filter)).number(xwidth).number(ywidth).end();
+void Writer::pixelFilter(film::Filter filter, float xwidth, float ywidth) {
+    start("PixelFilter").text(film::filterName(filter)).number(xwidth).number(ywidth).end();
 }
 
 void Writer::pixelVariance(float variation) {

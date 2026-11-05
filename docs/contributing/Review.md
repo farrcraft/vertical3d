@@ -17,7 +17,7 @@ is for anyone reviewing a change, and for the reviewer agents in `.claude/agents
   unchanged introduces nothing. Rewriting a function makes its defects the change's, unless the
   reviewer can show the old function had the same defect, in which case it goes on the debt list.
 
-Background: [ADR-0083](../adr/0083-review-a-changeset-answers-for-what-it-introduces.md)
+Background: [ADR-0083](../adr/project/0083-review-a-changeset-answers-for-what-it-introduces.md)
 
 ## What a reviewer reads
 
@@ -35,7 +35,7 @@ A review that says "no findings" without that line has not shown it covered the 
 | Field | Meaning |
 |---|---|
 | Class | One of the classes below |
-| Severity | Major, if the change can produce a wrong result, a crash, a leak or undefined behaviour in a reachable case. Minor otherwise. For the review gates in `scripts/`, a case is reachable when it arises in their supported environment, which [Linting.md](Linting.md#the-review-gates-environment) states |
+| Severity | Major, if the change can produce a wrong result, a crash, a leak or undefined behaviour in a reachable case. Minor otherwise. For the review gates in `scripts/`, a case is reachable when it arises in their supported environment, which [Gates.md](Gates.md#the-environment) states |
 | Where | File and line |
 | Defect and failure | What is wrong, and a concrete case where it goes wrong |
 | Siblings | The other sites of the same pattern, and whether each has the defect |
@@ -48,7 +48,7 @@ reviewer reports them only when the tool missed one.
 | Class | What it covers | Checked by |
 |---|---|---|
 | **Boundary input** | A value from a file, the command line or a caller converted without a check: a float made an integer, a JSON value read as a string without testing its type, a count used against a buffer, a value that is not finite | `scripts/boundary.ts` on added lines, and review |
-| **Drift** | A comment or document that no longer matches the code, or a claim a change makes that the code does not keep | `scripts/librarytable.ts` for the table of libraries, and review |
+| **Drift** | A comment or document that no longer matches the code, or a claim a change makes that the code does not keep | `scripts/librarytable.ts` for the table of libraries, `scripts/readmes.ts` for the READMEs, and review |
 | **Prose** | The writing rules in [Conventions.md](Conventions.md#writing): sentence length, openers, inverted sentences, figures of speech, lines extended past the wrap | `scripts/prose.ts`, on the lines a change adds |
 | **Weak test** | A test that would pass without the code it claims to test | `scripts/failsfirst.ts`, and review |
 | **Cleanup** | An object a constructor made before it threw, a null a function was given, a destructor that can throw, a resource never released | Review |

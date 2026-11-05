@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstdint>
 #include <span>
@@ -56,6 +56,12 @@ class Canvas final {
         glm::vec2 position;
         glm::vec2 uv;
         glm::vec4 colour;
+        /**
+         * Where a curve glyph's data starts among its bands, or with the high bit set where a
+         * colour program starts, or a distance field's ramp. Every other quad leaves it 0.
+         **/
+        uint32_t glyph = 0;
+        float contrast = -1.0F;  /**< for text, how much its coverage is strengthened, from 0 to 1. Below 0 for what is not text **/
     };
 
     /**
@@ -65,8 +71,9 @@ class Canvas final {
     struct Batch final {
         Batch() noexcept;
 
-        TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        resource::TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         bool text;              /**< whether the run samples a distance field **/
+        resource::TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
         bool clipped;           /**< whether the run is cut to clip **/
         glm::vec4 clip;         /**< the rectangle it is cut to: min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
@@ -105,6 +112,7 @@ class Canvas final {
      *
      * @param size how wide and tall the space is, in its own units. Zero in either goes
      *        back to drawing in pixels
+     * @param fit how the space maps onto the canvas when their aspects differ
      **/
     void space(const glm::vec2& size, Fit fit);
 
@@ -205,17 +213,21 @@ class Canvas final {
      * An untextured rectangle, drawn against the renderer's white texture.
      * @param min the top left corner in pixels
      * @param max the bottom right corner in pixels
+     * @param colour the fill colour
      **/
     void rect(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour);
 
     /**
      * A rectangle sampling a region of a texture.
+     * @param min the top left corner in pixels
+     * @param max the bottom right corner in pixels
      * @param uv0 the texture coordinate at min
      * @param uv1 the texture coordinate at max
      * @param colour multiplied with what is sampled, so white leaves the texture alone
+     * @param texture the texture to sample. An unset handle samples the renderer's white texture
      **/
     void rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture);
+        const glm::vec4& colour, const resource::TextureHandle& texture);
 
     /**
      * The colour at each corner of a rectangle, which blend across it.
@@ -238,7 +250,10 @@ class Canvas final {
 
     /**
      * A filled circle, as a fan of triangles.
+     * @param centre the centre in pixels
+     * @param radius the radius in pixels
      * @param sides how many segments to approximate it with
+     * @param colour the fill colour
      **/
     void circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour);
 
@@ -302,11 +317,17 @@ class Canvas final {
      * Its long sides run parallel to the line from one point to the other, half the width
      * either side of it. Its ends are square and stop at the two points. A segment whose
      * points are the same, or whose width is not more than zero, draws nothing.
+     *
+     * A feather smooths the long sides. Each fades to nothing across the feather, which is
+     * centred on the side, so the band covers as much as a hard one of the same width. A line
+     * narrower than the feather has no solid core and fades from its middle. Its ends stay hard.
+     * A segment with a feather is three quads, across it.
      **/
     struct Segment {
         glm::vec2 from{0.0F};
         glm::vec2 to{0.0F};
         float width = 0.0F;
+        float feather = 0.0F;
     };
 
     void segment(const Segment& shape, const glm::vec4& colour);
@@ -315,14 +336,43 @@ class Canvas final {
      * Append text that has already been laid out, as vertices and the triangles over them.
      *
      * The run is drawn against the atlas the glyphs were packed into, and is marked as text,
-     * so it never merges with a picture that samples the same texture. Laying the text out is
-     * the caller's job.
+     * so it never merges with a picture that samples the same texture. The atlas holds distance
+     * fields. A vertex whose glyph field is 0 draws the glyph's edge, and one whose glyph field
+     * is a ramp from fieldRamp() draws an effect, such as an outline, a shadow or a glow. Laying
+     * the text out is the caller's job.
      *
-     * @param vertices positions, atlas coordinates and colours, copied rather than kept
+     * @param vertices positions, atlas coordinates, colours and ramps, copied rather than kept
      * @param indices three per triangle, each naming one of these vertices
      * @param atlas the texture the glyphs were packed into
      **/
-    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
+    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& atlas);
+
+    /**
+     * Append coverage glyphs that have already been laid out, as vertices and the triangles over
+     * them, sampling a page whose alpha is each glyph's coverage. A vertex whose contrast is 0 or
+     * more is text, and its coverage is corrected to look the same weight in any target. The
+     * run joins pictures of the same page.
+     *
+     * @param vertices positions, page coordinates, colours and contrasts, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
+     * @param page the texture holding the glyphs' coverage
+     **/
+    void glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& page);
+
+    /**
+     * Append glyphs drawn from their curves, as vertices and the triangles over them.
+     *
+     * Each vertex's uv is its place in em units, y upwards, in the glyph whose data starts at
+     * its glyph field among the bands. The fragment shader finds each pixel's coverage from the
+     * curves that cross it, at any size and under any transform. The run never merges with one
+     * that draws another way.
+     *
+     * @param vertices positions, em coordinates, colours and glyphs, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
+     * @param curves the texture of float texels holding the glyphs' curves
+     * @param bands the texture of float texels holding each glyph's bands
+     **/
+    void curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& curves, const resource::TextureHandle& bands);
 
     /**
      * @return the vertex stream, in the layout the quad pipeline declares
@@ -354,12 +404,22 @@ class Canvas final {
     /**
      * Start a batch, or extend the open one when it already draws the same way.
      *
-     * The texture, the text flag and the clip rectangle all have to match. The fragment
+     * The texture, the text flag, the bands and the clip rectangle all have to match. The fragment
      * shader treats a text batch's texels as distances, so merging one with a run of
      * sprites would threshold the sprites. A scissor belongs to a whole draw, so two runs
      * cut differently cannot be one.
      **/
-    void open(const TextureHandle& texture, bool text = false);
+    void open(const resource::TextureHandle& texture, bool text = false, const resource::TextureHandle& bands = resource::TextureHandle());
+
+    /**
+     * @return whether a run laid out by the caller has triangles, and names only its own vertices
+     **/
+    static bool fits(std::span<const Vertex> vertices, std::span<const uint32_t> indices);
+
+    /**
+     * Add a run laid out by the caller to the open batch, its indices moved past what is there.
+     **/
+    void append(std::span<const Vertex> vertices, std::span<const uint32_t> indices);
 
     /**
      * Add a vertex with the current transform applied.
