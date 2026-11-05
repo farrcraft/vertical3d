@@ -18,6 +18,9 @@ concurrency:
   group: portable-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   clang:
     runs-on: ubuntu-26.04

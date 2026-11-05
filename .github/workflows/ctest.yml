@@ -18,6 +18,9 @@ concurrency:
   group: ctest-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: windows-latest

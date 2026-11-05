@@ -291,3 +291,15 @@ path in this repository, is exempt. To find the sha for a release, read the comm
 points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
 the tag is annotated. Updating an action means changing both the sha and the comment.
 
+**Every workflow states the permissions of its token.** A workflow that states none gets the
+repository's defaults, which can write. A workflow that only reads the checkout says so at the
+top:
+
+```yaml
+permissions:
+  contents: read
+```
+
+A job that needs more names it in a `permissions:` block of its own, as `codeql.yml` does to
+write its findings and `docs.yml` does to publish. CodeQL reports a workflow with no block.
+

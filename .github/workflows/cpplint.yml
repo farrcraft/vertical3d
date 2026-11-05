@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   cpplint:
     runs-on: ubuntu-26.04
