@@ -335,6 +335,9 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0165](project/0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product |
 | [0166](project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux |
+| [0175](project/0175-releases-semantic-versions-from-0-1-0.md) | Releases: semantic versions from 0.1.0 |
+| [0177](project/0177-releases-a-hand-written-changelog.md) | Releases: a hand-written changelog |
+| [0178](project/0178-releases-a-tag-on-main-starts-a-release.md) | Releases: a tag on main starts a release |
 
 ### rendering
 
