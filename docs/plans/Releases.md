@@ -90,7 +90,7 @@ by the owner before the step that builds it starts.
 | [1](#step-1--apps-find-their-data-from-the-install) | Apps find their data from the install | `api/engine`, apps | — | done |
 | [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | done |
 | [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | done |
-| [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | open |
+| [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | done |
 | [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | open |
 | [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | open |
 | [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | open |
@@ -210,6 +210,11 @@ matrix itself first runs on the branch's pull request.
 fixed in this step.
 
 ### Step 4 — The demo assets
+
+**Done.** The owner made pong's sounds and tetris's pieces for the project, so they are under its
+MIT licence. Demos.md has a table of every asset a demo ships and where it came from, which also
+covers odyssey's placeholder sprite and diorama's generated models and sound. `pieces.psd` moved
+to `demos/tetris/assets/`, outside `data/`, so neither the build nor an install copies it.
 
 * **pong's sounds and tetris's pieces each get a recorded source and licence**, or are replaced
   by assets that have one. A replacement made in the tree names the script or tool that made it.
