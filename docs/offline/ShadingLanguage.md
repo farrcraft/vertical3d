@@ -162,7 +162,7 @@ files on disk.
   in any order of buckets or pixels. A grid vertex is moved into world space first, so a vertex
   and a traced hit at the same position sample a light alike.
 
-  Background: [ADR-0094](../adr/0094-offline-area-lights-sampled-per-shading-point.md)
+  Background: [ADR-0094](../adr/offline/0094-offline-area-lights-sampled-per-shading-point.md)
 - **`background`** adds its colour behind each pixel in proportion to `1 - alpha`, then sets
   `alpha` to one, so a pixel it painted is no longer empty. A scene can use it instead of a
   backdrop polygon.
@@ -199,7 +199,7 @@ files on disk.
     because dicing runs u along the first edge and v along the last.
   - A derivative is first order, so on a curved surface it is as good as the grid is fine.
 
-  Background: [ADR-0093](../adr/0093-offline-derivatives-from-neighbouring-shading-points.md)
+  Background: [ADR-0093](../adr/offline/0093-offline-derivatives-from-neighbouring-shading-points.md)
 
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
@@ -284,7 +284,7 @@ files on disk.
   it. The lattice repeats every 256 cells, at any distance from the origin. A point that is
   not finite reads `0.5`.
 
-Background: [ADR-0026](../adr/0026-offline-shaders-run-over-batches-of-points.md)
+Background: [ADR-0026](../adr/offline/0026-offline-shaders-run-over-batches-of-points.md)
 
 ## Normals
 

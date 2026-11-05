@@ -17,7 +17,7 @@ is for anyone reviewing a change, and for the reviewer agents in `.claude/agents
   unchanged introduces nothing. Rewriting a function makes its defects the change's, unless the
   reviewer can show the old function had the same defect, in which case it goes on the debt list.
 
-Background: [ADR-0083](../adr/0083-review-a-changeset-answers-for-what-it-introduces.md)
+Background: [ADR-0083](../adr/project/0083-review-a-changeset-answers-for-what-it-introduces.md)
 
 ## What a reviewer reads
 

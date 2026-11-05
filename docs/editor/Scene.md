@@ -23,7 +23,7 @@ A face stores its normal and one of its half edges.
 outward. Every primitive is built that way, and a normal recomputed from a face's points follows
 the same rule, so a move never turns a face inside out. An importer of a counter-clockwise format
 reverses each face's loop. Background:
-[ADR-0097](../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
+[ADR-0097](../adr/editor/0097-editor-faces-wind-clockwise-seen-from-outside.md)
 
 `brep::INVALID_ID` (`1 << 31`) marks a
 reference to nothing, such as the `pair` of an edge on an open boundary. **Do not change
@@ -186,7 +186,7 @@ five kinds:
     made unique when the edit ends. The rename and the suffix are one change in the history.
   - The document saves the name, so a rename moves the revision.
 
-  Background: [ADR-0157](../adr/0157-editor-item-names-are-unique-in-their-scene.md)
+  Background: [ADR-0157](../adr/editor/0157-editor-item-names-are-unique-in-their-scene.md)
 - **Placement.** `placement()` is a translation, a rotation and a scale, measured in the space of
   the item's parent. A command undoes a gesture by setting all three at once. `matrix()` composes
   them as translation × rotation × scale, which is the item's local matrix. Where the item is in
@@ -211,7 +211,7 @@ five kinds:
   - An imported node that is not seen is hidden in both, and one that is seen and not rendered,
     a guide or a proxy, is hidden in renders.
 
-  Background: [ADR-0168](../adr/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md)
+  Background: [ADR-0168](../adr/editor/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md)
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
   its name, its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is
   the item's own count of changes, which the name's setter, every placement setter and every
@@ -249,8 +249,8 @@ five kinds:
   from -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
   clamped knots.
 
-Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
-[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)
+Background: [ADR-0099](../adr/editor/0099-editor-scene-items-own-identity-and-placement.md),
+[ADR-0103](../adr/editor/0103-editor-items-have-persistent-document-ids.md)
 
 ### Hierarchy
 
@@ -296,7 +296,7 @@ share one `BRep`.
   stays where it was in the world, and loses any shear its world matrix holds. An item cannot go
   beneath itself or anything beneath it. Undo gives it back its parent and its placement.
 
-Background: [ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
+Background: [ADR-0104](../adr/editor/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
 
 The four primitives in `api/brep/Primitives.h`, `brep::cube()`, `plane()`, `cylinder()` and
 `cone()`, are each one unit across and centred on the origin. Each is geometry, and the mesh
@@ -561,7 +561,7 @@ over the menu bar's band, which takes a press only on a label.
 | `workspace::export` | Write the workspace shown, as arranged, to a file in the form `data/layout.json` takes |
 | `workspace::import` | Keep each workspace a file holds, replacing any of the same name, and show the first |
 
-Background: [ADR-0134](../adr/0134-editor-workspaces-and-layouts-live-in-user-settings.md)
+Background: [ADR-0134](../adr/editor/0134-editor-workspaces-and-layouts-live-in-user-settings.md)
 
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 
@@ -658,7 +658,7 @@ camera the view shows, and no fixed view.
   the room around the frame. Each drag is one change named `move camera`, keyed while auto key is
   on.
 
-Background: [ADR-0169](../adr/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md)
+Background: [ADR-0169](../adr/editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md)
 
 **Orthographic** (`view::camera::orthographic`, the P key) switches a view's camera between an
 orthographic and a perspective projection, and leaves the camera where it is. The menu item is
@@ -745,7 +745,7 @@ through a screen of its own that shares the main screen's text, scale and theme.
 - **Its close button closes it.** Closing the main window quits, and the windows open are kept
   with the workspace, as [Workspaces](#workspaces) describes.
 
-Background: [ADR-0156](../adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
+Background: [ADR-0156](../adr/ui/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
 
 ## Panels
 
@@ -762,7 +762,7 @@ stale. The header, the tabs and a panel's menus are retained, as every area's ar
   landed on one is held.
 - A panel's text fields take the keyboard as the ui's do, so typing into one fires no binding.
 
-Background: [ADR-0136](../adr/0136-editor-panels-are-drawn-in-immediate-mode.md)
+Background: [ADR-0136](../adr/editor/0136-editor-panels-are-drawn-in-immediate-mode.md)
 
 **The outliner** (`outliner`) lists the scene's items as the tree their parents make. `Outliner`
 in `src/control/` draws it.

@@ -22,6 +22,7 @@ document for its subject, which the table links to.
 | `librarytable.ts` | The table of libraries has one row for each library in the manifest, in order | The tree | [Build.md](Build.md#the-manifest-is-checked-on-every-configure) |
 | `readmes.ts` | Each component has a README with a heading and links that resolve, and a library's README describes it as the table does | The tree | [Conventions.md](Conventions.md#readmes) |
 | `summary.ts` | `docs/SUMMARY.md` lists each page under `docs/` once, outside `completed/` directories | The tree | [Conventions.md](Conventions.md#the-documentation-site) |
+| `adr.ts` | Each decision record is in its area's folder, numbered, tagged and linked both ways, and the indexes made from the records are current. `--write` writes the indexes | The tree | [adr/README.md](../adr/README.md#how-the-records-are-kept) |
 | `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
@@ -89,7 +90,7 @@ agent that builds or edits in that time sees files without them, and an edit it 
 when pre-commit puts the set-aside changes back. Commit from one agent at a time, while no other
 is building or editing.
 
-Background: [ADR-0164](../adr/0164-tooling-commits-are-checked-locally-through-pre-commit.md)
+Background: [ADR-0164](../adr/project/0164-tooling-commits-are-checked-locally-through-pre-commit.md)
 
 ## Running them
 

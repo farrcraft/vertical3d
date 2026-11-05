@@ -298,7 +298,7 @@ a skip is correct, since a machine may have no Vulkan device.
 This is a separate executable from `v3dtest_render`, which tests the renderer's CPU-side code,
 so that `v3dtest_render` runs on any machine.
 
-Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
+Background: [ADR-0007](../adr/project/0007-ci-render-tests-on-software-vulkan.md)
 
 ## The render window suite
 
@@ -356,7 +356,7 @@ reference.
 change a reference on purpose, copy that file over the committed one. The test never writes to
 `data/`.
 
-Background: [ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+Background: [ADR-0054](../adr/project/0054-testing-golden-images-hold-only-spec-exact-output.md)
 
 ### moya references
 

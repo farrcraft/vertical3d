@@ -89,8 +89,8 @@ profile.lookat(center);   // the hand takes effect here
 `Isometric` carries its own hand. Its `right()` and `forward()` follow it, and `apply()` writes
 it onto the camera along with everything else. Set the hand on the orbit, not on the profile.
 
-Background: [ADR-0012](../adr/0012-camera-projection-targets-vulkan-clip-space.md),
-[ADR-0052](../adr/0052-camera-selectable-handedness.md)
+Background: [ADR-0012](../adr/scene/0012-camera-projection-targets-vulkan-clip-space.md),
+[ADR-0052](../adr/scene/0052-camera-selectable-handedness.md)
 
 ## Isometric
 

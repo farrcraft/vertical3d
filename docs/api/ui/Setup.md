@@ -99,7 +99,7 @@ Before the first frame there is no window height, and a `Height` screen follows 
 - **The cursor is not scaled.** Mouse points, the canvas and every box are device pixels, so hit
   testing is the same at every scale.
 
-Background: [ADR-0131](../../adr/0131-ui-tools-scale-with-the-monitor-games-with-the-window.md)
+Background: [ADR-0131](../../adr/ui/0131-ui-tools-scale-with-the-monitor-games-with-the-window.md)
 
 Do not keep a reference to `components()` across frames. A rescale replaces it, and an old
 reference points at an object that is no longer drawn. `immediate()` and `text()` are the same
@@ -128,7 +128,7 @@ of windows.
   built on that window, is offered the key and text events SDL names the window in. It goes
   before the screen, since it holds the screen's layer.
 
-Background: [ADR-0156](../../adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
+Background: [ADR-0156](../../adr/ui/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
 
 An app that needs a piece `Screen` does not build writes it beside the screen. An app that
 does not use `WindowRenderer` builds `TextRenderer` itself with its own `Upload`.

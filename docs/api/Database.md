@@ -75,4 +75,4 @@ const std::string name = row.text();
   deferred constraint refuses, rolls back, and the database's `error()` says why.
 - A transaction that is destroyed without a commit rolls back.
 
-Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md)
+Background: [ADR-0101](../adr/editor/0101-editor-a-scene-document-is-a-sqlite-database.md)

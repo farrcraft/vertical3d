@@ -77,4 +77,4 @@ type arguments or be a comparison. Type arguments are taken only when what follo
 TypeScript decides. A place where an arrow function did not read is remembered, so a nesting
 read twice is not read again at every level.
 
-Background: [ADR-0153](../adr/0153-editor-scripts-are-typescript-run-on-quickjs.md)
+Background: [ADR-0153](../adr/editor/0153-editor-scripts-are-typescript-run-on-quickjs.md)

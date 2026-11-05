@@ -55,7 +55,8 @@ gate does not check these directories.
 
 Those belong in a comment beside the code, or in the reference document for the subject.
 
-Records live in [adr/](adr/), indexed by area in [adr/README.md](adr/README.md). The
+Records live in [adr/](adr/), one folder for each area, indexed by area in
+[adr/README.md](adr/README.md) and by tag in [adr/tags.md](adr/tags.md). The
 `architecture-decision-records` skill in `.claude/skills/` covers the format. Write the ADR
 before or alongside the code. One written afterwards tends to justify what was built rather
 than record what was weighed.

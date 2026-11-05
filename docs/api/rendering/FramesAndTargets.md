@@ -96,7 +96,7 @@ reads a shadow map can therefore be created first and still draw second.
 - A pass that names its own target in `reads()` is reading that target's previous frame. That
   orders nothing.
 
-Background: [ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)
+Background: [ADR-0068](../../adr/rendering/0068-rendering-order-passes-by-what-they-read.md)
 
 ## Choosing a target
 

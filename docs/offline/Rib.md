@@ -100,5 +100,5 @@ the editor's export, rather than from the reader.
   handler's `deformation()`, and is dropped when that is null, as the reader drops it. A
   recording cannot be copied or moved, so one passed to another thread is held by a pointer.
 
-Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md),
-[ADR-0025](../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md)
+Background: [ADR-0023](../adr/offline/0023-offline-rib-is-the-scene-format.md),
+[ADR-0025](../adr/offline/0025-offline-rib-reader-calls-a-typed-handler-interface.md)

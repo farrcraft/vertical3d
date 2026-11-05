@@ -61,7 +61,7 @@ C system header. The order in a file is therefore:
 4. Third-party headers such as boost and glm. Their names end in `.hpp` or have no extension, so
    cpplint does not treat them as C headers.
 
-Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-root.md)
+Background: [ADR-0048](../adr/project/0048-includes-name-headers-from-the-repository-root.md)
 
 ### One class per header
 
@@ -141,7 +141,7 @@ fixture and helper before the first case. A fixture that two test files share ge
 its `internal/` headers. The review gates run it on the whole tree. Rule 3 is a judgment, and review
 checks it.
 
-Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md)
+Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-local.md)
 
 ### Directories
 
@@ -228,7 +228,7 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
   old `LOG_INFO` and `LOG_ERROR` macros. They appear only in commented-out or non-compiling code.
 - Doc comments are `/** **/` blocks. Many trivial members have an empty one.
 
-Background: [ADR-0161](../adr/0161-code-a-field-a-caller-may-omit-has-a-default.md)
+Background: [ADR-0161](../adr/project/0161-code-a-field-a-caller-may-omit-has-a-default.md)
 
 ## Writing
 
@@ -356,7 +356,7 @@ script fetches mdBook at a pinned version and checks it against a pinned SHA-256
   GitHub Pages on each push to `main`, at https://farrcraft.github.io/vertical3d/. A branch is
   never published.
 
-Background: [ADR-0162](../adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
+Background: [ADR-0162](../adr/project/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
 
 ## API design
 

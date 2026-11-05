@@ -88,7 +88,7 @@ none may call it.
 - The frame is a count, not a time, so a scene that moves shows the state its frame rate
   reached by then.
 
-Background: [ADR-0163](../../adr/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md)
+Background: [ADR-0163](../../adr/engine/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md)
 
 ### Startup
 
@@ -152,4 +152,4 @@ are already destroyed when a base class destructor runs.
   arrives while the app is still asking reaches `quitRequested()` again, so the override decides
   what a second request does.
 
-Background: [ADR-0080](../../adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md)
+Background: [ADR-0080](../../adr/engine/0080-apps-the-engine-owns-startup-and-shutdown-order.md)

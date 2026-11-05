@@ -84,7 +84,7 @@ an in and an out slope, in value per frame.
   midnight. `T` is anything `glm::mix` accepts. Construction throws for no keys, keys out of
   order, or a key outside the period.
 
-Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
+Background: [ADR-0070](../adr/scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
 
 ## Particle effects
 
@@ -152,4 +152,4 @@ particles an emitter has made and its own `Random`.
 When an effect fires and what the weather does are the game's decisions. The api provides a
 rate, a burst and an intensity, and nothing that chooses them.
 
-Background: [ADR-0072](../adr/0072-particles-an-emitter-component-owns-its-particles.md)
+Background: [ADR-0072](../adr/scene/0072-particles-an-emitter-component-owns-its-particles.md)

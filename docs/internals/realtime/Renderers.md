@@ -81,8 +81,8 @@ materials, and retires the old table and materials through the ring. `replace()`
 table and every source still in the map, before its `FullScreen` goes. `source()` releases the
 scene's registration if binding the material throws.
 
-Background: [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
-[ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md),
-[ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md),
-[ADR-0042](../../adr/0042-rendering-world-space-sprites.md),
-[ADR-0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)
+Background: [ADR-0005](../../adr/rendering/0005-2d-one-batched-quad-pipeline.md),
+[ADR-0011](../../adr/rendering/0011-rendering-lines-as-a-world-space-primitive.md),
+[ADR-0036](../../adr/text/0036-text-sdf-glyphs-through-the-quad-shader.md),
+[ADR-0042](../../adr/rendering/0042-rendering-world-space-sprites.md),
+[ADR-0071](../../adr/rendering/0071-skinning-joint-matrices-in-one-storage-buffer.md)

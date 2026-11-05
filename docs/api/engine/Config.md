@@ -52,8 +52,8 @@ How failures are reported:
 - A config document names images and never loads them. The app resolves a theme's images and a
   sprite sheet's image through its own asset manager and renderer.
 
-Background: [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md),
-[ADR-0119](../../adr/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
+Background: [ADR-0020](../../adr/ui/0020-ui-themes-are-data-apps-load-the-images.md),
+[ADR-0119](../../adr/engine/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
 
 A tool that does not run the engine reads the same list by building a manifest itself:
 

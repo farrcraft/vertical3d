@@ -3,8 +3,8 @@
 What the tree needs to ship versioned releases: the editor, moya, imagetool and the demos as one
 product, as an installer on Windows and a Flatpak on Linux. The api libraries stay consumed as
 source, and a release's tag gives a consumer a named commit to pin. Both choices are recorded in
-[ADR-0165](../adr/0165-releases-the-apps-ship-as-one-versioned-product.md) and
-[ADR-0166](../adr/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md).
+[ADR-0165](../adr/project/0165-releases-the-apps-ship-as-one-versioned-product.md) and
+[ADR-0166](../adr/project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md).
 
 Today nothing is installed, versioned or packaged. Every app runs from its build directory, and
 CI builds Debug on Windows only.

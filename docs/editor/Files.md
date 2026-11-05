@@ -38,7 +38,7 @@ A file the project refers to is named by its path relative to the project direct
 makes every directory of the layout that is missing, then writes the scene, then the manifest,
 so a manifest never names a scene that was not written.
 
-Background: [ADR-0100](../adr/0100-editor-a-project-is-a-directory-with-a-manifest.md)
+Background: [ADR-0100](../adr/editor/0100-editor-a-project-is-a-directory-with-a-manifest.md)
 
 ## Scene documents
 
@@ -185,11 +185,11 @@ and the curves are at version 1.
 and no edit is pending. A read changes no item's values, which
 [Animation.md](Animation.md#evaluating-a-frame) describes.
 
-Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md),
-[ADR-0102](../adr/0102-editor-scene-records-are-rows-with-json-payloads.md),
-[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md),
-[ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md),
-[ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)
+Background: [ADR-0101](../adr/editor/0101-editor-a-scene-document-is-a-sqlite-database.md),
+[ADR-0102](../adr/editor/0102-editor-scene-records-are-rows-with-json-payloads.md),
+[ADR-0103](../adr/editor/0103-editor-items-have-persistent-document-ids.md),
+[ADR-0104](../adr/editor/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md),
+[ADR-0105](../adr/editor/0105-editor-animation-is-scalar-curves-on-item-properties.md)
 
 ## Open, Save and Save As
 
@@ -272,13 +272,13 @@ The file is read by `interchange::readGltf()` or `interchange::usd::read()`, des
   length is then scaled into the document's unit of length by `interchange::rescale()`: points,
   positions, translation keys, curves and their width, and a camera's clipping and extent.
 
-Background: [ADR-0140](../adr/0140-editor-a-project-names-its-unit-of-length.md)
+Background: [ADR-0140](../adr/editor/0140-editor-a-project-names-its-unit-of-length.md)
 
 What the file holds that the editor cannot, such as a skin or a mesh of lines, is logged as a
 warning, one line each, and the outcome counts them. A file that cannot be read is refused, and
 the document is left as it was.
 
-Background: [ADR-0122](../adr/0122-editor-import-gltf-and-usd-as-scenes-of-items.md)
+Background: [ADR-0122](../adr/editor/0122-editor-import-gltf-and-usd-as-scenes-of-items.md)
 
 ## RIB export
 
@@ -325,4 +325,4 @@ its default colour. RI treats a polygon as planar and convex without checking. m
 first four vertices of a polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.
 
-Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md)
+Background: [ADR-0023](../adr/offline/0023-offline-rib-is-the-scene-format.md)

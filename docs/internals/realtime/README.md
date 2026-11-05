@@ -88,8 +88,8 @@ them.
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Every pass draws through dynamic
 rendering.
 
-Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
-[ADR-0051](../../adr/0051-frames-in-flight-ring-separate-from-presenting.md)
+Background: [ADR-0003](../../adr/rendering/0003-rendering-one-engine-for-2d-and-3d.md),
+[ADR-0051](../../adr/rendering/0051-frames-in-flight-ring-separate-from-presenting.md)
 
 ## Invariants that are easy to break
 

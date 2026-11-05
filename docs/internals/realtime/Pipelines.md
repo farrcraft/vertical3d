@@ -48,7 +48,7 @@ Notes:
   value, used when the pass names none. `Line`'s and `World`'s depth pipelines opt in. `Lit`'s
   do not, because a lit surface is opaque and always writes.
 
-  Background: [ADR-0085](../../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md)
+  Background: [ADR-0085](../../adr/rendering/0085-rendering-a-pass-chooses-whether-depth-is-written.md)
 - `layout(VkPipelineLayout)` compiles against a layout the caller owns, for several pipelines
   that share one layout under one bound set. `set()` is then read only to detect a set 2, and
   `push()` only for stage flags. The caller destroys that layout.
@@ -140,10 +140,10 @@ writes it before binding.
 | `FullScreen` sources | 8 |
 | set 2 (`Lit` scenes) | frames in flight |
 
-Background: [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md),
-[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
-[ADR-0088](../../adr/0088-lit-per-object-data-in-a-storage-buffer.md),
-[ADR-0109](../../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
+Background: [ADR-0008](../../adr/rendering/0008-shaders-descriptor-sets-by-update-frequency.md),
+[ADR-0064](../../adr/rendering/0064-lighting-lit-passes-use-the-shared-recorder.md),
+[ADR-0088](../../adr/rendering/0088-lit-per-object-data-in-a-storage-buffer.md),
+[ADR-0109](../../adr/rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 
 ## Draw items and the sort key
 

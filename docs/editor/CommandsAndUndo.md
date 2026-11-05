@@ -88,9 +88,9 @@ right parts when it is undone. Undo and redo of a topology change clear that mes
 selection, because after a renumbering an old flag could name another part. The object stays
 selected.
 
-Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
+Background: [ADR-0098](../adr/editor/0098-editor-topology-changes-undone-from-snapshots.md)
 
-Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
+Background: [ADR-0016](../adr/editor/0016-editor-undo-records-completed-changes.md)
 
 ### The saved position
 
@@ -251,5 +251,5 @@ each one takes.
 `command::Stack` and `Tool` are in the editor rather than the api. No other app has a document
 to undo.
 
-Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md),
-[ADR-0090](../adr/0090-input-commands-are-handled-through-one-registry.md)
+Background: [ADR-0081](../adr/engine/0081-input-key-events-and-commands-are-separate.md),
+[ADR-0090](../adr/engine/0090-input-commands-are-handled-through-one-registry.md)

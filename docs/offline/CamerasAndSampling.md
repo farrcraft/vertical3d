@@ -61,7 +61,7 @@ Both hiders render through them.
   `PixelFilter "box" 1 1`**, in its test code and in its `.rib`. `reference-sampled.png` and
   `raytrace-sampled.png` pin the defaults.
 
-Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared-film.md)
+Background: [ADR-0076](../adr/offline/0076-offline-seeded-samples-resolved-by-one-shared-film.md)
 
 ## Cameras and projections
 

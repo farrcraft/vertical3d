@@ -142,7 +142,7 @@ the shading language and the ray tracer. They differ in these ways:
 | Time of shadow and traced rays | Shutter open | Each sample's own time |
 | Storage of a primitive | In a bucket, and in the traced scene until rendering starts if no shader traces | Once, in the traced scene |
 
-Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
+Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
 
 ## What is not built
 

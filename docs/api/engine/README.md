@@ -65,7 +65,7 @@ makes it that game. Do not write your own version of these:
 
 [ui/](../ui/README.md) describes how to use each of these.
 
-Background: [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
+Background: [ADR-0028](../../adr/engine/0028-apps-the-shared-app-shell-lives-in-the-api.md)
 
 ## Logging
 

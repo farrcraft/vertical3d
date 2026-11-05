@@ -124,9 +124,9 @@ can therefore pass every gate on Windows and fail there.
   compiles against MSVC's standard library and the Windows headers, so it misses what only Linux
   shows.
 
-Background: [ADR-0107](../adr/0107-build-the-api-libraries-build-with-clang-off-windows.md),
-[ADR-0159](../adr/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md),
-[ADR-0160](../adr/0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
+Background: [ADR-0107](../adr/project/0107-build-the-api-libraries-build-with-clang-off-windows.md),
+[ADR-0159](../adr/project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md),
+[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
 
 ### The manifest is checked on every configure
 
@@ -221,7 +221,7 @@ and imagetool open no window and keep theirs at `<app>/icon.svg`. Each app's CMa
 - Only the subset of SVG NanoSVG draws is used. A gradient's position and radius are written
   as percentages, since a bare fraction is read as pixels.
 
-Background: [ADR-0170](../adr/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
+Background: [ADR-0170](../adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
 
 ## Shaders
 
@@ -312,8 +312,8 @@ Specific rules:
   `glm::glm` or `EnTT::EnTT`. Do not rely on their headers being reachable through another
   package's include directory.
 
-Background: [ADR-0027](../adr/0027-build-consume-the-api-as-source.md),
-[ADR-0079](../adr/0079-assets-loaders-are-registered.md)
+Background: [ADR-0027](../adr/project/0027-build-consume-the-api-as-source.md),
+[ADR-0079](../adr/engine/0079-assets-loaders-are-registered.md)
 
 ## The starter example
 

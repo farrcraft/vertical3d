@@ -155,7 +155,7 @@ else is touched. Text's coverage is changed in the shader in two steps:
 
 Coverage, curve and distance field glyphs are corrected alike, on the screen and in the world.
 
-Background: [ADR-0147](../../adr/0147-text-coverage-corrected-to-blend-as-in-display-space.md)
+Background: [ADR-0147](../../adr/text/0147-text-coverage-corrected-to-blend-as-in-display-space.md)
 
 ### User interface
 

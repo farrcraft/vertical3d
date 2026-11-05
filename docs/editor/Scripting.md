@@ -52,7 +52,7 @@ select mask that selects the parts it works on, as
 selects the parts it names first, whatever the mask. The items that hold them are selected, and
 nothing else of any item. Selection is not history, so undo leaves it as the script left it.
 
-Background: [ADR-0152](../adr/0152-editor-scripts-call-named-commands-with-typed-arguments.md)
+Background: [ADR-0152](../adr/editor/0152-editor-scripts-call-named-commands-with-typed-arguments.md)
 
 ## Text forms
 
@@ -148,4 +148,4 @@ CI checks each against `editor.d.ts`, and the editor suite runs each on a docume
 cube. An example fails there when a problem stops it, or when it runs no command, so an example
 that no longer works does not ship.
 
-Background: [ADR-0153](../adr/0153-editor-scripts-are-typescript-run-on-quickjs.md)
+Background: [ADR-0153](../adr/editor/0153-editor-scripts-are-typescript-run-on-quickjs.md)

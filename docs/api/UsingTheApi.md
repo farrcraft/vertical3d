@@ -31,7 +31,7 @@ The api is used as **source**, not as an installed package. There is no
 `find_package(vertical3d)` and nothing to install. Your project adds this repository with
 `add_subdirectory` and builds it with your compiler.
 
-Background: [ADR-0027](../adr/0027-build-consume-the-api-as-source.md)
+Background: [ADR-0027](../adr/project/0027-build-consume-the-api-as-source.md)
 
 ## What you need
 
@@ -164,7 +164,7 @@ api library they depend on, and looks only for the third-party packages that set
 dependencies. The configure prints the resolved set as `vertical3d api:` and
 `vertical3d packages:` lines.
 
-Background: [ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest.md)
+Background: [ADR-0033](../adr/project/0033-build-select-api-libraries-through-a-manifest.md)
 
 ### Link `v3d::` targets
 

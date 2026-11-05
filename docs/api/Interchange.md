@@ -10,7 +10,7 @@ loads glTF through [asset_media](Models.md#loading-gltf) instead, which merges a
 The library also owns cgltf's implementation, which is compiled once for every program.
 `asset_media` links it for that.
 
-Background: [ADR-0123](../adr/0123-interchange-file-readers-fill-a-neutral-scene.md)
+Background: [ADR-0123](../adr/scene/0123-interchange-file-readers-fill-a-neutral-scene.md)
 
 ## The scene
 

@@ -46,7 +46,7 @@ Rules for `onEvent()`:
 - **Keep it short.** It runs inside the poll loop, so a slow handler shows up as input latency.
 - The default returns false. An app that does not host a ui toolkit does not override it.
 
-Background: [ADR-0043](../../adr/0043-input-apps-see-raw-events-before-bindings.md)
+Background: [ADR-0043](../../adr/engine/0043-input-apps-see-raw-events-before-bindings.md)
 
 ### Keys and commands
 
@@ -96,7 +96,7 @@ as its key is held, such as moving a tetris piece, takes repeats. A command that
 something, such as a menu or an overlay, ignores a command whose `repeat()` is true. Otherwise
 holding its key flicks it on and off.
 
-Background: [ADR-0081](../../adr/0081-input-key-events-and-commands-are-separate.md)
+Background: [ADR-0081](../../adr/engine/0081-input-key-events-and-commands-are-separate.md)
 
 ### Bindings
 
@@ -152,7 +152,7 @@ modifiers are all held, and of those only the ones that name the most modifiers.
 - A chord keeps its whole name wherever a source is named: in `sources()`, `bound()`, a rebind
   and a saved override.
 
-Background: [ADR-0133](../../adr/0133-input-the-most-specific-chord-wins-a-key.md)
+Background: [ADR-0133](../../adr/engine/0133-input-the-most-specific-chord-wins-a-key.md)
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
 rebinding screen. The command keeps the context and the edge the document gave it. The engine
@@ -224,7 +224,7 @@ AppEngine::AppEngine(const std::string& path) :
 }
 ```
 
-Background: [ADR-0090](../../adr/0090-input-commands-are-handled-through-one-registry.md)
+Background: [ADR-0090](../../adr/engine/0090-input-commands-are-handled-through-one-registry.md)
 
 ### Polling the keyboard and mouse
 

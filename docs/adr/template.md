@@ -2,6 +2,7 @@
 
 **Status**: proposed | accepted | amended | superseded
 **Date**: YYYY-MM-DD
+**Tags**: the area word the title starts with, then any other tag from tags.md, in lower case
 **Amends**: ADR-NNNN (omit the line if none)
 **Amended by**: ADR-NNNN (omit the line if none)
 **Supersedes**: ADR-NNNN (omit the line if none)

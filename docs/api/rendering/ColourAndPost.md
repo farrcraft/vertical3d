@@ -86,5 +86,5 @@ when it is stored. Its albedo textures are uploaded with `TextureFactory::Encodi
 are decoded to linear when sampled. `resource::MeshRegistry` does this for you. A glTF base colour
 factor is already linear. Every other texture keeps the `Display` default.
 
-Background: [ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md),
-[ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)
+Background: [ADR-0009](../../adr/rendering/0009-colour-display-space-unorm-swapchain.md),
+[ADR-0066](../../adr/rendering/0066-lighting-light-in-linear-draw-to-srgb.md)

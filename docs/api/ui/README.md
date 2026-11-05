@@ -105,8 +105,8 @@ A Han character is drawn in the forms of the text's language: the style's `langu
 renderer's shaping cache's locale when the style names none. With neither, it takes the CJK
 face's Simplified Chinese forms.
 
-Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md),
-[ADR-0151](../../adr/0151-ui-noto-faces-for-each-script-in-the-tree.md)
+Background: [ADR-0129](../../adr/ui/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md),
+[ADR-0151](../../adr/ui/0151-ui-noto-faces-for-each-script-in-the-tree.md)
 
 Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::text::Paragraph`. Any character
 the faces have is drawn, with no set of glyphs named up front: a glyph is rasterized the first
@@ -139,7 +139,7 @@ and size set its weight and optical size axes, and its `variations` set any axis
 No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
 callbacks, as below. An app that draws the canvas through its own renderer supplies its own.
 
-Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+Background: [ADR-0145](../../adr/text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ### Curve text
 
@@ -183,7 +183,7 @@ world. A glyph there is wider than its outline by
 That is enough for text drawn larger than sixteen pixels to the em. To face the camera, build the
 transform from the camera's right and the world's up.
 
-Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+Background: [ADR-0145](../../adr/text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ### Glyph pages
 

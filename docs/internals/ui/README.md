@@ -246,7 +246,7 @@ rebuilds, and goes with its component or with its id when that ages out.
 To animate something new, give its colour a `Transition` in `Motion` or in `Retained`, and pass
 the colour to draw each frame through it. A field added to `Motion` costs every component.
 
-Background: [ADR-0132](../../adr/0132-ui-transition-state-lives-on-what-it-animates.md)
+Background: [ADR-0132](../../adr/ui/0132-ui-transition-state-lives-on-what-it-animates.md)
 
 ## Parents and held items
 
@@ -311,7 +311,7 @@ A registry of per-type functions was considered as a way to reduce the number of
 was not adopted, because `paint()` and `natural()` read private state of the renderer and the
 arranger.
 
-Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
+Background: [ADR-0047](../../adr/project/0047-code-exhaustive-enum-switches.md)
 
 ## Known limitations
 

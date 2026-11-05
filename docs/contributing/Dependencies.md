@@ -77,9 +77,9 @@ tree therefore builds ICU through its own port, in [ports/icu/](../../ports/icu/
 - When the baseline moves ICU to a new version, copy the new port over `ports/icu/`, apply the
   change again, and update the data archive's SHA512 from the release's `SHASUM512.txt`.
 
-Background: [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md),
-[ADR-0091](../adr/0091-platform-sdl3-replaces-sdl2.md),
-[ADR-0053](../adr/0053-memory-optional-vma-suballocation.md)
+Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
+[ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),
+[ADR-0053](../adr/rendering/0053-memory-optional-vma-suballocation.md)
 
 ## The Vulkan SDK
 
@@ -161,7 +161,7 @@ options and allows only syntax that can be erased.
 To update a tool, run `npm install --save-dev <package>@<version>` with a version released at
 least two weeks earlier. Then run `npm run typecheck` and commit `package.json` with the lockfile.
 
-Background: [ADR-0158](../adr/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
+Background: [ADR-0158](../adr/project/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
 
 ## Setting up vcpkg
 

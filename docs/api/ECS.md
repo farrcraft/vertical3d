@@ -135,7 +135,7 @@ the same for the clip being faded out of, and the fade's progress.
 A looping clip's time is kept unwrapped and grows without limit. At the fixed step, a float
 stops resolving a millisecond after a little over two hours of continuous looping.
 
-Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
+Background: [ADR-0070](../adr/scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
 
 ### Emitter
 
@@ -159,7 +159,7 @@ simulation.
 - A particle's look is one texture and one clip per emitter. Smoke rising from a flame is a
   second emitter, on the same entity or a child.
 
-Background: [ADR-0072](../adr/0072-particles-an-emitter-component-owns-its-particles.md)
+Background: [ADR-0072](../adr/scene/0072-particles-an-emitter-component-owns-its-particles.md)
 
 ## Drawing between steps
 
@@ -212,7 +212,7 @@ bool MyEngine::simulate(float step) {
 
 pong registers `Position2D` and `Position1D` this way.
 
-Background: [ADR-0060](../adr/0060-ecs-interpolate-from-a-previous-step-component.md)
+Background: [ADR-0060](../adr/scene/0060-ecs-interpolate-from-a-previous-step-component.md)
 
 ## How entities are drawn
 
@@ -237,7 +237,7 @@ coordinates (`uv0`, `uv1`), not the region's name, so a game that reloads a spri
 look its regions up again and write them back. [rendering/](rendering/README.md) covers these
 functions and the components in full.
 
-Background: [ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)
+Background: [ADR-0063](../adr/scene/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)
 
 ## Notes
 

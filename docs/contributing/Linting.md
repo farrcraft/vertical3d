@@ -90,7 +90,7 @@ they look the same.
   `api/ui` relies on this for `component::Type`. A `switch` that needs a catch-all case writes
   `default:` and is not checked.
 
-Background: [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md)
+Background: [ADR-0047](../adr/project/0047-code-exhaustive-enum-switches.md)
 
 ## MSVC /analyze
 

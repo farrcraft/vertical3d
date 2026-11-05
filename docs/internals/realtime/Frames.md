@@ -88,7 +88,7 @@ each frame in flight and one for each image, as the presenter keeps for its own.
 
 `Presenter::leave()` waits for the device before the joined swapchain's semaphores go.
 
-Background: [ADR-0155](../../adr/0155-rendering-one-device-presents-to-every-window.md)
+Background: [ADR-0155](../../adr/rendering/0155-rendering-one-device-presents-to-every-window.md)
 
 ### What `WindowRenderer::renderFrame()` does
 
@@ -186,9 +186,9 @@ without it set is a validation error. Other pipelines ignore the pass's choice.
 its own draw. It exists for work the item fields cannot describe. Reaching for it routinely means
 the item model needs extending.
 
-Background: [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md),
-[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
-[ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)
+Background: [ADR-0004](../../adr/rendering/0004-rendering-submit-draw-items-as-data.md),
+[ADR-0064](../../adr/rendering/0064-lighting-lit-passes-use-the-shared-recorder.md),
+[ADR-0068](../../adr/rendering/0068-rendering-order-passes-by-what-they-read.md)
 
 ## Layout transitions
 
@@ -253,4 +253,4 @@ Inside:
 - A depth source must be `D32_SFLOAT`, since its copy is exactly the float a test compares; any
   other depth format throws.
 
-Background: [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+Background: [ADR-0054](../../adr/project/0054-testing-golden-images-hold-only-spec-exact-output.md)

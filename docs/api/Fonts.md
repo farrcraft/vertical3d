@@ -133,7 +133,7 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   tabular figures, `{ "kern", 0 }` for no kerning. A feature that chooses among alternates takes
   the alternate's number as its value. A tag that is not four letters is left out.
 
-Background: [ADR-0141](../adr/0141-text-opentype-shaping-with-harfbuzz.md)
+Background: [ADR-0141](../adr/text/0141-text-opentype-shaping-with-harfbuzz.md)
 
 ## Segmentation
 
@@ -161,7 +161,7 @@ rules, and a dictionary for the scripts that mark no word boundaries.
 - Every offset is a byte offset at the start of a character. A malformed byte is a cluster of
   its own. An empty string gives no words and no line breaks.
 
-Background: [ADR-0142](../adr/0142-text-bidi-and-segmentation-with-icu.md)
+Background: [ADR-0142](../adr/text/0142-text-bidi-and-segmentation-with-icu.md)
 
 ## Bidi
 
@@ -189,7 +189,7 @@ is made.
   At the text's start or end there is only one character, and that one is taken. An empty text
   gives the paragraph's start edge.
 
-Background: [ADR-0142](../adr/0142-text-bidi-and-segmentation-with-icu.md)
+Background: [ADR-0142](../adr/text/0142-text-bidi-and-segmentation-with-icu.md)
 
 ## Paragraphs
 
@@ -285,7 +285,7 @@ clusters, such as a ligature, is shared between them evenly.
 - **`selection(start, end)`** gives the `SelectionRect`s covering the clusters from one index to
   another: one for each stretch of a line they cover side by side, top to bottom.
 
-Background: [ADR-0143](../adr/0143-text-styled-paragraphs-over-a-shared-shaping-cache.md)
+Background: [ADR-0143](../adr/text/0143-text-styled-paragraphs-over-a-shared-shaping-cache.md)
 
 ## The glyph store
 
@@ -320,7 +320,7 @@ and packed into pages, which a renderer copies to the device. It needs no GPU.
   A renderer copies them with `Textures::update()`. It compares `pages()` with the textures it
   holds to find a page added or let go.
 
-Background: [ADR-0144](../adr/0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md)
+Background: [ADR-0144](../adr/text/0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md)
 
 ## Coverage glyphs
 
@@ -339,7 +339,7 @@ A renderer draws a glyph with its pen rounded down to a step: the whole pixel it
 the bearing, is where the bitmap's top left goes, and the step picks the rasterization. Each
 line's baseline is rounded to a whole pixel.
 
-Background: [ADR-0145](../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+Background: [ADR-0145](../adr/text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ## Curve glyphs
 
@@ -470,8 +470,8 @@ units with y upwards, and the `min` and `max` of what it draws.
 
 `paint(glyph, library, size, subpixel, foreground)` paints a `ColourGlyph` already read.
 
-Background: [ADR-0149](../adr/0149-text-colour-glyphs-from-every-opentype-colour-table.md),
-[ADR-0150](../adr/0150-text-svg-glyphs-read-through-thorvg.md)
+Background: [ADR-0149](../adr/text/0149-text-colour-glyphs-from-every-opentype-colour-table.md),
+[ADR-0150](../adr/text/0150-text-svg-glyphs-read-through-thorvg.md)
 
 ## Effect fields
 
@@ -503,7 +503,7 @@ effects are drawn before any glyph.
 A field drawn much larger than 64 pixels to the em softens the effect's edge. The glyph's own
 edge stays sharp, because it is drawn as coverage or from its curves.
 
-Background: [ADR-0146](../adr/0146-text-effects-drawn-from-a-distance-field.md)
+Background: [ADR-0146](../adr/text/0146-text-effects-drawn-from-a-distance-field.md)
 
 ## Texture fonts
 

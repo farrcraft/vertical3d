@@ -58,4 +58,4 @@ surface, and a surface has to go before the window it presents to. The engine de
 window after the app's `release()`, so an app releases its renderer there.
 [Lifecycle.md](Lifecycle.md) has the order.
 
-Background: [ADR-0116](../../adr/0116-platform-the-window-is-a-library-below-the-renderer.md)
+Background: [ADR-0116](../../adr/engine/0116-platform-the-window-is-a-library-below-the-renderer.md)

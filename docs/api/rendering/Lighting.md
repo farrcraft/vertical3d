@@ -264,7 +264,7 @@ slice is small, so its texels are small.
   before.
 - Each cascade's shadow pass is a pass of its own, so the pass timings show what each costs.
 
-Background: [ADR-0115](../../adr/0115-rendering-cascaded-shadows-in-a-layered-map.md)
+Background: [ADR-0115](../../adr/rendering/0115-rendering-cascaded-shadows-in-a-layered-map.md)
 
 ### Skinned models
 

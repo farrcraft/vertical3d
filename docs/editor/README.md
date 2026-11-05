@@ -40,7 +40,7 @@ its label, and the editor's own panels as they choose. An icon is named in the u
 its name. Only the subset of SVG that NanoSVG draws is drawn: shapes, paths, fills, strokes and
 dashes, with no text, filters or embedded images.
 
-Background: [ADR-0139](../adr/0139-editor-icons-are-svg-drawn-at-the-ui-scale.md)
+Background: [ADR-0139](../adr/editor/0139-editor-icons-are-svg-drawn-at-the-ui-scale.md)
 
 ## Source layout
 

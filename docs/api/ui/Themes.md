@@ -96,7 +96,7 @@ The built-in roles meet these contrasts, and the ui suite checks them:
 | `disabled-text`, `placeholder` | `panel`, `widget` | 3:1 |
 | `border`, `focus`, `mark`, `caret` | `panel` | 3:1 |
 
-Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md)
+Background: [ADR-0128](../../adr/ui/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md)
 
 | Key | What it colours or sizes | Drawn by |
 |---|---|---|

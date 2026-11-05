@@ -11,218 +11,259 @@ of one class, and reference facts do not. [sdlc.md](../sdlc.md#2-decide) has the
 and the `architecture-decision-records` skill covers the format. Copy
 [template.md](template.md) to start one.
 
-**Statuses.** *accepted* is in force as written. *amended* is in force, but a later record
-changes part of it, and its header names which. *superseded* has been replaced outright. Some
-numbers have no file. Those records turned out not to be decisions; each row says where the
-content went. Numbers are never reused.
+## How the records are kept
 
+- **Each record lives in the folder of its area**, one of the eight the index below lists. A
+  record never moves once it is filed, so a link to it never breaks. An area that grows too
+  large is split by giving new records a folder of their own, and the older records stay where
+  they are.
+- **Numbers run across every folder.** ADR-0027 is one record wherever it lives, and a number
+  is never reused.
+- **Each record carries tags**, from the table in [tags.md](tags.md). A tag names a subject the
+  decision touches, in any area, and the first is the area word its title starts with.
+- **A later record names what it changes.** `Amends` or `Supersedes` in the new record, and
+  `Amended by` or `Superseded by` in the old one, name each other. The old record's status
+  follows: *amended* is in force, but a later record changes part of it. *superseded* has been
+  replaced outright. *accepted* is in force as written, and *proposed* awaits a decision.
+- **The index is generated.** `node scripts/adr.ts --write` writes the index below, the records
+  by tag in [tags.md](tags.md), and the records' entries in the site's summary, from each
+  record's header lines. Without `--write` it checks the records and those pages, as a review
+  gate.
 
-## Rendering
+## Numbers with no record
 
-| ADR | Decision | Status |
-|---|---|---|
-| [0001](0001-rendering-replace-opengl-with-vulkan.md) | Rendering: replace OpenGL with Vulkan | accepted |
-| [0002](0002-vulkan-require-version-1-3.md) | Vulkan: require version 1.3 | accepted |
-| [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
-| [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
-| [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
-| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088, 0109 |
-| [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
-| [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
-| [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
-| [0012](0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 |
-| [0031](0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 |
-| [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | amended by 0145 |
-| [0141](0141-text-opentype-shaping-with-harfbuzz.md) | Text: OpenType shaping with HarfBuzz | accepted |
-| [0142](0142-text-bidi-and-segmentation-with-icu.md) | Text: bidi and segmentation with ICU | accepted |
-| [0143](0143-text-styled-paragraphs-over-a-shared-shaping-cache.md) | Text: styled paragraphs over a shared shaping cache | accepted |
-| [0144](0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md) | Text: glyph pages of plots, reused least recently used first | accepted |
-| [0145](0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md) | Text: coverage on the pixel grid, curves when scaled | amended by 0146, 0149 |
-| [0146](0146-text-effects-drawn-from-a-distance-field.md) | Text: effects drawn from a distance field | accepted |
-| [0147](0147-text-coverage-corrected-to-blend-as-in-display-space.md) | Text: coverage corrected to blend as in display space | accepted |
-| [0149](0149-text-colour-glyphs-from-every-opentype-colour-table.md) | Text: colour glyphs from every OpenType colour table | accepted |
-| [0150](0150-text-svg-glyphs-read-through-thorvg.md) | Text: SVG glyphs read through ThorVG | accepted |
-| [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
-| [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
-| 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |
-| [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
-| [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
-| [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
-| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | amended by 0110 |
-| 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
-| 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
-| [0061](0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted |
-| [0064](0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | amended by 0071 |
-| [0065](0065-meshes-shared-registry-keyed-by-path.md) | Meshes: shared registry keyed by path | amended by 0082 |
-| [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
-| 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
-| [0068](0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted |
-| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | amended by 0088 |
-| [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
-| [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
-| [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
-| [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
-| [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
-| [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
-| [0110](0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted |
-| [0115](0115-rendering-cascaded-shadows-in-a-layered-map.md) | Rendering: cascaded shadows in a layered map | accepted |
-| [0155](0155-rendering-one-device-presents-to-every-window.md) | Rendering: one device presents to every window | accepted |
+These records turned out not to be decisions, or were merged into another. Each row says where
+the content went.
 
-## Offline rendering
-
-| ADR | Decision | Status |
-|---|---|---|
-| [0022](0022-offline-shared-library-with-no-vulkan.md) | Offline: shared library with no Vulkan | amended by 0078 |
-| [0023](0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | accepted |
-| 0024 | *Never built. Its principle is in docs/contributing/Conventions.md, under API design* | removed |
-| [0025](0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | accepted |
-| [0026](0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | accepted |
-| [0076](0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted |
-| [0077](0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 |
-| [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
-| [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted |
-| [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | amended by 0113, 0114 |
-| [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted |
-| [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted |
-| [0113](0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted |
-| [0114](0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted |
-| [0125](0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted |
-
-## User interface
-
-| ADR | Decision | Status |
-|---|---|---|
-| 0019 | *Merged into 0034* | removed |
-| [0020](0020-ui-themes-are-data-apps-load-the-images.md) | UI: themes are data, apps load the images | accepted |
-| [0034](0034-ui-layout-is-resolved-while-drawing.md) | UI: layout is resolved while drawing | accepted |
-| [0035](0035-ui-immediate-mode-beside-the-retained-tree.md) | UI: immediate mode beside the retained tree | accepted |
-| [0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) | UI: the UI hit-tests the mouse before the app | accepted |
-| 0039 | *Merged into 0034* | removed |
-| [0040](0040-ui-keyboard-focus-and-text-input.md) | UI: keyboard focus and text input | amended by 0058 |
-| 0045 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
-| 0046 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
-| 0057 | *Not a decision. Now in docs/api/ui/Keyboard.md and api/ui/component/TextBox.h* | removed |
-| [0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted |
-| [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
-| 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
-| [0128](0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted |
-| [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | amended by 0151 |
-| [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
-| [0131](0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted |
-| [0132](0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted |
-| [0148](0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted |
-| [0151](0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree | accepted |
-| [0156](0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own | accepted |
-| [0167](0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md) | UI: a chosen tab is marked as a place, not a toggle | accepted |
-
-## Engine, input and assets
-
-| ADR | Decision | Status |
-|---|---|---|
-| [0021](0021-audio-use-sdl3-mixer.md) | Audio: use SDL3_mixer | amended by 0079, 0084 |
-| [0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted |
-| [0030](0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 |
-| [0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted |
-| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | amended by 0101 |
-| [0043](0043-input-apps-see-raw-events-before-bindings.md) | Input: apps see raw events before bindings | amended by 0081 |
-| [0069](0069-models-material-parts-over-one-vertex-buffer.md) | Models: material parts over one vertex buffer | accepted |
-| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | amended by 0102 |
-| [0079](0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted |
-| [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
-| [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
-| [0084](0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted |
-| [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
-| [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
-| [0090](0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted |
-| [0133](0133-input-the-most-specific-chord-wins-a-key.md) | Input: the most specific chord wins a key | accepted |
-| [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
-| [0116](0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted |
-| [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |
-| [0163](0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line | accepted |
-| [0118](0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) | Assets: a loader is keyed by the kind it produces | accepted |
-| [0119](0119-assets-an-apps-document-list-is-an-asset-manifest.md) | Assets: an app's document list is an asset manifest | accepted |
-| [0123](0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene | accepted |
-| [0112](0112-audio-a-voice-is-placed-in-world-coordinates.md) | Audio: a voice is placed in world coordinates | accepted |
-
-## Grid and ECS
-
-| ADR | Decision | Status |
-|---|---|---|
-| [0029](0029-grid-8-way-movement-symmetric-line-of-sight.md) | Grid: 8-way movement, symmetric line of sight | accepted |
-| [0060](0060-ecs-interpolate-from-a-previous-step-component.md) | ECS: interpolate from a previous-step component | accepted |
-| [0062](0062-grid-parse-terrain-not-map-files.md) | Grid: parse terrain, not map files | accepted |
-| [0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted |
-| [0070](0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted |
-| [0072](0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted |
-| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | amended by 0111 |
-| [0111](0111-grid-a-search-may-span-a-set-of-placed-grids.md) | Grid: a search may span a set of placed grids | accepted |
-
-## Editor
-
-| ADR | Decision | Status |
-|---|---|---|
-| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | superseded by 0099 |
-| [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
-| [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 |
-| [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
-| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
-| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041; superseded by 0101 |
-| [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
-| [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
-| [0098](0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted |
-| [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | amended by 0104 |
-| [0100](0100-editor-a-project-is-a-directory-with-a-manifest.md) | Editor: a project is a directory with a manifest | accepted |
-| [0101](0101-editor-a-scene-document-is-a-sqlite-database.md) | Editor: a scene document is a SQLite database | accepted |
-| [0102](0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted |
-| [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
-| [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
-| [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
-| [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
-| [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
-| [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | amended by 0126 |
-| [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
-| [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
-| [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
-| [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | amended by 0154 |
-| [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
-| [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | superseded by 0157 |
-| [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
-| [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
-| [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
-| [0140](0140-editor-a-project-names-its-unit-of-length.md) | Editor: a project names its unit of length | accepted |
-| [0152](0152-editor-scripts-call-named-commands-with-typed-arguments.md) | Editor: scripts call named commands with typed arguments | accepted |
-| [0153](0153-editor-scripts-are-typescript-run-on-quickjs.md) | Editor: scripts are TypeScript, run on QuickJS | accepted |
-| [0154](0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted |
-| [0157](0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene | accepted |
-| [0168](0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags | accepted |
-| [0169](0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked | accepted |
-
-## Build, testing and code
-
-| ADR | Decision | Status |
-|---|---|---|
-| [0007](0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan | amended by 0054 |
-| [0027](0027-build-consume-the-api-as-source.md) | Build: consume the api as source | amended by 0048, 0165 |
-| [0033](0033-build-select-api-libraries-through-a-manifest.md) | Build: select api libraries through a manifest | accepted |
-| [0047](0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches | accepted |
-| [0048](0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted |
-| 0050 | *Merged into 0054* | removed |
-| [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
-| [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | amended by 0159, 0160 |
-| [0137](0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local | accepted |
-| [0158](0158-tooling-typescript-is-type-checked-through-a-package-json.md) | Tooling: TypeScript is type-checked through a package.json | accepted |
-| [0159](0159-build-the-portable-job-runs-in-an-image-built-locally-too.md) | Build: the portable job runs in an image built locally too | accepted |
-| [0160](0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang | accepted |
-| [0161](0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted |
-| [0162](0162-docs-an-mdbook-site-with-a-doxygen-reference.md) | Docs: an mdBook site with a Doxygen reference | accepted |
-| [0164](0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit | accepted |
-| [0165](0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product | accepted |
-| [0166](0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux | accepted |
-| [0170](0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run | accepted |
-
-## Process
-
-| ADR | Decision | Status |
+| ADR | Where it went | Status |
 |---|---|---|
 | 0006 | *Not a decision: a project-scope call to keep tetris. Noted in docs/plans/completed/Modernization.md* | removed |
-| [0083](0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces | accepted |
+| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
+| 0019 | *Merged into 0034* | removed |
+| 0024 | *Never built. Its principle is in docs/contributing/Conventions.md, under API design* | removed |
+| 0039 | *Merged into 0034* | removed |
+| 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |
+| 0045 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0046 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0050 | *Merged into 0054* | removed |
+| 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
+| 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
+| 0057 | *Not a decision. Now in docs/api/ui/Keyboard.md and api/ui/component/TextBox.h* | removed |
+| 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
+| 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
+
+## The index
+
+<!-- generated by scripts/adr.ts -->
+
+The next record is ADR-0172.
+
+| Area | Folder | Holds |
+|---|---|---|
+| Rendering | [rendering/](rendering/) | the realtime renderer: Vulkan, frames, resources, shaders, lighting and textures |
+| Text | [text/](text/) | fonts, and shaping and drawing text |
+| Offline rendering | [offline/](offline/) | moya, RIB and the offline renderer |
+| User interface | [ui/](ui/) | `api/ui`, and the shell a game shares |
+| Engine | [engine/](engine/) | the loop, input, assets, audio, files, the platform and how an app is built |
+| Scene | [scene/](scene/) | grids, the ECS, models, animation, cameras and interchange |
+| Editor | [editor/](editor/) | the editor app |
+| Project | [project/](project/) | the build, testing, code rules, tooling, documentation, review and releases |
+
+### Rendering
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0001](rendering/0001-rendering-replace-opengl-with-vulkan.md) | Rendering: replace OpenGL with Vulkan | accepted | rendering |
+| [0002](rendering/0002-vulkan-require-version-1-3.md) | Vulkan: require version 1.3 | accepted | vulkan |
+| [0003](rendering/0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted | rendering |
+| [0004](rendering/0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted | rendering |
+| [0005](rendering/0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 | 2d |
+| [0008](rendering/0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088, 0109 | shaders |
+| [0009](rendering/0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 | colour |
+| [0010](rendering/0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | superseded by 0065 | meshes |
+| [0011](rendering/0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted | rendering |
+| [0031](rendering/0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 | rendering |
+| [0037](rendering/0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted | 2d |
+| [0042](rendering/0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 | rendering |
+| [0049](rendering/0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted | swapchain |
+| [0051](rendering/0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted | frames |
+| [0053](rendering/0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | amended by 0110 | memory |
+| [0061](rendering/0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted | resources |
+| [0064](rendering/0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | amended by 0071 | lighting |
+| [0065](rendering/0065-meshes-shared-registry-keyed-by-path.md) | Meshes: shared registry keyed by path | amended by 0082 | meshes |
+| [0066](rendering/0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted | lighting |
+| [0068](rendering/0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted | rendering |
+| [0071](rendering/0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | amended by 0088 | skinning |
+| [0075](rendering/0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted | 2d |
+| [0082](rendering/0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted | textures |
+| [0085](rendering/0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted | rendering |
+| [0088](rendering/0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted | lit |
+| [0108](rendering/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted | memory |
+| [0109](rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted | textures |
+| [0110](rendering/0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted | memory |
+| [0115](rendering/0115-rendering-cascaded-shadows-in-a-layered-map.md) | Rendering: cascaded shadows in a layered map | accepted | rendering |
+| [0155](rendering/0155-rendering-one-device-presents-to-every-window.md) | Rendering: one device presents to every window | accepted | rendering |
+
+### Text
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0036](text/0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | amended by 0145 | text |
+| [0141](text/0141-text-opentype-shaping-with-harfbuzz.md) | Text: OpenType shaping with HarfBuzz | accepted | text |
+| [0142](text/0142-text-bidi-and-segmentation-with-icu.md) | Text: bidi and segmentation with ICU | accepted | text |
+| [0143](text/0143-text-styled-paragraphs-over-a-shared-shaping-cache.md) | Text: styled paragraphs over a shared shaping cache | accepted | text |
+| [0144](text/0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md) | Text: glyph pages of plots, reused least recently used first | accepted | text |
+| [0145](text/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md) | Text: coverage on the pixel grid, curves when scaled | amended by 0146, 0149 | text |
+| [0146](text/0146-text-effects-drawn-from-a-distance-field.md) | Text: effects drawn from a distance field | accepted | text |
+| [0147](text/0147-text-coverage-corrected-to-blend-as-in-display-space.md) | Text: coverage corrected to blend as in display space | accepted | text |
+| [0149](text/0149-text-colour-glyphs-from-every-opentype-colour-table.md) | Text: colour glyphs from every OpenType colour table | accepted | text |
+| [0150](text/0150-text-svg-glyphs-read-through-thorvg.md) | Text: SVG glyphs read through ThorVG | accepted | text |
+
+### Offline rendering
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0022](offline/0022-offline-shared-library-with-no-vulkan.md) | Offline: shared library with no Vulkan | amended by 0078 | offline |
+| [0023](offline/0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | accepted | offline |
+| [0025](offline/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | accepted | offline |
+| [0026](offline/0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | accepted | offline |
+| [0076](offline/0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted | offline |
+| [0077](offline/0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 | offline |
+| [0078](offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted | offline |
+| [0092](offline/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted | offline |
+| [0093](offline/0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | amended by 0113, 0114 | offline |
+| [0094](offline/0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted | offline |
+| [0095](offline/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted | offline |
+| [0113](offline/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted | offline |
+| [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted | offline |
+| [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted | offline |
+
+### User interface
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0020](ui/0020-ui-themes-are-data-apps-load-the-images.md) | UI: themes are data, apps load the images | accepted | ui |
+| [0034](ui/0034-ui-layout-is-resolved-while-drawing.md) | UI: layout is resolved while drawing | accepted | ui |
+| [0035](ui/0035-ui-immediate-mode-beside-the-retained-tree.md) | UI: immediate mode beside the retained tree | accepted | ui |
+| [0038](ui/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) | UI: the UI hit-tests the mouse before the app | accepted | ui |
+| [0040](ui/0040-ui-keyboard-focus-and-text-input.md) | UI: keyboard focus and text input | amended by 0058 | ui |
+| [0058](ui/0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted | ui |
+| [0059](ui/0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted | ui |
+| [0128](ui/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted | ui |
+| [0129](ui/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | amended by 0151 | ui |
+| [0130](ui/0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted | shell |
+| [0131](ui/0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted | ui |
+| [0132](ui/0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted | ui |
+| [0148](ui/0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted | ui |
+| [0151](ui/0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree | accepted | ui |
+| [0156](ui/0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own | accepted | ui |
+| [0167](ui/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md) | UI: a chosen tab is marked as a place, not a toggle | accepted | ui |
+
+### Engine
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0021](engine/0021-audio-use-sdl3-mixer.md) | Audio: use SDL3_mixer | amended by 0079, 0084 | audio |
+| [0028](engine/0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted | apps |
+| [0032](engine/0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted | loop |
+| [0041](engine/0041-files-write-documents-atomically.md) | Files: write documents atomically | amended by 0101 | files |
+| [0043](engine/0043-input-apps-see-raw-events-before-bindings.md) | Input: apps see raw events before bindings | amended by 0081 | input |
+| [0073](engine/0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | amended by 0102 | files |
+| [0079](engine/0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted | assets |
+| [0080](engine/0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted | apps |
+| [0081](engine/0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted | input |
+| [0084](engine/0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted | audio |
+| [0086](engine/0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted | loading |
+| [0089](engine/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted | paths |
+| [0090](engine/0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted | input |
+| [0091](engine/0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted | platform |
+| [0112](engine/0112-audio-a-voice-is-placed-in-world-coordinates.md) | Audio: a voice is placed in world coordinates | accepted | audio |
+| [0116](engine/0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted | platform |
+| [0117](engine/0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted | apps |
+| [0118](engine/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) | Assets: a loader is keyed by the kind it produces | accepted | assets |
+| [0119](engine/0119-assets-an-apps-document-list-is-an-asset-manifest.md) | Assets: an app's document list is an asset manifest | accepted | assets |
+| [0133](engine/0133-input-the-most-specific-chord-wins-a-key.md) | Input: the most specific chord wins a key | accepted | input |
+| [0163](engine/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line | accepted | apps |
+
+### Scene
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0012](scene/0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 | camera |
+| [0029](scene/0029-grid-8-way-movement-symmetric-line-of-sight.md) | Grid: 8-way movement, symmetric line of sight | accepted | grid |
+| [0030](scene/0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 | models |
+| [0052](scene/0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted | camera |
+| [0060](scene/0060-ecs-interpolate-from-a-previous-step-component.md) | ECS: interpolate from a previous-step component | accepted | ecs |
+| [0062](scene/0062-grid-parse-terrain-not-map-files.md) | Grid: parse terrain, not map files | accepted | grid |
+| [0063](scene/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted | ecs |
+| [0069](scene/0069-models-material-parts-over-one-vertex-buffer.md) | Models: material parts over one vertex buffer | accepted | models |
+| [0070](scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted | animation |
+| [0072](scene/0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted | particles |
+| [0087](scene/0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | amended by 0111 | grid |
+| [0111](scene/0111-grid-a-search-may-span-a-set-of-placed-grids.md) | Grid: a search may span a set of placed grids | accepted | grid |
+| [0123](scene/0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene | accepted | interchange |
+
+### Editor
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0013](editor/0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | superseded by 0099 | editor |
+| [0014](editor/0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted | editor |
+| [0015](editor/0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 | editor |
+| [0016](editor/0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted | editor |
+| [0018](editor/0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | superseded by 0101 | editor |
+| [0096](editor/0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted | editor |
+| [0097](editor/0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted | editor |
+| [0098](editor/0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted | editor |
+| [0099](editor/0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | amended by 0104 | editor |
+| [0100](editor/0100-editor-a-project-is-a-directory-with-a-manifest.md) | Editor: a project is a directory with a manifest | accepted | editor |
+| [0101](editor/0101-editor-a-scene-document-is-a-sqlite-database.md) | Editor: a scene document is a SQLite database | accepted | editor |
+| [0102](editor/0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted | editor |
+| [0103](editor/0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted | editor |
+| [0104](editor/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted | editor |
+| [0105](editor/0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted | editor |
+| [0106](editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted | editor |
+| [0120](editor/0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted | editor |
+| [0121](editor/0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | amended by 0126 | editor |
+| [0122](editor/0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted | editor |
+| [0124](editor/0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted | editor |
+| [0126](editor/0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted | editor |
+| [0127](editor/0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | amended by 0154 | editor |
+| [0134](editor/0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted | editor |
+| [0135](editor/0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | superseded by 0157 | editor |
+| [0136](editor/0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted | editor |
+| [0138](editor/0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted | editor |
+| [0139](editor/0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted | editor |
+| [0140](editor/0140-editor-a-project-names-its-unit-of-length.md) | Editor: a project names its unit of length | accepted | editor |
+| [0152](editor/0152-editor-scripts-call-named-commands-with-typed-arguments.md) | Editor: scripts call named commands with typed arguments | accepted | editor |
+| [0153](editor/0153-editor-scripts-are-typescript-run-on-quickjs.md) | Editor: scripts are TypeScript, run on QuickJS | accepted | editor |
+| [0154](editor/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted | editor |
+| [0157](editor/0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene | accepted | editor |
+| [0168](editor/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags | accepted | editor |
+| [0169](editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked | accepted | editor |
+
+### Project
+
+| ADR | Decision | Status | Tags |
+|---|---|---|---|
+| [0007](project/0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan | amended by 0054 | ci |
+| [0027](project/0027-build-consume-the-api-as-source.md) | Build: consume the api as source | amended by 0048, 0165 | build |
+| [0033](project/0033-build-select-api-libraries-through-a-manifest.md) | Build: select api libraries through a manifest | accepted | build |
+| [0047](project/0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches | accepted | code |
+| [0048](project/0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted | includes |
+| [0054](project/0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted | testing |
+| [0083](project/0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces | accepted | review |
+| [0107](project/0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | amended by 0159, 0160 | build |
+| [0137](project/0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local | accepted | code |
+| [0158](project/0158-tooling-typescript-is-type-checked-through-a-package-json.md) | Tooling: TypeScript is type-checked through a package.json | accepted | tooling |
+| [0159](project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md) | Build: the portable job runs in an image built locally too | accepted | build |
+| [0160](project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang | accepted | build |
+| [0161](project/0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted | code |
+| [0162](project/0162-docs-an-mdbook-site-with-a-doxygen-reference.md) | Docs: an mdBook site with a Doxygen reference | accepted | docs |
+| [0164](project/0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit | accepted | tooling |
+| [0165](project/0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product | accepted | releases |
+| [0166](project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux | accepted | releases |
+| [0170](project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run | accepted | build |
+| [0171](project/0171-process-decision-records-are-filed-in-folders-by-area.md) | Process: decision records are filed in folders by area | accepted | process, tooling, docs |
+
+<!-- end of generated -->

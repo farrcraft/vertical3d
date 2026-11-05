@@ -7,7 +7,7 @@ manuals, and puts pictures of the apps in the documents and the top-level README
 
 ## Decisions
 
-- [ADR-0162](../adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md): mdBook builds the
+- [ADR-0162](../adr/project/0162-docs-an-mdbook-site-with-a-doxygen-reference.md): mdBook builds the
   site from `docs/`, Doxygen builds the reference from the public headers, and both are pinned
   binaries run by one script.
 - The Markdown in `docs/` stays the one source, and it still reads correctly on GitHub. Nothing

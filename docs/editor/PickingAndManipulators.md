@@ -135,7 +135,7 @@ a held move ends that move only.
 An orthographic view is not turned, because the fixed views are orthographic and a turn would
 leave them showing something else.
 
-Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
+Background: [ADR-0014](../adr/editor/0014-editor-pick-by-cpu-ray-cast.md)
 
 ## Component selection
 
@@ -165,8 +165,8 @@ item it holds the numbers of its selected control points and handles. Neither `a
 - Removing an item, and clearing the scene, drop its parts. A document does not save the
   selection.
 
-Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md),
-[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)
+Background: [ADR-0121](../adr/editor/0121-editor-component-selection-belongs-to-the-item.md),
+[ADR-0126](../adr/editor/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)
 
 ## Manipulators
 
@@ -251,6 +251,6 @@ More rules:
 - `Manipulator::Space` is Global or Local and starts as Global. No command changes it yet.
 - Changing the mode ends any drag under way, and the change made so far is recorded for undo.
 
-Background: [ADR-0015](../adr/0015-editor-manipulators-edit-the-object-transform.md),
-[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md),
-[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)
+Background: [ADR-0015](../adr/editor/0015-editor-manipulators-edit-the-object-transform.md),
+[ADR-0096](../adr/editor/0096-editor-handles-pivot-at-the-mean-of-the-selection.md),
+[ADR-0126](../adr/editor/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)

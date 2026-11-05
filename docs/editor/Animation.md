@@ -77,7 +77,7 @@ same item does not make its keyed ones pending.
 - **A drag starts where the item is shown.** The manipulator's target takes each object's
   placement from the evaluation, and writes the whole placement into the object as it moves.
 
-Background: [ADR-0120](../adr/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
+Background: [ADR-0120](../adr/editor/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
 
 ## The timeline
 
@@ -189,4 +189,4 @@ undo takes back.
 - Turning auto key on or off is a change to the document, which undo takes back. The project
   saves it.
 
-Background: [ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)
+Background: [ADR-0105](../adr/editor/0105-editor-animation-is-scalar-curves-on-item-properties.md)

@@ -1,13 +1,15 @@
 ---
 name: architecture-decision-records
-description: Write an ADR for a technical decision in this project, in the house format. Use when a choice between real alternatives is being made that is hard to reverse or constrains other code, and when someone asks why an existing decision was made. Covers what qualifies, titles, numbering, the index, amending and superseding.
+description: Write an ADR for a technical decision in this project, in the house format. Use when a choice between real alternatives is being made that is hard to reverse or constrains other code, and when someone asks why an existing decision was made. Covers what qualifies, titles, folders, tags, numbering, the generated index, amending and superseding.
 ---
 
 # Architecture Decision Records
 
-`docs/adr/` records why the codebase is shaped as it is. It holds `template.md`, an index in
-`README.md` grouped by area, and a numbered run of records. Read the index for the next free
-number. Numbers are never reused, including the numbers of deleted records.
+`docs/adr/` records why the codebase is shaped as it is. Each record lives in the folder of its
+area, such as `rendering/` or `editor/`, and [`docs/adr/README.md`](../../../docs/adr/README.md)
+says how the records are kept. Its index is generated, and its first line names the next free
+number. Numbers run across every folder and are never reused, including the numbers of deleted
+records. A record never moves once it is filed.
 
 The process rule is in [`docs/sdlc.md`](../../../docs/sdlc.md) §2. This skill is how to carry
 it out.
@@ -79,31 +81,35 @@ they stop being true. They belong in the commit message.
 ## Writing one
 
 1. Take the next number from the index.
-2. Draft it from `template.md`, and leave no placeholder text.
-3. Add a row to the right area table in `docs/adr/README.md`:
-   `| [NNNN](file.md) | Title | status |`.
-4. Update the document named in `Documented in` so that it states the rule.
-5. **Show it to the user before committing.** The decision is theirs. A record marked
+2. Draft it from `template.md` in the folder of its area, and leave no placeholder text.
+3. Tag it. The first tag is the area word its title starts with, and the others name every
+   subject it binds, from the table in `docs/adr/tags.md`. Add a row there for a new subject.
+4. Run `node scripts/adr.ts --write`, which adds it to the index, to the tags page and to the
+   site's summary. Without `--write`, the script checks every record, as a review gate.
+5. Update the document named in `Documented in` so that it states the rule.
+6. **Show it to the user before committing.** The decision is theirs. A record marked
    `accepted` that the user never accepted is a false statement that outlives the
    conversation.
-6. Commit it with the code it governs. The commit message names the ADR.
+7. Commit it with the code it governs. The commit message names the ADR.
 
 ## Amending, superseding and retiring
 
 - **A later decision changes part of an earlier one.**
   - Add `Amends: ADR-X` to the new record.
   - Add `Amended by: ADR-Y` to the old one, and set its status to `amended`.
-  - Edit the old record's header, not its body.
+  - Edit the old record's header, not its body. The gate reports a link that only one side names.
 - **A later decision replaces an earlier one.**
   - Use `Superseded by` and the status `superseded` instead.
   - The old file stays, so the reasoning that was replaced is still readable.
 - **A correction of fact** (a renamed class, a wrong count) is edited in place.
 - **A record that turns out not to be a decision is deleted.**
   - Its content moves to the doc or header where it belongs.
-  - Its row in the index stays, saying where the content went.
+  - Its number gets a row under "Numbers with no record" in `docs/adr/README.md`, saying
+    where the content went.
 
 ## Answering "why was this done?"
 
-Scan the index for the area, then read that record's Context and Decision. If no record
+Scan the index for the area, or `docs/adr/tags.md` for the subject, then read that record's
+Context and Decision. If no record
 covers it, say so and offer to write one. Do not reconstruct a rationale from the code; the
 point of the record is that the code cannot carry it.

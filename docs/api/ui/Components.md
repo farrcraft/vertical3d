@@ -63,7 +63,7 @@ Notes on individual components:
   draws the recess behind a row of such buttons, such as a `panel` with `recess` set. A tab
   under the cursor is raised halfway. Its label is measured semibold, so choosing it moves
   nothing. A plain toggle is filled with the `highlight` while it is checked.
-  Background: [ADR-0167](../../adr/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md).
+  Background: [ADR-0167](../../adr/ui/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md).
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
   with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an

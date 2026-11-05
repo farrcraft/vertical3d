@@ -78,8 +78,8 @@ memory costs more than the upload. A device also caps live allocations at
 `maxMemoryAllocationCount`, often 4096. A poll that fills the allocator's last block of a memory
 type pays for a new one, which is the slowest poll a stream has.
 
-Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md),
-[ADR-0110](../../adr/0110-memory-suballocate-by-default.md)
+Background: [ADR-0053](../../adr/rendering/0053-memory-optional-vma-suballocation.md),
+[ADR-0110](../../adr/rendering/0110-memory-suballocate-by-default.md)
 
 - A resource holds a `memory::Allocation` (block, offset, size, VMA handle), not a
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and
@@ -101,7 +101,7 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md),
 - The allocator is destroyed before the device. See
   [ownership](README.md#object-chain-and-ownership).
 
-Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
+Background: [ADR-0053](../../adr/rendering/0053-memory-optional-vma-suballocation.md)
 
 ## Buffers and streaming
 
@@ -139,7 +139,7 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
   would have to wait for every frame still drawing the old one. `resource::Mesh::describe(&item)`
   fills an item's buffers, index type and counts.
 
-Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
+Background: [ADR-0108](../../adr/rendering/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
 
 **`vulkan::frame::StreamRing`** is how the renderers stream per-frame geometry. It keeps a list of
 `Buffer` pairs per frame in flight.
@@ -164,7 +164,7 @@ Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-fre
 Starting sizes: `Quad` 64 KiB of vertices and 32 KiB of indices; `World` 64 KiB and 16 KiB;
 `Line` 64 KiB with no index buffer.
 
-Background: [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md)
+Background: [ADR-0010](../../adr/rendering/0010-meshes-owned-by-the-app-that-built-them.md)
 
 ## Resources and deferred destruction
 
@@ -241,8 +241,8 @@ entry holds a `resource::Mesh`, its parts and an optional skin. Releasing an ent
 through the ring and drops each albedo's user count, releasing the albedo with its last user. The
 registry's destructor destroys remaining meshes at once, so it must run after the device is idle.
 
-Background: [ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md),
-[ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)
+Background: [ADR-0061](../../adr/rendering/0061-resources-explicit-release-generational-handles.md),
+[ADR-0065](../../adr/rendering/0065-meshes-shared-registry-keyed-by-path.md)
 
 ## Textures
 
@@ -297,4 +297,4 @@ target with nothing of that kind to sample. A descriptor written against an imag
 usage is undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never
 releases the white texture, so such a handle can be released like any other.
 
-Background: [ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md)
+Background: [ADR-0082](../../adr/rendering/0082-textures-owned-by-the-device-context.md)

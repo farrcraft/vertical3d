@@ -84,6 +84,11 @@ jobs:
     - name: Site summary
       if: ${{ !cancelled() }}
       run: node scripts/summary.ts
+    # each decision record is filed in its area's folder, tagged and linked both ways, and the
+    # indexes made from the records are up to date
+    - name: Decision records
+      if: ${{ !cancelled() }}
+      run: node scripts/adr.ts
     # every type is in a header, no state is global, and a file's own helpers are in one
     # anonymous namespace at its top, as docs/contributing/Conventions.md sets out
     - name: File-local code

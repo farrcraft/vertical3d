@@ -41,7 +41,7 @@ program, waits for it, and ends it when a stop is asked for.
 A renderer failure during Render View takes the editor down with it, because moya runs in the
 editor's process. One during a batch fails only that frame.
 
-Background: [ADR-0106](../adr/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md)
+Background: [ADR-0106](../adr/editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md)
 
 ## What is rendered
 
@@ -94,7 +94,7 @@ ends, and a number that is not a whole one within its range is refused. The hide
 a list and taken at once. Each change goes through the history, so one undo puts it back.
 `RenderSettingsEditor` in `src/control/` draws it.
 
-Background: [ADR-0154](../adr/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md)
+Background: [ADR-0154](../adr/editor/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md)
 
 **A batch** names each camera by its document id, as `camera3`. A scene with no camera is
 rendered from the active view, as `view`. Each camera has a directory under `renders/`, holding
