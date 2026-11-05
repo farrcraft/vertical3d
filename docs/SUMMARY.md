@@ -296,6 +296,7 @@
     - [ADR-0179: Releases: an NSIS installer built by CPack](adr/project/0179-releases-an-nsis-installer-built-by-cpack.md)
     - [ADR-0180: Releases: SignPath Foundation signs the Windows release](adr/project/0180-releases-signpath-foundation-signs-the-windows-release.md)
     - [ADR-0181: Build: Linux builds with Clang and GCC](adr/project/0181-build-linux-builds-with-clang-and-gcc.md)
+    - [ADR-0182: Releases: the Flatpak takes the runtime's libraries and builds the rest](adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)
 - [Plans](plans/README.md)
     - [Releases — Installed Apps, a Version, a Release Workflow, an Installer and a Flatpak](plans/Releases.md)
 - [Roadmaps](roadmap/README.md)

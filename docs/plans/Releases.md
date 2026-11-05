@@ -106,7 +106,7 @@ by the owner before the step that builds it starts.
 | [17](#step-17--the-windows-installer) | The Windows installer, in the release workflow | apps, CI | 0179, 0180 | open |
 | [18](#step-18--the-record-the-compilers-on-linux) | The record: the compilers on Linux | `docs/adr` | **0181** | done |
 | [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | open |
-| [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | open |
+| [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | done |
 | [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | open |
 | [22](#step-22--the-documents) | The documents state the new rules, and the roadmap closes | `docs` | — | open |
 
@@ -446,6 +446,12 @@ ADR-0181 decides whether the Linux build uses Clang alone, or GCC as well.
 **Tests:** the portable job.
 
 ### Step 20 — The record: the Flatpak's dependencies
+
+**Done.** ADR-0182 is accepted: the Flatpak uses the Freedesktop runtime's libraries where it has
+them, and builds each other dependency as a pinned module, as Krita's and FreeCAD's Flathub
+manifests do. CI builds the Flatpak on every pull request. The runtime's 25.08 branch carries
+SDL 3.2.30 and ICU 77.1, against the baseline's 3.4.8 and 78.3, so step 21 builds against those
+versions.
 
 ADR-0182 decides whether vcpkg builds inside the Flatpak, or the runtime's own libraries replace
 some packages. Flathub builds with no network, so every source a build downloads is listed in the

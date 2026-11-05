@@ -114,6 +114,7 @@ reported, so the table lists only tags in use.
 | [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs |
 | [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
+| [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 
 ### camera
 
@@ -345,6 +346,7 @@ reported, so the table lists only tags in use.
 | [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
 | [0180](project/0180-releases-signpath-foundation-signs-the-windows-release.md) | Releases: SignPath Foundation signs the Windows release |
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
+| [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 
 ### rendering
 
