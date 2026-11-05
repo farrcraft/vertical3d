@@ -232,7 +232,9 @@ BOOST_FIXTURE_TEST_CASE(a_tab_of_a_kind_is_added_to_an_area, Table) {
     context.layout = layout;
     int changes = 0;
     context.areasChanged = [&changes]() { changes++; };
-    v3d::editor::app::AreaCommands(context).registerCommands(&table);
+    // the commands it registers call back into it, so it outlives them, as the editor's own does
+    const v3d::editor::app::AreaCommands areas(context);
+    areas.registerCommands(&table);
 
     v3d::event::Event add("area::tab::add::graph");
     add.data(static_cast<int>(layout->areas()[0].id));

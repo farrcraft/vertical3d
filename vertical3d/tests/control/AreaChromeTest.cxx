@@ -254,8 +254,10 @@ BOOST_FIXTURE_TEST_CASE(a_tabbed_area_holds_its_own_commands_on_its_strip, Chrom
 
     const Area::Bands bands = Area::bands(layout.areas()[0], 28.0F);
     BOOST_REQUIRE(bands.strip && bands.header);
-    BOOST_CHECK(*bands.strip == glm::vec4(3.0F, 3.0F, 395.0F, 28.0F));
-    BOOST_CHECK_EQUAL(bands.header->y, 31.0F);
+    const glm::vec4 stripBox = *bands.strip;
+    const glm::vec4 headerBox = *bands.header;
+    BOOST_CHECK(stripBox == glm::vec4(3.0F, 3.0F, 395.0F, 28.0F));
+    BOOST_CHECK_EQUAL(headerBox.y, 31.0F);
     const boost::shared_ptr<v3d::ui::component::menu::Bar> strip = areaMenu(0);
     BOOST_REQUIRE(strip && strip != header(0));
     BOOST_CHECK(strip->find("area::split::left"));

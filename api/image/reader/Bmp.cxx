@@ -32,22 +32,24 @@ Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 
 void Bmp::logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const format::bmp_file_header& fheader,
     const format::bmp_info_header& iheader, int num_colors) {
-    logger->get()->debug("BMPReader::read - bmp type: {}", fheader.type_);
-    logger->get()->debug("BMPReader::read - bmp size: {}", fheader.size_);
-    logger->get()->debug("BMPReader::read - bmp reserved1: {}", fheader.reserved1_);
-    logger->get()->debug("BMPReader::read - bmp reserved2: {}", fheader.reserved2_);
-    logger->get()->debug("BMPReader::read - bmp offset: {}", fheader.offset_);
-    logger->get()->debug("BMPReader::read - info size: {}", iheader.size_);
-    logger->get()->debug("BMPReader::read - info width: {}", iheader.width_);
-    logger->get()->debug("BMPReader::read - info height: {}", iheader.height_);
-    logger->get()->debug("BMPReader::read - info planes: {}", iheader.planes_);
-    logger->get()->debug("BMPReader::read - info bits: {}", iheader.bits_);
-    logger->get()->debug("BMPReader::read - info compression: {}", iheader.compression_);
-    logger->get()->debug("BMPReader::read - info image size: {}", iheader.imageSize_);
-    logger->get()->debug("BMPReader::read - info xppm: {}", iheader.xppm_);
-    logger->get()->debug("BMPReader::read - info yppm: {}", iheader.yppm_);
-    logger->get()->debug("BMPReader::read - info used: {}", iheader.used_);
-    logger->get()->debug("BMPReader::read - info important: {}", iheader.important_);
+    // the headers are packed, so a member can sit off its natural alignment, and fmt takes its
+    // arguments by reference. A unary plus passes each one as a value instead
+    logger->get()->debug("BMPReader::read - bmp type: {}", +fheader.type_);
+    logger->get()->debug("BMPReader::read - bmp size: {}", +fheader.size_);
+    logger->get()->debug("BMPReader::read - bmp reserved1: {}", +fheader.reserved1_);
+    logger->get()->debug("BMPReader::read - bmp reserved2: {}", +fheader.reserved2_);
+    logger->get()->debug("BMPReader::read - bmp offset: {}", +fheader.offset_);
+    logger->get()->debug("BMPReader::read - info size: {}", +iheader.size_);
+    logger->get()->debug("BMPReader::read - info width: {}", +iheader.width_);
+    logger->get()->debug("BMPReader::read - info height: {}", +iheader.height_);
+    logger->get()->debug("BMPReader::read - info planes: {}", +iheader.planes_);
+    logger->get()->debug("BMPReader::read - info bits: {}", +iheader.bits_);
+    logger->get()->debug("BMPReader::read - info compression: {}", +iheader.compression_);
+    logger->get()->debug("BMPReader::read - info image size: {}", +iheader.imageSize_);
+    logger->get()->debug("BMPReader::read - info xppm: {}", +iheader.xppm_);
+    logger->get()->debug("BMPReader::read - info yppm: {}", +iheader.yppm_);
+    logger->get()->debug("BMPReader::read - info used: {}", +iheader.used_);
+    logger->get()->debug("BMPReader::read - info important: {}", +iheader.important_);
     logger->get()->debug("BMPReader::read - num colors: {}", num_colors);
 }
 

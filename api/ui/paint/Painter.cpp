@@ -81,6 +81,7 @@ void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, 
  * @param start where the quarter turn begins, as arc() takes it
  **/
 void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - a radius, a width, then an angle
     float radius, float width, float start, const glm::vec4& colour) {
     const glm::vec2 centre = corner + towards * radius;
     const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);

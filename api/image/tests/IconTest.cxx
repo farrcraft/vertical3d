@@ -34,11 +34,12 @@ boost::shared_ptr<v3d::image::Image> square(unsigned int side) {
 }
 
 /**
- * @return the number of a size stored at an offset, least significant byte first
+ * @return the number Size bytes long stored at an offset, least significant byte first
  **/
-std::uint32_t number(const std::string& bytes, std::size_t at, std::size_t size) {
+template <std::size_t Size>
+std::uint32_t number(const std::string& bytes, std::size_t at) {
     std::uint32_t value = 0;
-    for (std::size_t index = 0; index < size; index++) {
+    for (std::size_t index = 0; index < Size; index++) {
         value |= static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at + index])) << (index * 8);
     }
     return value;
@@ -58,22 +59,23 @@ BOOST_AUTO_TEST_SUITE(icon_test)
 BOOST_AUTO_TEST_CASE(an_icon_file_lists_each_image) {
     const std::optional<std::string> bytes = encode({ square(16), square(256) });
     BOOST_REQUIRE(bytes);
-    BOOST_CHECK_EQUAL(number(*bytes, 0, 2), 0U);
-    BOOST_CHECK_EQUAL(number(*bytes, 2, 2), 1U);
-    BOOST_REQUIRE_EQUAL(number(*bytes, 4, 2), 2U);
+    const std::string& file = *bytes;
+    BOOST_CHECK_EQUAL(number<2>(file, 0), 0U);
+    BOOST_CHECK_EQUAL(number<2>(file, 2), 1U);
+    BOOST_REQUIRE_EQUAL(number<2>(file, 4), 2U);
 
     const unsigned int sides[] = { 16, 256 };
     std::size_t expected = 6 + (2 * 16);
     for (std::size_t index = 0; index < 2; index++) {
         const std::size_t entry = 6 + (index * 16);
-        BOOST_CHECK_EQUAL(number(*bytes, entry, 1), sides[index] % 256);
-        BOOST_CHECK_EQUAL(number(*bytes, entry + 1, 1), sides[index] % 256);
-        BOOST_CHECK_EQUAL(number(*bytes, entry + 4, 2), 1U);
-        BOOST_CHECK_EQUAL(number(*bytes, entry + 6, 2), 32U);
-        BOOST_CHECK_EQUAL(number(*bytes, entry + 12, 4), expected);
-        expected += number(*bytes, entry + 8, 4);
+        BOOST_CHECK_EQUAL(number<1>(file, entry), sides[index] % 256);
+        BOOST_CHECK_EQUAL(number<1>(file, entry + 1), sides[index] % 256);
+        BOOST_CHECK_EQUAL(number<2>(file, entry + 4), 1U);
+        BOOST_CHECK_EQUAL(number<2>(file, entry + 6), 32U);
+        BOOST_CHECK_EQUAL(number<4>(file, entry + 12), expected);
+        expected += number<4>(file, entry + 8);
     }
-    BOOST_CHECK_EQUAL(bytes->size(), expected);
+    BOOST_CHECK_EQUAL(file.size(), expected);
 }
 
 /**
@@ -82,9 +84,10 @@ BOOST_AUTO_TEST_CASE(an_icon_file_lists_each_image) {
 BOOST_AUTO_TEST_CASE(the_largest_image_is_a_png) {
     const std::optional<std::string> bytes = encode({ square(256) });
     BOOST_REQUIRE(bytes);
+    const std::string& file = *bytes;
     v3d::image::reader::Png png(boost::make_shared<v3d::log::Logger>());
     const boost::shared_ptr<v3d::image::Image> read =
-        png.read(reinterpret_cast<const unsigned char*>(bytes->data()) + number(*bytes, 18, 4), number(*bytes, 14, 4));
+        png.read(reinterpret_cast<const unsigned char*>(file.data()) + number<4>(file, 18), number<4>(file, 14));
     BOOST_REQUIRE(read);
     BOOST_CHECK_EQUAL(read->width(), 256U);
 }
@@ -106,20 +109,24 @@ BOOST_AUTO_TEST_CASE(a_smaller_image_is_a_bitmap_with_a_mask) {
     }
     const std::optional<std::string> bytes = encode({ image });
     BOOST_REQUIRE(bytes);
-    const std::size_t at = number(*bytes, 18, 4);
-    BOOST_CHECK_EQUAL(number(*bytes, 14, 4), 40U + (16U * 16U * 4U) + (4U * 16U));
-    BOOST_CHECK_EQUAL(number(*bytes, at, 4), 40U);
-    BOOST_CHECK_EQUAL(number(*bytes, at + 4, 4), 16U);
-    BOOST_CHECK_EQUAL(number(*bytes, at + 8, 4), 32U);
-    BOOST_CHECK_EQUAL(number(*bytes, at + 14, 2), 32U);
+    const std::size_t at = number<4>(*bytes, 18);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, 14), 40U + (16U * 16U * 4U) + (4U * 16U));
+    BOOST_CHECK_EQUAL(number<4>(*bytes, at), 40U);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, at + 4), 16U);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, at + 8), 32U);
+    BOOST_CHECK_EQUAL(number<2>(*bytes, at + 14), 32U);
+
+    // a row is 16 pixels of four bytes, and a row of the mask is 16 bits padded to four bytes
+    const std::size_t row = 64U;
+    const std::size_t maskRow = 4U;
 
     // the bottom row comes first and is clear, and the top row comes last and is red
     const std::size_t pixels = at + 40;
-    BOOST_CHECK_EQUAL(number(*bytes, pixels, 4), 0U);
-    BOOST_CHECK_EQUAL(number(*bytes, pixels + (15U * 16U * 4U), 4), 0xFFFF0000U);
-    const std::size_t mask = pixels + (16U * 16U * 4U);
-    BOOST_CHECK_EQUAL(number(*bytes, mask, 4), 0x0000FFFFU);
-    BOOST_CHECK_EQUAL(number(*bytes, mask + (15U * 4U), 4), 0U);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, pixels), 0U);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, pixels + (15U * row)), 0xFFFF0000U);
+    const std::size_t mask = pixels + (16U * row);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, mask), 0x0000FFFFU);
+    BOOST_CHECK_EQUAL(number<4>(*bytes, mask + (15U * maskRow)), 0U);
 }
 
 /**

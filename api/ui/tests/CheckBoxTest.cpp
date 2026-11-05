@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     container.add(box);
     renderer.draw(&canvas, container);
 
-    const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
+    const v3d::ui::paint::Dressing& style = renderer.dressing();
     BOOST_CHECK_CLOSE(box->size().x,
         style.markSize + (style.padding * 0.5F) + (7.0F * characterWidth), 0.001F);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001F);

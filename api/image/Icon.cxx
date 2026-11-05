@@ -45,10 +45,12 @@ constexpr std::uint16_t BITS = 32;
 constexpr std::uint32_t BITMAP_HEADER = 40;
 
 /**
- * Append a number to the file, least significant byte first, as the format stores every number.
+ * Append a number Size bytes long to the file, least significant byte first, as the format
+ * stores every number.
  **/
-void put(std::string* bytes, std::uint32_t value, std::size_t size) {
-    for (std::size_t index = 0; index < size; index++) {
+template <std::size_t Size>
+void put(std::string* bytes, std::uint32_t value) {
+    for (std::size_t index = 0; index < Size; index++) {
         bytes->push_back(static_cast<char>((value >> (index * 8)) & 0xFFU));
     }
 }
@@ -63,17 +65,17 @@ std::string bitmap(const Image& image) {
     const std::uint32_t side = image.width();
     const std::uint32_t maskRow = ((side + 31) / 32) * 4;
     std::string bytes;
-    put(&bytes, BITMAP_HEADER, 4);
-    put(&bytes, side, 4);
-    put(&bytes, side * 2, 4);
-    put(&bytes, PLANES, 2);
-    put(&bytes, BITS, 2);
-    put(&bytes, 0, 4);  // not compressed
-    put(&bytes, (side * side * 4) + (maskRow * side), 4);
-    put(&bytes, 0, 4);  // no resolution
-    put(&bytes, 0, 4);
-    put(&bytes, 0, 4);  // no palette
-    put(&bytes, 0, 4);
+    put<4>(&bytes, BITMAP_HEADER);
+    put<4>(&bytes, side);
+    put<4>(&bytes, side * 2);
+    put<2>(&bytes, PLANES);
+    put<2>(&bytes, BITS);
+    put<4>(&bytes, 0);  // not compressed
+    put<4>(&bytes, (side * side * 4) + (maskRow * side));
+    put<4>(&bytes, 0);  // no resolution
+    put<4>(&bytes, 0);
+    put<4>(&bytes, 0);  // no palette
+    put<4>(&bytes, 0);
     for (std::uint32_t row = side; row-- > 0;) {
         for (std::uint32_t column = 0; column < side; column++) {
             const unsigned int at = ((row * side) + column) * 4;
@@ -142,22 +144,22 @@ std::optional<std::string> encodeIcon(std::span<const boost::shared_ptr<Image>> 
     }
 
     std::string bytes;
-    put(&bytes, 0, 2);
-    put(&bytes, ICON_TYPE, 2);
-    put(&bytes, static_cast<std::uint32_t>(encoded.size()), 2);
+    put<2>(&bytes, 0);
+    put<2>(&bytes, ICON_TYPE);
+    put<2>(&bytes, static_cast<std::uint32_t>(encoded.size()));
     // the images follow the directory, each where the one before it ends
     std::uint32_t offset = HEADER + (ENTRY * static_cast<std::uint32_t>(encoded.size()));
     for (std::size_t index = 0; index < encoded.size(); index++) {
         // a side of 256 does not fit in a byte, and is written as 0
         const std::uint32_t side = images[index]->width() % LARGEST;
-        put(&bytes, side, 1);
-        put(&bytes, side, 1);
-        put(&bytes, 0, 1);  // no palette
-        put(&bytes, 0, 1);  // reserved
-        put(&bytes, PLANES, 2);
-        put(&bytes, BITS, 2);
-        put(&bytes, static_cast<std::uint32_t>(encoded[index].size()), 4);
-        put(&bytes, offset, 4);
+        put<1>(&bytes, side);
+        put<1>(&bytes, side);
+        put<1>(&bytes, 0);  // no palette
+        put<1>(&bytes, 0);  // reserved
+        put<2>(&bytes, PLANES);
+        put<2>(&bytes, BITS);
+        put<4>(&bytes, static_cast<std::uint32_t>(encoded[index].size()));
+        put<4>(&bytes, offset);
         offset += static_cast<std::uint32_t>(encoded[index].size());
     }
     for (const std::string& each : encoded) {

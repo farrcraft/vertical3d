@@ -183,6 +183,11 @@ glm::vec3 Machine::refract(const glm::vec3 & incident, const glm::vec3 & normal,
 }
 
 void Machine::fresnel(const internal::Site & site, unsigned int point) {
+    // the reflected and transmitted fractions go to two output arguments, so a call that
+    // names fewer has nowhere to put them
+    if (site.outputs == nullptr || site.outputs->size() < 2) {
+        return;
+    }
     const glm::vec3 incident = unit(site.argument(0).triple(point));
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);

@@ -145,9 +145,16 @@ JSValue call(JSContext* context, JSValueConst self, int count, JSValueConst* val
     boost::json::array arguments;
     for (int each = 0; each < count; ++each) {
         const std::optional<std::string> written = json(context, values[each]);
-        boost::system::error_code error;
-        boost::json::value parsed = written ? boost::json::parse(*written, error) : boost::json::value(nullptr);
-        arguments.push_back(error ? boost::json::value(nullptr) : std::move(parsed));
+        // an argument JSON cannot hold arrives as null
+        boost::json::value parsed(nullptr);
+        if (written) {
+            boost::system::error_code error;
+            parsed = boost::json::parse(*written, error);
+            if (error) {
+                parsed = nullptr;
+            }
+        }
+        arguments.push_back(std::move(parsed));
     }
     try {
         const boost::json::value value = (*function)(arguments);
