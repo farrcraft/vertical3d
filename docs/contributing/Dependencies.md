@@ -9,6 +9,7 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 - [The Vulkan SDK](#the-vulkan-sdk)
 - [TypeScript tooling from npm](#typescript-tooling-from-npm)
 - [Setting up vcpkg](#setting-up-vcpkg)
+- [Third-party notices](#third-party-notices)
 - [Adding a package](#adding-a-package)
 - [Updating versions](#updating-versions)
 
@@ -205,6 +206,27 @@ configure again.
 
 CI does not use `vendor/vcpkg` or the runner image's vcpkg. Each job checks out the baseline
 commit alone, at depth one, bootstraps it, and installs from that.
+
+## Third-party notices
+
+A release shows a licence for everything it ships, in one notices file.
+[scripts/notices.ts](../../scripts/notices.ts) writes it with `--out <file>`, and holds:
+
+1. the project's [LICENSE](../../LICENSE);
+2. each font family's licence from `data/fonts/`;
+3. the copyright file of each vcpkg package that ships code.
+
+Without `--out` the script is a check, and CI runs it on the Debug build's install. It fails
+when:
+
+- **a package installs code and has no copyright file.** A package that installs files only
+  under `share/` ships no code: vcpkg's build helpers and meta-packages are such packages.
+- **a font has no licence.** A font's licence is the `<Family>-OFL.txt` file beside it whose
+  family its name starts with. `Inter-OFL.txt` covers `Inter-Regular.ttf`. When two families
+  match, the longer one wins.
+
+The demos' own assets are the project's work, under its licence.
+[Demos.md](../Demos.md#where-the-demo-assets-come-from) lists them.
 
 ## Adding a package
 

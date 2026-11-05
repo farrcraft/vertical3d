@@ -91,7 +91,7 @@ by the owner before the step that builds it starts.
 | [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | done |
 | [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | done |
 | [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | done |
-| [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | open |
+| [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | done |
 | [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | open |
 | [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | open |
 | [8](#step-8--the-release-triplet-tried) | The release triplet, tried with the editor | build | — | open |
@@ -223,6 +223,19 @@ to `demos/tetris/assets/`, outside `data/`, so neither the build nor an install 
 **Tests:** none. Step 5's notices list each asset.
 
 ### Step 5 — Third-party notices
+
+**Done.** `scripts/notices.ts --out <file>` writes the notices file: the project's `LICENSE`, each
+font family's OFL text, and the copyright file of each vcpkg package that ships code. Run on the
+Debug install, it holds eight font families and 80 packages. Without `--out` it is a gate, and
+`ctest.yml` runs it after the Debug build's configure. It fails on a package that installs code
+and has no copyright file, and on a font no licence covers. A package that installs only under
+`share/`, such as vcpkg's build helpers, ships no code and needs no notice. Dependencies.md
+states the rule, and nine cases test the script.
+
+Two things differ from the plan. Nothing in the tree is vendored but vcpkg, which does not
+ship, so there are no vendored licences to gather. The demos' assets are the project's own work,
+recorded in Demos.md, so they are covered by `LICENSE` rather than checked by the script. Step
+11 puts the file in the install.
 
 * **`scripts/notices.ts` writes one notices file** from the copyright files vcpkg installs, the
   font licences, the vendored licences and the demo assets' licences.

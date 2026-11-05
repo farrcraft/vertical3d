@@ -340,6 +340,24 @@ jobs:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
 
+      # Node runs the notices check and the fails-first harness directly, with no install, at the
+      # version the other gates run on in review-gates.yml.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: matrix.preset == 'ci'
+        with:
+          node-version: 24
+
+      # A release shows a licence for everything it ships: every package in the install that
+      # ships code has a copyright file, and every font has a licence. The check reads this job's
+      # install, which the review gates' runner does not have. Both build types install the same
+      # packages, so the Debug build alone runs it.
+      - name: Everything a release ships has a licence
+        if: matrix.preset == 'ci'
+        shell: pwsh
+        run: |
+          node scripts/notices.ts --installed "$env:BUILD_DIR/vcpkg_installed"
+          if ($LASTEXITCODE -ne 0) { throw "the notices check exited $LASTEXITCODE" }
+
       - name: Build
         shell: cmd
         run: |
@@ -498,13 +516,6 @@ jobs:
             -DVCPKG_INSTALLED_DIR="%GITHUB_WORKSPACE%\out\build\ci\vcpkg_installed" ^
             -DVCPKG_MANIFEST_INSTALL=OFF || exit /b 1
           cmake --build "%STARTER_BUILD_DIR%" || exit /b 1
-
-      # Node runs the fails-first harness directly, with no install, at the version the other
-      # gates run on in review-gates.yml.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
-        with:
-          node-version: 24
 
       # Every test case a pull request adds has to fail without the rest of the pull request: a
       # case that passes on the base does not test the change. The harness builds the affected
