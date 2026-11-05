@@ -89,7 +89,7 @@ by the owner before the step that builds it starts.
 |---|---|---|---|---|
 | [1](#step-1--apps-find-their-data-from-the-install) | Apps find their data from the install | `api/engine`, apps | — | done |
 | [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | done |
-| [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | open |
+| [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | done |
 | [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | open |
 | [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | open |
 | [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | open |
@@ -188,6 +188,20 @@ executable, as the roadmap said, and this step moved it.
 **Tests:** cases that the log and the default project resolve under the user's directories.
 
 ### Step 3 — A Release build in CI
+
+**Done.** `x64-Release` builds Release locally on `x64-Debug`'s vcpkg install, and `ci-release`
+is the CI job's. `ctest.yml` runs the job as a matrix over `ci` and `ci-release`, each on a runner
+of its own. The starter example and the fails-first harness run in the Debug build alone. The
+tree compiled cleanly in Release, and two suites failed only there:
+
+- `Interface::resolveImages` summed two passes in one expression, and C++ leaves the order of a
+  sum's operands unspecified. The Release build resolved the containers before the themes. The
+  passes are now two statements.
+- The brep welder turned `-0` into `0` by adding zero, and the optimiser folded `x + 0.0F` to
+  `x`. The key now clears the sign bit of `-0` on the integer.
+
+Every suite passes in both builds, and every app ran from a Release build with `--capture`. The
+matrix itself first runs on the branch's pull request.
 
 * **A `release` preset** in `CMakePresets.json` builds Release with the release's options.
 * **`ctest.yml` builds and tests it** beside Debug.

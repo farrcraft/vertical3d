@@ -1,4 +1,6 @@
-# Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
+# Builds the tree in Debug and in Release and runs the Boost.Test suites through ctest in each. A
+# release ships the Release build, so a defect only Release shows fails here, not in a release.
+# This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
 # needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
@@ -26,9 +28,17 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
 
+    # Each build type runs on a runner of its own, beside the other rather than after it. A
+    # failure in one does not cancel the other, so a run reports both.
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ci, ci-release]
+
     env:
-      # The directory the ci preset in CMakePresets.json builds into
-      BUILD_DIR: out/build/ci
+      # The configure preset in CMakePresets.json, and the directory it builds into
+      PRESET: ${{ matrix.preset }}
+      BUILD_DIR: out/build/${{ matrix.preset }}
       # The out of tree build of the starter example, which consumes the api as source. It is
       # a second build directory rather than a second workflow: it needs this job's toolchain,
       # vcpkg install and SDK, and a runner of its own would build boost again.
@@ -274,7 +284,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
-      # The ci preset configures with the vcpkg checkout above, and with a job pool that holds
+      # The ci presets configure with the vcpkg checkout above, and with a job pool that holds
       # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
       # deployment runs in the same edge, reopening the binary just linked and copying dlls out
       # of the installed bin directory the other link edges are reading. Only linking is pooled,
@@ -285,7 +295,7 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --version || exit /b 1
           ninja --version || exit /b 1
-          cmake --preset ci || exit /b 1
+          cmake --preset %PRESET% || exit /b 1
 
       # An archive is named by its package's ABI hash, and the install's status file lists the
       # hash of every package installed. An archive no installed package names is one the
@@ -320,13 +330,15 @@ jobs:
           "changed=$($built -gt 0)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       # Saved here, not from a post step. A run whose build or tests fail still keeps the
-      # packages the configure just spent the time building.
+      # packages the configure just spent the time building. The two build types install the
+      # same packages, and each saves under a key of its own, because two saves of one key
+      # cannot both succeed.
       - name: Save the vcpkg binaries
         if: steps.vcpkg-used.outputs.changed == 'True'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
 
       - name: Build
         shell: cmd
@@ -470,8 +482,10 @@ jobs:
       # something its manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
-      # would build boost a second time to install the same package set.
+      # would build boost a second time to install the same package set. The Debug build alone
+      # runs it, because what it checks does not depend on the build type.
       - name: Build the starter example
+        if: matrix.preset == 'ci'
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
@@ -488,7 +502,7 @@ jobs:
       # Node runs the fails-first harness directly, with no install, at the version the other
       # gates run on in review-gates.yml.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
         with:
           node-version: 24
 
@@ -499,9 +513,10 @@ jobs:
       # Test step does. Only pull requests run it, because a push to main has already been
       # checked as one. Its worktree and its build go under RUNNER_TEMP, which Defender does not
       # scan. A link that fails there would mark every new case as failing to build, which the
-      # harness counts as failing without the change.
+      # harness counts as failing without the change. The Debug build alone runs it: a case
+      # fails without the change in both build types or in neither.
       - name: The new test cases fail without the change
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"

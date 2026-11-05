@@ -24,16 +24,21 @@ configured with. Each preset builds into `out/build/<preset name>`:
 | Preset | Configured with | For |
 |---|---|---|
 | `x64-Debug` | the defaults | everyday work, and the build every script and document uses |
+| `x64-Release` | Release, with `x64-Debug`'s vcpkg install | the build a release ships |
 | `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
 | `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
 | `verify` | both | both analysers in one build |
 | `asan` | `V3D_SANITIZE=ON` | AddressSanitizer ([Testing.md](Testing.md#sanitizers)) |
 | `ci` | the vcpkg that `VCPKG_INSTALLATION_ROOT` names, and one link at a time | the Windows CI job |
+| `ci-release` | `ci`, in Release | the Windows CI job's Release build |
 
-Every preset is Debug, uses the `x64-windows` triplet, and generates for Ninja. Every one but
-`ci` uses the vcpkg in `vendor/vcpkg`. `ci` is listed only when `VCPKG_INSTALLATION_ROOT` is
-set, which the CI job does after it checks vcpkg out at the manifest's baseline. Visual Studio
-and VS Code list the presets when they open the folder.
+Every preset but `x64-Release` and `ci-release` is Debug. Every one uses the `x64-windows`
+triplet, which holds the Debug and the Release libraries, and generates for Ninja.
+`x64-Release` installs its packages into `x64-Debug`'s `vcpkg_installed` rather than a second
+copy. Every preset but the two `ci` ones uses the vcpkg in `vendor/vcpkg`. The `ci` presets
+are listed only when `VCPKG_INSTALLATION_ROOT` is set, which the CI job does after it checks
+vcpkg out at the manifest's baseline. Visual Studio and VS Code list the presets when they open
+the folder.
 
 From a shell, enter a developer environment first (run `vcvars64.bat`), then configure and build:
 
