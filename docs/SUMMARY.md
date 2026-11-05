@@ -289,6 +289,7 @@
     - [ADR-0173: Testing: the suites also run under the sanitizers](adr/project/0173-testing-the-suites-also-run-under-the-sanitizers.md)
     - [ADR-0174: Testing: the hand-written parsers are fuzzed](adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
     - [ADR-0175: Releases: semantic versions from 0.1.0](adr/project/0175-releases-semantic-versions-from-0-1-0.md)
+    - [ADR-0176: Releases: the Windows release links its libraries as DLLs](adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md)
     - [ADR-0177: Releases: a hand-written changelog](adr/project/0177-releases-a-hand-written-changelog.md)
     - [ADR-0178: Releases: a tag on main starts a release](adr/project/0178-releases-a-tag-on-main-starts-a-release.md)
 - [Plans](plans/README.md)

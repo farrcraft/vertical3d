@@ -94,8 +94,8 @@ by the owner before the step that builds it starts.
 | [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | done |
 | [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | done |
 | [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | done |
-| [8](#step-8--the-release-triplet-tried) | The release triplet, tried with the editor | build | — | open |
-| [9](#step-9--the-record-how-a-release-links-its-dependencies) | The record: how a release links its dependencies | `docs/adr` | **0176** | open |
+| [8](#step-8--the-release-triplet-tried) | The release triplet, tried with the editor | build | — | done |
+| [9](#step-9--the-record-how-a-release-links-its-dependencies) | The record: how a release links its dependencies | `docs/adr` | **0176** | done |
 | [10](#step-10--the-editor-finds-moya-and-its-usd-plugins-from-the-install) | The editor finds moya and its USD plugins from the install | `vertical3d`, build | 0176 | open |
 | [11](#step-11--install-rules) | Install rules, and a CI job that runs each app from the install | build, CI | 0176 | open |
 | [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | done |
@@ -281,6 +281,14 @@ info carries it.
 
 ### Step 8 — The release triplet, tried
 
+**Done.** Every app built in Release with `x64-windows-static-md`. The editor and moya ran and
+rendered, and the USD suite passed. The triplet does not leave no DLLs: vcpkg's `usd` port
+declares `vcpkg_check_linkage(ONLY_DYNAMIC_LIBRARY)`, so OpenUSD's 18 DLLs and its plugins sit
+beside the editor whatever the triplet, with the Vulkan loader. No overlay was needed. Each app
+carries its own copy of every library, so the apps and libraries came to 104 MB, against 47 MB
+for one shared copy of each of the 41 DLLs `x64-windows` installs. Each demo is 12 MB static and
+1 MB shared.
+
 * **The editor builds and runs with `x64-windows-static-md`**, the triplet the roadmap's research
   favoured, and imports USD. The triplet leaves no DLLs to gather.
 * **A triplet overlay builds OpenUSD shared**, if its plugins need it.
@@ -288,6 +296,10 @@ info carries it.
 **Tests:** the suites pass with the trial triplet. The editor imports a USD fixture.
 
 ### Step 9 — The record: how a release links its dependencies
+
+**Done.** ADR-0176 is accepted: a Windows release links its libraries as DLLs, through
+`x64-windows` as every build does. The install holds one copy of each DLL beside the apps, and
+leaves out the Vulkan loader. Step 11 gathers them.
 
 ADR-0176 decides the triplet a release builds with, from step 8's trial.
 

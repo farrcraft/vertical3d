@@ -269,6 +269,7 @@ The next record is ADR-0179.
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers | accepted | testing, ci, build |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed | accepted | testing, ci, offline |
 | [0175](project/0175-releases-semantic-versions-from-0-1-0.md) | Releases: semantic versions from 0.1.0 | accepted | releases |
+| [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs | accepted | releases, build |
 | [0177](project/0177-releases-a-hand-written-changelog.md) | Releases: a hand-written changelog | accepted | releases |
 | [0178](project/0178-releases-a-tag-on-main-starts-a-release.md) | Releases: a tag on main starts a release | accepted | releases |
 
