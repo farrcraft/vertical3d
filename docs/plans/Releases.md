@@ -410,9 +410,12 @@ application to it is the owner's.
 app's name, writes its version resource and records it for the Start menu. CPack's NSIS
 generator builds the installer from the install rules, into `package/`. A configure was checked
 here: `pong.exe` reads back "Pong", "0.1.0-dev" and "Vertical3D" from its properties, and
-CPack's configuration lists the six windowed apps. NSIS is not installed on this machine, so
-the installer was not built here. CI's Release job builds it on every run, installs it
-silently, checks the editor's Start menu entry, and checks the uninstaller removes every app. On
+CPack's configuration lists the six windowed apps. The installer is 29 MB. Here it installed
+silently into a scratch directory, with a Start menu entry for each windowed app and one for
+the uninstaller. The editor and pong ran from the installed copy, and the uninstaller removed
+every file and the Start menu folder. `v3dInstallDependencies.cmake` sets CMake's policy
+CMP0207, which normalises paths before matching, after CPack warned of it. CI's Release job
+builds the installer on every run and runs the same install and uninstall checks. On
 a tag it is attested and published beside the zip. The editor's entry is "Vertical3D Editor",
 because a shortcut's file name cannot hold the `|` of "Vertical|3D". Signing is added to the
 workflow once SignPath Foundation accepts the project, which needs its organisation and project

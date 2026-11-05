@@ -7,6 +7,11 @@
 # @param V3D_DLL_DIRECTORY vcpkg's directory of DLLs for the build's configuration
 # @param CMAKE_INSTALL_PREFIX the install root, which holds the apps
 
+# paths are matched with forward slashes, which the exclusions below accept as well as backslashes
+if(POLICY CMP0207)
+	cmake_policy(SET CMP0207 NEW)
+endif()
+
 file(GLOB apps "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/*.exe")
 if(NOT apps)
 	message(FATAL_ERROR "no app is installed in ${CMAKE_INSTALL_PREFIX} to find the DLLs of")
