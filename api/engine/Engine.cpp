@@ -41,6 +41,7 @@
 #include <string_view>
 #include <vector>
 
+#include "Application.h"
 #include "Feature.h"
 #include "Identity.h"
 #include "Launch.h"
@@ -220,8 +221,7 @@ bool Engine::initialize() {
 
     logger_->get()->info("Initializing engine...");
 
-    const std::string dataPath = appPath_ + std::string("data/");
-    assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
+    assetManager_ = boost::make_shared<v3d::asset::Manager>(dataRoots(appPath_, launch_), logger_);
     v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();

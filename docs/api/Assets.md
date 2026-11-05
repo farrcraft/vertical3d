@@ -18,9 +18,19 @@ What the loaders read is described with the type they read into: images in
 ## The asset manager
 
 `v3d::asset::Manager` ([api/asset/Manager.h](../../api/asset/Manager.h)) loads files from one
-directory. The game engine builds one rooted at `<app path>/data/` and returns it from
-`Engine::assets()`. Every relative name an app loads resolves there, not against the working
-directory.
+or more root directories. A name resolves against each root in order, and the first root that
+holds the file wins. A name no root holds resolves against the first root, so the failure names
+a path there.
+
+The game engine builds one with two roots and returns it from `Engine::assets()`:
+
+1. `<app path>/data/<program>/`, the app's own assets. `<program>` is the name the executable
+   was started as, without its extension, as `Launch::program` holds it.
+2. `<app path>/data/`, the assets every app shares, such as the fonts.
+
+`engine::dataRoots()` names the two, and an install lays its files out the same way. An engine
+with no command line, as in a test, has no program name and reads `<app path>/data/` alone.
+Every relative name an app loads resolves under the roots, not against the working directory.
 
 ```cpp
 auto doc = assets()->load<v3d::asset::kind::Json>("level.json");

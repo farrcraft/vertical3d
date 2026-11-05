@@ -10,7 +10,7 @@ another:
 
 | Function | Directory | Used for |
 |---|---|---|
-| `v3d::engine::appPath(argv[0])` | The directory the executable is in. The engine loads assets from its `data/` subdirectory. | Shipped assets. Rebuilt from source on every build, and not reliably writable. |
+| `v3d::engine::appPath()` | The directory the executable is in, as `SDL_GetBasePath` reports it, whatever the working directory. The engine loads assets from its `data/` subdirectory, as [Assets.md](../Assets.md#the-asset-manager) describes. | Shipped assets. Rebuilt from source on every build, and not reliably writable. |
 | `v3d::engine::userPath(org, app)` | A per-user directory from `SDL_GetPrefPath`. It is created if missing. | Settings, saved bindings, saved games. |
 
 Both return paths ending in a separator. `userPath()` returns an empty string and logs if the

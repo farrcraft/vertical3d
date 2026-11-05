@@ -23,7 +23,10 @@
 namespace v3d::asset {
 /**
  * The Asset Manager provides an access point for mapping and loading assets
- * within a single path.
+ * under one or more roots.
+ *
+ * A name is resolved against each root in order, and the first root that holds the file wins.
+ * A name no root holds resolves against the first, so the failure names a path in it.
  *
  * It loads the kinds a loader has been registered for. A manager starts with the document
  * loaders, Json and Text. The loaders for pictures and models are in api/asset/media, and the
@@ -40,8 +43,16 @@ namespace v3d::asset {
 class Manager final {
  public:
     /**
+     * @param path the one root names resolve against
+     * @param logger where failures are reported
      **/
     Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger>& logger);
+
+    /**
+     * @param roots the roots names resolve against, searched in order. There is at least one
+     * @param logger where failures are reported
+     **/
+    Manager(const std::vector<std::string>& roots, const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      * Load an asset through the loader registered for its extension.
@@ -88,6 +99,9 @@ class Manager final {
     /**
      * The path a name resolves to, for a caller that opens the file itself instead of loading
      * it as an asset.
+     *
+     * @param name the file, relative to a root
+     * @return the file under the first root that holds it, or under the first root when none does
      **/
     std::string path(std::string_view name) const;
 
@@ -115,7 +129,7 @@ class Manager final {
         return held;
     }
 
-    boost::filesystem::path path_;
+    std::vector<boost::filesystem::path> roots_;
     std::unordered_map<std::type_index, boost::shared_ptr<Loader>> loaders_;
     std::unordered_map<std::string, boost::shared_ptr<Loader>> extensions_;
     boost::shared_ptr<v3d::log::Logger> logger_;

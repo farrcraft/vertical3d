@@ -50,7 +50,8 @@ The parts of an app that are the same in every game live in the api. An app keep
 makes it that game. Do not write your own version of these:
 
 - **`main`** — `v3d::engine::run<T>`, described in [Lifecycle.md](Lifecycle.md#the-run-function).
-- **The app path** — `v3d::engine::appPath(argv[0])`.
+- **The app path** — `v3d::engine::appPath()`, and the data directories under it,
+  `v3d::engine::dataRoots()`.
 - **The shell** — `v3d::shell::Shell` builds the ui, the screen, the pause menu and the statistics
   overlay below, and declares their commands. An app holds one. See [Shell.md](Shell.md).
 - **Text** — `v3d::ui::paint::TextRenderer` owns the font, the glyph store and text drawing.

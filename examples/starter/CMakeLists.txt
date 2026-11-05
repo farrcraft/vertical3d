@@ -43,9 +43,9 @@ add_executable(v3dstarter
 	"src/main.cxx")
 
 # A CMake function is global once defined, so the tree's data helpers are callable here. This
-# one copies data/ beside the executable, because the engine resolves every asset relative to
-# the exe. v3d_add_shared_data(v3dstarter) would also copy the tree's own data/, which holds
-# the shared font. This app draws no text, so it does not call it.
+# one copies data/ into data/v3dstarter/ beside the executable, because the engine resolves
+# every asset relative to the exe. v3d_add_shared_data(v3dstarter) would also copy the tree's
+# own data/, which holds the shared font. This app draws no text, so it does not call it.
 v3d_add_app_data(v3dstarter)
 
 # The app names v3d:: targets and no third party package. These sources compile against

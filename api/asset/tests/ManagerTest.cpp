@@ -10,11 +10,16 @@
 #include <api/asset/kind/Text.h>
 #include <api/log/Logger.h>
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <typeinfo>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
@@ -156,6 +161,51 @@ BOOST_AUTO_TEST_CASE(manager_path_resolution_test) {
 
     auto rooted = manager("nowhere");
     BOOST_TEST(!rooted->load<v3d::asset::kind::Json>("document.json"));
+}
+
+/**
+ * A name only a later root holds is found there, so an app reads the shared data through the
+ * same manager as its own.
+ **/
+BOOST_AUTO_TEST_CASE(manager_later_root_test) {
+    v3d::asset::Manager assets(std::vector<std::string>{ "nowhere", "data" }, boost::make_shared<v3d::log::Logger>());
+
+    BOOST_TEST(static_cast<bool>(assets.load<v3d::asset::kind::Json>("document.json")));
+}
+
+/**
+ * The first root that holds a name wins, so an app's own file is read before a shared file of
+ * the same name.
+ **/
+BOOST_AUTO_TEST_CASE(manager_first_root_wins_test) {
+    const boost::filesystem::path base = boost::filesystem::temp_directory_path() / "v3d_manager_roots";
+    boost::filesystem::remove_all(base);
+    for (const char* root : { "own", "shared" }) {
+        boost::filesystem::create_directories(base / root);
+        boost::filesystem::ofstream(base / root / "same.txt") << root;
+    }
+    const v3d::asset::Manager assets(std::vector<std::string>{ (base / "own").string(), (base / "shared").string() },
+                               boost::make_shared<v3d::log::Logger>());
+
+    BOOST_CHECK_EQUAL(assets.path("same.txt"), (base / "own" / "same.txt").string());
+    boost::filesystem::remove_all(base);
+}
+
+/**
+ * A name no root holds resolves against the first root, so the failure names a path in it.
+ **/
+BOOST_AUTO_TEST_CASE(manager_missing_name_resolves_against_the_first_root_test) {
+    const v3d::asset::Manager assets(std::vector<std::string>{ "first", "data" }, boost::make_shared<v3d::log::Logger>());
+
+    BOOST_CHECK_EQUAL(assets.path("absent.json"), (boost::filesystem::path("first") / "absent.json").string());
+}
+
+/**
+ * A manager with no root has nowhere to resolve a name, and is refused.
+ **/
+BOOST_AUTO_TEST_CASE(manager_without_a_root_test) {
+    BOOST_CHECK_THROW(v3d::asset::Manager(std::vector<std::string>{}, boost::make_shared<v3d::log::Logger>()),
+                      std::invalid_argument);
 }
 
 /**

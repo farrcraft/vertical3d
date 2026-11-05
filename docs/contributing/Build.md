@@ -205,8 +205,8 @@ guard has to cover the whole file.
 | Function | What it does |
 |---|---|
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
-| `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory beside the executable |
-| `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
+| `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory into `data/` beside the executable |
+| `v3d_add_app_data(<target>)` | Copies `<app>/data` into `data/<executable>/` beside the executable |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
@@ -215,8 +215,11 @@ guard has to cover the whole file.
 ### Data directories
 
 The engine resolves every asset relative to the executable, so assets are copied beside it.
-Assets used by more than one app live in the root [data/](../../data) directory. An app's own
-assets live in `<app>/data`.
+Assets used by more than one app live in the root [data/](../../data) directory, and are copied
+into `data/`. An app's own assets live in `<app>/data`, and are copied into
+`data/<executable>/`, named for the executable without its extension. The engine reads the
+app's directory first and `data/` after it, which is the layout an install has too.
+[Assets.md](../api/Assets.md#the-asset-manager) has the rule.
 
 The two data helpers add a build rule whose inputs are the files in the source directory:
 
@@ -224,9 +227,11 @@ The two data helpers add a build rule whose inputs are the files in the source d
   build time.
 - **A deleted file is not removed** from the build tree, because the copy merges rather than
   mirrors. Delete the `data/` directory beside the executable and build again to clear it.
-- An app that calls both helpers gets both directories copied into the same `data/`, in the
-  order it calls them. The two should not share a file name: after an edit, only the edited
-  directory is copied again, so which copy is left depends on which was edited last.
+- An app that calls both helpers gets its own directory copied inside the shared one, in the
+  order it calls them.
+- A test suite that needs an app's documents calls `v3d_copy_data(<test> app <directory>)`,
+  which copies them into `data/` itself. A test builds its engine with no program name, so it
+  reads `data/` alone.
 
 These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
 vertical3d. All of them but moya also call `v3d_add_shared_data`.

@@ -87,7 +87,7 @@ by the owner before the step that builds it starts.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--apps-find-their-data-from-the-install) | Apps find their data from the install | `api/engine`, apps | — | open |
+| [1](#step-1--apps-find-their-data-from-the-install) | Apps find their data from the install | `api/engine`, apps | — | done |
 | [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | open |
 | [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | open |
 | [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | open |
@@ -144,6 +144,17 @@ Step 14 needs steps 7, 11, 12 and 13. Step 17 needs steps 14 to 16. Step 21 need
 ---
 
 ### Step 1 — Apps find their data from the install
+
+**Done.** `appPath()` asks `SDL_GetBasePath()` and takes no argument. `Launch::parse` reads the
+program's name from `argv[0]`, and `engine::dataRoots()` gives the engine's asset manager two
+roots: `data/<program>/` for the app's own assets, then `data/` for the shared ones. The asset
+manager searches its roots in order. `v3d_add_app_data` copies an app's data into
+`data/<executable>/`, so the build and an install lay the data out the same way. A test suite's
+fixtures stay in `data/`, and an engine with no program name reads `data/` alone. Every app ran
+with `--capture` from the scratchpad, after its `data/` was deleted and rebuilt.
+
+The shared `data/` is still copied once for each app. Each app builds into its own directory,
+and the copy is shared only in the install, which step 11 builds.
 
 * **`appPath` takes `SDL_GetBasePath()`**, not the directory of `argv[0]`. An app started from
   `PATH` or a shortcut then finds its data.

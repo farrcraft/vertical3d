@@ -5,6 +5,7 @@
 
 #include "Application.h"
 
+#include <api/engine/Launch.h>
 #include <api/log/Logger.h>
 
 #include <SDL3/SDL_error.h>
@@ -12,18 +13,31 @@
 #include <SDL3/SDL_stdinc.h>
 
 #include <string>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+#include <vector>
 
 namespace v3d::engine {
 
 /**
  **/
-std::string appPath(const char* executable) {
-    const boost::filesystem::path directory =
-        boost::filesystem::system_complete(boost::filesystem::path(executable)).remove_filename();
-    return directory.string() + boost::filesystem::path("/").make_preferred().string();
+std::string appPath() {
+    // SDL owns the string, ends it with a separator, and needs no SDL_Init()
+    const char* path = SDL_GetBasePath();
+    if (path == nullptr) {
+        const v3d::log::Logger logger;
+        logger.get()->error("the executable's directory is unknown - {}", SDL_GetError());
+        return std::string();
+    }
+    return std::string(path);
+}
+
+/**
+ **/
+std::vector<std::string> dataRoots(const std::string& appPath, const Launch& launch) {
+    const std::string shared = appPath + "data/";
+    if (launch.program.empty()) {
+        return { shared };
+    }
+    return { shared + launch.program + "/", shared };
 }
 
 /**

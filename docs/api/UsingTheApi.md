@@ -195,10 +195,11 @@ because vertical3d's call leaves `Boost_DIR` in the CMake cache.
 
 vertical3d's CMake functions are global once defined, so you can call its two data helpers:
 
-- `v3d_add_app_data(myapp)` copies your `data/` directory beside the executable. The engine
-  resolves every asset relative to the executable, not to the working directory.
-- `v3d_add_shared_data(myapp)` also copies vertical3d's own `data/` directory, which holds the
-  shared fonts and UI themes. Add it once you draw text.
+- `v3d_add_app_data(myapp)` copies your `data/` directory into `data/myapp/` beside the
+  executable. The engine resolves every asset relative to the executable, not to the working
+  directory, and reads `data/myapp/` before `data/`.
+- `v3d_add_shared_data(myapp)` also copies vertical3d's own `data/` directory into `data/`,
+  which holds the shared fonts and UI themes. Add it once you draw text.
 
 ## 4. The application
 

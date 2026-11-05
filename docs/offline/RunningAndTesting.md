@@ -32,9 +32,10 @@ The command-line driver, its options, what it prints and its log are in the user
 - **Run moya from its own directory**, `out/build/x64-Debug/moya`. Started anywhere else, Windows
   cannot find its DLLs and shows a modal dialog. The process then waits on the dialog and uses
   no CPU.
-- **Two demo scenes are copied beside the executable** at build time, from `moya/data/`:
-  `test-scene-01.rib` (two quads under the reyes hider) and `raytrace-scene.rib` (a metal and a
-  glass sphere under the ray hider). Neither names a `Display`, so pass `--output` to get a file.
+- **Two demo scenes are copied into `data/moya/` beside the executable** at build time, from
+  `moya/data/`: `test-scene-01.rib` (two quads under the reyes hider) and `raytrace-scene.rib` (a
+  metal and a glass sphere under the ray hider). Neither names a `Display`, so pass `--output` to
+  get a file.
 - **The driver pins `--grid` and `--bucket` before the scene is read.** The context leaves a
   pinned size as it is, so the command line wins over the scene's `Option "limits"` while the
   scene is read and rendered.

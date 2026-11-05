@@ -125,7 +125,7 @@ moya renders a RIB file from the command line. Run it from its own directory:
 
 ```
 cd out/build/x64-Debug/moya
-moya.exe --file data/raytrace-scene.rib --output scene.png
+moya.exe --file data/moya/raytrace-scene.rib --output scene.png
 ```
 
 ## Where to go next

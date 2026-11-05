@@ -14,21 +14,35 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace v3d::engine {
 
 /**
  * The directory the running executable sits in, with a trailing separator.
  *
- * An engine resolves its relative asset paths against this. It comes from argv[0] because a
- * game can be started from any working directory.
+ * An engine resolves its relative asset paths against this. The platform reports it, so it does
+ * not depend on the working directory, or on whether the app was started from a shortcut or
+ * from PATH. It is UTF-8.
  *
- * Both the argument and the result are UTF-8. The result is correct only in an executable whose
- * manifest sets the UTF-8 code page, which linking v3dlib_log provides.
- *
- * @param executable argv[0]
+ * When the platform cannot say, this logs the failure and returns an empty string, so paths
+ * resolve against the working directory.
  **/
-std::string appPath(const char* executable);
+std::string appPath();
+
+/**
+ * The directories an app's assets are read from, searched in order.
+ *
+ * The app's own assets are in data/<program>/, and the assets every app shares are in data/.
+ * The build and the install lay them out the same way, so this is the one place the layout is
+ * written down.
+ *
+ * @param appPath the directory the executable is in, ending in a separator
+ * @param launch the command line, whose program names the app's own directory. An engine with
+ *        no command line has no program, and reads data/ alone
+ * @return the directories, each ending in a separator
+ **/
+std::vector<std::string> dataRoots(const std::string& appPath, const Launch& launch);
 
 /**
  * The directory this user's own files for an app belong in, with a trailing separator.
@@ -50,74 +64,18 @@ std::string appPath(const char* executable);
  **/
 std::string userPath(const std::string& org, const std::string& app);
 
-template <typename T, typename... Args>
-int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args);
-
-/**
- * Build an engine, run it to completion and shut it down. This is all of an app's main().
- *
- * shutdown() runs outside the loop and after its catch, so it runs whether the loop ended
- * normally or by throwing. A throw from shutdown() is caught and logged too. An event handler
- * calls quit() instead: tearing the window down inside a handler would leave the next frame
- * drawing to a destroyed window.
- *
- * @tparam T the engine to run: the app's subclass of v3d::engine::Engine, with its own
- *           features(), start() and release(). This function is the only caller of
- *           shutdown(), which an app cannot reach
- * @param executable argv[0]
- * @param identity who the app is. The engine is given it before it starts, and keeps the
- *        player's settings under it. Its application names the app in the log line that
- *        reports a failure
- * @param args further constructor arguments for the app's engine, forwarded after the path.
- *        An app that parses its command line into options passes them here rather than
- *        writing its own main
- * @return the process exit status
- **/
-template <typename T, typename... Args>
-int run(const char* executable, const Identity& identity, Args&&... args) {
-    return runLaunched<T>(executable, Launch(), identity, std::forward<Args>(args)...);
-}
-
-/**
- * Run an engine as run(executable, identity) does, with what its command line asks of it.
- *
- * The command line is read into a Launch, which the engine is given before it starts. A command
- * line Launch::parse() refuses is logged, and the app does not start.
- *
- * @tparam T the engine to run
- * @param argc the number of arguments, as main() is given it
- * @param argv the arguments, as main() is given them
- * @param identity who the app is
- * @param args further constructor arguments for the app's engine, forwarded after the path
- * @return the process exit status
- **/
-template <typename T, typename... Args>
-int run(int argc, char* argv[], const Identity& identity, Args&&... args) {
-    Launch launch;
-    try {
-        launch = Launch::parse(argc, argv);
-    } catch (const std::invalid_argument& error) {
-        v3d::log::Logger::open(appPath(argv[0]) + "v3d.log");
-        const v3d::log::Logger logger;
-        logger.get()->error("{} cannot start: {}", identity.application, error.what());
-        return EXIT_FAILURE;
-    }
-    return runLaunched<T>(argv[0], launch, identity, std::forward<Args>(args)...);
-}
-
 /**
  * The body both forms of run() share. An app calls run().
  *
  * @tparam T the engine to run
- * @param executable argv[0]
  * @param launch what the command line asked of the engine
  * @param identity who the app is
  * @param args further constructor arguments for the app's engine, forwarded after the path
  * @return the process exit status
  **/
 template <typename T, typename... Args>
-int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args) {
-    const std::string path = appPath(executable);
+int runLaunched(const Launch& launch, const Identity& identity, Args&&... args) {
+    const std::string path = appPath();
     // beside the executable, whatever directory it was started from: a windowed app has no
     // console, so the log is the only place its errors appear. A directory that cannot be
     // written to sends the log to stderr, and the app still runs
@@ -162,6 +120,59 @@ int runLaunched(const char* executable, const Launch& launch, const Identity& id
     }
 
     return exitStatus;
+}
+
+/**
+ * Build an engine, run it to completion and shut it down. This is all of an app's main().
+ *
+ * shutdown() runs outside the loop and after its catch, so it runs whether the loop ended
+ * normally or by throwing. A throw from shutdown() is caught and logged too. An event handler
+ * calls quit() instead: tearing the window down inside a handler would leave the next frame
+ * drawing to a destroyed window.
+ *
+ * @tparam T the engine to run: the app's subclass of v3d::engine::Engine, with its own
+ *           features(), start() and release(). This function is the only caller of
+ *           shutdown(), which an app cannot reach
+ * @param executable argv[0], which names the app's own data directory
+ * @param identity who the app is. The engine is given it before it starts, and keeps the
+ *        player's settings under it. Its application names the app in the log line that
+ *        reports a failure
+ * @param args further constructor arguments for the app's engine, forwarded after the path.
+ *        An app that parses its command line into options passes them here rather than
+ *        writing its own main
+ * @return the process exit status
+ **/
+template <typename T, typename... Args>
+int run(const char* executable, const Identity& identity, Args&&... args) {
+    const char* const argv[] = { executable };
+    return runLaunched<T>(Launch::parse(1, argv), identity, std::forward<Args>(args)...);
+}
+
+/**
+ * Run an engine as run(executable, identity) does, with what its command line asks of it.
+ *
+ * The command line is read into a Launch, which the engine is given before it starts. A command
+ * line Launch::parse() refuses is logged, and the app does not start.
+ *
+ * @tparam T the engine to run
+ * @param argc the number of arguments, as main() is given it
+ * @param argv the arguments, as main() is given them
+ * @param identity who the app is
+ * @param args further constructor arguments for the app's engine, forwarded after the path
+ * @return the process exit status
+ **/
+template <typename T, typename... Args>
+int run(int argc, char* argv[], const Identity& identity, Args&&... args) {
+    Launch launch;
+    try {
+        launch = Launch::parse(argc, argv);
+    } catch (const std::invalid_argument& error) {
+        v3d::log::Logger::open(appPath() + "v3d.log");
+        const v3d::log::Logger logger;
+        logger.get()->error("{} cannot start: {}", identity.application, error.what());
+        return EXIT_FAILURE;
+    }
+    return runLaunched<T>(launch, identity, std::forward<Args>(args)...);
 }
 
 };  // namespace v3d::engine
