@@ -112,8 +112,10 @@ function(v3d_install_release)
 		execute_process(COMMAND \"${V3D_NODE}\" \"${V3D_ROOT}/scripts/notices.ts\"
 			--installed \"${VCPKG_INSTALLED_DIR}\" --out \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/NOTICES.txt\"
 			RESULT_VARIABLE failed)
-		if(failed)
+		if(failed STREQUAL \"1\")
 			message(FATAL_ERROR \"scripts/notices.ts found something without a licence, and wrote no NOTICES.txt\")
+		elseif(failed)
+			message(FATAL_ERROR \"scripts/notices.ts could not run with ${V3D_NODE} (\${failed}), and wrote no NOTICES.txt\")
 		endif()")
 endfunction()
 

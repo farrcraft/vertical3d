@@ -308,6 +308,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
+      # Node runs the notices check, the install's notices and the fails-first harness directly,
+      # with no install, at the version the other gates run on in review-gates.yml. It comes before
+      # Configure, which records the node on the PATH for the install to run.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
       # The ci presets configure with the vcpkg checkout above, and with a job pool that holds
       # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
       # deployment runs in the same edge, reopening the binary just linked and copying dlls out
@@ -365,12 +372,6 @@ jobs:
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
-
-      # Node runs the notices check, the install's notices and the fails-first harness directly,
-      # with no install, at the version the other gates run on in review-gates.yml.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
 
       # A release shows a licence for everything it ships: every package in the install that
       # ships code has a copyright file, and every font has a licence. The check reads this job's
