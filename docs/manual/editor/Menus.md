@@ -35,7 +35,7 @@ The first menu shows the editor's mark.
 | Save As | | Saves the scene as a new project, in a new directory, and makes it the open project |
 | Import > glTF | | Adds the scene of a `.gltf` or `.glb` file |
 | Import > USD | | Adds the scene of a `.usd`, `.usda`, `.usdc` or `.usdz` file |
-| Export > RIB | | Writes the scene as `export.rib` beside the program |
+| Export > RIB | | Writes the scene as `export.rib` in the project's folder |
 | Quit | Escape | Closes the editor, as on the Vertical3D menu |
 
 [Projects.md](Projects.md) describes each of these.
@@ -169,6 +169,7 @@ The key items use the keys of the selected items, or of every item when nothing 
 | Item | Key | What it does |
 |---|---|---|
 | Search Commands | F3 | Opens the command search |
+| About Vertical|3D | | Shows the editor's version, which a bug report should name |
 
 ## The tool shelf
 

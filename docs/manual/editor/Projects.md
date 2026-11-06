@@ -21,8 +21,8 @@ The chooser starts in the directory that holds the open project.
 
 ## Create a project
 
-The editor starts with an empty scene in a project named `project`, beside the program. To
-start a project of your own:
+The editor starts with an empty scene in a project named `project`, in a `Vertical3D` folder in
+your documents. To start a project of your own:
 
 1. Choose **File > Save As**.
 2. Go to the directory the project should be made in.
@@ -111,7 +111,7 @@ notice says why.
 ## Export RIB
 
 Choose **File > Export > RIB**. The editor writes the scene as a RIB file named `export.rib`
-beside the program, and replaces any file already there. RIB is the scene format moya reads.
+in the project's folder, and replaces any file already there. RIB is the scene format moya reads.
 
 The file renders the current frame, as a render would, from the same camera and with the same
 render settings. Rendering it with moya writes `export.png` beside it. The editor cannot read a

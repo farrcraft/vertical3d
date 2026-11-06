@@ -10,6 +10,7 @@ another repository against the api is covered in [UsingTheApi.md](../api/UsingTh
 - [The CMake layout](#the-cmake-layout)
 - [The options](#the-options)
 - [The helper functions](#the-helper-functions)
+- [The install tree](#the-install-tree)
 - [Shaders](#shaders)
 - [Linking rules](#linking-rules)
 - [The starter example](#the-starter-example)
@@ -24,16 +25,21 @@ configured with. Each preset builds into `out/build/<preset name>`:
 | Preset | Configured with | For |
 |---|---|---|
 | `x64-Debug` | the defaults | everyday work, and the build every script and document uses |
+| `x64-Release` | Release, with `x64-Debug`'s vcpkg install | the build a release ships |
 | `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
 | `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
 | `verify` | both | both analysers in one build |
 | `asan` | `V3D_SANITIZE=ON` | AddressSanitizer ([Testing.md](Testing.md#sanitizers)) |
 | `ci` | the vcpkg that `VCPKG_INSTALLATION_ROOT` names, and one link at a time | the Windows CI job |
+| `ci-release` | `ci`, in Release | the Windows CI job's Release build |
 
-Every preset is Debug, uses the `x64-windows` triplet, and generates for Ninja. Every one but
-`ci` uses the vcpkg in `vendor/vcpkg`. `ci` is listed only when `VCPKG_INSTALLATION_ROOT` is
-set, which the CI job does after it checks vcpkg out at the manifest's baseline. Visual Studio
-and VS Code list the presets when they open the folder.
+Every preset but `x64-Release` and `ci-release` is Debug. Every one uses the `x64-windows`
+triplet, which holds the Debug and the Release libraries, and generates for Ninja.
+`x64-Release` installs its packages into `x64-Debug`'s `vcpkg_installed` rather than a second
+copy. Every preset but the two `ci` ones uses the vcpkg in `vendor/vcpkg`. The `ci` presets
+are listed only when `VCPKG_INSTALLATION_ROOT` is set, which the CI job does after it checks
+vcpkg out at the manifest's baseline. Visual Studio and VS Code list the presets when they open
+the folder.
 
 From a shell, enter a developer environment first (run `vcvars64.bat`), then configure and build:
 
@@ -114,40 +120,53 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 
 ### Building off MSVC
 
-The api libraries whose closure names neither SDL3, Vulkan nor OpenUSD build and test with Clang
-on Linux:
-asset, asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
-render_offline and type. CI checks that on every pull request, in
-[.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them
-can therefore pass every gate on Windows and fail there.
+The whole tree, every api library and every app, builds and passes its suites on Linux with
+Clang and with GCC. [.github/workflows/portable.yml](../../.github/workflows/portable.yml) checks
+that on every pull request, so a change can pass every gate on Windows and fail there. It has two
+jobs, which build in the same Ubuntu 26.04 image,
+[scripts/portable/Dockerfile](../../scripts/portable/Dockerfile).
 
-- Those libraries do not use an MSVC extension or a Windows header.
-- The job builds in an Ubuntu 26.04 image that
-  [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile) defines.
-  [scripts/portable/build.sh](../../scripts/portable/build.sh) runs the configure, the build and
-  the tests in it, and holds the list above. It configures with
-  `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the manifest's `platform` and `usd`
-  features, and with `V3D_LIBRARIES` naming the list.
-- **The job builds with `V3D_SANITIZE` and `V3D_FUZZ` on**, so its suites run under both
-  sanitizers, and it fuzzes each fuzz target after them. See
-  [Testing.md](Testing.md#sanitizers).
-- **The job builds with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts
-  code an older one rejects, so the oldest catches a feature that a consumer's compiler lacks.
-  Apple's Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
+- **The `whole` job builds the whole tree, once with Clang and once with GCC.**
+  [scripts/portable/whole.sh](../../scripts/portable/whole.sh) configures, builds and runs every
+  suite with the compiler `CC` and `CXX` name. The device suites draw with lavapipe, Mesa's
+  software Vulkan driver, with the validation layer on. The window suites open their windows on a
+  virtual X display, Xvfb, with the Openbox window manager, which carries out a request to go full
+  screen. SDL plays sound into its dummy driver. GCC is the compiler the Flatpak builds with.
+- **The `clang` job builds the libraries that need neither a window nor a device**, under
+  `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
+  fuzz target after them. See [Testing.md](Testing.md#sanitizers).
+  [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
+  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
+  render_offline and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
+  leaves out the manifest's `platform` and `usd` features.
+- **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
+  older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's
+  Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
   `std::expected` against libstdc++. The version is the `CLANG` argument in the Dockerfile, and
-  nothing else names it.
-- **`scripts\portable.cmd` runs the job locally**, with Docker Desktop running. It builds the
-  same image and runs the same script, with the tree mounted read-only. The build, the vcpkg
+  nothing else names it. GCC is the image's own.
+- **The warnings differ from MSVC's.** `-Wall -Wextra` with `-Werror` reports what `/W4` does not,
+  such as a missing `override`, an unused private field, and constructor initializers out of
+  declaration order. Neither compiler reports a call whose arguments change the same state, and
+  the order they are evaluated in differs between them, so each change goes in its own statement.
+  Each compiler's report of a field left out of an initializer is off, because the tree leaves
+  out fields that have a default.
+- **A test that needs a device or a window starts in two ways.** Boost.Test is a DLL on Windows,
+  where the suite's `main` probes and then calls `unit_test_main`. On Linux it is static and
+  brings its own `main`, and the probe runs in `init_unit_test_suite`, which that `main` calls.
+- **`scriptsportable.cmd` runs a job locally**, with Docker Desktop running: no argument for the
+  `clang` job, `whole` for the whole tree with Clang, and `whole gcc` for GCC. It builds the
+  same image and runs the same script, with the tree mounted read-only. The builds, the vcpkg
   checkout and the binary cache live in the Docker volume `v3d-portable`, apart from the Windows
-  build, so a second run reuses them. The first run builds every dependency from source.
-  `docker volume rm v3d-portable` starts again from cold.
+  build, so a second run reuses them. The first run of each compiler builds every dependency from
+  source. `docker volume rm v3d-portable` starts again from cold.
 - Clang's GNU driver on Windows is no substitute. It rejects MSVC's flag spellings, but it
   compiles against MSVC's standard library and the Windows headers, so it misses what only Linux
   shows.
 
 Background: [ADR-0107](../adr/project/0107-build-the-api-libraries-build-with-clang-off-windows.md),
 [ADR-0159](../adr/project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md),
-[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
+[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md),
+[ADR-0181](../adr/project/0181-build-linux-builds-with-clang-and-gcc.md)
 
 ### The manifest is checked on every configure
 
@@ -180,6 +199,7 @@ than an imported target, so it never appears in a link line.
 |---|---|---|
 | `V3D_BUILD_APPS` | top level | Everything outside `api/` |
 | `V3D_BUILD_TESTS` | top level | The Boost.Test suites and their ctest entries |
+| `V3D_RELEASE` | `OFF` | A release build, whose version is the bare number. See [api/engine/README.md](../api/engine/README.md#the-version) |
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy. See [Linting.md](Linting.md) |
@@ -205,8 +225,9 @@ guard has to cover the whole file.
 | Function | What it does |
 |---|---|
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
-| `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory beside the executable |
-| `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
+| `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory into `data/` beside the executable |
+| `v3d_add_app_data(<target>)` | Copies `<app>/data` into `data/<executable>/` beside the executable, and installs it there. See [The install tree](#the-install-tree) |
+| `v3d_install_app(<target> <name>)` | Installs an app's executable into the install root, gives it a version resource, and names its Start menu entry. See [The install tree](#the-install-tree) |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
@@ -215,8 +236,11 @@ guard has to cover the whole file.
 ### Data directories
 
 The engine resolves every asset relative to the executable, so assets are copied beside it.
-Assets used by more than one app live in the root [data/](../../data) directory. An app's own
-assets live in `<app>/data`.
+Assets used by more than one app live in the root [data/](../../data) directory, and are copied
+into `data/`. An app's own assets live in `<app>/data`, and are copied into
+`data/<executable>/`, named for the executable without its extension. The engine reads the
+app's directory first and `data/` after it, which is the layout an install has too.
+[Assets.md](../api/Assets.md#the-asset-manager) has the rule.
 
 The two data helpers add a build rule whose inputs are the files in the source directory:
 
@@ -224,9 +248,11 @@ The two data helpers add a build rule whose inputs are the files in the source d
   build time.
 - **A deleted file is not removed** from the build tree, because the copy merges rather than
   mirrors. Delete the `data/` directory beside the executable and build again to clear it.
-- An app that calls both helpers gets both directories copied into the same `data/`, in the
-  order it calls them. The two should not share a file name: after an edit, only the edited
-  directory is copied again, so which copy is left depends on which was edited last.
+- An app that calls both helpers gets its own directory copied inside the shared one, in the
+  order it calls them.
+- A test suite that needs an app's documents calls `v3d_copy_data(<test> app <directory>)`,
+  which copies them into `data/` itself. A test builds its engine with no program name, so it
+  reads `data/` alone.
 
 These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
 vertical3d. All of them but moya also call `v3d_add_shared_data`.
@@ -246,6 +272,67 @@ and imagetool open no window and keep theirs at `<app>/icon.svg`. Each app's CMa
   as percentages, since a bare fraction is read as pixels.
 
 Background: [ADR-0170](../adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
+
+## The install tree
+
+A release ships the install tree. `cmake --install out/build/x64-Release` writes it to
+`out/install/x64-Release`, the preset's install directory. On Windows it is one flat directory:
+
+- every app's executable, which `v3d_install_app` installs;
+- `data/`, with the shared data and each app's own data in `data/<executable>/`, as the build
+  lays it out;
+- one copy of each DLL the apps load, and the MSVC runtime from `InstallRequiredSystemLibraries`;
+- OpenUSD's plugins in `usd/`, beside its DLLs, where it looks for them;
+- `NOTICES.txt`, which [scripts/notices.ts](../../scripts/notices.ts) writes as the tree is
+  installed. Installing needs Node on the `PATH` for it.
+
+The rules are in [cmake/v3dInstall.cmake](../../cmake/v3dInstall.cmake):
+
+- **An app is installed by its own CMakeLists.txt** calling `v3d_install_app`. A new app that
+  forgets it is missing from a release.
+- **The DLLs are found from the installed apps**, by
+  [cmake/v3dInstallDependencies.cmake](../../cmake/v3dInstallDependencies.cmake), once every app
+  is in place. In the build, vcpkg copies each DLL beside every app that loads it. Beside the
+  installed apps there is none, so each DLL resolves to vcpkg's own copy.
+- **The system's DLLs and the Vulkan loader are left out.** The loader comes with the GPU
+  driver. A DLL the apps load that vcpkg does not hold stops the install.
+- The engine finds `data/` beside its executable, and the editor finds moya beside itself, so an
+  app runs from the install as it does from the build. CI installs the Release build and runs
+  every app from the install with `--capture`.
+
+### The installer
+
+`cpack -C Release` in the Release build directory writes the Windows installer into
+`package/`, as `vertical3d-<version>-windows-x64-setup.exe`. CPack's NSIS generator builds it from
+the same install rules, so it installs exactly the tree above. It needs
+[NSIS](https://nsis.sourceforge.io/) 3.03 or later. The runner image has no NSIS, so CI installs
+the version `ctest.yml` pins.
+
+- **It installs into Program Files**, in a `Vertical3D` directory, and adds an uninstaller.
+- **Each windowed app gets a Start menu entry**, named by the second argument of its
+  `v3d_install_app`. moya and imagetool are run from a console, and get none.
+- **It registers no file types.**
+- **Each app carries a version resource**, which `v3d_install_app` writes and Windows shows in
+  the file's properties: its name, and the release's version as the configure knew it.
+
+CI builds the installer on every run, installs it silently, checks the editor's Start menu entry,
+and checks the uninstaller removes every app.
+
+### On Linux
+
+The install tree follows the install prefix's own layout. The Flatpak installs it into `/app`. It
+holds:
+
+- every app's executable in `lib/vertical3d/`, with `data/` beside it, laid out as on Windows;
+- a relative link to each executable in `bin/`, so the apps are on the `PATH`.
+
+An app run through its link resolves it to the executable, so it reads `data/` from
+`lib/vertical3d/`. The install gathers no libraries and writes no `NOTICES.txt`. The Flatpak
+brings its own libraries and their licences, and [Releasing.md](Releasing.md#the-flatpak)
+describes it.
+
+Background: [ADR-0176](../adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md),
+[ADR-0179](../adr/project/0179-releases-an-nsis-installer-built-by-cpack.md)
 
 ## Shaders
 

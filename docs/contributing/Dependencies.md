@@ -9,6 +9,8 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 - [The Vulkan SDK](#the-vulkan-sdk)
 - [TypeScript tooling from npm](#typescript-tooling-from-npm)
 - [Setting up vcpkg](#setting-up-vcpkg)
+- [Third-party notices](#third-party-notices)
+- [The Flatpak's packages](#the-flatpaks-packages)
 - [Adding a package](#adding-a-package)
 - [Updating versions](#updating-versions)
 
@@ -17,11 +19,11 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json), during the first
 configure. [Build.md](Build.md#traps) says where they go, and why that directory is kept.
 
-SDL3, SDL3_mixer, Vulkan and vulkan-memory-allocator are in the manifest's `platform` feature,
-which is a default feature, so a configure installs them unless it is given
-`-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`. Only a build of the libraries that need neither a
-window nor a device leaves it out, as the Linux CI job does. A new port that only the window,
-the device or the audio needs goes in that feature.
+SDL3, SDL3_mixer, Vulkan, the Vulkan loader on Linux and vulkan-memory-allocator are in the
+manifest's `platform` feature, which is a default feature, so a configure installs them unless
+it is given `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`. Only a build of the libraries that need
+neither a window nor a device leaves it out, as the Linux CI job does. A new port that only the
+window, the device or the audio needs goes in that feature.
 
 OpenUSD is in the manifest's `usd` feature, also a default one, for the same reason: only
 `v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
@@ -47,6 +49,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
+| vulkan-loader | Linux only. On Windows the loader comes with the GPU driver. **It must have its `wayland`, `xcb` and `xlib` features.** Without them the loader has no surface for a window, and no app can present |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
 
 The configure looks only for the packages that the selected api libraries need. A build of this
@@ -92,6 +95,22 @@ replace. AddressSanitizer then reports a mismatch on every allocation, and a rep
 - When the baseline moves thorvg to a new version, copy the new port over `ports/thorvg/`,
   add the patch to its `PATCHES` again, and remake the patch if the file has moved. Drop the
   port once thorvg no longer replaces the operators.
+
+### The OpenUSD overlay port
+
+OpenUSD's `schemaRegistry.h` holds maps whose values own a `unique_ptr` to
+`UsdPrimDefinition`, a type the header only declares, and looks them up in inline functions.
+libstdc++ 15 checks whether such a map's value can be default-constructed, which needs the
+complete type. Clang then fails on any file that includes the header, so the Linux build with
+Clang cannot build the editor's USD reader. MSVC and GCC accept it.
+
+- The port in [ports/usd/](../../ports/usd/) is vcpkg's own, from the baseline commit, with one
+  patch added. [fix-schema-registry-incomplete-type.patch](../../ports/usd/fix-schema-registry-incomplete-type.patch)
+  moves the three lookups out of the class body into `schemaRegistry.cpp`, as OpenUSD's open
+  pull request #4212 does for its development branch.
+- When the baseline moves OpenUSD to a new version, copy the new port over `ports/usd/`, add the
+  patch to its `PATCHES` again, and remake it if the header has changed. Drop the port once
+  OpenUSD's release holds the fix.
 
 Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),
@@ -206,6 +225,48 @@ configure again.
 CI does not use `vendor/vcpkg` or the runner image's vcpkg. Each job checks out the baseline
 commit alone, at depth one, bootstraps it, and installs from that.
 
+## Third-party notices
+
+A release shows a licence for everything it ships, in one notices file.
+[scripts/notices.ts](../../scripts/notices.ts) writes it with `--out <file>`, and holds:
+
+1. the project's [LICENSE](../../LICENSE);
+2. each font family's licence from `data/fonts/`;
+3. the copyright file of each vcpkg package that ships code.
+
+Without `--out` the script is a check, and CI runs it on the Debug build's install. It fails
+when:
+
+- **a package installs code and has no copyright file.** A package that installs files only
+  under `share/` ships no code: vcpkg's build helpers and meta-packages are such packages.
+- **a font has no licence.** A font's licence is the `<Family>-OFL.txt` file beside it whose
+  family its name starts with. `Inter-OFL.txt` covers `Inter-Regular.ttf`. When two families
+  match, the longer one wins.
+
+The demos' own assets are the project's work, under its licence.
+[Demos.md](../Demos.md#where-the-demo-assets-come-from) lists them.
+
+## The Flatpak's packages
+
+The Flatpak does not use vcpkg. Its manifest,
+[flatpak/com.farrcraft.Vertical3D.yml](../../flatpak/com.farrcraft.Vertical3D.yml), takes each
+package from one of two places:
+
+- **the Freedesktop runtime**, for a package it holds at a version the tree accepts. The
+  manifest's first comment lists them;
+- **a module of the manifest** for every other package, pinned by URL and SHA-256 to the version
+  vcpkg's baseline builds.
+
+A package the runtime supplies is installed as its own project installs it, not as vcpkg does.
+[cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake) finds SQLite, libjpeg and
+quickjs-ng both ways, and gives each the target name vcpkg's config package uses, so the link
+lines are the same in both builds.
+
+The thorvg and OpenUSD modules apply the patches in `ports/` by path, so a remade patch applies to
+both builds.
+
+Background: [ADR-0182](../adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)
+
 ## Adding a package
 
 From a developer command prompt:
@@ -227,6 +288,10 @@ The package is installed at the next configure. Then:
    manifest and the link lines disagree.
 4. Add the port to [examples/starter/vcpkg.json](../../examples/starter/vcpkg.json). That file is
    kept identical to the root one.
+5. Add it to the Flatpak, from the runtime or as a module, as
+   [The Flatpak's packages](#the-flatpaks-packages) describes. If the runtime supplies it, check
+   that `find_package` finds the runtime's install. flatpak.yml builds the Flatpak on every pull
+   request, so a package it cannot find fails there.
 
 ### Adding a boost library
 
@@ -278,3 +343,7 @@ seven days old.
 - the development container's base image in `.devcontainer/Dockerfile`, monthly.
 
 Each pull request runs CI like any other, so an update that breaks the build is found there.
+
+**A new baseline moves the Flatpak's modules too.** Dependabot's pull request changes only the
+vcpkg files. Before it merges, update the URL and SHA-256 of each module whose package the
+baseline moved, in the same pull request. Nothing checks that the versions match.

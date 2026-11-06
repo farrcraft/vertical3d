@@ -111,6 +111,10 @@ reported, so the table lists only tags in use.
 | [0170](project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run |
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
+| [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs |
+| [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
+| [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
+| [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 
 ### camera
 
@@ -335,6 +339,14 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0165](project/0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product |
 | [0166](project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux |
+| [0175](project/0175-releases-semantic-versions-from-0-1-0.md) | Releases: semantic versions from 0.1.0 |
+| [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs |
+| [0177](project/0177-releases-a-hand-written-changelog.md) | Releases: a hand-written changelog |
+| [0178](project/0178-releases-a-tag-on-main-starts-a-release.md) | Releases: a tag on main starts a release |
+| [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
+| [0180](project/0180-releases-signpath-foundation-signs-the-windows-release.md) | Releases: SignPath Foundation signs the Windows release |
+| [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
+| [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 
 ### rendering
 

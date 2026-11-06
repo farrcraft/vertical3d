@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	animation asset asset_media audio brep curve database ecs engine event font grid image input
-	interchange interchange_usd log model render render_offline script shell type ui window)
+	interchange interchange_usd log model render render_offline script shell type ui version window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -58,7 +58,7 @@ set(V3D_API_ecs_REQUIRES animation type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media ecs event image input type window)
+set(V3D_API_engine_REQUIRES log asset asset_media ecs event image input type version window)
 set(V3D_API_engine_PACKAGES SDL3 EnTT glm)
 
 set(V3D_API_event_PATH "event")
@@ -101,7 +101,7 @@ set(V3D_API_model_REQUIRES animation)
 set(V3D_API_model_PACKAGES glm)
 
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log animation asset asset_media ecs image model type window)
+set(V3D_API_render_REQUIRES log animation asset asset_media ecs image model type version window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but a separate library: the offline renderer is built on it. It names
@@ -120,6 +120,11 @@ set(V3D_API_script_PACKAGES qjs)
 set(V3D_API_shell_PATH "shell")
 set(V3D_API_shell_REQUIRES engine event ui asset render window)
 set(V3D_API_shell_PACKAGES EnTT)
+
+# The tree's version, which every app shows and every library may read. It names nothing.
+set(V3D_API_version_PATH "version")
+set(V3D_API_version_REQUIRES)
+set(V3D_API_version_PACKAGES)
 
 set(V3D_API_type_PATH "type")
 set(V3D_API_type_REQUIRES)

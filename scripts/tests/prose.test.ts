@@ -166,10 +166,12 @@ test('prose reports history: "used to", a date and a phase, but not the passive 
     assert.deepEqual(markdown(['The ring arrives in phase 2.']), ['1: history']);
 });
 
-test('prose lets plans and roadmaps describe change, and a document that names its phases refer to them', () => {
+test('prose lets plans, roadmaps and the changelog describe change, and a document that names its phases refer to them', () => {
     const lines = ['The ring used to hold three frames, and phase 2 changes it on 2026-11-02.'];
     assert.deepEqual(markdown(lines, 'docs/plans/Ring.md'), []);
     assert.deepEqual(markdown(lines, 'docs/roadmap/Ring.md'), []);
+    assert.deepEqual(markdown(lines, 'CHANGELOG.md'), []);
+    assert.deepEqual(markdown(lines, 'README.md'), ['1: history', '1: history', '1: history']);
     assert.deepEqual(markdown(['# Phase 1: set up', '', 'Run phase 1 first.']), []);
 });
 

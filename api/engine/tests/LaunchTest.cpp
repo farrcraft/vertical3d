@@ -19,6 +19,20 @@ v3d::engine::Launch parse(const std::vector<const char*>& arguments) {
     return v3d::engine::Launch::parse(static_cast<int>(argv.size()), argv.data());
 }
 
+BOOST_AUTO_TEST_CASE(launch_names_the_program_from_argv0_test) {
+    const char* const qualified[] = { "C:/games/pong.exe" };
+    BOOST_CHECK_EQUAL(v3d::engine::Launch::parse(1, qualified).program, "pong");
+    const char* const bare[] = { "tetris" };
+    BOOST_CHECK_EQUAL(v3d::engine::Launch::parse(1, bare).program, "tetris");
+    BOOST_CHECK_EQUAL(v3d::engine::Launch::parse(0, nullptr).program, "");
+}
+
+BOOST_AUTO_TEST_CASE(launch_reads_a_request_for_the_version_test) {
+    BOOST_TEST(parse({ "--version" }).version);
+    BOOST_TEST(!parse({}).version);
+    BOOST_TEST(parse({ "--version" }).rest.empty());
+}
+
 BOOST_AUTO_TEST_CASE(launch_with_no_options_captures_nothing_test) {
     const v3d::engine::Launch launch = parse({});
     BOOST_TEST(launch.capture.empty());

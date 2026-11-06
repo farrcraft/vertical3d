@@ -24,7 +24,7 @@ properties editor below it. The caption reads `Vertical|3D - project - frame 1`.
 3. Click **Accept**.
 
 The caption now reads `Vertical|3D - first-scene - frame 1`. The editor made a directory named
-`first-scene` beside the program, and saved the empty scene into it.
+`first-scene` in the `Vertical3D` folder in your documents, and saved the empty scene into it.
 
 ## Add a cube and a cone
 

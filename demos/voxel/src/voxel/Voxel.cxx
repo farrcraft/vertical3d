@@ -8,8 +8,8 @@
 
 Voxel::Voxel(BlockType type, const glm::vec3 & position) :
     type_(type),
-    active_(true),
-    position_(position) {
+    position_(position),
+    active_(true) {
     if (type_ == BLOCK_TYPE_AIR) {
         active_ = false;
     }

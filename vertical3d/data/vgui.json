@@ -20,6 +20,7 @@
               "accent": true,
               "items": [
                 { "label": "Search Commands", "type": "action", "context": "search", "command": "open" },
+                { "label": "About Vertical|3D", "type": "action", "context": "help", "command": "about" },
                 { "type": "separator" },
                 { "label": "Quit", "type": "action", "context": "ui", "command": "quit" }
               ]

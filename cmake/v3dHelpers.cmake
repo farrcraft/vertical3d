@@ -32,8 +32,8 @@ function(v3d_add_api_library name)
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
-# Copy a directory of assets beside a target's executable, as a build rule that the assets
-# themselves are the inputs to.
+# Copy a directory of assets into the data/ directory beside a target's executable, as a build
+# rule that the assets themselves are the inputs to.
 #
 # **Not a POST_BUILD step on the target.** POST_BUILD runs only when the target itself
 # relinks, so an edited asset would not be copied until the next relink. Until then the app
@@ -48,29 +48,35 @@ endfunction()
 # directory unwritten.
 #
 # **A deleted asset is still left behind**, because copy_directory merges rather than
-# mirrors. The destination cannot be cleared first: an app copies the shared data and its
-# own into the same directory, so the second copy would clear what the first had written.
+# mirrors. The destination cannot be cleared first: an app's own data is copied inside the
+# shared data's directory, so clearing the shared copy would clear the app's.
 # A leftover file is harmless because nothing reads it. To clear a stale data directory,
 # delete it and the next build fills it again.
 #
 # @param target the executable the data is copied beside
 # @param name what this set of data is, which separates one call's stamp from another's
 # @param source the directory to copy
+# @param ARGV3 optional: the directory under data/ to copy into. Without it the copy goes into
+#        data/ itself, as a test's fixtures do
 function(v3d_copy_data target name source)
+	set(destination "$<TARGET_FILE_DIR:${target}>/data")
+	if(ARGC GREATER 3)
+		string(APPEND destination "/${ARGV3}")
+	endif()
 	file(GLOB_RECURSE files CONFIGURE_DEPENDS "${source}/*")
 	set(copier "${target}_${name}_data")
 	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
 	add_custom_command(OUTPUT "${stamp}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${source}" "$<TARGET_FILE_DIR:${target}>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${source}" "${destination}"
 		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
 		DEPENDS ${files}
 		COMMENT "Copying ${name} data for ${target}"
 		VERBATIM)
 	add_custom_target(${copier} DEPENDS "${stamp}")
 	add_dependencies(${target} ${copier})
-	# An app that takes both the shared data and its own copies two directories into one
-	# destination, and nothing orders those copies against each other. They are chained in
-	# the order they were requested rather than left to run at the same time.
+	# An app that takes both the shared data and its own copies one directory inside the other,
+	# and nothing orders those copies against each other. They are chained in the order they were
+	# requested rather than left to run at the same time.
 	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
 	if(previous)
 		add_dependencies(${copier} ${previous})
@@ -119,18 +125,20 @@ function(v3d_copy_program target program)
 endfunction()
 
 # Assets shared by more than one app live in the root data/ directory, so there is one
-# committed copy rather than one per app. v3d_add_shared_data copies them into an app's
-# runtime data directory, alongside whatever that app keeps in <app>/data. The engine
-# resolves assets relative to the executable, so the destination has to be beside the exe
-# rather than in the source tree.
+# committed copy rather than one per app. v3d_add_shared_data copies them into the data/
+# directory beside an app's executable. The engine resolves assets relative to the executable,
+# so the destination has to be beside the exe rather than in the source tree.
 function(v3d_add_shared_data target)
 	v3d_copy_data(${target} shared "${V3D_ROOT}/data")
 endfunction()
 
-# An app's own assets are committed under <app>/data, and are copied beside the executable
-# for the same reason the shared ones are.
+# An app's own assets are committed under <app>/data, and are copied into data/<executable>/
+# beside the executable. The engine reads that directory first and the shared data/ after it,
+# which is the layout an install has too, so the same directory is installed there.
 function(v3d_add_app_data target)
-	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data")
+	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_BASE_NAME:${target}>")
+	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
+		DESTINATION "${V3D_INSTALL_APP_DIR}/data/$<TARGET_FILE_BASE_NAME:${target}>")
 endfunction()
 
 # An app's icon is an SVG. On Windows the build draws it into an .ico with appicon and embeds

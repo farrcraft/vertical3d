@@ -30,7 +30,7 @@ class Mouse : public Device {
     /**
      * @return bool true if the event was handled
      **/
-    bool handleEvent(const SDL_Event& event);
+    bool handleEvent(const SDL_Event& event) override;
 
     /**
      * The cursor position and held buttons, as of the last event handled.

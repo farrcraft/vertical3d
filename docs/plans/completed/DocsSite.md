@@ -55,7 +55,7 @@ with no `@param` is off until step 5 turns it on.
 
 ### Step 3 — The site is published
 
-`.github/workflows/docs.yml` builds the site on each pull request, and builds and publishes it to
+**Done.** `.github/workflows/docs.yml` builds the site on each pull request, and builds and publishes it to
 GitHub Pages on each push to `main`. Each action it uses is pinned to a commit, and `pinned.ts`
 passes.
 
@@ -64,8 +64,8 @@ reference on Linux, in the `node:24` image, from a clean copy of the tree. The f
 failed: mdBook gives the preprocessor a non-blocking pipe, and a synchronous read of standard
 input fails on one with EAGAIN. `outside.ts` now reads it as a stream.
 
-Open: the workflow itself has not run, because the branch has not reached GitHub. Its first pull
-request runs the build job, and the merge to `main` runs the first publish.
+The build job passed on the branch's pull request. The merge to `main` on 2026-11-05 ran the first
+publish, and https://farrcraft.github.io/vertical3d/ and its `reference/` both answer.
 
 ### Step 4 — The rules are written down
 
@@ -129,3 +129,36 @@ two manuals, and has no History section.
 
 The README shows a picture of the editor, of moya's output and of the demos. It links the site.
 It drops its History section, which the writing rules keep out of documents.
+
+## Outcome
+
+Closed 2026-11-05. The documents are one searchable site on GitHub Pages, with a reference built
+from the public headers beside them, user manuals for the editor and moya, and pictures of the
+apps that scripts make again.
+
+**Delivered:**
+
+- `node scripts/docs.ts`: mdBook and Doxygen fetched at pinned hashes, a preprocessor that
+  rewrites the links the site cannot serve, and `scripts/summary.ts` checking `SUMMARY.md`
+  (ADR-0162).
+- `.github/workflows/docs.yml`, which builds the site on each pull request and publishes it on
+  each push to `main`.
+- Every public type documented, and no doc comment that contradicts its declaration, checked on
+  each build.
+- `docs/manual/editor/` and `docs/manual/moya/`.
+- `node scripts/pictures.ts`, and `--capture` and `--script` on the apps' command lines
+  (ADR-0163).
+- The rules in Conventions.md, under "The documentation site", and a README that opens with the
+  pictures.
+
+**Different from the plan:**
+
+- The work corrected false statements outside its scope: six in doc comments, and eleven in the
+  developer pages.
+- Taking the editor's picture found that it crashed on every quit, which was fixed.
+- The first Linux build failed on mdBook's non-blocking pipe. The preprocessor reads standard
+  input as a stream.
+
+**Left open:** the six defects the manuals found, in TODO.md: moya's exit code, its `--grid`
+message, `--silent`, a shader's `printf()`, the reyes hider's displaced slopes, and the area
+header's editor names.

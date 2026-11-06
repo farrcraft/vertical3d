@@ -29,7 +29,8 @@ Every demo follows the same pattern:
 - `main` is one call to `v3d::engine::run<T>(argv[0], identity)`, and the demo is a subclass of
   `v3d::engine::Engine`. The identity names the directory a player's files are kept in.
 - Data is read from the `data/` directory beside the executable. The build copies the demo's
-  own `data/` there, and the shared fonts and game theme from the repository's root `data/`.
+  own `data/` into `data/<demo>/`, and the shared fonts and game theme from the repository's
+  root `data/` into `data/`.
 - `data/config.json` lists the demo's documents by kind. Each kind is one a library reads or
   one of the demo's own.
 - The log is where [api/engine/README.md](api/engine/README.md#logging) says.
@@ -59,6 +60,20 @@ Every demo follows the same pattern:
 | Diorama | `diorama` | 1280 × 720 | `binding`, `sound`, `ui`, `window` | `diorama` suite: layout, models, sun, bindings |
 
 No suite needs a window or a GPU. The renderers are not covered.
+
+## Where the demo assets come from
+
+Every asset a demo ships was made for this project, and is under the project's MIT licence
+with the rest of the tree. A new asset from anywhere else needs a licence that allows it to be
+shipped, and is added to this table with its source.
+
+| Assets | Source |
+|---|---|
+| Pong's `hit.wav`, `score.wav` and `victory.wav` | Made for pong by the project's author |
+| Tetris's `pieces/<colour>.tga` | Made for tetris by the project's author, from `demos/tetris/assets/pieces.psd` |
+| Odyssey's `sample.png` | A placeholder sprite made in the tree |
+| Diorama's `models/*.glb` and `well.wav` | Made by the scripts in `demos/diorama/assets/` |
+| The shared fonts in `data/fonts/` | Each under the SIL Open Font License, with its licence beside it |
 
 ## Pong
 
@@ -162,7 +177,9 @@ before giving up. Play commands are ignored while the game is paused or over.
 | `config.json`, `mappings.json`, `vgui.json`, `window.json` | Config, bindings, menu, window size |
 | `pieces/shapes.txt` | The seven tetrads: four rows of `0` and `1` for each, followed by a colour name |
 | `pieces/<colour>.tga` | The block texture for each colour |
-| `pieces/pieces.psd` | The source artwork for the textures |
+
+The source artwork for the textures is `demos/tetris/assets/pieces.psd`, outside `data/`, so
+the build does not copy it and an install does not ship it.
 
 **What tetris is the reference for:** the smallest complete game. It shows a `GameMenu` with
 an app command (`ui::newGame`), a text file loaded through the asset manager

@@ -1,0 +1,67 @@
+# Builds the Flatpak from flatpak/com.farrcraft.Vertical3D.yml, as Flathub builds it: from
+# source, on the Freedesktop runtime, with no network once the sources are fetched. It runs on
+# every pull request, because the Flatpak links other versions of its libraries than the rest of
+# CI does, and this is where those versions are tested. The bundle it makes is kept with the run.
+# ctest.yml calls it for a release's tag, and publishes the bundle with the release.
+name: flatpak
+
+# push is filtered to the default branch and pull_request is not, for the reason cpplint.yml
+# gives.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    # Flathub's own image, with the runtime and the SDK in it. flatpak-builder sandboxes each
+    # module, which needs a privileged container.
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # A release's tag builds the tree with the options of a release, so the apps show the
+      # release's version. ctest.yml has already checked the tag.
+      - name: A release's tag builds a release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-rc.*) prerelease="${GITHUB_REF_NAME##*-}" ;; esac
+          sed -i "s/^      - -DV3D_WARNINGS_AS_ERRORS=OFF$/&\n      - -DV3D_RELEASE=ON\n      - -DV3D_PRERELEASE=$prerelease/" flatpak/com.farrcraft.Vertical3D.yml
+          grep -q -- "-DV3D_RELEASE=ON" flatpak/com.farrcraft.Vertical3D.yml
+
+      # The action caches each module's build, keyed by the manifest, so a run that changes only
+      # the tree rebuilds only the tree.
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
+        with:
+          bundle: vertical3d.flatpak
+          manifest-path: flatpak/com.farrcraft.Vertical3D.yml
+          cache-key: flatpak-builder-${{ hashFiles('flatpak/com.farrcraft.Vertical3D.yml', 'ports/thorvg/**', 'ports/usd/**') }}
+
+      - name: Name the bundle for the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: mv vertical3d.flatpak "vertical3d-${GITHUB_REF_NAME#v}-linux-x86_64.flatpak"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: release-flatpak
+          path: vertical3d-*-linux-x86_64.flatpak
+          if-no-files-found: error

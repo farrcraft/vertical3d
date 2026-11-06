@@ -22,8 +22,13 @@
 # The components are the compiled boost libraries the tree links, and nothing else. Each one
 # is a `boost-*` port the manifest names in its own right rather than a piece of the `boost`
 # metapackage. A component named here that the manifest does not install therefore fails the
-# configure rather than resolving quietly.
-find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json program_options unit_test_framework)
+# configure rather than resolving quietly. Only the test suites link the test framework, so a
+# build without them, such as the Flatpak's, does not ask for it.
+set(v3d_boost_components filesystem json program_options)
+if(V3D_BUILD_TESTS)
+	list(APPEND v3d_boost_components unit_test_framework)
+endif()
+find_package(Boost 1.76.0 REQUIRED COMPONENTS ${v3d_boost_components})
 
 # Resolve the named packages.
 #
@@ -46,8 +51,9 @@ macro(v3d_find_packages)
 		elseif(v3d_package STREQUAL "JPEG")
 			find_package(JPEG REQUIRED)
 			# vcpkg's jpeg port is libjpeg-turbo, and its config carries the import libraries
-			# that FindJPEG's variables name.
-			find_package(libjpeg-turbo CONFIG REQUIRED)
+			# that FindJPEG's variables name. A system's libjpeg, such as the Flatpak runtime's,
+			# has no such config and needs none.
+			find_package(libjpeg-turbo CONFIG QUIET)
 		elseif(v3d_package STREQUAL "SDL3_mixer")
 			# api/audio plays sound through SDL3_mixer.
 			find_package(SDL3_mixer CONFIG REQUIRED)
@@ -75,9 +81,27 @@ macro(v3d_find_packages)
 				endif()
 			endif()
 		elseif(v3d_package STREQUAL "unofficial-sqlite3")
-			# vcpkg's sqlite3 port provides only a config package, under this name.
-			find_package(unofficial-sqlite3 CONFIG REQUIRED)
-		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog|pxr|NanoSVG|harfbuzz|qjs)$")
+			# vcpkg's sqlite3 port provides only a config package, under this name. A system's
+			# SQLite, such as the Flatpak runtime's, is found by CMake's own module, and given
+			# the target name the libraries link.
+			find_package(unofficial-sqlite3 CONFIG QUIET)
+			if(NOT unofficial-sqlite3_FOUND)
+				find_package(SQLite3 REQUIRED)
+				if(NOT TARGET unofficial::sqlite3::sqlite3)
+					add_library(unofficial::sqlite3::sqlite3 INTERFACE IMPORTED)
+					target_link_libraries(unofficial::sqlite3::sqlite3 INTERFACE SQLite::SQLite3)
+				endif()
+			endif()
+		elseif(v3d_package STREQUAL "qjs")
+			# vcpkg installs quickjs-ng's package as qjs. quickjs-ng's own install, as in the
+			# Flatpak, puts qjsConfig.cmake in a directory named quickjs, which find_package does
+			# not search for a package named qjs, so the directory is found and named.
+			find_package(qjs CONFIG QUIET)
+			if(NOT qjs_FOUND)
+				find_path(V3D_QUICKJS_CONFIG_DIR NAMES "qjsConfig.cmake" PATH_SUFFIXES "lib/cmake/quickjs" REQUIRED)
+				find_package(qjs CONFIG REQUIRED PATHS "${V3D_QUICKJS_CONFIG_DIR}" NO_DEFAULT_PATH)
+			endif()
+		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog|pxr|NanoSVG|harfbuzz)$")
 			find_package(${v3d_package} CONFIG REQUIRED)
 		else()
 			find_package(${v3d_package} REQUIRED)

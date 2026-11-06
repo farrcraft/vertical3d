@@ -6,7 +6,6 @@
 #include "GameState.h"
 
 GameState::GameState() :
-    state_(STATE_LOADING),
     paused_(false) {
 }
 

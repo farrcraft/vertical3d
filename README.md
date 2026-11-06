@@ -8,7 +8,8 @@ Vertical3D is a set of C++ libraries for building 3D applications and games, tog
 applications built on them. Rendering uses Vulkan 1.3, windowing and input use SDL3, and the
 whole repository builds with CMake.
 
-It builds on Windows with MSVC. Nothing is packaged or released; you build it from source.
+It builds on Windows with MSVC. Each release ships the apps for Windows, and
+[docs/contributing/Releasing.md](docs/contributing/Releasing.md) says what a release holds.
 
 | | | |
 |---|---|---|

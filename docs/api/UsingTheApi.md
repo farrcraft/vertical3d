@@ -195,10 +195,11 @@ because vertical3d's call leaves `Boost_DIR` in the CMake cache.
 
 vertical3d's CMake functions are global once defined, so you can call its two data helpers:
 
-- `v3d_add_app_data(myapp)` copies your `data/` directory beside the executable. The engine
-  resolves every asset relative to the executable, not to the working directory.
-- `v3d_add_shared_data(myapp)` also copies vertical3d's own `data/` directory, which holds the
-  shared fonts and UI themes. Add it once you draw text.
+- `v3d_add_app_data(myapp)` copies your `data/` directory into `data/myapp/` beside the
+  executable. The engine resolves every asset relative to the executable, not to the working
+  directory, and reads `data/myapp/` before `data/`.
+- `v3d_add_shared_data(myapp)` also copies vertical3d's own `data/` directory into `data/`,
+  which holds the shared fonts and UI themes. Add it once you draw text.
 
 ## 4. The application
 
@@ -328,8 +329,10 @@ cannot check your app. Run it and read the log.
 
 ## Keeping up with the tree
 
-The submodule commit is your version of vertical3d. There are no releases and no compatibility
-checks. To update:
+The submodule commit is your version of vertical3d. Pin a release's tag, such as `v0.1.0`, to have
+a version whose changes are written down: [CHANGELOG.md](../../CHANGELOG.md) says what each
+release changed, and how to update for a break. While the major version is 0, a minor release
+may break the api, and a patch release never does. To update:
 
 ```
 git -C vendor/vertical3d pull

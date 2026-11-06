@@ -101,9 +101,9 @@ class Polygon : public reyes::Primitive {
     void clip(const v3d::type::geometry::Plane & plane);
 
     // reyes::Primitive
-    virtual v3d::type::geometry::AABBox bound(void) const;
+    v3d::type::geometry::AABBox bound(void) const override;
     void split(reyes::Hider & hider, state::RenderContext & rc) override;
-    virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc);
+    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) override;
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid
      * size. The vertices have to be in eye space already, as addPolygon() leaves them.

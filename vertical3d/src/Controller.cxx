@@ -6,6 +6,7 @@
 #include "Controller.h"
 
 #include <api/asset/Json.h>
+#include <api/engine/Application.h>
 #include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
@@ -32,6 +33,7 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
+#include <api/version/Version.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
@@ -141,6 +143,10 @@ void Controller::registerCommands() {
 
     scripting_.bind();
     table_.press("search::open", [this]() { openSearch(); });
+    // the version names the build a bug report is about
+    table_.press("help::about", [this]() {
+        context_.prompt->open("Vertical|3D " + std::string(v3d::version::text()), { { "Close", {} } }, {});
+    });
     table_.press("search::run", [this]() { runSearch(); });
     table_.hold("view::drag", [this](const v3d::event::Event& event) {
         // the press goes to the pointer over the window the cursor is in
@@ -206,7 +212,11 @@ bool Controller::start() {
 /**
  **/
 bool Controller::buildDocument() {
-    context_.document = boost::make_shared<document::Document>(logger(), boost::filesystem::path(context_.path) / "project");
+    // the user's documents hold the default project. An editor with no identity, as in a test,
+    // has none, and keeps it beside the executable
+    const std::string documents = v3d::engine::documentsPath(identity());
+    context_.document = boost::make_shared<document::Document>(logger(),
+        boost::filesystem::path(documents.empty() ? context_.path : documents) / "project");
     context_.playback = boost::make_shared<control::Playback>(context_.document);
     context_.profiles = boost::make_shared<v3d::engine::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::engine::CameraProfiles::DOCUMENT);

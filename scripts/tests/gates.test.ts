@@ -23,7 +23,7 @@ import { ROOT } from '../lib/tree.ts';
 const GATES = readdirSync(join(ROOT, 'scripts')).filter((name) => name.endsWith('.ts')).sort();
 
 /** The gates that compare against a base revision named by --base. */
-const BASED = ['boundary.ts', 'commentsonly.ts', 'failsfirst.ts', 'prose.ts'];
+const BASED = ['boundary.ts', 'changelog.ts', 'commentsonly.ts', 'failsfirst.ts', 'prose.ts'];
 
 /** Starts a gate with the given arguments and Node options, from the repository root. */
 function start(script: string, args: string[], nodeOptions: string[] = []) {

@@ -29,6 +29,8 @@ document for its subject, which the table links to.
 | `namespaces.ts` | Each C++ file is in its directory's namespace | The tree | [Conventions.md](Conventions.md#language) |
 | `pinned.ts` | Every action a workflow uses is pinned to a full commit sha | The tree | [Linting.md](Linting.md#ci) |
 | `npm.ts` | npm brings only pinned development tools, and no script imports a package | The tree | [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) |
+| `notices.ts` | Every package that ships code has a copyright file, and every font has a licence. `--out` writes the notices file | A vcpkg install | [Dependencies.md](Dependencies.md#third-party-notices) |
+| `changelog.ts` | A change to what a release ships adds its entry to `CHANGELOG.md` | Changed files | [Releasing.md](Releasing.md#the-changelog) |
 | `prose.ts` | The writing rules | Added lines | [Conventions.md](Conventions.md#writing), [Linting.md](Linting.md#prose) |
 | `boundary.ts` | Boundary input converted without a check | Added lines | [Conventions.md](Conventions.md#boundary-input) |
 | `failsfirst.ts` | Each test case a change adds fails without the change | Added cases | [Testing.md](Testing.md#checking-that-a-new-test-fails-first) |
@@ -52,7 +54,10 @@ The gates that read added lines compare against a base:
   the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
   with a message.
 
-`failsfirst.ts` runs in [ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's
+`notices.ts` runs in [ctest.yml](../../.github/workflows/ctest.yml) instead, after the Debug
+build's configure, because it reads that build's vcpkg install.
+
+`failsfirst.ts` runs in [ctest.yml](../../.github/workflows/ctest.yml) too, as that job's
 last step on each pull request. It needs the compiler, the packages and the software Vulkan
 driver, which that job already has. Its scratch directory is under `RUNNER_TEMP`, which the job
 excludes from Defender. A link that a scan broke would mark every new case as failing to build,
@@ -61,7 +66,7 @@ and the gate would pass them.
 ## Before a commit
 
 [.pre-commit-config.yaml](../../.pre-commit-config.yaml) runs cpplint and every gate but
-`failsfirst.ts` and `commentsonly.ts` before each commit, through
+`failsfirst.ts`, `notices.ts` and `commentsonly.ts` before each commit, through
 [pre-commit](https://pre-commit.com/). Install it once, and turn it on in each clone:
 
 ```

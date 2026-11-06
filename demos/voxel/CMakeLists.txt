@@ -22,7 +22,7 @@ add_executable(voxel
 	"src/Controller.h" "src/Controller.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 	"src/Scene.h" "src/Scene.cxx"
-	"src/Version.h" "src/main.cxx")
+	"src/main.cxx")
 
 target_link_libraries(voxel PRIVATE
 	v3dlib_engine
@@ -33,6 +33,7 @@ target_link_libraries(voxel PRIVATE
 	v3dlib_type
 	v3dlib_shell
 	v3dlib_ui
+	v3dlib_version
 	v3dlib_window
 )
 
@@ -41,6 +42,7 @@ v3d_add_shader(voxel "shaders/voxel.frag")
 
 v3d_add_app_data(voxel)
 v3d_add_app_icon(voxel "data/icon.svg")
+v3d_install_app(voxel "Voxel")
 v3d_add_shared_data(voxel)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

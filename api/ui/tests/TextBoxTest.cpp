@@ -32,8 +32,6 @@
 
 namespace {
 
-const float characterWidth = 10.0F;
-
 /**
  * A ui::Interface holding one container, the renderer that places what it holds, and both
  * routers - the cursor that gives the focus and the keys that follow it.

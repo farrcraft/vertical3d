@@ -114,3 +114,6 @@ jobs:
     - name: Boundary input
       if: ${{ !cancelled() }}
       run: node scripts/boundary.ts --base "$GATE_BASE"
+    - name: Changelog
+      if: ${{ !cancelled() }}
+      run: node scripts/changelog.ts --base "$GATE_BASE"

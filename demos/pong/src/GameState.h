@@ -5,17 +5,9 @@
 
 #pragma once
 
-#include <cstdint>
-
 class GameState {
  public:
     GameState();
-
-    typedef enum : std::uint8_t {
-        STATE_LOADING,
-        STATE_SIMULATION,
-        STATE_GUI
-    } SimulationState;
 
     void reset(void);
 
@@ -44,5 +36,4 @@ class GameState {
     bool coop_;
     bool paused_;
     int maxScore_;
-    SimulationState state_;
 };

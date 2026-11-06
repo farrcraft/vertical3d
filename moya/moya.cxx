@@ -6,6 +6,7 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/version/Version.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 
 #include <cstdio>
@@ -84,7 +85,7 @@ int run(int argc, char *argv[]) {
     }
 
     if (var_map.count("version") != 0) {
-        std::cout << "Moya v0.0.1" << "\n";
+        std::cout << "moya " << v3d::version::text() << "\n";
         std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
                      "Copyright 1988, 1989, Pixar" << "\n" <<
                      "All Rights Reserved" << "\n";

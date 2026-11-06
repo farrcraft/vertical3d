@@ -22,7 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [DocsSite](DocsSite.md) | Documents, CI, editor, moya | A searchable site of the documents with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps |
+| [Releases](Releases.md) | Engine, apps, build, CI, documents | Apps that run from an install, a version in every app, install rules, a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |
 
 ## Completed plans
 
@@ -30,6 +30,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [DocsSite](completed/DocsSite.md) | Documents, CI, editor, moya | 2026-11-05 | A searchable site of the documents on GitHub Pages with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps made by scripts |
 | [EditorDesignSync](completed/EditorDesignSync.md) | Editor, UI, design | 2026-11-04 | The editor and its mockups in agreement: chosen tabs, tab strips, Properties headings, visibility flags, the timeline's transport, views through a scene camera, and the mockups redrawn where the editor chose |
 | [ScriptTooling](completed/ScriptTooling.md) | Review gates, TypeScript, CI | 2026-11-03 | TypeScript type-checked through pinned npm tools, the review gates on shared modules and split by job with every rule tested, one output format, example editor scripts that run in a test, and a reference page for the gates |
 | [EditorFinish](completed/EditorFinish.md) | Editor, UI, script | 2026-11-02 | The editor's views, headers, outliner, properties, status bar and notices as designed; a timeline, graph editor, console, render view and render settings as area editors; scripts in TypeScript on QuickJS against the editor's commands; and the Animation, Shading and Rendering workspaces |

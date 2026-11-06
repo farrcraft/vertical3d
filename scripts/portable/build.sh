@@ -11,25 +11,12 @@ set -euo pipefail
 
 src=/src
 work=/work
-export VCPKG_DEFAULT_BINARY_CACHE="${VCPKG_DEFAULT_BINARY_CACHE:-$work/vcpkg-cache}"
+
+# shellcheck source=vcpkg.sh
+source /usr/local/bin/v3d-vcpkg
 
 # The libraries whose closure names neither SDL3, Vulkan nor OpenUSD
 libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;render_offline;type"
-
-mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-
-# vcpkg resolves the baseline in vcpkg.json against the checkout that runs the install, so the
-# checkout is the baseline commit itself. With no version overrides, that commit holds every
-# port the install reads. A checkout already at the baseline is kept.
-baseline=$(jq -r '."builtin-baseline"' "$src/vcpkg.json")
-vcpkg="$work/vcpkg"
-if [ "$(git -C "$vcpkg" rev-parse HEAD 2>/dev/null)" != "$baseline" ] || [ ! -x "$vcpkg/vcpkg" ]; then
-    rm -rf "$vcpkg"
-    git init --quiet "$vcpkg"
-    git -C "$vcpkg" fetch --quiet --depth 1 https://github.com/microsoft/vcpkg.git "$baseline"
-    git -C "$vcpkg" checkout --quiet --detach FETCH_HEAD
-    "$vcpkg/bootstrap-vcpkg.sh" -disableMetrics
-fi
 
 "$CXX" --version
 

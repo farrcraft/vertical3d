@@ -18,6 +18,17 @@
 
 namespace v3d::brep::internal {
 
+namespace {
+
+// A coordinate's bits, with -0 given the bits of 0, which it compares equal to. The sign bit is
+// cleared on the integer: an optimiser may fold x + 0.0F to x, which keeps -0's sign.
+std::uint32_t bits(float coordinate) {
+    const std::uint32_t raw = std::bit_cast<std::uint32_t>(coordinate);
+    return raw == 0x80000000U ? 0U : raw;
+}
+
+};  // namespace
+
 Welder::Welder(const Polygons& polygons, std::vector<glm::vec3>* positions)
     : polygons_(polygons), positions_(positions), vertexOf_(polygons.points.size(), INVALID_ID) {
     vertexAt_.reserve(polygons.points.size());
@@ -41,9 +52,7 @@ std::size_t Welder::PositionHash::operator()(const PositionKey& key) const noexc
 }
 
 Welder::PositionKey Welder::positionKey(const glm::vec3& point) {
-    // adding zero turns -0 into 0, which compares equal to it but has other bits
-    return { std::bit_cast<std::uint32_t>(point.x + 0.0F), std::bit_cast<std::uint32_t>(point.y + 0.0F),
-        std::bit_cast<std::uint32_t>(point.z + 0.0F) };
+    return { bits(point.x), bits(point.y), bits(point.z) };
 }
 
 };  // namespace v3d::brep::internal

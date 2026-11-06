@@ -23,6 +23,7 @@ target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_log
 	v3dlib_input
 	v3dlib_type
+	v3dlib_version
 	glm::glm
 	EnTT::EnTT
 	${Boost_LIBRARIES}

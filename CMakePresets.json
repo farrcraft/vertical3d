@@ -25,6 +25,16 @@
       "inherits": "windows"
     },
     {
+      "name": "x64-Release",
+      "displayName": "Release",
+      "description": "The build a release ships, sharing the Debug build's vcpkg install",
+      "inherits": "windows",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/out/build/x64-Debug/vcpkg_installed"
+      }
+    },
+    {
       "name": "analyze",
       "displayName": "Debug with /analyze",
       "description": "MSVC's static analyser runs with the compiler",
@@ -69,10 +79,18 @@
           { "type": "notEquals", "lhs": "$env{VCPKG_INSTALLATION_ROOT}", "rhs": "" }
         ]
       }
+    },
+    {
+      "name": "ci-release",
+      "displayName": "CI Release",
+      "description": "The Windows CI job's Release build",
+      "inherits": "ci",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
   ],
   "buildPresets": [
     { "name": "x64-Debug", "configurePreset": "x64-Debug" },
+    { "name": "x64-Release", "configurePreset": "x64-Release" },
     { "name": "analyze", "configurePreset": "analyze" },
     { "name": "tidy", "configurePreset": "tidy" },
     { "name": "verify", "configurePreset": "verify" },
@@ -82,6 +100,11 @@
     {
       "name": "x64-Debug",
       "configurePreset": "x64-Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "x64-Release",
+      "configurePreset": "x64-Release",
       "output": { "outputOnFailure": true }
     },
     {

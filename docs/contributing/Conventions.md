@@ -250,6 +250,7 @@ These rules apply to code comments and to every document in [docs/](..) alike.
   as "seam", "the walk" or "the tier" means nothing to a new reader.
 - **Present tense.** Describe the code as it is. No "used to", no "no longer", no dates, no
   "phase N", and no account of how a bug was found. History belongs in git and in the ADRs.
+  Plans, roadmaps and [CHANGELOG.md](../../CHANGELOG.md) describe change, and are exempt.
 - **Nothing the reader cannot open.** Do not name other repositories, deleted trees such as
   rigel or v3dlibs, or issue-tracker IDs. [audits/](../audits) is where the deleted trees'
   lineage lives.

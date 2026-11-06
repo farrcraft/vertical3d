@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Pong
+Comment=The Vertical3D demo of the classic paddle game
+Exec=pong
+Icon=com.farrcraft.Vertical3D.Pong
+Terminal=false
+Categories=Game;ArcadeGame;

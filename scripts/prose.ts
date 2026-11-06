@@ -18,8 +18,8 @@
  *                    item is not counted.
  *   personification  "knows", "wants", "owes" or "trusts", or "does not know" and its kin,
  *                    with a subject that is not a person or whoever writes an app.
- *   history          "used to" (not the passive "is used to"), a date, or "phase N". Plans and
- *                    roadmaps are exempt, because they describe change.
+ *   history          "used to" (not the passive "is used to"), a date, or "phase N". Plans,
+ *                    roadmaps and CHANGELOG.md are exempt, because they describe change.
  *   long-line        a Markdown prose line, or a comment line with no code before it, longer
  *                    than 100 columns.
  *   extended-line    a comment line more than 10 columns longer than every other line of its

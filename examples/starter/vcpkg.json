@@ -38,6 +38,15 @@
     "sqlite3",
     "thorvg",
     "vulkan",
+    {
+      "name": "vulkan-loader",
+      "features": [
+        "wayland",
+        "xcb",
+        "xlib"
+      ],
+      "platform": "linux"
+    },
     "vulkan-memory-allocator"
   ]
 }

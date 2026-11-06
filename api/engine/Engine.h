@@ -498,7 +498,7 @@ class Engine {
      void loadSettings();
 
      template <typename T, typename... Args>
-     friend int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args);
+     friend int runLaunched(const Launch& launch, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::asset::Manifest> manifest_;

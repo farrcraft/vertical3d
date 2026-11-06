@@ -412,7 +412,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
-    const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[(static_cast<std::size_t>(y) * size) + x]; };
+    const auto at = [&depths](uint32_t x, uint32_t y) { return depths[(static_cast<std::size_t>(y) * size) + x]; };
     // the mirrored hand mirrors the map, so the two blocks change sides
     const bool mirrored = hand == v3d::type::camera::Profile::Hand::DirectionCrossUp;
     BOOST_CHECK_EQUAL(at(mirrored ? 11 : 4, 8), 0.25F);

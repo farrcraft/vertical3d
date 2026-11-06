@@ -31,7 +31,6 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
-#include <glm/common.hpp>
 #include <glm/vec2.hpp>
 
 namespace {
@@ -728,10 +727,6 @@ BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
     BOOST_CHECK(!later.held("pong::leftPaddleUp"));
     later.offer(keyDown(SDLK_UP));
     BOOST_CHECK(later.held("pong::leftPaddleUp"));
-}
-
-Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
-    return Position2D{glm::mix(from.value, to.value, alpha)};
 }
 
 /**

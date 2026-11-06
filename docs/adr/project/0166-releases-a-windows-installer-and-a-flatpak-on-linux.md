@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-03
 **Tags**: releases
-**Documented in**: [Releases.md](../../roadmap/Releases.md), until a release process document states the rule
+**Documented in**: [Releasing.md](../../contributing/Releasing.md#what-a-release-is)
 
 ## Context
 

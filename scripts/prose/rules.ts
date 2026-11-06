@@ -11,7 +11,7 @@ const MAX_WORDS = 35;
 const EXTENDED_MARGIN = 10;
 const EXTENDED_BASELINE = 70;
 
-const HISTORY_EXEMPT_PREFIXES = ['docs/plans/', 'docs/roadmap/'];
+const HISTORY_EXEMPT_PREFIXES = ['docs/plans/', 'docs/roadmap/', 'CHANGELOG.md'];
 
 const OPENERS = new Set(['And', 'So']);
 const INVERTED = /,\s+which\s+is\s+(what|how|where|why|when)\b/i;

@@ -14,21 +14,36 @@
 
 #include <algorithm>
 #include <cctype>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <typeindex>
 #include <vector>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/system/error_code.hpp>
 
 namespace v3d::asset {
 
 /**
  **/
 Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger>& logger) :
+    Manager(std::vector<std::string>{ std::string(path) }, logger) {
+}
+
+/**
+ **/
+Manager::Manager(const std::vector<std::string>& roots, const boost::shared_ptr<v3d::log::Logger>& logger) :
+    roots_(roots.begin(), roots.end()),
     logger_(logger) {
-    path_ = static_cast<std::string>(path);
-    logger_->get()->info("Setting asset manager path to: {}", path);
+    if (roots_.empty()) {
+        throw std::invalid_argument("an asset manager needs a root");
+    }
+    for (const boost::filesystem::path& root : roots_) {
+        logger_->get()->info("Resolving assets under {}", root.string());
+    }
     registerLoader(boost::make_shared<loader::Json>(logger_), {".json"});
     registerLoader(boost::make_shared<loader::Text>(logger_), {".txt"});
 }
@@ -55,7 +70,15 @@ boost::shared_ptr<Loader> Manager::resolveLoader(std::type_index kind) const {
 /**
  **/
 std::string Manager::path(std::string_view name) const {
-    return (path_ / static_cast<std::string>(name)).string();
+    const std::string relative(name);
+    for (const boost::filesystem::path& root : roots_) {
+        const boost::filesystem::path candidate = root / relative;
+        boost::system::error_code error;
+        if (boost::filesystem::exists(candidate, error)) {
+            return candidate.string();
+        }
+    }
+    return (roots_.front() / relative).string();
 }
 
 /**

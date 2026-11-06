@@ -1,4 +1,8 @@
-# Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
+# Builds the tree in Debug and in Release and runs the Boost.Test suites through ctest in each. A
+# release ships the Release build, so a defect only Release shows fails here, not in a release.
+# A pushed tag vX.Y.Z, or vX.Y.Z-rc.N for a release candidate, also publishes the Release build's
+# install tree, its installer and the Flatpak as a GitHub release, once every job has passed.
+# This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
 # needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
@@ -10,6 +14,7 @@ name: ctest
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 # A push that supersedes an earlier one cancels it. The cold dependency build is expensive
@@ -26,9 +31,17 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
 
+    # Each build type runs on a runner of its own, beside the other rather than after it. A
+    # failure in one does not cancel the other, so a run reports both.
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ci, ci-release]
+
     env:
-      # The directory the ci preset in CMakePresets.json builds into
-      BUILD_DIR: out/build/ci
+      # The configure preset in CMakePresets.json, and the directory it builds into
+      PRESET: ${{ matrix.preset }}
+      BUILD_DIR: out/build/${{ matrix.preset }}
       # The out of tree build of the starter example, which consumes the api as source. It is
       # a second build directory rather than a second workflow: it needs this job's toolchain,
       # vcpkg install and SDK, and a runner of its own would build boost again.
@@ -45,6 +58,9 @@ jobs:
       # comes from a third-party release, not a package manager. Resolving "latest" would let
       # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
+      # NSIS builds the Windows installer. The runner image does not ship it, and its version is
+      # pinned so the installer cannot change without a commit here.
+      NSIS_VERSION: "3.13.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
 
     steps:
@@ -53,6 +69,27 @@ jobs:
           # the whole history, so the fails-first step can find the branch a pull request
           # merges into and read each changed file at its version there
           fetch-depth: 0
+
+      # A release's tag has to name the version the tree builds, and the changelog has to have
+      # that version's section, which becomes the release's notes. The step gives the configure
+      # the options of a release build. Any other run gives it none.
+      - name: The tag names the tree's version
+        id: tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+)(?:-(rc\.\d+))?$') { throw "a release tag is vX.Y.Z or vX.Y.Z-rc.N, and $tag is neither" }
+          $number = $Matches[1]
+          $prerelease = $Matches[2]
+          $project = Select-String -Path CMakeLists.txt -Pattern 'project \("vertical3d" VERSION ([0-9.]+)\)'
+          if (-not $project) { throw "CMakeLists.txt's project() names no version" }
+          $version = $project.Matches[0].Groups[1].Value
+          if ($number -ne $version) { throw "the tag $tag names $number, and the tree builds $version" }
+          if (-not (Select-String -Path CHANGELOG.md -Pattern "^## \[$([regex]::Escape($number))\]" -Quiet)) {
+            throw "CHANGELOG.md has no section for $number to be the release's notes"
+          }
+          "options=-DV3D_RELEASE=ON -DV3D_PRERELEASE=$prerelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       # Defender holds a file while it scans it. Files this job writes are often opened again
       # immediately: the linker's output to embed a manifest, and again by the applocal copy
@@ -274,18 +311,27 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
-      # The ci preset configures with the vcpkg checkout above, and with a job pool that holds
+      # Node runs the notices check, the install's notices and the fails-first harness directly,
+      # with no install, at the version the other gates run on in review-gates.yml. It comes before
+      # Configure, which records the node on the PATH for the install to run.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # The ci presets configure with the vcpkg checkout above, and with a job pool that holds
       # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
       # deployment runs in the same edge, reopening the binary just linked and copying dlls out
       # of the installed bin directory the other link edges are reading. Only linking is pooled,
       # so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
+        env:
+          RELEASE_OPTIONS: ${{ steps.tag.outputs.options }}
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --version || exit /b 1
           ninja --version || exit /b 1
-          cmake --preset ci || exit /b 1
+          cmake --preset %PRESET% %RELEASE_OPTIONS% || exit /b 1
 
       # An archive is named by its package's ABI hash, and the install's status file lists the
       # hash of every package installed. An archive no installed package names is one the
@@ -320,13 +366,26 @@ jobs:
           "changed=$($built -gt 0)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       # Saved here, not from a post step. A run whose build or tests fail still keeps the
-      # packages the configure just spent the time building.
+      # packages the configure just spent the time building. The two build types install the
+      # same packages, and each saves under a key of its own, because two saves of one key
+      # cannot both succeed.
       - name: Save the vcpkg binaries
         if: steps.vcpkg-used.outputs.changed == 'True'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
+
+      # A release shows a licence for everything it ships: every package in the install that
+      # ships code has a copyright file, and every font has a licence. The check reads this job's
+      # install, which the review gates' runner does not have. Both build types install the same
+      # packages, so the Debug build alone runs it.
+      - name: Everything a release ships has a licence
+        if: matrix.preset == 'ci'
+        shell: pwsh
+        run: |
+          node scripts/notices.ts --installed "$env:BUILD_DIR/vcpkg_installed"
+          if ($LASTEXITCODE -ne 0) { throw "the notices check exited $LASTEXITCODE" }
 
       - name: Build
         shell: cmd
@@ -461,6 +520,86 @@ jobs:
           if ($exit -eq 77) { throw "the render window suite could not open a window to present to, and skipped" }
           if ($exit -ne 0) { throw "the render window suite exited $exit" }
 
+      # A release ships the install tree, so each app has to run from it, from a working directory
+      # of its own. An app that cannot find a DLL, a data file or its shaders there fails here.
+      # A windowed app returns at once when started from a shell, so each is waited for.
+      - name: Every app runs from the install
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        env:
+          INSTALL_DIR: ${{ runner.temp }}\install
+        run: |
+          cmake --install "$env:BUILD_DIR" --prefix "$env:INSTALL_DIR"
+          if ($LASTEXITCODE -ne 0) { throw "the install exited $LASTEXITCODE" }
+          if (-not (Test-Path "$env:INSTALL_DIR\NOTICES.txt")) { throw "the install wrote no NOTICES.txt" }
+          $pictures = "$env:RUNNER_TEMP\from-install"
+          New-Item -ItemType Directory -Force -Path $pictures | Out-Null
+          Push-Location $pictures
+          $failed = @()
+          foreach ($app in 'pong', 'tetris', 'voxel', 'odyssey', 'diorama', 'vertical3d') {
+            $process = Start-Process -FilePath "$env:INSTALL_DIR\$app.exe" -ArgumentList '--capture', "$pictures\$app.png" -Wait -PassThru
+            if ($process.ExitCode -ne 0 -or -not (Test-Path "$pictures\$app.png")) { $failed += "$app exited $($process.ExitCode)" }
+          }
+          & "$env:INSTALL_DIR\moya.exe" --file "$env:INSTALL_DIR\data\moya\raytrace-scene.rib" --output "$pictures\moya.png" --silent
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$pictures\moya.png")) { $failed += "moya exited $LASTEXITCODE" }
+          & "$env:INSTALL_DIR\imagetool.exe" --version
+          if ($LASTEXITCODE -ne 0) { $failed += "imagetool exited $LASTEXITCODE" }
+          Pop-Location
+          if ($failed) { throw "from the install: $($failed -join '; ')" }
+
+      - name: Install NSIS
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        run: |
+          choco install nsis --version $env:NSIS_VERSION --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "installing NSIS $env:NSIS_VERSION exited $LASTEXITCODE" }
+
+      # The installer is built from the same install rules on every run, so a change that breaks
+      # it fails here rather than at a release. It installs silently, gives the editor a Start
+      # menu entry, and its uninstaller removes every app it installed. The uninstaller is run in
+      # place, so it is waited for, and it is left behind as the one file it cannot remove.
+      - name: The installer installs and uninstalls
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        run: |
+          Push-Location $env:BUILD_DIR
+          cpack -C Release
+          $packed = $LASTEXITCODE
+          Pop-Location
+          if ($packed -ne 0) { throw "cpack exited $packed" }
+          $setup = Get-ChildItem "$env:BUILD_DIR\package\*-setup.exe" | Select-Object -First 1
+          if (-not $setup) { throw "cpack wrote no installer" }
+          $target = "$env:RUNNER_TEMP\installed"
+          $process = Start-Process -FilePath $setup.FullName -ArgumentList '/S', "/D=$target" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "the installer exited $($process.ExitCode)" }
+          foreach ($file in 'vertical3d.exe', 'moya.exe', 'NOTICES.txt', 'data\fonts', 'usd\plugInfo.json') {
+            if (-not (Test-Path "$target\$file")) { throw "the installer did not install $file" }
+          }
+          $menus = @([Environment]::GetFolderPath('CommonPrograms'), [Environment]::GetFolderPath('Programs'))
+          if (-not ($menus | Where-Object { Test-Path "$_\Vertical3D\Vertical3D Editor.lnk" })) { throw "the installer made no Start menu entry for the editor" }
+          $process = Start-Process -FilePath "$target\Uninstall.exe" -ArgumentList '/S', "_?=$target" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "the uninstaller exited $($process.ExitCode)" }
+          $left = Get-ChildItem $target -Recurse -File | Where-Object { $_.Name -ne 'Uninstall.exe' }
+          if ($left) { throw "the uninstaller left $($left.Count) files, such as $($left[0].FullName)" }
+
+      # A release's tag packages the install tree the step above ran every app from, for the
+      # release job to publish beside the installer.
+      - name: Package the release
+        if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          Compress-Archive -Path "$env:RUNNER_TEMP\install\*" -DestinationPath "$env:RUNNER_TEMP\vertical3d-$version-windows-x64.zip"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: release
+          path: |
+            ${{ runner.temp }}/vertical3d-*-windows-x64.zip
+            ${{ env.BUILD_DIR }}/package/vertical3d-*-windows-x64-setup.exe
+          if-no-files-found: error
+
       # Inside the tree, a target that does not declare its own include path and dependencies
       # still builds, because the root and the apps supply them. Only a separate root project
       # shows the difference, and this step builds one.
@@ -470,8 +609,10 @@ jobs:
       # something its manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
-      # would build boost a second time to install the same package set.
+      # would build boost a second time to install the same package set. The Debug build alone
+      # runs it, because what it checks does not depend on the build type.
       - name: Build the starter example
+        if: matrix.preset == 'ci'
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
@@ -485,13 +626,6 @@ jobs:
             -DVCPKG_MANIFEST_INSTALL=OFF || exit /b 1
           cmake --build "%STARTER_BUILD_DIR%" || exit /b 1
 
-      # Node runs the fails-first harness directly, with no install, at the version the other
-      # gates run on in review-gates.yml.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: github.event_name == 'pull_request'
-        with:
-          node-version: 24
-
       # Every test case a pull request adds has to fail without the rest of the pull request: a
       # case that passes on the base does not test the change. The harness builds the affected
       # suites a second time, in a worktree with every file outside tests/ at the base, reusing
@@ -499,9 +633,10 @@ jobs:
       # Test step does. Only pull requests run it, because a push to main has already been
       # checked as one. Its worktree and its build go under RUNNER_TEMP, which Defender does not
       # scan. A link that fails there would mark every new case as failing to build, which the
-      # harness counts as failing without the change.
+      # harness counts as failing without the change. The Debug build alone runs it: a case
+      # fails without the change in both build types or in neither.
       - name: The new test cases fail without the change
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -511,3 +646,50 @@ jobs:
         run: |
           node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/${{ github.base_ref }}"
           if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }
+
+  # A release's tag builds the Flatpak as pull requests do, as a release.
+  flatpak:
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/flatpak.yml
+
+  # A release's tag publishes the packages once every build and test has passed. The packages are
+  # attested, so a user can check they were built here, from the tagged commit. The release's notes
+  # are the changelog's section for its version, and a release candidate is marked as one.
+  release:
+    needs: [test, flatpak]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # the Windows packages are the artifact release, and the Flatpak is release-flatpak
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release*
+          merge-multiple: true
+          path: dist
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          number="${TAG#v}"
+          number="${number%%-*}"
+          # the lines after the version's heading, up to the next version's
+          awk -v heading="## [$number]" 'index($0, heading) == 1 { on = 1; next } /^## \[/ { if (on) exit } on' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "CHANGELOG.md's section for $number is empty"
+            exit 1
+          fi
+          prerelease=()
+          case "$TAG" in *-rc.*) prerelease=(--prerelease) ;; esac
+          gh release create "$TAG" dist/* --verify-tag --title "Vertical3D ${TAG#v}" --notes-file notes.md "${prerelease[@]}"

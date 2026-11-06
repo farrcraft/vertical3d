@@ -57,7 +57,7 @@ class Grade final {
     /**
      * The table's edge, in entries.
      **/
-    static const uint32_t SIZE = 16;
+    static constexpr uint32_t SIZE = 16;
 
     /**
      * What the grade draws into, and the table it starts with.

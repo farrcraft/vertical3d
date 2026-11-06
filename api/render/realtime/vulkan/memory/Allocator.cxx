@@ -5,9 +5,14 @@
 
 #include "Allocator.h"
 
+// MSVC reports warnings in the allocator's header, which this tree does not own
+#ifdef _MSC_VER
 #pragma warning(push, 0)
+#endif
 #include <vk_mem_alloc.h>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 #include <cstdint>
 #include <optional>

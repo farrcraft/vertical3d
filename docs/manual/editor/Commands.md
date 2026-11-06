@@ -60,8 +60,8 @@ frame. A toggle such as Auto Key flips when `on` is left out.
 The console lists each command you run from a menu or a key as the script line that does the
 same thing. Copy a line from the list to learn a command's script name and arguments.
 
-The file `data/scripts/editor.d.ts`, beside the program, declares every command a script can
-run.
+The file `data/vertical3d/scripts/editor.d.ts`, beside the program, declares every command a
+script can run.
 
 ## Name items and parts
 
@@ -92,8 +92,8 @@ try {
 
 ## Example scripts
 
-The directory `data/scripts/examples/` beside the program holds three scripts to read and copy
-from:
+The directory `data/vertical3d/scripts/examples/` beside the program holds three scripts to read
+and copy from:
 
 | File | What it does |
 |---|---|

@@ -11,6 +11,7 @@
 #include <api/image/Image.h>
 #include <api/image/Pack.h>
 #include <api/log/Logger.h>
+#include <api/version/Version.h>
 #include <imagetool/SheetRequest.h>
 
 #include <algorithm>
@@ -302,6 +303,7 @@ bool rectangle(const std::string& text, unsigned int* values) {
 void describeOptions(boost::program_options::options_description* opts_desc) {
     opts_desc->add_options()
         ("help", "produce help message")
+        ("version", "display version info")
         ("info", "display image info")
         ("silent", "don't display any output")
         ("file", boost::program_options::value<std::string>(), "input image filename to be read")
@@ -385,6 +387,10 @@ int run(int argc, char *argv[]) {
     // process options
     if (var_map.count("help") != 0) {
         std::cout << opts_desc << "\n";
+        exit(EXIT_SUCCESS);
+    }
+    if (var_map.count("version") != 0) {
+        std::cout << "imagetool " << v3d::version::text() << "\n";
         exit(EXIT_SUCCESS);
     }
 

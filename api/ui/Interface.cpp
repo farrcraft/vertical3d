@@ -36,7 +36,7 @@ namespace v3d::ui {
 
 Interface::Interface(const boost::shared_ptr<v3d::event::Router>& router, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::log::Logger>& logger) :
-    router_(router), dispatcher_(dispatcher), logger_(logger) {
+    logger_(logger), router_(router), dispatcher_(dispatcher) {
 }
 
 const boost::shared_ptr<entt::dispatcher>& Interface::dispatcher() const noexcept {
@@ -228,7 +228,10 @@ std::size_t Interface::resolveImages(const Resolve& resolve) {
     if (!resolve) {
         return 0;
     }
-    return resolveThemeImages(resolve) + resolveContainerImages(resolve);
+    // two statements, because the order a sum evaluates its operands in is unspecified, and the
+    // themes are resolved before the containers
+    const std::size_t themes = resolveThemeImages(resolve);
+    return themes + resolveContainerImages(resolve);
 }
 
 /**

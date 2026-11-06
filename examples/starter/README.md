@@ -12,7 +12,7 @@ as the starting point for an app in a repository of your own.
 | `vcpkg.json`, `vcpkg-configuration.json` | The package list and registry a consumer repository carries. They match the repository's own, except that `overlay-ports` names `../../ports`, the repository's `ports/` from here. A consumer points it at vertical3d's `ports/` from its own root |
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<AppEngine>(argv[0], { .organization = "Vertical3D", .application = "Starter" })` |
 | `src/AppEngine.h`, `src/AppEngine.cxx` | The app. `features()` asks for a window, keyboard input and config. `start()` creates the renderer, `render()` draws the rectangle, and `release()` shuts the renderer down before the window is destroyed |
-| `data/config.json`, `data/window.json` | The config list and the window size, 1024 × 768. The build copies `data/` beside the executable |
+| `data/config.json`, `data/window.json` | The config list and the window size, 1024 × 768. The build copies `data/` into `data/v3dstarter/` beside the executable |
 
 ## Building and running
 
