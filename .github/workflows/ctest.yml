@@ -587,20 +587,22 @@ jobs:
           if ($left) { throw "the uninstaller left $($left.Count) files, such as $($left[0].FullName)" }
 
       # A release's tag packages the install tree the step above ran every app from, for the
-      # release job to publish beside the installer.
+      # release job to publish beside the installer. The zip is written beside the installer, so
+      # the artifact holds both at its top level: an artifact keeps each file's path below the
+      # directory its paths share.
       - name: Package the release
         if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME.Substring(1)
-          Compress-Archive -Path "$env:RUNNER_TEMP\install\*" -DestinationPath "$env:RUNNER_TEMP\vertical3d-$version-windows-x64.zip"
+          Compress-Archive -Path "$env:RUNNER_TEMP\install\*" -DestinationPath "$env:BUILD_DIR\package\vertical3d-$version-windows-x64.zip"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
         with:
           name: release
           path: |
-            ${{ runner.temp }}/vertical3d-*-windows-x64.zip
+            ${{ env.BUILD_DIR }}/package/vertical3d-*-windows-x64.zip
             ${{ env.BUILD_DIR }}/package/vertical3d-*-windows-x64-setup.exe
           if-no-files-found: error
 
@@ -686,6 +688,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
+          # a release asset is a file, so a directory here would fail the upload after the release
+          # was created
+          if [ -n "$(find dist -mindepth 1 -type d)" ]; then
+            echo "dist holds a directory, where it should hold only the files to publish:"
+            find dist
+            exit 1
+          fi
           number="${TAG#v}"
           number="${number%%-*}"
           # the lines after the version's heading, up to the next version's
