@@ -39,9 +39,14 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     for (unsigned int j = 0; j < ny; j++) {
         for (unsigned int i = 0; i < nx; i++) {
             Sample & sample = samples[(j * nx) + i];
+            // each offset is drawn in a statement of its own, the y offset first. The order a call
+            // evaluates its arguments in differs between compilers, and a pixel's samples have
+            // to be the same whichever compiler built the renderer
+            const float jitterY = jitter(ny, &random);
+            const float jitterX = jitter(nx, &random);
             sample.raster = glm::vec2(
-                static_cast<float>(column) + ((static_cast<float>(i) + jitter(nx, &random)) / static_cast<float>(nx)),
-                static_cast<float>(row) + ((static_cast<float>(j) + jitter(ny, &random)) / static_cast<float>(ny)));
+                static_cast<float>(column) + ((static_cast<float>(i) + jitterX) / static_cast<float>(nx)),
+                static_cast<float>(row) + ((static_cast<float>(j) + jitterY) / static_cast<float>(ny)));
         }
     }
 
@@ -64,9 +69,12 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
         samples[k].time = open + ((close - open) * t);
         const unsigned int across = lenses[k] % nx;
         const unsigned int down = lenses[k] / nx;
+        // the y offset first, as above
+        const float lensY = jitter(ny, &random);
+        const float lensX = jitter(nx, &random);
         const glm::vec2 square(
-            (static_cast<float>(across) + jitter(nx, &random)) / static_cast<float>(nx),
-            (static_cast<float>(down) + jitter(ny, &random)) / static_cast<float>(ny));
+            (static_cast<float>(across) + lensX) / static_cast<float>(nx),
+            (static_cast<float>(down) + lensY) / static_cast<float>(ny));
         samples[k].lens = uniformDisc(square);
     }
     return samples;
