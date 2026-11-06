@@ -94,6 +94,22 @@ replace. AddressSanitizer then reports a mismatch on every allocation, and a rep
   add the patch to its `PATCHES` again, and remake the patch if the file has moved. Drop the
   port once thorvg no longer replaces the operators.
 
+### The OpenUSD overlay port
+
+OpenUSD's `schemaRegistry.h` holds maps whose values own a `unique_ptr` to
+`UsdPrimDefinition`, a type the header only declares, and looks them up in inline functions.
+libstdc++ 15 checks whether such a map's value can be default-constructed, which needs the
+complete type. Clang then fails on any file that includes the header, so the Linux build with
+Clang cannot build the editor's USD reader. MSVC and GCC accept it.
+
+- The port in [ports/usd/](../../ports/usd/) is vcpkg's own, from the baseline commit, with one
+  patch added. [fix-schema-registry-incomplete-type.patch](../../ports/usd/fix-schema-registry-incomplete-type.patch)
+  moves the three lookups out of the class body into `schemaRegistry.cpp`, as OpenUSD's open
+  pull request #4212 does for its development branch.
+- When the baseline moves OpenUSD to a new version, copy the new port over `ports/usd/`, add the
+  patch to its `PATCHES` again, and remake it if the header has changed. Drop the port once
+  OpenUSD's release holds the fix.
+
 Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),
 [ADR-0053](../adr/rendering/0053-memory-optional-vma-suballocation.md)
