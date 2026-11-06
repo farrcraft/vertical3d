@@ -300,6 +300,5 @@
 - [Plans](plans/README.md)
     - [Releases — Installed Apps, a Version, a Release Workflow, an Installer and a Flatpak](plans/Releases.md)
 - [Roadmaps](roadmap/README.md)
-    - [Releases](roadmap/Releases.md)
 - [Audits and surveys](audits/README.md)
 - [TODO](TODO.md)

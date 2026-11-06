@@ -32,14 +32,13 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 ## Open roadmaps
 
-| Roadmap | Area |
-|---|---|
-| [Releases.md](Releases.md) | Versioned releases of the apps: running from an install, a version in every app, install rules, a changelog and a release workflow, a Windows installer, the apps on Linux, and a Flatpak |
+None.
 
 ## Completed roadmaps
 
 | Roadmap | What it covered | Done by |
 |---|---|---|
+| [Releases.md](completed/Releases.md) | Versioned releases of the apps: running from an install, a version in every app, install rules, a changelog and a release workflow, a Windows installer, the apps on Linux, and a Flatpak | [Releases](../plans/Releases.md), 2026-11-06 |
 | [EditorModelling.md](completed/EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the fixed views and resizable panes. The other menu command groups are in [TODO.md](../TODO.md#editor) | [EditorModelling](../plans/completed/EditorModelling.md), 2026-10-24 |
 | [OfflineShading.md](completed/OfflineShading.md) | The remaining RenderMan features: verified transformations, an acceleration structure, area lights, reyes opacity, displacement and bump mapping. | [OfflineShading](../plans/completed/OfflineShading.md), 2026-10-18 |
 | [LitScenesAtScale.md](completed/LitScenesAtScale.md) | Instanced lit and shadow draws, a grade authored for display, and a panned voice. | [LitScenesAtScale](../plans/completed/LitScenesAtScale.md), 2026-10-17 |

@@ -1,10 +1,10 @@
 # Releases — Installed Apps, a Version, a Release Workflow, an Installer and a Flatpak
 
 Drafted 2026-11-05 against `36deb542`. This plan takes up every section of
-[the releases roadmap](../roadmap/Releases.md). When it closes, a pushed tag builds the editor,
-moya, imagetool and the demos in Release, and publishes them as one versioned GitHub Release, with
-an installer for Windows and a Flatpak for Linux. Every app runs from a read-only install, answers
-`--version`, and ships with the notices its dependencies require.
+[the releases roadmap](../roadmap/completed/Releases.md). When it closes, a pushed tag builds the
+editor, moya, imagetool and the demos in Release, and publishes them as one versioned GitHub
+Release, with an installer for Windows and a Flatpak for Linux. Every app runs from a read-only
+install, answers `--version`, and ships with the notices its dependencies require.
 
 [ADR-0165](../adr/project/0165-releases-the-apps-ship-as-one-versioned-product.md) decides that the
 apps ship as one product and the api ships as source.
@@ -108,7 +108,7 @@ by the owner before the step that builds it starts.
 | [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | open |
 | [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | done |
 | [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | open |
-| [22](#step-22--the-documents) | The documents state the new rules, and the roadmap closes | `docs` | — | open |
+| [22](#step-22--the-documents) | The documents state the new rules, and the roadmap closes | `docs` | — | done |
 
 ## What blocks what
 
@@ -517,6 +517,13 @@ What the Flatpak found:
 host's Vulkan driver.
 
 ### Step 22 — The documents
+
+**Done.** Build.md and Testing.md already stated what each step changed. Dependencies.md gained the
+Vulkan loader on Linux and the features it needs. It also says where the Flatpak takes each package
+from, and that adding a package or moving the baseline changes the Flatpak too. Nothing checks that
+a module keeps the version vcpkg's baseline builds. ADR-0165 and ADR-0166 already named
+Releasing.md. The roadmap is in `completed/`, because every section it asked for is built. Steps 14,
+17, 19 and 21 stay open only on a release candidate, CI's first run, SignPath and Flathub.
 
 * **Build.md, Testing.md and Dependencies.md** state what the steps changed. Each step updates
   its own section as it lands.
