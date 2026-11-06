@@ -36,7 +36,7 @@ namespace v3d::ui {
 
 Interface::Interface(const boost::shared_ptr<v3d::event::Router>& router, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::log::Logger>& logger) :
-    router_(router), dispatcher_(dispatcher), logger_(logger) {
+    logger_(logger), router_(router), dispatcher_(dispatcher) {
 }
 
 const boost::shared_ptr<entt::dispatcher>& Interface::dispatcher() const noexcept {

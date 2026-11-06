@@ -10,6 +10,7 @@
 #include <api/log/Logger.h>
 #include <api/version/Version.h>
 
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_init.h>
 
 #include <cstdlib>
@@ -228,7 +229,8 @@ BOOST_AUTO_TEST_CASE(run_writes_the_log_in_the_user_directory) {
 
 /**
  * A user's documents go in a directory named for the organization, in their documents folder,
- * which is made for them.
+ * which is made for them. A machine with no documents folder, such as a container, uses the
+ * app's user directory instead.
  **/
 BOOST_AUTO_TEST_CASE(documents_go_in_a_directory_named_for_the_organization) {
     const v3d::engine::Identity identity{ .organization = "vertical3d_tests_documents", .application = "stub" };
@@ -238,7 +240,11 @@ BOOST_AUTO_TEST_CASE(documents_go_in_a_directory_named_for_the_organization) {
     BOOST_REQUIRE(!path.empty());
     BOOST_TEST(boost::filesystem::path(path).is_absolute());
     BOOST_TEST(boost::filesystem::is_directory(boost::filesystem::path(path)));
-    BOOST_CHECK_EQUAL(boost::filesystem::path(path).parent_path().filename().string(), "vertical3d_tests_documents");
+    if (SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS) != nullptr) {
+        BOOST_CHECK_EQUAL(boost::filesystem::path(path).parent_path().filename().string(), "vertical3d_tests_documents");
+    } else {
+        BOOST_CHECK_EQUAL(path, v3d::engine::userPath(identity.organization, identity.application));
+    }
     BOOST_TEST(path != v3d::engine::appPath());
 
     boost::system::error_code error;
@@ -343,9 +349,10 @@ BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
     BOOST_TEST(v3d::engine::run<PathOnlyEngine>("stub.exe", stub()) == EXIT_SUCCESS);
 }
 
+#ifdef _WIN32
 /**
  * A narrow path is UTF-8. A log and an asset under a directory whose name the ANSI code page
- * cannot hold are still written and read there.
+ * cannot hold are still written and read there. Only Windows has an ANSI code page.
  *
  * The directory is made and checked through wide paths, so the test does not depend on the
  * conversion it is testing.
@@ -375,6 +382,7 @@ BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
     v3d::log::Logger::open("v3d.log");
     boost::filesystem::remove_all(directory);
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
 

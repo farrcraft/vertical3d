@@ -120,40 +120,53 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 
 ### Building off MSVC
 
-The api libraries whose closure names neither SDL3, Vulkan nor OpenUSD build and test with Clang
-on Linux:
-asset, asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
-render_offline and type. CI checks that on every pull request, in
-[.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them
-can therefore pass every gate on Windows and fail there.
+The whole tree, every api library and every app, builds and passes its suites on Linux with
+Clang and with GCC. [.github/workflows/portable.yml](../../.github/workflows/portable.yml) checks
+that on every pull request, so a change can pass every gate on Windows and fail there. It has two
+jobs, which build in the same Ubuntu 26.04 image,
+[scripts/portable/Dockerfile](../../scripts/portable/Dockerfile).
 
-- Those libraries do not use an MSVC extension or a Windows header.
-- The job builds in an Ubuntu 26.04 image that
-  [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile) defines.
-  [scripts/portable/build.sh](../../scripts/portable/build.sh) runs the configure, the build and
-  the tests in it, and holds the list above. It configures with
-  `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the manifest's `platform` and `usd`
-  features, and with `V3D_LIBRARIES` naming the list.
-- **The job builds with `V3D_SANITIZE` and `V3D_FUZZ` on**, so its suites run under both
-  sanitizers, and it fuzzes each fuzz target after them. See
-  [Testing.md](Testing.md#sanitizers).
-- **The job builds with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts
-  code an older one rejects, so the oldest catches a feature that a consumer's compiler lacks.
-  Apple's Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
+- **The `whole` job builds the whole tree, once with Clang and once with GCC.**
+  [scripts/portable/whole.sh](../../scripts/portable/whole.sh) configures, builds and runs every
+  suite with the compiler `CC` and `CXX` name. The device suites draw with lavapipe, Mesa's
+  software Vulkan driver, with the validation layer on. The window suites open their windows on a
+  virtual X display, Xvfb, with the Openbox window manager, which carries out a request to go full
+  screen. SDL plays sound into its dummy driver. GCC is the compiler the Flatpak builds with.
+- **The `clang` job builds the libraries that need neither a window nor a device**, under
+  `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
+  fuzz target after them. See [Testing.md](Testing.md#sanitizers).
+  [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
+  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
+  render_offline and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
+  leaves out the manifest's `platform` and `usd` features.
+- **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
+  older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's
+  Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
   `std::expected` against libstdc++. The version is the `CLANG` argument in the Dockerfile, and
-  nothing else names it.
-- **`scripts\portable.cmd` runs the job locally**, with Docker Desktop running. It builds the
-  same image and runs the same script, with the tree mounted read-only. The build, the vcpkg
+  nothing else names it. GCC is the image's own.
+- **The warnings differ from MSVC's.** `-Wall -Wextra` with `-Werror` reports what `/W4` does not,
+  such as a missing `override`, an unused private field, and constructor initializers out of
+  declaration order. Neither compiler reports a call whose arguments change the same state, and
+  the order they are evaluated in differs between them, so each change goes in its own statement.
+  Each compiler's report of a field left out of an initializer is off, because the tree leaves
+  out fields that have a default.
+- **A test that needs a device or a window starts in two ways.** Boost.Test is a DLL on Windows,
+  where the suite's `main` probes and then calls `unit_test_main`. On Linux it is static and
+  brings its own `main`, and the probe runs in `init_unit_test_suite`, which that `main` calls.
+- **`scriptsportable.cmd` runs a job locally**, with Docker Desktop running: no argument for the
+  `clang` job, `whole` for the whole tree with Clang, and `whole gcc` for GCC. It builds the
+  same image and runs the same script, with the tree mounted read-only. The builds, the vcpkg
   checkout and the binary cache live in the Docker volume `v3d-portable`, apart from the Windows
-  build, so a second run reuses them. The first run builds every dependency from source.
-  `docker volume rm v3d-portable` starts again from cold.
+  build, so a second run reuses them. The first run of each compiler builds every dependency from
+  source. `docker volume rm v3d-portable` starts again from cold.
 - Clang's GNU driver on Windows is no substitute. It rejects MSVC's flag spellings, but it
   compiles against MSVC's standard library and the Windows headers, so it misses what only Linux
   shows.
 
 Background: [ADR-0107](../adr/project/0107-build-the-api-libraries-build-with-clang-off-windows.md),
 [ADR-0159](../adr/project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md),
-[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
+[ADR-0160](../adr/project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md),
+[ADR-0181](../adr/project/0181-build-linux-builds-with-clang-and-gcc.md)
 
 ### The manifest is checked on every configure
 

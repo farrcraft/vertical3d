@@ -83,7 +83,7 @@ void ViewCommands::registerCommands(CommandTable* table) const {
         display(table, fixed.command, [this, profile](const Context::Placed& at, view::ViewPort* view) { look(at, view, profile); });
     }
     display(table, "view::camera::orthographic", [this](const Context::Placed&, view::ViewPort* view) { toggleProjection(view); });
-    display(table, "view::camera::lock", [this](const Context::Placed& at, view::ViewPort* view) { toggleLock(at, view); });
+    display(table, "view::camera::lock", [](const Context::Placed& at, view::ViewPort* view) { toggleLock(at, view); });
     // the camera is named in the data, with the area when an area's own menu sent it
     table->hold("view::camera::scene", [this](const v3d::event::Event& event) {
         if (event.state() == v3d::event::State::Released || event.repeat()) {

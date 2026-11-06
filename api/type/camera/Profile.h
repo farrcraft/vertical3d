@@ -171,6 +171,11 @@ class Profile {
         *	@return the camera profile with the new settings copied to it.
         */
         Profile & operator = (const Profile & other);
+        /**
+        *	Copy constructor, copying every setting as the assignment operator does.
+        *	@param other the camera profile to copy.
+        */
+        Profile(const Profile & other) = default;
 
  private:
         typedef enum CameraOptions : std::uint8_t {

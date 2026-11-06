@@ -52,7 +52,7 @@ class Keyboard final : public Device {
     /**
      * @return bool true if the event was handled
      **/
-    bool handleEvent(const SDL_Event& event);
+    bool handleEvent(const SDL_Event& event) override;
 
     /**
      **/

@@ -9,6 +9,12 @@ target_link_libraries(v3dlib_interchange_usd PUBLIC v3dlib_interchange glm::glm)
 # no OpenUSD type. internal/Reader.h does, and only this library's own sources include it.
 target_link_libraries(v3dlib_interchange_usd PRIVATE v3dlib_curve v3dlib_type usd usdGeom usdLux)
 
+# OpenUSD's headers include libstdc++'s deprecated <ext/hash_set> under GCC, whose #warning stops
+# a build that treats warnings as errors. The warning is OpenUSD's, so it is off for this library.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(v3dlib_interchange_usd PRIVATE "-Wno-deprecated")
+endif()
+
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

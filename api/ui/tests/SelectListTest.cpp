@@ -25,8 +25,6 @@
 
 namespace {
 
-const float characterWidth = 10.0F;
-
 /**
  * A line the ui drew.
  **/

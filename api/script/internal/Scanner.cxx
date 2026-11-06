@@ -15,9 +15,10 @@ namespace {
 
 /**
  * The punctuators of more than one character, longest first so the first that matches is the
- * longest. None begins with >, which is always read alone.
+ * longest. None begins with >, which is always read alone. ??= is written with an escaped ? so
+ * that no compiler reads it as a trigraph.
  **/
-constexpr std::array<std::string_view, 28> LONG{ "...", "===", "!==", "**=", "<<=", "&&=", "||=", "??=", "=>", "==", "!=", "<=",
+constexpr std::array<std::string_view, 28> LONG{ "...", "===", "!==", "**=", "<<=", "&&=", "||=", "?\?=", "=>", "==", "!=", "<=",
 "<<", "**", "++", "--", "&&", "||", "??", "?.", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=" };
 
 /**

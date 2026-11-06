@@ -111,5 +111,4 @@ class PongScene {
     Ball ball_;
     Paddle left_, right_;
     GameState gameState_;
-    entt::registry* registry_;
 };

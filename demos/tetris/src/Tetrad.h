@@ -69,8 +69,6 @@ class Tetrad {
          */
         unsigned int offset(OffsetAxis dir) const;
 
-        Tetrad & operator=(const Tetrad & t);
-
         /**
          * Move a shape's filled cells into the top left of its 4x4 grid.
          *

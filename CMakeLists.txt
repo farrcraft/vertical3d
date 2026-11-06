@@ -58,6 +58,14 @@ if(MSVC)
 else()
 	# the warnings /W4 asks MSVC for. -Wall carries -Wswitch, which is C4062
 	add_compile_options("-Wall" "-Wextra")
+	# The tree's initializers leave out the fields whose members have a default, or which are to be
+	# zero. -Wextra reports each field left out, under Clang only in a designated initializer and
+	# under GCC in any. MSVC reports neither.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		add_compile_options("-Wno-missing-designated-field-initializers")
+	elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		add_compile_options("-Wno-missing-field-initializers")
+	endif()
 endif()
 
 # The static analysis gates. /WX is on only when this project is the top level one. A

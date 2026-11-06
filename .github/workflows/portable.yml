@@ -1,9 +1,10 @@
-# Builds and tests the api libraries that need neither a window nor a device with Clang on
-# Linux, so the api keeps building with a compiler other than MSVC. The suites run under the
-# sanitizers, and each fuzz target is fuzzed after them. The rest of CI builds with MSVC on
-# Windows. The build runs in the image scripts/portable/Dockerfile defines, through
-# scripts/portable/build.sh, which name the compiler, the libraries and the configure. A local
-# run of scripts\portable.cmd builds in the same image with the same script.
+# Builds the tree on Linux, so it keeps building with compilers other than MSVC. The clang job
+# builds the api libraries that need neither a window nor a device with Clang, runs their suites
+# under the sanitizers, and fuzzes each fuzz target after them, through scripts/portable/build.sh.
+# The whole job builds the whole tree with Clang and with GCC, and runs every suite, through
+# scripts/portable/whole.sh. The rest of CI builds with MSVC on Windows. Both run in the image
+# scripts/portable/Dockerfile defines. scripts\portable.cmd runs either locally in the same
+# image.
 name: portable
 
 # push is filtered to the default branch and pull_request is not. A branch in this repository
@@ -77,3 +78,65 @@ jobs:
         with:
           path: ${{ env.VCPKG_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+
+  # The whole tree, the apps included, built with Clang and with GCC on Linux, and every suite
+  # run: the device suites on lavapipe, and the window suites on a virtual display. GCC is the
+  # compiler the Flatpak builds with. scripts/portable/whole.sh does the build, in the same image
+  # as the job above. Each compiler keeps its own vcpkg binaries, because vcpkg hashes the
+  # compiler into every package's ABI.
+  whole:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 240
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: clang
+            environment: ""
+          - compiler: gcc
+            environment: "-e CC=gcc -e CXX=g++"
+
+    env:
+      WORK_DIR: ${{ github.workspace }}/out/build/whole
+      VCPKG_CACHE: ${{ github.workspace }}/out/build/whole/vcpkg-cache
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image
+        run: docker build -t v3d-portable scripts/portable
+
+      - name: Restore the vcpkg binaries
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_CACHE }}
+          key: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-
+
+      - name: Make the vcpkg cache directory
+        run: |
+          mkdir -p "$VCPKG_CACHE"
+          find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
+
+      - name: Build and test
+        run: docker run --rm ${{ matrix.environment }} -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole
+
+      - name: Check for new vcpkg binaries
+        id: vcpkg-new
+        if: ${{ !cancelled() }}
+        run: |
+          find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-now.txt"
+          if cmp -s "$RUNNER_TEMP/vcpkg-restored.txt" "$RUNNER_TEMP/vcpkg-now.txt"; then
+            echo "built=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the vcpkg binaries
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.built == 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_CACHE }}
+          key: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}

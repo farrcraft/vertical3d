@@ -34,10 +34,9 @@ float PongScene::across(float x) {
 
 PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     dispatcher_(dispatcher),
-    registry_(registry),
+    ball_(registry),
     left_(registry),
-    right_(registry),
-    ball_(registry) {
+    right_(registry) {
     left_.color(glm::vec3(1.0F, 1.0F, 1.0F));
     right_.color(glm::vec3(1.0F, 1.0F, 1.0F));
 }

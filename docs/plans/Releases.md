@@ -438,6 +438,35 @@ ADR-0181 decides whether the Linux build uses Clang alone, or GCC as well.
 
 ### Step 19 — The whole tree on Linux
 
+**Done here; open until CI's first run.** Every app and every library builds on Linux with Clang
+20 and with GCC 15, and all 39 suites pass with each, in the portable image under Docker. Windows
+still passes all 39. `scripts/portable/whole.sh` builds and tests the whole tree with the
+compiler `CC` and `CXX` name, and `portable.yml` has a `whole` job for each compiler. The image
+gained SDL3's X11, Wayland and audio headers, `glslc`, lavapipe, the validation layer, Xvfb and
+Openbox. `scripts\portable.cmd whole [gcc]` runs it locally, and Build.md gives the commands, so
+the `.cmd` scripts need no shell equivalents.
+
+What Linux found:
+
+- **Warnings MSVC does not raise**, each fixed. They were missing `override`s, unused private
+  fields and constants, and constructor initializers out of order. Tetris's `Tetrad` and
+  `Profile` relied on a deprecated implicit copy. There were MSVC-only `pragma`s, a trigraph, and
+  an unused lambda capture. A field
+  left out of an initializer is not reported, because the tree leaves out fields with defaults.
+- **moya's sampler drew two random offsets as arguments of one call.** MSVC and Clang evaluate
+  them in different orders, so the same seed sampled differently. Each is now drawn in its own
+  statement, in the order MSVC drew them, so every committed reference still holds.
+- **OpenUSD 26.3's `schemaRegistry.h` does not compile under Clang with libstdc++ 15.** A
+  `ports/usd` overlay port carries OpenUSD's open pull request #4212 as a patch. Under GCC,
+  OpenUSD's headers include a deprecated libstdc++ header, so the USD library turns that warning
+  off.
+- **The device test mains called a Boost.Test entry point that only a DLL has.** Linked
+  statically, Boost.Test brings its own `main`, and the probe runs in `init_unit_test_suite`.
+- **vcpkg built the Vulkan loader on Linux without its X11 and Wayland support**, so no window
+  could present. The manifest asks for those features on Linux.
+- Two engine cases assumed Windows: one needs a documents folder, and one tests the ANSI code
+  page. The first checks the fallback where there is none, and the second runs on Windows alone.
+
 * **Every app and every library builds on Linux.**
 * **The portable job builds the whole tree** and runs every suite, the device suites on a
   software Vulkan driver.
