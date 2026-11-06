@@ -478,15 +478,34 @@ What Linux found:
 
 **Done.** ADR-0182 is accepted: the Flatpak uses the Freedesktop runtime's libraries where it has
 them, and builds each other dependency as a pinned module, as Krita's and FreeCAD's Flathub
-manifests do. CI builds the Flatpak on every pull request. The runtime's 25.08 branch carries
-SDL 3.2.30 and ICU 77.1, against the baseline's 3.4.8 and 78.3, so step 21 builds against those
-versions.
+manifests do. CI builds the Flatpak on every pull request. Step 21 builds against the runtime's
+versions, which are not the baseline's.
 
 ADR-0182 decides whether vcpkg builds inside the Flatpak, or the runtime's own libraries replace
 some packages. Flathub builds with no network, so every source a build downloads is listed in the
 manifest.
 
 ### Step 21 — The Flatpak
+
+**Done here; open until a release candidate, and until the owner submits it to Flathub.**
+`flatpak/com.farrcraft.Vertical3D.yml` builds every app on Freedesktop 26.08 under flatpak-builder,
+in Flathub's image, and each app's `--version` runs from the build. Flathub's manifest linter and
+`appstreamcli validate` pass. `flatpak.yml` builds it on every pull request, and the release
+workflow calls it on a tag and publishes the bundle. Releasing.md says how it is built and
+submitted.
+
+What the Flatpak found:
+
+- **On Linux an install follows the prefix's layout.** The apps and `data/` go in
+  `lib/vertical3d/`, with links in `bin/`. Windows keeps its flat directory.
+- **The tree found some packages only through vcpkg's names.** It now also finds the runtime's
+  SQLite, libjpeg and a quickjs-ng install without a package config on the default path. It no
+  longer asks for Boost.Test when tests are off.
+- **The runtime's 25.08 branch was too old** for SDL_mixer 3.2 and the tree's HarfBuzz calls. On
+  26.08 its SDL3 and HarfBuzz serve, and no module builds them.
+- **GCC 16 reports `-Warray-bounds` inside `boost::make_shared`'s inlined cleanup** in a Release
+  build, a false positive in Boost's code. The tree's module builds with warnings left as
+  warnings, which the runtime's other library versions need anyway.
 
 * **A Flatpak manifest** builds the install tree on a Freedesktop runtime.
 * **Each app gets a desktop entry and an AppStream metainfo file**, and installs its SVG icon as

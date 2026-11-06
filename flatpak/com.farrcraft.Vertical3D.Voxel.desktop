@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Voxel
+Comment=The Vertical3D demo of a world of blocks to fly through
+Exec=voxel
+Icon=com.farrcraft.Vertical3D.Voxel
+Terminal=false
+Categories=Game;Simulation;

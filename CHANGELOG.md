@@ -18,6 +18,7 @@ that section to its version, and the section becomes the release's notes.
 - A Windows installer, with a Start menu entry for each windowed app and an uninstaller, and the
   same install tree as a zip. Both hold the notices of every library and font the apps ship.
 - Each app's file properties on Windows show its name and version.
+- A Flatpak for Linux holding every app, with a desktop entry for the editor and each demo.
 
 ### Changed
 

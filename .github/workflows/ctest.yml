@@ -1,7 +1,7 @@
 # Builds the tree in Debug and in Release and runs the Boost.Test suites through ctest in each. A
 # release ships the Release build, so a defect only Release shows fails here, not in a release.
 # A pushed tag vX.Y.Z, or vX.Y.Z-rc.N for a release candidate, also publishes the Release build's
-# install tree as a GitHub release, once every job has passed.
+# install tree, its installer and the Flatpak as a GitHub release, once every job has passed.
 # This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
 # needs a compiler, the Vulkan SDK and a vcpkg install.
@@ -636,11 +636,16 @@ jobs:
           node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/${{ github.base_ref }}"
           if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }
 
-  # A release's tag publishes the package once every build and test has passed. The package is
-  # attested, so a user can check it was built here, from the tagged commit. The release's notes
+  # A release's tag builds the Flatpak as pull requests do, as a release.
+  flatpak:
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/flatpak.yml
+
+  # A release's tag publishes the packages once every build and test has passed. The packages are
+  # attested, so a user can check they were built here, from the tagged commit. The release's notes
   # are the changelog's section for its version, and a release candidate is marked as one.
   release:
-    needs: test
+    needs: [test, flatpak]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -650,9 +655,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # the Windows packages are the artifact release, and the Flatpak is release-flatpak
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release
+          pattern: release*
+          merge-multiple: true
           path: dist
 
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2

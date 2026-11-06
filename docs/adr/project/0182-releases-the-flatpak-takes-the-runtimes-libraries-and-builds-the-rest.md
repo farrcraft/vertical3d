@@ -15,8 +15,9 @@ downloads its sources as it builds.
 
 ## Decision
 
-The Flatpak uses the runtime's libraries where the runtime has them. The manifest builds each
-other dependency as a module of its own, pinned to a source archive and its hash. CI builds the
+The Flatpak uses the runtime's libraries where the runtime has a version the tree's dependencies
+accept. The manifest builds each other dependency as a module of its own, pinned to a source
+archive and its hash. CI builds the
 Flatpak on every pull request, so the versions it links are tested.
 
 ## Alternatives

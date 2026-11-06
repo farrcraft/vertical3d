@@ -3,8 +3,20 @@
 # plugins in usd/, and NOTICES.txt. The engine finds data/ beside the executable, and the editor
 # finds moya beside itself, so an app runs from the install as it does from the build.
 #
+# Elsewhere, as in the Flatpak, the same flat directory is lib/vertical3d under the prefix, and
+# bin/ holds a link to each app. The libraries the apps load are the system's, or the Flatpak's.
+#
 # Each app adds itself with v3d_install_app, and the root calls v3d_install_release once after
-# every app has, then v3d_package_release. Other platforms have no install rules yet.
+# every app has, then v3d_package_release.
+
+include(GNUInstallDirs)
+
+# The directory the apps and their data are installed in, relative to the prefix
+if(WIN32)
+	set(V3D_INSTALL_APP_DIR ".")
+else()
+	set(V3D_INSTALL_APP_DIR "${CMAKE_INSTALL_LIBDIR}/vertical3d")
+endif()
 
 # The version a release shows, as the apps' version resources and the installer name it. It is
 # set when the tree is configured, so a build that is not a release shows the number marked as a
@@ -19,17 +31,24 @@ function(v3d_release_version out)
 	endif()
 endfunction()
 
-# Install an app's executable into the install root, and give it a version resource, which
-# Windows shows in the file's properties. v3d_install_release installs the DLLs it loads, once for
-# every app, and the installer gives each windowed app a Start menu entry.
+# Install an app's executable into the apps' directory. On Windows, give it a version resource,
+# which Windows shows in the file's properties. v3d_install_release installs the DLLs it loads,
+# once for every app, and the installer gives each windowed app a Start menu entry. Elsewhere, put
+# a link to it in bin/.
 #
 # @param target the app's executable
 # @param name what the app is called, in its Start menu entry and its version resource
 function(v3d_install_app target name)
+	install(TARGETS ${target} RUNTIME DESTINATION "${V3D_INSTALL_APP_DIR}")
 	if(NOT WIN32)
+		# the link is relative, so the tree can be installed under any prefix
+		install(CODE "
+			set(bin \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")
+			file(MAKE_DIRECTORY \"\${bin}\")
+			file(CREATE_LINK \"../${V3D_INSTALL_APP_DIR}/$<TARGET_FILE_NAME:${target}>\"
+				\"\${bin}/$<TARGET_FILE_NAME:${target}>\" SYMBOLIC)")
 		return()
 	endif()
-	install(TARGETS ${target} RUNTIME DESTINATION .)
 	set_property(GLOBAL APPEND PROPERTY V3D_INSTALLED_APPS "${target}")
 	set_property(GLOBAL PROPERTY V3D_APP_NAME_${target} "${name}")
 
@@ -68,10 +87,10 @@ endfunction()
 # Install what every app shares: the shared data, the DLLs the apps load, the MSVC runtime and
 # the notices.
 function(v3d_install_release)
+	install(DIRECTORY "${V3D_ROOT}/data/" DESTINATION "${V3D_INSTALL_APP_DIR}/data")
 	if(NOT WIN32)
 		return()
 	endif()
-	install(DIRECTORY "${V3D_ROOT}/data/" DESTINATION data)
 
 	# The DLLs come from vcpkg's install, found from the installed apps. The root's rules run
 	# after every subdirectory's, so the apps are in place by then.

@@ -317,7 +317,18 @@ the same install rules, so it installs exactly the tree above. It needs
 CI builds the installer on every run, installs it silently, checks the editor's Start menu entry,
 and checks the uninstaller removes every app.
 
-Other platforms have no install rules yet.
+### On Linux
+
+The install tree follows the install prefix's own layout. The Flatpak installs it into `/app`. It
+holds:
+
+- every app's executable in `lib/vertical3d/`, with `data/` beside it, laid out as on Windows;
+- a relative link to each executable in `bin/`, so the apps are on the `PATH`.
+
+An app run through its link resolves it to the executable, so it reads `data/` from
+`lib/vertical3d/`. The install gathers no libraries and writes no `NOTICES.txt`. The Flatpak
+brings its own libraries and their licences, and [Releasing.md](Releasing.md#the-flatpak)
+describes it.
 
 Background: [ADR-0176](../adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md),
 [ADR-0179](../adr/project/0179-releases-an-nsis-installer-built-by-cpack.md)

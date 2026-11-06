@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Tetris
+Comment=The Vertical3D demo of a falling-block puzzle
+Exec=tetris
+Icon=com.farrcraft.Vertical3D.Tetris
+Terminal=false
+Categories=Game;BlocksGame;

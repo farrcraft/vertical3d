@@ -137,9 +137,8 @@ endfunction()
 # which is the layout an install has too, so the same directory is installed there.
 function(v3d_add_app_data target)
 	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_BASE_NAME:${target}>")
-	if(WIN32)
-		install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/" DESTINATION "data/$<TARGET_FILE_BASE_NAME:${target}>")
-	endif()
+	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
+		DESTINATION "${V3D_INSTALL_APP_DIR}/data/$<TARGET_FILE_BASE_NAME:${target}>")
 endfunction()
 
 # An app's icon is an SVG. On Windows the build draws it into an .ico with appicon and embeds

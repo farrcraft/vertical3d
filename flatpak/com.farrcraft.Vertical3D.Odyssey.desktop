@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Odyssey
+Comment=The Vertical3D demo of a world of tiles loaded as you walk
+Exec=odyssey
+Icon=com.farrcraft.Vertical3D.Odyssey
+Terminal=false
+Categories=Game;AdventureGame;

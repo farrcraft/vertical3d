@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Vertical|3D
+GenericName=3D Modeller
+Comment=Model, animate and render 3D scenes
+Exec=vertical3d
+Icon=com.farrcraft.Vertical3D
+Terminal=false
+Categories=Graphics;3DGraphics;
+Keywords=3D;model;animation;render;RenderMan;

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.farrcraft.Vertical3D</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Vertical|3D</name>
+  <summary>Model, animate and render 3D scenes</summary>
+  <developer id="com.farrcraft">
+    <name>Joshua Farr</name>
+  </developer>
+  <description>
+    <p>
+      A 3D editor. Model scenes from primitives, edit their faces, edges and points, key their
+      motion on a timeline, and render them with moya, the offline renderer that comes with it,
+      which reads RenderMan RIB and its shading language.
+    </p>
+    <p>It also holds:</p>
+    <ul>
+      <li>The offline renderer, moya, run from the command line</li>
+      <li>An image tool, imagetool, which converts, crops and packs images</li>
+      <li>Five demos built on the same engine: Pong, Tetris, Voxel, Odyssey and Diorama</li>
+    </ul>
+    <p>Run moya and imagetool with flatpak run --command=moya or --command=imagetool.</p>
+  </description>
+  <launchable type="desktop-id">com.farrcraft.Vertical3D.desktop</launchable>
+  <url type="homepage">https://github.com/farrcraft/vertical3d</url>
+  <url type="bugtracker">https://github.com/farrcraft/vertical3d/issues</url>
+  <url type="help">https://farrcraft.github.io/vertical3d/</url>
+  <url type="vcs-browser">https://github.com/farrcraft/vertical3d</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The editor with a first scene</caption>
+      <image>https://raw.githubusercontent.com/farrcraft/vertical3d/main/docs/manual/editor/images/first-scene.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A scene moya rendered</caption>
+      <image>https://raw.githubusercontent.com/farrcraft/vertical3d/main/docs/manual/moya/images/focus.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The Diorama demo</caption>
+      <image>https://raw.githubusercontent.com/farrcraft/vertical3d/main/docs/images/diorama.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-11-06"/>
+  </releases>
+</component>

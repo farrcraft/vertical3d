@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Diorama
+Comment=The Vertical3D demo of a lit village with a sun that moves
+Exec=diorama
+Icon=com.farrcraft.Vertical3D.Diorama
+Terminal=false
+Categories=Game;Simulation;

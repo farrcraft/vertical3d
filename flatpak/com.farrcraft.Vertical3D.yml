@@ -1,0 +1,211 @@
+# The Flatpak of every app: the editor, moya, imagetool and the five demos. It runs on the
+# Freedesktop runtime and uses the runtime's SDL3, ICU, FreeType, HarfBuzz, libpng, libjpeg,
+# SQLite, zlib and Vulkan loader. Each other dependency is a module below, pinned to its source
+# archive at the version vcpkg's baseline builds. thorvg and OpenUSD carry the patches of their
+# overlay ports in ports/. docs/contributing/Releasing.md says how it is built and published.
+id: com.farrcraft.Vertical3D
+runtime: org.freedesktop.Platform
+runtime-version: '26.08'
+sdk: org.freedesktop.Sdk
+command: vertical3d
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # the editor keeps its projects in the documents folder, and its file chooser lists what the
+  # sandbox can see
+  - --filesystem=xdg-documents
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/doc
+  - '*.a'
+
+modules:
+  - name: boost
+    buildsystem: simple
+    build-commands:
+      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=filesystem,json,program_options
+      - ./b2 install variant=release link=shared threading=multi -j ${FLATPAK_BUILDER_N_JOBS}
+    sources:
+      - type: archive
+        url: https://archives.boost.io/release/1.91.0/source/boost_1_91_0.tar.bz2
+        sha256: de5e6b0e4913395c6bdfa90537febd9028ea4c0735d2cdb0cd9b45d5f51264f5
+
+  - name: glm
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DGLM_BUILD_TESTS=OFF
+      - -DGLM_BUILD_INSTALL=ON
+      - -DBUILD_SHARED_LIBS=OFF
+    # flatpak-builder finds a licence named LICENSE or COPYING, and glm's is neither
+    license-files:
+      - copying.txt
+    sources:
+      - type: archive
+        url: https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz
+        sha256: 6775e47231a446fd086d660ecc18bcd076531cfedd912fbd66e576b118607001
+
+  - name: entt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DENTT_INSTALL=ON
+    sources:
+      - type: archive
+        url: https://github.com/skypjack/entt/archive/refs/tags/v3.16.0.tar.gz
+        sha256: 7d7b4037b737992342049ffab14f22fa10243e01664f8c3a0657aa247ac52f71
+
+  - name: fmt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DFMT_TEST=OFF
+      - -DFMT_DOC=OFF
+      - -DBUILD_SHARED_LIBS=ON
+    sources:
+      - type: archive
+        url: https://github.com/fmtlib/fmt/archive/refs/tags/12.1.0.tar.gz
+        sha256: ea7de4299689e12b6dddd392f9896f08fb0777ac7168897a244a6d6085043fea
+
+  - name: spdlog
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DSPDLOG_FMT_EXTERNAL=ON
+      - -DSPDLOG_BUILD_SHARED=ON
+      - -DSPDLOG_BUILD_EXAMPLE=OFF
+    sources:
+      - type: archive
+        url: https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz
+        sha256: d8862955c6d74e5846b3f580b1605d2428b11d97a410d86e2fb13e857cd3a744
+
+  - name: cgltf
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 cgltf.h ${FLATPAK_DEST}/include/cgltf.h
+      - install -Dm644 cgltf_write.h ${FLATPAK_DEST}/include/cgltf_write.h
+    sources:
+      - type: archive
+        url: https://github.com/jkuhlmann/cgltf/archive/refs/tags/v1.15.tar.gz
+        sha256: 84e352092e5cd6aab7f66de62ddb66beb5e6f18d412ca9d12950d7a55bfef25a
+
+  - name: nanosvg
+    buildsystem: cmake-ninja
+    sources:
+      - type: archive
+        url: https://github.com/memononen/nanosvg/archive/93ce879dc4c04a3ef1758428ec80083c38610b1f.tar.gz
+        sha256: 259f5236843a2245fdfd92fddffcaf292ac1f46d24f94f38fa3a9b690501e7d2
+
+  - name: thorvg
+    buildsystem: meson
+    config-opts:
+      - -Dengines=['cpu']
+      - -Dloaders=all
+      - -Dsavers=all
+      - -Dsimd=true
+      - -Dbindings=capi
+      - -Dtests=false
+    sources:
+      - type: archive
+        url: https://github.com/thorvg/thorvg/archive/refs/tags/v1.0.4.tar.gz
+        sha256: 1a60b794eaac5717ad79d0c7e3d189f46e21d469b3a0013d7804f348fbacdf17
+      - type: patch
+        path: ../ports/thorvg/no-global-operator-new.patch
+
+  - name: quickjs-ng
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+      - -DQJS_BUILD_EXAMPLES=OFF
+    cleanup:
+      - /bin
+    sources:
+      - type: archive
+        url: https://github.com/quickjs-ng/quickjs/archive/refs/tags/v0.14.0.tar.gz
+        sha256: 928e9406addd99eb8623348f2cfcd916eade9a263c60d42be79bc7aee4ee8453
+
+  - name: sdl3-mixer
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DSDLMIXER_SAMPLES=OFF
+      - -DSDLMIXER_EXAMPLES=OFF
+      - -DSDLMIXER_TESTS=OFF
+      - -DSDLMIXER_VENDORED=OFF
+    sources:
+      - type: archive
+        url: https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-3.2.0.tar.gz
+        sha256: 1077fef4a6e9513027da0a08e6f1b8645f8c88c8bef001c17befeb52b129b5dd
+
+  - name: vulkan-memory-allocator
+    buildsystem: cmake-ninja
+    sources:
+      - type: archive
+        url: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/refs/tags/v3.3.0.tar.gz
+        sha256: c4f6bbe6b5a45c2eb610ca9d231158e313086d5b1a40c9922cb42b597419b14e
+
+  - name: onetbb
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DTBB_TEST=OFF
+      - -DTBB_STRICT=OFF
+    sources:
+      - type: archive
+        url: https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v2022.3.0.tar.gz
+        sha256: 01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a
+
+  - name: openusd
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DPXR_BUILD_DOCUMENTATION=OFF
+      - -DPXR_BUILD_EXAMPLES=OFF
+      - -DPXR_BUILD_TESTS=OFF
+      - -DPXR_BUILD_TUTORIALS=OFF
+      - -DPXR_BUILD_USD_TOOLS=OFF
+      - -DPXR_BUILD_IMAGING=OFF
+      - -DPXR_BUILD_USD_IMAGING=OFF
+      - -DPXR_ENABLE_GL_SUPPORT=OFF
+      - -DPXR_ENABLE_MATERIALX_SUPPORT=OFF
+      - -DPXR_ENABLE_OPENVDB_SUPPORT=OFF
+      - -DPXR_ENABLE_PTEX_SUPPORT=OFF
+      - -DPXR_ENABLE_PYTHON_SUPPORT=OFF
+      - -DPXR_PREFER_SAFETY_OVER_SPEED=ON
+    sources:
+      - type: archive
+        url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v26.03.tar.gz
+        sha256: 590ea75ffa3ac0c35fdd080df04d61a696733b8f3d6a79bdc3f13f8077162d36
+      - type: patch
+        path: ../ports/usd/fix-schema-registry-incomplete-type.patch
+
+  - name: vertical3d
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DV3D_BUILD_TESTS=OFF
+      # the runtime's libraries are other versions than vcpkg's, and a warning in one of their
+      # headers must not stop the build
+      - -DV3D_WARNINGS_AS_ERRORS=OFF
+    # post-install runs in the build directory, so it starts from the source's root. flatpak-builder
+    # installs LICENSE itself
+    post-install:
+      - |
+        cd "${FLATPAK_BUILDER_BUILDDIR}"
+        install -Dm644 flatpak/com.farrcraft.Vertical3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/com.farrcraft.Vertical3D.metainfo.xml"
+        install -Dm644 vertical3d/data/icon.svg "${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/com.farrcraft.Vertical3D.svg"
+        install -Dm644 flatpak/com.farrcraft.Vertical3D.desktop "${FLATPAK_DEST}/share/applications/com.farrcraft.Vertical3D.desktop"
+        for demo in Pong Tetris Voxel Odyssey Diorama; do
+          lower=$(echo "$demo" | tr '[:upper:]' '[:lower:]')
+          install -Dm644 "demos/$lower/data/icon.svg" "${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/com.farrcraft.Vertical3D.$demo.svg"
+          install -Dm644 "flatpak/com.farrcraft.Vertical3D.$demo.desktop" "${FLATPAK_DEST}/share/applications/com.farrcraft.Vertical3D.$demo.desktop"
+        done
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - out
+          - vendor
+          - node_modules
+          - .flatpak-builder

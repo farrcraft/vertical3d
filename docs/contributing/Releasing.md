@@ -9,6 +9,7 @@ to reach one. It says what a release is, how its version and notes are kept, and
 - [Making a release](#making-a-release)
 - [A fix to a release](#a-fix-to-a-release)
 - [What the workflow does](#what-the-workflow-does)
+- [The Flatpak](#the-flatpak)
 
 ## What a release is
 
@@ -18,7 +19,8 @@ built from one commit, and ship together.
 - **Windows** gets an installer, and the install tree as a zip.
   [Build.md](Build.md#the-installer) describes both. They are unsigned until SignPath
   Foundation accepts the project, and then signed through it.
-- **Linux** gets a Flatpak, which is still to come.
+- **Linux** gets a Flatpak, [described below](#the-flatpak). It is attached to the GitHub
+  release, and Flathub publishes it once the manifest is submitted there.
 - **macOS** is not a release platform.
 - **The api is not shipped as a binary.** A release's tag gives a project that uses the api a
   named commit to pin, as [UsingTheApi.md](../api/UsingTheApi.md#keeping-up-with-the-tree)
@@ -64,7 +66,7 @@ A release is made from `main`, after the pull request that holds its last change
 
 1. On a branch, rename the changelog's `## [Unreleased]` heading to `## [X.Y.Z] - <date>`, and
    add an empty `## [Unreleased]` above it. Check that `project()` in the root `CMakeLists.txt`
-   names `X.Y.Z`. Merge the branch.
+   names `X.Y.Z`, and add a `<release>` for it to the Flatpak's metainfo. Merge the branch.
 2. For a candidate, push the tag `vX.Y.Z-rc.N` on that commit of `main`. The workflow publishes it
    as a pre-release.
 3. When a candidate is good, or with no candidate, push the tag `vX.Y.Z` on the commit to release.
@@ -97,6 +99,56 @@ request, with these steps added:
 3. The Release build installs, runs every app from the install, and zips the install tree as
    `vertical3d-<version>-windows-x64.zip`. It builds the installer,
    `vertical3d-<version>-windows-x64-setup.exe`, and checks it installs and uninstalls.
-4. Once every job has passed, the release job attests both files, and publishes a GitHub release
-   from the tag. Its notes are the changelog's section, and a candidate is marked as a
+4. It calls [flatpak.yml](../../.github/workflows/flatpak.yml), which builds the Flatpak with
+   the same release options, as `vertical3d-<version>-linux-x86_64.flatpak`.
+5. Once every job has passed, the release job attests the three files, and publishes a GitHub
+   release from the tag. Its notes are the changelog's section, and a candidate is marked as a
    pre-release.
+
+## The Flatpak
+
+[flatpak/com.farrcraft.Vertical3D.yml](../../flatpak/com.farrcraft.Vertical3D.yml) builds every
+app on the Freedesktop runtime, from source and with no network once its sources are fetched, as
+Flathub builds it. Its app ID is `com.farrcraft.Vertical3D`.
+
+- **The runtime supplies the libraries it has**, where its version is one the tree accepts. The
+  manifest's first comment lists them.
+- **Each other dependency is a module**, pinned by URL and SHA-256 to the version vcpkg's
+  baseline builds. thorvg and OpenUSD apply the patches of their overlay ports in `ports/`. When
+  the baseline moves a package, its module moves with it, in the same change.
+- **The runtime is the newest Freedesktop branch.** Flathub's linter warns when a newer one is out,
+  and the manifest moves to it.
+- **The apps are installed in `/app/lib/vertical3d`**, with `data/` beside them, and each has a
+  link in `/app/bin`. [Build.md](Build.md#on-linux) gives the layout.
+- **The editor is the Flatpak's command**, and the editor and each demo have a desktop entry and
+  an icon. moya and imagetool run with `flatpak run --command=moya` or `--command=imagetool`.
+- **The sandbox gets** a Wayland or X11 window, the GPU, PulseAudio, and the user's documents
+  folder, where the editor keeps its projects.
+
+[flatpak/com.farrcraft.Vertical3D.metainfo.xml](../../flatpak/com.farrcraft.Vertical3D.metainfo.xml)
+is what Flathub and software centres show. It holds a `<release>` for each version, so a release
+adds one in its first step, beside the changelog's heading.
+
+flatpak.yml builds the Flatpak on every pull request, and keeps the bundle with the run. To build
+it locally, run flatpak-builder in Flathub's image under Docker:
+
+```
+docker run --rm --privileged -v C:\code\vertical3d:/src:ro -v v3d-flatpak:/work ^
+  ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08 bash -c ^
+  "cd /work && flatpak-builder --disable-rofiles-fuse --state-dir=/work/state --force-clean /work/build /src/flatpak/com.farrcraft.Vertical3D.yml"
+```
+
+The `v3d-flatpak` volume keeps each module's build, so a second run rebuilds only what changed.
+`flatpak build /work/build vertical3d --version` in the same image runs an app from the build.
+`flatpak-builder-lint manifest` and `appstreamcli validate` check the manifest and the metainfo as
+Flathub does.
+
+### Flathub
+
+Flathub builds from its own repository, `flathub/com.farrcraft.Vertical3D`, which holds a copy of
+the manifest. Its copy names the tree as a `git` source at a release's tag, in place of the
+directory, and adds `-DV3D_RELEASE=ON` to the tree's module. Each release updates that tag and
+commit there by pull request. Publishing under `com.farrcraft` needs Flathub to verify that the
+project controls `farrcraft.com`.
+
+Background: [ADR-0182](../adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)
