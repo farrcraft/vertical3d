@@ -305,7 +305,8 @@ The rules are in [cmake/v3dInstall.cmake](../../cmake/v3dInstall.cmake):
 `cpack -C Release` in the Release build directory writes the Windows installer into
 `package/`, as `vertical3d-<version>-windows-x64-setup.exe`. CPack's NSIS generator builds it from
 the same install rules, so it installs exactly the tree above. It needs
-[NSIS](https://nsis.sourceforge.io/) 3.03 or later.
+[NSIS](https://nsis.sourceforge.io/) 3.03 or later. The runner image has no NSIS, so CI installs
+the version `ctest.yml` pins.
 
 - **It installs into Program Files**, in a `Vertical3D` directory, and adds an uninstaller.
 - **Each windowed app gets a Start menu entry**, named by the second argument of its

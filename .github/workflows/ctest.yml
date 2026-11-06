@@ -58,6 +58,9 @@ jobs:
       # comes from a third-party release, not a package manager. Resolving "latest" would let
       # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
+      # NSIS builds the Windows installer. The runner image does not ship it, and its version is
+      # pinned so the installer cannot change without a commit here.
+      NSIS_VERSION: "3.13.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
 
     steps:
@@ -543,6 +546,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { $failed += "imagetool exited $LASTEXITCODE" }
           Pop-Location
           if ($failed) { throw "from the install: $($failed -join '; ')" }
+
+      - name: Install NSIS
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        run: |
+          choco install nsis --version $env:NSIS_VERSION --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "installing NSIS $env:NSIS_VERSION exited $LASTEXITCODE" }
 
       # The installer is built from the same install rules on every run, so a change that breaks
       # it fails here rather than at a release. It installs silently, gives the editor a Start
