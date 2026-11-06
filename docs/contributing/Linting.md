@@ -245,8 +245,9 @@ can still break the build in a way the script does not see, so build and run the
 ## CodeQL
 
 [.github/workflows/codeql.yml](../../.github/workflows/codeql.yml) scans the C++, the TypeScript
-and the workflows with GitHub's CodeQL. It runs on each pull request, on each push to `main`
-and once a week, since CodeQL's queries change while the code does not. Its findings are the
+and the workflows with GitHub's CodeQL. It runs on each pull request and each push to `main`
+that changes more than documents, and once a week, since CodeQL's queries change while the
+code does not. Its findings are the
 repository's code scanning alerts, and a pull request shows the ones it adds beside the lines.
 
 - **The C++ is read without a build.** CodeQL reads every source file, including the code only
@@ -263,7 +264,7 @@ repository's code scanning alerts, and a pull request shows the ones it adds bes
 
 [.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on
 an Ubuntu runner and runs the command above. It runs on each pull request and on each push to
-`main`.
+`main` that changes more than documents.
 
 It is a separate workflow from [ctest.yml](../../.github/workflows/ctest.yml), which builds the
 tree on a Windows runner and runs the tests. cpplint needs only Python. The build needs MSVC, the

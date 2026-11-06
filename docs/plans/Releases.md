@@ -105,7 +105,7 @@ by the owner before the step that builds it starts.
 | [16](#step-16--the-record-signing) | The record: signing | `docs/adr` | **0180** | done |
 | [17](#step-17--the-windows-installer) | The Windows installer, in the release workflow | apps, CI | 0179, 0180 | open |
 | [18](#step-18--the-record-the-compilers-on-linux) | The record: the compilers on Linux | `docs/adr` | **0181** | done |
-| [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | open |
+| [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | done |
 | [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | done |
 | [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | open |
 | [22](#step-22--the-documents) | The documents state the new rules, and the roadmap closes | `docs` | — | done |
@@ -438,13 +438,13 @@ ADR-0181 decides whether the Linux build uses Clang alone, or GCC as well.
 
 ### Step 19 — The whole tree on Linux
 
-**Done here; open until CI's first run.** Every app and every library builds on Linux with Clang
-20 and with GCC 15, and all 39 suites pass with each, in the portable image under Docker. Windows
-still passes all 39. `scripts/portable/whole.sh` builds and tests the whole tree with the
-compiler `CC` and `CXX` name, and `portable.yml` has a `whole` job for each compiler. The image
-gained SDL3's X11, Wayland and audio headers, `glslc`, lavapipe, the validation layer, Xvfb and
-Openbox. `scripts\portable.cmd whole [gcc]` runs it locally, and Build.md gives the commands, so
-the `.cmd` scripts need no shell equivalents.
+**Done.** Both `whole` jobs passed on CI's first run. Every app and every library builds on
+Linux with Clang 20 and with GCC 15, and all 39 suites pass with each, in the portable image
+under Docker. Windows still passes all 39. `scripts/portable/whole.sh` builds and tests the
+whole tree with the compiler `CC` and `CXX` name, and `portable.yml` has a `whole` job for each
+compiler. The image gained SDL3's X11, Wayland and audio headers, `glslc`, lavapipe, the
+validation layer, Xvfb and Openbox. `scripts\portable.cmd whole [gcc]` runs it locally, and
+Build.md gives the commands, so the `.cmd` scripts need no shell equivalents.
 
 What Linux found:
 
@@ -523,7 +523,7 @@ Vulkan loader on Linux and the features it needs. It also says where the Flatpak
 from, and that adding a package or moving the baseline changes the Flatpak too. Nothing checks that
 a module keeps the version vcpkg's baseline builds. ADR-0165 and ADR-0166 already named
 Releasing.md. The roadmap is in `completed/`, because every section it asked for is built. Steps 14,
-17, 19 and 21 stay open only on a release candidate, CI's first run, SignPath and Flathub.
+17 and 21 stay open only on a release candidate, SignPath and Flathub.
 
 * **Build.md, Testing.md and Dependencies.md** state what the steps changed. Each step updates
   its own section as it lands.

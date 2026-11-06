@@ -180,8 +180,9 @@ one Python file in the tree. Its header gives the command line.
 
 A test that passes without the code it claims to test is a weak test.
 [scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. CI runs it
-on every pull request, and fails the pull request when a new case passes on the base or is not
-run. Run it on a branch before review, so that CI does not find it first:
+on every pull request that changes more than documents, and fails the pull request when a new case
+passes on the base or is not run. Run it on a branch before review, so that CI does not find it
+first:
 
 ```
 node scripts/failsfirst.ts                  # the branch, from its merge base with main

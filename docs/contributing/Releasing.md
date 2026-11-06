@@ -129,8 +129,8 @@ Flathub builds it. Its app ID is `com.farrcraft.Vertical3D`.
 is what Flathub and software centres show. It holds a `<release>` for each version, so a release
 adds one in its first step, beside the changelog's heading.
 
-flatpak.yml builds the Flatpak on every pull request, and keeps the bundle with the run. To build
-it locally, run flatpak-builder in Flathub's image under Docker:
+flatpak.yml builds the Flatpak on every pull request that changes more than documents, and keeps
+the bundle with the run. To build it locally, run flatpak-builder in Flathub's image under Docker:
 
 ```
 docker run --rm --privileged -v C:\code\vertical3d:/src:ro -v v3d-flatpak:/work ^

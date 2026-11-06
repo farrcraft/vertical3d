@@ -1,16 +1,20 @@
-# Builds the Flatpak from flatpak/com.farrcraft.Vertical3D.yml, as Flathub builds it: from
-# source, on the Freedesktop runtime, with no network once the sources are fetched. It runs on
-# every pull request, because the Flatpak links other versions of its libraries than the rest of
-# CI does, and this is where those versions are tested. The bundle it makes is kept with the run.
-# ctest.yml calls it for a release's tag, and publishes the bundle with the release.
+# Builds the Flatpak from flatpak/com.farrcraft.Vertical3D.yml, as Flathub builds it: from source,
+# on the Freedesktop runtime, with no network once the sources are fetched. It runs on every pull
+# request that changes more than documents, because the Flatpak links other versions of its
+# libraries than the rest of CI does, and this is where those versions are tested. The bundle it
+# makes is kept with the run. ctest.yml calls it for a release's tag, and publishes the bundle
+# with the release.
 name: flatpak
 
 # push is filtered to the default branch and pull_request is not, for the reason cpplint.yml
 # gives.
+# A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_call:
 
 concurrency:

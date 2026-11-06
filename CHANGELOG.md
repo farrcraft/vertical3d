@@ -10,6 +10,8 @@ that section to its version, and the section becomes the release's notes.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-06
+
 ### Added
 
 - The editor, the offline renderer moya, imagetool and five demos (pong, tetris, voxel, odyssey
