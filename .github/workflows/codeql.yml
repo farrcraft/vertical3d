@@ -10,10 +10,13 @@ name: codeql
 
 # push is filtered to the default branch and pull_request is not, for the reason portable.yml
 # gives. The weekly run reads unchanged code with the queries CodeQL has added since.
+# A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   schedule:
     - cron: '17 4 * * 1'
 

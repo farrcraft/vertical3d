@@ -122,8 +122,8 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 
 The whole tree, every api library and every app, builds and passes its suites on Linux with
 Clang and with GCC. [.github/workflows/portable.yml](../../.github/workflows/portable.yml) checks
-that on every pull request, so a change can pass every gate on Windows and fail there. It has two
-jobs, which build in the same Ubuntu 26.04 image,
+that on every pull request that changes more than documents, so a change can pass every gate on
+Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 image,
 [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile).
 
 - **The `whole` job builds the whole tree, once with Clang and once with GCC.**

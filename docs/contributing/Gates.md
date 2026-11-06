@@ -58,10 +58,10 @@ The gates that read added lines compare against a base:
 build's configure, because it reads that build's vcpkg install.
 
 `failsfirst.ts` runs in [ctest.yml](../../.github/workflows/ctest.yml) too, as that job's
-last step on each pull request. It needs the compiler, the packages and the software Vulkan
-driver, which that job already has. Its scratch directory is under `RUNNER_TEMP`, which the job
-excludes from Defender. A link that a scan broke would mark every new case as failing to build,
-and the gate would pass them.
+last step on each pull request that changes more than documents. It needs the compiler, the
+packages and the software Vulkan driver, which that job already has. Its scratch directory is
+under `RUNNER_TEMP`, which the job excludes from Defender. A link that a scan broke would mark
+every new case as failing to build, and the gate would pass them.
 
 ## Before a commit
 

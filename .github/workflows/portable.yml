@@ -10,10 +10,13 @@ name: portable
 # push is filtered to the default branch and pull_request is not. A branch in this repository
 # fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
 # whole life of a pull request.
+# A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 
 concurrency:
   group: portable-${{ github.ref }}

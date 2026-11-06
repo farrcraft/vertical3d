@@ -3,10 +3,13 @@ name: cpplint
 # fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
 # whole life of a pull request. A branch with no pull request open gets no run - open one to
 # get CI.
+# A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 permissions:
   contents: read
 jobs:
