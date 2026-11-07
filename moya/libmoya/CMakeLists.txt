@@ -7,6 +7,12 @@ add_library("v3dlib_moya"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
 
+	"device/Buffer.h"
+	"device/CpuDevice.h" "device/CpuDevice.cxx"
+	"device/Device.h"
+	"device/internal/Arena.h"
+	"device/internal/HostBuffer.h"
+
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/Renderer.h" "ri/Renderer.cxx"
@@ -53,7 +59,8 @@ else()
 endif()
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
-# header includes the log's. moya's headers name glm types. PRIVATE: only Display writes an image,
-# encoding it with image and writing the file through asset.
-target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image)
+# header includes the log's. moya's headers name glm types, and the device's headers name kernel
+# types. PRIVATE: only Display writes an image, encoding it with image and writing the file through
+# asset, and only the CPU device's source includes TBB.
+target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image TBB::tbb)

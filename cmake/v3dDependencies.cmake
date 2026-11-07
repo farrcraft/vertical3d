@@ -30,6 +30,13 @@ if(V3D_BUILD_TESTS)
 endif()
 find_package(Boost 1.76.0 REQUIRED COMPONENTS ${v3d_boost_components})
 
+# The packages only moya uses, which no api library names, so the manifest of the api does not
+# find them. They come from the manifest's moya feature, and are looked for only when moya is
+# built. oneTBB schedules moya's CPU device.
+if(V3D_BUILD_APPS OR V3D_BUILD_MOYA)
+	find_package(TBB CONFIG REQUIRED)
+endif()
+
 # Resolve the named packages.
 #
 # A macro rather than a function: find_package creates its imported targets in the scope it

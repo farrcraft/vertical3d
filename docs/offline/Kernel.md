@@ -47,7 +47,8 @@ Background: [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every
   gets `-ffp-contract=off` under Clang and GCC too, so a kernel function inlined into host code
   rounds as it does in the kernel. MSVC's `cl` fuses only under `/fp:contract` or `/fp:fast`,
   which the tree never gives.
-- **`Kernel.cxx` includes every kernel header**, and does nothing else.
+- **`Kernel.cxx` includes every kernel header**, and does nothing else. Each include carries
+  `// IWYU pragma: keep`, since clang-tidy otherwise finds nothing in the file that uses it.
 - **`Qualifiers.h` defines `MOYA_KERNEL`**: `__host__ __device__` under nvcc and HIP, and
   nothing on the CPU.
 

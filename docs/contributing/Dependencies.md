@@ -29,6 +29,11 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 `v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
 builds TBB and OpenUSD from source, which takes a long time.
 
+What moya alone uses is in the manifest's `moya` feature, also a default one. No api library
+uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
+only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
+names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
+
 | Port | Notes |
 |---|---|
 | boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | One port per boost library the tree uses. The manifest does not use the `boost` metapackage. See [Adding a boost library](#adding-a-boost-library) |
@@ -46,6 +51,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| tbb | oneTBB, in the `moya` feature. moya's CPU device schedules its work on it, through the `TBB::tbb` target, linked PRIVATE by `v3dlib_moya` because only the device's source includes it. OpenUSD needs it too, and the Flatpak builds it as a module for both |
 | thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |

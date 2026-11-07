@@ -224,6 +224,27 @@ test("linkrule reads an app that uses an app library through the library's heade
     assert.deepEqual(report(files), []);
 });
 
+test("linkrule reads a library in a directory below an app library's as a library of its own", () => {
+    const inner = {
+        'lib/inner/CMakeLists.txt': 'add_library(v3dlib_inner Inner.cpp)\n',
+        'lib/inner/Inner.h': '#pragma once\n',
+        'lib/inner/Inner.cpp': '#include "Inner.h"\n',
+    };
+    const uses = '#include <lib/inner/Inner.h>\n';
+    assert.deepEqual(report({ ...applib(uses, '#include "Lib.h"\n', 'PUBLIC v3dlib_inner'), ...inner }), []);
+    assert.deepEqual(report({ ...applib(uses, '#include "Lib.h"\n', 'PUBLIC v3dlib_gfx'), ...inner }), [
+        'lib/CMakeLists.txt: missing-link: lib/Lib.h includes lib/inner/Inner.h, and v3dlib_applib does not link v3dlib_inner',
+        'lib/CMakeLists.txt: extra-link: v3dlib_applib links v3dlib_gfx, and none of its files includes its headers',
+    ]);
+});
+
+test('linkrule reads a TBB header as the TBB package', () => {
+    assert.deepEqual(report(app(USES_GFX + '#include <tbb/parallel_for.h>\n', 'v3dlib_gfx TBB::tbb')), []);
+    assert.deepEqual(report(app(USES_GFX + '#include <oneapi/tbb/task_arena.h>\n', 'v3dlib_gfx')), [
+        'app/CMakeLists.txt: package-unlinked: app/main.cpp includes oneapi/tbb/task_arena.h, and nothing app links carries TBB::tbb',
+    ]);
+});
+
 test('linkrule does not count an include inside a comment or an #if 0 block', () => {
     const main = USES_GFX + '// #include <api/core/Core.h>\n#if 0\n#include <png.h>\n#endif\n';
     assert.deepEqual(report(app(main, 'v3dlib_gfx')), []);

@@ -7,4 +7,6 @@
 // with no exceptions and no RTTI. A header missing from this list is compiled only under the
 // rules of whatever includes it.
 
-#include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep

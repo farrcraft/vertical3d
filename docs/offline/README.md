@@ -17,6 +17,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Reyes.md](Reyes.md) | Change the reyes hider: bucketing, splitting, dicing and hiding |
 | [RayTracing.md](RayTracing.md) | Change the ray tracer or the ray-trace hider |
 | [Kernel.md](Kernel.md) | Write kernel code for the new core, which every device compiles from one source |
+| [Devices.md](Devices.md) | Change how the new core holds memory on a device and launches kernel code |
 
 ## How a frame is made
 

@@ -20,14 +20,15 @@ libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;inter
 
 "$CXX" --version
 
-# The manifest's default features are the window, the device, the audio and OpenUSD, which
-# these libraries do not use, so they are left out and never built. The tree is built under
-# AddressSanitizer and the undefined behaviour sanitizer, so every test runs under both, and
-# instrumented for libFuzzer, so the fuzz targets can run below.
+# The manifest's default features are moya's packages, the window, the device, the audio and
+# OpenUSD. Only moya's are used here, so the rest are left out and never built. The tree is
+# built under AddressSanitizer and the undefined behaviour sanitizer, so every test runs under
+# both, and instrumented for libFuzzer, so the fuzz targets can run below.
 cmake -S "$src" -B "$work/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" \
     -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
+    -DVCPKG_MANIFEST_FEATURES=moya \
     -DV3D_BUILD_APPS=OFF \
     -DV3D_BUILD_MOYA=ON \
     -DV3D_BUILD_TESTS=ON \

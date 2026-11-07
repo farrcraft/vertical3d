@@ -49,7 +49,9 @@ function walk(tree: Tree, t: Target, own: string | null): Walk {
             } else if (found !== null) {
                 const r = rel(tree.root, found);
                 lib = tree.owner(r);
-                if (lib !== null && own !== null && r.startsWith(own)) {
+                // a header the target owns is its own. One in a directory below it that another
+                // library's CMakeLists.txt is in belongs to that library, and owner() names it
+                if (lib !== null && own !== null && lib === t.name) {
                     lib = null;
                 }
                 if (lib === null) {

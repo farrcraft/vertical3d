@@ -99,7 +99,7 @@ each step is where the survey points, not a conclusion.
 | [2](#step-2--the-record-the-cpu-devices-threads) | The record: the CPU device's threads | `docs/adr` | **0196** | done |
 | [3](#step-3--the-record-the-kernels-vector-types) | The record: the kernel's vector types | `docs/adr` | **0197** | done |
 | [4](#step-4--the-kernel-subset-as-a-target) | The kernel subset as a target, with its rules checked | `moya/libmoya`, `scripts` | 0195, 0197 | done |
-| [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | open |
+| [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | done |
 | [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | open |
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | open |
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | open |
@@ -237,6 +237,22 @@ Windows and in portable.yml, and moya's suite runs there under the sanitizers.
 
 ### Step 5 — The device interface and the CPU device
 
+**Done.** `device::Device` allocates, uploads and downloads `Buffer`s, which kernel code sees as
+`kernel::Array<T>`. A launch is on each device's own class rather than on `Device`, since a GPU
+starts entry points it compiled where the CPU calls a function. `CpuDevice::launch` runs a
+`kernel::Function<Params>` over 32-pixel tiles in a TBB arena of a given width, behind
+`device/internal/Arena.h`. No wait is needed while the CPU is the only device, since its launch
+returns when every pixel has run. Traversal and texture lookups are left to the sections that
+build them, rather than declared with nothing behind them. The manifest's `moya` feature holds
+oneTBB, OpenUSD never named it directly, and the clang job names the feature.
+[Devices.md](../offline/Devices.md) states the rules.
+
+Two fixes outside moya came with it. `linkrule.ts` read every header below an app library's
+directory as that library's own, so the kernel target's headers did not count as a link of
+libmoya's. It now takes the library that owns a header, and its package table holds TBB's
+headers. moya's suite also finalizes TBB in its global fixture, because TBB's workers outlive
+`main` and the debug runtime reported what they held as leaks.
+
 * **The device interface**: buffers of device memory, a launch of a kernel function over the
   tiles of an image, and a wait. Ray traversal and texture lookups are declared here and
   implemented by sections 3 and 5 of the roadmap.
@@ -337,9 +353,8 @@ filters reproduce the filter's shape.
 
 ### Step 12 — OpenEXR, Imath and OpenColorIO in the tree
 
-* **The three ports** in moya's manifest feature, which step 5 adds with oneTBB, in `vcpkg.json`
-  and `examples/starter/vcpkg.json`. It is a default feature, as `usd` is, so a consumer of the
-  api that builds no apps leaves it out.
+* **The three ports** in moya's manifest feature in `vcpkg.json`, which step 5 adds with oneTBB.
+  `examples/starter/vcpkg.json` builds no moya, so it does not take them.
 * **Found** in `cmake/v3dDependencies.cmake`, and linked by `v3dlib_moya` alone.
 * **The Flatpak** takes each from the Freedesktop runtime or as a pinned module, as
   [Dependencies.md](../contributing/Dependencies.md#the-flatpaks-packages) describes.

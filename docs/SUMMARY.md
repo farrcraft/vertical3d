@@ -111,6 +111,7 @@
     - [The reyes hider](offline/Reyes.md)
     - [Ray tracing](offline/RayTracing.md)
     - [Kernel code](offline/Kernel.md)
+    - [Devices](offline/Devices.md)
 
 # The applications
 

@@ -32,10 +32,17 @@
     "thorvg"
   ],
   "default-features": [
+    "moya",
     "platform",
     "usd"
   ],
   "features": {
+    "moya": {
+      "description": "What moya alone uses: oneTBB, which its CPU device schedules its work on",
+      "dependencies": [
+        "tbb"
+      ]
+    },
     "platform": {
       "description": "The window, the device and the audio: what the realtime renderer, the engine, input, the ui and audio need",
       "dependencies": [

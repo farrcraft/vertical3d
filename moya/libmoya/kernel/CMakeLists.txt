@@ -4,6 +4,8 @@
 # wherever else it is included. scripts/kernel.ts checks what no compiler flag can, such as a
 # virtual function or an allocation.
 add_library("v3dlib_moya_kernel"
+	"Array.h"
+	"Launch.h"
 	"Qualifiers.h"
 	"Kernel.cxx"
 )
