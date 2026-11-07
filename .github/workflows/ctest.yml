@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     timeout-minutes: 120
 
     # Each build type runs on a runner of its own, beside the other rather than after it. A
@@ -689,7 +689,7 @@ jobs:
   release:
     needs: [test, flatpak]
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       id-token: write
