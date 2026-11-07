@@ -48,6 +48,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 #include <entt/entt.hpp>
+#include <glm/geometric.hpp>
 
 #include "Headless.h"
 #include "Shapes.h"
@@ -628,6 +629,37 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
     BOOST_TEST_MESSAGE("ground darkened " << shading.darkened << ", anything else changed " << shading.otherwise);
     BOOST_CHECK_GT(shading.darkened, 0U);
     BOOST_CHECK_EQUAL(shading.otherwise, 0U);
+}
+
+/**
+ * With the registry given, the fit covers each caster's whole model, not its origin. A unit
+ * cube's sphere has a radius of sqrt(3) / 2, and a tower four times as tall has four times that.
+ * A caster whose mesh does not resolve is fitted at its position, as with no registry.
+ **/
+BOOST_AUTO_TEST_CASE(the_fit_covers_each_casters_model) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Stage stage(&headless);
+    const MeshHandle tower = stage.meshes.add("tower", cube(glm::vec4(1.0F)));
+    place(&stage.registry, tower, glm::vec3(3.0F, 2.0F, 0.0F), glm::vec3(1.0F, 4.0F, 1.0F), true);
+
+    const std::optional<lighting::ShadowBounds> origins = lighting::fitShadow(stage.registry, {}, {.margin = 1.0F});
+    const std::optional<lighting::ShadowBounds> models = lighting::fitShadow(stage.registry, {}, {.margin = 1.0F, .meshes = &stage.meshes});
+    BOOST_REQUIRE(stage.meshes.release(tower));
+    const std::optional<lighting::ShadowBounds> released =
+        lighting::fitShadow(stage.registry, {}, {.margin = 1.0F, .meshes = &stage.meshes});
+    if (!origins || !models || !released) {
+        BOOST_ERROR("two casters gave no fit");
+        return;
+    }
+
+    // the crate stands at (0, 0.5, 0) and the tower at (3, 2, 0), so the centre is between them
+    const float apart = glm::length(glm::vec3(1.5F, 0.75F, 0.0F));
+    const float unit = std::sqrt(3.0F) / 2.0F;
+    BOOST_CHECK_CLOSE(models->centre.x, 1.5F, 1e-3F);
+    BOOST_CHECK_CLOSE(models->centre.y, 1.25F, 1e-3F);
+    BOOST_CHECK_CLOSE(origins->radius, apart + 1.0F, 1e-3F);
+    BOOST_CHECK_CLOSE(models->radius, apart + (4.0F * unit) + 1.0F, 1e-3F);
+    BOOST_CHECK_CLOSE(released->radius, apart + unit + 1.0F, 1e-3F);
 }
 
 /**

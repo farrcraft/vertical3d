@@ -130,7 +130,7 @@ bool Renderer::place(entt::registry* registry, const std::vector<Placement>& pla
         registry->emplace<v3d::render::realtime::component::Mesh>(entity,
             v3d::render::realtime::component::Mesh{loaded[placement.model], placement.castsShadow});
     }
-    bounds_ = v3d::render::realtime::lighting::fitShadow(*registry, {}, {.margin = SHADOW_MARGIN});
+    bounds_ = v3d::render::realtime::lighting::fitShadow(*registry, {}, {.margin = SHADOW_MARGIN, .meshes = meshes_.get()});
     return true;
 }
 

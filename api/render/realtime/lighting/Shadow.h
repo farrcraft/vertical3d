@@ -18,6 +18,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+namespace v3d::render::realtime::resource {
+class MeshRegistry;
+};  // namespace v3d::render::realtime::resource
+
 namespace v3d::render::realtime::lighting {
 
 /**
@@ -42,7 +46,21 @@ struct ShadowBounds final {
 struct ShadowFit final {
     float margin = 0.0F;
     float alpha = 1.0F;
+    /**
+     * Where the casters' meshes resolve, so that the fit covers each caster's whole model rather
+     * than its origin. Null fits the origins alone
+     **/
+    const resource::MeshRegistry* meshes = nullptr;
 };
+
+/**
+ * A sphere around a registered model where a matrix places it: the entry's bound moved by the
+ * matrix, and its radius scaled by the matrix's largest scale.
+ *
+ * @param bound resource::MeshRegistry::Entry::bound, the sphere in the model's own space
+ * @param model the matrix that places the model in the world
+ **/
+ShadowBounds placed(const glm::vec4& bound, const glm::mat4& model);
 
 /**
  * The matrix a directional light draws its shadow map through: an orthographic box around a
@@ -67,20 +85,26 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds,
  * A sphere around every entity carrying an ecs::component::Transform and a
  * component::Mesh that casts a shadow, and the extra points given.
  *
- * The centre is the mean of the positions and the radius the farthest of them from it, plus
- * the margin. The radius is at least minimumShadowRadius, which one caster with no margin, or a
- * negative margin, would otherwise take to zero or below. A position is an origin, not an
- * extent. The margin covers a caster's size and the length of the shadow it throws. What
- * casts nothing is left out, because a ground plane reaches past anything that shadows it
+ * Each caster is a sphere. With ShadowFit::meshes given, it is the sphere around the caster's
+ * model, placed by its transform as placed() places it. Without, or while the caster's mesh does
+ * not resolve, it is the caster's position alone. An extra point is a sphere of radius zero.
+ *
+ * The centre is the mean of the spheres' centres. The radius reaches the far side of the
+ * farthest sphere, plus the margin. It is at least minimumShadowRadius, which one point with no
+ * margin, or a negative margin, would otherwise take to zero or below. The margin covers the
+ * length of the shadow a caster throws, and a caster's size where no mesh is resolved. A skinned
+ * caster's sphere is its bind pose, so the margin also covers how far a pose reaches past it.
+ * What casts nothing is left out, because a ground plane reaches past anything that shadows it
  * and would spread the map's texels over ground no shadow falls on.
  *
- * Each position is the one drawn: alpha of the way from the caster's previous step to its
+ * Each caster is placed where it is drawn: alpha of the way from its previous step to its
  * current one, as the lit pass draws it.
  *
  * @param registry the entities whose casters are fitted
  * @param alsoCover points that should be inside the map whether or not anything stands there,
  *        such as where a character will walk to
- * @param fit the margin added to the radius, and the alpha positions are read at
+ * @param fit the margin added to the radius, the alpha casters are placed at, and where their
+ *        meshes resolve
  * @return nothing when no entity casts a shadow, so a caller keeps the bounds it had
  **/
 std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit);

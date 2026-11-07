@@ -8,6 +8,7 @@
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/lighting/internal/Basis.h>
 #include <api/render/realtime/lighting/internal/Volume.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
@@ -178,32 +179,43 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type
 
 /**
  **/
+ShadowBounds placed(const glm::vec4& bound, const glm::mat4& model) {
+    const float scale = std::max({glm::length(glm::vec3(model[0])), glm::length(glm::vec3(model[1])), glm::length(glm::vec3(model[2]))});
+    return ShadowBounds{.centre = glm::vec3(model * glm::vec4(glm::vec3(bound), 1.0F)), .radius = bound.w * scale};
+}
+
+/**
+ **/
 std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit) {
-    const float margin = fit.margin;
-    const float alpha = fit.alpha;
-    std::vector<glm::vec3> points;
+    std::vector<ShadowBounds> spheres;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
-        if (view.get<const component::Mesh>(entity).castsShadow) {
-            points.push_back(ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).position);
+        const component::Mesh& mesh = view.get<const component::Mesh>(entity);
+        if (!mesh.castsShadow) {
+            continue;
         }
+        const ecs::component::Transform transform = ecs::interpolated<ecs::component::Transform>(registry, entity, fit.alpha);
+        const resource::MeshRegistry::Entry* entry = fit.meshes != nullptr ? fit.meshes->resolve(mesh.mesh) : nullptr;
+        spheres.push_back(entry != nullptr ? placed(entry->bound, transform.matrix()) : ShadowBounds{.centre = transform.position});
     }
-    if (points.empty()) {
+    if (spheres.empty()) {
         return std::nullopt;
     }
-    points.insert(points.end(), alsoCover.begin(), alsoCover.end());
+    for (const glm::vec3& point : alsoCover) {
+        spheres.push_back(ShadowBounds{.centre = point});
+    }
 
     ShadowBounds bounds;
-    for (const glm::vec3& point : points) {
-        bounds.centre += point;
+    for (const ShadowBounds& sphere : spheres) {
+        bounds.centre += sphere.centre;
     }
-    bounds.centre /= static_cast<float>(points.size());
+    bounds.centre /= static_cast<float>(spheres.size());
 
     float spread = 0.0F;
-    for (const glm::vec3& point : points) {
-        spread = std::max(spread, glm::length(point - bounds.centre));
+    for (const ShadowBounds& sphere : spheres) {
+        spread = std::max(spread, glm::length(sphere.centre - bounds.centre) + sphere.radius);
     }
-    bounds.radius = std::max(spread + margin, minimumShadowRadius);
+    bounds.radius = std::max(spread + fit.margin, minimumShadowRadius);
     return bounds;
 }
 

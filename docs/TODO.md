@@ -19,15 +19,6 @@ up. None waits for a game, a scene or a second caller to need it first.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## Lit scenes
-
-[] **`lighting::fitShadow` covers each caster's position and a margin, not its extent or
-scale.** A caller with large casters passes a margin big enough for them. A registered mesh
-carries a sphere around its vertices (`MeshRegistry::Entry::bound`), which the fit could
-scale by each caster's transform instead.
-
-- Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
-
 ## Offline rendering
 
 [] **A shader's traced rays include the hits that did not trace.** `trace()` casts one ray for

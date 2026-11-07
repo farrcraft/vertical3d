@@ -28,9 +28,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <glm/geometric.hpp>
-#include <glm/vec4.hpp>
-
 namespace v3d::render::realtime::entity {
 
 namespace {
@@ -89,11 +86,7 @@ bool reaches(const internal::Placed& placed, const Casting& casting) {
     if (!casting.covers || placed.entry->skin) {
         return true;
     }
-    const glm::vec4 bound = placed.entry->bound;
-    const float scale = std::max({glm::length(glm::vec3(placed.model[0])), glm::length(glm::vec3(placed.model[1])),
-        glm::length(glm::vec3(placed.model[2]))});
-    const lighting::ShadowBounds caster{.centre = glm::vec3(placed.model * glm::vec4(glm::vec3(bound), 1.0F)), .radius = bound.w * scale};
-    return lighting::casts(*casting.covers, casting.towards, caster);
+    return lighting::casts(*casting.covers, casting.towards, lighting::placed(placed.entry->bound, placed.model));
 }
 
 /**

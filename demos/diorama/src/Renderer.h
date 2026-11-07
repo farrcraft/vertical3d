@@ -97,8 +97,8 @@ class Renderer final {
     static constexpr uint32_t SHADOW_TEXELS = 2048;
 
     /**
-     * How far past the casters the shadow map reaches, for the height of a tree and the length of
-     * its shadow, in world units.
+     * How far past the casters' models the shadow map reaches, for the length of a tree's shadow,
+     * in world units.
      **/
     static constexpr float SHADOW_MARGIN = 3.0F;
 
