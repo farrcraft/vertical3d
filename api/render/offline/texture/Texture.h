@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,6 +11,9 @@
 
 #include <glm/vec3.hpp>
 
+/**
+ * The textures shaders read, the directories they are found in, and noise.
+ **/
 namespace v3d::render::offline::texture {
 
 /**

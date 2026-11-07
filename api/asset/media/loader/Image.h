@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/asset/Loader.h>
 
+/**
+ * The loaders for image files and glTF models.
+ **/
 namespace v3d::asset::media::loader {
 /**
  * Every image format. The file is read through asset::readFile and decoded from memory by

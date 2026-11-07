@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/compiler/Compiler.h>

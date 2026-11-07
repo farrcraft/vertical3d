@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -15,6 +15,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 
+/**
+ * Events, the router that delivers them, key bindings and chords, and the mapping from a key to a
+ * command.
+ **/
 namespace v3d::event {
 
 using EventData = std::variant<int, bool, std::string>;

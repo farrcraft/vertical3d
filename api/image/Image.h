@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,6 +11,10 @@
 
 #include <glm/vec2.hpp>
 
+/**
+ * Images in memory: the readers and writers for each format, cropping, comparison, the texture
+ * atlas and sprite sheet packing.
+ **/
 namespace v3d::image {
 /**
  * a simple image class. 

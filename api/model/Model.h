@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -17,6 +17,9 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+/**
+ * The geometry, materials, skeleton and clips a model file gives.
+ **/
 namespace v3d::model {
 
 /**

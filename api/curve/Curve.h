@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -13,6 +13,10 @@
 
 #include <glm/vec3.hpp>
 
+/**
+ * Poly, Bezier, Catmull-Rom and NURBS curves, their evaluation, and their conversion to the basis
+ * curves a renderer takes.
+ **/
 namespace v3d::curve {
 
 /**

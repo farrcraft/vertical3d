@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <demos/pong/src/component/Color3.h>
 #include <demos/pong/src/component/Position1D.h>

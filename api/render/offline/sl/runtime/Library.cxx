@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 /*
     The bodies behind the signatures in sl/compiler/Builtins.h: what a CALL instruction does.

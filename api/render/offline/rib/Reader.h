@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -24,6 +24,10 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 
+/**
+ * RIB: the lexer and the reader of an ASCII RIB stream, the handler a renderer implements, the
+ * declarations and parameters of a request, and a writer and a recorder of requests.
+ **/
 namespace v3d::render::offline::rib {
 
 /**

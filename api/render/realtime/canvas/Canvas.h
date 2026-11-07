@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -17,6 +17,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+/**
+ * What an app fills on the CPU during a tick: quads, lines, and quads standing in the world,
+ * collected for the renderers to upload.
+ **/
 namespace v3d::render::realtime::canvas {
 
 /**

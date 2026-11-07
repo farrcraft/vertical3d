@@ -26,7 +26,7 @@ document for its subject, which the table links to.
 | `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
-| `namespaces.ts` | Each C++ file is in its directory's namespace | The tree | [Conventions.md](Conventions.md#language) |
+| `namespaces.ts` | Each C++ file is in its directory's namespace, and each namespace of the API reference is described once | The tree | [Conventions.md](Conventions.md#language), [Conventions.md](Conventions.md#doc-comments-in-a-public-header) |
 | `pinned.ts` | Every action a workflow uses is pinned to a full commit sha | The tree | [Linting.md](Linting.md#ci) |
 | `npm.ts` | npm brings only pinned development tools, and no script imports a package | The tree | [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) |
 | `notices.ts` | Every package that ships code has a copyright file, and every font has a licence. `--out` writes the notices file | A vcpkg install | [Dependencies.md](Dependencies.md#third-party-notices) |

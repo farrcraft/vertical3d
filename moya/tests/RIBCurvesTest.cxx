@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/offline/film/FrameBuffer.h>
 #include <moya/libmoya/ri/RIBHandler.h>

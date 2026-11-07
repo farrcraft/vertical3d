@@ -1,12 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
 #include <entt/entt.hpp>
 
+/**
+ * Helpers over the EnTT entity registry: systems, references to entities, and the value a component
+ * held at the last step, for drawing between steps.
+ **/
 namespace v3d::ecs {
 
 /**

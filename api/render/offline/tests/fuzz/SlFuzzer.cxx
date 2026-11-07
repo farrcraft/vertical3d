@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // Passes each input to the shading language parser as a source file, and compiles every
 // shader it parses. Both stop at the first error, so the target checks only that no input

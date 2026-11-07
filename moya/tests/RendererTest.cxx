@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/Renderer.h>

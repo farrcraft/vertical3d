@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -16,6 +16,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The syntax tree the parser builds: a shader, its functions, statements and expressions.
+ **/
 namespace v3d::render::offline::sl::syntax {
 
 /**

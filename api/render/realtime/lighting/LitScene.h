@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -39,6 +39,9 @@ namespace v3d::render::realtime::frame {
 class Frame;
 };  // namespace v3d::render::realtime::frame
 
+/**
+ * Lit scenes: the light, the cel bands, the outline and the shadow map.
+ **/
 namespace v3d::render::realtime::lighting {
 
 /**

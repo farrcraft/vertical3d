@@ -1,10 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
+/**
+ * What the RIB and shading language lexers share: character input that keeps its position, and a
+ * lexical unit.
+ **/
 namespace v3d::render::offline::source {
 
 /**

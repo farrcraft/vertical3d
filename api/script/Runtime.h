@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -23,6 +23,10 @@
 struct JSRuntime;
 struct JSContext;
 
+/**
+ * TypeScript run on QuickJS: a runtime that strips the types of a script and runs it, with the
+ * functions a host binds into it.
+ **/
 namespace v3d::script {
 
 /**

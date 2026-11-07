@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -32,6 +32,9 @@ class Bar;
 
 };  // namespace v3d::ui
 
+/**
+ * Turns the cursor and the keys into commands and edits on the ui, and edits a line of text.
+ **/
 namespace v3d::ui::input {
 
 /**

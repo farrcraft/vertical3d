@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
 #include <api/asset/Loader.h>
 
+/**
+ * The loaders for JSON documents and text files.
+ **/
 namespace v3d::asset::loader {
 /**
  * Reads a file as a JSON object and gives a kind::Json. A file that cannot be read, or that

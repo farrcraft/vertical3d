@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -29,6 +29,10 @@ namespace v3d::render::offline::sl::runtime::internal {
 class Site;
 };  // namespace v3d::render::offline::sl::runtime::internal
 
+/**
+ * Runs a compiled shader over a batch of shading points: the program, its registers and values, the
+ * machine, the globals a hider fills, and the imager.
+ **/
 namespace v3d::render::offline::sl::runtime {
 
 /**

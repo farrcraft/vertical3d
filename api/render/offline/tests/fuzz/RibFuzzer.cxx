@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // Passes each input to the RIB reader as a whole stream, and records every request it reads.
 // The reader stops at what it cannot parse, so the target checks only that no input makes the

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>

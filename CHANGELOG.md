@@ -10,6 +10,10 @@ that section to its version, and the section becomes the release's notes.
 
 ## [Unreleased]
 
+### Fixed
+
+- The API reference describes each namespace, where it showed the copyright notice.
+
 ## [0.1.0] - 2026-11-06
 
 ### Added

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -23,6 +23,10 @@ class FallbackChain;
 
 };  // namespace v3d::font::face
 
+/**
+ * Text shaped into glyphs and laid out: UTF-8, bidirectional levels, word boundaries, OpenType
+ * features and paragraphs.
+ **/
 namespace v3d::font::text {
 
 /**

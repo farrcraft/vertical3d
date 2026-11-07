@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <string_view>
 
+/**
+ * The tree's version: the numbers of the release it builds toward, and the text a user is shown.
+ **/
 namespace v3d::version {
 
 /**

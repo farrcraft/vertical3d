@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/offline/Area.h>
 #include <api/render/offline/film/FrameBuffer.h>

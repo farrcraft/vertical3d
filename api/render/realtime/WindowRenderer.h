@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -25,6 +25,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+/**
+ * The Vulkan realtime renderer: the renderer an app draws into a window with, and the device and
+ * window contexts under it. Its library is linked as `v3d::render`.
+ **/
 namespace v3d::render::realtime {
 /**
  * The renderer an app draws into a window with. It owns the window's device context and the

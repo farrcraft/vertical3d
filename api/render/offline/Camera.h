@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,6 +10,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * What the offline renderer moya is built on: RIB, the shading language, sampling, the film
+ * and the ray tracer. It uses no Vulkan and no SDL. This is a library of its own, linked as
+ * `v3d::render_offline`.
+ **/
 namespace v3d::render::offline {
 
 /**

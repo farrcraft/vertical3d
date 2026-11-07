@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // Passes each input to the BMP reader as the bytes of a file. The reader rejects what it
 // cannot decode, so the target checks only that no input makes it misbehave.

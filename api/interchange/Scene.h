@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -18,6 +18,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+/**
+ * Scenes read from glTF in no format's terms: nodes, polygon meshes, cameras, lights, curves and
+ * keys.
+ **/
 namespace v3d::interchange {
 
 /**

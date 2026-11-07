@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,9 @@
 
 #include <string>
 
+/**
+ * The kinds of event: keys, the mouse, text input, sounds, and changes to the window.
+ **/
 namespace v3d::event::kind {
 
 /**

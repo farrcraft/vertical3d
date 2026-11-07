@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,6 +11,9 @@
 
 #include <glm/vec4.hpp>
 
+/**
+ * The properties a style holds: colours, images and numbers.
+ **/
 namespace v3d::ui::style::property {
 
 /**

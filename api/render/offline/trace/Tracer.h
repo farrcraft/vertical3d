@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,6 +21,10 @@
 #include "Hit.h"
 #include "Scene.h"
 
+/**
+ * The ray tracer: the primitives a ray can meet, the hierarchy over them, intersection, and the
+ * shading of hits.
+ **/
 namespace v3d::render::offline::trace {
 
 /**

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,6 +20,10 @@ class Face;
 
 };  // namespace v3d::font::face
 
+/**
+ * The pixels of a glyph: a coverage bitmap, a distance field, its curves, or a colour glyph painted
+ * from the colour tables of its face.
+ **/
 namespace v3d::font::glyph {
 
 

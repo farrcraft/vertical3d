@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/MicroPolygon.h>

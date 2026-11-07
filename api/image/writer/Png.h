@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,6 +10,9 @@
 #include <optional>
 #include <string>
 
+/**
+ * A writer for each image format, each encoding an image.
+ **/
 namespace v3d::image::writer {
 /**
  * Encodes an image as a png file, through libpng.

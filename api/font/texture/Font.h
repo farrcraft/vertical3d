@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -24,6 +24,9 @@ class Face;
 
 };  // namespace v3d::font::face
 
+/**
+ * Faces drawn at one size into a texture atlas, and the text buffers laid out from them.
+ **/
 namespace v3d::font::texture {
 
 

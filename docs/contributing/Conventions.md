@@ -11,13 +11,14 @@ editing.**
   one directory (`api/render/realtime/*.cpp` beside `api/render/realtime/vulkan/*.cxx`). Use the
   extension of the neighbouring files.
 - Every source file and header starts with the copyright block. A header follows it with
-  `#pragma once`.
+  `#pragma once`. The block opens with `/*`, not `/**`, because Doxygen takes a `/**` comment
+  as the description of the declaration after it, and in a header that is the namespace.
 
   ```
-  /**
+  /*
    * Vertical3D
    * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-   **/
+   */
   ```
 
 - Files use LF line endings. [.gitattributes](../../.gitattributes) sets `* text=auto eol=lf`. If
@@ -297,6 +298,13 @@ there, and `node scripts/docs.ts` reports a break of each:
 
 A member is documented when it holds something its declaration cannot say, as any other comment
 is. An empty block above a trivial member is allowed.
+
+**Each namespace has one description.** It is a doc comment directly above the line that opens
+the namespace, in one public header of its directory, and says what the namespace holds. The
+other headers of the directory open the namespace with no comment above it. A namespace whose
+directory holds only other directories, such as `v3d::font`, is described by an `@namespace`
+block in [scripts/docs/namespaces.dox](../../scripts/docs/namespaces.dox). `scripts/namespaces.ts`
+reports a namespace of the reference that nothing describes, and one described twice.
 
 ## Documents
 

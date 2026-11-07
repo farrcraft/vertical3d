@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -23,6 +23,10 @@ namespace v3d::font::internal {
 class FaceHandle;
 };  // namespace v3d::font::internal
 
+/**
+ * Typefaces opened through FreeType: a face, the family it belongs to, the fallback chain for text
+ * that mixes scripts, and the axes of a variable font.
+ **/
 namespace v3d::font::face {
 
 class Library;

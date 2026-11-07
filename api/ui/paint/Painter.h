@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,6 +10,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+/**
+ * Draws the ui onto a canvas: boxes, text, the colours a theme gives, and the device's copy of the
+ * glyph and curve stores.
+ **/
 namespace v3d::ui::paint {
 
 /**

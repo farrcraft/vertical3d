@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -11,6 +11,9 @@
 
 #include <boost/json.hpp>
 
+/**
+ * The assets the loaders of this library give: a JSON document and a text file.
+ **/
 namespace v3d::asset::kind {
 /**
  * A JSON document asset

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // The controller's other windows: opening one for an editor, keeping and reopening those a
 // workspace holds, drawing and closing them.

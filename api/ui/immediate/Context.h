@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -32,6 +32,10 @@ namespace v3d::ui::paint {
 class TextRenderer;
 };  // namespace v3d::ui::paint
 
+/**
+ * What the immediate-mode layer keeps for its widgets between frames, such as windows, rows,
+ * tables, tab strips and popups, and how a widget reacted to the cursor.
+ **/
 namespace v3d::ui::immediate {
 
 /**

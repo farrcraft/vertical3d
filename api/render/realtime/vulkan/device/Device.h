@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -19,6 +19,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The Vulkan instance, the logical device and its queues, and the surface of a window.
+ **/
 namespace v3d::render::realtime::vulkan::device {
 
 /**

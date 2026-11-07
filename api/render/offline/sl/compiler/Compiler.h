@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -18,6 +18,10 @@
 
 #include "Symbol.h"
 
+/**
+ * Compiles shading language source into a program: lexing, parsing, type checking, deciding which
+ * values vary, and emitting.
+ **/
 namespace v3d::render::offline::sl::compiler {
 
 class Signature;

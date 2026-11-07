@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,10 @@
 
 #include <string>
 
+/**
+ * The USD reader, which fills the same scene as the glTF reader. This is a library of its own,
+ * linked as `v3d::interchange_usd`, and the one that links OpenUSD.
+ **/
 namespace v3d::interchange::usd {
 
 /**

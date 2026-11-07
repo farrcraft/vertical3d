@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -13,6 +13,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * Where and when each pixel is sampled, the pixel filters, and the film that turns samples into
+ * pixels in a stack of image planes.
+ **/
 namespace v3d::render::offline::film {
 
 /**

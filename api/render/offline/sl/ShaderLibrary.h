@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -15,6 +15,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The shading language: its types, the shaders a scene names, and the instances a scene binds
+ * values onto.
+ **/
 namespace v3d::render::offline::sl {
 
 /**
