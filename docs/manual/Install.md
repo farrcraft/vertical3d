@@ -59,6 +59,15 @@ flatpak run --command=pong com.farrcraft.Vertical3D
 The apps in the Flatpak see only your documents folder. Keep the files that moya and imagetool
 read and write there, and run them from a terminal in that folder.
 
+The Flatpak does not update itself. To move to a newer version, download its bundle and install
+it over the old one:
+
+```
+flatpak install --user --reinstall vertical3d-<version>-linux-x86_64.flatpak
+```
+
+To remove Vertical3D, run `flatpak uninstall --user com.farrcraft.Vertical3D`.
+
 ## Where the apps keep your files
 
 - **The editor keeps its projects** in a `Vertical3D` folder in your documents.

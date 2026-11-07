@@ -9,6 +9,7 @@ to reach one. It says what a release is, how its version and notes are kept, and
 - [Making a release](#making-a-release)
 - [A fix to a release](#a-fix-to-a-release)
 - [What the workflow does](#what-the-workflow-does)
+- [Signing](#signing)
 - [The Flatpak](#the-flatpak)
 
 ## What a release is
@@ -20,7 +21,7 @@ built from one commit, and ship together.
   [Build.md](Build.md#the-installer) describes both. They are unsigned until SignPath
   Foundation accepts the project, and then signed through it.
 - **Linux** gets a Flatpak, [described below](#the-flatpak). It is attached to the GitHub
-  release, and Flathub publishes it once the manifest is submitted there.
+  release, and is not published on Flathub.
 - **macOS** is not a release platform.
 - **The api is not shipped as a binary.** A release's tag gives a project that uses the api a
   named commit to pin, as [UsingTheApi.md](../api/UsingTheApi.md#keeping-up-with-the-tree)
@@ -105,11 +106,79 @@ request, with these steps added:
    release from the tag. Its notes are the changelog's section, and a candidate is marked as a
    pre-release.
 
+## Signing
+
+The Windows release is signed through SignPath Foundation, which signs open-source projects at
+no cost and is named as the publisher. Until SignPath accepts the project, the release is
+unsigned and the workflow has no signing step.
+
+### What SignPath requires
+
+SignPath's terms are at https://signpath.org/terms. The project already meets these:
+
+- **Every component has an OSI licence**, provided the release is built without FMOD. A build
+  with FMOD is never signed.
+- **The project is released** in the form to be signed: the installer and the zip.
+- **The installer has an uninstaller.**
+- **Each app's ProductName is "Vertical3D"** and its version is the release's, as SignPath's
+  metadata rules ask. [v3dInstall.cmake](../../cmake/v3dInstall.cmake) writes both.
+- **No app sends anything over the network.**
+- **[README.md](../../README.md) has a "Code signing policy" section**, under that exact heading.
+  It names SignPath.io and SignPath Foundation, lists the roles and who holds each, and states
+  that the apps send nothing over the network. When someone gains or loses write access, or a
+  role changes hands, its table changes in the same step.
+- **Each release's page links the policy.** The release job appends the link to the notes it
+  takes from the changelog.
+- **Every account with write access has two-factor login on GitHub.** SignPath requires it for
+  everyone on the team, and on SignPath's own site as well. A new collaborator turns it on
+  before they are given access.
+
+To check two-factor login on an account, open GitHub's **Settings > Password and
+authentication** while signed in to it. The "Two-factor authentication" section reads
+**Enabled**, and lists at least one method, an authenticator app or a security key, with
+recovery codes saved. From a terminal, `gh auth refresh -s user` gives the CLI's token the
+`user` scope, and `gh api user --jq .two_factor_authentication` then prints `true`.
+
+### Applying and setting up
+
+1. **Apply at https://signpath.org/apply**, naming the repository and the installer the release
+   publishes. Acceptance is at SignPath Foundation's discretion.
+2. **Once accepted, in SignPath's web app:**
+   - Add the predefined trusted build system **GitHub.com** to the organization, and link it
+     to the project.
+   - Make a signing policy for releases, with yourself as its approver, so each request waits
+     for your approval.
+   - Make an artifact configuration that signs the project's own executables (the apps' `.exe`
+     files) and the installer, and nothing else. The DLLs vcpkg builds belong to other projects
+     and ship unsigned. Restrict the product name to "Vertical3D".
+   - Make a user with submitter rights on the project and the policy, and an API token for it.
+3. **In the repository's settings on GitHub**, under Secrets and variables > Actions:
+   - Add the token as the secret `SIGNPATH_API_TOKEN`.
+   - Add the organization ID, the project slug and the signing policy slug as the variables
+     `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG` and `SIGNPATH_POLICY_SLUG`.
+4. Optionally, install the SignPath GitHub app on the repository. SignPath uses it only to read
+   the audit log.
+
+### The workflow's signing step
+
+With those in place, a change to [ctest.yml](../../.github/workflows/ctest.yml) adds signing to
+the Release job on a tag. It uploads the files to sign as an artifact with
+`actions/upload-artifact`, and submits it with `signpath/github-action-submit-signing-request`,
+waiting for the signed files.
+
+- **The apps are signed before the installer is built**, because the installer holds copies of
+  them. The job signs the executables, puts the signed copies in the install tree, builds the
+  zip and the installer from it, and then signs the installer in a second request.
+- **Each request waits for the approver.** A release's job sits at the signing step until the
+  approver approves it on SignPath's site. The action's `wait-for-completion-timeout-in-seconds`
+  is 600 by default, so the maintainer pushes a tag only when they can approve within it, or the
+  step sets a longer one.
+
 ## The Flatpak
 
 [flatpak/com.farrcraft.Vertical3D.yml](../../flatpak/com.farrcraft.Vertical3D.yml) builds every
-app on the Freedesktop runtime, from source and with no network once its sources are fetched, as
-Flathub builds it. Its app ID is `com.farrcraft.Vertical3D`.
+app on the Freedesktop runtime, from source and with no network once its sources are fetched.
+Its app ID is `com.farrcraft.Vertical3D`.
 
 - **The runtime supplies the libraries it has**, where its version is one the tree accepts. The
   manifest's first comment lists them.
@@ -126,8 +195,8 @@ Flathub builds it. Its app ID is `com.farrcraft.Vertical3D`.
   folder, where the editor keeps its projects.
 
 [flatpak/com.farrcraft.Vertical3D.metainfo.xml](../../flatpak/com.farrcraft.Vertical3D.metainfo.xml)
-is what Flathub and software centres show. It holds a `<release>` for each version, so a release
-adds one in its first step, beside the changelog's heading.
+is what software centres show. It holds a `<release>` for each version, so a release adds one in
+its first step, beside the changelog's heading.
 
 flatpak.yml builds the Flatpak on every pull request that changes more than documents, and keeps
 the bundle with the run. To build it locally, run flatpak-builder in Flathub's image under Docker:
@@ -140,15 +209,20 @@ docker run --rm --privileged -v C:\code\vertical3d:/src:ro -v v3d-flatpak:/work 
 
 The `v3d-flatpak` volume keeps each module's build, so a second run rebuilds only what changed.
 `flatpak build /work/build vertical3d --version` in the same image runs an app from the build.
-`flatpak-builder-lint manifest` and `appstreamcli validate` check the manifest and the metainfo as
-Flathub does.
+`flatpak-builder-lint manifest` and `appstreamcli validate` check the manifest and the metainfo.
 
-### Flathub
+### How it ships
 
-Flathub builds from its own repository, `flathub/com.farrcraft.Vertical3D`, which holds a copy of
-the manifest. Its copy names the tree as a `git` source at a release's tag, in place of the
-directory, and adds `-DV3D_RELEASE=ON` to the tree's module. Each release updates that tag and
-commit there by pull request. Publishing under `com.farrcraft` needs Flathub to verify that the
-project controls `farrcraft.com`.
+The bundle is the whole of the Linux release, as the installer is of the Windows one.
 
-Background: [ADR-0182](../adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)
+- **Each release attaches the bundle**, `vertical3d-<version>-linux-x86_64.flatpak`, and the
+  project publishes no Flatpak repository. A user installs it from the download, and installs
+  the next release the same way, because an installed bundle does not update itself.
+- **The runtime comes from Flathub.** A user adds the Flathub remote once, and Flatpak takes
+  `org.freedesktop.Platform` from it. [Install.md](../manual/Install.md#on-linux) gives users the
+  commands.
+- **The app is not on Flathub.** Flathub does not accept a manifest written with an AI
+  assistant, and this one is.
+
+Background: [ADR-0183](../adr/project/0183-releases-the-flatpak-ships-only-as-a-release-bundle.md),
+[ADR-0182](../adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)

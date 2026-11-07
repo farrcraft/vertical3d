@@ -100,14 +100,14 @@ by the owner before the step that builds it starts.
 | [11](#step-11--install-rules) | Install rules, and a CI job that runs each app from the install | build, CI | 0176 | done |
 | [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | done |
 | [13](#step-13--the-record-the-release-flow) | The record: the release flow | `docs/adr` | **0178** | done |
-| [14](#step-14--the-release-workflow) | The changelog, the release workflow and its document | CI, `docs` | 0177, 0178 | open |
+| [14](#step-14--the-release-workflow) | The changelog, the release workflow and its document | CI, `docs` | 0177, 0178 | done |
 | [15](#step-15--the-record-the-windows-installer) | The record: the Windows installer | `docs/adr` | **0179** | done |
 | [16](#step-16--the-record-signing) | The record: signing | `docs/adr` | **0180** | done |
-| [17](#step-17--the-windows-installer) | The Windows installer, in the release workflow | apps, CI | 0179, 0180 | open |
+| [17](#step-17--the-windows-installer) | The Windows installer, in the release workflow | apps, CI | 0179, 0180 | done, unsigned |
 | [18](#step-18--the-record-the-compilers-on-linux) | The record: the compilers on Linux | `docs/adr` | **0181** | done |
 | [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | done |
 | [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | done |
-| [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | open |
+| [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | done, not on Flathub |
 | [22](#step-22--the-documents) | The documents state the new rules, and the roadmap closes | `docs` | — | done |
 
 ## What blocks what
@@ -358,7 +358,7 @@ only when a fix has to ship after `main` has moved on.
 
 ### Step 14 — The release workflow
 
-**Built; open until the first release candidate runs it.** `CHANGELOG.md` has its Unreleased
+**Done.** 0.1.0 ran it, with no candidate before it. `CHANGELOG.md` has its Unreleased
 section, and `scripts/changelog.ts` fails a change to what a release ships that adds no entry.
 It runs in review-gates.yml and before each commit, and six cases test it. The prose gate's
 history rule exempts the changelog. `docs/contributing/Releasing.md` states the rules, and
@@ -406,7 +406,7 @@ application to it is the owner's.
 
 ### Step 17 — The Windows installer
 
-**Built; open until signing is wired and a candidate runs it.** `v3d_install_app` takes each
+**Done, unsigned.** 0.1.0 published and attested the installer. `v3d_install_app` takes each
 app's name, writes its version resource and records it for the Start menu. CPack's NSIS
 generator builds the installer from the install rules, into `package/`. A configure was checked
 here: `pong.exe` reads back "Pong", "0.1.0-dev" and "Vertical3D" from its properties, and
@@ -487,7 +487,7 @@ manifest.
 
 ### Step 21 — The Flatpak
 
-**Done here; open until a release candidate, and until the owner submits it to Flathub.**
+**Done, and not yet on Flathub.** 0.1.0 published the bundle.
 `flatpak/com.farrcraft.Vertical3D.yml` builds every app on Freedesktop 26.08 under flatpak-builder,
 in Flathub's image, and each app's `--version` runs from the build. Flathub's manifest linter and
 `appstreamcli validate` pass. `flatpak.yml` builds it on every pull request, and the release
@@ -529,3 +529,45 @@ Releasing.md. The roadmap is in `completed/`, because every section it asked for
   its own section as it lands.
 * **ADR-0165 and ADR-0166** name `Releasing.md` in their `Documented in` lines.
 * **The roadmap moves to `completed/`.**
+
+## Outcome
+
+Closed 2026-11-06. Vertical3D 0.1.0 is a published, immutable GitHub release, built from the
+`v0.1.0` tag on `main`. It holds the Windows install tree as a zip, a Windows installer and a
+Flatpak bundle, and the zip and the installer are attested. Every app runs from a read-only
+install, answers `--version`, and ships with the notices of what it links.
+
+**Delivered:**
+
+- Apps that read their data from the install and write to the user's directories.
+- A Release build of every app in CI, installed and run from its install tree on every run.
+- One generated notices file, and a gate that every shipped package and font has a licence.
+- A version in every app from `project()`, through `v3dlib_version` (ADR-0175).
+- Install rules that gather one copy of each DLL (ADR-0176).
+- `CHANGELOG.md` and its gate (ADR-0177), and a release workflow started by a tag (ADR-0178),
+  with `docs/contributing/Releasing.md`.
+- An NSIS installer built by CPack, with version resources in each app (ADR-0179).
+- The whole tree built and tested on Linux with Clang and with GCC (ADR-0181).
+- A Flatpak of every app, built on each pull request and released with a tag (ADR-0182).
+
+**Different from the plan:**
+
+- 0.1.0 had no release candidate. The tag ran the release workflow directly.
+- The first run of the tag failed after it made the release, because the artifact held the zip
+  and the installer in directories and `gh release create` stopped on the first. The release job
+  now checks that it holds only files, and the tag was moved to the merge of that fix.
+- CI took NSIS from Chocolatey at first, and now takes it from NSIS's own release, cached.
+
+**Left open:**
+
+- The Windows release is unsigned until SignPath Foundation accepts the project (ADR-0180). The
+  owner applies, and the signing step goes into the workflow with the names SignPath gives.
+- No run of the 0.1.0 Flatpak on a host's Vulkan driver is recorded. CI builds the bundle and
+  runs each app's `--version` from the build.
+
+Neither is a change to the tree, so neither is in TODO.md. Releasing.md says the release is
+unsigned until SignPath accepts it.
+
+**Flathub is not used.** Its policy does not accept a manifest written with an AI assistant, so
+ADR-0183 amends ADR-0166: the Flatpak ships only as the release's bundle, as the installer does
+on Windows.

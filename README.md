@@ -75,6 +75,25 @@ for what you are doing:
 [docs/README.md](docs/README.md) indexes every document. [CLAUDE.md](CLAUDE.md) is orientation
 for coding agents.
 
+## Code signing policy
+
+Windows releases are to be signed with free code signing provided by
+[SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/). Until SignPath Foundation accepts the project, they
+are unsigned.
+
+Each signed release is built in this repository's GitHub Actions workflow, from the tagged
+commit, and each signing request is approved by hand. The project's roles are:
+
+| Role | What it covers | Members |
+|---|---|---|
+| Authors | Change the code without further review | [farrcraft](https://github.com/farrcraft) |
+| Reviewers | Review each pull request from someone who is not an author | [farrcraft](https://github.com/farrcraft) |
+| Approvers | Approve each signing request | [farrcraft](https://github.com/farrcraft) |
+
+Privacy: this program will not transfer any information to other networked systems unless
+specifically requested by the user or the person installing or operating it.
+
 ## License
 
 Vertical3D is under the MIT license, in [LICENSE](LICENSE). The third-party code it carries keeps
