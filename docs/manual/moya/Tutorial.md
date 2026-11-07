@@ -4,7 +4,7 @@ This tutorial renders [first.rib](first.rib), a small scene beside this page. It
 two lights, a floor, a sphere and a box. You run moya on it and open the image it writes. It
 takes a few minutes.
 
-You need a build of the repository. [README.md](README.md#getting-moya) says where `moya.exe` is.
+You need moya installed or built. [README.md](README.md#getting-moya) says where `moya.exe` is.
 
 ## 1. Read the scene
 
@@ -75,23 +75,25 @@ each a list of indices into one shared list of corner points.
 
 ## 2. Run moya
 
-Open a command prompt and change to the directory that holds `moya.exe`. moya must be started
-from its own directory. Started anywhere else, Windows cannot find the libraries moya needs and
-shows an error dialog.
+Make a folder for the tutorial, such as `C:\renders`, and save `first.rib` into it. Open a
+command prompt, change to that folder, and run moya by its full path:
 
 ```
-cd C:\code\vertical3d\out\build\x64-Debug\moya
-moya.exe --file C:\code\vertical3d\docs\manual\moya\first.rib --output C:\renders\first.png
+cd C:\renders
+"C:\Program Files\Vertical3D\moya.exe" --file first.rib --output first.png
 ```
 
-Change the paths to match where the repository is, and make the `C:\renders` directory first or
-choose another. Give full paths. A relative path is read from moya's own directory.
+That is where the installer puts moya. For moya from the zip or from a build, give the path to
+that `moya.exe` instead. In the Flatpak, make the folder in your documents, and run
+`flatpak run --command=moya com.farrcraft.Vertical3D --file first.rib --output first.png` in it.
+
+Relative paths, such as `first.rib` here, are read from the folder you run moya from.
 
 `--output` names the file to write, and replaces the file the scene's `Display` names. Without
-it, moya writes `first.png` into its own directory.
+it, moya writes the `first.png` the scene names, in the same folder.
 
-moya prints a copyright notice and the name of the scene, then renders. A Debug build takes a
-few seconds on this scene. When the command prompt returns, the picture is written.
+moya prints a copyright notice and the name of the scene, then renders. This takes a few seconds.
+When the command prompt returns, the picture is written.
 
 ## 3. Open the image
 
@@ -104,7 +106,8 @@ floor, against a pale blue sky. Each object casts a shadow to the right and away
 
 ## 4. Check the log
 
-moya writes its messages to `v3d.log`, in its own directory. Open it and read the last lines.
+moya writes its messages to `v3d.log`, in the folder you ran it from. Open it and read the last
+lines.
 A good render ends with a line like this:
 
 ```

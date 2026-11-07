@@ -20,9 +20,12 @@ The editor in `vertical3d/` has its own document, [editor/](editor/README.md). T
 
 ## Running a demo
 
-Build the demo's target, then run the executable from the build tree, for example
-`out/build/x64-Debug/demos/pong/pong.exe`. [contributing/Build.md](contributing/Build.md) covers
-the build.
+A release installs every demo, with a Start menu entry on Windows and a desktop entry in the
+Flatpak. [manual/Install.md](manual/Install.md) says how to install one.
+
+From the repository, build the demo's target, then run the executable from the build tree, for
+example `out/build/x64-Debug/demos/pong/pong.exe`. [contributing/Build.md](contributing/Build.md)
+covers the build.
 
 Every demo follows the same pattern:
 

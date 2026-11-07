@@ -4,6 +4,7 @@
 
 # Using the editor and moya
 
+- [Install Vertical3D](manual/Install.md)
 - [The Vertical3D editor manual](manual/editor/README.md)
     - [Tutorial: a first scene](manual/editor/Tutorial.md)
     - [Concepts](manual/editor/Concepts.md)

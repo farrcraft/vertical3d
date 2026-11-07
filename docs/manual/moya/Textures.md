@@ -24,7 +24,7 @@ intensity 1, the colour is the image's own. Add lights and raise `Kd` to light i
 - moya looks in each directory on `Option "searchpath" "texture"`, then at the name as given.
   The path is written as the shader path is, as
   [Shaders.md](Shaders.md#2-tell-moya-where-the-shader-is) describes.
-- A relative name is read from moya's own directory. Give a search path or a full path.
+- A relative name is read from the folder you run moya from. Give a search path or a full path.
 - The image can be a PNG, JPEG, TGA or BMP file. moya chooses the reader by the file's extension.
 - `MakeTexture` does nothing. Name the image itself, not a converted texture file.
 - An image moya cannot read is logged once, and reads as black.

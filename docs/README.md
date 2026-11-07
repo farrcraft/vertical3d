@@ -11,6 +11,7 @@ says which kind each page is.
 
 | Document | Covers |
 |---|---|
+| [manual/Install.md](manual/Install.md) | Installing a release on Windows or Linux, where the apps keep your files, and building from source |
 | [manual/editor/](manual/editor/README.md) | Modelling, the scene, animating, rendering, projects, the workspace, the menus and the key bindings |
 | [manual/moya/](manual/moya/README.md) | Rendering a RIB scene: hiders, lights, shaders, the camera, output and quality, the command line, RIB and the shading language |
 

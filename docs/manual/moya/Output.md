@@ -16,8 +16,8 @@ Display "scene.png" "file" "rgb"
 
 - `--output` replaces the file the scene's `Display` names. Use it to render one scene to
   several files without editing it.
-- A relative file name is written in the directory moya was started in, which is moya's own.
-  Give a full path to write somewhere else.
+- A relative file name is written in the folder you run moya from. Give a full path to write
+  somewhere else.
 - With neither `--output` nor a `Display` of type `"file"`, moya renders and writes nothing.
   The two scenes in `moya/data/`, [test-scene-01.rib](../../../moya/data/test-scene-01.rib) and
   [raytrace-scene.rib](../../../moya/data/raytrace-scene.rib), name no `Display`, so render

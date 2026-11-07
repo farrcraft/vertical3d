@@ -112,4 +112,4 @@ describes it.
 - Render smaller with `--width` and `--height`, or a part of the picture with `CropWindow`
   ([Output.md](Output.md)).
 - Use `PixelSamples 1 1` until the scene is right.
-- Use a Release build. A Debug build is slower.
+- Use a released moya, or a Release build. A Debug build is slower.

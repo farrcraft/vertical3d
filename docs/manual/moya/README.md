@@ -21,9 +21,13 @@ run moya, and look at the image it writes. The manual does not describe the sour
 
 ## Getting moya
 
-moya is built with the rest of the repository. A build puts `moya.exe` in
-`out/build/x64-Debug/moya/`, and [Build.md](../../contributing/Build.md) says how to build it.
-A Debug build renders slowly. A Release build, in `out/build/x64-Release/moya/`, is faster.
+moya comes with every release of Vertical3D, and [Install.md](../Install.md) says how to install
+one. On Windows the installer puts `moya.exe` in `C:\Program Files\Vertical3D`. In the Flatpak,
+moya runs with `flatpak run --command=moya com.farrcraft.Vertical3D`. moya runs from a command
+prompt or a terminal, and has no Start menu entry or desktop entry.
+
+moya is also built with the rest of the repository, into `out/build/<preset>/moya/`. A Debug
+build renders slowly. A release, or a Release build, is faster.
 
 ## The pages
 

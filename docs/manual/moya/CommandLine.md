@@ -7,14 +7,15 @@ moya.exe --help
 moya.exe --version
 ```
 
-## Run moya from its own directory
+## Where moya reads and writes
 
-Change to the directory that holds `moya.exe` before you run it, such as
-`out/build/x64-Debug/moya`. Started anywhere else, Windows cannot find the libraries moya needs.
-It shows a dialog about a missing DLL, and moya waits on that dialog without rendering.
+moya runs from any directory. Run it from a folder you can write to, such as one that holds your
+scenes, and give `moya.exe` by its full path, such as `"C:\Program Files\Vertical3D\moya.exe"`.
+In the Flatpak, run `flatpak run --command=moya com.farrcraft.Vertical3D` from a folder in your
+documents, the only folder the Flatpak can see.
 
-Relative paths are read from that directory: the scene file, the output file, and the
-directories on a search path. Give full paths to work with files elsewhere.
+Relative paths are read from the folder you run moya from: the scene file, the output file, and
+the directories on a search path. Give full paths to work with files elsewhere.
 
 ## Options
 
@@ -49,7 +50,7 @@ read.
 
 ## The log
 
-moya writes its messages to `v3d.log`, in the directory it was started in. Each run adds to the
+moya writes its messages to `v3d.log`, in the folder you run it from. Each run adds to the
 end of the file.
 
 | Level | Means |

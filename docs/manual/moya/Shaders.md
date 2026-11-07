@@ -43,8 +43,8 @@ Option "searchpath" "shader" ["C:/renders/shaders:&"]
   before, so the line above adds a directory without removing any.
 - A single letter before a colon is a drive letter, so `C:/renders/shaders` is one directory.
 - Write `/` between directories. A backslash in a RIB string starts an escape.
-- A relative directory is read from the directory moya was started in, which is moya's own. Give
-  full paths.
+- A relative directory is read from the folder you run moya from. Give full paths to use the
+  same shaders from anywhere.
 - A shader on the search path is used instead of a built-in shader with the same name.
 
 ## 3. Use the shader
