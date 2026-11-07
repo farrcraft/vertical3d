@@ -116,6 +116,10 @@ jobs:
     - name: Namespaces
       if: ${{ !cancelled() }}
       run: node scripts/namespaces.ts
+    # moya's kernel code does nothing a GPU compiler rejects
+    - name: Kernel code
+      if: ${{ !cancelled() }}
+      run: node scripts/kernel.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

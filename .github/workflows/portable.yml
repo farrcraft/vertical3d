@@ -1,10 +1,10 @@
 # Builds the tree on Linux, so it keeps building with compilers other than MSVC. The clang job
-# builds the api libraries that need neither a window nor a device with Clang, runs their suites
-# under the sanitizers, and fuzzes each fuzz target after them, through scripts/portable/build.sh.
-# The whole job builds the whole tree with Clang and with GCC, and runs every suite, through
-# scripts/portable/whole.sh. The rest of CI builds with MSVC on Windows. Both run in the image
-# scripts/portable/Dockerfile defines. scripts\portable.cmd runs either locally in the same
-# image.
+# builds the api libraries that need neither a window nor a device, and moya, with Clang, runs
+# their suites under the sanitizers, and fuzzes each fuzz target after them, through
+# scripts/portable/build.sh. The whole job builds the whole tree with Clang and with GCC, and
+# runs every suite, through scripts/portable/whole.sh. The rest of CI builds with MSVC on
+# Windows. Both run in the image scripts/portable/Dockerfile defines. scripts\portable.cmd runs
+# either locally in the same image.
 name: portable
 
 # push is filtered to the default branch and pull_request is not. A branch in this repository

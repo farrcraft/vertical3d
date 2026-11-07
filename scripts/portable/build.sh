@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds and tests the api libraries that need neither a window nor a device, with Clang on
-# Linux and under the sanitizers, then fuzzes the fuzz targets. It runs inside the image the
-# Dockerfile in this directory defines, in CI and locally.
+# Builds and tests the api libraries that need neither a window nor a device, and moya, with
+# Clang on Linux and under the sanitizers, then fuzzes the fuzz targets. It runs inside the image
+# the Dockerfile in this directory defines, in CI and locally.
 #
 # The tree is mounted read-only at /src. Everything the build writes goes under /work: the
 # vcpkg checkout, the binary cache, the build directory and the fuzzing corpus.
@@ -29,6 +29,7 @@ cmake -S "$src" -B "$work/build" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" \
     -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
     -DV3D_BUILD_APPS=OFF \
+    -DV3D_BUILD_MOYA=ON \
     -DV3D_BUILD_TESTS=ON \
     -DV3D_SANITIZE=ON \
     -DV3D_FUZZ=ON \

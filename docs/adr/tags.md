@@ -117,6 +117,8 @@ reported, so the table lists only tags in use.
 | [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 | [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
 | [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
+| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
+| [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
 
 ### camera
 
@@ -140,6 +142,7 @@ reported, so the table lists only tags in use.
 | [0047](project/0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches |
 | [0137](project/0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local |
 | [0161](project/0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default |
+| [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 
 ### colour
 
@@ -325,6 +328,9 @@ reported, so the table lists only tags in use.
 | [0192](offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md) | Offline: path stages run fused on the CPU, queued on the GPU |
 | [0193](offline/0193-offline-moya-owns-its-ray-acceleration-structure.md) | Offline: moya owns its ray acceleration structure |
 | [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
+| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
+| [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
+| [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 
 ### particles
 

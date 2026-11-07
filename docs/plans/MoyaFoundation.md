@@ -95,21 +95,21 @@ each step is where the survey points, not a conclusion.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--the-record-where-the-new-core-lives) | The record: where the new core lives | `docs/adr` | **0195** | open |
-| [2](#step-2--the-record-the-cpu-devices-threads) | The record: the CPU device's threads | `docs/adr` | **0196** | open |
-| [3](#step-3--the-record-the-kernels-vector-types) | The record: the kernel's vector types | `docs/adr` | **0197** | open |
-| [4](#step-4--the-kernel-subset-as-a-target) | The kernel subset as a target, with its rules checked | `api/render/offline`, `scripts` | 0195, 0197 | open |
-| [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `api/render/offline` | 0196 | open |
-| [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `api/render/offline` | — | open |
+| [1](#step-1--the-record-where-the-new-core-lives) | The record: where the new core lives | `docs/adr` | **0195** | done |
+| [2](#step-2--the-record-the-cpu-devices-threads) | The record: the CPU device's threads | `docs/adr` | **0196** | done |
+| [3](#step-3--the-record-the-kernels-vector-types) | The record: the kernel's vector types | `docs/adr` | **0197** | done |
+| [4](#step-4--the-kernel-subset-as-a-target) | The kernel subset as a target, with its rules checked | `moya/libmoya`, `scripts` | 0195, 0197 | done |
+| [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | open |
+| [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | open |
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | open |
-| [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `api/render/offline` | 0198 | open |
-| [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `api/render/offline` | — | open |
+| [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | open |
+| [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | open |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | open |
-| [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `api/render/offline` | 0199 | open |
+| [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | open |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | open |
-| [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `api/render/offline` | — | open |
-| [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `api/render/offline` | 0198 | open |
-| [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `api/render/offline` | — | open |
+| [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | open |
+| [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | open |
+| [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | open |
 | [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | open |
 
 ## What blocks what
@@ -136,8 +136,8 @@ documents, and step 16 checks that they read as a whole.
   clang-tidy and every review gate stay clean.
 * **The suites.** The offline suite and moya's suites pass. Each step with code adds cases, and
   `failsfirst.ts` is run on the change to show that each new case fails without it.
-* **Linux.** portable.yml's clang job builds the kernel target and runs the new cases under the
-  sanitizers.
+* **Linux.** portable.yml's clang job builds `v3dlib_moya` and its kernel target, and runs moya's
+  suite under the sanitizers. Step 4 widens the job to reach them.
 * **No picture changes.** The old hiders are not touched, so every committed PNG in
   `moya/tests/data/` stays as it is.
 
@@ -159,8 +159,12 @@ roadmap removes them.
 * **`moya/libmoya`.** moya's own library, but not an api library, so a pipeline in another
   repository could not build it as the api's other libraries are built.
 
-**The lean** is the first. The new film shares the `film` namespace with the old one until
-section 7, so the record also says how the two are told apart in the meantime.
+**Drafted** as [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md),
+proposed: the third option. Every client of the core is built in this tree, and a pipeline
+elsewhere reaches moya through a Hydra plugin or through files, never by building it from
+source. Only the first two options would have put the core in the api, which serves no consumer.
+ADR-0022's rule then holds as it stands. How the new film is told apart from the old one is a
+name, not a decision, so step 11 chooses it.
 
 ### Step 2 — The record: the CPU device's threads
 
@@ -174,8 +178,10 @@ section 3 spreads its work.
 * **A pool of moya's own over `std::thread`**, as pbrt-v4 has. No package, and nested work needs
   a design of its own.
 
-**The lean** is oneTBB, for the shared scheduler inside a host. The record also says whether TBB
-moves from the `usd` feature to the base manifest.
+**Drafted** as [ADR-0196](../adr/offline/0196-offline-the-cpu-device-runs-on-onetbb.md),
+proposed: oneTBB, for the scheduler a host shares and for cancellation. The standard library's
+parallel algorithms and OpenMP are rejected beside a pool of moya's own. oneTBB moves from the
+`usd` feature into the base manifest at step 12, so the Linux clang job builds it too.
 
 ### Step 3 — The record: the kernel's vector types
 
@@ -189,23 +195,45 @@ to compile under MSVC, Clang, GCC, HIP and nvcc, and round the same way on each 
 * **Types of moya's own**, as Cycles and pbrt-v4 have, sized for the kernel and with conversions
   to glm at the scene interface.
 
-**The lean** depends on what the research finds about glm under HIP. The record also names the
-C++ standard the kernel subset is held to. nvcc does not accept C++23, so kernel code is held to
-the newest standard that HIP and nvcc both accept.
+**Drafted** as
+[ADR-0197](../adr/offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md),
+proposed: glm. The installed glm 1.0 detects HIP as it detects nvcc, and marks every function as
+both host and device code under each (`glm/detail/setup.hpp`, `GLM_CUDA_FUNC_DEF`). The tree
+turns on none of glm's intrinsics. Imath is rejected beside types of moya's own. Spectra and
+SIMD lanes are moya's own types whichever way the record went.
 
 ### Step 4 — The kernel subset as a target
 
-* **A kernel target** that compiles the kernel directories with exceptions and RTTI off, at the
-  standard step 3 names. Everything else in the library calls it, and it calls nothing in the
-  library outside the kernel.
+**Done.** `v3dlib_moya_kernel` is built from `moya/libmoya/kernel/`, at C++20, with `/GR-`,
+no `/EH` flag and `_HAS_EXCEPTIONS=0` under MSVC, and `-fno-exceptions -fno-rtti` elsewhere. Its
+`-ffp-contract=off` is PUBLIC. CMake seeds `/GR` and `/EHsc` into every MSVC command line, so the
+root strips both, and puts `/EHsc` back on every target whose `V3D_KERNEL` property is off.
+`Qualifiers.h` defines `MOYA_KERNEL`, and `Kernel.cxx` includes every kernel header. `kernel.ts`
+reports the six rules [Kernel.md](../offline/Kernel.md#the-rules) states, and each rule broken
+by hand fails one of its tests. `V3D_BUILD_MOYA` builds moya without the other apps, and
+portable.yml's clang job turns it on. moya's suite passes there under both sanitizers, in 320
+seconds. The kernel target holds no code yet: step 6's spectra are the first.
+
+* **A kernel target** that compiles the kernel directories with exceptions and RTTI off.
+  Everything else in the library calls it, and it calls nothing in the library outside the
+  kernel.
+* **The standard kernel code is held to**: the newest that HIP and nvcc both accept, which is
+  older than the tree's C++23. The compilers force it, so it is a rule in the reference page, not
+  a record.
+* **Contraction pinned**: every CPU compiler compiles kernel code with the same rule for fusing a
+  multiply and an add, so MSVC, Clang and GCC round alike.
 * **A review gate** in `scripts/` that rejects a virtual function, `new`, `delete`, `throw`, a
   standard container or a `boost::shared_ptr` in the kernel directories. It reads the source, so
   it checks what a GPU compiler would reject before any GPU build exists.
 * **A host-and-device qualifier** in one header, empty on the CPU, which every kernel function
   carries.
+* **portable.yml's clang job widened** to build `v3dlib_moya`, its kernel target and moya's
+  suite, under the sanitizers and with no window or device. The job builds api libraries alone
+  today (`scripts/portable/build.sh`, with `V3D_BUILD_APPS=OFF`), so moya's library needs a way
+  to build without the apps.
 
 **Tests:** the gate's rules, in its own test, as every gate has. The kernel target builds on
-Windows and in portable.yml.
+Windows and in portable.yml, and moya's suite runs there under the sanitizers.
 
 ### Step 5 — The device interface and the CPU device
 
@@ -213,6 +241,9 @@ Windows and in portable.yml.
   tiles of an image, and a wait. Ray traversal and texture lookups are declared here and
   implemented by sections 3 and 5 of the roadmap.
 * **The CPU device**: buffers in host memory, and tiles run by the threads step 2 decides.
+* **moya's manifest feature, with oneTBB in it.** oneTBB leaves the `usd` feature. The Linux
+  clang job builds without `usd`, so it has no TBB until moya's feature carries it, and it turns
+  the feature on. Step 12 adds the other packages to the same feature.
 * **The rule that a launch is deterministic**: each pixel's result depends only on its own
   inputs, so the order tiles finish in cannot change a picture.
 
@@ -306,15 +337,16 @@ filters reproduce the filter's shape.
 
 ### Step 12 — OpenEXR, Imath and OpenColorIO in the tree
 
-* **The three ports** in `vcpkg.json` and `examples/starter/vcpkg.json`, found in
-  `cmake/v3dDependencies.cmake`, and in `v3dlib_render_offline`'s package list.
+* **The three ports** in moya's manifest feature, which step 5 adds with oneTBB, in `vcpkg.json`
+  and `examples/starter/vcpkg.json`. It is a default feature, as `usd` is, so a consumer of the
+  api that builds no apps leaves it out.
+* **Found** in `cmake/v3dDependencies.cmake`, and linked by `v3dlib_moya` alone.
 * **The Flatpak** takes each from the Freedesktop runtime or as a pinned module, as
   [Dependencies.md](../contributing/Dependencies.md#the-flatpaks-packages) describes.
 * **The notices check** finds a copyright file for each, and for each package they bring with
   them.
 
-**Tests:** the configure, flatpak.yml and the notices check. TBB moves to the base manifest here
-if step 2 chose it.
+**Tests:** the configure, flatpak.yml and the notices check.
 
 ### Step 13 — EXR output
 
@@ -358,5 +390,7 @@ film. The film is written to EXR and through the sRGB display to PNG.
 * **[The offline renderer](../offline/README.md)** says that the new core sits beside the old
   hiders until section 7 of the roadmap.
 * **[Dependencies.md](../contributing/Dependencies.md)** lists OpenEXR, Imath, OpenColorIO, and
-  TBB if step 2 chose it.
+  oneTBB, and the manifest feature that holds them.
+* **Each record's `Documented in` line** names the reference page that states its rule, in
+  place of this plan.
 * **The roadmap's section 1** links here, and says so when this plan closes.

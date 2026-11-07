@@ -110,6 +110,7 @@
     - [The shading language](offline/ShadingLanguage.md)
     - [The reyes hider](offline/Reyes.md)
     - [Ray tracing](offline/RayTracing.md)
+    - [Kernel code](offline/Kernel.md)
 
 # The applications
 
@@ -194,6 +195,9 @@
     - [ADR-0192: Offline: path stages run fused on the CPU, queued on the GPU](adr/offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md)
     - [ADR-0193: Offline: moya owns its ray acceleration structure](adr/offline/0193-offline-moya-owns-its-ray-acceleration-structure.md)
     - [ADR-0194: Offline: stateless samples, one picture per device](adr/offline/0194-offline-stateless-samples-one-picture-per-device.md)
+    - [ADR-0195: Offline: the renderer's core lives in libmoya](adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
+    - [ADR-0196: Offline: the CPU device runs on oneTBB](adr/offline/0196-offline-the-cpu-device-runs-on-onetbb.md)
+    - [ADR-0197: Offline: kernel code uses glm for vectors and matrices](adr/offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

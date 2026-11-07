@@ -1,3 +1,6 @@
+# Kernel code is a target of its own, compiled under the rules every device accepts.
+add_subdirectory("kernel")
+
 add_library("v3dlib_moya"
 	"Curve.h" "Curve.cxx"
 	"Hider.h"
