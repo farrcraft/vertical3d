@@ -242,13 +242,18 @@ A release shows a licence for everything it ships, in one notices file.
 
 1. the project's [LICENSE](../../LICENSE);
 2. each font family's licence from `data/fonts/`;
-3. the copyright file of each vcpkg package that ships code.
+3. the notice of each third-party data table the tree carries in its source, from the file
+   `DATA` in `notices.ts` names for it;
+4. the copyright file of each vcpkg package that ships code.
 
 Without `--out` the script is a check, and CI runs it on the Debug build's install. It fails
 when:
 
 - **a package installs code and has no copyright file.** A package that installs files only
   under `share/` ships no code: vcpkg's build helpers and meta-packages are such packages.
+- **a data table's notice is missing.** Each entry in `DATA` names a notice file, which has to
+  be in the tree. The CIE's tables in `moya/libmoya/kernel/spectrum/` are the only entry.
+  [Spectra.md](../offline/Spectra.md#the-cies-tables) says why they are kept apart.
 - **a font has no licence.** A font's licence is the `<Family>-OFL.txt` file beside it whose
   family its name starts with. `Inter-OFL.txt` covers `Inter-Regular.ttf`. When two families
   match, the longer one wins.

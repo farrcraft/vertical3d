@@ -26,6 +26,7 @@ v3d_add_test(moya
 	"RendererTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"SamplesTest.cxx"
+	"SpectrumTest.cxx"
 	"VertexTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes

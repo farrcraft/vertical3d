@@ -7,14 +7,22 @@ add_library("v3dlib_moya_kernel"
 	"Array.h"
 	"Launch.h"
 	"Qualifiers.h"
+	"spectrum/CieD65.h"
+	"spectrum/CieObserver.h"
+	"spectrum/Colorimetry.h"
+	"spectrum/Spectrum.h"
+	"spectrum/Visible.h"
+	"spectrum/Wavelengths.h"
 	"Kernel.cxx"
 )
 
 # The newest standard both HIP and nvcc accept, which is older than the tree's.
 set_target_properties("v3dlib_moya_kernel" PROPERTIES CXX_STANDARD 20 V3D_KERNEL ON)
 
-# Kernel code includes its headers from the root of the tree, as the api libraries do.
+# Kernel code includes its headers from the root of the tree, as the api libraries do. Its headers
+# name glm's vectors.
 target_include_directories("v3dlib_moya_kernel" PUBLIC "${V3D_ROOT}")
+target_link_libraries("v3dlib_moya_kernel" PUBLIC glm::glm)
 
 # No exceptions and no RTTI, which a GPU compiler does not support. The top-level build leaves
 # /EHsc off a target that sets V3D_KERNEL. _HAS_EXCEPTIONS=0 keeps MSVC's standard headers from

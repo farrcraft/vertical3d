@@ -100,7 +100,7 @@ each step is where the survey points, not a conclusion.
 | [3](#step-3--the-record-the-kernels-vector-types) | The record: the kernel's vector types | `docs/adr` | **0197** | done |
 | [4](#step-4--the-kernel-subset-as-a-target) | The kernel subset as a target, with its rules checked | `moya/libmoya`, `scripts` | 0195, 0197 | done |
 | [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | done |
-| [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | open |
+| [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | done |
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | open |
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | open |
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | open |
@@ -267,6 +267,22 @@ headers. moya's suite also finalizes TBB in its global fixture, because TBB's wo
 each pixel's coordinates gives the same image on one thread and on every thread.
 
 ### Step 6 — Sampled spectra
+
+**Done.** `SampledSpectrum` and `SampledWavelengths` are in `kernel/spectrum/`, with
+`observer()`, `toXyz()`, `d65()` and `illuminantA()`. Two changes from the list below:
+
+* **The wavelengths are spread in the distribution, not at equal steps in nanometres.** The
+  hero is drawn from a density that follows the observer's luminance, and the other three sit at
+  the same point offset by quarters of the distribution, as pbrt-v4 draws them. One random
+  number still places all four.
+* **Illuminant A comes from its defining formula**, a Planckian radiator at 2848 K, not a
+  table. Only the observer and D65 are tables.
+
+The CIE's tables are CC BY-SA 4.0, which their metadata states and their pages do not. The
+owner chose to carry them, in two files that hold only the data, each marked with that licence
+and the CIE's citation. `notices.ts` adds `CIE-NOTICE.txt` to the notices file, and reports it
+missing. `MOYA_KERNEL_DATA` marks a table kernel code reads. D65's chromaticity from the tables
+is (0.31272, 0.32903), as published. [Spectra.md](../offline/Spectra.md) states the rules.
 
 * **A sampled spectrum** of four values, with the arithmetic the integrator needs.
 * **Sampled wavelengths**: a hero wavelength drawn over the visible range, with three more at

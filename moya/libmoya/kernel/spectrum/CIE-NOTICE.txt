@@ -1,0 +1,13 @@
+moya carries two data tables of the International Commission on Illumination (CIE), in
+moya/libmoya/kernel/spectrum/CieObserver.h and moya/libmoya/kernel/spectrum/CieD65.h:
+
+  CIE 2019, Colour-matching functions of CIE 1931 standard colorimetric observer,
+  International Commission on Illumination (CIE), Vienna, AT, DOI: 10.25039/CIE.DS.xvudnb9b
+
+  CIE 2019, CIE standard illuminant D65, International Commission on Illumination (CIE),
+  Vienna, AT, DOI: 10.25039/CIE.DS.hjfjmt59
+
+Copyright (c) CIE. Both tables are licensed under the Creative Commons Attribution-ShareAlike
+4.0 International licence, https://creativecommons.org/licenses/by-sa/4.0/, and so are the two
+files that hold them. Their values are written as C++ float literals, which rounds each to single
+precision. No value is otherwise changed.

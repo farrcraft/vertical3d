@@ -112,6 +112,7 @@
     - [Ray tracing](offline/RayTracing.md)
     - [Kernel code](offline/Kernel.md)
     - [Devices](offline/Devices.md)
+    - [Spectra](offline/Spectra.md)
 
 # The applications
 

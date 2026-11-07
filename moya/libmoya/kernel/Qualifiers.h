@@ -17,3 +17,13 @@
 #else
 #define MOYA_KERNEL
 #endif
+
+/**
+ * Marks a table at namespace scope that kernel code reads, so that a GPU compiler places a copy
+ * in device memory. Every such table in a kernel header carries it. It is empty on the CPU.
+ **/
+#if defined(__CUDACC__) || defined(__HIP__)
+#define MOYA_KERNEL_DATA __device__
+#else
+#define MOYA_KERNEL_DATA
+#endif

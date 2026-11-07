@@ -24,6 +24,7 @@ GPU build exists.
 | C++20 | The newest standard both HIP and nvcc accept. The rest of the tree is C++23 | The target |
 | No multiply and add fused into one rounding | MSVC, Clang and GCC then round kernel code alike | The target, for itself and for every source that links it |
 | Every function carries `MOYA_KERNEL` | A GPU compiler builds a function for the device only when it is marked | Review |
+| Every table at namespace scope carries `MOYA_KERNEL_DATA` | A GPU compiler places a copy in device memory only when it is marked | Review |
 | Every header is included by `Kernel.cxx` | A header is compiled under the kernel's rules only through a source of the kernel target | The gate |
 
 A deleted function, `= delete`, is not an allocation, and the gate does not report one.
@@ -50,6 +51,7 @@ Background: [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every
 - **`Kernel.cxx` includes every kernel header**, and does nothing else. Each include carries
   `// IWYU pragma: keep`, since clang-tidy otherwise finds nothing in the file that uses it.
 - **`Qualifiers.h` defines `MOYA_KERNEL`**: `__host__ __device__` under nvcc and HIP, and
+  nothing on the CPU. It defines `MOYA_KERNEL_DATA` too: `__device__` under nvcc and HIP, and
   nothing on the CPU.
 
 ## Building moya without the apps

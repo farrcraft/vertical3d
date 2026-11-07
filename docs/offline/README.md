@@ -18,6 +18,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [RayTracing.md](RayTracing.md) | Change the ray tracer or the ray-trace hider |
 | [Kernel.md](Kernel.md) | Write kernel code for the new core, which every device compiles from one source |
 | [Devices.md](Devices.md) | Change how the new core holds memory on a device and launches kernel code |
+| [Spectra.md](Spectra.md) | Change how the new core carries light as wavelengths and turns it into colour |
 
 ## How a frame is made
 
