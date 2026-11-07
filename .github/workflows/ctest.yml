@@ -62,10 +62,13 @@ jobs:
       # comes from a third-party release, not a package manager. Resolving "latest" would let
       # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
-      # NSIS builds the Windows installer. The runner image does not ship it, and its version is
-      # pinned so the installer cannot change without a commit here.
-      NSIS_VERSION: "3.13.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
+      # NSIS builds the Windows installer. The runner image does not ship it. It comes from
+      # NSIS's own release, pinned by version and by the zip's hash, so the installer cannot
+      # change without a commit here.
+      NSIS_VERSION: "3.13"
+      NSIS_SHA256: "ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8"
+      NSIS_ROOT: ${{ github.workspace }}\out\build\nsis
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -551,12 +554,34 @@ jobs:
           Pop-Location
           if ($failed) { throw "from the install: $($failed -join '; ')" }
 
+      - name: Restore NSIS
+        id: nsis-cache
+        if: matrix.preset == 'ci-release'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.NSIS_ROOT }}
+          key: nsis-${{ runner.os }}-${{ env.NSIS_VERSION }}
+
       - name: Install NSIS
+        if: matrix.preset == 'ci-release' && steps.nsis-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $archive = "$env:RUNNER_TEMP\nsis.zip"
+          $url = "https://downloads.sourceforge.net/project/nsis/NSIS%203/$env:NSIS_VERSION/nsis-$env:NSIS_VERSION.zip"
+          Invoke-WebRequest -Uri $url -OutFile $archive -MaximumRetryCount 3 -RetryIntervalSec 10
+          $hash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash
+          if ($hash -ne $env:NSIS_SHA256) { throw "the NSIS $env:NSIS_VERSION zip has the hash $hash, not $env:NSIS_SHA256" }
+          Expand-Archive -Path $archive -DestinationPath $env:NSIS_ROOT -Force
+
+      # The zip is a portable NSIS, which runs from where it is unpacked, and cpack finds makensis
+      # on the PATH.
+      - name: Put NSIS on the PATH
         if: matrix.preset == 'ci-release'
         shell: pwsh
         run: |
-          choco install nsis --version $env:NSIS_VERSION --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw "installing NSIS $env:NSIS_VERSION exited $LASTEXITCODE" }
+          $makensis = Join-Path $env:NSIS_ROOT "nsis-$env:NSIS_VERSION\makensis.exe"
+          if (-not (Test-Path $makensis)) { throw "makensis is not at $makensis - the NSIS zip or its cache is incomplete" }
+          Split-Path $makensis | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
       # The installer is built from the same install rules on every run, so a change that breaks
       # it fails here rather than at a release. It installs silently, gives the editor a Start
