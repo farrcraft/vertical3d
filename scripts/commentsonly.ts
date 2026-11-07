@@ -59,8 +59,7 @@ export function syntax(path: string): 'slash' | 'hash' | null {
     if (SLASH_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
         return 'slash';
     }
-    if (lower === 'cmakelists.txt' || lower.endsWith('/cmakelists.txt')
-        || HASH_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
+    if (lower === 'cmakelists.txt' || lower.endsWith('/cmakelists.txt') || HASH_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
         return 'hash';
     }
     return null;
@@ -83,21 +82,23 @@ function keep(lines: string[]): CodeLine[] {
  * cannot join two tokens. A literal is kept exactly, whitespace included.
  */
 export function slashCode(text: string): CodeLine[] {
-    return keep(lex(text.replace(/\r\n/g, '\n')).map((segments) => {
-        let line = '';
-        let pending = '';
-        for (const s of segments) {
-            if (s.kind === 'literal') {
-                line += pending.replace(/\s+/g, ' ') + s.text;
-                pending = '';
-            } else if (s.kind === 'code') {
-                pending += s.text;
-            } else if (s.opens && s.text.startsWith('/*')) {
-                pending += ' ';
+    return keep(
+        lex(text.replace(/\r\n/g, '\n')).map((segments) => {
+            let line = '';
+            let pending = '';
+            for (const s of segments) {
+                if (s.kind === 'literal') {
+                    line += pending.replace(/\s+/g, ' ') + s.text;
+                    pending = '';
+                } else if (s.kind === 'code') {
+                    pending += s.text;
+                } else if (s.opens && s.text.startsWith('/*')) {
+                    pending += ' ';
+                }
             }
-        }
-        return line + pending.replace(/\s+/g, ' ');
-    }));
+            return line + pending.replace(/\s+/g, ' ');
+        }),
+    );
 }
 
 /**
@@ -106,22 +107,23 @@ export function slashCode(text: string): CodeLine[] {
  */
 export function hashCode(text: string): CodeLine[] {
     // a bracket comment is replaced by its line breaks, so the lines after it keep their numbers
-    const unbracketed = text.replace(/\r\n/g, '\n')
-        .replace(/#\[(=*)\[[\s\S]*?\]\1\]/g, (comment) => ' ' + comment.replace(/[^\n]/g, ''));
-    return keep(unbracketed.split('\n').map((line) => {
-        let quoted = false;
-        for (let i = 0; i < line.length; i++) {
-            const c = line[i];
-            if (c === '\\') {
-                i++;
-            } else if (c === '"') {
-                quoted = !quoted;
-            } else if (c === '#' && !quoted) {
-                return line.slice(0, i).replace(/\s+/g, ' ');
+    const unbracketed = text.replace(/\r\n/g, '\n').replace(/#\[(=*)\[[\s\S]*?\]\1\]/g, (comment) => ' ' + comment.replace(/[^\n]/g, ''));
+    return keep(
+        unbracketed.split('\n').map((line) => {
+            let quoted = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (c === '\\') {
+                    i++;
+                } else if (c === '"') {
+                    quoted = !quoted;
+                } else if (c === '#' && !quoted) {
+                    return line.slice(0, i).replace(/\s+/g, ' ');
+                }
             }
-        }
-        return line.replace(/\s+/g, ' ');
-    }));
+            return line.replace(/\s+/g, ' ');
+        }),
+    );
 }
 
 /** The line comments that end with a backslash, and the lines they are on. */
@@ -129,8 +131,7 @@ function continuedLines(text: string): CodeLine[] {
     const found: CodeLine[] = [];
     lex(text).forEach((segments, index) => {
         const last = segments.at(-1);
-        if (last !== undefined && last.kind === 'comment' && last.opens && last.text.startsWith('//')
-            && /\\\s*$/.test(last.text)) {
+        if (last !== undefined && last.kind === 'comment' && last.opens && last.text.startsWith('//') && /\\\s*$/.test(last.text)) {
             found.push({ number: index + 1, text: last.text });
         }
     });
@@ -159,7 +160,7 @@ export function compare(path: string, was: string, now: string): Finding[] {
     // a line the base has with the same text is not reported, so a sweep is not blamed for it
     const added = (rule: string, base: CodeLine[], head: CodeLine[]) => {
         const known = new Set(base.map((line) => line.text));
-        for (const line of head.filter((line) => !known.has(line.text))) {
+        for (const line of head.filter((candidate) => !known.has(candidate.text))) {
             findings.push({ path, number: line.number, rule, detail: line.text });
         }
     };
@@ -181,7 +182,7 @@ function changed(base: string): Array<{ status: string; path: string }> {
     for (const path of untracked()) {
         files.push({ status: 'A', path });
     }
-    return files.filter((file) => syntax(file.path) !== null).sort((a, b) => a.path.localeCompare(b.path));
+    return files.filter((file) => syntax(file.path) !== null).toSorted((a, b) => a.path.localeCompare(b.path));
 }
 
 function main(): number {

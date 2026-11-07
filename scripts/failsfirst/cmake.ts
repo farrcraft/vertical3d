@@ -104,7 +104,8 @@ export type MissingLink = { file: string; line: number; target: string };
 
 export function missingLinks(output: string): MissingLink[] {
     const links = output.matchAll(
-        /CMake Error at (\S[^\r\n]*?):(\d+) \(target_link_libraries\):\s*\r?\n\s*Target "[^"\r\n]+" links to:\s+(\S+)\s+but the target was not found/g);
+        /CMake Error at (\S[^\r\n]*?):(\d+) \(target_link_libraries\):\s*\r?\n\s*Target "[^"\r\n]+" links to:\s+(\S+)\s+but the target was not found/g,
+    );
     return [...links].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), target: m[3] ?? '' }));
 }
 

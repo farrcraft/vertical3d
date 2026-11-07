@@ -21,33 +21,95 @@ const CLEFT = /\b(?:is|are|was|were)\s+what\s+(?:also\s+|only\s+|then\s+)?([a-z]
 const NOT_VERBS = new Set(['this', 'its', 'his', 'is', 'was', 'has', 'as', 'us', 'thus', 'those', 'these', 'ones']);
 // A clause join: a relative "which", ", so" or "so that", "because", "rather than", a semicolon,
 // or a dash between two words. A dash between operands, as in "n - 1", is not one.
-const JOIN = new RegExp([
-    /,\s+which\b/, /\b(?:but|and)\s+which\b/, /,\s+so\b(?!\s+(?:does|do|is|are|can|did|will)\b)/,
-    /\bso\s+that\b/, /\bbecause\b/, /\brather\s+than\b/, /;/,
-    /(?<=(?:^|\s)[A-Za-z][a-z']+,?)\s(?:-{1,2}|–|—)\s(?=[A-Za-z][a-z']*(?:[\s,.;:]|$))/, /(?<=[a-z])—(?=[a-z])/,
-].map((part) => part.source).join('|'), 'gi');
+const JOIN = new RegExp(
+    [
+        /,\s+which\b/,
+        /\b(?:but|and)\s+which\b/,
+        /,\s+so\b(?!\s+(?:does|do|is|are|can|did|will)\b)/,
+        /\bso\s+that\b/,
+        /\bbecause\b/,
+        /\brather\s+than\b/,
+        /;/,
+        /(?<=(?:^|\s)[A-Za-z][a-z']+,?)\s(?:-{1,2}|–|—)\s(?=[A-Za-z][a-z']*(?:[\s,.;:]|$))/,
+        /(?<=[a-z])—(?=[a-z])/,
+    ]
+        .map((part) => part.source)
+        .join('|'),
+    'gi',
+);
 const DASH = /^[-–—]+$/;
-const PERSON_VERB =
-    /\b([A-Za-z_][\w']*)\s+(?:(?:also|already|only|still|never|always|then|just)\s+)?(knows|wants|owes|trusts)\b/g;
-const PERSON_NEGATED =
-    /\b([A-Za-z_][\w']*)\s+(?:does\s+not|doesn't|do\s+not|don't|need\s+not|cannot|can't|can)\s+(know|want|owe|trust)\b/g;
+const PERSON_VERB = /\b([A-Za-z_][\w']*)\s+(?:(?:also|already|only|still|never|always|then|just)\s+)?(knows|wants|owes|trusts)\b/g;
+const PERSON_NEGATED = /\b([A-Za-z_][\w']*)\s+(?:does\s+not|doesn't|do\s+not|don't|need\s+not|cannot|can't|can)\s+(know|want|owe|trust)\b/g;
 const HUMANS = new Set([
-    'i', 'you', 'we', 'they', 'he', 'she', 'who', 'one', 'someone', 'anyone', 'everyone', 'nobody',
-    'person', 'people', 'reader', 'readers', 'user', 'users', 'developer', 'developers',
-    'contributor', 'contributors', 'reviewer', 'reviewers', 'author', 'authors', 'player',
-    'players', 'maintainer', 'maintainers', 'artist', 'artists', 'team', 'human', 'humans',
+    'i',
+    'you',
+    'we',
+    'they',
+    'he',
+    'she',
+    'who',
+    'one',
+    'someone',
+    'anyone',
+    'everyone',
+    'nobody',
+    'person',
+    'people',
+    'reader',
+    'readers',
+    'user',
+    'users',
+    'developer',
+    'developers',
+    'contributor',
+    'contributors',
+    'reviewer',
+    'reviewers',
+    'author',
+    'authors',
+    'player',
+    'players',
+    'maintainer',
+    'maintainers',
+    'artist',
+    'artists',
+    'team',
+    'human',
+    'humans',
 ]);
 // "An app that wants a camera" names the people who write the app, so these subjects are not
 // counted as personified.
-const AGENTS = new Set(['app', 'apps', 'consumer', 'consumers', 'caller', 'callers', 'game', 'games',
-    'anything', 'something', 'whoever']);
+const AGENTS = new Set(['app', 'apps', 'consumer', 'consumers', 'caller', 'callers', 'game', 'games', 'anything', 'something', 'whoever']);
 const RELATIVE = /(\w+)\s+(?:else\s+)?(?:that|which)$/;
 const USED_TO = /\b([\w']+)\s+used\s+to\b/gi;
-const PASSIVE = new Set(['is', 'are', 'was', 'were', 'be', 'been', 'being', 'get', 'gets', 'got',
-    'not', 'only', 'also', 'often', 'commonly', 'typically', 'usually', 'and', 'or', 'then',
-    "isn't", "aren't"]);
-const DATE = new RegExp('\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b(January|February|March|April|May|June|July|'
-    + 'August|September|October|November|December)\\s+(\\d{1,2},\\s+)?\\d{4}\\b');
+const PASSIVE = new Set([
+    'is',
+    'are',
+    'was',
+    'were',
+    'be',
+    'been',
+    'being',
+    'get',
+    'gets',
+    'got',
+    'not',
+    'only',
+    'also',
+    'often',
+    'commonly',
+    'typically',
+    'usually',
+    'and',
+    'or',
+    'then',
+    "isn't",
+    "aren't",
+]);
+const DATE = new RegExp(
+    '\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b(January|February|March|April|May|June|July|' +
+        'August|September|October|November|December)\\s+(\\d{1,2},\\s+)?\\d{4}\\b',
+);
 const PHASE = /\bphase\s+\d+\b/i;
 const QUOTED = /"[^"]*"|“[^”]*”/g;
 
@@ -87,14 +149,13 @@ function clauseJoins(masked: string): string[] {
 }
 
 /** Return [rule, detail] pairs for one sentence. Matches are reported from the original text. */
-function checkSentence(original: string, maskedSentence: string, path: string,
-    phaseHeadings: boolean): Array<[string, string]> {
+function checkSentence(original: string, maskedSentence: string, path: string, phaseHeadings: boolean): Array<[string, string]> {
     const findings: Array<[string, string]> = [];
     const words = wordCount(maskedSentence);
     if (words > MAX_WORDS) {
         findings.push(['long-sentence', `${words} words`]);
     }
-    const first = /^[\s"'(\[*_>-]*(\w+)/.exec(maskedSentence)?.[1];
+    const first = /^[\s"'([*_>-]*(\w+)/.exec(maskedSentence)?.[1];
     if (first !== undefined && OPENERS.has(first)) {
         findings.push(['opener', `starts with "${first}"`]);
     }
@@ -124,7 +185,12 @@ function checkSentence(original: string, maskedSentence: string, path: string,
             if (subject === 'that' || subject === 'which') {
                 subject = RELATIVE.exec(masked.slice(0, match.index + word.length))?.[1]?.toLowerCase() ?? subject;
             }
-            if (masked.slice(Math.max(0, match.index - 40), match.index).toLowerCase().includes('whoever')) {
+            if (
+                masked
+                    .slice(Math.max(0, match.index - 40), match.index)
+                    .toLowerCase()
+                    .includes('whoever')
+            ) {
                 continue;
             }
             if (!HUMANS.has(subject) && !AGENTS.has(subject)) {
@@ -151,8 +217,13 @@ function checkSentence(original: string, maskedSentence: string, path: string,
 }
 
 /** Return findings for one paragraph, limited to the sentences that overlap an added line. */
-export function checkParagraph(paragraph: ParagraphLine[], added: Added, path: string, comment: boolean,
-    phaseHeadings: boolean): Finding[] {
+export function checkParagraph(
+    paragraph: ParagraphLine[],
+    added: Added,
+    path: string,
+    comment: boolean,
+    phaseHeadings: boolean,
+): Finding[] {
     const findings: Finding[] = [];
     const pieces: string[] = [];
     const offsets: Array<[number, number, number]> = [];
@@ -193,8 +264,7 @@ export function checkParagraph(paragraph: ParagraphLine[], added: Added, path: s
                 continue;
             }
             const length = columns(line.trimEnd());
-            const others = Math.max(...paragraph.filter((other) => other.number !== number)
-                .map((other) => columns(other.line.trimEnd())));
+            const others = Math.max(...paragraph.filter((other) => other.number !== number).map((other) => columns(other.line.trimEnd())));
             if (others >= EXTENDED_BASELINE && length > others + EXTENDED_MARGIN) {
                 findings.push({ path, number, rule: 'extended-line', detail: `${length} columns against ${others}` });
             }

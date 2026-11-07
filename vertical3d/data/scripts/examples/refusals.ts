@@ -9,7 +9,7 @@ for (const name of wanted) {
     try {
         timeline.set({ items: [name], frame: 1 });
     } catch (error) {
-        missing.push(`${name} (${(error as Error).message})`);
+        missing.push(`${name} (${error instanceof Error ? error.message : String(error)})`);
     }
 }
 console.log('not keyed:', missing.join(', '));

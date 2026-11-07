@@ -21,12 +21,19 @@ export const UNSIGNED_BYTE = 5121;
 export const UNSIGNED_SHORT = 5123;
 export const FLOAT = 5126;
 
-const GLB_MAGIC = 0x46546C67;
-const JSON_CHUNK = 0x4E4F534A;
-const BIN_CHUNK = 0x004E4942;
+const GLB_MAGIC = 0x46546c67;
+const JSON_CHUNK = 0x4e4f534a;
+const BIN_CHUNK = 0x004e4942;
 
 /** The generator name every fixture's asset block carries. */
 export const ASSET = { version: '2.0', generator: 'vertical3d test fixture generator' };
+
+declare global {
+    interface JSON {
+        /** The value JSON.stringify writes as the given text, unchanged. Node has it from 21 on. */
+        rawJSON(text: string): unknown;
+    }
+}
 
 /**
  * A number written with a decimal point when it is a whole number, so 1 is written as "1.0".
@@ -41,7 +48,7 @@ export function float(value: number): unknown {
     if (Number.isInteger(value)) {
         text += '.0';
     }
-    return (JSON as unknown as { rawJSON(text: string): unknown }).rawJSON(text);
+    return JSON.rawJSON(text);
 }
 
 /** Every number of a list written as float() writes it. */
@@ -113,8 +120,7 @@ export class Writer {
      * Append data with an accessor over it, and return the accessor's index. The properties in
      * extra follow the four every accessor has, in the order given.
      */
-    accessor(data: Buffer, component: number, count: number, type: string, target?: number,
-        extra: Record<string, unknown> = {}): number {
+    accessor(data: Buffer, component: number, count: number, type: string, target?: number, extra: Record<string, unknown> = {}): number {
         this.accessors.push({ bufferView: this.view(data, target), componentType: component, count, type, ...extra });
         return this.accessors.length - 1;
     }

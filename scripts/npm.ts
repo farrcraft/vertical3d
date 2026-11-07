@@ -42,7 +42,7 @@ const EXACT = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /** An object read from JSON, or an empty one for anything else. */
 function record(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
+    return typeof value === 'object' && value !== null && !Array.isArray(value) ? { ...value } : {};
 }
 
 /** The findings for package.json and its lockfile, each parsed. A missing lockfile is null. */
@@ -52,17 +52,32 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
     for (const field of RUNTIME_FIELDS) {
         const value = pkg[field];
         if (value !== undefined && (Array.isArray(value) ? value.length > 0 : Object.keys(record(value)).length > 0)) {
-            findings.push({ path: 'package.json', line: null, rule: 'runtime-dependency', message: `${field} names packages; only devDependencies are allowed` });
+            findings.push({
+                path: 'package.json',
+                line: null,
+                rule: 'runtime-dependency',
+                message: `${field} names packages; only devDependencies are allowed`,
+            });
         }
     }
     const dev = record(pkg.devDependencies);
     for (const [name, spec] of Object.entries(dev)) {
         if (typeof spec !== 'string' || !EXACT.test(spec)) {
-            findings.push({ path: 'package.json', line: null, rule: 'inexact-version', message: `${name} is ${JSON.stringify(spec)}, not one exact version` });
+            findings.push({
+                path: 'package.json',
+                line: null,
+                rule: 'inexact-version',
+                message: `${name} is ${JSON.stringify(spec)}, not one exact version`,
+            });
         }
     }
     if (lock === null) {
-        findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: 'there is no lockfile; run npm install and commit it' });
+        findings.push({
+            path: 'package-lock.json',
+            line: null,
+            rule: 'lockfile',
+            message: 'there is no lockfile; run npm install and commit it',
+        });
         return findings;
     }
     const packages = record(record(lock).packages);
@@ -70,12 +85,22 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
     const locked = record(root.devDependencies);
     for (const name of new Set([...Object.keys(dev), ...Object.keys(locked)])) {
         if (dev[name] !== locked[name]) {
-            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} is ${JSON.stringify(dev[name])} in package.json and ${JSON.stringify(locked[name])} in the lockfile` });
+            findings.push({
+                path: 'package-lock.json',
+                line: null,
+                rule: 'lockfile',
+                message: `${name} is ${JSON.stringify(dev[name])} in package.json and ${JSON.stringify(locked[name])} in the lockfile`,
+            });
             continue;
         }
         const installed = record(packages[`node_modules/${name}`]).version;
         if (installed !== dev[name]) {
-            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} ${String(dev[name])} is locked at ${JSON.stringify(installed)}` });
+            findings.push({
+                path: 'package-lock.json',
+                line: null,
+                rule: 'lockfile',
+                message: `${name} ${String(dev[name])} is locked at ${JSON.stringify(installed)}`,
+            });
         }
     }
     for (const field of RUNTIME_FIELDS) {
@@ -90,7 +115,12 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
         const entry = record(value);
         const resolved = entry.resolved;
         if (typeof resolved !== 'string' || !resolved.startsWith(REGISTRY) || typeof entry.integrity !== 'string') {
-            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${where} does not come from ${REGISTRY} with an integrity hash` });
+            findings.push({
+                path: 'package-lock.json',
+                line: null,
+                rule: 'lockfile',
+                message: `${where} does not come from ${REGISTRY} with an integrity hash`,
+            });
         }
     }
     return findings;
@@ -142,7 +172,7 @@ export function packageImports(text: string): Array<{ line: number; specifier: s
             }
         }
     }
-    return found.sort((a, b) => a.line - b.line);
+    return found.toSorted((a, b) => a.line - b.line);
 }
 
 /** A JSON file under the root, parsed, or null when it does not exist. */
@@ -157,7 +187,12 @@ function main(): number {
     const findings = manifestFindings(readJson('package.json'), readJson('package-lock.json'));
     const npmrc = path.join(ROOT, '.npmrc');
     if (!existsSync(npmrc) || !scriptsOff(readFileSync(npmrc, 'utf8'))) {
-        findings.push({ path: '.npmrc', line: null, rule: 'install-scripts', message: 'install scripts are not turned off with ignore-scripts=true' });
+        findings.push({
+            path: '.npmrc',
+            line: null,
+            rule: 'install-scripts',
+            message: 'install scripts are not turned off with ignore-scripts=true',
+        });
     }
     for (const file of tracked('*.ts')) {
         for (const { line, specifier } of packageImports(readFileSync(path.join(ROOT, file), 'utf8'))) {

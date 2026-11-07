@@ -438,6 +438,7 @@ reported, so the table lists only tags in use.
 | [0164](project/0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit |
 | [0171](project/0171-process-decision-records-are-filed-in-folders-by-area.md) | Process: decision records are filed in folders by area |
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
+| [0184](project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md) | Tooling: TypeScript is linted by oxlint and formatted by oxfmt |
 
 ### ui
 

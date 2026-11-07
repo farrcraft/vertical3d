@@ -33,8 +33,7 @@ function walk(tree: Tree, t: Target, own: string | null): Walk {
     const queue = t.sources.filter(isFile);
     const seen = new Set<string>();
     const result: Walk = { included: new Map(), headerLibs: new Map(), packages: new Map(), uses: [] };
-    while (queue.length > 0) {
-        const f = queue.shift() as string;
+    for (let f = queue.shift(); f !== undefined; f = queue.shift()) {
         if (seen.has(f)) {
             continue;
         }
@@ -72,7 +71,12 @@ function walk(tree: Tree, t: Target, own: string | null): Walk {
             }
             // a header under internal/ is included only by the library's own sources, so what it
             // includes is linked PRIVATE
-            if (own !== null && endsWithAny(f, HEADER_SUFFIXES) && !rel(tree.root, f).includes('/internal/') && !result.headerLibs.has(lib)) {
+            if (
+                own !== null &&
+                endsWithAny(f, HEADER_SUFFIXES) &&
+                !rel(tree.root, f).includes('/internal/') &&
+                !result.headerLibs.has(lib)
+            ) {
                 result.headerLibs.set(lib, [f, name]);
             }
         }
@@ -94,12 +98,12 @@ function namedLinks(t: Target): Map<string, Visibility> {
 /** missing-link and extra-link: the target links exactly the libraries its files include. */
 function checkLinks(tree: Tree, t: Target, found: Walk, named: Map<string, Visibility>, report: Report): void {
     const cm = rel(tree.root, t.cmake);
-    for (const [lib, [f, name]] of [...found.included].sort()) {
+    for (const [lib, [f, name]] of [...found.included].toSorted(([a], [b]) => a.localeCompare(b))) {
         if (!named.has(lib)) {
             report(cm, 'missing-link', `${rel(tree.root, f)} includes ${name}, and ${t.name} does not link ${lib}`);
         }
     }
-    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).sort()) {
+    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).toSorted()) {
         if (!found.included.has(lib)) {
             report(cm, 'extra-link', `${t.name} links ${lib}, and none of its files includes its headers`);
         }
@@ -122,12 +126,12 @@ function checkNamespaces(tree: Tree, t: Target, found: Walk, report: Report): vo
 /** visibility: an app library links PUBLIC exactly what its headers include. */
 function checkVisibility(tree: Tree, t: Target, found: Walk, named: Map<string, Visibility>, report: Report): void {
     const cm = rel(tree.root, t.cmake);
-    for (const [lib, [f, name]] of [...found.headerLibs].sort()) {
+    for (const [lib, [f, name]] of [...found.headerLibs].toSorted(([a], [b]) => a.localeCompare(b))) {
         if (named.has(lib) && named.get(lib) !== 'PUBLIC') {
             report(cm, 'visibility', `${rel(tree.root, f)} includes ${name}, and ${t.name} links ${lib} PRIVATE`);
         }
     }
-    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).sort()) {
+    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).toSorted()) {
         if (named.get(lib) === 'PUBLIC' && found.included.has(lib) && !found.headerLibs.has(lib)) {
             report(cm, 'visibility', `${t.name} links ${lib} PUBLIC, and none of its headers includes it`);
         }
@@ -142,7 +146,7 @@ function checkPackages(tree: Tree, t: Target, found: Walk, named: Map<string, Vi
     const cm = rel(tree.root, t.cmake);
     // what the v3dlib_* targets this one links carry
     const through = new Set<string>();
-    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).sort()) {
+    for (const lib of [...named.keys()].filter((x) => x.startsWith('v3dlib_')).toSorted()) {
         for (const x of carried(tree.targets, lib, boost)) {
             if (x !== lib) {
                 through.add(x);
@@ -171,7 +175,7 @@ function checkPackages(tree: Tree, t: Target, found: Walk, named: Map<string, Vi
             report(cm, 'package', `${t.name} names ${item}: ${bad.join('; ')}`);
         }
     }
-    for (const [pkg, [f, name]] of [...found.packages].sort()) {
+    for (const [pkg, [f, name]] of [...found.packages].toSorted(([a], [b]) => a.localeCompare(b))) {
         const given = suite && pkg === 'Boost::unit_test_framework';
         if (!through.has(pkg) && !direct.has(pkg) && !given) {
             report(cm, 'package-unlinked', `${rel(tree.root, f)} includes ${name}, and nothing ${t.name} links carries ${pkg}`);

@@ -175,7 +175,7 @@ export function descriptionFindings(headers: readonly Header[], dox: string): Pl
     const add = (name: string, place: { path: string; line: number }): void => {
         places.set(name, [...(places.get(name) ?? []), place]);
     };
-    for (const { file, own, text } of [...headers].sort((a, b) => a.file.localeCompare(b.file))) {
+    for (const { file, own, text } of [...headers].toSorted((a, b) => a.file.localeCompare(b.file))) {
         const opening = opened(text).find(({ name }) => name === own);
         if (!missing.has(own) && opening !== undefined) {
             missing.set(own, { path: file, line: opening.line, rule: 'no-description', message: `nothing describes ${own}` });
@@ -187,7 +187,8 @@ export function descriptionFindings(headers: readonly Header[], dox: string): Pl
     for (const { line, name } of declared(dox)) {
         add(name, { path: NAMESPACES_DOX, line });
     }
-    for (const own of [...missing.keys()]) {
+    // the loop adds parents to missing, so it walks a copy of the names found before it
+    for (const own of Array.from(missing.keys())) {
         const parts = own.split('::');
         for (let length = 1; length < parts.length; length += 1) {
             const parent = parts.slice(0, length).join('::');
@@ -203,7 +204,11 @@ export function descriptionFindings(headers: readonly Header[], dox: string): Pl
             found.push(finding);
         }
         for (const place of later) {
-            found.push({ ...place, rule: 'described-twice', message: `${name} is described already, at ${earlier?.path}:${earlier?.line}` });
+            found.push({
+                ...place,
+                rule: 'described-twice',
+                message: `${name} is described already, at ${earlier?.path}:${earlier?.line}`,
+            });
         }
     }
     return found;
@@ -211,11 +216,10 @@ export function descriptionFindings(headers: readonly Header[], dox: string): Pl
 
 /** The tracked C++ files the check reads, relative to the root, each with its namespace. */
 export function files(): Array<[string, string]> {
-    return tracked('*.h', '*.cpp', '*.cxx')
-        .flatMap((f) => {
-            const own = expected(f);
-            return own === null ? [] : [[f, own] as [string, string]];
-        });
+    return tracked('*.h', '*.cpp', '*.cxx').flatMap((f) => {
+        const own = expected(f);
+        return own === null ? [] : [[f, own] as [string, string]];
+    });
 }
 
 function main(): number {
@@ -224,8 +228,9 @@ function main(): number {
     const checked = files();
     const known = new Set(checked.map(([, own]) => own));
     const texts = new Map(checked.map(([file]) => [file, readFileSync(path.join(ROOT, file), 'utf8')]));
-    const found = checked.flatMap(([file, own]) => findings(texts.get(file) ?? '', own, known)
-        .map(({ line, rule, message }) => ({ path: file, line, rule, message })));
+    const found = checked.flatMap(([file, own]) =>
+        findings(texts.get(file) ?? '', own, known).map(({ line, rule, message }) => ({ path: file, line, rule, message })),
+    );
     const headers = checked
         .filter(([file]) => file.startsWith('api/') && file.endsWith('.h') && !file.includes('/internal/'))
         .map(([file, own]) => ({ file, own, text: texts.get(file) ?? '' }));

@@ -19,7 +19,13 @@ test('script keeps the length and the line breaks of the text', () => {
     const text = "const a = 'x'; // note\n/* two\nlines */ const b = `t${a}t`;\n";
     const result = codeOnly(text);
     assert.equal(result.length, text.length);
-    assert.deepEqual([...result].map((c, i) => (c === '\n') === (text[i] === '\n')).every(Boolean), true);
+    assert.deepEqual(
+        result
+            .split('')
+            .map((c, i) => (c === '\n') === (text[i] === '\n'))
+            .every(Boolean),
+        true,
+    );
 });
 
 test('script blanks comments and the insides of strings, and keeps their quotes', () => {
@@ -28,7 +34,7 @@ test('script blanks comments and the insides of strings, and keeps their quotes'
 });
 
 test('script reads a template expression as code, and its text as a literal', () => {
-    assert.equal(code('`text ${f(\'s\')} more`'), "` ${f(' ')} `");
+    assert.equal(code("`text ${f('s')} more`"), "` ${f(' ')} `");
     // a brace inside the expression does not end it
     assert.equal(code('`a${ {k: 1}.k }b`'), '` ${ {k: 1}.k } `');
     // a template inside an expression
@@ -52,11 +58,20 @@ test('script reads an escaped backtick as part of the template', () => {
 
 test('script ends an unterminated string at the line, and an unterminated comment at the end', () => {
     assert.equal(code("a = 'open\nb = 1"), "a = ' \nb = 1");
-    assert.deepEqual(regions('x /* never closed').map((r) => r.kind), ['comment']);
+    assert.deepEqual(
+        regions('x /* never closed').map((r) => r.kind),
+        ['comment'],
+    );
 });
 
 test('script reports each region with its kind, in order', () => {
     const text = "f('a') // c\n`t`";
-    assert.deepEqual(regions(text).map((r) => [r.kind, text.slice(r.start, r.end)]),
-        [['literal', 'a'], ['comment', '// c'], ['literal', 't']]);
+    assert.deepEqual(
+        regions(text).map((r) => [r.kind, text.slice(r.start, r.end)]),
+        [
+            ['literal', 'a'],
+            ['comment', '// c'],
+            ['literal', 't'],
+        ],
+    );
 });

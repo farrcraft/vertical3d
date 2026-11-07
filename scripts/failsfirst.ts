@@ -151,14 +151,13 @@ export type Options = {
     build: string;
 };
 
-function check(cases: Case[], base: string, head: string, changes: Change[], options: Options): void {
-    const scratch = options.scratch ??
-        path.join(os.tmpdir(), 'v3d-failsfirst', `${base.slice(0, 8)}-${head.slice(0, 8)}`);
+function check(cases: Case[], base: string, head: string, changes: Change[], settings: Options): void {
+    const scratch = settings.scratch ?? path.join(os.tmpdir(), 'v3d-failsfirst', `${base.slice(0, 8)}-${head.slice(0, 8)}`);
     if (fs.existsSync(scratch)) {
         throw new GateError(`${scratch} exists; remove it or pass --scratch`);
     }
     // read before the scratch directory exists, so a build that is not configured leaves nothing
-    const cache = readCache(options.build);
+    const cache = readCache(settings.build);
     fs.mkdirSync(scratch, { recursive: true });
     const worktree = path.join(scratch, 'src');
     const build = path.join(scratch, 'build');
@@ -170,7 +169,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
         made = true;
         const dropped = makeWorktree(head, base, changes, worktree);
         const added = new Set(changes.filter((c) => c.status === 'A').map((c) => c.file));
-        configure(worktree, build, options.build, cache, env, scratch, head, added, dropped);
+        configure(worktree, build, settings.build, cache, env, scratch, head, added, dropped);
         const bySuite = new Map<string, Case[]>();
         for (const c of cases) {
             if (!bySuite.has(c.suite)) {
@@ -180,8 +179,8 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
         }
         const listed = listedSources(head);
         const headMap = suiteMap(head);
-        buildAll([...bySuite.keys()].sort(), build, env, scratch);
-        for (const suite of [...bySuite.keys()].sort()) {
+        buildAll([...bySuite.keys()].toSorted(), build, env, scratch);
+        for (const suite of [...bySuite.keys()].toSorted()) {
             const suiteCases = bySuite.get(suite)!;
             const directory = headMap.get(suiteCases[0]?.file ?? '')!.directory;
             // a base that does not add the head suite's directory, such as one where the change
@@ -206,12 +205,12 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
                     c.result = FAILS_TO_BUILD;
                 } else {
                     console.log(`running ${suite} ${c.path}`);
-                    runCase(c, executable, env, options.timeout);
+                    runCase(c, executable, env, settings.timeout);
                 }
             }
         }
     } finally {
-        if (options.keep) {
+        if (settings.keep) {
             console.log(`kept ${scratch}`);
         } else {
             if (made) {
@@ -240,10 +239,21 @@ Check that the test cases a changeset adds fail without its code.
 
 // The options, or null when the command line asks for the usage.
 export function parseOptions(argv: string[]): Options | null {
-    const { values } = options(USAGE, {
-        base: { type: 'string' }, commit: { type: 'string' }, scratch: { type: 'string' }, build: { type: 'string' },
-        timeout: { type: 'string' }, list: { type: 'boolean' }, keep: { type: 'boolean' }, help: { type: 'boolean', short: 'h' },
-    }, false, argv);
+    const { values } = options(
+        USAGE,
+        {
+            base: { type: 'string' },
+            commit: { type: 'string' },
+            scratch: { type: 'string' },
+            build: { type: 'string' },
+            timeout: { type: 'string' },
+            list: { type: 'boolean' },
+            keep: { type: 'boolean' },
+            help: { type: 'boolean', short: 'h' },
+        },
+        false,
+        argv,
+    );
     if (values.help === true) {
         return null;
     }
@@ -264,22 +274,22 @@ export function parseOptions(argv: string[]): Options | null {
 }
 
 function main(): number {
-    const options = parseOptions(process.argv.slice(2));
-    if (options === null) {
+    const settings = parseOptions(process.argv.slice(2));
+    if (settings === null) {
         console.log(USAGE);
         return 0;
     }
     let base: string;
     let head: string;
-    if (options.commit !== null) {
-        if (options.base !== null) {
+    if (settings.commit !== null) {
+        if (settings.base !== null) {
             throw new GateError('--commit and --base cannot be combined');
         }
-        head = commit(options.commit);
+        head = commit(settings.commit);
         base = commit(head + '^');
     } else {
         head = commit('HEAD');
-        base = options.base !== null ? commit(options.base) : mergeBase();
+        base = settings.base !== null ? commit(settings.base) : mergeBase();
     }
 
     const changes = changedFiles(base, head);
@@ -291,13 +301,13 @@ function main(): number {
     if (cases.length === 0) {
         return 0;
     }
-    if (options.list) {
+    if (settings.list) {
         printTable(cases, false);
         printStated(cases);
         return 0;
     }
 
-    check(cases, base, head, changes, options);
+    check(cases, base, head, changes, settings);
     console.log();
     printTable(cases, true);
     printStated(cases);

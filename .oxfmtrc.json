@@ -1,0 +1,11 @@
+// How the tree's TypeScript is laid out. npm run format writes it, and CI checks it with
+// npm run format:check. docs/contributing/Linting.md says what the formatter covers.
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "printWidth": 140,
+    "tabWidth": 4,
+    "singleQuote": true,
+    "endOfLine": "lf",
+    // the editor writes this file from its commands, and a test compares the two byte for byte
+    "ignorePatterns": ["vertical3d/data/scripts/editor.d.ts"]
+}

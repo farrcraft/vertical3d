@@ -29,8 +29,7 @@ test('summary reads the Markdown under docs/, but SUMMARY.md and completed recor
 });
 
 test('summary reads each link of the summary, without its anchor', () => {
-    assert.deepEqual(entries('# Summary\n\n[Docs](README.md)\n\n- [A](adr/a.md#top)\n'),
-        [{ page: 'README.md', line: 3 }]);
+    assert.deepEqual(entries('# Summary\n\n[Docs](README.md)\n\n- [A](adr/a.md#top)\n'), [{ page: 'README.md', line: 3 }]);
 });
 
 test('summary accepts a summary that lists each page once', () => {
@@ -38,16 +37,19 @@ test('summary accepts a summary that lists each page once', () => {
 });
 
 test('summary reports a page the summary leaves out', () => {
-    assert.deepEqual(check(['README.md', 'adr/a.md'], '[Docs](README.md)\n'),
-        ['docs/adr/a.md: unlisted: docs/SUMMARY.md does not list it']);
+    assert.deepEqual(check(['README.md', 'adr/a.md'], '[Docs](README.md)\n'), [
+        'docs/adr/a.md: unlisted: docs/SUMMARY.md does not list it',
+    ]);
 });
 
 test('summary reports an entry that names no page', () => {
-    assert.deepEqual(check(['README.md'], '[Docs](README.md)\n- [Gone](gone.md)\n'),
-        ['docs/SUMMARY.md:2: no-page: gone.md is not a page under docs/']);
+    assert.deepEqual(check(['README.md'], '[Docs](README.md)\n- [Gone](gone.md)\n'), [
+        'docs/SUMMARY.md:2: no-page: gone.md is not a page under docs/',
+    ]);
 });
 
 test('summary reports a page listed twice', () => {
-    assert.deepEqual(check(['README.md'], '[Docs](README.md)\n- [Again](README.md)\n'),
-        ['docs/SUMMARY.md:2: second-entry: README.md is listed already']);
+    assert.deepEqual(check(['README.md'], '[Docs](README.md)\n- [Again](README.md)\n'), [
+        'docs/SUMMARY.md:2: second-entry: README.md is listed already',
+    ]);
 });

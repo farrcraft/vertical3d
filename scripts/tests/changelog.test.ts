@@ -19,15 +19,28 @@ function check(changed: string[], changelog = CHANGELOG): string[] {
 }
 
 test('changelog counts the api, the apps, the demos and the shared data as shipped', () => {
-    for (const file of ['api/engine/Engine.cpp', 'vertical3d/src/Controller.cxx', 'moya/moya.cxx', 'imagetool/imagetool.cxx',
-        'demos/pong/src/pong.cxx', 'data/fonts/Inter-Regular.ttf', 'vertical3d/data/vgui.json']) {
+    for (const file of [
+        'api/engine/Engine.cpp',
+        'vertical3d/src/Controller.cxx',
+        'moya/moya.cxx',
+        'imagetool/imagetool.cxx',
+        'demos/pong/src/pong.cxx',
+        'data/fonts/Inter-Regular.ttf',
+        'vertical3d/data/vgui.json',
+    ]) {
         assert.ok(ships(file), file);
     }
 });
 
 test('changelog does not count tests, READMEs or anything outside the shipped directories', () => {
-    for (const file of ['api/engine/tests/EngineTest.cpp', 'api/engine/README.md', 'docs/api/README.md', 'scripts/prose.ts',
-        '.github/workflows/ctest.yml', 'CMakeLists.txt']) {
+    for (const file of [
+        'api/engine/tests/EngineTest.cpp',
+        'api/engine/README.md',
+        'docs/api/README.md',
+        'scripts/prose.ts',
+        '.github/workflows/ctest.yml',
+        'CMakeLists.txt',
+    ]) {
         assert.ok(!ships(file), file);
     }
 });
@@ -41,9 +54,12 @@ test('changelog accepts a change that ships nothing without an entry', () => {
 });
 
 test('changelog reports a change to what ships that adds no entry, naming what it touched', () => {
-    assert.deepEqual(check(['api/engine/Engine.cpp']), ['CHANGELOG.md: no-entry: the change touches api/engine/Engine.cpp, and adds no entry']);
-    assert.deepEqual(check(['api/engine/Engine.cpp', 'moya/moya.cxx']),
-        ['CHANGELOG.md: no-entry: the change touches api/engine/Engine.cpp and 1 more, and adds no entry']);
+    assert.deepEqual(check(['api/engine/Engine.cpp']), [
+        'CHANGELOG.md: no-entry: the change touches api/engine/Engine.cpp, and adds no entry',
+    ]);
+    assert.deepEqual(check(['api/engine/Engine.cpp', 'moya/moya.cxx']), [
+        'CHANGELOG.md: no-entry: the change touches api/engine/Engine.cpp and 1 more, and adds no entry',
+    ]);
 });
 
 test('changelog finds the Unreleased section, and reports a changelog without one', () => {

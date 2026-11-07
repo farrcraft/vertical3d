@@ -42,9 +42,10 @@ sweep of comments. [Review.md](Review.md) says which class of review finding eac
 ## In CI
 
 [review-gates.yml](../../.github/workflows/review-gates.yml) runs on an Ubuntu runner with Node.
-It installs the TypeScript tooling with `npm ci` and type-checks every TypeScript file. Then it
-runs the gates' own tests, and then each gate as a step of its own. Every step runs even when
-one before it failed, so each gate reports.
+It installs the TypeScript tooling with `npm ci`, then type-checks, lints and checks the layout of
+every TypeScript file, as [Linting.md](Linting.md#typescript) describes. Then it runs the gates'
+own tests, and then each gate as a step of its own. Every step runs even when one before it
+failed, so each gate reports.
 
 The gates that read added lines compare against a base:
 
@@ -83,8 +84,9 @@ A gate whose rule covers only some files runs when one of them is staged, or any
 `prose.ts` and `readmes.ts` run on every commit, because a rename anywhere can break what they
 check. cpplint reads only the staged C++ files, with the version and the options CI uses.
 
-The type check, the gates' own tests, `failsfirst.ts` and the documentation build stay in CI.
-They need `npm ci`, a build or a download. CI runs every check again whatever ran locally.
+The type check, the lint, the format check, the gates' own tests, `failsfirst.ts` and the
+documentation build stay in CI. They need `npm ci`, a build or a download. CI runs every check
+again whatever ran locally.
 
 `pre-commit run --all-files` runs every hook on the whole tree. `SKIP=prose git commit` skips
 one hook, for a commit that has to land in a state a gate rejects, such as one step of a
@@ -102,8 +104,9 @@ Background: [ADR-0164](../adr/project/0164-tooling-commits-are-checked-locally-t
 From the repository root:
 
 ```
-npm ci                       # once, for the type checker
+npm ci                       # once, for the type checker, the linter and the formatter
 npm run typecheck            # every TypeScript file
+npm run lint                 # and npm run format, as Linting.md describes
 npm test                     # the gates' own tests
 node scripts/linkrule.ts     # any gate, by its file
 node scripts/prose.ts --base main
@@ -115,7 +118,8 @@ there is no `origin/main`. `--base REF` names another branch or commit. Untracke
 added. [Testing.md](Testing.md#checking-that-a-new-test-fails-first) covers the options of
 `failsfirst.ts`, which builds the affected suites and takes several minutes.
 
-Running a gate needs only Node. `npm ci` is needed only for the type check.
+Running a gate needs only Node. `npm ci` is needed only for the type check, the lint and
+the formatter.
 
 ## What a gate prints
 

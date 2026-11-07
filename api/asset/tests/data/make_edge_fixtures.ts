@@ -20,7 +20,11 @@
 
 import { ARRAY_BUFFER, ASSET, FLOAT, UNSIGNED_SHORT, Writer, bounds, f32, u16 } from './gltf_writer.ts';
 
-const CORNERS = [[0, 0, 0], [1, 0, 0], [0, 1, 0]];
+const CORNERS = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+];
 
 /** Append the triangle's corners as a position accessor and return its index. */
 function triangle(writer: Writer): number {
@@ -30,28 +34,36 @@ function triangle(writer: Writer): number {
 function externalBuffer(): void {
     const writer = new Writer();
     const position = triangle(writer);
-    writer.gltfBeside({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0] }],
-        nodes: [{ mesh: 0 }],
-        meshes: [{ primitives: [{ attributes: { POSITION: position } }] }],
-    }, 'external_buffer.gltf', 'external buffer.bin', 'external%20buffer.bin');
+    writer.gltfBeside(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0] }],
+            nodes: [{ mesh: 0 }],
+            meshes: [{ primitives: [{ attributes: { POSITION: position } }] }],
+        },
+        'external_buffer.gltf',
+        'external buffer.bin',
+        'external%20buffer.bin',
+    );
 }
 
 function imageWithoutSource(): void {
     const writer = new Writer();
     const position = triangle(writer);
-    writer.gltf({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0] }],
-        nodes: [{ mesh: 0 }],
-        meshes: [{ primitives: [{ attributes: { POSITION: position }, material: 0 }] }],
-        materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
-        textures: [{ source: 0 }],
-        images: [{ mimeType: 'image/png' }],
-    }, 'image_without_source.gltf');
+    writer.gltf(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0] }],
+            nodes: [{ mesh: 0 }],
+            meshes: [{ primitives: [{ attributes: { POSITION: position }, material: 0 }] }],
+            materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+            textures: [{ source: 0 }],
+            images: [{ mimeType: 'image/png' }],
+        },
+        'image_without_source.gltf',
+    );
 }
 
 function jointOutsideSkin(): void {
@@ -60,14 +72,17 @@ function jointOutsideSkin(): void {
     const joints = writer.accessor(u16(5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), UNSIGNED_SHORT, 3, 'VEC4', ARRAY_BUFFER);
     const weights = writer.accessor(f32(0.5, 0.5, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0), FLOAT, 3, 'VEC4', ARRAY_BUFFER);
     const identity = writer.accessor(f32(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), FLOAT, 1, 'MAT4');
-    writer.gltf({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0, 1] }],
-        nodes: [{ mesh: 0, skin: 0 }, { name: 'joint' }],
-        meshes: [{ primitives: [{ attributes: { POSITION: position, JOINTS_0: joints, WEIGHTS_0: weights } }] }],
-        skins: [{ joints: [1], inverseBindMatrices: identity }],
-    }, 'joint_outside_skin.gltf');
+    writer.gltf(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0, 1] }],
+            nodes: [{ mesh: 0, skin: 0 }, { name: 'joint' }],
+            meshes: [{ primitives: [{ attributes: { POSITION: position, JOINTS_0: joints, WEIGHTS_0: weights } }] }],
+            skins: [{ joints: [1], inverseBindMatrices: identity }],
+        },
+        'joint_outside_skin.gltf',
+    );
 }
 
 externalBuffer();

@@ -299,6 +299,7 @@
     - [ADR-0181: Build: Linux builds with Clang and GCC](adr/project/0181-build-linux-builds-with-clang-and-gcc.md)
     - [ADR-0182: Releases: the Flatpak takes the runtime's libraries and builds the rest](adr/project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md)
     - [ADR-0183: Releases: the Flatpak ships only as a release bundle](adr/project/0183-releases-the-flatpak-ships-only-as-a-release-bundle.md)
+    - [ADR-0184: Tooling: TypeScript is linted by oxlint and formatted by oxfmt](adr/project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md)
 - [Plans](plans/README.md)
 - [Roadmaps](roadmap/README.md)
 - [Audits and surveys](audits/README.md)

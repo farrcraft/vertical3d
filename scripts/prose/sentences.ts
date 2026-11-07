@@ -2,8 +2,23 @@
  * Dividing a paragraph into sentences, with the text a rule must not read blanked.
  */
 
-const ABBREVIATIONS = new Set(['e.g.', 'i.e.', 'etc.', 'vs.', 'cf.', 'approx.', 'no.', 'fig.', 'eq.',
-    'mr.', 'dr.', 'st.', 'ch.', 'sec.', 'al.']);
+const ABBREVIATIONS = new Set([
+    'e.g.',
+    'i.e.',
+    'etc.',
+    'vs.',
+    'cf.',
+    'approx.',
+    'no.',
+    'fig.',
+    'eq.',
+    'mr.',
+    'dr.',
+    'st.',
+    'ch.',
+    'sec.',
+    'al.',
+]);
 
 /** Return text of the same length with code spans, link targets, URLs and bold markers blanked. */
 export function mask(text: string): string {
@@ -38,7 +53,10 @@ export function splitSentences(masked: string): Array<[number, number]> {
     const sentences: Array<[number, number]> = [];
     let start = 0;
     for (const match of masked.matchAll(/[.!?]["')\]]*(\s+)(?=\S)/g)) {
-        const before = masked.slice(0, match.index + 1).split(/\s+/).filter(Boolean);
+        const before = masked
+            .slice(0, match.index + 1)
+            .split(/\s+/)
+            .filter(Boolean);
         const word = before.at(-1)?.toLowerCase() ?? '';
         // a one-letter word ends a sentence like any other: in this tree it is a variable, such
         // as the x of a vector, far more often than an initial

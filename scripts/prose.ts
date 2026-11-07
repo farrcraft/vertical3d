@@ -118,8 +118,7 @@ export function checkLines(path: string, lines: string[], added: Added): Finding
     for (const finding of findings) {
         unique.set(`${finding.number}\u0000${finding.rule}\u0000${finding.detail}`, finding);
     }
-    return [...unique.values()].sort((a, b) => a.number - b.number || a.rule.localeCompare(b.rule)
-        || a.detail.localeCompare(b.detail));
+    return [...unique.values()].toSorted((a, b) => a.number - b.number || a.rule.localeCompare(b.rule) || a.detail.localeCompare(b.detail));
 }
 
 const USAGE = 'usage: node scripts/prose.ts [--base REF] | --all FILE...';
@@ -142,7 +141,7 @@ function main(): number {
     } else {
         process.chdir(ROOT);
         const { added, newFiles } = changeSince(mergeBase(base));
-        for (const path of [...added.keys()].sort()) {
+        for (const path of [...added.keys()].toSorted()) {
             const lines = added.get(path) ?? null;
             if (lines !== null && lines.size === 0) {
                 continue;

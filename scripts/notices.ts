@@ -58,7 +58,7 @@ export function installed(status: string): Package[] {
             triplet: field('Architecture'),
         });
     }
-    return found.sort((a, b) => a.name.localeCompare(b.name));
+    return found.toSorted((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Whether a package's installed file list holds a file outside share/: whether it ships code. */
@@ -90,7 +90,7 @@ export function licenceOf(font: string, covering: ReadonlyMap<string, string>): 
             best = family;
         }
     }
-    return best === null ? null : covering.get(best) ?? null;
+    return best === null ? null : (covering.get(best) ?? null);
 }
 
 /** The fonts among the files that no licence covers. */
@@ -115,9 +115,10 @@ export interface Notice {
 
 /** The notices file: an opening paragraph, then each notice in the order given. */
 export function compose(notices: readonly Notice[]): string {
-    const opening = 'Third-party notices for Vertical3D\n\n'
-        + 'Vertical3D is under the MIT licence below. It ships the fonts and the libraries that\n'
-        + 'follow, each under the licence given with it.\n';
+    const opening =
+        'Third-party notices for Vertical3D\n\n' +
+        'Vertical3D is under the MIT licence below. It ships the fonts and the libraries that\n' +
+        'follow, each under the licence given with it.\n';
     return [opening, ...notices.map((notice) => section(notice.heading, notice.text))].join('\n');
 }
 
@@ -141,7 +142,7 @@ function main(): number {
 
     const fonts = tracked(FONTS);
     findings.push(...unlicensedFonts(fonts));
-    for (const [family, file] of [...families(fonts)].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [family, file] of [...families(fonts)].toSorted(([a], [b]) => a.localeCompare(b))) {
         notices.push({ heading: `The ${family} fonts`, text: readFileSync(path.join(ROOT, file), 'utf8') });
     }
 

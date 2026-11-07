@@ -1,0 +1,28 @@
+// The lint rules for the tree's TypeScript. npm run lint applies them, and CI runs it next to the
+// type check. docs/contributing/Linting.md says what each category catches.
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["eslint", "typescript", "unicorn", "oxc"],
+    "categories": {
+        "correctness": "error",
+        "suspicious": "error",
+        "perf": "error"
+    },
+    "options": {
+        "typeAware": true,
+        "denyWarnings": true,
+        "reportUnusedDisableDirectives": "error"
+    },
+    "rules": {
+        // A function longer than 100 lines does several steps, and each step deserves a name.
+        "eslint/max-lines-per-function": ["error", { "max": 100 }],
+        // a short helper that one function uses is defined in that function, beside its use
+        "unicorn/consistent-function-scoping": "off",
+        // node:test runs a test it is handed, and its promise only reports what the runner
+        // already reports.
+        "typescript/no-floating-promises": ["error", {
+            "allowForKnownSafeCalls": [{ "from": "package", "package": "node:test", "name": ["test", "describe", "it", "suite"] }]
+        }]
+    },
+    "ignorePatterns": ["out/**", "vendor/**", "vcpkg_installed/**"]
+}

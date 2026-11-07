@@ -77,11 +77,14 @@ export function usesIn(text: string, namespaces: Map<string, Set<string>>): Arra
         if (m[2] && !m[1]) {
             continue;
         }
-        const parts = (m[3] ?? '').split('::').slice(1).map((p) => p.trim());
+        const parts = (m[3] ?? '')
+            .split('::')
+            .slice(1)
+            .map((p) => p.trim());
         for (let k = parts.length; k > 0; k -= 1) {
             const libs = namespaces.get(parts.slice(0, k).join('::'));
             if (libs !== undefined) {
-                uses.push([[...libs].sort(), 'v3d::' + parts.join('::')]);
+                uses.push([[...libs].toSorted(), 'v3d::' + parts.join('::')]);
                 break;
             }
         }

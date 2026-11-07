@@ -22,8 +22,8 @@ jobs:
       with:
         fetch-depth: 0
     # Node runs the gates directly; they use only its own modules and the gates' shared ones in
-    # scripts/, and need no install. The install below is the type checker and Node's type
-    # declarations, at the versions package-lock.json names
+    # scripts/, and need no install. The install below is the type checker, Node's type
+    # declarations, the linter and the formatter, at the versions package-lock.json names
     - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: 24
@@ -33,6 +33,14 @@ jobs:
     # against the declarations the editor writes
     - name: Types
       run: npm run typecheck
+    # the lint rules in .oxlintrc.json, with type information, over the same files
+    - name: Lint
+      if: ${{ !cancelled() }}
+      run: npm run lint -- --format=github
+    # the layout in .oxfmtrc.json; npm run format writes it
+    - name: Format
+      if: ${{ !cancelled() }}
+      run: npm run format:check
     # A push names the previous tip of main. That is all zeros when the branch is new, can be
     # empty, and after a force push can name a commit the checkout does not have. The base is
     # then the pushed commit's first parent, so only that commit is checked. A root commit has no

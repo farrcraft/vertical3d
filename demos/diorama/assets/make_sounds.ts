@@ -39,7 +39,7 @@ for (let index = 0; index < total; index++) {
     first += 0.25 * (noise() - first);
     second += 0.25 * (first - second);
     const time = (index % length) / RATE;
-    const swell = 0.75 + 0.15 * Math.sin(2 * Math.PI * time / SECONDS) + 0.1 * Math.sin(2 * Math.PI * 3 * time / SECONDS);
+    const swell = 0.75 + 0.15 * Math.sin((2 * Math.PI * time) / SECONDS) + 0.1 * Math.sin((2 * Math.PI * 3 * time) / SECONDS);
     raw[index] = second * swell;
 }
 
@@ -68,8 +68,8 @@ header.writeUInt32LE(36 + data.length, 4);
 header.write('WAVE', 8, 'ascii');
 header.write('fmt ', 12, 'ascii');
 header.writeUInt32LE(16, 16);
-header.writeUInt16LE(1, 20);  // PCM
-header.writeUInt16LE(1, 22);  // mono
+header.writeUInt16LE(1, 20); // PCM
+header.writeUInt16LE(1, 22); // mono
 header.writeUInt32LE(RATE, 24);
 header.writeUInt32LE(RATE * 2, 28);
 header.writeUInt16LE(2, 32);

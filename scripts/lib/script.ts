@@ -86,7 +86,7 @@ export function regions(text: string): Region[] {
             const end = text.indexOf('*/', index + 2);
             found.push({ kind: 'comment', start: index, end: end < 0 ? text.length : end + 2 });
             index = end < 0 ? text.length : end + 2;
-        } else if (char === '"' || char === '\'') {
+        } else if (char === '"' || char === "'") {
             let end = index + 1;
             while (end < text.length && text[end] !== char && text[end] !== '\n') {
                 end += text[end] === '\\' ? 2 : 1;

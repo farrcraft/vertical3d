@@ -13,9 +13,11 @@ const METADATA = /^\*\*(Status|Date|Documented in|Amended by|Amends|Superseded b
 const FENCE = /^\s*(```|~~~)/;
 
 // A comment line that reads as code, such as commented-out code, ends the paragraph around it.
-const CODE_LIKE = new RegExp('(;\\s*$|[{}]\\s*$|^\\s*#\\s*(include|define|if|endif|pragma)\\b|'
-    + '^\\s*\\w+\\(.*\\)\\s*$|^\\s*(return|if|for|while|auto|const|void|int|float)\\b.*[;({]|->|'
-    + '::\\w+\\()');
+const CODE_LIKE = new RegExp(
+    '(;\\s*$|[{}]\\s*$|^\\s*#\\s*(include|define|if|endif|pragma)\\b|' +
+        '^\\s*\\w+\\(.*\\)\\s*$|^\\s*(return|if|for|while|auto|const|void|int|float)\\b.*[;({]|->|' +
+        '::\\w+\\()',
+);
 
 /**
  * One line of a paragraph: its number, the column its prose starts at, and the whole line. Alone
@@ -68,8 +70,7 @@ export function markdownParagraphs(lines: string[]): ParagraphLine[][] {
             inComment = !stripped.includes('-->');
             continue;
         }
-        if (!stripped || /^[#|<]/.test(stripped) || METADATA.test(stripped)
-            || /^(-{3,}|\*{3,}|_{3,})$/.test(stripped)) {
+        if (!stripped || /^[#|<]/.test(stripped) || METADATA.test(stripped) || /^(-{3,}|\*{3,}|_{3,})$/.test(stripped)) {
             flush();
             continue;
         }
@@ -107,11 +108,13 @@ interface CommentSpan {
  */
 export function scriptSpans(lines: string[]): CommentSpan[] {
     const text = lines.join('\n');
-    const ranges = regions(text).filter((region) => region.kind === 'comment').map(({ start, end }): [number, number] => {
-        // a closed block comment ends with its marker, which is not part of the text
-        const closed = text.startsWith('/*', start) && end - start >= 4 && text.startsWith('*/', end - 2);
-        return [start + 2, closed ? end - 2 : end];
-    });
+    const ranges = regions(text)
+        .filter((region) => region.kind === 'comment')
+        .map(({ start, end }): [number, number] => {
+            // a closed block comment ends with its marker, which is not part of the text
+            const closed = text.startsWith('/*', start) && end - start >= 4 && text.startsWith('*/', end - 2);
+            return [start + 2, closed ? end - 2 : end];
+        });
     // each line with the offset it starts at in the text
     const rows: Array<{ line: string; start: number }> = [];
     let offset = 0;
@@ -197,8 +200,13 @@ export function commentParagraphs(lines: string[], kind: Kind): ParagraphLine[][
             body = body.replace(/\s*\*+\/?\s*$/, '');
         }
         const stripped = body.trim();
-        if (!stripped || /^[-=*/#_~]{3,}$/.test(stripped) || CODE_LIKE.test(stripped)
-            || stripped.startsWith('|') || stripped.startsWith('```')) {
+        if (
+            !stripped ||
+            /^[-=*/#_~]{3,}$/.test(stripped) ||
+            CODE_LIKE.test(stripped) ||
+            stripped.startsWith('|') ||
+            stripped.startsWith('```')
+        ) {
             flush();
             continue;
         }

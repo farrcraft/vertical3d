@@ -12,8 +12,7 @@ const CMD_SUFFIXES = ['.cmd', '.bat'];
 const SCRIPT_SUFFIXES = ['.ts', '.js', '.mjs', '.cjs'];
 
 // Historical records, and third-party or generated trees. ports/ holds vcpkg's own ports, overlaid.
-const EXCLUDED_PREFIXES = ['vendor/', 'ports/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
-    'docs/audits/'];
+const EXCLUDED_PREFIXES = ['vendor/', 'ports/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/', 'docs/audits/'];
 // An accepted ADR's body is not edited, so only a new ADR file is checked.
 const ADR_BODY = /^docs\/adr\/\d{4}-[^/]*\.md$/;
 
@@ -52,5 +51,7 @@ export function excluded(path: string, newFiles: Set<string>): boolean {
 }
 
 export function readLines(path: string): string[] {
-    return readFileSync(path, 'utf8').split('\n').map((line) => line.replace(/\r$/, ''));
+    return readFileSync(path, 'utf8')
+        .split('\n')
+        .map((line) => line.replace(/\r$/, ''));
 }

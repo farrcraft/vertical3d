@@ -163,11 +163,13 @@ CI has no SDK, so that case never runs there.
 
 The tree's TypeScript runs on Node 24 or later, which erases the types and checks none of them.
 That covers the review gates in `scripts/`, the fixture and asset generators, and the editor's
-scripts. The type checker comes from npm through [package.json](../../package.json):
+scripts. The type checker, the linter and the formatter come from npm through
+[package.json](../../package.json):
 
 ```
 npm ci              # install exactly what package-lock.json names
 npm run typecheck   # check every TypeScript file in the tree
+npm run lint        # lint it, and npm run format to lay it out (Linting.md)
 npm test            # the review gates' own tests
 ```
 
@@ -194,7 +196,9 @@ on QuickJS. Both extend [tsconfig.base.json](../../tsconfig.base.json), which ho
 options and allows only syntax that can be erased.
 
 To update a tool, run `npm install --save-dev <package>@<version>` with a version released at
-least two weeks earlier. Then run `npm run typecheck` and commit `package.json` with the lockfile.
+least two weeks earlier. Then run `npm run typecheck` and `npm run lint` and commit `package.json`
+with the lockfile. `oxlint-tsgolint` is built for one TypeScript version, so it moves with
+`typescript`. An update to oxfmt is followed by `npm run format`, in the same commit.
 
 Background: [ADR-0158](../adr/project/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
 

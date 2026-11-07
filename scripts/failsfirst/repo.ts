@@ -24,8 +24,9 @@ export function show(revision: string, file: string): string | null {
 
 // Every file the changeset touched. A rename is a delete and an add.
 export function changedFiles(base: string, head: string): Change[] {
-    const fields = git(['diff', '--name-status', '--no-renames', '-z', base, head]).stdout
-        .split('\0').filter((f) => f.length > 0);
+    const fields = git(['diff', '--name-status', '--no-renames', '-z', base, head])
+        .stdout.split('\0')
+        .filter((f) => f.length > 0);
     const changes: Change[] = [];
     for (let i = 0; i + 1 < fields.length; i += 2) {
         changes.push({ status: fields[i]?.[0] ?? '', file: fields[i + 1] ?? '' });

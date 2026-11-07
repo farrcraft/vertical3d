@@ -62,33 +62,31 @@ export type Report = { path: string; number: number; rule: string; excerpt: stri
 
 const SOURCE = /\.(h|hpp|c|cc|cpp|cxx)$/;
 
-const HELPERS = new Set([
-    'api/type/Checked.h',
-    'api/type/Checked.cxx',
-    'api/asset/Json.h',
-    'api/asset/Json.cpp',
-]);
+const HELPERS = new Set(['api/type/Checked.h', 'api/type/Checked.cxx', 'api/asset/Json.h', 'api/asset/Json.cpp']);
 
 /** The comment that accepts a reported line, with the reason the conversion is defined. */
 const CHECKED = /\/\/\s*checked:\s*\S/;
 
 const VALUE_TO = /\bvalue_to\s*</;
 
-const INTEGER = '(?:std::)?(?:u?int(?:8|16|32|64)?_t|u?int_(?:fast|least)(?:8|16|32|64)_t|size_t|ptrdiff_t' +
+const INTEGER =
+    '(?:std::)?(?:u?int(?:8|16|32|64)?_t|u?int_(?:fast|least)(?:8|16|32|64)_t|size_t|ptrdiff_t' +
     '|intmax_t|uintmax_t)' +
     '|(?:unsigned|signed)(?:\\s+(?:char|short|int|long(?:\\s+long)?(?:\\s+int)?))?' +
     '|short(?:\\s+int)?|long(?:\\s+long)?(?:\\s+int)?|int';
 const CAST = new RegExp('\\bstatic_cast\\s*<\\s*(?:const\\s+)?(?:' + INTEGER + ')\\s*>\\s*\\(', 'g');
 
-const FLOATY = new RegExp([
-    '\\b(?:std::)?(?:floor|ceil|round|lround|llround|trunc|fmod|nearbyint|rint|sqrt|pow|exp2?|log2?|log10)f?\\s*\\(',
-    '\\.value\\s*\\(\\s*\\)',
-    '\\bas_double\\s*\\(',
-    '\\bstatic_cast\\s*<\\s*(?:float|double|long\\s+double)\\s*>',
-    '(?<![\\w.])(?:\\d+\\.\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?[fFlL]?(?![\\w.])',
-    '(?<![\\w.])\\d+[eE][+-]?\\d+[fFlL]?(?![\\w.])',
-    '(?<![\\w.])\\d+[fF](?![\\w.])',
-].join('|'));
+const FLOATY = new RegExp(
+    [
+        '\\b(?:std::)?(?:floor|ceil|round|lround|llround|trunc|fmod|nearbyint|rint|sqrt|pow|exp2?|log2?|log10)f?\\s*\\(',
+        '\\.value\\s*\\(\\s*\\)',
+        '\\bas_double\\s*\\(',
+        '\\bstatic_cast\\s*<\\s*(?:float|double|long\\s+double)\\s*>',
+        '(?<![\\w.])(?:\\d+\\.\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?[fFlL]?(?![\\w.])',
+        '(?<![\\w.])\\d+[eE][+-]?\\d+[fFlL]?(?![\\w.])',
+        '(?<![\\w.])\\d+[fF](?![\\w.])',
+    ].join('|'),
+);
 
 /** Every line a change adds to a C++ source or header since the base, with its code. */
 function addedLines(base: string): Line[] {
@@ -119,8 +117,7 @@ function addedLines(base: string): Line[] {
  * Returns the added lines with the code of each, read from the whole file that read returns for
  * its path.
  */
-export function attachCode(added: Array<{ path: string; number: number; text: string }>,
-    read: (path: string) => string): Line[] {
+export function attachCode(added: Array<{ path: string; number: number; text: string }>, read: (path: string) => string): Line[] {
     // whether a line is code is a property of the whole file: an added line may sit inside a
     // block comment that an unchanged line opened
     const files = new Map<string, string[]>();
@@ -194,9 +191,16 @@ export function check(lines: Line[]): Report[] {
 function main(): number {
     const { values } = options('usage: node scripts/boundary.ts [--base REF]', { base: { type: 'string' } });
     process.chdir(ROOT);
-    const found = check(addedLines(mergeBase(values.base)))
-        .map(({ path, number, rule, excerpt }) => ({ path, line: number, rule, message: excerpt }));
-    return report(found, 'converts boundary input without a check. Use the helpers in api/type/Checked.h and api/asset/Json.h, or name why the conversion is defined in a // checked: comment.');
+    const found = check(addedLines(mergeBase(values.base))).map(({ path, number, rule, excerpt }) => ({
+        path,
+        line: number,
+        rule,
+        message: excerpt,
+    }));
+    return report(
+        found,
+        'converts boundary input without a check. Use the helpers in api/type/Checked.h and api/asset/Json.h, or name why the conversion is defined in a // checked: comment.',
+    );
 }
 
 runGate(import.meta.url, main);

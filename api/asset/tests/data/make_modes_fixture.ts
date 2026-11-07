@@ -36,9 +36,19 @@ const TRIANGLE_STRIP = 5;
 const TRIANGLE_FAN = 6;
 
 // bottom left, bottom right, top left, top right
-const STRIP = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]];
+const STRIP = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [1, 1, 0],
+];
 // round the square from the bottom left, counter clockwise
-const FAN = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+const FAN = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [1, 1, 0],
+    [0, 1, 0],
+];
 
 /** Append corners as a position accessor and return its index. */
 function positions(writer: Writer, corners: number[][]): number {
@@ -47,35 +57,50 @@ function positions(writer: Writer, corners: number[][]): number {
 
 function modes(): void {
     const writer = new Writer();
-    const drawn: [number[][], number][] = [[STRIP, TRIANGLE_STRIP], [FAN, TRIANGLE_FAN], [STRIP, LINES], [STRIP, POINTS]];
+    const drawn: [number[][], number][] = [
+        [STRIP, TRIANGLE_STRIP],
+        [FAN, TRIANGLE_FAN],
+        [STRIP, LINES],
+        [STRIP, POINTS],
+    ];
     const primitives = drawn.map(([corners, mode]) => ({ attributes: { POSITION: positions(writer, corners) }, mode, material: 0 }));
-    writer.gltf({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0] }],
-        nodes: [{ mesh: 0 }],
-        meshes: [{ primitives }],
-        materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
-        textures: [{ source: 0 }],
-        images: [{ uri: 'my%20texture.png' }],
-    }, 'primitive_modes.gltf');
+    writer.gltf(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0] }],
+            nodes: [{ mesh: 0 }],
+            meshes: [{ primitives }],
+            materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+            textures: [{ source: 0 }],
+            images: [{ uri: 'my%20texture.png' }],
+        },
+        'primitive_modes.gltf',
+    );
 }
 
 function dataUri(): void {
     const writer = new Writer();
-    const position = positions(writer, [[0, 0, 0], [1, 0, 0], [0, 1, 0]]);
+    const position = positions(writer, [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+    ]);
     const pixel = readFileSync(join(HERE, 'pixel.png'));
-    writer.gltf({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0] }],
-        nodes: [{ mesh: 0 }],
-        meshes: [{ primitives: [{ attributes: { POSITION: position }, material: 0 }] }],
-        materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
-        textures: [{ source: 0 }],
-        // no mimeType, because the uri states the type
-        images: [{ uri: `data:image/png;base64,${pixel.toString('base64')}` }],
-    }, 'data_uri_texture.gltf');
+    writer.gltf(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0] }],
+            nodes: [{ mesh: 0 }],
+            meshes: [{ primitives: [{ attributes: { POSITION: position }, material: 0 }] }],
+            materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+            textures: [{ source: 0 }],
+            // no mimeType, because the uri states the type
+            images: [{ uri: `data:image/png;base64,${pixel.toString('base64')}` }],
+        },
+        'data_uri_texture.gltf',
+    );
 }
 
 modes();

@@ -115,7 +115,7 @@ export function tokens(text: string): Token[] {
             const stop = close < 0 ? length : close + delimiter.length + 2;
             push('literal', index, stop);
             index = stop;
-        } else if (char === '"' || (char === '\'' && !isDigitSeparator(text, index))) {
+        } else if (char === '"' || (char === "'" && !isDigitSeparator(text, index))) {
             let end = index + 1;
             while (end < length && text[end] !== char && text[end] !== '\n') {
                 if (text[end] === '\\') {
@@ -175,19 +175,23 @@ export function lex(text: string): Segment[][] {
  * its closing marker. Each line inside a block comment has a body, which may be empty.
  */
 export function commentLines(text: string): CommentText[][] {
-    return lex(text).map((segments) => segments.filter((s) => s.kind === 'comment').map((s) => {
-        let column = s.column;
-        let body = s.text;
-        const block = !s.opens || body.startsWith('/*');
-        if (s.opens) {
-            column += 2;
-            body = body.slice(2);
-        }
-        if (block && s.closes && body.endsWith('*/')) {
-            body = body.slice(0, -2);
-        }
-        return { column, text: body };
-    }));
+    return lex(text).map((segments) =>
+        segments
+            .filter((s) => s.kind === 'comment')
+            .map((s) => {
+                let column = s.column;
+                let body = s.text;
+                const block = !s.opens || body.startsWith('/*');
+                if (s.opens) {
+                    column += 2;
+                    body = body.slice(2);
+                }
+                if (block && s.closes && body.endsWith('*/')) {
+                    body = body.slice(0, -2);
+                }
+                return { column, text: body };
+            }),
+    );
 }
 
 /**
@@ -197,19 +201,23 @@ export function commentLines(text: string): CommentText[][] {
  * or a literal keeps only the code outside it.
  */
 export function codeLines(text: string): string[] {
-    return lex(text).map((segments) => segments.map((s) => {
-        if (s.kind === 'code') {
-            return s.text;
-        }
-        if (!s.opens) {
-            return '';
-        }
-        if (s.kind === 'comment') {
-            return s.text.startsWith('/*') ? ' ' : '';
-        }
-        const quote = s.text[0] === '\'' ? '\'' : '"';
-        return quote + quote;
-    }).join(''));
+    return lex(text).map((segments) =>
+        segments
+            .map((s) => {
+                if (s.kind === 'code') {
+                    return s.text;
+                }
+                if (!s.opens) {
+                    return '';
+                }
+                if (s.kind === 'comment') {
+                    return s.text.startsWith('/*') ? ' ' : '';
+                }
+                const quote = s.text[0] === "'" ? "'" : '"';
+                return quote + quote;
+            })
+            .join(''),
+    );
 }
 
 /**

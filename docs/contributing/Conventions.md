@@ -166,7 +166,8 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
 
 - **A function is at most 100 lines.** A longer one does several steps that each deserve a
   name. Give each step a function of its own, named for what it does. clang-tidy's
-  `readability-function-size` reports a longer function.
+  `readability-function-size` reports a longer C++ function, and oxlint's
+  `max-lines-per-function` a longer TypeScript one.
 - **A C++ or TypeScript file is at most 1000 lines, unless it is a test.** A longer file is a
   class or a module doing several jobs. Split it into classes or modules with one job each,
   rather than spreading one class's definitions over several files. `scripts/filelength.ts`

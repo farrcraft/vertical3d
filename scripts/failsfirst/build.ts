@@ -18,15 +18,30 @@ import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types
 // drops are added to dropped, marked with whether the change added the source. A call in a
 // tests/ CMakeLists.txt that the configure reports as an unknown command is removed, and the
 // configure runs again.
-export function configure(worktree: string, build: string, mainBuild: string, cache: Map<string, string>, env: Env,
-                   scratch: string, head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
+export function configure(
+    worktree: string,
+    build: string,
+    mainBuild: string,
+    cache: Map<string, string>,
+    env: Env,
+    scratch: string,
+    head: string,
+    added: Set<string>,
+    dropped: Map<string, Drop[]>,
+): void {
     let toolchain = cache.get('CMAKE_TOOLCHAIN_FILE') ?? 'vendor/vcpkg/scripts/buildsystems/vcpkg.cmake';
     if (!path.isAbsolute(toolchain)) {
         toolchain = path.join(ROOT, toolchain);
     }
     const installed = cache.get('VCPKG_INSTALLED_DIR') || path.join(mainBuild, 'vcpkg_installed');
     const command = [
-        'cmake', '-S', worktree, '-B', build, '-G', 'Ninja',
+        'cmake',
+        '-S',
+        worktree,
+        '-B',
+        build,
+        '-G',
+        'Ninja',
         '-DCMAKE_BUILD_TYPE=' + (cache.get('CMAKE_BUILD_TYPE') ?? 'Debug'),
         '-DCMAKE_TOOLCHAIN_FILE=' + toolchain.replaceAll('\\', '/'),
         '-DVCPKG_TARGET_TRIPLET=' + (cache.get('VCPKG_TARGET_TRIPLET') ?? 'x64-windows'),
@@ -54,8 +69,7 @@ export function configure(worktree: string, build: string, mainBuild: string, ca
             const named = name.replaceAll('\\', '/');
             for (const { suite, directory, source } of listed) {
                 // the configure prints the entry as the list spelled it, or as an absolute path
-                const full = path.isAbsolute(name) ?
-                    path.relative(worktree, name).split(path.sep).join('/') : sourceOf(directory, named);
+                const full = path.isAbsolute(name) ? path.relative(worktree, name).split(path.sep).join('/') : sourceOf(directory, named);
                 if (full !== source || fs.existsSync(path.join(worktree, ...source.split('/')))) {
                     continue;
                 }
@@ -117,8 +131,11 @@ export function failedSources(output: string, directory: string, suite: string, 
         if (!outputFile.includes(marker) || !outputFile.endsWith('.obj')) {
             return null;
         }
-        const relative = (outputFile.split(marker)[1] ?? '').slice(0, -'.obj'.length)
-            .split('/').map((part) => (part === '__' ? '..' : part)).join('/');
+        const relative = (outputFile.split(marker)[1] ?? '')
+            .slice(0, -'.obj'.length)
+            .split('/')
+            .map((part) => (part === '__' ? '..' : part))
+            .join('/');
         failed.push(path.posix.normalize(path.posix.join(directory, relative)));
     }
     if (!linked) {
@@ -194,14 +211,21 @@ export function buildAll(suites: string[], build: string, env: Env, scratch: str
 
 // Builds v3dtest_<suite>. Marks the cases that cannot be built or run, and returns the
 // executable, or null when there is none to run.
-export function buildSuite(suite: string, directory: string, sources: string[], cases: Case[], worktree: string,
-                    build: string, env: Env, scratch: string): string | null {
+export function buildSuite(
+    suite: string,
+    directory: string,
+    sources: string[],
+    cases: Case[],
+    worktree: string,
+    build: string,
+    env: Env,
+    scratch: string,
+): string | null {
     const target = 'v3dtest_' + suite;
     const dropped = new Set<string>();
     for (;;) {
         console.log(`building ${target}`);
-        const { code, output } = runLogged(['ninja', '-k', '0', '-C', build, target],
-                                           path.join(scratch, `build-${suite}.log`), env);
+        const { code, output } = runLogged(['ninja', '-k', '0', '-C', build, target], path.join(scratch, `build-${suite}.log`), env);
         if (code === 0) {
             break;
         }
@@ -241,7 +265,7 @@ export function buildSuite(suite: string, directory: string, sources: string[], 
     if (fs.existsSync(executable)) {
         return executable;
     }
-    for (const entry of fs.readdirSync(build, { recursive: true }) as string[]) {
+    for (const entry of fs.readdirSync(build, { recursive: true, encoding: 'utf8' })) {
         if (path.basename(entry) === target + '.exe') {
             return path.join(build, entry);
         }

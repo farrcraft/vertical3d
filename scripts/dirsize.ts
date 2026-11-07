@@ -63,15 +63,19 @@ export function headerCounts(files: readonly string[]): Map<string, number> {
 /** The findings for a set of header counts, against a limit and a list of cohesive directories. */
 export function check(counts: ReadonlyMap<string, number>, limit: number, cohesive: ReadonlyMap<string, string>): Finding[] {
     const findings: Finding[] = [];
-    for (const [directory, count] of [...counts].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [directory, count] of [...counts].toSorted(([a], [b]) => a.localeCompare(b))) {
         if (count > limit && !cohesive.has(directory)) {
             findings.push({ directory, rule: 'over-limit', message: `${count} headers, over the limit of ${limit}` });
         }
     }
-    for (const directory of [...cohesive.keys()].sort()) {
+    for (const directory of [...cohesive.keys()].toSorted()) {
         const count = counts.get(directory) ?? 0;
         if (count <= limit) {
-            findings.push({ directory, rule: 'stale-listing', message: `listed as cohesive, but holds ${count} headers, within the limit of ${limit}` });
+            findings.push({
+                directory,
+                rule: 'stale-listing',
+                message: `listed as cohesive, but holds ${count} headers, within the limit of ${limit}`,
+            });
         }
     }
     return findings;
@@ -80,9 +84,16 @@ export function check(counts: ReadonlyMap<string, number>, limit: number, cohesi
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/dirsize.ts', {});
-    const findings = check(headerCounts(tracked('*.h')), LIMIT, COHESIVE)
-        .map(({ directory, rule, message }) => ({ path: directory, line: null, rule, message }));
-    return report(findings, 'breaks "Directories" in docs/contributing/Conventions.md. Split a directory by purpose, or list it in COHESIVE in scripts/dirsize.ts with the family its headers belong to.');
+    const findings = check(headerCounts(tracked('*.h')), LIMIT, COHESIVE).map(({ directory, rule, message }) => ({
+        path: directory,
+        line: null,
+        rule,
+        message,
+    }));
+    return report(
+        findings,
+        'breaks "Directories" in docs/contributing/Conventions.md. Split a directory by purpose, or list it in COHESIVE in scripts/dirsize.ts with the family its headers belong to.',
+    );
 }
 
 runGate(import.meta.url, main);

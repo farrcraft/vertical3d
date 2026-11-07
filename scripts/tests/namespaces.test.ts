@@ -15,9 +15,11 @@ function check(text: string, own: string, known: string[]): string[] {
 }
 
 /** The description findings for some headers and a namespaces.dox, as "path:line: rule" strings. */
-function describe(headers: Array<[string, string, string]>, dox = ''): string[] {
-    return descriptionFindings(headers.map(([file, own, text]) => ({ file, own, text })), dox)
-        .map((f) => `${f.path}:${f.line}: ${f.rule}`);
+function describe(headers: Array<[string, string, string]>, doxText = ''): string[] {
+    return descriptionFindings(
+        headers.map(([file, own, text]) => ({ file, own, text })),
+        doxText,
+    ).map((f) => `${f.path}:${f.line}: ${f.rule}`);
 }
 
 /** A header that opens a namespace, with a doc comment above the opening when described. */
@@ -58,7 +60,10 @@ test('namespaces names a nested namespace in full, and skips an anonymous one', 
         '}',
         '};  // namespace v3d::font',
     ].join('\n');
-    assert.deepEqual(opened(text), [{ line: 1, name: 'v3d::font' }, { line: 4, name: 'v3d::font::internal' }]);
+    assert.deepEqual(opened(text), [
+        { line: 1, name: 'v3d::font' },
+        { line: 4, name: 'v3d::font::internal' },
+    ]);
 });
 
 test('namespaces reads no namespace in a comment, a literal or a macro', () => {
@@ -69,7 +74,10 @@ test('namespaces reads no namespace in a comment, a literal or a macro', () => {
         'namespace v3d::right {',
         '};  // namespace v3d::right',
     ].join('\n');
-    assert.deepEqual(opened(text).map((o) => o.name), ['v3d::right']);
+    assert.deepEqual(
+        opened(text).map((o) => o.name),
+        ['v3d::right'],
+    );
 });
 
 test('namespaces reports a file that opens only a parent of its own namespace', () => {
@@ -77,7 +85,7 @@ test('namespaces reports a file that opens only a parent of its own namespace', 
     assert.deepEqual(check(text, 'v3d::editor::scene', ['v3d::editor', 'v3d::editor::scene']), ['1: own-namespace']);
 });
 
-test('namespaces allows a forward declaration in another directory\'s namespace', () => {
+test("namespaces allows a forward declaration in another directory's namespace", () => {
     const text = [
         'namespace v3d::editor::view {',
         'class ViewPort;',

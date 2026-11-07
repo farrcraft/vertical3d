@@ -7,10 +7,16 @@
   },
   "scripts": {
     "typecheck": "tsc -p . && tsc -p vertical3d/data/scripts && tsc -p docs/manual/editor/scenes",
+    "lint": "oxlint .",
+    "format": "oxfmt \"**/*.ts\"",
+    "format:check": "oxfmt --check \"**/*.ts\"",
     "test": "node --test \"scripts/tests/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "24.19.2",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "oxlint-tsgolint": "7.0.2005",
     "typescript": "7.0.2"
   }
 }

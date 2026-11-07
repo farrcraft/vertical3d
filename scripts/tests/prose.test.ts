@@ -35,17 +35,11 @@ function markdown(lines: string[], path = 'docs/Example.md', added: Set<number> 
 }
 
 test('prose reads a comment that follows a digit separator', () => {
-    assert.deepEqual(prose(['int count = 1\'000;  // So the count is large.']), ['1: opener']);
+    assert.deepEqual(prose(["int count = 1'000;  // So the count is large."]), ['1: opener']);
 });
 
 test('prose skips a comment marker inside a raw string and reads the comment after it', () => {
-    const lines = [
-        'const char* text = R"(',
-        '// So this line is inside a raw string.',
-        ')";',
-        '',
-        '// So this one is a real comment.',
-    ];
+    const lines = ['const char* text = R"(', '// So this line is inside a raw string.', ')";', '', '// So this one is a real comment.'];
     assert.deepEqual(prose(lines), ['5: opener']);
 });
 
@@ -61,11 +55,7 @@ test('prose skips a comment marker inside a continued string', () => {
 
 test('prose reports a comment line past 100 columns, and not a comment after code', () => {
     const long = `// ${'word '.repeat(20)}`;
-    const lines = [
-        '// A short comment line before it.',
-        long,
-        `int count = 0;  ${long}`,
-    ];
+    const lines = ['// A short comment line before it.', long, `int count = 0;  ${long}`];
     assert.deepEqual(prose(lines), ['2: long-line']);
 });
 
@@ -126,7 +116,6 @@ test('prose reports "X is what" followed by a verb, and not by a subject', () =>
     ];
     assert.deepEqual(prose(lines), ['1: inverted']);
 });
-
 
 test('prose reports a sentence of more than 35 words, and counts a code span as one word', () => {
     assert.deepEqual(markdown(wrapped(36, '.')), ['1: long-sentence']);
@@ -239,7 +228,10 @@ test('prose does not report a long comment line that holds a URL', () => {
 
 test('prose reads the comments of each kind of file it checks', () => {
     assert.deepEqual(markdown(['# So a comment line.', 'set(X 1)  # So a trailing comment.'], 'cmake/x.cmake'), ['1: opener', '2: opener']);
-    assert.deepEqual(markdown(['rem So a remark.', ':: So another.', 'echo So not a comment.'], 'scripts/x.cmd'), ['1: opener', '2: opener']);
+    assert.deepEqual(markdown(['rem So a remark.', ':: So another.', 'echo So not a comment.'], 'scripts/x.cmd'), [
+        '1: opener',
+        '2: opener',
+    ]);
     assert.deepEqual(markdown(['# So a comment.', 'key: So a value.'], '.github/workflows/x.yml'), ['1: opener']);
     assert.deepEqual(markdown(["const s = '// So inside a string.'; // So a comment."], 'scripts/x.ts'), ['1: opener']);
     assert.deepEqual(markdown(['So nothing here is read.'], 'data/notes.txt'), []);
@@ -257,8 +249,15 @@ test('prose names the kind of a file by its name', () => {
 });
 
 test('prose leaves out records, third-party trees and an ADR that is not new', () => {
-    for (const path of ['vendor/x/README.md', 'ports/glm/usage.md', 'docs/audits/x.md', 'docs/plans/completed/X.md',
-        'docs/roadmap/completed/X.md', 'out/build/x.md', 'examples/starter/vcpkg_installed/x.md']) {
+    for (const path of [
+        'vendor/x/README.md',
+        'ports/glm/usage.md',
+        'docs/audits/x.md',
+        'docs/plans/completed/X.md',
+        'docs/roadmap/completed/X.md',
+        'out/build/x.md',
+        'examples/starter/vcpkg_installed/x.md',
+    ]) {
         assert.equal(excluded(path, new Set()), true, path);
     }
     assert.equal(excluded('docs/adr/0001-a-decision.md', new Set()), true);
