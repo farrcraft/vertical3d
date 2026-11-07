@@ -79,4 +79,24 @@ Attribute "displacementbound" "float sphere" [0.1]
   lost.
 - Under either hider, shadows and reflections meet the displaced shape. The shader runs once,
   so a displacement that changes over the shutter does not blur.
+
+## 4. Set a trace bias under the reyes hider
+
+Shadows and reflections meet the 64 by 64 copy of the surface that the ray-trace hider uses.
+The reyes hider shades its own, finer grids. Where the surface curves, the two lie a little
+apart. A shadow ray from a reyes grid can then start just under the copy and meet it, and the
+slopes of the surface show black and white stripes.
+
+`Attribute "trace" "bias"` sets how far from the surface a ray leaving it starts, in world
+units. Set it larger than the gap:
+
+```
+Attribute "trace" "bias" [0.005]
+```
+
+- The default is 0.0001, which is enough for a surface that is not displaced.
+- The gap grows with how sharply the surface curves and how large it is. A surface a unit or two
+  across, rippled a tenth of a unit, needs about 0.002. A bias ten times the gap leaves margin.
+- Too large a bias lets light through where two surfaces touch, so a contact shadow thins.
+- The attribute applies under both hiders, to every surface declared after it in the block.
 - A sphere is never displaced.

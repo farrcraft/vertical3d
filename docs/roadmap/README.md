@@ -32,7 +32,9 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 ## Open roadmaps
 
-None.
+| Roadmap | What it covers |
+|---|---|
+| [MoyaRebuild.md](MoyaRebuild.md) | moya rebuilt as a spectral path tracer: a kernel source for every device, a retained scene interface, its own BVH, a BSDF library fed by MaterialX, physically based lights, compositing output, volumes, HIP and OptiX back ends, Hydra and OSL |
 
 ## Completed roadmaps
 

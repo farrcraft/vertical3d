@@ -7,6 +7,7 @@
 
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/trace/Primitive.h>
 
 #include <vector>
 
@@ -55,6 +56,11 @@ class Shading final {
      * "sphere"`, in camera space. Zero when the scene gave no bound.
      **/
     float displacementBound = 0.0F;
+    /**
+     * How far along its geometric normal a ray leaving the primitive starts, in world units:
+     * Attribute "trace" "bias". Its traced copy carries the same.
+     **/
+    float traceBias = v3d::render::offline::trace::defaultBias;
 };
 
 };  // namespace v3d::moya::state

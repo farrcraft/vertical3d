@@ -146,11 +146,7 @@ Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-
 
 ## What is not built
 
-[TODO.md](../TODO.md#offline-rendering) holds the open work:
-
-- A shader's traced rays include the hits that did not call `trace()`.
-
-Also not built, with no open item:
+[TODO.md](../TODO.md) holds no open item for the offline renderer. These are not built:
 
 - Volume shaders, the `shadow()` built-in and shadow maps.
 - Deforming primitives inside a motion block.
@@ -158,5 +154,5 @@ Also not built, with no open item:
   the reyes hider.
 - A curve's `"N"`, which would turn its ribbon to face a given way, its varying `"Cs"`, round
   curves, a displaced traced curve, and a curve joining an area light.
-- `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary and gzipped
-  RIB, and `Display` modes other than RGB.
+- `Orientation`, any `Attribute` but `"light"`, `"displacementbound"` and `"trace"`, binary
+  and gzipped RIB, and `Display` modes other than RGB.

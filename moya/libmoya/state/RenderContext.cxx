@@ -426,6 +426,15 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         attributes_.displacementBound = radius * stretch;
         return;
     }
+    if (name == "trace" && parameters.has("bias")) {
+        const float bias = parameters.number("bias", 0.0F);
+        if (!std::isfinite(bias) || bias < 0.0F) {
+            logger_->get()->warn("a trace bias of {} is not a distance, and is not used", bias);
+            return;
+        }
+        attributes_.traceBias = bias;
+        return;
+    }
     if (std::find(unusedAttributes_.begin(), unusedAttributes_.end(), name) == unusedAttributes_.end()) {
         unusedAttributes_.push_back(name);
         logger_->get()->warn("the attribute \"{}\" is not used", name);
@@ -468,6 +477,7 @@ Shading RenderContext::shading() {
     state.lights = lights_.shining(attributes_.lit);
     state.displacement = attributes_.displacement;
     state.displacementBound = attributes_.displacementBound;
+    state.traceBias = attributes_.traceBias;
     return state;
 }
 
@@ -643,6 +653,10 @@ bool RenderContext::stopped() const noexcept {
     return progress_.stopped();
 }
 
+unsigned int RenderContext::unwritten() const noexcept {
+    return unwritten_;
+}
+
 void RenderContext::render() {
     if (!planes_) {
         return;
@@ -671,7 +685,9 @@ void RenderContext::render() {
         imager.run(planes_.get(), Planes::COVERAGE);
     }
 
-    display_.finish(planes_.get(), logger_);
+    if (!display_.finish(planes_.get(), logger_)) {
+        unwritten_++;
+    }
 }
 
 };  // namespace v3d::moya::state

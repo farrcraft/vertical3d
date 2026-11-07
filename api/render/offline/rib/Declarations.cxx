@@ -65,6 +65,8 @@ Declarations::Declarations() {
     declarations_["gridsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
     // the parameters of Option "trace" and Option "searchpath", whose names the standard defines
     declarations_["maxdepth"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
+    // Attribute "trace" "bias", which RenderMan renderers predeclare
+    declarations_["bias"] = Declaration(Storage::UNIFORM, Type::FLOAT, 1);
     declarations_["shader"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
     declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 }

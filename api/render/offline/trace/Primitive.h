@@ -22,6 +22,17 @@
 namespace v3d::render::offline::trace {
 
 /**
+ * How far along its geometric normal a ray leaving a surface starts, in world units, when the
+ * scene sets nothing else.
+ *
+ * **This is a trap.** A shadow ray that starts exactly on the surface hits the surface it
+ * left, and every lit pixel comes out black. The pattern looks like a fault in the normals
+ * rather than a numerical one. The offset is along the normal rather than along the ray,
+ * because an offset along a ray nearly parallel to the surface stays on the surface.
+ **/
+inline constexpr float defaultBias = 1.0e-4F;
+
+/**
  * The lights a primitive is shaded by, each with the space it was instanced in. Shared, since
  * every primitive made between two changes of the lights has the same set.
  **/
@@ -83,6 +94,19 @@ class Primitive {
     void opacity(const glm::vec3 & value);
 
     /**
+     * How far along its geometric normal a ray leaving the primitive starts, in world units:
+     * `Attribute "trace" "bias"`, and defaultBias when the scene set none.
+     *
+     * A displaced surface is diced for the traced scene apart from the grids the reyes hider
+     * shades, and the two lie a little apart where the surface curves. A ray from a grid that
+     * starts inside that gap meets the traced copy, and the surface shadows itself in bands.
+     * A bias larger than the gap clears it. Too large a bias lets light leak where two
+     * surfaces touch.
+     **/
+    float bias() const;
+    void bias(float distance);
+
+    /**
      * The primitive's object space into world space, as the transformation stood when the
      * scene created it: SL's "object" space. A moving primitive keeps the transformation of
      * the pose it is stored in. The identity for a primitive built in code without one.
@@ -115,6 +139,7 @@ class Primitive {
     v3d::render::offline::sl::Placed surface_;
     Lights lights_;
     glm::vec3 opacity_ = glm::vec3(1.0F);
+    float bias_ = defaultBias;
     glm::mat4x4 object_ = glm::mat4x4(1.0F);
     glm::vec3 colour_;
 };

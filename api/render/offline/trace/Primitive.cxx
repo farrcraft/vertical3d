@@ -53,6 +53,14 @@ void Primitive::opacity(const glm::vec3 & value) {
     opacity_ = value;
 }
 
+float Primitive::bias() const {
+    return bias_;
+}
+
+void Primitive::bias(float distance) {
+    bias_ = distance;
+}
+
 const glm::mat4x4 & Primitive::object() const {
     return object_;
 }

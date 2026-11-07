@@ -85,14 +85,15 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     Shape shape() const override;
     /**
      * Both trace through the context's traced scene, in world space, at the shutter's open. A
-     * grid is shaded once for all of its samples, so it has no single time of its own.
+     * grid is shaded once for all of its samples, so it has no single time of its own. Each ray
+     * starts the primitive's trace bias off the surface.
      **/
     bool transmission(const v3d::render::offline::sl::runtime::Value & from,
         const v3d::render::offline::sl::runtime::Value & to,
-        v3d::render::offline::sl::runtime::Value* fraction) override;
+        v3d::render::offline::sl::runtime::Value* fraction, const std::vector<char> & active) override;
     bool trace(const v3d::render::offline::sl::runtime::Value & origin,
         const v3d::render::offline::sl::runtime::Value & direction,
-        v3d::render::offline::sl::runtime::Value* colour) override;
+        v3d::render::offline::sl::runtime::Value* colour, const std::vector<char> & active) override;
 
  private:
     typedef v3d::render::offline::sl::runtime::Value Value;
@@ -148,6 +149,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     glm::mat4x4 toWorld_ = glm::mat4x4(1.0F);
     std::vector<glm::vec3> planes_;
+    /** The bias of the primitive the grid was diced from, which its rays start at. **/
+    float bias_ = v3d::render::offline::trace::defaultBias;
 };
 
 };  // namespace v3d::moya::reyes

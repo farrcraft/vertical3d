@@ -6,6 +6,7 @@
 #include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/ri/RIBHandler.h>
@@ -253,6 +254,37 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
     shading = handler.context().shading();
     BOOST_CHECK(!shading.displacement.shader);
     BOOST_CHECK_EQUAL(shading.displacementBound, 0.0F);
+}
+
+/**
+ * Attribute "trace" "bias" sets how far a ray leaving a surface starts from it, and the traced
+ * copy of a primitive declared under it carries the same. The parameter is predeclared, as a
+ * RenderMan renderer declares it. A bias that is not a distance is reported and changes
+ * nothing, and a block's end restores the bias.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_trace_bias_reaches_the_traced_scene_test) {
+    v3d::moya::ri::RIBHandler handler;
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read(
+        "Format 8 6 1\n"
+        "Hider \"raytrace\"\n"
+        "WorldBegin\n"
+        "AttributeBegin\n"
+        "Attribute \"trace\" \"bias\" [0.01]\n"
+        "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
+        "Attribute \"trace\" \"bias\" [-1]\n", &handler));
+
+    BOOST_CHECK_CLOSE(handler.context().shading().traceBias, 0.01F, 0.01F);
+    BOOST_TEST(heard.said("a trace bias of -1 is not a distance"));
+    const auto & traced = handler.context().traced().primitives();
+    BOOST_REQUIRE(!traced.empty());
+    for (const auto & primitive : traced) {
+        BOOST_CHECK_CLOSE(primitive->bias(), 0.01F, 0.01F);
+    }
+
+    handler.context().attributeEnd();
+    BOOST_CHECK_EQUAL(handler.context().shading().traceBias, v3d::render::offline::trace::defaultBias);
 }
 
 /**

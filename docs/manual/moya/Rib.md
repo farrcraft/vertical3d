@@ -148,6 +148,7 @@ again.
 | `Basis "name" step "name" step` | The basis of cubic curves. See [Curves.md](Curves.md#choose-the-basis-of-a-cubic-curve) |
 | `Attribute "light" "integer nsamples" [n]` | How many points an area light made after it samples, from 1 to 4096. Default 16 |
 | `Attribute "displacementbound" "float sphere" [d]` | How far a displacement shader can move a point. See [Displacement.md](Displacement.md#3-set-the-displacement-bound) |
+| `Attribute "trace" "bias" [d]` | How far from a surface a shadow or traced ray leaving it starts, in world units. Default 0.0001. See [Displacement.md](Displacement.md#4-set-a-trace-bias-under-the-reyes-hider) |
 
 - `Attribute` reads only the names in the table. Any other attribute is reported once by name
   and ignored.

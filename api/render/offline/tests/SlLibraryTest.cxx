@@ -4,6 +4,7 @@
  */
 
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/compiler/Builtins.h>
 #include <api/render/offline/sl/compiler/Compiler.h>
@@ -17,11 +18,17 @@
 #include <api/render/offline/texture/Noise.h>
 #include <api/render/offline/texture/Texture.h>
 
+#include <spdlog/sinks/ringbuffer_sink.h>
+
+#include <cstddef>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
@@ -43,7 +50,7 @@ typedef v3d::render::offline::sl::runtime::Program Program;
 class Shaded final {
  public:
     explicit Shaded(const std::string & body, unsigned int batch = 1,
-        v3d::render::offline::sl::runtime::Renderer* renderer = nullptr) {
+        v3d::render::offline::sl::runtime::Renderer* renderer = nullptr, const boost::shared_ptr<v3d::log::Logger> & logger = {}) {
         const std::string source = "surface test() {\n" + body + "\n}\n";
         std::istringstream stream(source);
         v3d::render::offline::sl::compiler::Parser parser(stream);
@@ -54,6 +61,9 @@ class Shaded final {
         v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
         machine_.renderer(renderer);
+        if (logger) {
+            machine_.logger(logger);
+        }
         machine_.prepare(program_, batch);
         BOOST_REQUIRE_MESSAGE(machine_.run(), machine_.error());
     }
@@ -436,6 +446,26 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_test) {
     BOOST_CHECK(shaded.machine().printed()[0].find("(0.500000 0.000000 1.000000)") != std::string::npos);
     // no report: reports are only for what the machine could not do
     BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
+ * Each line printf writes goes to the machine's logger as it is written, one per shading point,
+ * so a renderer's log shows what a shader printed.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_printf_is_logged_test) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> heard = std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(16);
+    logger->get()->sinks().push_back(heard);
+    const Shaded shaded("printf(\"s is %f\", s);", 2, nullptr, logger);
+    logger->get()->sinks().pop_back();
+
+    std::size_t said = 0;
+    for (const std::string & line : heard->last_formatted()) {
+        if (line.contains("shader: s is ")) {
+            said++;
+        }
+    }
+    BOOST_CHECK_EQUAL(said, 2U);
 }
 
 /**

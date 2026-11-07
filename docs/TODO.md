@@ -19,27 +19,6 @@ up. None waits for a game, a scene or a second caller to need it first.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## Offline rendering
-
-[] **A shader's traced rays include the hits that did not trace.** `trace()` casts one ray for
-every hit of a run, whatever branch each hit took, because a shader callback is given no mask of
-the hits that reached it. The rays of the hits that did not call `trace()` are cast and thrown
-away. The callback needs the run's active hits, so it casts rays for those alone.
-
-[] **Displaced slopes stripe under the reyes hider.** A displaced surface rendered by reyes shows
-black and white bands on its slopes. `moya/tests/data/reference-displaced.rib` shows them at
-256×192. The ray-trace hider renders the same scene cleanly.
-
-[] **A shader's `printf()` output is never shown.** The runtime collects what `printf()` writes,
-and nothing prints it or sends it to the log.
-
-[] **moya exits 0 when it cannot write the image.** An output file with an extension no writer
-takes logs an error, and the process still exits with 0, so a script that runs moya sees success.
-
-[] **moya's message for an out-of-range `--grid` or `--bucket` is wrong.** It says the default
-is used. A scene's `Option "limits"` can still set the size, so the message names one case of
-two.
-
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.

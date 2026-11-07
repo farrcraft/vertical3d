@@ -17,6 +17,7 @@
 
 #include "MicroPolygonGrid.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,18 @@
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::reyes {
+
+namespace {
+
+/**
+ * Whether a point reached a trace or transmission call: whether it is live in the mask the
+ * machine passed.
+ **/
+bool live(const std::vector<char> & active, unsigned int point) {
+    return point < active.size() && active[point] != 0;
+}
+
+};  // namespace
 
 GridShader::GridShader(state::RenderContext* context) :
     context_(context), tracer_(&context->traced(), &context->textures()) {
@@ -103,31 +116,39 @@ bool GridShader::message(const std::string & shader, const std::string & name, V
     return from != nullptr && from->machine.output(name, value);
 }
 
-bool GridShader::transmission(const Value & from, const Value & to, Value* fraction) {
+bool GridShader::transmission(const Value & from, const Value & to, Value* fraction, const std::vector<char> & active) {
     for (unsigned int point = 0; point < batch_; point++) {
+        if (!live(active, point)) {
+            continue;
+        }
         const glm::vec3 source(toWorld_ * glm::vec4(from.triple(point), 1.0F));
         const glm::vec3 target(toWorld_ * glm::vec4(to.triple(point), 1.0F));
         fraction->triple(point, tracer_.transmitted({.origin = source, .direction = target - source},
-            point < planes_.size() ? planes_[point] : glm::vec3(0.0F)));
+            point < planes_.size() ? planes_[point] : glm::vec3(0.0F), bias_));
     }
     return true;
 }
 
-bool GridShader::trace(const Value & origin, const Value & direction, Value* colour) {
-    // the grid's rays are traced as one batch, so their hits are shaded together
+bool GridShader::trace(const Value & origin, const Value & direction, Value* colour, const std::vector<char> & active) {
+    // the rays of the points that reached the call are traced as one batch, so their hits are
+    // shaded together
     std::vector<v3d::type::geometry::Line> paths;
     std::vector<glm::vec3> geometric;
-    paths.reserve(batch_);
-    geometric.reserve(batch_);
+    std::vector<unsigned int> casting;
     for (unsigned int point = 0; point < batch_; point++) {
+        if (!live(active, point)) {
+            continue;
+        }
+        casting.push_back(point);
         const glm::vec3 start(toWorld_ * glm::vec4(origin.triple(point), 1.0F));
         const glm::vec3 along = glm::mat3(toWorld_) * direction.triple(point);
         paths.push_back({.origin = start, .direction = along});
         geometric.push_back(point < planes_.size() ? planes_[point] : glm::vec3(0.0F));
     }
-    const std::vector<glm::vec3> seen = tracer_.traced(paths, geometric, std::vector<float>(batch_, tracer_.time()));
-    for (unsigned int point = 0; point < batch_; point++) {
-        colour->triple(point, seen[point]);
+    const std::vector<glm::vec3> seen = tracer_.traced(paths, geometric, std::vector<float>(paths.size(), tracer_.time()),
+        std::vector<float>(paths.size(), bias_));
+    for (std::size_t ray = 0; ray < casting.size(); ray++) {
+        colour->triple(casting[ray], seen[ray]);
     }
     return true;
 }
@@ -192,6 +213,7 @@ void GridShader::displace(const state::Shading & shading, MicroPolygonGrid* grid
     // a displacement shader names no lights, so shading_ stays null while it runs
     placement_ = shading.displacement.placement;
     object_ = shading.object;
+    bias_ = shading.traceBias;
     batch_ = batch;
     size_ = size;
     Run & held = run(shading.displacement.shader, batch);
@@ -246,6 +268,7 @@ void GridShader::shade(const state::Shading & shading, MicroPolygonGrid* grid) {
     shading_ = &shading;
     placement_ = shading.placement;
     object_ = shading.object;
+    bias_ = shading.traceBias;
     batch_ = batch;
     size_ = size;
     toWorld_ = glm::inverse(context_->coordinateSystem("camera"));

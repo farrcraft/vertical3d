@@ -8,6 +8,7 @@
 #include <api/render/offline/Area.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/trace/Primitive.h>
 
 #include <string>
 #include <vector>
@@ -38,6 +39,8 @@ class Attributes final {
     /** RiDisplacement, placed in camera space, and how far it may move a point there. **/
     v3d::render::offline::sl::Placed displacement;
     float displacementBound = 0.0F;
+    /** `Attribute "trace" "bias"`: how far from the surface a ray leaving it starts. **/
+    float traceBias = v3d::render::offline::trace::defaultBias;
     /**
      * Which lights are switched on, by handle. The lights themselves last for the frame, so
      * AttributeEnd restores only this set.

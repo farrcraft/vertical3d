@@ -93,9 +93,18 @@ Background: [ADR-0092](../adr/offline/0092-offline-a-bounding-volume-hierarchy-f
 - **Each batch is shaded by a `trace::HitShader`** made on the stack for it. The `HitShader`
   answers the shader's callbacks for the batch. A batch a shader traces into gets its own
   `HitShader`, so nothing is saved and restored around a traced ray.
-- **A shader's traced rays are a batch.** `trace()` traces one ray for each hit of the run, and
-  the rays are traced and shaded together, one depth down. A grid's `trace()` under the reyes
-  hider is one batch too.
+- **A shader's traced rays are a batch.** `trace()` traces one ray for each hit of the run that
+  reached the call, and the rays are traced and shaded together, one depth down. A grid's
+  `trace()` under the reyes hider is one batch too, of the vertices that reached it.
+- **A ray starts its surface's trace bias off it**, along the geometric normal:
+  `Primitive::bias()`, from `Attribute "trace" "bias"`, and `trace::defaultBias` (0.0001)
+  without one. A reyes grid's rays take the bias of the primitive it was diced from, and a hit's
+  rays the bias of the primitive it hit. A displaced surface needs a larger bias under the reyes
+  hider, because its grids and its traced copy are diced apart and lie up to the bias apart.
+  Background: [ADR-0185](../adr/offline/0185-offline-a-surface-sets-its-trace-bias.md)
+- **Only the points that reach a call trace.** The machine passes `trace()` and
+  `transmission()` its execution mask. A point a branch left out casts no ray, and keeps the
+  value it had. A hit traces when any point of its stencil reached the call.
 - **A hit is one point, or a stencil of three when its shader differentiates.** A surface
   shader that reads a derivative, or a light shining on it that does, shades each hit with the
   points a step along its primitive's u and along its v. The derivative built-ins difference

@@ -90,10 +90,10 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
         std::vector<char>* reached, bool* ambient) override;
     bool transmission(const v3d::render::offline::sl::runtime::Value & from,
         const v3d::render::offline::sl::runtime::Value & to,
-        v3d::render::offline::sl::runtime::Value* fraction) override;
+        v3d::render::offline::sl::runtime::Value* fraction, const std::vector<char> & active) override;
     bool trace(const v3d::render::offline::sl::runtime::Value & origin,
         const v3d::render::offline::sl::runtime::Value & direction,
-        v3d::render::offline::sl::runtime::Value* colour) override;
+        v3d::render::offline::sl::runtime::Value* colour, const std::vector<char> & active) override;
     const v3d::render::offline::texture::Texture* texture(const std::string & name) override;
     /**
      * A light reads the surface being shaded, and a surface's illuminance loop reads the light

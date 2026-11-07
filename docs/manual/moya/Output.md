@@ -37,7 +37,7 @@ The file name's extension sets the format:
 | `.bmp` | Windows bitmap |
 
 Upper and lower case are the same. A file with any other extension is not written, and the log
-holds an `[error]` that says so. moya still exits with success, so check the log.
+holds an `[error]` that says so. moya prints `error writing the picture` and exits with failure.
 
 The file always holds red, green and blue, eight bits each, whatever mode `Display` names. It
 holds no alpha channel and no depth. A colour above 1 is written as 1, and one below 0 as 0.

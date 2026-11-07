@@ -67,8 +67,9 @@ class RenderContext {
         /**
          * maps to RiWorldEnd()
          * Runs the hider into the framebuffer's planes, then the imager if there is one. A
-         * display of type "file" then has its colour channels written. Lights, the traced
-         * scene and the framebuffer are kept. Does nothing before prepareWorld().
+         * display of type "file" then has its colour channels written, and one that cannot be
+         * written is counted by unwritten(). Lights, the traced scene and the framebuffer are
+         * kept. Does nothing before prepareWorld().
          *
          * Under the reyes hider, when no shader the scene bound calls trace or transmission,
          * the traced scene's primitives are dropped before the hider runs, since no ray will
@@ -97,6 +98,12 @@ class RenderContext {
          * @return whether the last render was stopped before its end
          **/
         bool stopped() const noexcept;
+
+        /**
+         * @return how many renders since the context was made had a display of type "file"
+         *         that could not be written
+         **/
+        unsigned int unwritten() const noexcept;
 
         unsigned int imageWidth() const;
         unsigned int imageHeight() const;
@@ -483,6 +490,7 @@ class RenderContext {
         v3d::render::offline::CameraOptions options_;
         v3d::render::offline::Camera camera_;
         Display display_;
+        unsigned int unwritten_ = 0;
         boost::shared_ptr<Hider> hider_;
         v3d::render::offline::film::Sampling sampling_;
 

@@ -154,18 +154,28 @@ class Renderer {
      * This is how a shadow is cast. moya computes it with the shared ray tracer, for a grid
      * and for a traced hit alike. It is a ray tracing extension, not part of RI 3.03.
      *
+     * @param from where the light leaves, at each point
+     * @param to where it arrives, at each point
+     * @param fraction where the fraction that arrives lands, per component
+     * @param active which points reached the call, non-zero for each that did. Only those are
+     *        traced, and the fraction at every other point is left as it was
      * @return whether the renderer computed it; when it did not, all the light gets through
      **/
-    virtual bool transmission(const Value & from, const Value & to, Value* fraction);
+    virtual bool transmission(const Value & from, const Value & to, Value* fraction, const std::vector<char> & active);
 
     /**
      * The colour a ray from a point in a direction returns. moya traces it with the shared
      * ray tracer, for a grid and for a traced hit alike.
      *
+     * @param origin where each point's ray starts
+     * @param direction which way each point's ray goes
+     * @param colour where the colour each ray returns lands
+     * @param active which points reached the call, non-zero for each that did. Only those cast
+     *        a ray, and the colour at every other point is left as it was
      * @return whether the renderer traced it; when it did not, the result is black and the
      *         machine reports it
      **/
-    virtual bool trace(const Value & origin, const Value & direction, Value* colour);
+    virtual bool trace(const Value & origin, const Value & direction, Value* colour, const std::vector<char> & active);
 
     /**
      * The texture a shader names. The renderer keeps each texture for the frame, so each is

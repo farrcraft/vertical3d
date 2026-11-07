@@ -255,6 +255,13 @@ Each copies the parameter into `v` and returns 1, or returns 0 and leaves `v` as
 parameter must be declared `output` and have `v`'s type. Under the ray-trace hider,
 `displacement()` always returns 0.
 
+### Printing
+
+`printf("format", ...)` writes a line into the log, as an `[info]` message starting `shader:`,
+once for each shading point that runs it. `%f` prints a float, `%c` a colour, `%p` a point,
+`%v` a vector, `%n` a normal, `%m` a matrix and `%s` a string, and `%%` prints `%`. See
+[Shaders.md](Shaders.md).
+
 ## Built-in shaders
 
 These are compiled into moya, so they need no files.
@@ -290,4 +297,3 @@ These are compiled into moya, so they need no files.
   list. A call to one is an error.
 - A colour space other than `"rgb"`.
 - `PI` and the other named constants. Write the number.
-- `printf()` compiles, but moya does not show what it prints.

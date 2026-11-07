@@ -19,6 +19,7 @@
 #include <glm/vec3.hpp>
 
 #include "Hit.h"
+#include "Primitive.h"
 #include "Scene.h"
 
 /**
@@ -113,22 +114,25 @@ class Tracer final {
      *
      * @param path for transmitted(), from the shading point to the light: its direction ends at
      *        the light. For traced(), where the ray starts and which way it goes.
-     * @param geometric the geometric normal of the surface the ray leaves. The ray starts a
-     *        small offset along it, so that it does not meet that surface again. Zero starts
-     *        the ray at the path's origin
+     * @param geometric the geometric normal of the surface the ray leaves. The ray starts the
+     *        bias along it, so that it does not meet that surface again. Zero starts the ray at
+     *        the path's origin
+     * @param bias how far along the normal the ray starts: the surface's Primitive::bias()
      **/
-    glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
-    glm::vec3 traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
+    glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, float bias = defaultBias);
+    glm::vec3 traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, float bias = defaultBias);
 
     /** transmitted() with the moving primitives placed as `poses` places them. **/
-    glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, const Scene::Poses & poses);
+    glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, const Scene::Poses & poses,
+        float bias = defaultBias);
 
     /**
      * traced() for a batch of rays, each from its own surface at its own time, traced and
-     * shaded as one batch. The three lists are the same length.
+     * shaded as one batch. The first three lists are the same length. biases holds each ray's
+     * bias, and a ray past its end takes defaultBias.
      **/
     std::vector<glm::vec3> traced(const std::vector<v3d::type::geometry::Line> & paths,
-        const std::vector<glm::vec3> & geometric, const std::vector<float> & times);
+        const std::vector<glm::vec3> & geometric, const std::vector<float> & times, const std::vector<float> & biases = {});
 
     const Scene* scene() const;
     /** Where the moving primitives are at the time set by time(). **/
@@ -170,12 +174,8 @@ class Tracer final {
 
  private:
     /**
-     * How far along the geometric normal a ray leaving a surface starts.
-     *
-     * **This is a trap.** A shadow ray that starts exactly on the surface hits the surface it
-     * left, and every lit pixel comes out black. The pattern looks like a fault in the normals
-     * rather than a numerical one. The offset is along the normal rather than along the ray,
-     * because an offset along a ray nearly parallel to the surface stays on the surface.
+     * How far short of its end a shadow ray stops, and the shortest shadow ray traced. A ray's
+     * start is offset by its surface's bias instead.
      **/
     static constexpr float EPSILON = 1.0e-4F;
 

@@ -292,11 +292,12 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
     The same scene as data/reference-displaced.rib, and as data/raytrace-displaced.rib under the
     ray hider. A plane is rippled three times across x by the lift displacement shader, toward
     the camera, and lit from the left. The plane's normal points away from the camera, so the
-    amount is negative.
+    amount is negative. Its trace bias clears the gap between the reyes grids and the traced
+    copy of the plane, which are diced apart.
 */
-void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider) {
+void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider, const glm::ivec2 & size = {64, 48}) {
     rc.hider(hider);
-    rc.imageResolution({64, 48}, 1.0F);
+    rc.imageResolution(size, 1.0F);
     pixelCentres(rc);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.searchpath("data:&");
@@ -316,6 +317,9 @@ void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     v3d::render::offline::rib::ParameterList bound;
     put(&bound, "sphere", Declaration::Type::FLOAT, { 0.16F });
     rc.attribute("displacementbound", bound);
+    v3d::render::offline::rib::ParameterList bias;
+    put(&bias, "bias", Declaration::Type::FLOAT, { 0.005F });
+    rc.attribute("trace", bias);
     v3d::render::offline::rib::ParameterList ripples;
     put(&ripples, "amount", Declaration::Type::FLOAT, { -0.08F });
     put(&ripples, "wave", Declaration::Type::FLOAT, { 0.08F });
@@ -350,6 +354,32 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
 
     check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         DISPLACED, DISPLACED_RIB_RENDERED);
+}
+
+/**
+ * A displaced surface under the reyes hider does not shadow itself. Each grid's shadow rays
+ * start the plane's trace bias off it, past the traced copy of the plane, which is diced apart
+ * from the grids. A ray that met that copy would leave its pixel lit by the ambient light
+ * alone. Every pixel inside the plane is lit from the side as well, as under the ray hider.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_displaced_surface_does_not_shadow_itself_test) {
+    v3d::moya::state::RenderContext rc;
+    // at the size of the reference the grids are no finer than the traced copy, and lie on it
+    displacedScene(rc, "hidden", {256, 192});
+    rc.render();
+
+    // the plane covers the picture but for a border of a few pixels
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> picture = rc.picture();
+    float darkest = 1.0F;
+    for (unsigned int row = 24; row + 24 < picture->height(); row++) {
+        for (unsigned int column = 24; column + 24 < picture->width(); column++) {
+            darkest = std::min(darkest, picture->value(0, column, row));
+        }
+    }
+    BOOST_TEST_MESSAGE("the darkest red inside the plane is " << darkest);
+    // the ambient light alone gives 0.08 of red, and the side light at its most oblique more
+    // than three times that
+    BOOST_CHECK_GT(darkest, 0.2F);
 }
 
 /**

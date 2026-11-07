@@ -115,6 +115,8 @@ reported, so the table lists only tags in use.
 | [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 | [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
 
 ### camera
 
@@ -144,6 +146,7 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0009](rendering/0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain |
+| [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
 
 ### docs
 
@@ -197,6 +200,7 @@ reported, so the table lists only tags in use.
 | [0157](editor/0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene |
 | [0168](editor/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags |
 | [0169](editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
 
 ### files
 
@@ -240,6 +244,9 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0123](scene/0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
 
 ### lighting
 
@@ -247,6 +254,7 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0064](rendering/0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder |
 | [0066](rendering/0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
 
 ### lit
 
@@ -307,6 +315,16 @@ reported, so the table lists only tags in use.
 | [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative |
 | [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
+| [0192](offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md) | Offline: path stages run fused on the CPU, queued on the GPU |
+| [0193](offline/0193-offline-moya-owns-its-ray-acceleration-structure.md) | Offline: moya owns its ray acceleration structure |
+| [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
 
 ### particles
 
@@ -381,6 +399,8 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0008](rendering/0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
 
 ### shell
 
@@ -407,6 +427,7 @@ reported, so the table lists only tags in use.
 | [0054](project/0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
 
 ### text
 

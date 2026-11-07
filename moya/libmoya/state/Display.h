@@ -51,8 +51,10 @@ class Display final {
      * past it, so the pixels are cleared once the hider and the imager are done rather than
      * skipped. An empty pixel has nothing in any plane, and the depth plane at the farthest
      * depth.
+     *
+     * @return false when a display of type "file" could not be written, which is logged
      **/
-    void finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const;
+    bool finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const;
 
  private:
     // an empty name writes no file. RI's default display is a framebuffer, which moya does

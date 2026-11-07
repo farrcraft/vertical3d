@@ -55,7 +55,7 @@ glm::uvec4 Display::cropped(unsigned int width, unsigned int height) const {
     return glm::uvec4(first(width, crop_.xmin), first(width, crop_.xmax), first(height, crop_.ymin), first(height, crop_.ymax));
 }
 
-void Display::finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const {
+bool Display::finish(v3d::render::offline::film::FrameBuffer* planes, const boost::shared_ptr<v3d::log::Logger> & logger) const {
     const glm::uvec4 window = cropped(planes->width(), planes->height());
     for (unsigned int row = 0; row < planes->height(); row++) {
         for (unsigned int column = 0; column < planes->width(); column++) {
@@ -71,7 +71,7 @@ void Display::finish(v3d::render::offline::film::FrameBuffer* planes, const boos
     // a display named nothing, or one that is not a file, leaves the samples in the planes
     // rather than writing them
     if (name_.empty() || type_ != "file") {
-        return;
+        return true;
     }
     // only the three colour channels are written, whatever the display mode. The coverage and
     // depth planes stay in the framebuffer
@@ -79,7 +79,9 @@ void Display::finish(v3d::render::offline::film::FrameBuffer* planes, const boos
     const std::optional<std::string> encoded = factory.encode(planes->image(Planes::CHANNELS), v3d::image::Factory::kind(name_));
     if (!encoded || !v3d::asset::writeFile(name_, *encoded)) {
         logger->get()->error("the picture could not be written to '{}'", name_);
+        return false;
     }
+    return true;
 }
 
 };  // namespace v3d::moya::state

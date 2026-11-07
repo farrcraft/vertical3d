@@ -11,6 +11,7 @@
     are Machine's state. Control flow and masking are in Machine.cxx.
 */
 
+#include <api/log/Logger.h>
 #include <api/render/offline/Units.h>
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/compiler/Builtins.h>
@@ -533,6 +534,14 @@ std::string Machine::printed(char conversion, const Value & value, unsigned int 
     return wide == 1 ? text : "(" + text + ")";
 }
 
+void Machine::print(const std::vector<const Value*> & given, unsigned int point) {
+    // a line per shading point, not deduplicated as the machine's reports are
+    printed_.push_back(format(given, point));
+    if (logger_) {
+        logger_->get()->info("shader: {}", printed_.back());
+    }
+}
+
 std::string Machine::format(const std::vector<const Value*> & given, unsigned int point) {
     const std::string & text = given[0]->text();
     std::string line;
@@ -648,8 +657,7 @@ void Machine::builtin(const Instruction & instruction) {
             continue;
         }
         if (body == Body::PRINTF) {
-            // a line per shading point, not deduplicated as the machine's reports are
-            printed_.push_back(format(given, point));
+            print(given, point);
             continue;
         }
         apply(site, point);
@@ -753,7 +761,7 @@ void Machine::message(const std::string & shader, const std::string & name, Valu
 
 void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* target) {
     if (renderer_ != nullptr &&
-        (ray ? renderer_->trace(from, to, target) : renderer_->transmission(from, to, target))) {
+        (ray ? renderer_->trace(from, to, target, masks_.back()) : renderer_->transmission(from, to, target, masks_.back()))) {
         return;
     }
     /*

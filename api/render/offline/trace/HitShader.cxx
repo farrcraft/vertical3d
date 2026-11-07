@@ -25,6 +25,23 @@
 
 namespace v3d::render::offline::trace {
 
+namespace {
+
+/**
+ * Whether any of a hit's lanes reached a trace or transmission call: whether one is live in the
+ * mask the machine passed. A hit's neighbours can take another branch than the hit itself.
+ **/
+bool live(const std::vector<char> & active, unsigned int first, unsigned int lanes) {
+    for (unsigned int lane = first; lane < first + lanes && lane < active.size(); lane++) {
+        if (active[lane] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+};  // namespace
+
 HitShader::HitShader(Tracer* tracer, const std::vector<const Hit*> & hits, const std::vector<float> & times,
     const std::vector<const Scene::Poses*> & poses) :
     tracer_(tracer), hits_(hits), times_(times), poses_(poses), placement_(hits.front()->primitive->surface().placement) {
@@ -123,7 +140,7 @@ bool HitShader::light(unsigned int index, const Value & surface, const v3d::rend
     return ran;
 }
 
-bool HitShader::transmission(const Value & from, const Value & to, Value* fraction) {
+bool HitShader::transmission(const Value & from, const Value & to, Value* fraction, const std::vector<char> & active) {
     if (tracer_->scene() == nullptr || fraction == nullptr) {
         return false;
     }
@@ -131,9 +148,12 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     // not traced three times
     for (std::size_t hit = 0; hit < hits_.size(); hit++) {
         const unsigned int first = static_cast<unsigned int>(hit) * lanes_;
+        if (!live(active, first, lanes_)) {
+            continue;
+        }
         const glm::vec3 passed = tracer_->transmitted(
             {.origin = from.triple(first), .direction = to.triple(first) - from.triple(first)},
-            hits_[hit]->geometric, *poses_[hit]);
+            hits_[hit]->geometric, *poses_[hit], hits_[hit]->primitive->bias());
         for (unsigned int lane = first; lane < first + lanes_ && lane < fraction->width(); lane++) {
             fraction->triple(lane, passed);
         }
@@ -141,25 +161,32 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     return true;
 }
 
-bool HitShader::trace(const Value & origin, const Value & direction, Value* colour) {
+bool HitShader::trace(const Value & origin, const Value & direction, Value* colour, const std::vector<char> & active) {
     if (tracer_->scene() == nullptr || colour == nullptr) {
         return false;
     }
-    // one ray for each hit, and the rays of the batch are traced as a batch
+    // one ray for each hit that reached the call, and those rays are traced as a batch
     std::vector<v3d::type::geometry::Line> paths;
     std::vector<glm::vec3> geometric;
-    paths.reserve(hits_.size());
-    geometric.reserve(hits_.size());
+    std::vector<float> times;
+    std::vector<float> biases;
+    std::vector<unsigned int> casting;
     for (std::size_t hit = 0; hit < hits_.size(); hit++) {
         const unsigned int first = static_cast<unsigned int>(hit) * lanes_;
+        if (!live(active, first, lanes_)) {
+            continue;
+        }
+        casting.push_back(first);
         paths.push_back({.origin = origin.triple(first), .direction = direction.triple(first)});
         geometric.push_back(hits_[hit]->geometric);
+        times.push_back(times_[hit]);
+        biases.push_back(hits_[hit]->primitive->bias());
     }
-    const std::vector<glm::vec3> seen = tracer_->traced(paths, geometric, times_);
-    for (std::size_t hit = 0; hit < hits_.size(); hit++) {
-        const unsigned int first = static_cast<unsigned int>(hit) * lanes_;
+    const std::vector<glm::vec3> seen = tracer_->traced(paths, geometric, times, biases);
+    for (std::size_t ray = 0; ray < casting.size(); ray++) {
+        const unsigned int first = casting[ray];
         for (unsigned int lane = first; lane < first + lanes_ && lane < colour->width(); lane++) {
-            colour->triple(lane, seen[hit]);
+            colour->triple(lane, seen[ray]);
         }
     }
     return true;

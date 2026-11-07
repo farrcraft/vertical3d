@@ -152,6 +152,7 @@ void Scene::shade(v3d::render::offline::trace::Primitive* primitive, const state
     primitive->surface(surface);
     primitive->object(glm::inverse(with.view) * state.object);
     primitive->opacity(state.opacity);
+    primitive->bias(state.traceBias);
     primitive->lights(with.lights);
 }
 

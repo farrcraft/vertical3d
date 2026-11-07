@@ -5,7 +5,9 @@
 
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/runtime/Value.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
@@ -622,6 +624,45 @@ BOOST_AUTO_TEST_CASE(moya_lights_and_surfaces_pass_messages_test) {
     v3d::moya::reyes::MicroPolygonGrid lit = facing({});
     asked.shader().shade(asked.shading(), &lit);
     BOOST_CHECK_CLOSE(lit.vertex(1, 1).color().r, 0.75F, 0.01F);
+}
+
+/**
+ * A trace or a transmission casts rays only from the vertices that reached the call. A vertex
+ * that did not keeps the value it had.
+ **/
+BOOST_AUTO_TEST_CASE(moya_only_the_vertices_that_reach_a_trace_are_traced_test) {
+    typedef v3d::render::offline::sl::runtime::Value Value;
+    typedef v3d::render::offline::sl::Type Type;
+    typedef v3d::render::offline::sl::Storage Storage;
+    v3d::moya::state::RenderContext rc;
+    prepare(&rc);
+    rc.surface("constant", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    rc.shader().shade(rc.shading(), &grid);
+
+    Value from;
+    Value along;
+    Value colour;
+    Value fraction;
+    from.reset(Type::POINT, Storage::VARYING, 4);
+    along.reset(Type::VECTOR, Storage::VARYING, 4);
+    colour.reset(Type::COLOR, Storage::VARYING, 4);
+    fraction.reset(Type::COLOR, Storage::VARYING, 4);
+    const glm::vec3 untouched(7.0F);
+    for (unsigned int point = 0; point < 4; point++) {
+        from.triple(point, glm::vec3(0.0F, 0.0F, 5.0F));
+        along.triple(point, glm::vec3(0.0F, 0.0F, 1.0F));
+        colour.triple(point, untouched);
+        fraction.triple(point, untouched);
+    }
+    const std::vector<char> active{1, 0, 0, 1};
+    BOOST_REQUIRE(rc.shader().trace(from, along, &colour, active));
+    BOOST_REQUIRE(rc.shader().transmission(from, along, &fraction, active));
+
+    for (unsigned int point = 0; point < 4; point++) {
+        BOOST_CHECK_EQUAL(colour.triple(point) == untouched, active[point] == 0);
+        BOOST_CHECK_EQUAL(fraction.triple(point) == untouched, active[point] == 0);
+    }
 }
 
 };  // namespace

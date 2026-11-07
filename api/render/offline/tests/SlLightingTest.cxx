@@ -127,12 +127,54 @@ class Scene final : public v3d::render::offline::sl::runtime::Renderer {
 };
 
 /**
+ * A Renderer that answers every trace and transmission with white, and keeps the points each
+ * call was told reached it.
+ **/
+class Tracing final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
+        return false;
+    }
+
+    bool transmission(const Value & /* from */, const Value & /* to */, Value* fraction, const std::vector<char> & active) override {
+        transmitted_.push_back(active);
+        return answer(fraction, active);
+    }
+
+    bool trace(const Value & /* origin */, const Value & /* direction */, Value* colour, const std::vector<char> & active) override {
+        traced_.push_back(active);
+        return answer(colour, active);
+    }
+
+    const std::vector<std::vector<char>> & transmitted() const {
+        return transmitted_;
+    }
+
+    const std::vector<std::vector<char>> & traced() const {
+        return traced_;
+    }
+
+ private:
+    static bool answer(Value* colour, const std::vector<char> & active) {
+        for (unsigned int point = 0; point < active.size(); point++) {
+            if (active[point] != 0) {
+                colour->triple(point, glm::vec3(1.0F));
+            }
+        }
+        return true;
+    }
+
+    std::vector<std::vector<char>> transmitted_;
+    std::vector<std::vector<char>> traced_;
+};
+
+/**
  * A surface shader run over a batch under a scene's lights, with N and P written first
  * because a light model is a function of both.
  **/
 class Lit final {
  public:
-    Lit(const std::string & body, Scene* scene, unsigned int batch) {
+    Lit(const std::string & body, v3d::render::offline::sl::runtime::Renderer* scene, unsigned int batch) {
         std::string error;
         BOOST_REQUIRE_MESSAGE(build("surface test() {\n" + body + "\n}\n", &program_, &error), error);
         machine_.renderer(scene);
@@ -515,6 +557,32 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
     BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
     BOOST_CHECK(lit.machine().reports()[0].ends_with(
         "'trace' is not answered by this renderer, so a ray comes back black"));
+}
+
+/**
+ * A renderer is told which points reached a trace or a transmission, so it casts rays for
+ * those alone. Under a branch only the points that took it are named, and the points that did
+ * not keep the colour they had.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_only_the_points_that_reach_a_trace_are_traced_test) {
+    Tracing tracing;
+    Lit lit(
+        "Ci = 0;\n"
+        "if (xcomp(P) > 0) {\n"
+        "    Ci = trace(P, vector (0, 0, 1)) + transmission(P, point (0, 0, 10));\n"
+        "}", &tracing, 4);
+    for (unsigned int point = 0; point < 4; point++) {
+        lit.position(point, glm::vec3(point % 2 == 0 ? -1.0F : 1.0F, 0.0F, 0.0F));
+    }
+    lit.run();
+
+    const std::vector<char> odd{0, 1, 0, 1};
+    BOOST_REQUIRE_EQUAL(tracing.traced().size(), 1U);
+    BOOST_REQUIRE_EQUAL(tracing.transmitted().size(), 1U);
+    BOOST_CHECK(tracing.traced()[0] == odd);
+    BOOST_CHECK(tracing.transmitted()[0] == odd);
+    BOOST_CHECK_SMALL(lit.colour(0).r, 0.0001F);
+    BOOST_CHECK_CLOSE(lit.colour(1).r, 2.0F, 0.1F);
 }
 
 /**

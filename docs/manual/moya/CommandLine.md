@@ -44,6 +44,8 @@ the directories on a search path. Give full paths to work with files elsewhere.
 - **`Rendering scene file: <path>`** before it starts, unless `--silent` is given.
 - **`error reading rib file - <reason>`** when the scene cannot be opened or does not parse. The
   reason gives the line and column. moya exits with failure and writes no picture.
+- **`error writing the picture - <path>`** when a picture could not be written, once the whole
+  scene is read. The log names each file that was not written. moya exits with failure.
 
 The picture is written when moya reads the scene's `WorldEnd`. moya exits once the whole file is
 read.
@@ -60,10 +62,11 @@ end of the file.
 | `[error]` | Something that failed, such as a shader that does not compile, or a picture that could not be written |
 | `[debug]` | Detail, such as which file a texture was read from |
 
-A warning or an error does not stop the render, and moya still exits with success. Read the log
-when a picture does not look as you expect.
+A warning or an error does not stop the render. moya still exits with success, unless the
+error is a picture that could not be written. Read the log when a picture does not look as you
+expect.
 
 ## Exit status
 
-moya exits with 0 when it read the whole scene. It exits with 1 when the scene could not be read
-or parsed, or the command line was wrong.
+moya exits with 0 when it read the whole scene and wrote every picture. It exits with 1 when the
+scene could not be read or parsed, a picture could not be written, or the command line was wrong.

@@ -45,7 +45,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
     if (var_map.count("grid") != 0) {
         const int grid = var_map["grid"].as<int>();
         if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
-            std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
+            std::cout << "--grid has to be between 1 and " << largest << ", so the scene's Option \"limits\" or the default is used" << "\n";
         } else {
             handler->context().pinGridSize(static_cast<unsigned int>(grid));
         }
@@ -53,7 +53,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
     if (var_map.count("bucket") != 0) {
         const int bucket = var_map["bucket"].as<int>();
         if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
-            std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
+            std::cout << "--bucket has to be between 1 and " << largest << ", so the scene's Option \"limits\" or the default is used" << "\n";
         } else {
             handler->context().pinBucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
         }
@@ -129,7 +129,12 @@ int run(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // the picture was written by RiWorldEnd, as the RI standard specifies
+    // the picture was written by RiWorldEnd, as the RI standard specifies. The log names each
+    // file of a scene of several frames that could not be written
+    if (handler.context().unwritten() > 0) {
+        std::cout << "error writing the picture - " << handler.context().displayName() << "\n";
+        exit(EXIT_FAILURE);
+    }
     return EXIT_SUCCESS;
 }
 

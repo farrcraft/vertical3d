@@ -117,8 +117,9 @@ class Machine final {
     const std::vector<std::string> & reports() const;
 
     /**
-     * Where a report also goes, as a warning, the first time it is made. Without one, reports
-     * are only kept for reports() to read.
+     * Where a report also goes, as a warning, the first time it is made, and each line a
+     * printf writes, as an info message. Without one, both are only kept for reports() and
+     * printed() to read.
      **/
     void logger(const boost::shared_ptr<v3d::log::Logger> & logger);
 
@@ -131,7 +132,7 @@ class Machine final {
 
     /**
      * The lines each `printf` in the shader wrote, in order. Cleared at the start of every
-     * run. A renderer copies them into its log, and a test reads them.
+     * run. Each line also goes to the logger, as an info message, when it is written.
      *
      * Unlike reports(), these are not deduplicated. A printf writes one line per shading
      * point.
@@ -312,6 +313,9 @@ class Machine final {
     static std::string printed(char conversion, const Value & value, unsigned int point);
 
     static std::string format(const std::vector<const Value*> & given, unsigned int point);
+
+    /** One point's printf: its line kept for printed(), and given to the logger. **/
+    void print(const std::vector<const Value*> & given, unsigned int point);
 
     /** One pass over a range of the instructions, used by both run() and initialise(). **/
     bool execute(const Program & program, const Range & range);

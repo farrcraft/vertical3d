@@ -14,6 +14,7 @@
 #include <api/render/offline/trace/Tracer.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
 
 #include <string>
@@ -469,6 +470,28 @@ BOOST_AUTO_TEST_CASE(trace_a_shadow_ray_ending_on_a_surface_reaches_it_test) {
     const glm::vec3 beyond = tracer.transmitted({.origin = start, .direction = 1.5F * (end - start)},
         glm::vec3(0.0F, 0.0F, -1.0F));
     BOOST_CHECK_EQUAL(beyond.r, 0.0F);
+}
+
+/**
+ * A ray starts the bias along the normal of the surface it leaves. A surface a thousandth of a
+ * unit past the point stops a ray at the default bias, and a bias of a hundredth starts the ray
+ * beyond it. A displaced surface's reyes grids and its traced copy lie that far apart.
+ **/
+BOOST_AUTO_TEST_CASE(trace_a_ray_starts_the_bias_off_its_surface_test) {
+    v3d::render::offline::trace::Scene scene;
+    scene.add(facing(2.0F, glm::vec3(1.0F, 0.0F, 0.0F)));
+    v3d::render::offline::trace::Tracer tracer(&scene);
+
+    const glm::vec3 below(0.0F, 0.0F, -0.001F);
+    const glm::vec3 up(0.0F, 0.0F, 1.0F);
+    const v3d::type::geometry::Line toLight{.origin = below, .direction = glm::vec3(0.0F, 0.0F, 5.0F)};
+    BOOST_CHECK_EQUAL(tracer.transmitted(toLight, up).r, 0.0F);
+    BOOST_CHECK_EQUAL(tracer.transmitted(toLight, up, 0.01F).r, 1.0F);
+
+    // a traced ray meets the red triangle at the default bias, and the black background past it
+    const v3d::type::geometry::Line along{.origin = below, .direction = up};
+    BOOST_CHECK_GT(tracer.traced(along, up).r, 0.0F);
+    BOOST_CHECK_EQUAL(tracer.traced(along, up, 0.01F).r, 0.0F);
 }
 
 };  // namespace

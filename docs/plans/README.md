@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [MoyaFoundation](MoyaFoundation.md) | Offline rendering, build | The rebuilt moya's foundation: a CPU device over tiles, sampled spectra, a ZSobol sampler, a film of AOVs, and EXR output through OpenColorIO |
 
 ## Completed plans
 

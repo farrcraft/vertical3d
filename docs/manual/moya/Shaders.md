@@ -116,4 +116,6 @@ and column of the fault:
 moya reports each broken shader once. A surface whose shader fails is drawn with `matte`
 instead. A shader named that moya cannot find is logged in the same way.
 
-`printf` compiles, but moya does not show what it prints. To see a value, write it into `Ci`.
+`printf` writes its line into the log as an `[info]` message starting `shader:`, once for each
+shading point that runs it. A shader run over a whole picture writes a great many lines, so print
+from a small render, or write the value into `Ci` instead.

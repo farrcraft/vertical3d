@@ -40,12 +40,12 @@ bool Renderer::light(unsigned int /* index */, const Value & /* surface */, cons
 }
 
 bool Renderer::transmission(const Value & /* from */, const Value & /* to */,
-    Value* /* fraction */) {
+    Value* /* fraction */, const std::vector<char> & /* active */) {
     return false;
 }
 
 bool Renderer::trace(const Value & /* origin */, const Value & /* direction */,
-    Value* /* colour */) {
+    Value* /* colour */, const std::vector<char> & /* active */) {
     return false;
 }
 

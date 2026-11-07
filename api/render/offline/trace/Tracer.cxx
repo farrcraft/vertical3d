@@ -84,11 +84,12 @@ float Tracer::time() const {
     return time_;
 }
 
-glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
-    return transmitted(path, geometric, poses_);
+glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, float bias) {
+    return transmitted(path, geometric, poses_, bias);
 }
 
-glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, const Scene::Poses & poses) {
+glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, const Scene::Poses & poses,
+    float bias) {
     const glm::vec3 & along = path.direction;
     const float span = glm::length(along);
     if (scene_ == nullptr || span <= 0.0F) {
@@ -96,15 +97,14 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
     }
 
     /*
-        The ray starts a small offset from the surface it leaves, because a ray that starts
-        exactly on the surface hits it. The offset is along the geometric normal, on the
-        side the light is on. A ray leaving the back of a surface would otherwise start
-        inside it.
+        The ray starts the bias from the surface it leaves, because a ray that starts exactly
+        on the surface hits it. The offset is along the geometric normal, on the side the
+        light is on. A ray leaving the back of a surface would otherwise start inside it.
     */
     const float side = glm::dot(geometric, along) < 0.0F ? -1.0F : 1.0F;
     // aimed from where it starts at where the path ends, so its length is the distance from
     // the offset start to the light
-    const glm::vec3 start = path.origin + (geometric * (side * EPSILON));
+    const glm::vec3 start = path.origin + (geometric * (side * bias));
     const glm::vec3 toward = path.origin + along - start;
     const float length = glm::length(toward);
     if (length <= EPSILON) {
@@ -121,8 +121,8 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
     glm::vec3 through(1.0F);
     float past = 0.0F;
     Hit blocker;
-    // the ray stops short of its end by the same offset, because the end can lie on a surface
-    // too: an area light's samples lie on its own geometry, which must not shadow it
+    // the ray stops a little short of its end, because the end can lie on a surface too: an
+    // area light's samples lie on its own geometry, which must not shadow it
     const float reach = length - EPSILON;
     while (scene_->nearest(ray, past, &blocker, poses) && blocker.distance < reach) {
         through *= glm::vec3(1.0F) - blocker.primitive->opacity();
@@ -134,13 +134,13 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
     return through;
 }
 
-glm::vec3 Tracer::traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
+glm::vec3 Tracer::traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric, float bias) {
     return traced(std::vector<v3d::type::geometry::Line>{ path }, std::vector<glm::vec3>{ geometric },
-        std::vector<float>{ time_ }).front();
+        std::vector<float>{ time_ }, std::vector<float>{ bias }).front();
 }
 
 std::vector<glm::vec3> Tracer::traced(const std::vector<v3d::type::geometry::Line> & paths,
-    const std::vector<glm::vec3> & geometric, const std::vector<float> & times) {
+    const std::vector<glm::vec3> & geometric, const std::vector<float> & times, const std::vector<float> & biases) {
     std::vector<glm::vec3> colours(paths.size(), glm::vec3(0.0F));
     if (scene_ == nullptr) {
         return colours;
@@ -158,7 +158,8 @@ std::vector<glm::vec3> Tracer::traced(const std::vector<v3d::type::geometry::Lin
             continue;
         }
         const float side = glm::dot(geometric[i], direction) < 0.0F ? -1.0F : 1.0F;
-        const glm::vec3 start = paths[i].origin + (geometric[i] * (side * EPSILON));
+        const float bias = i < biases.size() ? biases[i] : defaultBias;
+        const glm::vec3 start = paths[i].origin + (geometric[i] * (side * bias));
         Look look;
         look.ray = v3d::type::geometry::Ray({.origin = start, .direction = direction / span});
         look.time = i < times.size() ? times[i] : time_;

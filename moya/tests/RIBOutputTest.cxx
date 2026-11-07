@@ -45,6 +45,34 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
 }
 
 /**
+ * Each frame whose picture could not be written is counted, so moya can exit with failure. A
+ * display that is not a file writes nothing, and is not counted.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_counted_test) {
+    v3d::moya::ri::RIBHandler handler;
+
+    BOOST_REQUIRE(read(
+        "Format 8 6 1\n"
+        "FrameBegin 1\n"
+        "Display \"picture.unknown\" \"file\" \"rgb\"\n"
+        "WorldBegin\n"
+        "WorldEnd\n"
+        "FrameEnd\n"
+        "FrameBegin 2\n"
+        "Display \"picture.tif\" \"framebuffer\" \"rgb\"\n"
+        "WorldBegin\n"
+        "WorldEnd\n"
+        "FrameEnd\n"
+        "FrameBegin 3\n"
+        "Display \"other.unknown\" \"file\" \"rgb\"\n"
+        "WorldBegin\n"
+        "WorldEnd\n"
+        "FrameEnd\n", &handler));
+
+    BOOST_TEST(handler.context().unwritten() == 2U);
+}
+
+/**
  * The renderer reads no display parameter, so each one a scene gives is logged as not used.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
