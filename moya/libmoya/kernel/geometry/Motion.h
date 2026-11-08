@@ -41,10 +41,10 @@ struct Between {
 };
 
 /**
- * Where a geometry's points are held: count points for each of its samples, one sample after
+ * Where a geometry's values are held: count values for each of its samples, one sample after
  * another from first, at the times from times on. A geometry of one sample holds it at every time.
  **/
-struct PointSamples {
+struct Sampled {
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
     std::uint32_t times { 0 };
@@ -100,19 +100,20 @@ MOYA_KERNEL inline glm::mat4 transformAt(const Key * keys, std::uint32_t count, 
     return compose(mixed);
 }
 
-/** A geometry's point at a time, interpolated linearly between the samples that bracket it. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, then the time
-MOYA_KERNEL inline glm::vec3 pointAt(const PointSamples & held, const glm::vec3 * points, const float * times, std::uint32_t index, float time) {
+/** A geometry's value at a time, interpolated linearly between the samples that bracket it. **/
+template <typename T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the value, then the time
+MOYA_KERNEL T sampleAt(const Sampled & held, const T * values, const float * times, std::uint32_t index, float time) {
     const Between at = between(
         [&](std::uint32_t sample) {
             return times[held.times + sample];
         },
         held.samples, time);
-    const glm::vec3 & from = points[held.first + (at.at * held.count) + index];
+    const T & from = values[held.first + (at.at * held.count) + index];
     if (at.along == 0.0F) {
         return from;
     }
-    const glm::vec3 & to = points[held.first + ((at.at + 1U) * held.count) + index];
+    const T & to = values[held.first + ((at.at + 1U) * held.count) + index];
     return from + ((to - from) * at.along);
 }
 

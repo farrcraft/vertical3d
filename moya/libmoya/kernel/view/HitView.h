@@ -72,7 +72,7 @@ MOYA_KERNEL void hits(const HitView<T> & view, Item item) {
     }
     const std::uint32_t face = view.surfaces.face(hit);
     view.pixels.addChannel(item, view.channels.depth, 1.0F, hit.distance);
-    view.pixels.addChannel(item, view.channels.normal, 1.0F, view.surfaces.normal(hit));
+    view.pixels.addChannel(item, view.channels.normal, 1.0F, view.surfaces.normal(hit, ray));
     view.pixels.addChannel(item, view.channels.instance, 1.0F, hit.depth == 0U ? -1.0F : static_cast<float>(hit.instances[hit.depth - 1U]));
     view.pixels.addChannel(item, view.channels.face, 1.0F, face == geometry::kNoPrimitive ? -1.0F : static_cast<float>(face));
     view.pixels.addChannel(item, view.channels.coverage, 1.0F, 1.0F);

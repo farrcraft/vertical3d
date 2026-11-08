@@ -28,7 +28,7 @@ same fields.
 - **`primitive`**, the index within the geometry the innermost instance places. `kNoPrimitive`
   means the ray met nothing, which `found()` reports.
 - **`uv`**, the position on the primitive. For a triangle it is the weight of its second and
-  third vertices.
+  third vertices, and for a quadric RI's parameters. A point has none, and its `uv` is zero.
 - **`instances`**, the chain of instances that placed the primitive, outermost first, and
   **`depth`**, how many there are. The chain holds at most `kInstanceDepth`, which is 4.
 
@@ -63,6 +63,41 @@ meets either side.
 - **An edge that rounds to zero is computed again in double precision**, so both triangles that
   share it decide a ray exactly on it the same way.
 - **A distance that is not a number is no hit.**
+
+## Points and quadrics
+
+Points and RI's quadrics are intersected by moya's own kernel code, in
+`kernel/geometry/Shapes.h`, so every device runs the same tests. Each is tested in its own space.
+A `ShapeHit` gives the distance and the position on the surface.
+
+- **A round point is a sphere** of half its width about its centre, and **a flat point a disk**
+  of the same radius facing the ray, in the plane through its centre. `intersectSphere()` and
+  `intersectFacing()` test them. A sphere's crossings come from the point on the ray nearest its
+  centre, so a ray from far off keeps the radius.
+- **A `Quadric` is one of RI's seven**, each a profile swept about z from +x by `thetamax`. Each
+  reads RI's dimensions: a sphere cut at `zmin` and `zmax`, and a cone narrowing from its
+  `radius` at z = 0 to its apex at `height`. A cylinder runs from `zmin` to `zmax`, and a
+  hyperboloid is swept from the line `point1` to `point2`. A paraboloid has its `radius` at
+  `zmax`, a disk lies at `height`, and a torus has a ring and a tube. Angles are radians.
+- **`intersectQuadric()` keeps the nearer crossing within the quadric's sweep and limits.** The
+  sphere, cone, cylinder, paraboloid and a rising hyperboloid are quadratics, whose roots are
+  computed so that neither loses precision to the other. A disk, and a hyperboloid whose line
+  lies flat, are planes.
+- **The torus is a quartic**, solved in single precision. The ray first moves to where it passes
+  nearest the torus's centre, with a direction of unit length, which keeps the coefficients
+  small. `rootsIn()` then isolates each root between the polynomial's turning points, the roots of
+  its derivative found the same way, and halves each interval that changes sign. A ray down the
+  torus's axis passes through its hole.
+- **The position on a quadric is RI's**: u along the sweep from 0 to 1, and v along the profile.
+  v runs by latitude on a sphere, and by height on a cone, a cylinder or a paraboloid. It runs
+  along the line of a hyperboloid, inwards on a disk, and around the tube of a torus. A
+  hyperboloid's sweep starts at its line's own angle at the hit's height.
+- **`quadricNormal()` gives the geometric normal** from the surface's implicit form.
+
+A quadric's dimensions may each move over the shutter on their own times. `geometry::gather()`
+samples them together at every time any of them is sampled at, which holds each between its own
+samples exactly, and `sampledQuadric()` interpolates them. A point cloud's centres and widths
+each keep their own samples.
 
 ## Leaving a surface
 
@@ -106,11 +141,15 @@ orthographic, at the origin.
 `geometry::gather(scene, logger)` gathers every prototype the scene's instances reach from the
 world into a `geometry::Prototypes`, each in its own space, with the instances that place them.
 
-- **A prototype placed many times is held once.** Each mesh's triangles are a run of the
-  triangles every mesh holds, with the face each was cut from. Its points are three per
-  triangle at each of its samples, one sample after another, and the faces are cut where the
-  first sample's points lie.
-- **An instance names its prototype**, a mesh or a group, and its transformation into the space
+- **A prototype placed many times is held once.** A `Geometry` is a mesh, a point cloud or a
+  quadric, and says its `Form`: triangles, round points, flat points or a quadric.
+  - A mesh's triangles are a run of the triangles every mesh holds, with the face each was cut
+    from. Its points are three per triangle at each of its samples, one sample after another, and
+    the faces are cut where the first sample's points lie.
+  - A point cloud holds each point's centre and width at each sample. A cloud that gives a width
+    for some points but not all takes its constant width, and is reported.
+  - A quadric holds its dimensions at each sample.
+- **An instance names its prototype**, a geometry or a group, and its transformation into the space
   of the group that holds it. It keeps its index in the scene. Its `camera`, `shadow` and
   `indirect` parameters give the kinds of ray it is visible to.
 - **A group comes after every group it holds.** The world is the group of every instance in no
@@ -120,7 +159,8 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
     group. A group that holds itself would otherwise have no bounds.
   - an instance that would be deeper in a chain than a hit records. It is still held where a
     shorter chain reaches it, and each traversal leaves it out where it is too deep.
-  - an instance of a prototype of a kind not yet traced. Meshes alone are traced.
+  - an instance of a prototype of a kind not yet traced. Meshes, points and the quadrics are
+    traced.
 
   `Prototypes::reports` holds the reports, and the log has them too.
 - **An instance whose prototype was removed places nothing**, and one whose group was removed is
@@ -137,7 +177,7 @@ motion.
 - **A time is held to the shutter.** A ray before the shutter opens is traced as at the opening,
   and one after it closes as at the close. A hit keeps its ray's own time.
 - **A mesh's points are interpolated linearly** between the two samples around a time.
-  `pointAt()` reads them, and a time outside the samples takes the nearer end.
+  `sampleAt()` reads them, and a time outside the samples takes the nearer end.
 - **A transformation is decomposed at each sample** by `geometry::decompose()`, by polar
   decomposition, into a translation, a rotation and a symmetric scale that holds any shear. A
   `kernel::geometry::Key` holds the three. A linear part that mirrors keeps a rotation, and its
@@ -152,8 +192,11 @@ Background: [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-o
 
 ## Placing the scene
 
-`geometry::flatten(prototypes, time)` places every triangle the prototypes' instances reach in
-world space as it stands at a time, in runs, one run for each chain of instances. With no time,
+`geometry::flatten(prototypes, time)` places every primitive the prototypes' instances reach as
+it stands at a time, in runs, one run for each chain of instances. Triangles are placed in world
+space. Points and quadrics are held in their own space, each run as a `PlacedShapes` with the
+transformation into it from the world, since a sphere stretched by a transformation is no longer
+a sphere. With no time,
 it places them as they stand when the shutter opens. `geometry::World` holds the result in a
 device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
 `flatten(scene, logger)` gathers the scene and places what it gathers.
@@ -162,13 +205,15 @@ device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Pl
   instance in the group inside its own transformation. Runs follow the instances' indices.
 - **A run is visible to the kinds of ray every instance of its chain is visible to.**
 - **A chain deeper than a hit records is left out.**
-- **A triangle's primitive is its index within its geometry**, which is its index within its
-  run. A hit then names the same primitive whichever traversal found it, and `Placed` gives the
-  hit's geometric normal and its mesh's face from the chain and the primitive.
+- **A primitive is its index within its geometry**, which is its index within its run. A hit then
+  names the same primitive whichever traversal found it, and `Placed` gives the hit's geometric
+  normal and its face from the chain, the primitive and the ray. A point's radius is half its
+  width.
 
 ## The brute-force traversal
 
-`kernel::geometry::BruteForce` tests every placed triangle for every ray. It is slow, and it is
+`kernel::geometry::BruteForce` tests every placed primitive for every ray, moving the ray into
+each run of points or quadrics. It is slow, and it is
 the reference every other traversal is compared with. Its `nearest()` keeps the nearest hit
 within the ray's interval, and its `any()` stops at the first. A run hidden from the ray's kind
 is passed over. It traces the triangles as they were placed, so it is right for a ray at the time
@@ -187,9 +232,9 @@ view of a RIB file.
 | Channel | A pixel whose ray hit | A pixel whose ray met nothing |
 |---|---|---|
 | `depth` | the hit's depth along the camera's view | infinity |
-| `normal` | the geometric normal in world space, by its triangle's winding | zero |
+| `normal` | the geometric normal in world space: by a triangle's winding, from a round point's centre or a quadric's surface, and back along the ray for a flat point | zero |
 | `instance` | the index of the innermost instance | -1 |
-| `face` | the face of its mesh | -1 |
+| `face` | the face of its mesh, the point it met, or 0 for a quadric | -1 |
 | `coverage` | one | zero |
 
 The beauty is black.
@@ -263,14 +308,21 @@ Background: [ADR-0207](../adr/offline/0207-offline-the-hierarchy-splits-motion-b
 
 ## A hierarchy per prototype
 
-`accel::assemble(device, prototypes)` builds a hierarchy for each mesh and each group of a
+`accel::assemble(device, prototypes)` builds a hierarchy for each geometry and each group of a
 scene's prototypes, and one for the world. Still hierarchies are held in one array of nodes and
 moving ones in one of moving nodes, with one array of references. An `accel::Assembly` gives each
 one's root, and whether it moves.
 
-- **A mesh's hierarchy is built once**, however many instances place it. A mesh that holds still
-  is built as `build()` builds one over triangles, and one that moves as `buildMoving()` does,
-  over the shutter. Its leaves hold the indices of its triangles within the mesh.
+- **A geometry's hierarchy is built once**, however many instances place it, and its leaves hold
+  the indices of its primitives within it. One that holds still is built as `build()` builds one:
+  a mesh over its triangles with spatial splits, and points over their boxes without. One that
+  moves is built as `buildMoving()` does, over the shutter.
+- **A point is bounded** by its centre and half its width, which `accel::pointSweep()` bounds
+  over a time range as a moving triangle's points are bounded.
+- **A quadric is one primitive.** `accel::quadricBounds()` gives the box of its whole surface of
+  revolution from the least and greatest of each dimension, so it holds whatever the sweep. Over
+  a time range, `accel::quadricSweep()` takes each dimension's least and greatest at the samples
+  inside the range and at its ends, which hold the quadric throughout, and the bounds hold still.
 - **A group's hierarchy is built over its instances**, with no spatial splits. A group moves when
   an instance in it moves, or places something that moves. One that holds still bounds each
   instance by its prototype's box with its eight corners moved by its transformation.
@@ -282,7 +334,8 @@ one's root, and whether it moves.
 
 A `device::cpu::Instance` is an instance as the CPU traverses it. It holds the inverse of its
 transformation while it holds still, and its keys while it moves. It names its prototype's root
-and whether that moves, its mesh or `kGroup`, its index in the scene and its visibility.
+and whether that moves, its geometry or `kGroup`, its index in the scene and its visibility. A
+`device::cpu::Geometry` gives a geometry's form and where its samples are held.
 
 ## The CPU's traversal
 
@@ -291,7 +344,7 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
 
 - **A ray's time is held to the shutter.** A moving node stands at that time as a still one, each
   child's box interpolated, and a child whose range does not hold the time left empty. A moving
-  mesh's points, and a moving instance's transformation, are interpolated at that time.
+  geometry, and a moving instance's transformation, are interpolated at that time.
 - **A box is entered at its near planes and left at its far ones**, chosen per axis by the sign of
   the ray's direction. An empty child's near plane lies beyond its far one, so no ray reaches it.
   A distance that is not a number, from a ray along a box's plane, is passed over.
@@ -299,7 +352,9 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   lost to rounding.
 - **`nearest()` tests the leaves it reaches nearest first**, and pushes the nodes it reaches
   farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
-  passed over. `any()` stops at the first triangle it meets.
+  passed over. `any()` stops at the first primitive it meets.
+- **A leaf of a geometry's hierarchy tests each primitive by the geometry's form**: a triangle,
+  a round or flat point, or the quadric, as it stands at the ray's time.
 - **A leaf of a group's hierarchy enters each of its instances.** The ray is moved into the
   instance's prototype's space by the inverse of its transformation at the ray's time, and
   traverses the prototype's hierarchy there. A distance along the
@@ -307,15 +362,15 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   and outside an instance are compared by their distances alone.
 - **A ray enters an instance only when the instance is visible to its kind**, and only when its
   chain holds fewer instances than a hit records.
-- **A hit names the same primitive as the brute-force traversal's**: the triangle's index within
-  its mesh, with the chain of instances the ray entered to reach it, outermost first.
+- **A hit names the same primitive as the brute-force traversal's**: the primitive's index within
+  its geometry, with the chain of instances the ray entered to reach it, outermost first.
 
-`view::Tracing` holds a scene's prototypes on a CPU device: their triangles placed in world space
-at a time for the brute-force traversal, and the hierarchies when the hierarchy is traced through.
+`view::Tracing` holds a scene's prototypes on a CPU device: their primitives placed at a time for
+the brute-force traversal, and the hierarchies when the hierarchy is traced through.
 `view::trace(device, prototypes, rays, tracer)` traces a list of rays and gives each one's
 nearest hit and whether anything lies on it. Through the brute-force traversal it places the
 scene again for each time a ray holds, so each ray is traced against the scene at its own time.
 
-The brute-force traversal is the oracle for instances and motion too. Its triangles are moved
-into the world and the hierarchy's rays into each instance, so the two round apart, and their
-distances agree within a tolerance rather than exactly.
+The brute-force traversal is the oracle for instances, motion, points and quadrics too. Its
+triangles are moved into the world and the hierarchy's rays into each instance, so the two round
+apart, and their distances agree within a tolerance rather than exactly.

@@ -53,6 +53,7 @@ add_library("v3dlib_moya"
 
 	"geometry/Motion.h" "geometry/Motion.cxx"
 	"geometry/Prototypes.h" "geometry/Prototypes.cxx"
+	"geometry/Quadrics.h" "geometry/Quadrics.cxx"
 	"geometry/Triangulate.h" "geometry/Triangulate.cxx"
 	"geometry/World.h" "geometry/World.cxx"
 	"geometry/internal/Walk.h" "geometry/internal/Walk.cxx"

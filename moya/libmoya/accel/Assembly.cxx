@@ -13,6 +13,8 @@
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -65,23 +67,57 @@ LinearBox restrict(const LinearBox & bounds, const geometry::Prototypes & protot
     return LinearBox { .start = bounds.at((begin - prototypes.open) / span), .end = bounds.at((end - prototypes.open) / span) };
 }
 
-/** Builds each mesh's hierarchy into an assembly, and gives each one's bounds over the shutter. **/
-std::vector<LinearBox> assembleMeshes(device::CpuDevice & device, const geometry::Prototypes & prototypes, Assembly & out) {
+/** The bounds over a time range of each of a geometry's primitives, by its form. **/
+Sweep sweepOf(const geometry::Prototypes & prototypes, const geometry::Geometry & geometry) {
+    switch (geometry.form) {
+        case kernel::geometry::Form::Triangles:
+            return triangleSweep(geometry.points, prototypes.points, prototypes.times);
+        case kernel::geometry::Form::RoundPoints:
+        case kernel::geometry::Form::FlatPoints:
+            return pointSweep(geometry.points, geometry.widths, prototypes.points, prototypes.widths, prototypes.times);
+        case kernel::geometry::Form::Quadric:
+        default: {
+            const kernel::geometry::Sampled held = geometry.quadric;
+            return [held, &prototypes](std::uint32_t, float begin, float end) {
+                return quadricSweep(held, prototypes.quadrics, prototypes.times, begin, end);
+            };
+        }
+    }
+}
+
+/** Builds each geometry's hierarchy into an assembly, and gives its bounds over the shutter. **/
+std::vector<LinearBox> assembleGeometries(device::CpuDevice & device, const geometry::Prototypes & prototypes, Assembly & out) {
     std::vector<LinearBox> bounds;
-    bounds.reserve(prototypes.meshes.size());
-    for (const geometry::Mesh & mesh : prototypes.meshes) {
-        if (mesh.moves()) {
+    bounds.reserve(prototypes.geometries.size());
+    Options unsplit;
+    unsplit.spatial = false;
+    for (const geometry::Geometry & geometry : prototypes.geometries) {
+        if (geometry.moves()) {
             const MovingHierarchy hierarchy =
-                buildMoving(device, mesh.count, triangleSweep(mesh.points, prototypes.points, prototypes.times), prototypes.open, prototypes.close);
+                buildMoving(device, geometry.count, sweepOf(prototypes, geometry), prototypes.open, prototypes.close, unsplit);
             bounds.push_back(hierarchy.bounds);
-            out.meshes.push_back(Root { .node = append(out.motionNodes, out.references, hierarchy.nodes, hierarchy.references), .moving = true });
+            out.geometries.push_back(Root { .node = append(out.motionNodes, out.references, hierarchy.nodes, hierarchy.references), .moving = true });
             continue;
         }
-        const auto first = static_cast<std::ptrdiff_t>(mesh.points.first);
-        const std::vector<glm::vec3> points(prototypes.points.begin() + first, prototypes.points.begin() + first + mesh.points.count);
-        const Hierarchy hierarchy = build(device, triangleBounds(points), triangleClip(points));
+        Hierarchy hierarchy;
+        if (geometry.form == kernel::geometry::Form::Triangles) {
+            const auto first = static_cast<std::ptrdiff_t>(geometry.points.first);
+            const std::vector<glm::vec3> points(prototypes.points.begin() + first, prototypes.points.begin() + first + geometry.points.count);
+            hierarchy = build(device, triangleBounds(points), triangleClip(points));
+        } else {
+            const Sweep sweep = sweepOf(prototypes, geometry);
+            std::vector<Box> boxes;
+            boxes.reserve(geometry.count);
+            for (std::uint32_t primitive = 0; primitive < geometry.count; ++primitive) {
+                boxes.push_back(sweep(primitive, prototypes.open, prototypes.open).start);
+            }
+            const Clip clip = [&boxes](std::uint32_t primitive, const Box & within) {
+                return boxes[primitive].within(within);
+            };
+            hierarchy = build(device, boxes, clip, unsplit);
+        }
         bounds.push_back(LinearBox::still(hierarchy.bounds));
-        out.meshes.push_back(Root { .node = append(out.nodes, out.references, hierarchy.nodes, hierarchy.references), .moving = false });
+        out.geometries.push_back(Root { .node = append(out.nodes, out.references, hierarchy.nodes, hierarchy.references), .moving = false });
     }
     return bounds;
 }
@@ -91,13 +127,13 @@ bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group
     bool moving = false;
     for (const std::uint32_t index : members.instances) {
         const geometry::Instance & instance = prototypes.instances[index];
-        const bool mesh = instance.kind == geometry::Prototype::Mesh;
-        const Root root = mesh ? out.meshes[instance.prototype] : out.groups[instance.prototype];
+        const bool shape = instance.kind == geometry::Prototype::Geometry;
+        const Root root = shape ? out.geometries[instance.prototype] : out.groups[instance.prototype];
         device::cpu::Instance & placed = out.instances[index];
         placed.toPrototype = glm::inverse(instance.transform);
         placed.root = root.node;
         placed.moving = root.moving ? 1U : 0U;
-        placed.mesh = mesh ? instance.prototype : device::cpu::kGroup;
+        placed.geometry = shape ? instance.prototype : device::cpu::kGroup;
         placed.id = instance.id;
         placed.visibility = instance.visibility;
         if (instance.moves()) {
@@ -115,9 +151,9 @@ bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group
  * bounds over the shutter, and gives its root and its own bounds.
  **/
 std::pair<Root, LinearBox> assembleGroup(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Group & members,
-    const std::vector<LinearBox> & meshBounds, const std::vector<LinearBox> & groupBounds, Assembly & out) {
+    const std::vector<LinearBox> & geometryBounds, const std::vector<LinearBox> & groupBounds, Assembly & out) {
     const auto boundsOf = [&](const geometry::Instance & instance) -> const LinearBox & {
-        return instance.kind == geometry::Prototype::Mesh ? meshBounds[instance.prototype] : groupBounds[instance.prototype];
+        return instance.kind == geometry::Prototype::Geometry ? geometryBounds[instance.prototype] : groupBounds[instance.prototype];
     };
     Options options;
     options.spatial = false;
@@ -157,16 +193,16 @@ std::pair<Root, LinearBox> assembleGroup(device::CpuDevice & device, const geome
 Assembly assemble(device::CpuDevice & device, const geometry::Prototypes & prototypes) {
     Assembly out;
     out.instances.resize(prototypes.instances.size());
-    const std::vector<LinearBox> meshBounds = assembleMeshes(device, prototypes, out);
+    const std::vector<LinearBox> geometryBounds = assembleGeometries(device, prototypes, out);
     // a group comes after every group it holds, so each member's root and bounds are known
     std::vector<LinearBox> groupBounds;
     groupBounds.reserve(prototypes.groups.size());
     for (const geometry::Group & members : prototypes.groups) {
-        const auto [root, bounds] = assembleGroup(device, prototypes, members, meshBounds, groupBounds, out);
+        const auto [root, bounds] = assembleGroup(device, prototypes, members, geometryBounds, groupBounds, out);
         out.groups.push_back(root);
         groupBounds.push_back(bounds);
     }
-    const auto [root, bounds] = assembleGroup(device, prototypes, prototypes.world, meshBounds, groupBounds, out);
+    const auto [root, bounds] = assembleGroup(device, prototypes, prototypes.world, geometryBounds, groupBounds, out);
     out.world = root;
     out.bounds = bounds;
     return out;

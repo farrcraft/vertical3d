@@ -12,7 +12,7 @@
 
 namespace v3d::moya::device::cpu {
 
-/** The mesh of an instance that places a group, which places no mesh. **/
+/** The geometry of an instance that places a group, which places no geometry. **/
 inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max();
 
 /**
@@ -20,9 +20,9 @@ inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max(
  * that reaches one is moved into its prototype's space and traverses the prototype's hierarchy
  * from its root.
  *
- * An instance of a mesh names the mesh, and the leaves of the mesh's hierarchy hold the indices
- * of its triangles. An instance of a group names kGroup, and the leaves of the group's hierarchy
- * hold instances.
+ * An instance of a geometry names the geometry, and the leaves of the geometry's hierarchy hold
+ * the indices of its primitives. An instance of a group names kGroup, and the leaves of the
+ * group's hierarchy hold instances.
  **/
 struct Instance {
     /** From the space of the group that holds the instance into its prototype's, when still. **/
@@ -37,7 +37,7 @@ struct Instance {
     /** One when the prototype's hierarchy is of moving nodes. **/
     std::uint32_t moving { 0 };
 
-    std::uint32_t mesh { kGroup };
+    std::uint32_t geometry { kGroup };
 
     /** The instance's index in the scene, which a hit's chain names it by. **/
     std::uint32_t id { 0 };

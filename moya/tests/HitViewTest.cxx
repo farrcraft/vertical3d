@@ -311,16 +311,17 @@ BOOST_AUTO_TEST_CASE(moya_hitview_a_chain_deeper_than_a_hit_records_is_left_out_
 
 BOOST_AUTO_TEST_CASE(moya_hitview_a_prototype_not_yet_traced_is_reported_test) {
     scene::Scene scene(scene::kinds());
-    const scene::Handle sphere = scene.create("sphere", "ball");
-    instanced(scene, "ball", sphere, {}, glm::mat4(1.0F));
-    instanced(scene, "ball again", sphere, {}, glm::mat4(1.0F));
+    const scene::Handle cage = scene.create("subdivision", "cage");
+    instanced(scene, "cage", cage, {}, glm::mat4(1.0F));
+    instanced(scene, "cage again", cage, {}, glm::mat4(1.0F));
     scene.commit();
     scene.apply();
 
     const geometry::Flat flat = geometry::flatten(scene, {});
     BOOST_TEST(flat.reports.size() == 1U);
-    BOOST_TEST(reported(flat, "a sphere is not yet traced"));
+    BOOST_TEST(reported(flat, "a subdivision is not yet traced"));
     BOOST_TEST(flat.placements.empty());
+    BOOST_TEST(flat.shapes.empty());
 }
 
 };  // namespace

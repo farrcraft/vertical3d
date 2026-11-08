@@ -58,7 +58,9 @@ class Tracing final {
     boost::shared_ptr<device::Buffer> references_;
     boost::shared_ptr<device::Buffer> points_;
     boost::shared_ptr<device::Buffer> times_;
-    boost::shared_ptr<device::Buffer> meshes_;
+    boost::shared_ptr<device::Buffer> widths_;
+    boost::shared_ptr<device::Buffer> quadrics_;
+    boost::shared_ptr<device::Buffer> geometries_;
     boost::shared_ptr<device::Buffer> keys_;
     boost::shared_ptr<device::Buffer> instances_;
     accel::Root worldRoot_;

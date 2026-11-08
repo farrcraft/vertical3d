@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_a_mesh_at_three_times_bends_through_its_middle_
     scene.apply();
 
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
-    BOOST_TEST(prototypes.meshes.front().moves());
+    BOOST_TEST(prototypes.geometries.front().moves());
     const std::vector<float> times { 0.0F, 0.25F, 0.5F, 0.75F, 1.0F };
     const std::vector<float> heights { 0.0F, 2.0F, 4.0F, 2.0F, 0.0F };
     std::vector<kernel::geometry::Ray> rays;
@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_splitting_by_time_lowers_the_cost_of_motion_tha
     prototypes.points.insert(prototypes.points.end(), away.begin(), away.end());
     prototypes.points.insert(prototypes.points.end(), start.begin(), start.end());
     prototypes.times = { 0.0F, 0.5F, 1.0F };
-    const kernel::geometry::PointSamples held { .first = 0, .count = static_cast<std::uint32_t>(start.size()), .times = 0, .samples = 3 };
+    const kernel::geometry::Sampled held { .first = 0, .count = static_cast<std::uint32_t>(start.size()), .times = 0, .samples = 3 };
     CpuDevice device;
     const accel::Sweep sweep = accel::triangleSweep(held, prototypes.points, prototypes.times);
     accel::Options without;

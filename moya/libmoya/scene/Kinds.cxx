@@ -180,7 +180,8 @@ Kind pointCloud() {
                 .motion = true,
                 .fallback = Value::floats({}),
                 .interpolation = Interpolation::Varying },
-            Declaration { .name = "constantWidth", .type = Type::Float, .fallback = Value::number(1.0F) } },
+            Declaration { .name = "constantWidth", .type = Type::Float, .fallback = Value::number(1.0F) },
+            Declaration { .name = "profile", .type = Type::String, .fallback = Value::string("round"), .choices = { "flat", "round" } } },
         .primvars = true };
 }
 

@@ -6,6 +6,7 @@
 #include <moya/libmoya/view/Tracing.h>
 
 #include <moya/libmoya/accel/Assembly.h>
+#include <moya/libmoya/device/cpu/Geometry.h>
 #include <moya/libmoya/device/cpu/Instance.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/Buffer.h>
@@ -19,6 +20,7 @@
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
 
@@ -83,17 +85,20 @@ Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & protot
     tracer_(tracer), world_(device, geometry::flatten(prototypes, time)) {
     if (tracer == Tracer::Hierarchy) {
         const accel::Assembly assembly = accel::assemble(device, prototypes);
-        std::vector<kernel::geometry::PointSamples> meshes;
-        meshes.reserve(prototypes.meshes.size());
-        for (const geometry::Mesh & mesh : prototypes.meshes) {
-            meshes.push_back(mesh.points);
+        std::vector<device::cpu::Geometry> geometries;
+        geometries.reserve(prototypes.geometries.size());
+        for (const geometry::Geometry & geometry : prototypes.geometries) {
+            geometries.push_back(
+                device::cpu::Geometry { .form = geometry.form, .points = geometry.points, .widths = geometry.widths, .quadric = geometry.quadric });
         }
         nodes_ = uploaded(device, assembly.nodes);
         motionNodes_ = uploaded(device, assembly.motionNodes);
         references_ = uploaded(device, assembly.references);
         points_ = uploaded(device, prototypes.points);
         times_ = uploaded(device, prototypes.times);
-        meshes_ = uploaded(device, meshes);
+        widths_ = uploaded(device, prototypes.widths);
+        quadrics_ = uploaded(device, prototypes.quadrics);
+        geometries_ = uploaded(device, geometries);
         keys_ = uploaded(device, assembly.keys);
         instances_ = uploaded(device, assembly.instances);
         worldRoot_ = assembly.world;
@@ -122,8 +127,10 @@ device::cpu::Traversal Tracing::hierarchy() const {
         .motionNodes = device::view<device::cpu::MotionNode>(*motionNodes_),
         .references = device::view<std::uint32_t>(*references_),
         .points = device::view<glm::vec3>(*points_),
+        .widths = device::view<float>(*widths_),
+        .quadrics = device::view<kernel::geometry::Quadric>(*quadrics_),
         .times = device::view<float>(*times_),
-        .meshes = device::view<kernel::geometry::PointSamples>(*meshes_),
+        .geometries = device::view<device::cpu::Geometry>(*geometries_),
         .keys = device::view<kernel::geometry::Key>(*keys_),
         .instances = device::view<device::cpu::Instance>(*instances_),
         .world = worldRoot_.node,

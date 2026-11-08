@@ -133,12 +133,12 @@ BOOST_AUTO_TEST_CASE(moya_instances_a_prototype_instanced_twice_is_one_hierarchy
     scene.apply();
 
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
-    BOOST_TEST(prototypes.meshes.size() == 1U);
+    BOOST_TEST(prototypes.geometries.size() == 1U);
     BOOST_TEST(prototypes.points.size() == 3U);
     BOOST_TEST(prototypes.instances.size() == 2U);
     CpuDevice device;
     const v3d::moya::accel::Assembly assembly = v3d::moya::accel::assemble(device, prototypes);
-    BOOST_TEST(assembly.meshes.size() == 1U);
+    BOOST_TEST(assembly.geometries.size() == 1U);
     BOOST_TEST(assembly.instances.size() == 2U);
     BOOST_TEST(assembly.instances[0].root == assembly.instances[1].root);
 
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(moya_instances_a_group_in_a_group_places_its_geometry_at_ev
 
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
     BOOST_TEST(prototypes.reports.empty());
-    BOOST_TEST(prototypes.meshes.size() == 1U);
+    BOOST_TEST(prototypes.geometries.size() == 1U);
     BOOST_TEST(prototypes.groups.size() == 2U);
     const std::vector<kernel::geometry::Ray> rays { down(-11.0F, 0.5F), down(9.0F, 0.5F), down(-9.0F, 0.5F), down(-11.0F, 1.5F) };
     eachTraversal([&](view::Tracer tracer, cpu::Isa isa) {

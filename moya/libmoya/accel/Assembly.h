@@ -24,12 +24,12 @@ struct Root {
 };
 
 /**
- * A hierarchy for each mesh and each group of a scene's prototypes, and the instances that place
- * them, as the CPU traverses them. Still hierarchies are held in one array of nodes, and moving
- * ones in one of moving nodes. The instances are the prototypes', in their order.
+ * A hierarchy for each geometry and each group of a scene's prototypes, and the instances that
+ * place them, as the CPU traverses them. Still hierarchies are held in one array of nodes, and
+ * moving ones in one of moving nodes. The instances are the prototypes', in their order.
  *
- * A mesh's hierarchy is built once, however many instances place it, and its leaves hold the
- * indices of its triangles within it. A group's leaves hold its instances. The world's hierarchy
+ * A geometry's hierarchy is built once, however many instances place it, and its leaves hold the
+ * indices of its primitives within it. A group's leaves hold its instances. The world's hierarchy
  * is a group's.
  **/
 struct Assembly {
@@ -41,8 +41,8 @@ struct Assembly {
     /** The keys of every instance that moves. **/
     std::vector<kernel::geometry::Key> keys;
 
-    /** The root of each mesh's hierarchy, and of each group's, in the prototypes' order. **/
-    std::vector<Root> meshes;
+    /** The root of each geometry's hierarchy, and of each group's, in the prototypes' order. **/
+    std::vector<Root> geometries;
     std::vector<Root> groups;
     Root world;
 
@@ -53,11 +53,12 @@ struct Assembly {
 /**
  * Builds the hierarchies of a scene's prototypes.
  *
- * A mesh whose points do not move is built as build() builds one over triangles, and one that
- * moves as buildMoving() builds one, over the shutter. A group moves when an instance in it moves,
- * or places something that moves. A group that does not is built over its instances' boxes, each
- * its prototype's box moved by its transformation. One that does is built as buildMoving() builds
- * one. Neither has spatial splits.
+ * A geometry that does not move is built as build() builds one: a mesh over its triangles, with
+ * spatial splits, and points over their boxes, without. One that moves is built as buildMoving()
+ * builds one, over the shutter. A quadric is one primitive, bounded as quadricBounds() bounds it.
+ * A group moves when an instance in it moves, or places something that moves. A group that does
+ * not is built over its instances' boxes, each its prototype's box moved by its transformation.
+ * One that does is built as buildMoving() builds one. Neither has spatial splits.
  *
  * An instance in a moving group is bounded over each time range the builder asks for, by its
  * prototype's bounds over that range:

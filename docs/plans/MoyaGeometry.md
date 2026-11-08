@@ -135,7 +135,7 @@ among the options before the record is drafted.
 | [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206, **0210** | done |
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | done |
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | done |
-| [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | open |
+| [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | done |
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208 | open |
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | open |
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | open |
@@ -577,6 +577,30 @@ that time. A rotating instance is hit at the middle of the shutter, where a box 
 would miss it. A geometry at three times bends through the middle sample.
 
 ### Step 14 — Points and the quadrics
+
+**Done.** `kernel/geometry/Shapes.h` intersects round points, flat points and RI's seven
+quadrics, and `kernel/geometry/Polynomial.h` finds the torus's roots. `geometry::gather()`
+gathers point clouds and quadrics as geometries beside meshes, each of a `Form`, and the
+brute-force traversal and the CPU's both test every form. The scene's `points` gains a `profile`,
+round by default. Each case was run against broken code as well. With the sweep's limit ignored,
+every quadric's hits strayed outside it. With no root isolation in the quartic, the roots, the
+torus and the random scene failed. With flat points tested as spheres, the flat point and the
+random scene failed. With quadrics bounded at the start of a range, or points without their
+width, the random scene failed. Four things the list below did not settle:
+
+* **Points and quadrics are tested in their own space**, by the oracle as by the hierarchy. A
+  sphere stretched by a transformation is no longer a sphere, so the oracle holds each run with
+  the transformation into its space rather than placing it in the world.
+* **A quadric's dimensions move**, each on its own times, as the scene declares. They are sampled
+  together at every time any of them is, which reproduces each exactly between its own samples.
+  A moving quadric's bounds come from each dimension's least and greatest over a range, since
+  its box is not linear in its dimensions: a cut sphere's floor can dip lowest between samples.
+* **A point's width moves on its own times**, apart from its centre, and the bounds hold at the
+  samples of both.
+* **A point has no position on its surface**, so its `uv` is zero, and its face in the hit view
+  is its index. A quadric's position is RI's parameters.
+
+[Traversal.md](../offline/Traversal.md#points-and-quadrics) states the rules.
 
 * **The quadrics**: the sphere, cone, cylinder, hyperboloid, paraboloid, disk and torus,
   intersected in their own space with RI's sweep and height limits. The torus is a quartic,

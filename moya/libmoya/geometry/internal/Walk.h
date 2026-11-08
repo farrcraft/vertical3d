@@ -9,6 +9,7 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -58,8 +59,20 @@ class Walk final {
     /** The index of a group among the groups, gathered once. **/
     std::uint32_t group(const scene::Handle & handle);
 
-    /** The index of a mesh among the meshes, cut once. **/
+    /** The index of a mesh among the geometries, cut once. **/
     std::uint32_t mesh(const scene::Handle & handle);
+
+    /** The index of a point cloud among the geometries, gathered once. **/
+    std::uint32_t cloud(const scene::Handle & handle);
+
+    /** The index of a quadric among the geometries, gathered once. **/
+    std::uint32_t quadric(const scene::Handle & handle);
+
+    /**
+     * Where values are held from first, count for each of a list of samples' times, which the
+     * prototypes keep when there is more than one.
+     **/
+    kernel::geometry::Sampled sampled(std::size_t first, std::size_t count, const std::vector<float> & times);
 
     /** Every group a group holds, directly or through another group. **/
     const std::set<std::uint32_t> & held(std::uint32_t group);
@@ -71,7 +84,7 @@ class Walk final {
     boost::shared_ptr<log::Logger> logger_;
     std::map<std::uint32_t, std::vector<scene::Handle>> groups_;
     std::map<std::uint32_t, std::uint32_t> groupIndex_;
-    std::map<std::uint32_t, std::uint32_t> meshIndex_;
+    std::map<std::uint32_t, std::uint32_t> geometryIndex_;
     std::map<std::uint32_t, std::set<std::uint32_t>> held_;
     std::set<std::pair<std::uint32_t, std::uint32_t>> deepened_;
     std::set<std::string> reported_;

@@ -9,10 +9,13 @@
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/geometry/Quadrics.h>
 #include <moya/libmoya/geometry/Triangulate.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -111,8 +114,15 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         out.kind = Prototype::Group;
         out.prototype = group(prototype);
     } else if (kind == "mesh") {
-        out.kind = Prototype::Mesh;
+        out.kind = Prototype::Geometry;
         out.prototype = mesh(prototype);
+    } else if (kind == "points") {
+        out.kind = Prototype::Geometry;
+        out.prototype = cloud(prototype);
+    } else if (kind == "sphere" || kind == "cone" || kind == "cylinder" || kind == "hyperboloid" || kind == "paraboloid" || kind == "disk" ||
+        kind == "torus") {
+        out.kind = Prototype::Geometry;
+        out.prototype = quadric(prototype);
     } else {
         report("a " + kind + " is not yet traced, so " + scene_.name(prototype) + " is left out");
         return std::nullopt;
@@ -138,8 +148,8 @@ std::uint32_t Walk::group(const scene::Handle & handle) {
 }
 
 std::uint32_t Walk::mesh(const scene::Handle & handle) {
-    const auto found = meshIndex_.find(handle.index);
-    if (found != meshIndex_.end()) {
+    const auto found = geometryIndex_.find(handle.index);
+    if (found != geometryIndex_.end()) {
         return found->second;
     }
     // the faces are cut where the first sample's points lie, and every sample shares the cut
@@ -155,26 +165,98 @@ std::uint32_t Walk::mesh(const scene::Handle & handle) {
     if (triangles.dropped > 0) {
         report("mesh " + scene_.name(handle) + " has " + std::to_string(triangles.dropped) + " faces that cover no area");
     }
-    Mesh mesh;
+    Geometry mesh;
+    mesh.form = kernel::geometry::Form::Triangles;
     mesh.first = static_cast<std::uint32_t>(prototypes_.faces.size());
     mesh.count = static_cast<std::uint32_t>(triangles.faces.size());
-    mesh.points.first = static_cast<std::uint32_t>(prototypes_.points.size());
-    mesh.points.count = static_cast<std::uint32_t>(triangles.corners.size());
-    mesh.points.times = static_cast<std::uint32_t>(prototypes_.times.size());
-    mesh.points.samples = static_cast<std::uint32_t>(samples.values.size());
-    if (mesh.moves()) {
-        prototypes_.times.insert(prototypes_.times.end(), samples.times.begin(), samples.times.end());
-    }
+    mesh.points = sampled(prototypes_.points.size(), triangles.corners.size(), samples.times);
     for (const scene::Value & sample : samples.values) {
         for (const std::uint32_t corner : triangles.corners) {
             prototypes_.points.push_back(sample.triple(static_cast<std::size_t>(indices[corner])));
         }
     }
     prototypes_.faces.insert(prototypes_.faces.end(), triangles.faces.begin(), triangles.faces.end());
-    const auto index = static_cast<std::uint32_t>(prototypes_.meshes.size());
-    prototypes_.meshes.push_back(mesh);
-    meshIndex_.emplace(handle.index, index);
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(mesh);
+    geometryIndex_.emplace(handle.index, index);
     return index;
+}
+
+std::uint32_t Walk::cloud(const scene::Handle & handle) {
+    const auto found = geometryIndex_.find(handle.index);
+    if (found != geometryIndex_.end()) {
+        return found->second;
+    }
+    const scene::Samples & centres = scene_.samples(handle, "P");
+    const std::size_t count = centres.values.front().size();
+    Geometry cloud;
+    cloud.form = scene_.value(handle, "profile").stringArray().front() == "flat" ? kernel::geometry::Form::FlatPoints :
+                                                                                 kernel::geometry::Form::RoundPoints;
+    cloud.count = static_cast<std::uint32_t>(count);
+    cloud.points = sampled(prototypes_.points.size(), count, centres.times);
+    for (const scene::Value & sample : centres.values) {
+        for (std::size_t point = 0; point < count; ++point) {
+            prototypes_.points.push_back(sample.triple(point));
+        }
+    }
+    // a width for each point at each sample, or the one constant width for every point
+    const scene::Samples & widths = scene_.samples(handle, "width");
+    if (widths.values.front().size() == count && count > 0) {
+        cloud.widths = sampled(prototypes_.widths.size(), count, widths.times);
+        for (const scene::Value & sample : widths.values) {
+            const std::vector<float> & values = sample.floatArray();
+            prototypes_.widths.insert(prototypes_.widths.end(), values.begin(), values.end());
+        }
+    } else {
+        if (!widths.values.front().floatArray().empty()) {
+            report("points " + scene_.name(handle) + " has a width for some of its points but not all, and takes its constant width");
+        }
+        cloud.widths = sampled(prototypes_.widths.size(), count, {});
+        prototypes_.widths.insert(prototypes_.widths.end(), count, scene_.value(handle, "constantWidth").floatArray().front());
+    }
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(cloud);
+    geometryIndex_.emplace(handle.index, index);
+    return index;
+}
+
+std::uint32_t Walk::quadric(const scene::Handle & handle) {
+    const auto found = geometryIndex_.find(handle.index);
+    if (found != geometryIndex_.end()) {
+        return found->second;
+    }
+    // every time any dimension is sampled at, since each moves linearly between its own samples
+    std::set<float> times;
+    for (const scene::Declaration & declaration : scene_.schema().kind(handle.kind).parameters) {
+        if (declaration.motion) {
+            const std::vector<float> & own = scene_.samples(handle, declaration.name).times;
+            times.insert(own.begin(), own.end());
+        }
+    }
+    const std::vector<float> at = times.empty() ? std::vector<float> { 0.0F } : std::vector<float>(times.begin(), times.end());
+    Geometry shape;
+    shape.form = kernel::geometry::Form::Quadric;
+    shape.count = 1;
+    shape.quadric = sampled(prototypes_.quadrics.size(), 1, times.empty() ? std::vector<float> {} : at);
+    for (const float time : at) {
+        prototypes_.quadrics.push_back(quadricAt(scene_, handle, time));
+    }
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(shape);
+    geometryIndex_.emplace(handle.index, index);
+    return index;
+}
+
+kernel::geometry::Sampled Walk::sampled(std::size_t first, std::size_t count, const std::vector<float> & times) {
+    kernel::geometry::Sampled out;
+    out.first = static_cast<std::uint32_t>(first);
+    out.count = static_cast<std::uint32_t>(count);
+    out.times = static_cast<std::uint32_t>(prototypes_.times.size());
+    out.samples = times.size() > 1 ? static_cast<std::uint32_t>(times.size()) : 1U;
+    if (times.size() > 1) {
+        prototypes_.times.insert(prototypes_.times.end(), times.begin(), times.end());
+    }
+    return out;
 }
 
 const std::set<std::uint32_t> & Walk::held(std::uint32_t group) {

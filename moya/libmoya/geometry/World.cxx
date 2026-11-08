@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cmath>
@@ -23,6 +24,7 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::moya::geometry {
@@ -41,17 +43,42 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
  * Places a mesh's triangles as they stand at a time, at the end of a chain of instances, inside
  * its transformation.
  **/
-void placeMesh(const Prototypes & prototypes, float time, const Mesh & mesh, const glm::mat4 & toWorld, kernel::geometry::Placement placement,
+void placeMesh(const Prototypes & prototypes, float time, const Geometry & mesh, const glm::mat4 & toWorld, kernel::geometry::Placement placement,
     Flat & out) {
     placement.first = static_cast<std::uint32_t>(out.faces.size());
     placement.count = mesh.count;
     for (std::uint32_t corner = 0; corner < mesh.points.count; ++corner) {
-        const glm::vec3 point = kernel::geometry::pointAt(mesh.points, prototypes.points.data(), prototypes.times.data(), corner, time);
+        const glm::vec3 point = kernel::geometry::sampleAt(mesh.points, prototypes.points.data(), prototypes.times.data(), corner, time);
         out.points.emplace_back(toWorld * glm::vec4(point, 1.0F));
     }
     out.faces.insert(out.faces.end(), prototypes.faces.begin() + mesh.first, prototypes.faces.begin() + mesh.first + mesh.count);
     out.runs.insert(out.runs.end(), mesh.count, static_cast<std::uint32_t>(out.placements.size()));
     out.placements.push_back(placement);
+}
+
+/**
+ * Places a geometry's points or its quadric as they stand at a time, at the end of a chain of
+ * instances, in their own space with the transformation into it from the world.
+ **/
+void placeShapes(const Prototypes & prototypes, float time, const Geometry & geometry, const glm::mat4 & toWorld,
+    kernel::geometry::Placement placement, Flat & out) {
+    kernel::geometry::PlacedShapes shapes;
+    shapes.form = geometry.form;
+    shapes.toShape = glm::inverse(toWorld);
+    placement.count = geometry.count;
+    if (geometry.form == kernel::geometry::Form::Quadric) {
+        placement.first = static_cast<std::uint32_t>(out.quadrics.size());
+        out.quadrics.push_back(kernel::geometry::sampledQuadric(geometry.quadric, prototypes.quadrics.data(), prototypes.times.data(), time));
+    } else {
+        placement.first = static_cast<std::uint32_t>(out.spheres.size());
+        for (std::uint32_t point = 0; point < geometry.count; ++point) {
+            const glm::vec3 centre = kernel::geometry::sampleAt(geometry.points, prototypes.points.data(), prototypes.times.data(), point, time);
+            const float width = kernel::geometry::sampleAt(geometry.widths, prototypes.widths.data(), prototypes.times.data(), point, time);
+            out.spheres.emplace_back(centre, width * 0.5F);
+        }
+    }
+    shapes.placement = placement;
+    out.shapes.push_back(shapes);
 }
 
 /**
@@ -73,7 +100,12 @@ void placeGroup(const Prototypes & prototypes, float time, const Group & group, 
         if (instance.kind == Prototype::Group) {
             placeGroup(prototypes, time, prototypes.groups[instance.prototype], inner, placement, out);
         } else {
-            placeMesh(prototypes, time, prototypes.meshes[instance.prototype], inner, placement, out);
+            const Geometry & geometry = prototypes.geometries[instance.prototype];
+            if (geometry.form == kernel::geometry::Form::Triangles) {
+                placeMesh(prototypes, time, geometry, inner, placement, out);
+            } else {
+                placeShapes(prototypes, time, geometry, inner, placement, out);
+            }
         }
     }
 }
@@ -106,12 +138,16 @@ Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & 
 
 World::World(device::Device & device, const Flat & flat) :
     points_(uploaded(device, flat.points)), faces_(uploaded(device, flat.faces)), placements_(uploaded(device, flat.placements)),
-    runs_(uploaded(device, flat.runs)) {
+    runs_(uploaded(device, flat.runs)), shapes_(uploaded(device, flat.shapes)), spheres_(uploaded(device, flat.spheres)),
+    quadrics_(uploaded(device, flat.quadrics)) {
 }
 
 kernel::geometry::Placed World::view() const {
     return kernel::geometry::Placed { .points = device::view<glm::vec3>(*points_), .faces = device::view<std::uint32_t>(*faces_),
-        .placements = device::view<kernel::geometry::Placement>(*placements_) };
+        .placements = device::view<kernel::geometry::Placement>(*placements_),
+        .shapes = device::view<kernel::geometry::PlacedShapes>(*shapes_),
+        .spheres = device::view<glm::vec4>(*spheres_),
+        .quadrics = device::view<kernel::geometry::Quadric>(*quadrics_) };
 }
 
 kernel::Array<std::uint32_t> World::runs() const {

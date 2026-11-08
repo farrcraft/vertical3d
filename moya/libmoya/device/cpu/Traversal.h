@@ -5,11 +5,13 @@
 
 #pragma once
 
+#include <moya/libmoya/device/cpu/Geometry.h>
 #include <moya/libmoya/device/cpu/Instance.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 
 #include <cstdint>
@@ -23,8 +25,8 @@ namespace v3d::moya::device::cpu {
  * are tested eight children at a time with SIMD. Still hierarchies are held in one array of
  * nodes and moving ones in another, and a ray starts at the world's.
  *
- * A ray's time is held to the shutter. Each moving transformation and each moving mesh's points
- * are interpolated at that time, and a moving node's boxes too.
+ * A ray's time is held to the shutter. Each moving transformation and each moving geometry are
+ * interpolated at that time, and a moving node's boxes too.
  *
  * A ray enters an instance only when the instance is visible to its kind and the chain it is
  * inside has room for one more. A hit's chain is the instances it entered, outermost first.
@@ -37,19 +39,24 @@ struct Traversal {
     kernel::Array<MotionNode> motionNodes;
 
     /**
-     * The hierarchies' references. A mesh's leaf holds the index of a triangle within its mesh,
-     * and a group's the index of an instance.
+     * The hierarchies' references. A geometry's leaf holds the index of a primitive within the
+     * geometry, and a group's the index of an instance.
      **/
     kernel::Array<std::uint32_t> references;
 
-    /** Three points per triangle of every mesh at each of its samples, in its mesh's space. **/
+    /** Three points per triangle, or a point's centre, at each sample, in their own space. **/
     kernel::Array<glm::vec3> points;
 
-    /** The times of every moving mesh's samples. **/
+    /** Every point's width, at each sample. **/
+    kernel::Array<float> widths;
+
+    /** Every quadric's dimensions, at each sample. **/
+    kernel::Array<kernel::geometry::Quadric> quadrics;
+
+    /** The times of the samples of everything that moves. **/
     kernel::Array<float> times;
 
-    /** Where each mesh's points are held. **/
-    kernel::Array<kernel::geometry::PointSamples> meshes;
+    kernel::Array<Geometry> geometries;
 
     /** The keys of every moving instance. **/
     kernel::Array<kernel::geometry::Key> keys;

@@ -24,7 +24,7 @@ namespace v3d::moya::scene {
  * - **mesh**, **subdivision**, **curves** and **points**: geometry prototypes, each holding its
  *   points over the shutter, its topology and its primvars. A subdivision mesh adds its scheme,
  *   creases, corners, holes and boundary rule. Curves add their type, basis, wrap, widths and
- *   profile, and points add their widths.
+ *   profile, and points add their widths and profile.
  * - **sphere**, **cone**, **cylinder**, **hyperboloid**, **paraboloid**, **disk** and **torus**:
  *   RI's quadrics, each with RI's dimensions, which may move over the shutter. RI gives them no
  *   defaults, so each is a unit shape until a client sets it.

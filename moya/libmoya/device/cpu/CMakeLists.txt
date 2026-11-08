@@ -2,6 +2,7 @@
 # traversal, the instruction sets and each library's table of entry points. Headers alone, which
 # hold no instruction-specific type, so libmoya and each library compile them alike.
 add_library("v3dlib_moya_cpu" INTERFACE
+	"Geometry.h"
 	"Instance.h"
 	"Isa.h"
 	"Module.h"

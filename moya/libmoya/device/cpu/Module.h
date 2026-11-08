@@ -22,7 +22,7 @@ using HitParams = kernel::view::HitView<Traversal>;
 using TraceParams = kernel::geometry::TraceRays<Traversal>;
 
 /** The version of the table below. A library of another version is refused. **/
-inline constexpr std::uint32_t kModuleVersion = 3;
+inline constexpr std::uint32_t kModuleVersion = 4;
 
 /** The name of the function each library exports, which gives its table. **/
 inline constexpr const char * kModuleEntry = "moya_cpu_module";

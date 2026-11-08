@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Shapes.h>
 
 #include <cstdint>
 #include <functional>
@@ -61,14 +62,14 @@ using Sweep = std::function<LinearBox(std::uint32_t primitive, float begin, floa
 
 /**
  * The bounds over a time range of triangles that move between samples. Each triangle's three
- * points are interpolated linearly between the samples of the mesh, as kernel::geometry::pointAt()
+ * points are interpolated linearly between the samples of the mesh, as kernel::geometry::sampleAt()
  * reads them, so the bounds are exact at every time and hold between.
  *
  * @param held where the mesh's points are, three per triangle in each sample
  * @param points every mesh's points
  * @param times every mesh's sample times
  **/
-Sweep triangleSweep(const kernel::geometry::PointSamples & held, const std::vector<glm::vec3> & points, const std::vector<float> & times);
+Sweep triangleSweep(const kernel::geometry::Sampled & held, const std::vector<glm::vec3> & points, const std::vector<float> & times);
 
 /**
  * The bounds over a time range of a box moved by a transformation that is interpolated between
@@ -78,6 +79,31 @@ Sweep triangleSweep(const kernel::geometry::PointSamples & held, const std::vect
  * that swings outside the boxes at the range's ends stays inside.
  **/
 LinearBox sweepBox(const Box & box, const std::vector<kernel::geometry::Key> & keys, float begin, float end);
+
+/**
+ * The bounds over a time range of points that move between samples, each a sphere or a disk of
+ * half its width about its centre. The centres and the widths each move linearly between their
+ * own samples, so the bounds hold at every sample of either inside the range, and so between.
+ *
+ * @param centres where the points' centres are, one per point in each sample
+ * @param widths where the points' widths are, one per point in each sample
+ **/
+Sweep pointSweep(const kernel::geometry::Sampled & centres, const kernel::geometry::Sampled & widths, const std::vector<glm::vec3> & points,
+    const std::vector<float> & widthValues, const std::vector<float> & times);
+
+/**
+ * The box of a quadric whose dimensions each lie between least's and most's. It holds the whole
+ * surface of revolution, whatever its sweep.
+ **/
+Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometry::Quadric & most);
+
+/**
+ * The bounds over a time range of a quadric whose dimensions move between samples. Each dimension
+ * moves linearly, so its least and its greatest over the range are at a sample inside it or at an
+ * end, and quadricBounds() of those holds the quadric throughout. The bounds hold still.
+ **/
+LinearBox quadricSweep(const kernel::geometry::Sampled & held, const std::vector<kernel::geometry::Quadric> & quadrics,
+    const std::vector<float> & times, float begin, float end);
 
 /** A box moved by a transformation: the box of its eight corners moved. Empty for an empty box. **/
 Box moveBox(const Box & box, const glm::mat4 & transform);
