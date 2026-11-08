@@ -150,6 +150,7 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0009](rendering/0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain |
 | [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
+| [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
 
 ### docs
 
@@ -331,6 +332,7 @@ reported, so the table lists only tags in use.
 | [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
+| [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
 
 ### particles
 

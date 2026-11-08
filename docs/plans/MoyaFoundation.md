@@ -101,7 +101,7 @@ each step is where the survey points, not a conclusion.
 | [4](#step-4--the-kernel-subset-as-a-target) | The kernel subset as a target, with its rules checked | `moya/libmoya`, `scripts` | 0195, 0197 | done |
 | [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | done |
 | [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | done |
-| [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | open |
+| [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | done |
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | open |
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | open |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | open |
@@ -307,7 +307,13 @@ Every RGB value a scene gives is converted into it before its spectrum is found.
 * **Linear Rec. 709**, the gamut of sRGB, which most texture files are authored in.
 * **A space the scene names**, at the cost of a spectrum table built per space.
 
-**The lean** is ACEScg, with Rec. 709 inputs converted into it.
+**Drafted** as
+[ADR-0198](../adr/offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md),
+accepted. The question changed in the drafting. In a spectral renderer the space the film stores
+in decides nothing, since XYZ to any RGB space is one matrix, which commutes with a sum of
+samples. What matters is the space outputs are written in and untagged RGB is read in, and the
+gamut of the spectrum table. The record takes the working space from OpenColorIO's scene-linear
+role, ACEScg in the default configuration, and builds the table for ACEScg alone.
 
 ### Step 8 — RGB to spectrum
 
