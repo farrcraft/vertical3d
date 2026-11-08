@@ -1,0 +1,86 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 0
+    focalLength float = 0
+    fov float = 90
+    fstop float = inf
+    near float = 0.001
+    projection string = "orthographic"
+    screen float[4] = -1.33333 1.33333 -1 1
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 -1 1]
+distantLight "light 1"
+    angle float = 0
+    colour colour = (1, 1, 1)
+    exposure float = 0
+    instances handle[0] =
+    intensity float = 0.9
+    normalize integer = 0
+    transform matrix = [-0.819232 0 0.573462 0 0.285279 0.867482 0.407542 0 -0.497468 0.497468 -0.710669 0 0 0 0 1]
+instance "Polygon 1"
+    camera integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 1"
+    prototype handle = mesh "Polygon 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 2"
+    camera integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 2"
+    prototype handle = mesh "Polygon 2"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+material "material 1"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "matte 1"
+    surfaceOutput string = "out"
+material "material 2"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "plastic 1"
+    surfaceOutput string = "out"
+mesh "Polygon 1"
+    P point[4] = (-1.15, -1.2, 3) (1.15, -1.2, 3) (1.15, 1.2, 3) (-1.15, 1.2, 3)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+mesh "Polygon 2"
+    P point[4] = (-0.5, -0.45, 2.2) (0.35, -0.45, 2.2) (0.35, 0.4, 2.2) (-0.5, 0.4, 2.2)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+options "options"
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    filter string = "box"
+    filterWidth float[2] = 1 1
+    frame integer = 0
+    frameAspect float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 64 48
+    samples integer = 1
+    variance float = 0
+shader "matte 1"
+    Cs colour = (0.8, 0.75, 0.6)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "matte"
+shader "plastic 1"
+    Cs colour = (0.2, 0.45, 0.8)
+    Ks float = 0.5
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    roughness float = 0.1
+    shader string = "plastic"
+sphereLight "light 2"
+    colour colour = (1, 1, 1)
+    coneAngle float = 90
+    coneSoftness float = 0
+    exposure float = 0
+    instances handle[0] =
+    intensity float = 1.2
+    normalize integer = 0
+    radius float = 0
+    transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 -0.6 0.5 1.2 1]

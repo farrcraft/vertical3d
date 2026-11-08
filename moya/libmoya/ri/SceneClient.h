@@ -13,9 +13,13 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -45,8 +49,25 @@ namespace v3d::moya::ri {
  * was given. The scene's owner applies the batch there. A file of several frames is then a
  * scene that changes between commits.
  *
- * **Names.** An object takes its name from RI's `Attribute "identifier" "name"`. A display's
- * output is named after its file.
+ * **The world.** Each primitive becomes a geometry prototype and an instance of it, at the
+ * current transformation, with the material the attribute state gives. A primitive repeated
+ * inside a motion block deforms: each later pose adds a sample to the prototype the first made.
+ * An object is a group, whose geometry is placed by each instance of it. A new world removes
+ * every object the world before it made.
+ *
+ * **Shaders.** The attribute state's surface and displacement shaders become a material of RI
+ * shader nodes, made when the first geometry after a change needs one, so the instances under
+ * one attribute state share it. Its colour and opacity are the surface node's `Cs` and `Os`.
+ *
+ * **Lights.** RI's `pointlight`, `distantlight` and `spotlight` become a sphere light of radius
+ * zero, a distant light and a sphere light shaped by a cone. Each points down its `to` from its
+ * `from`. A light names the instances made while it was on, or none when it lit every instance.
+ * Another light shader is logged and makes no light. `AreaLightSource` makes a mesh light of
+ * each geometry after it in its attribute block.
+ *
+ * **Names.** An object takes its name from RI's `Attribute "identifier" "name"`, or from its
+ * request and its place in the file. A name a kind already holds gets a number after it. A
+ * display's output is named after its file, and a light without a name after its handle.
  **/
 class SceneClient final : public v3d::render::offline::rib::Handler {
  public:
@@ -104,6 +125,46 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** `"identifier"`'s `"name"` names the objects made after it in the attribute block. **/
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
+    /**
+     * A space a scene names, or `"world"` and `"camera"`. Another of RI's own spaces is logged
+     * and changes nothing.
+     **/
+    void coordinateSystem(const std::string & space) override;
+    void coordSysTransform(const std::string & space) override;
+
+    void color(const glm::vec3 & value) override;
+    void opacity(const glm::vec3 & value) override;
+    /** The basis a cubic curve takes. A basis RI does not name is logged, and Bezier is used. **/
+    void basis(const v3d::render::offline::rib::Basis & request) override;
+    void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void areaLightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void illuminate(const std::string & handle, bool on) override;
+
+    Handler* deformation() override;
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cone(const v3d::render::offline::rib::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cylinder(const v3d::render::offline::rib::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void paraboloid(const v3d::render::offline::rib::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void disk(const v3d::render::offline::rib::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void torus(const v3d::render::offline::rib::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * A tag RI names, `crease`, `corner`, `hole` or `interpolateboundary`, becomes the mesh's
+     * parameters. Another tag is logged.
+     **/
+    void subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+
+    void objectBegin(const std::string & handle) override;
+    void objectEnd() override;
+    /** An object no objectBegin() named is logged, and places nothing. **/
+    void objectInstance(const std::string & handle) override;
+
  private:
     /** RI's current transformation: one matrix, or a matrix at each of a motion block's times. **/
     struct Sampled {
@@ -111,11 +172,142 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         std::vector<glm::mat4> matrices { glm::mat4(1.0F) };
     };
 
+    /** A shader as a request names it. **/
+    struct Shader {
+        std::string name;
+        v3d::render::offline::rib::ParameterList parameters;
+    };
+
     /** What AttributeBegin saves and AttributeEnd restores. **/
     struct Attributes {
         Sampled transformation;
         std::string name;
+        glm::vec3 colour { 1.0F };
+        glm::vec3 opacity { 1.0F };
+        Shader surface { .name = "defaultsurface" };
+        Shader displacement;
+
+        /** The material the state above makes, or none until a geometry needs it. **/
+        scene::Handle material;
+
+        /** The lights that are on, by handle, and the area light the geometry after it makes. **/
+        std::set<std::string> lights;
+        std::optional<Shader> area;
+
+        std::string basis { "bezier" };
+
+        /** The group an object's geometry goes in, or none in the world. **/
+        scene::Handle group;
     };
+
+    /**
+     * A primitive as the scene holds it: its kind, the request that made it, its parameters, and
+     * the parameters of the request that become primvars.
+     **/
+    struct Shape {
+        std::string kind;
+        std::string request;
+        std::vector<std::pair<std::string, scene::Value>> parameters;
+        v3d::render::offline::rib::ParameterList primvars;
+        std::set<std::string> taken;
+    };
+
+    /**
+     * Takes each pose after the first of a deforming primitive, and adds its samples to the
+     * prototype the first pose made.
+     **/
+    class Deforming final : public v3d::render::offline::rib::Handler {
+     public:
+        explicit Deforming(SceneClient * client);
+        void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void cone(const v3d::render::offline::rib::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void cylinder(const v3d::render::offline::rib::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void paraboloid(const v3d::render::offline::rib::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void disk(const v3d::render::offline::rib::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void torus(const v3d::render::offline::rib::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+        void subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+
+     private:
+        SceneClient * client_;
+    };
+
+    /** A subdivision mesh's creases, corners, holes and boundary rule, as its tags give them. **/
+    struct Edges {
+        std::vector<std::int32_t> creases;
+        std::vector<std::int32_t> creaseLengths;
+        std::vector<float> creaseSharpness;
+        std::vector<std::int32_t> corners;
+        std::vector<float> cornerSharpness;
+        std::vector<std::int32_t> holes;
+        std::string boundary { "none" };
+    };
+
+    /**
+     * RenderMan's interpolateboundary rule: 0 for none, 2 for the edges alone, and any other for
+     * the edges and the corners.
+     **/
+    static std::string boundaryOf(unsigned int rule);
+
+    /**
+     * Add one tag's integers and floats to a mesh's edges.
+     *
+     * @return false for a tag RI does not name
+     **/
+    static bool addTag(const std::string & name, const std::vector<unsigned int> & given, const std::vector<float> & sharpness, Edges * edges);
+
+    /** A light the world made, and the instances made while it was on. **/
+    struct Light {
+        scene::Handle light;
+        std::vector<scene::Handle> lit;
+    };
+
+    /** The shapes of the primitive requests, which place() and deform() take. **/
+    static Shape polygonShape(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters);
+    static Shape meshShape(const v3d::render::offline::rib::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters);
+    Shape curvesShape(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) const;
+    static Shape pointsShape(const v3d::render::offline::rib::ParameterList & parameters);
+    Shape subdivisionShape(const v3d::render::offline::rib::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters);
+    static Shape quadricShape(const std::string & kind, const std::string & request, const v3d::render::offline::rib::ParameterList & parameters,
+        const std::vector<std::pair<std::string, scene::Value>> & dimensions);
+
+    /**
+     * Make a shape's prototype and an instance of it at the current state. A primitive outside
+     * the world is logged once and makes nothing.
+     **/
+    void place(const Shape & shape);
+
+    /** Add a deforming pose's samples to the prototype the motion block's first pose made. **/
+    void deform(const Shape & shape);
+
+    /** An instance of a prototype at the current state, lit by the lights that are on. **/
+    scene::Handle instance(const scene::Handle & prototype, const std::string & name, bool lit);
+
+    /** The material of the current attribute state, made when there is none. **/
+    scene::Handle material();
+
+    /** A shader node of a request's shader, language and parameters. **/
+    scene::Handle shaderNode(const Shader & shader, const std::string & name);
+
+    /** A light at the current transformation, from `from` towards `to`. **/
+    scene::Handle light(const std::string & kind, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+        const glm::vec3 & defaultTo);
+
+    /** A name for a new object of a kind: the attribute state's, or the request's and a count. **/
+    std::string nameFor(const std::string & kind, const std::string & request);
+
+    /** A name no object of the kind holds: the one given, or it with a number after it. **/
+    std::string unique(const std::string & kind, const std::string & base);
+
+    /** Make an object in the world, which the next world removes. **/
+    scene::Handle make(const std::string & kind, const std::string & name);
+
+    /** Log a message once per key. **/
+    void once(const std::string & key, const std::string & message);
 
     /** A transform request that concatenates, or one that replaces the transformation. **/
     void concat(const glm::mat4 & matrix);
@@ -137,10 +329,29 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     scene::Handle options_;
     scene::Handle camera_;
     std::map<std::string, scene::Handle> outputs_;
+    std::map<std::string, scene::Handle> channels_;
 
     Attributes current_;
     std::vector<Attributes> attributes_;
     std::vector<Sampled> transformations_;
+
+    bool world_ { false };
+    std::vector<scene::Handle> made_;
+    std::vector<scene::Handle> instances_;
+    std::map<std::string, Light> lights_;
+
+    /** The handles of lights a scene declared and the client made nothing of. **/
+    std::set<std::string> unmade_;
+    std::map<std::string, scene::Handle> objects_;
+    std::map<std::string, Sampled> spaces_;
+    std::map<std::string, unsigned int> counts_;
+    std::map<std::string, std::set<std::string>> taken_;
+    std::set<std::string> logged_;
+
+    /** The prototype a motion block's first pose made, and the samples of its poses. **/
+    scene::Handle deforming_;
+    std::map<std::string, std::vector<scene::Value>> samples_;
+    Deforming deformations_ { this };
 
     /**
      * An open motion block's times, the transformation it opened with, and each time's

@@ -125,7 +125,7 @@ among the options before the record was drafted. All four are accepted.
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | done |
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | done |
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | done |
-| [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | open |
+| [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | done |
 | [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | open |
 | [14](#step-14--the-documents) | The reference pages for the scene | `docs` | — | open |
 
@@ -472,6 +472,28 @@ list below:
 **Tests:** the camera and displays of each of moya's RIB scenes describe as committed.
 
 ### Step 12 — The RIB client: the world
+
+**Done.** The client's world requests are in `ri/SceneWorld.cxx`, and a request's parameters
+become primvars or shader inputs through `ri/internal/Primvars.h`. Every one of the 22 scenes in
+`moya/tests/data` reads through the client into the description committed beside it in
+`moya/tests/data/scenes`, which `moya --scene` writes. Six things the list below did not settle:
+
+* **Objects are named after their identifier, or their request and a count**, as `Polygon 2`,
+  and a light without an identifier after its handle, as `light 1`.
+* **The material is made when a geometry needs one.** A change of `Surface`, `Displacement`,
+  `Color` or `Opacity` makes the next geometry make a new one, so the instances under one
+  attribute state share it. The colour and opacity are the surface node's `Cs` and `Os`, as RI's
+  shaders read them, and a scene with no `Surface` has `defaultsurface`.
+* **An object's geometry names no material**, and takes the material of the instance that
+  places its group, since RI's objects take the attributes in force where they are placed.
+* **RI's lights are placed by their `from` and `to`**, looking down their `-z` as UsdLux's
+  lights emit. Their intensity is RI's, carried as it is, and section 7 maps the units.
+* **An area light makes a mesh light of each geometry after it**, and is not switched by
+  `Illuminate`.
+* **A new world removes the world before it**, so a file of several frames commits each frame's
+  world whole.
+
+[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
 
 * **The attribute and transformation stacks**, coordinate systems and motion blocks, as
   `RIBHandler` keeps them today. A motion block's times are kept as step 2 decides.

@@ -119,7 +119,42 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **`WorldEnd` commits the frame**, and calls the function the client's `frame()` was given, where
   the scene's owner applies the batch. A file of several frames is a scene that changes between
   commits.
-- **An object takes its name from `Attribute "identifier" "name"`**, held in the attribute state.
+- **An object takes its name from `Attribute "identifier" "name"`**, held in the attribute state,
+  or else from its request and a count, such as `Polygon 2`. A name its kind already holds gets
+  a number after it. A light without a name is named after its handle, as `light 1`, and an
+  object after its handle, as `object leaf`.
+- **Each primitive is a geometry prototype and an instance of it**, at the current
+  transformation. `Polygon` and `PointsPolygons` are meshes, and the other primitives have
+  kinds of their own. The request's parameters that the kind does not hold become primvars, with
+  their RIB storage class. `"P"` comes from `"Pw"` divided out when there is no `"P"`.
+- **A primitive repeated inside a motion block deforms.** Each later pose adds a sample, at the
+  block's next time, to each parameter of the first pose's prototype that may move. A pose whose
+  points differ in number keeps the first pose alone, and is logged.
+- **A primitive outside the world is not drawn**, and the first is logged.
+- **The material is made when a geometry needs one**, from the attribute state's `Surface`,
+  `Displacement`, `Color` and `Opacity`. Each shader is a node of language `ri` with its
+  parameters as inputs, and the colour and opacity are the surface node's `Cs` and `Os`. The
+  instances made under one attribute state share it. With no `Surface`, the surface is
+  `defaultsurface`.
+- **An object is a group.** `ObjectBegin` saves the attribute state and resets the
+  transformation, so the object's geometry is placed in its own space, and its instances name
+  the group and no material. `ObjectInstance` places the group at the current state. An
+  `ObjectInstance` of an object no `ObjectBegin` made is logged.
+- **RI's three standard lights become UsdLux's.** `pointlight` is a sphere light of radius zero
+  at its `from`. `distantlight` is a distant light. `spotlight` is a sphere light of radius zero
+  whose cone angle is its `coneangle` in degrees, and whose softness is its `conedeltaangle` over
+  its `coneangle`. Each points its `-z` from its `from` towards its `to`, and holds its
+  `intensity` and `lightcolor`. Another light shader is logged and makes no light, and
+  `Illuminate` passes over its handle.
+- **A light names the instances made while it was on**, or none when it lit every instance.
+  `Illuminate` turns a light on and off in the attribute state, and `AttributeEnd` restores it.
+- **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
+  that geometry's prototype as its shape, and its `intensity` and `lightcolor`.
+- **`CoordinateSystem` names the current transformation**, and `CoordSysTransform` makes a named
+  one current. `"world"` is the identity, and `"camera"` is the camera's own space. Another name
+  is logged.
+- **A new world replaces the one before it.** `WorldBegin` removes every object the world before
+  it made, and keeps the options, the camera and the outputs.
 - **`moya --scene`** reads a file through the client and prints the scene's description after
   each frame, in place of rendering it.
 

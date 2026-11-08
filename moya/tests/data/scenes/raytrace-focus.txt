@@ -1,0 +1,66 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 4
+    focalLength float = 0.5
+    fov float = 40
+    fstop float = 1
+    near float = 0.1
+    projection string = "perspective"
+    screen float[0] =
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 1"
+    camera integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 1"
+    prototype handle = mesh "Polygon 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 2"
+    camera integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 2"
+    prototype handle = mesh "Polygon 2"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+material "material 1"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "constant 1"
+    surfaceOutput string = "out"
+material "material 2"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "constant 2"
+    surfaceOutput string = "out"
+mesh "Polygon 1"
+    P point[4] = (-1.5, -1, 4) (-0.2, -1, 4) (-0.2, 1, 4) (-1.5, 1, 4)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+mesh "Polygon 2"
+    P point[4] = (0.5, -2.5, 10) (4, -2.5, 10) (4, 2.5, 10) (0.5, 2.5, 10)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+options "options"
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    filter string = "gaussian"
+    filterWidth float[2] = 2 2
+    frame integer = 0
+    frameAspect float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 64 48
+    samples integer = 16
+    variance float = 0
+shader "constant 1"
+    Cs colour = (0.9, 0.2, 0.2)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "constant"
+shader "constant 2"
+    Cs colour = (0.2, 0.4, 0.9)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "constant"

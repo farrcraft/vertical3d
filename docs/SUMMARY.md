@@ -330,6 +330,7 @@
 - [Plans](plans/README.md)
   - [Moya Scene](plans/MoyaScene.md)
 - [Roadmaps](roadmap/README.md)
+  - [Editor Scripting](roadmap/EditorScripting.md)
   - [Moya Rebuild](roadmap/MoyaRebuild.md)
 - [Audits and surveys](audits/README.md)
 - [TODO](TODO.md)

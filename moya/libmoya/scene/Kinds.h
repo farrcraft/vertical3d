@@ -31,7 +31,8 @@ namespace v3d::moya::scene {
  * - **group**: a prototype made of the instances that name it as their group.
  * - **instance**: a prototype placed by a transformation over the shutter, with its visibility to
  *   camera rays, shadow rays and indirect rays. An instance in no group is in the world. An
- *   instance of a group places every instance in it, so instancing nests. It names its material.
+ *   instance of a group places every instance in it, so instancing nests. It names its material,
+ *   and one in a group that names none takes the material of the instance that places the group.
  * - **shader**, **connection** and **material**: a material's network. A shader node names its
  *   shader and its language, and declares its inputs as primvars of constant interpolation. A
  *   connection feeds one node's output to another's input. A material names the node and output

@@ -34,6 +34,7 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | What it covers |
 |---|---|
+| [EditorScripting.md](EditorScripting.md) | Scenes a script can finish: a rotation order for each item, shared meshes in a scene document, commands to place an item and set a key's interpolation, a headless mode, and batches in parallel |
 | [MoyaRebuild.md](MoyaRebuild.md) | moya rebuilt as a spectral path tracer: a kernel source for every device, a retained scene interface, its own BVH, a BSDF library fed by MaterialX, physically based lights, compositing output, volumes, HIP and OptiX back ends, Hydra and OSL |
 
 ## Completed roadmaps

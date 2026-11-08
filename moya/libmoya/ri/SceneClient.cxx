@@ -146,13 +146,13 @@ void SceneClient::display(const v3d::render::offline::rib::Display & request, co
 
     std::vector<scene::Handle> channels;
     if (request.mode != "rgb" && request.mode != "rgba" && !request.mode.empty()) {
-        const std::optional<scene::Handle> held = scene_.find("channel", request.mode);
-        scene::Handle channel = held.value_or(scene::Handle {});
-        if (!held) {
-            channel = scene_.create("channel", request.mode);
+        const auto held = channels_.find(request.mode);
+        if (held == channels_.end()) {
+            const scene::Handle channel = scene_.create("channel", request.mode);
             scene_.set(channel, "source", scene::Value::string(request.mode));
+            channels_[request.mode] = channel;
         }
-        channels.push_back(channel);
+        channels.push_back(channels_[request.mode]);
     }
     scene_.set(made, "channels", scene::Value::handles(channels));
 }
@@ -169,9 +169,33 @@ void SceneClient::worldBegin() {
     }
     setSampled(camera_, "transform", camera);
     current_.transformation = Sampled();
+
+    // a new world replaces everything the world before it made
+    for (const scene::Handle & made : made_) {
+        scene_.remove(made);
+    }
+    made_.clear();
+    taken_.clear();
+    counts_.clear();
+    instances_.clear();
+    lights_.clear();
+    unmade_.clear();
+    objects_.clear();
+    spaces_.clear();
+    spaces_["camera"] = camera;
+    current_.lights.clear();
+    current_.material = scene::Handle {};
+    world_ = true;
 }
 
 void SceneClient::worldEnd() {
+    // a light that lit every instance names none, and any other names those it lit
+    for (const auto & [handle, light] : lights_) {
+        if (light.lit.size() != instances_.size()) {
+            scene_.set(light.light, "instances", scene::Value::handles(light.lit));
+        }
+    }
+    world_ = false;
     scene_.commit();
     if (committed_) {
         committed_();
@@ -253,6 +277,8 @@ void SceneClient::motionBegin(const std::vector<float> & times) {
     times_ = times;
     base_ = current_.transformation;
     poses_.clear();
+    deforming_ = scene::Handle {};
+    samples_.clear();
 }
 
 void SceneClient::motionEnd() {
@@ -260,6 +286,27 @@ void SceneClient::motionEnd() {
         return;
     }
     motion_ = false;
+
+    // a deforming primitive's poses become samples of its prototype, one at each of the block's
+    // times
+    if (deforming_.valid()) {
+        for (const auto & [name, values] : samples_) {
+            const std::size_t count = std::min(values.size(), times_.size());
+            if (count < 2) {
+                continue;
+            }
+            try {
+                scene_.set(deforming_, name, std::vector<float>(times_.begin(), times_.begin() + static_cast<std::ptrdiff_t>(count)),
+                    std::vector<scene::Value>(values.begin(), values.begin() + static_cast<std::ptrdiff_t>(count)));
+            } catch (const std::invalid_argument & error) {
+                logger_->get()->warn("a deforming primitive's poses differ in their points or its times are not in order, so it keeps its first pose - {}",
+                    error.what());
+            }
+        }
+        deforming_ = scene::Handle {};
+        samples_.clear();
+    }
+
     // a block that held one request, or named one time, moves nothing
     const std::size_t count = std::min(poses_.size(), times_.size());
     if (count == 1 || (count == 0 && !poses_.empty())) {
