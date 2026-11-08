@@ -10,6 +10,7 @@ v3d_add_test(moya
 	"ExrTest.cxx"
 	"FilmTest.cxx"
 	"GridShaderTest.cxx"
+	"HitTest.cxx"
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
 	"PolygonTest.cxx"

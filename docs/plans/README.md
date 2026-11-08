@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [MoyaGeometry](MoyaGeometry.md) | Offline rendering | The rebuilt moya's ray traversal: a wide hierarchy over every primitive the scene names, with motion and nested instances, SIMD on the CPU, OpenSubdiv, tessellation and displacement, and a hit view |
 
 ## Completed plans
 

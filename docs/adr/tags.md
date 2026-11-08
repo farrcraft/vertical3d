@@ -119,6 +119,7 @@ reported, so the table lists only tags in use.
 | [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
 | [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
+| [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
 
 ### camera
 
@@ -143,6 +144,7 @@ reported, so the table lists only tags in use.
 | [0137](project/0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local |
 | [0161](project/0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default |
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
+| [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
 
 ### colour
 
@@ -342,6 +344,12 @@ reported, so the table lists only tags in use.
 | [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
 | [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
 | [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
+| [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
+| [0205](offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md) | Offline: the hierarchy is eight wide at full precision |
+| [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
+| [0207](offline/0207-offline-the-hierarchy-splits-motion-by-time.md) | Offline: the hierarchy splits motion by time |
+| [0208](offline/0208-offline-curves-are-swept-and-converted-to-bezier.md) | Offline: curves are swept and converted to Bézier |
+| [0209](offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md) | Offline: surfaces are tessellated when the hierarchy is built |
 
 ### particles
 

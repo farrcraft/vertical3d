@@ -180,6 +180,9 @@ make.
   records every change as a version, so what is built from it rebuilds only what changed.
   `ri::SceneClient` fills it from RIB, and the editor keeps one in step with its own.
   `moya --scene` prints the scene a file makes. [Scene.md](Scene.md)
+- **Rays and hits** are kernel code. A triangle is met watertight, a ray leaving a surface starts
+  off it, and a stage takes its traversal as a type, so each device brings its own.
+  [Traversal.md](Traversal.md)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through

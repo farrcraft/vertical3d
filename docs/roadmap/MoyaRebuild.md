@@ -96,6 +96,8 @@ describes the scene it built.
 
 ### 3. Geometry and ray traversal
 
+[MoyaGeometry](../plans/MoyaGeometry.md) is its plan.
+
 - **The BVH.** Four or eight children per node, traversed with AVX2 or AVX-512. Built by binned
   surface area with spatial splits. Motion over several segments, and nested instances.
 - **Triangles**, intersected watertight, and ray starts offset by Wächter and Binder's method.
