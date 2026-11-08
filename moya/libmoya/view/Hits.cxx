@@ -6,19 +6,21 @@
 #include <moya/libmoya/view/Hits.h>
 
 #include <moya/libmoya/camera/Camera.h>
+#include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
+#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 #include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/view/Tracing.h>
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -26,20 +28,30 @@
 
 namespace v3d::moya::view {
 
-film::Snapshot hits(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, float time) {
+film::Snapshot hits(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, float time,
+    Tracer tracer) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
-    const geometry::World world(device, geometry::flatten(scene, logger));
+    const Tracing tracing(device, geometry::flatten(scene, logger), tracer);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     film::Film picture(device, resolution,
         { { .name = kDepth, .components = 1 }, { .name = kNormal, .components = 3 }, { .name = kInstance, .components = 1 },
             { .name = kFace, .components = 1 }, { .name = kCoverage, .components = 1 } });
     const kernel::view::HitChannels channels { .depth = picture.offset(kDepth), .normal = picture.offset(kNormal),
         .instance = picture.offset(kInstance), .face = picture.offset(kFace), .coverage = picture.offset(kCoverage) };
-    picture.pass([&](const kernel::film::Pixels & pixels) {
-        const kernel::view::HitView<kernel::geometry::BruteForce> params { .pixels = pixels, .channels = channels, .camera = camera,
-            .traversal = { .placed = world.view() }, .surfaces = world.view(), .time = time };
-        device.launch(resolution.x, resolution.y, params, &kernel::view::hits<kernel::geometry::BruteForce>);
-    });
+    if (tracer == Tracer::Hierarchy) {
+        const kernel::Function<device::cpu::HitParams> entry = device.module().hits;
+        picture.pass([&](const kernel::film::Pixels & pixels) {
+            const device::cpu::HitParams params { .pixels = pixels, .channels = channels, .camera = camera, .traversal = tracing.hierarchy(),
+                .surfaces = tracing.world().view(), .time = time };
+            device.launch(resolution.x, resolution.y, params, entry);
+        });
+    } else {
+        picture.pass([&](const kernel::film::Pixels & pixels) {
+            const kernel::view::HitView<kernel::geometry::BruteForce> params { .pixels = pixels, .channels = channels, .camera = camera,
+                .traversal = tracing.bruteForce(), .surfaces = tracing.world().view(), .time = time };
+            device.launch(resolution.x, resolution.y, params, &kernel::view::hits<kernel::geometry::BruteForce>);
+        });
+    }
     return picture.snapshot();
 }
 

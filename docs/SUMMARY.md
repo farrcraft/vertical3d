@@ -219,6 +219,7 @@
     - [ADR-0207: Offline: the hierarchy splits motion by time](adr/offline/0207-offline-the-hierarchy-splits-motion-by-time.md)
     - [ADR-0208: Offline: curves are swept and converted to Bézier](adr/offline/0208-offline-curves-are-swept-and-converted-to-bezier.md)
     - [ADR-0209: Offline: surfaces are tessellated when the hierarchy is built](adr/offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md)
+    - [ADR-0210: Offline: each CPU instruction set is a library](adr/offline/0210-offline-each-cpu-instruction-set-is-a-library.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

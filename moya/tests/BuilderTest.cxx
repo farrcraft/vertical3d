@@ -5,7 +5,7 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
-#include <moya/libmoya/accel/Node.h>
+#include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/accel/Triangles.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
@@ -23,6 +23,7 @@
 namespace {
 
 namespace accel = v3d::moya::accel;
+namespace cpu = v3d::moya::device::cpu;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
 /** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
@@ -61,7 +62,7 @@ std::vector<glm::vec3> slivers(std::size_t count) {
     return points;
 }
 
-accel::Box boxOf(const accel::Node & node, std::uint32_t slot) {
+accel::Box boxOf(const cpu::Node & node, std::uint32_t slot) {
     return accel::Box { .lower = { node.lowerX[slot], node.lowerY[slot], node.lowerZ[slot] },
         .upper = { node.upperX[slot], node.upperY[slot], node.upperZ[slot] } };
 }
@@ -72,9 +73,9 @@ accel::Box boxOf(const accel::Node & node, std::uint32_t slot) {
  **/
 void walk(const accel::Hierarchy & hierarchy, const std::vector<accel::Box> & bounds, std::uint32_t at, const accel::Box & parent,
     std::vector<std::uint32_t> & seen, int & breaches) {
-    const accel::Node & node = hierarchy.nodes[at];
-    for (std::uint32_t slot = 0; slot < accel::kWidth; ++slot) {
-        if (node.child[slot] == accel::kEmpty) {
+    const cpu::Node & node = hierarchy.nodes[at];
+    for (std::uint32_t slot = 0; slot < cpu::kWidth; ++slot) {
+        if (node.child[slot] == cpu::kEmpty) {
             continue;
         }
         const accel::Box box = boxOf(node, slot);
@@ -85,8 +86,8 @@ void walk(const accel::Hierarchy & hierarchy, const std::vector<accel::Box> & bo
         if (!slack.holds(box)) {
             ++breaches;
         }
-        if ((node.child[slot] & accel::kLeaf) != 0) {
-            const std::uint32_t first = node.child[slot] & ~accel::kLeaf;
+        if ((node.child[slot] & cpu::kLeaf) != 0) {
+            const std::uint32_t first = node.child[slot] & ~cpu::kLeaf;
             for (std::uint32_t i = 0; i < node.count[slot]; ++i) {
                 const std::uint32_t primitive = hierarchy.references[first + i];
                 ++seen[primitive];
@@ -148,7 +149,7 @@ BOOST_AUTO_TEST_CASE(moya_builder_two_builds_on_different_threads_are_equal_test
     const accel::Hierarchy first = accel::build(one, bounds, accel::triangleClip(points));
     const accel::Hierarchy second = accel::build(many, bounds, accel::triangleClip(points));
     BOOST_TEST_REQUIRE(first.nodes.size() == second.nodes.size());
-    BOOST_TEST(std::memcmp(first.nodes.data(), second.nodes.data(), first.nodes.size() * sizeof(accel::Node)) == 0);
+    BOOST_TEST(std::memcmp(first.nodes.data(), second.nodes.data(), first.nodes.size() * sizeof(cpu::Node)) == 0);
     BOOST_TEST(first.references == second.references);
     BOOST_TEST(first.nodes.size() > 1U);
 }
@@ -157,16 +158,16 @@ BOOST_AUTO_TEST_CASE(moya_builder_no_primitives_and_one_primitive_each_have_a_ro
     CpuDevice device;
     const accel::Hierarchy none = accel::build(device, {}, accel::triangleClip({}));
     BOOST_TEST(none.nodes.size() == 1U);
-    for (std::uint32_t slot = 0; slot < accel::kWidth; ++slot) {
-        BOOST_TEST(none.nodes[0].child[slot] == accel::kEmpty);
+    for (std::uint32_t slot = 0; slot < cpu::kWidth; ++slot) {
+        BOOST_TEST(none.nodes[0].child[slot] == cpu::kEmpty);
     }
 
     const std::vector<glm::vec3> points { { 0.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F } };
     const accel::Hierarchy one = accel::build(device, accel::triangleBounds(points), accel::triangleClip(points));
     BOOST_TEST(one.nodes.size() == 1U);
-    BOOST_TEST(one.nodes[0].child[0] == accel::kLeaf);
+    BOOST_TEST(one.nodes[0].child[0] == cpu::kLeaf);
     BOOST_TEST(one.nodes[0].count[0] == 1U);
-    BOOST_TEST(one.nodes[0].child[1] == accel::kEmpty);
+    BOOST_TEST(one.nodes[0].child[1] == cpu::kEmpty);
 }
 
 // a node holds up to eight children, and a hierarchy of many primitives fills them
@@ -175,11 +176,11 @@ BOOST_AUTO_TEST_CASE(moya_builder_nodes_hold_up_to_eight_children_test) {
     const std::vector<glm::vec3> points = scattered(5000, 3);
     const accel::Hierarchy hierarchy = accel::build(device, accel::triangleBounds(points), accel::triangleClip(points));
     std::size_t children = 0;
-    for (const accel::Node & node : hierarchy.nodes) {
+    for (const cpu::Node & node : hierarchy.nodes) {
         bool packed = true;
         bool ended = false;
-        for (std::uint32_t slot = 0; slot < accel::kWidth; ++slot) {
-            const bool empty = node.child[slot] == accel::kEmpty;
+        for (std::uint32_t slot = 0; slot < cpu::kWidth; ++slot) {
+            const bool empty = node.child[slot] == cpu::kEmpty;
             packed = packed && (!ended || empty);
             ended = ended || empty;
             children += empty ? 0 : 1;

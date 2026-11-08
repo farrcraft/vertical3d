@@ -8,6 +8,7 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/view/Tracing.h>
 
 #include <string>
 
@@ -29,7 +30,7 @@ inline constexpr const char * kCoverage = "coverage";
 
 /**
  * The hit view of a scene through its camera: one ray through the centre of each pixel and of the
- * lens, traced by the brute-force traversal over the scene's placed triangles.
+ * lens, traced through the scene's placed triangles.
  *
  * A pixel holds its ray's depth, the geometric normal it hit in world space, the index of its
  * innermost instance, the face of its mesh, and a coverage of one. A pixel whose ray met nothing
@@ -37,9 +38,12 @@ inline constexpr const char * kCoverage = "coverage";
  * beauty is black.
  *
  * @param time where the rays are drawn over the shutter, from 0 at its opening to 1 at its close
+ * @param tracer the traversal the rays are traced through
+ * @throws std::runtime_error when the hierarchy is asked for and the CPU device's library cannot be
+ *         loaded
  **/
 film::Snapshot hits(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    float time = 0.0F);
+    float time = 0.0F, Tracer tracer = Tracer::Hierarchy);
 
 /**
  * Writes a hit view to an EXR file of float channels, the beauty and each of the hit view's

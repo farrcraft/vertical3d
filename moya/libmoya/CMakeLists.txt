@@ -1,6 +1,9 @@
 # Kernel code is a target of its own, compiled under the rules every device accepts.
 add_subdirectory("kernel")
 
+# What the CPU's libraries share with libmoya, and the libraries themselves, a target each.
+add_subdirectory("device/cpu")
+
 # The RGB-to-spectrum table, which moya_rgbtable fits when the tool or the kernel's colour code
 # changes. The output is generated, so it is not linted: clang-tidy and /analyze would spend
 # minutes on its millions of literals, which hold no code.
@@ -23,7 +26,6 @@ add_library("v3dlib_moya"
 
 	"accel/Box.h"
 	"accel/Builder.h" "accel/Builder.cxx"
-	"accel/Node.h"
 	"accel/Triangles.h" "accel/Triangles.cxx"
 	"accel/internal/Binary.h" "accel/internal/Binary.cxx"
 
@@ -37,6 +39,7 @@ add_library("v3dlib_moya"
 
 	"device/Buffer.h"
 	"device/CpuDevice.h" "device/CpuDevice.cxx"
+	"device/CpuLibrary.h" "device/CpuLibrary.cxx"
 	"device/Device.h"
 	"device/internal/Arena.h"
 	"device/internal/HostBuffer.h"
@@ -77,6 +80,7 @@ add_library("v3dlib_moya"
 	"state/Transforms.h" "state/Transforms.cxx"
 
 	"view/Hits.h" "view/Hits.cxx"
+	"view/Tracing.h" "view/Tracing.cxx"
 
 	"raytrace/Hider.h" "raytrace/Hider.cxx"
 	"raytrace/Pass.h"
@@ -110,9 +114,14 @@ endif()
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
 # header includes the log's. moya's headers name glm types, and the device's headers name kernel
-# types. PRIVATE: only Display writes an image, encoding it with image and writing the file through
+# types. The CPU device's header names the instruction sets its libraries are built for.
+# PRIVATE: only Display writes an image, encoding it with image and writing the file through
 # asset. Only the CPU device's source includes TBB, and only the EXR writer's source includes
 # OpenEXR and Imath. Only the colour configuration's source and its internal headers include
 # OpenColorIO.
-target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
+target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
 target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
+
+# PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
+# platforms, and finds it by its path.
+target_link_libraries("v3dlib_moya" PRIVATE ${CMAKE_DL_LIBS} Boost::filesystem)

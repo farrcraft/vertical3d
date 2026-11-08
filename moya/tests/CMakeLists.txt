@@ -23,6 +23,7 @@ v3d_add_test(moya
 	"SurfaceReferenceTest.cxx"
 	"TriangulateTest.cxx"
 	"TracedReferenceTest.cxx"
+	"TraversalTest.cxx"
 	"RenderContextTest.cxx"
 	"RIBCameraTest.cxx"
 	"RIBGeometryTest.cxx"
@@ -48,12 +49,13 @@ v3d_add_test(moya
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes
 # what it rendered through api/asset, reads RIB through api/render/offline, and builds loggers
-# and reads what they wrote through api/log and the spdlog it carries. glm and Boost::filesystem
+# and reads what they wrote through api/log and the spdlog it carries. It reads the CPU's node
+# layout and instruction sets through v3dlib_moya_cpu. glm and Boost::filesystem
 # come through the api libraries, as a package does. It launches kernel code on the CPU device,
 # and its main waits for TBB's threads, which libmoya links PRIVATE. It reads back the EXR files
 # libmoya writes through OpenEXR and Imath, and checks colour conversions against OpenColorIO's own,
 # which libmoya links PRIVATE too.
-target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
+target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
 	v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
 
 # The reference image is resolved against the working directory. v3d_add_test sets that to the
@@ -64,3 +66,6 @@ add_custom_command(TARGET v3dtest_moya POST_BUILD
 		"$<TARGET_FILE_DIR:v3dtest_moya>/data"
 	COMMENT "Copying moya test fixtures"
 	VERBATIM)
+
+# The suite traces through the CPU device, which loads its libraries from beside the executable.
+v3d_moya_cpu_libraries(v3dtest_moya)

@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace v3d::moya::accel {
+namespace v3d::moya::device::cpu {
 
 /** The most children a node holds. **/
 inline constexpr std::uint32_t kWidth = 8;
@@ -20,9 +20,9 @@ inline constexpr std::uint32_t kEmpty = std::numeric_limits<std::uint32_t>::max(
 inline constexpr std::uint32_t kLeaf = 0x80000000U;
 
 /**
- * A node of the hierarchy: up to eight children, each a box at full precision. The boxes are
- * stored axis by axis, each array holding one plane of every child, so a SIMD test reads one
- * plane of all eight at once.
+ * A node of the hierarchy the CPU traverses: up to eight children, each a box at full precision.
+ * The boxes are stored axis by axis, each array holding one plane of every child, so a SIMD test
+ * reads one plane of all eight at once.
  *
  * A child is the index of another node, or kLeaf with the index of the leaf's first reference
  * and count[] references, or kEmpty with an empty box. A node's children are packed from the
@@ -39,4 +39,4 @@ struct alignas(32) Node {
     std::uint32_t count[kWidth];
 };
 
-};  // namespace v3d::moya::accel
+};  // namespace v3d::moya::device::cpu

@@ -111,6 +111,7 @@ void Walk::mesh(const scene::Handle & handle, const glm::mat4 & toWorld, const s
         flat_.points.emplace_back(toWorld * glm::vec4(point, 1.0F));
     }
     flat_.faces.insert(flat_.faces.end(), cut.triangles.faces.begin(), cut.triangles.faces.end());
+    flat_.runs.insert(flat_.runs.end(), cut.triangles.faces.size(), static_cast<std::uint32_t>(flat_.placements.size()));
     flat_.placements.push_back(placement);
 }
 

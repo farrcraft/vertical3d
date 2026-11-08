@@ -6,7 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/accel/Box.h>
-#include <moya/libmoya/accel/Node.h>
+#include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
 #include <cstdint>
@@ -21,7 +21,7 @@ namespace v3d::moya::accel {
  * primitive split in space is referenced from each leaf that holds part of it.
  **/
 struct Hierarchy {
-    std::vector<Node> nodes;
+    std::vector<device::cpu::Node> nodes;
     std::vector<std::uint32_t> references;
 
     /** The box of everything the hierarchy holds. **/

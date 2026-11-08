@@ -7,11 +7,13 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/kernel/Launch.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -21,6 +23,12 @@ namespace v3d::moya::device {
 namespace internal {
 class Arena;
 };  // namespace internal
+
+namespace cpu {
+struct Module;
+};  // namespace cpu
+
+class CpuLibrary;
 
 /**
  * The CPU as a device. Its memory is host memory, and a launch runs a kernel function over the
@@ -39,8 +47,10 @@ class CpuDevice final : public Device {
     /**
      * @param threads how many threads a launch runs on at most, or 0 for as many as TBB gives
      *        this process. A host's own limit on TBB applies as well.
+     * @param newest the newest instruction set the device's library may be built for. The device
+     *        takes this or the processor's newest, whichever is older, so a test can run each
      **/
-    explicit CpuDevice(unsigned int threads = 0);
+    explicit CpuDevice(unsigned int threads = 0, cpu::Isa newest = cpu::Isa::Avx512);
 
     std::string name() const override;
     boost::shared_ptr<Buffer> allocate(std::size_t bytes) override;
@@ -49,6 +59,17 @@ class CpuDevice final : public Device {
 
     /** How many threads a launch runs on at most. **/
     unsigned int threads() const;
+
+    /** The instruction set the device's library is built for. **/
+    cpu::Isa isa() const;
+
+    /**
+     * The table of the library for the device's instruction set, which is loaded the first time it
+     * is asked for, and stays loaded while the device lives. Safe from any thread.
+     *
+     * @throws std::runtime_error when the library cannot be loaded
+     **/
+    const cpu::Module & module();
 
     /**
      * Runs host work on the device's threads: the task once for each index below count, in any
@@ -85,6 +106,11 @@ class CpuDevice final : public Device {
     void run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound);
 
     boost::shared_ptr<internal::Arena> arena_;
+    cpu::Isa isa_;
+
+    /** Held while the library is loaded, so two threads asking at once load it once. **/
+    std::mutex loading_;
+    boost::shared_ptr<CpuLibrary> library_;
 };
 
 };  // namespace v3d::moya::device

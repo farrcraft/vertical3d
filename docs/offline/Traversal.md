@@ -161,10 +161,32 @@ for triangles of three points each.
   references or more builds its halves on separate threads, each into a part of its own, and
   joins them in order.
 
-An `accel::Node` holds up to eight children, packed from the first slot, each with its box at
-full precision. The boxes are stored plane by plane, so a SIMD test reads one plane of every child
-at once. A child is another node's index, `kLeaf` with its first reference and a count, or
-`kEmpty` with an empty box. The root is the first node, and a hierarchy of no primitives has one
-node of empty slots. `accel::cost()` gives a hierarchy's cost by the surface area heuristic.
+A `device::cpu::Node`, the layout the CPU traverses, holds up to eight children, packed from the
+first slot, each with its box at full precision. The boxes are stored plane by plane, so a SIMD
+test reads one plane of every child at once. A child is another node's index, `kLeaf` with its
+first reference and a count, or `kEmpty` with an empty box. The root is the first node, and a
+hierarchy of no primitives has one node of empty slots. `accel::cost()` gives a hierarchy's cost
+by the surface area heuristic.
 
 Background: [ADR-0205](../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md)
+
+## The CPU's traversal
+
+`device::cpu::Traversal` traverses the hierarchy over the placed triangles, testing a node's eight
+children at once: as one AVX register for AVX2 and AVX-512, and as two SSE registers for SSE4.2.
+
+- **A box is entered at its near planes and left at its far ones**, chosen per axis by the sign of
+  the ray's direction. An empty child's near plane lies beyond its far one, so no ray reaches it.
+  A distance that is not a number, from a ray along a box's plane, is passed over.
+- **The far distance is widened** by Ize's bound of 1 + 2γ(3), so a ray that grazes a box is never
+  lost to rounding.
+- **`nearest()` tests the leaves it reaches nearest first**, and pushes the nodes it reaches
+  farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
+  passed over. `any()` stops at the first triangle it meets.
+- **A hit names the same primitive as the brute-force traversal's**: the triangle's index within
+  its run, with its run's chain of instances.
+
+`view::Tracing` holds a scene's placed triangles on a CPU device, with the hierarchy over them
+when it is traced through. `view::trace(device, flat, rays, tracer)` traces a list of rays and
+gives each one's nearest hit and whether anything lies on it. The hit view takes a `view::Tracer`
+too, the hierarchy unless the brute-force traversal is asked for.

@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -32,6 +33,9 @@ struct Flat {
     std::vector<glm::vec3> points;
     std::vector<std::uint32_t> faces;
     std::vector<kernel::geometry::Placement> placements;
+
+    /** The placement each triangle belongs to, one per triangle. **/
+    std::vector<std::uint32_t> runs;
 
     /** What was left out and why, once each, as the log reports it. **/
     std::vector<std::string> reports;
@@ -65,6 +69,9 @@ class World final {
     /** The placed triangles, as kernel code reads them. **/
     kernel::geometry::Placed view() const;
 
+    /** The placement each triangle belongs to, as kernel code reads it. **/
+    kernel::Array<std::uint32_t> runs() const;
+
     /** How many triangles are placed. **/
     std::uint32_t triangles() const;
 
@@ -72,6 +79,7 @@ class World final {
     boost::shared_ptr<device::Buffer> points_;
     boost::shared_ptr<device::Buffer> faces_;
     boost::shared_ptr<device::Buffer> placements_;
+    boost::shared_ptr<device::Buffer> runs_;
 };
 
 };  // namespace v3d::moya::geometry

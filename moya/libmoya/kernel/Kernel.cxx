@@ -15,6 +15,7 @@
 #include <moya/libmoya/kernel/geometry/Hit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Offset.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Ray.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/Trace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Traversal.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Triangle.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep

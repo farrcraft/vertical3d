@@ -6,6 +6,9 @@
 #include <moya/libmoya/device/CpuDevice.h>
 
 #include <moya/libmoya/device/Buffer.h>
+#include <moya/libmoya/device/cpu/Isa.h>
+#include <moya/libmoya/device/CpuLibrary.h>
+#include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/internal/Arena.h>
 #include <moya/libmoya/device/internal/HostBuffer.h>
 #include <moya/libmoya/kernel/Launch.h>
@@ -19,6 +22,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
@@ -36,7 +40,8 @@ void check(const Buffer & buffer, std::size_t bytes) {
 
 };  // namespace
 
-CpuDevice::CpuDevice(unsigned int threads) : arena_(boost::make_shared<internal::Arena>(threads)) {
+CpuDevice::CpuDevice(unsigned int threads, cpu::Isa newest) :
+    arena_(boost::make_shared<internal::Arena>(threads)), isa_(std::min(newest, newestIsa())) {
 }
 
 std::string CpuDevice::name() const {
@@ -59,6 +64,18 @@ void CpuDevice::download(const Buffer & from, void * to, std::size_t bytes) {
     if (bytes > 0) {
         std::memcpy(to, from.address(), bytes);
     }
+}
+
+cpu::Isa CpuDevice::isa() const {
+    return isa_;
+}
+
+const cpu::Module & CpuDevice::module() {
+    const std::lock_guard<std::mutex> lock(loading_);
+    if (!library_) {
+        library_ = boost::make_shared<CpuLibrary>(isa_);
+    }
+    return library_->module();
 }
 
 unsigned int CpuDevice::threads() const {

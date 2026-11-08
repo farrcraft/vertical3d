@@ -120,6 +120,7 @@ reported, so the table lists only tags in use.
 | [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
 | [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
+| [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
 
 ### camera
 
@@ -350,6 +351,7 @@ reported, so the table lists only tags in use.
 | [0207](offline/0207-offline-the-hierarchy-splits-motion-by-time.md) | Offline: the hierarchy splits motion by time |
 | [0208](offline/0208-offline-curves-are-swept-and-converted-to-bezier.md) | Offline: curves are swept and converted to Bézier |
 | [0209](offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md) | Offline: surfaces are tessellated when the hierarchy is built |
+| [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
 
 ### particles
 

@@ -6,7 +6,7 @@
 #include <moya/libmoya/accel/Builder.h>
 
 #include <moya/libmoya/accel/Box.h>
-#include <moya/libmoya/accel/Node.h>
+#include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/accel/internal/Binary.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
@@ -24,18 +24,18 @@ namespace v3d::moya::accel {
 namespace {
 
 /** A node whose every slot is empty. **/
-Node emptyNode() {
-    Node node {};
-    for (std::uint32_t slot = 0; slot < kWidth; ++slot) {
+device::cpu::Node emptyNode() {
+    device::cpu::Node node {};
+    for (std::uint32_t slot = 0; slot < device::cpu::kWidth; ++slot) {
         node.lowerX[slot] = node.lowerY[slot] = node.lowerZ[slot] = std::numeric_limits<float>::infinity();
         node.upperX[slot] = node.upperY[slot] = node.upperZ[slot] = -std::numeric_limits<float>::infinity();
-        node.child[slot] = kEmpty;
+        node.child[slot] = device::cpu::kEmpty;
         node.count[slot] = 0;
     }
     return node;
 }
 
-void setBox(Node & node, std::uint32_t slot, const Box & box) {
+void setBox(device::cpu::Node & node, std::uint32_t slot, const Box & box) {
     node.lowerX[slot] = box.lower.x;
     node.lowerY[slot] = box.lower.y;
     node.lowerZ[slot] = box.lower.z;
@@ -44,7 +44,7 @@ void setBox(Node & node, std::uint32_t slot, const Box & box) {
     node.upperZ[slot] = box.upper.z;
 }
 
-Box boxOf(const Node & node, std::uint32_t slot) {
+Box boxOf(const device::cpu::Node & node, std::uint32_t slot) {
     return Box { .lower = { node.lowerX[slot], node.lowerY[slot], node.lowerZ[slot] },
         .upper = { node.upperX[slot], node.upperY[slot], node.upperZ[slot] } };
 }
@@ -56,7 +56,7 @@ Box boxOf(const Node & node, std::uint32_t slot) {
  **/
 std::vector<std::uint32_t> gathered(const internal::Binary & binary, std::uint32_t at) {
     std::vector<std::uint32_t> children { binary.nodes[at].left, binary.nodes[at].right };
-    while (children.size() < kWidth) {
+    while (children.size() < device::cpu::kWidth) {
         std::size_t widest = children.size();
         float area = -1.0F;
         for (std::size_t i = 0; i < children.size(); ++i) {
@@ -86,7 +86,7 @@ std::uint32_t collapse(const internal::Binary & binary, std::uint32_t at, Hierar
         std::uint32_t link = 0;
         std::uint32_t count = 0;
         if (child.leaf) {
-            link = kLeaf | static_cast<std::uint32_t>(out.references.size());
+            link = device::cpu::kLeaf | static_cast<std::uint32_t>(out.references.size());
             count = child.count;
             out.references.insert(out.references.end(), binary.references.begin() + child.first,
                 binary.references.begin() + child.first + child.count);
@@ -94,7 +94,7 @@ std::uint32_t collapse(const internal::Binary & binary, std::uint32_t at, Hierar
             link = collapse(binary, children[slot], out);
         }
         // the vector may have grown while the child was added, so the node is found again
-        Node & node = out.nodes[index];
+        device::cpu::Node & node = out.nodes[index];
         setBox(node, slot, child.box);
         node.child[slot] = link;
         node.count[slot] = count;
@@ -105,14 +105,14 @@ std::uint32_t collapse(const internal::Binary & binary, std::uint32_t at, Hierar
 /** A node's cost and its children's, over the root's area. **/
 double nodeCost(const Hierarchy & hierarchy, std::uint32_t at, const Box & box, double rootArea) {
     double total = static_cast<double>(box.area()) / rootArea;
-    const Node & node = hierarchy.nodes[at];
-    for (std::uint32_t slot = 0; slot < kWidth; ++slot) {
+    const device::cpu::Node & node = hierarchy.nodes[at];
+    for (std::uint32_t slot = 0; slot < device::cpu::kWidth; ++slot) {
         const std::uint32_t child = node.child[slot];
-        if (child == kEmpty) {
+        if (child == device::cpu::kEmpty) {
             continue;
         }
         const Box childBox = boxOf(node, slot);
-        if ((child & kLeaf) != 0) {
+        if ((child & device::cpu::kLeaf) != 0) {
             total += (static_cast<double>(childBox.area()) / rootArea) * static_cast<double>(node.count[slot]);
         } else {
             total += nodeCost(hierarchy, child, childBox, rootArea);
@@ -127,7 +127,7 @@ Hierarchy build(device::CpuDevice & device, const std::vector<Box> & bounds, con
     if (!std::isfinite(options.budget) || options.budget < 0.0F) {
         throw std::invalid_argument("a budget of spatial splits must be finite and not negative");
     }
-    if (bounds.size() >= kLeaf) {
+    if (bounds.size() >= device::cpu::kLeaf) {
         throw std::invalid_argument("a hierarchy holds fewer primitives than a leaf's first reference can name");
     }
     Hierarchy out;
@@ -144,16 +144,16 @@ Hierarchy build(device::CpuDevice & device, const std::vector<Box> & bounds, con
         return out;
     }
     // the references a leaf can name bound how many spatial splits may add
-    const double room = static_cast<double>(kLeaf - references.size());
+    const double room = static_cast<double>(device::cpu::kLeaf - references.size());
     const double wanted = std::min(std::floor(static_cast<double>(options.budget) * static_cast<double>(references.size())), room);
     const auto budget = static_cast<std::size_t>(wanted);  // checked: finite, and 0 to the room a leaf names
     const internal::BinaryBuilder builder(device, clip, options, out.bounds.area());
     const internal::Binary binary = builder.build(std::move(references), out.bounds, budget);
     if (binary.nodes.front().leaf) {
         // a hierarchy of one leaf still has a root node, which holds it
-        Node root = emptyNode();
+        device::cpu::Node root = emptyNode();
         setBox(root, 0, binary.nodes.front().box);
-        root.child[0] = kLeaf;
+        root.child[0] = device::cpu::kLeaf;
         root.count[0] = binary.nodes.front().count;
         out.nodes.push_back(root);
         out.references = binary.references;

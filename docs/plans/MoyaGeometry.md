@@ -111,6 +111,7 @@ OpenColorIO, OpenEXR and oneTBB (`vcpkg.json:40`).
 | 0207 | How motion is held in the hierarchy | [4](#step-4--the-record-motion-in-the-hierarchy) |
 | 0208 | How curves are intersected | [5](#step-5--the-record-curves) |
 | 0209 | When surfaces are tessellated | [6](#step-6--the-record-tessellation) |
+| 0210 | Each CPU instruction set is a library, amending 0206 | [11](#step-11--the-cpu-traversal) |
 
 Each record step researches how production renderers make the choice, and the owner chooses
 among the options before the record is drafted.
@@ -131,7 +132,7 @@ among the options before the record is drafted.
 | [8](#step-8--the-hit-view-and-the-brute-force-oracle) | The hit view and the brute-force oracle | `moya/libmoya`, `moya` | 0204 | done |
 | [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | done |
 | [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | done |
-| [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206 | open |
+| [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206, **0210** | done |
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | open |
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | open |
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | open |
@@ -428,10 +429,10 @@ of a face names the face. A face of two vertices is dropped.
 ### Step 10 — The builder
 
 **Done.** `accel::build()` builds a binary hierarchy by the surface area heuristic, with spatial
-splits where a node's best halves overlap, and collapses it into `accel::Node`s of eight children
-at full precision. `CpuDevice::each()` runs host work on the device's threads, so the builder
-reaches oneTBB only through the device. On long thin triangles along a diagonal, spatial splits
-lower the cost by about two fifths. Three things the list below did not settle:
+splits where a node's best halves overlap, and collapses it into `device::cpu::Node`s of eight
+children at full precision. `CpuDevice::each()` runs host work on the device's threads, so the
+builder reaches oneTBB only through the device. On long thin triangles along a diagonal, spatial
+splits lower the cost by about two fifths. Three things the list below did not settle:
 
 * **The budget is shared by counts.** Each node shares what is left of its budget of added
   references between its halves by their counts. A budget that threads drew from as they went
@@ -461,6 +462,30 @@ is lower with spatial splits than without. Two builds of one scene on different 
 are equal node for node.
 
 ### Step 11 — The CPU traversal
+
+**Done.** `device::cpu::Traversal` tests a node's eight children at once, and lives in three
+shared libraries, `moya_cpu_sse42`, `moya_cpu_avx2` and `moya_cpu_avx512`, each compiled whole
+for its instruction set. The CPU device loads the newest the processor runs, from beside the
+executable, and a test names each in turn. `view::trace()` traces a list of rays through either
+traversal, and the hit view traces through the hierarchy. Each case was run against broken code
+as well: with the box test blind to a direction's sign, every scene disagreed with the oracle at
+both instruction sets this machine runs. Three things the list below did not settle:
+
+* **Each instruction set is a library, by
+  [ADR-0210](../adr/offline/0210-offline-each-cpu-instruction-set-is-a-library.md).** ADR-0206's
+  sources compiled for each instruction set in one binary would share glm's and the kernel's
+  inline functions, and the linker could keep an AVX2 copy for the SSE4.2 path. The owner chose a
+  library per instruction set over an inline namespace per source or a traversal of intrinsics
+  alone.
+* **AVX-512 runs the AVX2 code compiled for AVX-512**, since a node has eight children. The
+  machine this step was built on has no AVX-512, so that library is compiled and loaded by no test
+  here. CI's runners test it where they have it.
+* **The libraries are copied beside each executable on every build**, by a target of their own.
+  A copy after the executable links missed a library that changed alone, and the first check
+  against broken code passed for that reason.
+
+[Devices.md](../offline/Devices.md#the-cpus-instruction-sets) and
+[Traversal.md](../offline/Traversal.md#the-cpus-traversal) state the rules.
 
 * **The CPU device's traversal** behind step 1's interface, testing a node's children at once, at
   each instruction set step 3 chooses.

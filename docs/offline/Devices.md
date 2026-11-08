@@ -54,3 +54,36 @@ worker threads end before the debug runtime looks for leaks. moya's suite does t
 `TestMain.cxx`.
 
 Background: [ADR-0196](../adr/offline/0196-offline-the-cpu-device-runs-on-onetbb.md)
+
+## The CPU's instruction sets
+
+The CPU's fused path is built once for each of SSE4.2, AVX2 and AVX-512, the x86-64 levels v2, v3
+and v4. Each build is a shared library of its own, `moya_cpu_sse42`, `moya_cpu_avx2` and
+`moya_cpu_avx512`, compiled whole for its instruction set from `device/cpu/Entry.cxx`. What they
+share with libmoya is `v3dlib_moya_cpu`, a target of headers alone in `device/cpu/`: the
+instruction sets, the node layout, the traversal and the table of entry points.
+
+- **Nothing compiled for one instruction set reaches another.** A library links only the shared
+  headers, the kernel's and glm, never libmoya. Its symbols are hidden but for the one function
+  it exports, `moya_cpu_module`, which gives a `cpu::Module`: a table of entry points, each a
+  kernel function a launch runs. Two sources in one binary that compiled the same inline
+  function for different instruction sets would leave the linker free to keep the newer copy
+  for both.
+- **A table's parameters hold no instruction-specific type**, since libmoya and each library
+  compile them from the same headers and have to agree on their layout. `cpu::Traversal`
+  declares its functions in a header that libmoya sees, and only the libraries define them.
+- **The device chooses when it is made.** `CpuDevice(threads, newest)` takes the older of
+  `newest` and what the processor and its operating system run, which `newestIsa()` reports.
+  A test names each instruction set in turn. `isa()` gives the choice.
+- **The library is loaded the first time it is needed**, by `module()` through a `CpuLibrary`,
+  from the running
+  executable's directory, and stays loaded while the device lives. A library that cannot be
+  loaded, exports no table, or whose table is of another version or another instruction set,
+  throws `std::runtime_error`.
+- **Each executable that traces has the libraries beside it.** `v3d_moya_cpu_libraries(target)`
+  copies them there on every build, and an install puts them beside the apps.
+
+A processor older than SSE4.2 does not run moya.
+
+Background: [ADR-0206](../adr/offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md),
+[ADR-0210](../adr/offline/0210-offline-each-cpu-instruction-set-is-a-library.md)

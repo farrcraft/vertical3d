@@ -1,9 +1,10 @@
 # ADR-0206: Offline: the CPU path is built per instruction set
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-08
 **Tags**: offline, build
-**Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
+**Amended by**: ADR-0210
+**Documented in**: [offline/Devices.md](../../offline/Devices.md)
 
 ## Context
 
