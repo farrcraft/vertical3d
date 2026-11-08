@@ -33,6 +33,8 @@ add_library("v3dlib_moya"
 	"film/Film.h" "film/Film.cxx"
 	"film/Filter.h" "film/Filter.cxx"
 
+	"output/Exr.h" "output/Exr.cxx"
+
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/Renderer.h" "ri/Renderer.cxx"
@@ -81,6 +83,7 @@ endif()
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
 # header includes the log's. moya's headers name glm types, and the device's headers name kernel
 # types. PRIVATE: only Display writes an image, encoding it with image and writing the file through
-# asset, and only the CPU device's source includes TBB.
+# asset, only the CPU device's source includes TBB, and only the EXR writer's source includes
+# OpenEXR and Imath.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenEXR::OpenEXR TBB::tbb)

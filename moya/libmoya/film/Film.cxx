@@ -25,6 +25,15 @@ float Snapshot::at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const
     return values.at((((static_cast<std::size_t>(y) * resolution.x) + x) * stride) + offset);
 }
 
+std::uint32_t Snapshot::offset(const std::string & name) const {
+    for (std::size_t i = 0; i < channels.size(); ++i) {
+        if (channels[i].name == name) {
+            return offsets.at(i);
+        }
+    }
+    throw std::out_of_range("the snapshot has no channel named " + name);
+}
+
 Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::vector<Channel> & channels) :
     device_(device), resolution_(resolution), channels_(channels) {
     if (resolution.x == 0 || resolution.y == 0) {
@@ -77,7 +86,8 @@ Snapshot Film::snapshot() const {
     const std::size_t pixels = static_cast<std::size_t>(resolution_.x) * resolution_.y;
     const std::uint32_t stored = stride_ + 1U;
     std::vector<float> sums(pixels * stored);
-    Snapshot out { .resolution = resolution_, .passes = 0, .stride = stride_, .values = std::vector<float>(pixels * stride_) };
+    Snapshot out { .resolution = resolution_, .passes = 0, .stride = stride_, .channels = channels_, .offsets = offsets_,
+        .values = std::vector<float>(pixels * stride_) };
     {
         const std::scoped_lock lock(mutex_);
         device_.download(*pixels_, sums.data(), sums.size() * sizeof(float));

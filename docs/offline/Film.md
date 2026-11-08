@@ -65,3 +65,5 @@ reads.
 - **A snapshot is resolved.** Each sum is divided by its pixel's weight, and a pixel no sample
   reached is zero. `passes` says how many passes it holds. `at(x, y, offset)` reads a float, at
   0 to 2 for the beauty or at a channel's offset.
+- **A snapshot describes itself.** It holds the film's channels and their offsets, so
+  `offset(name)` finds a channel without the film, and a writer needs only the snapshot.

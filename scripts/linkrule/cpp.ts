@@ -23,6 +23,8 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['GPUOpen::VulkanMemoryAllocator', /^vk_mem_alloc/],
     ['spdlog::spdlog', /^(spdlog|fmt)\//],
     ['TBB::tbb', /^(tbb|oneapi\/tbb)\//],
+    ['OpenEXR::OpenEXR', /^OpenEXR\//],
+    ['Imath::Imath', /^Imath\//],
 ];
 
 /**

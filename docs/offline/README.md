@@ -21,6 +21,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Spectra.md](Spectra.md) | Change how the new core carries light as wavelengths and turns it into colour |
 | [Sampler.md](Sampler.md) | Change how the new core draws the random numbers a path uses |
 | [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
+| [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
 
 ## How a frame is made
 

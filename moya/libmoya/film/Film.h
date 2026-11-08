@@ -46,11 +46,22 @@ struct Snapshot {
     /** The floats each pixel holds: the beauty's three, then each channel's, in order. **/
     std::uint32_t stride { 0 };
 
+    /** The film's channels, in order, and where each one's first float sits in a pixel. **/
+    std::vector<Channel> channels;
+    std::vector<std::uint32_t> offsets;
+
     /** Every pixel's floats, row by row from the top left. **/
     std::vector<float> values;
 
-    /** A pixel's float at an offset: 0 to 2 for the beauty, or Film::offset() for a channel. **/
+    /** A pixel's float at an offset: 0 to 2 for the beauty, or offset() for a channel. **/
     float at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const;
+
+    /**
+     * Where a channel's first float sits in a pixel, as Film::offset() gives it.
+     *
+     * @throws std::out_of_range when the snapshot has no channel of that name
+     **/
+    std::uint32_t offset(const std::string & name) const;
 };
 
 /**

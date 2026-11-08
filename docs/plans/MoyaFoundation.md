@@ -107,7 +107,7 @@ each step is where the survey points, not a conclusion.
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | done |
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | done |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | done |
-| [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | open |
+| [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | done |
 | [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | open |
 | [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | open |
 | [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | open |
@@ -447,6 +447,18 @@ where the first source includes them. flatpak.yml is the first build of the modu
 **Tests:** the configure, flatpak.yml and the notices check.
 
 ### Step 13 — EXR output
+
+**Done.** `output::writeExr` writes a film's snapshot as one part or several, each with its own
+precision and compression. Three changes from the list below:
+
+* **The beauty is RGB, not RGBA.** The film holds no coverage yet, so there is no alpha to write.
+* **The header carries ACEScg's chromaticities**, the film's space, until step 14 makes the
+  working space a setting.
+* **A snapshot now carries its channels and their offsets**, so the writer needs no film.
+
+OpenEXR converts between pixel types only when it reads, so a half part converts the floats
+itself. `v3dlib_moya` links OpenEXR and Imath PRIVATE, and linkrule's package table names their
+headers. [Output.md](../offline/Output.md) states the rules.
 
 * **A writer from the film to OpenEXR**: the beauty as half or float RGBA, each AOV as named
   channels, and a part per output when several are asked for.
