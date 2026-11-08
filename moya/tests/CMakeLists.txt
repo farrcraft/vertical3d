@@ -34,6 +34,7 @@ v3d_add_test(moya
 	"SceneDescriptionTest.cxx"
 	"SceneGeometryTest.cxx"
 	"SceneKindsTest.cxx"
+	"SceneShadingTest.cxx"
 	"SceneTest.cxx"
 	"SpectrumTest.cxx"
 	"VertexTest.cxx"

@@ -39,6 +39,14 @@ constexpr float kTurn = 360.0F;
 /** A torus's minor radius until a client sets one. RI gives no default. **/
 constexpr float kMinorRadius = 0.25F;
 
+/**
+ * UsdLux's defaults: a light's radius, a distant light's angle in degrees, and a cone that shapes
+ * nothing.
+ **/
+constexpr float kLightRadius = 0.5F;
+constexpr float kSunAngle = 0.53F;
+constexpr float kOpenCone = 90.0F;
+
 Kind camera() {
     return Kind { .name = "camera",
         .parameters = {
@@ -213,9 +221,103 @@ Kind instance() {
             Declaration { .name = "prototype", .type = Type::Handle, .fallback = Value::handle({}), .targets = prototypes() },
             Declaration { .name = "group", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "group" } },
             Declaration { .name = "transform", .type = Type::Matrix, .motion = true, .fallback = Value::matrix(glm::mat4(1.0F)) },
+            Declaration { .name = "material", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "material" } },
             Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(1) },
             Declaration { .name = "shadow", .type = Type::Integer, .fallback = Value::integer(1) },
             Declaration { .name = "indirect", .type = Type::Integer, .fallback = Value::integer(1) } } };
+}
+
+/**
+ * A node of a material's network: the shader it runs, the language the shader is written in, and
+ * the inputs its client declares on it, each as a primvar of constant interpolation.
+ **/
+Kind shader() {
+    return Kind { .name = "shader",
+        .parameters = {
+            Declaration { .name = "shader", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "language", .type = Type::String, .fallback = Value::string("materialx"), .choices = { "materialx", "osl", "ri" } } },
+        .primvars = true };
+}
+
+/** One node's output feeding another node's input. **/
+Kind connection() {
+    return Kind { .name = "connection",
+        .parameters = {
+            Declaration { .name = "from", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
+            Declaration { .name = "output", .type = Type::String, .fallback = Value::string("out") },
+            Declaration { .name = "to", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
+            Declaration { .name = "input", .type = Type::String, .fallback = Value::string("") } } };
+}
+
+/**
+ * A network's terminals: the node and output that give its surface, and those that give its
+ * displacement.
+ **/
+Kind material() {
+    return Kind { .name = "material",
+        .parameters = {
+            Declaration { .name = "surface", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
+            Declaration { .name = "surfaceOutput", .type = Type::String, .fallback = Value::string("out") },
+            Declaration { .name = "displacement", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
+            Declaration { .name = "displacementOutput", .type = Type::String, .fallback = Value::string("out") } } };
+}
+
+/**
+ * What every light holds: its placement, its colour and strength, and the instances it lights, or
+ * all of them when it names none.
+ **/
+std::vector<Declaration> light() {
+    return {
+        Declaration { .name = "transform", .type = Type::Matrix, .motion = true, .fallback = Value::matrix(glm::mat4(1.0F)) },
+        Declaration { .name = "colour", .type = Type::Colour, .fallback = Value::colour(glm::vec3(1.0F)) },
+        Declaration { .name = "intensity", .type = Type::Float, .fallback = Value::number(1.0F) },
+        Declaration { .name = "exposure", .type = Type::Float, .fallback = Value::number(0.0F) },
+        Declaration { .name = "normalize", .type = Type::Integer, .fallback = Value::integer(0) },
+        Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
+}
+
+/** A light with an area, whose emission a cone may shape. **/
+std::vector<Declaration> areaLight(const std::vector<Declaration> & own) {
+    std::vector<Declaration> parameters = light();
+    parameters.push_back(Declaration { .name = "coneAngle", .type = Type::Float, .fallback = Value::number(kOpenCone) });
+    parameters.push_back(Declaration { .name = "coneSoftness", .type = Type::Float, .fallback = Value::number(0.0F) });
+    parameters.insert(parameters.end(), own.begin(), own.end());
+    return parameters;
+}
+
+/** A light at infinity, which no cone shapes. **/
+std::vector<Declaration> farLight(const std::vector<Declaration> & own) {
+    std::vector<Declaration> parameters = light();
+    parameters.insert(parameters.end(), own.begin(), own.end());
+    return parameters;
+}
+
+Declaration size(const char * name, float fallback) {
+    return Declaration { .name = name, .type = Type::Float, .fallback = Value::number(fallback) };
+}
+
+Declaration texture() {
+    return Declaration { .name = "texture", .type = Type::String, .fallback = Value::string("") };
+}
+
+/** What a mesh light may take its shape from: any geometry, but not a group. **/
+std::vector<std::string> shapes() {
+    std::vector<std::string> kinds = prototypes();
+    std::erase(kinds, "group");
+    return kinds;
+}
+
+/** UsdLux's lights, with its parameters and defaults. **/
+std::vector<Kind> lights() {
+    return {
+        Kind { .name = "rectLight", .parameters = areaLight({ size("width", 1.0F), size("height", 1.0F), texture() }) },
+        Kind { .name = "diskLight", .parameters = areaLight({ size("radius", kLightRadius) }) },
+        Kind { .name = "sphereLight", .parameters = areaLight({ size("radius", kLightRadius) }) },
+        Kind { .name = "cylinderLight", .parameters = areaLight({ size("radius", kLightRadius), size("length", 1.0F) }) },
+        Kind { .name = "meshLight",
+            .parameters = areaLight({ Declaration { .name = "geometry", .type = Type::Handle, .fallback = Value::handle({}), .targets = shapes() } }) },
+        Kind { .name = "distantLight", .parameters = farLight({ size("angle", kSunAngle) }) },
+        Kind { .name = "domeLight", .parameters = farLight({ texture() }) } };
 }
 
 };  // namespace
@@ -234,7 +336,13 @@ Schema kinds() {
         schema.add(quadric);
     }
     schema.add(group());
+    schema.add(shader());
+    schema.add(connection());
+    schema.add(material());
     schema.add(instance());
+    for (const Kind & each : lights()) {
+        schema.add(each);
+    }
     return schema;
 }
 

@@ -128,7 +128,7 @@ std::string parameterLine(const Scene & scene, const Declaration & declared, boo
     if (declared.count != 1) {
         line += "[" + std::to_string(samples.values.front().size()) + "]";
     }
-    if (primvar) {
+    if (primvar && declared.interpolation != Interpolation::Constant) {
         line += std::string(" ") + name(declared.interpolation);
     }
     if (samples.times.empty()) {

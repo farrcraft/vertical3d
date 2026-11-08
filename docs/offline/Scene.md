@@ -65,10 +65,25 @@ then derived as RI derives it.
   unit shape until a client sets it.
 - **`group`**: a prototype made of the instances that name it.
 - **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
-  to, or none for the world. `transform` over the shutter, and its visibility to `camera`,
-  `shadow` and `indirect` rays, each 1 or 0. An instance of a group places every instance in it,
-  so instancing nests. Flattening it into placements is the work of whatever is built from the
-  scene, which stops at a group that holds itself.
+  to, or none for the world. `transform` over the shutter, its `material`, and its visibility
+  to `camera`, `shadow` and `indirect` rays, each 1 or 0. An instance of a group places every
+  instance in it, so instancing nests. Flattening it into placements is the work of whatever is
+  built from the scene, which stops at a group that holds itself.
+- **`shader`**: a node of a material's network. `shader` names what it runs, and `language` the
+  language it is written in, `materialx`, `osl` or `ri`. Its inputs are declared on it as
+  primvars of constant interpolation, so each node holds the inputs its shader takes.
+- **`connection`**: `from` one node's `output`, `to` another node's `input`.
+- **`material`**: its terminals, `surface` and `displacement`, each a node and an output. The
+  scene does not read the shaders a network names. Compiling them is the work of whatever is
+  built from the scene.
+- **The lights** are UsdLux's, with its parameters and defaults: `rectLight`, `diskLight`,
+  `sphereLight`, `cylinderLight`, `meshLight`, `distantLight` and `domeLight`. Each holds a
+  `transform` over the shutter, `colour`, `intensity`, `exposure` and `normalize`, and the
+  `instances` it lights, all of them when it names none. A light with an area holds `coneAngle`
+  and `coneSoftness`. A rect light holds its `width`, `height` and `texture`, a disk or sphere
+  light its `radius`, and a cylinder light its `radius` and `length`. A distant light holds its
+  `angle` in degrees, and a dome light its `texture`. A mesh light takes its shape from the
+  geometry prototype its `geometry` names.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
 
@@ -169,8 +184,8 @@ whatever order they were made in.
 - **An object** is a line of its kind and its quoted name. Each parameter follows on a line of
   its own, indented four spaces.
 - **A parameter's line** gives its name and type, then its element count in brackets when it is
-  an array, then a primvar's interpolation class. Its value follows `=`. A parameter with
-  samples gives each one as `@ time = value`.
+  an array, then a primvar's interpolation class unless it is constant. Its value follows `=`.
+  A parameter with samples gives each one as `@ time = value`.
 - **A float** is the shortest text that reads back as the same float. A colour, point, vector or
   normal is three floats in parentheses, and a colour with a space names it after `in`. A matrix
   is sixteen floats in square brackets, column by column. A string is quoted, with a quote or a

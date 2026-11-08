@@ -122,7 +122,7 @@ among the options before the record was drafted. All four are accepted.
 | [6](#step-6--the-scene-description) | The scene description, for tests and `moya --scene` | `moya/libmoya`, `moya` | — | done |
 | [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | done |
 | [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | done |
-| [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | open |
+| [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | done |
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | open |
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | open |
 | [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | open |
@@ -372,6 +372,22 @@ three times keeps three. A deformation that changes topology is refused. A neste
 world transformation is its own times its parent's.
 
 ### Step 9 — Materials and lights
+
+**Done.** moya's schema adds `shader`, `connection` and `material`, an instance's `material`, and
+seven lights. Three changes from the list below:
+
+* **A network is objects.** A `shader` node names its shader and language and declares its
+  inputs as primvars of constant interpolation. A `connection` feeds one node's output to another
+  node's input, and a `material` names the node and output of each terminal. This is the shape of
+  Hydra's `HdMaterialNetwork2`, so section 12's delegate copies one across.
+* **Each light is a kind of its own**, as UsdLux's are, with UsdLux's parameters and defaults. A
+  point light is a sphere light of radius zero and a spot a light with a cone, as the RIB client
+  maps them at step 12.
+* **A handle to a removed object names nothing**, as step 8 settled, so a mesh light whose
+  prototype is removed names none, and so does an instance whose material is removed.
+
+A primvar of constant interpolation is described without its class, so a shader's inputs read as
+its parameters do. [Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
 
 * **A material**: a network as step 3 decides, with a surface and a displacement terminal. A
   material whose network names an unknown shader is kept, and section 5 reports it.

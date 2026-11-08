@@ -19,12 +19,12 @@ namespace v3d::moya::scene {
  *
  * Each object is a line of its kind and its quoted name, then a line per parameter, indented
  * four spaces. A parameter's line gives its name, its type, its element count in brackets when it
- * is an array, and a primvar's interpolation class. Then it gives its value after `=`, or each
- * sample's time and value after `@`. A float is written as the shortest text that reads back as
- * the same float. A colour, point, vector or normal is three floats in parentheses, and a colour
- * names its space after it when it has one. A matrix is sixteen floats in square brackets, column
- * by column. A handle is its object's kind and quoted name, or `none` when the scene holds no
- * object it names.
+ * is an array, and a primvar's interpolation class unless it is constant. Then it gives its value
+ * after `=`, or each sample's time and value after `@`. A float is written as the shortest text
+ * that reads back as the same float. A colour, point, vector or normal is three floats in
+ * parentheses, and a colour names its space after it when it has one. A matrix is sixteen floats
+ * in square brackets, column by column. A handle is its object's kind and quoted name, or `none`
+ * when the scene holds no object it names.
  **/
 std::string describe(const Scene & scene);
 
