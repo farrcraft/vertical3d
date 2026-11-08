@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-07
 **Tags**: offline, build
-**Documented in**: [plans/MoyaFoundation.md](../../plans/MoyaFoundation.md)
+**Documented in**: [offline/Devices.md](../../offline/Devices.md)
 
 ## Context
 

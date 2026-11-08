@@ -20,9 +20,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-| Plan | Area | What it delivers |
-|---|---|---|
-| [MoyaFoundation](MoyaFoundation.md) | Offline rendering, build | The rebuilt moya's foundation: a CPU device over tiles, sampled spectra, a ZSobol sampler, a film of AOVs, and EXR output through OpenColorIO |
+None.
 
 ## Completed plans
 
@@ -30,6 +28,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaFoundation](completed/MoyaFoundation.md) | Offline rendering, build | 2026-11-07 | The rebuilt moya's foundation: kernel code on a CPU device over oneTBB, sampled spectra and a fitted RGB-to-spectrum table, a ZSobol sampler, a film of AOVs that filters by importance sampling, EXR and 8-bit output, and colour management through OpenColorIO |
 | [Releases](completed/Releases.md) | Engine, apps, build, CI, documents | 2026-11-06 | Vertical3D 0.1.0: apps that run from an install with a version in each, install rules, a changelog and a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |
 | [DocsSite](completed/DocsSite.md) | Documents, CI, editor, moya | 2026-11-05 | A searchable site of the documents on GitHub Pages with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps made by scripts |
 | [EditorDesignSync](completed/EditorDesignSync.md) | Editor, UI, design | 2026-11-04 | The editor and its mockups in agreement: chosen tabs, tab strips, Properties headings, visibility flags, the timeline's transport, views through a scene camera, and the mockups redrawn where the editor chose |

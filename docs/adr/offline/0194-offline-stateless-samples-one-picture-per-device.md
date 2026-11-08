@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-06
 **Tags**: offline, testing
-**Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
+**Documented in**: [offline/Sampler.md](../../offline/Sampler.md)
 
 ## Context
 

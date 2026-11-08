@@ -151,6 +151,37 @@ the shading language and the ray tracer. They differ in these ways:
 
 Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
 
+## The new core
+
+moya is being rebuilt as a spectral path tracer, and its new core sits beside the two hiders.
+The hiders render every RIB scene as before. Nothing in the new core reads a scene or traces a
+ray yet, and nothing in it changes a picture the hiders make.
+
+- **It lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
+  client of the core is built in this tree.
+- **Kernel code** is in `moya/libmoya/kernel/`, compiled under the rules a GPU compiler imposes
+  as the target `v3dlib_moya_kernel`. The CPU and every later device run it from one source.
+  [Kernel.md](Kernel.md)
+- **A device** holds the memory kernel code reads and launches it over the pixels of an image.
+  The CPU device runs tiles on oneTBB's threads. [Devices.md](Devices.md)
+- **Light is four sampled wavelengths.** An RGB colour becomes a spectrum through a table fitted
+  for ACEScg when moya is built, and a spectrum becomes XYZ through the CIE observer.
+  [Spectra.md](Spectra.md)
+- **The ZSobol sampler** gives each sample's random numbers from its pixel, index and
+  dimension, with no state. [Sampler.md](Sampler.md)
+- **The film** holds each pixel's weighted sums: the beauty in ACEScg and named channels beside
+  it. A camera sample's place is drawn from the pixel filter, and the sample is added to its own
+  pixel alone. [Film.md](Film.md)
+- **Colour management** goes through OpenColorIO, with its ACES 2.0 configuration built in.
+  [Colour.md](Colour.md)
+- **Output** is OpenEXR in the working space, or 8 bits through a display. [Output.md](Output.md)
+
+A picture is the same on one thread and on every thread, since a pixel's samples are added in
+order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
+all of it.
+
+Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
+
 ## What is not built
 
 [TODO.md](../TODO.md) holds no open item for the offline renderer. These are not built:

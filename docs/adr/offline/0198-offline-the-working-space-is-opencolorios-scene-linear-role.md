@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-07
 **Tags**: offline, colour
-**Documented in**: [plans/MoyaFoundation.md](../../plans/MoyaFoundation.md)
+**Documented in**: [offline/Colour.md](../../offline/Colour.md)
 
 ## Context
 

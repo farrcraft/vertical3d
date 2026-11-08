@@ -110,7 +110,7 @@ each step is where the survey points, not a conclusion.
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | done |
 | [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | done |
 | [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | done |
-| [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | open |
+| [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | done |
 
 ## What blocks what
 
@@ -520,6 +520,11 @@ film. The film is written to EXR and through the sRGB display to PNG.
 
 ### Step 16 — The documents
 
+**Done.** Each step wrote its own page, and this step read them as a whole. The offline
+README gained a section on the new core that names every page. Records 0189, 0191, 0194 and
+0195 to 0199 name their reference pages in place of this plan or the roadmap. ADR-0187 still names
+the roadmap, since its rule reaches past this plan into the formats later sections read.
+
 * **New reference pages** in `docs/offline/` for the kernel subset and the device layer, for
   spectra and the working space, and for the sampler and the film. The docs site's summary lists
   them.
@@ -530,3 +535,57 @@ film. The film is written to EXR and through the sRGB display to PNG.
 * **Each record's `Documented in` line** names the reference page that states its rule, in
   place of this plan.
 * **The roadmap's section 1** links here, and says so when this plan closes.
+
+---
+
+## Outcome
+
+Closed 2026-11-07. moya's new core runs from a sample to a file. Kernel code runs on a CPU
+device over tiles on oneTBB, and carries light as four sampled wavelengths. RGB becomes a
+spectrum through a table fitted for ACEScg at build time. A stateless ZSobol sampler draws each
+sample, and a film of AOVs adds it to its own pixel in a fixed order. Pictures go to EXR in
+several parts, with colour managed through OpenColorIO's ACES 2.0 configuration. A colour
+chart renders through all of it, to EXR and to a reference PNG, and one thread and every thread
+write the same files. The reyes and ray hiders are untouched, and no committed picture of theirs
+changed.
+
+**Delivered:**
+
+- The kernel target and `kernel.ts` (ADR-0195, ADR-0197), and moya built and tested without
+  the apps in the Linux clang job.
+- The device interface and the CPU device on oneTBB (ADR-0196).
+- Sampled spectra, the CIE observer, D65, illuminant A and CIE daylight.
+- The working space as OpenColorIO's scene_linear role (ADR-0198), the fitted ACEScg table, and
+  the RGB build, which CI builds and tests beside the spectral one.
+- The ZSobol sampler.
+- Filter importance sampling (ADR-0199), the film, its passes and its snapshots.
+- OpenEXR, Imath and OpenColorIO in the manifest's moya feature and in the Flatpak.
+- EXR output, 8-bit output through a display, and colour management.
+- A reference page for each, and a section of the offline README that joins them.
+
+**Different from the plan:**
+
+- Wavelengths are spread through the sampling distribution, not at equal steps in nanometres,
+  and illuminant A comes from its formula, not a table.
+- The working space's record found that the space the film stores in decides nothing in a
+  spectral renderer. It decides the space outputs are written in and untagged colours are read
+  in, and the table's gamut.
+- ACES white is CIE daylight at 6000 K, a third CIE table. The corners of ACEScg are not tested,
+  since no reflectance reaches them.
+- ZSobol needs no table of direction numbers, since it draws from the Sobol sequence's first two
+  dimensions alone, and so the notices file gained no entry for one.
+- The film holds ACEScg, and its sums are floats.
+- An EXR beauty is RGB, since the film holds no coverage yet. A header names its space by Color
+  Interop Forum ID, and carries chromaticities only for the six spaces whose primaries are
+  standard. A snapshot carries its channels, so a writer needs no film.
+- The chart is lit by ACES white rather than D65, and its reference is checked in a spectral
+  build alone.
+
+**Left open:**
+
+- The Flatpak's eight new modules have not been built. flatpak.yml builds them on the pull
+  request that carries this plan.
+- The chart's reference has been compared only on Windows. portable.yml compares it on Linux on
+  the same pull request.
+
+Neither is a change to the tree, so neither is in TODO.md.

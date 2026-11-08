@@ -65,7 +65,8 @@ scenes describe.
 
 ### 1. The foundation
 
-Everything later runs on this. [MoyaFoundation](../plans/MoyaFoundation.md) is its plan.
+Done. Everything later runs on this. [MoyaFoundation](../plans/completed/MoyaFoundation.md) was
+its plan, and [the offline README](../offline/README.md#the-new-core) describes what it built.
 
 - **The kernel subset and the CPU device.** The rules of the subset: no virtual calls, no
   exceptions and no allocation in shared code. A device interface for memory, ray traversal and
