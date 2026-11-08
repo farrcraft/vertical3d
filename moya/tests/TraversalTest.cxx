@@ -6,8 +6,7 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/CpuLibrary.h>
-#include <moya/libmoya/geometry/World.h>
-#include <moya/libmoya/kernel/geometry/BruteForce.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/view/Tracing.h>
@@ -37,22 +36,19 @@ float next(std::uint32_t & seed) {
     return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
 }
 
-/** Triangles of three points each, placed in the world as one run. **/
-geometry::Flat placed(const std::vector<glm::vec3> & points) {
-    geometry::Flat flat;
-    flat.points = points;
+/** Triangles of three points each, as one mesh placed in the world by one instance. **/
+geometry::Prototypes placed(const std::vector<glm::vec3> & points) {
+    geometry::Prototypes prototypes;
+    prototypes.points = points;
     const auto count = static_cast<std::uint32_t>(points.size() / 3);
-    flat.faces.resize(count);
+    prototypes.faces.resize(count);
     for (std::uint32_t i = 0; i < count; ++i) {
-        flat.faces[i] = i;
+        prototypes.faces[i] = i;
     }
-    flat.runs.assign(count, 0);
-    kernel::geometry::Placement placement;
-    placement.instances[0] = 7;
-    placement.depth = 1;
-    placement.count = count;
-    flat.placements.push_back(placement);
-    return flat;
+    prototypes.meshes.push_back(geometry::Mesh { .first = 0, .count = count });
+    prototypes.instances.push_back(geometry::Instance { .id = 7, .visibility = kernel::geometry::kEveryRay });
+    prototypes.world.instances.push_back(0);
+    return prototypes;
 }
 
 /** Small triangles scattered through a cube of side 100. **/
@@ -133,10 +129,10 @@ std::vector<cpu::Isa> runnable() {
  * How many rays the hierarchy at an instruction set answers otherwise than the brute-force
  * traversal. Two hits at one distance are the same answer, whichever primitive each names.
  **/
-std::size_t disagreements(const geometry::Flat & flat, const std::vector<kernel::geometry::Ray> & list, cpu::Isa isa) {
+std::size_t disagreements(const geometry::Prototypes & prototypes, const std::vector<kernel::geometry::Ray> & list, cpu::Isa isa) {
     CpuDevice device(0, isa);
-    const view::Traced reference = view::trace(device, flat, list, view::Tracer::BruteForce);
-    const view::Traced traced = view::trace(device, flat, list, view::Tracer::Hierarchy);
+    const view::Traced reference = view::trace(device, prototypes, list, view::Tracer::BruteForce);
+    const view::Traced traced = view::trace(device, prototypes, list, view::Tracer::Hierarchy);
     std::size_t out = 0;
     for (std::size_t i = 0; i < list.size(); ++i) {
         const kernel::geometry::Hit & want = reference.nearest[i];

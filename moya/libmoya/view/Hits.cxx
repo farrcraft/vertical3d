@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/Launch.h>
@@ -31,7 +32,7 @@ namespace v3d::moya::view {
 film::Snapshot hits(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, float time,
     Tracer tracer) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
-    const Tracing tracing(device, geometry::flatten(scene, logger), tracer);
+    const Tracing tracing(device, geometry::gather(scene, logger), tracer);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     film::Film picture(device, resolution,
         { { .name = kDepth, .components = 1 }, { .name = kNormal, .components = 3 }, { .name = kInstance, .components = 1 },

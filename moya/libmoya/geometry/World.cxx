@@ -7,11 +7,11 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
-#include <moya/libmoya/geometry/internal/Walk.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
+#include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/scene/Value.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -21,6 +21,7 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::geometry {
 
@@ -34,13 +35,54 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
     return buffer;
 }
 
+/** Places a mesh's triangles at the end of a chain of instances, inside its transformation. **/
+void placeMesh(const Prototypes & prototypes, const Mesh & mesh, const glm::mat4 & toWorld, kernel::geometry::Placement placement,
+    Flat & out) {
+    placement.first = static_cast<std::uint32_t>(out.faces.size());
+    placement.count = mesh.count;
+    for (std::size_t corner = std::size_t { mesh.first } * 3; corner < (std::size_t { mesh.first } + mesh.count) * 3; ++corner) {
+        out.points.emplace_back(toWorld * glm::vec4(prototypes.points[corner], 1.0F));
+    }
+    out.faces.insert(out.faces.end(), prototypes.faces.begin() + mesh.first, prototypes.faces.begin() + mesh.first + mesh.count);
+    out.runs.insert(out.runs.end(), mesh.count, static_cast<std::uint32_t>(out.placements.size()));
+    out.placements.push_back(placement);
+}
+
+/**
+ * Places every instance in a group, after the chain that reached the group and inside its
+ * transformation.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the group, then the chain that reached it
+void placeGroup(const Prototypes & prototypes, const Group & group, const glm::mat4 & toWorld, const kernel::geometry::Placement & chain,
+    Flat & out) {
+    if (chain.depth == kernel::geometry::kInstanceDepth) {
+        return;
+    }
+    for (const std::uint32_t index : group.instances) {
+        const Instance & instance = prototypes.instances[index];
+        kernel::geometry::Placement placement = chain;
+        placement.instances[placement.depth++] = instance.id;
+        placement.visibility &= instance.visibility;
+        const glm::mat4 inner = toWorld * instance.transform;
+        if (instance.kind == Prototype::Group) {
+            placeGroup(prototypes, prototypes.groups[instance.prototype], inner, placement, out);
+        } else {
+            placeMesh(prototypes, prototypes.meshes[instance.prototype], inner, placement, out);
+        }
+    }
+}
+
 };  // namespace
 
+Flat flatten(const Prototypes & prototypes) {
+    Flat out;
+    placeGroup(prototypes, prototypes.world, glm::mat4(1.0F), kernel::geometry::Placement {}, out);
+    out.reports = prototypes.reports;
+    return out;
+}
+
 Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) {
-    internal::Walk walk(scene, logger);
-    std::vector<std::uint32_t> chain;
-    walk.group(scene::Handle {}, glm::mat4(1.0F), chain);
-    return walk.take();
+    return flatten(gather(scene, logger));
 }
 
 World::World(device::Device & device, const Flat & flat) :

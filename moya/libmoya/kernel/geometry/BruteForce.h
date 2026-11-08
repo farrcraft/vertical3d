@@ -20,7 +20,7 @@ namespace v3d::moya::kernel::geometry {
 
 /**
  * One chain of instances that places a geometry in the world, and the run of placed triangles it
- * owns.
+ * owns. Its visibility holds the kinds of ray every instance of the chain is visible to.
  **/
 struct Placement {
     std::uint32_t instances[kInstanceDepth] {};
@@ -29,6 +29,8 @@ struct Placement {
     /** The first of its triangles, and how many there are. **/
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
+
+    std::uint32_t visibility { kEveryRay };
 };
 
 /**
@@ -89,7 +91,8 @@ struct Placed {
 
 /**
  * The traversal that tests every placed triangle for every ray. It is slow, and it is the
- * reference every other traversal is compared with.
+ * reference every other traversal is compared with. A run hidden from the ray's kind is passed
+ * over.
  **/
 struct BruteForce {
     Placed placed;
@@ -101,6 +104,9 @@ struct BruteForce {
         float end = ray.end;
         for (std::uint32_t run = 0; run < placed.placements.size; ++run) {
             const Placement & placement = placed.placements[run];
+            if ((placement.visibility & ray.kind) == 0U) {
+                continue;
+            }
             for (std::uint32_t i = 0; i < placement.count; ++i) {
                 const std::uint32_t at = placement.first + i;
                 TriangleHit hit;
@@ -122,11 +128,17 @@ struct BruteForce {
 
     MOYA_KERNEL bool any(const Ray & ray) const {
         const Shear shear = Shear::of(ray);
-        for (std::uint32_t at = 0; at * 3U < placed.points.size; ++at) {
-            TriangleHit hit;
-            if (intersectTriangle(shear, placed.points[at * 3U], placed.points[(at * 3U) + 1U], placed.points[(at * 3U) + 2U],
-                    ray.start, ray.end, hit)) {
-                return true;
+        for (std::uint32_t run = 0; run < placed.placements.size; ++run) {
+            const Placement & placement = placed.placements[run];
+            if ((placement.visibility & ray.kind) == 0U) {
+                continue;
+            }
+            for (std::uint32_t at = placement.first; at < placement.first + placement.count; ++at) {
+                TriangleHit hit;
+                if (intersectTriangle(shear, placed.points[at * 3U], placed.points[(at * 3U) + 1U], placed.points[(at * 3U) + 2U],
+                        ray.start, ray.end, hit)) {
+                    return true;
+                }
             }
         }
         return false;

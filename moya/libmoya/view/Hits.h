@@ -30,7 +30,7 @@ inline constexpr const char * kCoverage = "coverage";
 
 /**
  * The hit view of a scene through its camera: one ray through the centre of each pixel and of the
- * lens, traced through the scene's placed triangles.
+ * lens, traced through the scene's prototypes.
  *
  * A pixel holds its ray's depth, the geometric normal it hit in world space, the index of its
  * innermost instance, the face of its mesh, and a coverage of one. A pixel whose ray met nothing

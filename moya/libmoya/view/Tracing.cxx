@@ -5,14 +5,15 @@
 
 #include <moya/libmoya/view/Tracing.h>
 
-#include <moya/libmoya/accel/Builder.h>
+#include <moya/libmoya/accel/Assembly.h>
+#include <moya/libmoya/device/cpu/Instance.h>
 #include <moya/libmoya/device/cpu/Node.h>
-#include <moya/libmoya/accel/Triangles.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
@@ -26,6 +27,8 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::moya::view {
 
@@ -44,11 +47,15 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
 
 };  // namespace
 
-Tracing::Tracing(device::CpuDevice & device, const geometry::Flat & flat, Tracer tracer) : tracer_(tracer), world_(device, flat) {
+Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer) :
+    tracer_(tracer), world_(device, geometry::flatten(prototypes)) {
     if (tracer == Tracer::Hierarchy) {
-        const accel::Hierarchy hierarchy = accel::build(device, accel::triangleBounds(flat.points), accel::triangleClip(flat.points));
-        nodes_ = uploaded(device, hierarchy.nodes);
-        references_ = uploaded(device, hierarchy.references);
+        const accel::Assembly assembly = accel::assemble(device, prototypes);
+        nodes_ = uploaded(device, assembly.nodes);
+        references_ = uploaded(device, assembly.references);
+        points_ = uploaded(device, prototypes.points);
+        instances_ = uploaded(device, assembly.instances);
+        root_ = assembly.world;
     }
 }
 
@@ -69,15 +76,16 @@ device::cpu::Traversal Tracing::hierarchy() const {
         return {};
     }
     return device::cpu::Traversal { .nodes = device::view<device::cpu::Node>(*nodes_), .references = device::view<std::uint32_t>(*references_),
-        .placed = world_.view(), .runs = world_.runs() };
+        .points = device::view<glm::vec3>(*points_), .instances = device::view<device::cpu::Instance>(*instances_), .world = root_ };
 }
 
-Traced trace(device::CpuDevice & device, const geometry::Flat & flat, const std::vector<kernel::geometry::Ray> & rays, Tracer tracer) {
+Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const std::vector<kernel::geometry::Ray> & rays,
+    Tracer tracer) {
     Traced out;
     if (rays.empty()) {
         return out;
     }
-    const Tracing tracing(device, flat, tracer);
+    const Tracing tracing(device, prototypes, tracer);
     const auto input = uploaded(device, rays);
     const auto nearest = device.allocate(rays.size() * sizeof(kernel::geometry::Hit));
     const auto any = device.allocate(rays.size() * sizeof(std::uint32_t));

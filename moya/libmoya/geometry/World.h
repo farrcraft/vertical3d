@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -42,20 +43,17 @@ struct Flat {
 };
 
 /**
- * The triangles of every mesh the scene's instances place, in world space.
+ * The triangles of every mesh the prototypes' instances place, in world space.
  *
  * Each instance in the world places its prototype, and an instance of a group places every
  * instance in the group, inside its own transformation. Each chain of instances that reaches a
- * mesh is one placement, in the order of the instances' indices.
- *
- * Some chains are left out, and each is reported once:
- * - a group that holds itself, directly or through another group
- * - a chain deeper than kernel::geometry::kInstanceDepth
- * - a prototype of a kind not yet traced; meshes alone are traced
- *
- * An instance whose prototype was removed places nothing. One whose group was removed is in no
- * group, and so is placed by nothing. A transformation is its first sample.
+ * mesh is one placement, in the order of the instances' indices, visible to the rays every
+ * instance of the chain is. A chain deeper than kernel::geometry::kInstanceDepth is left out, as
+ * gather() reports. The reports are the prototypes'.
  **/
+Flat flatten(const Prototypes & prototypes);
+
+/** The triangles of every mesh the scene's instances place: flatten() of what gather() gives. **/
 Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger);
 
 /**

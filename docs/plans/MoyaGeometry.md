@@ -133,7 +133,7 @@ among the options before the record is drafted.
 | [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | done |
 | [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | done |
 | [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206, **0210** | done |
-| [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | open |
+| [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | done |
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | open |
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | open |
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208 | open |
@@ -497,6 +497,31 @@ nearest primitive, at every instruction set the machine runs. An any-hit ray rep
 the oracle has one. A ray that starts inside a box still finds the nearest hit.
 
 ### Step 12 — Instances
+
+**Done.** `geometry::gather()` gathers each prototype once, in its own space, with the instances
+that place it, and `geometry::flatten()` now places what it gathers, so the oracle and the
+hierarchy read one instancing. `accel::assemble()` builds a hierarchy per mesh, one per group over
+its instances' moved boxes, and one for the world, in one array of nodes. The CPU's traversal
+moves the ray into each instance it enters. Each case was run against broken code as well. With
+the ray left unmoved, the cases of a prototype placed twice, groups in groups, visibility and the
+random nested scene failed. With visibility ignored in the hierarchy or in the oracle, the
+visibility case and the random scene failed. Four things the list below did not settle:
+
+* **A loop of groups is broken where it closes.** An instance of a group that holds the
+  instance's own group is left out, so each group has one set of members and finite bounds. The
+  flattening used to stop where a chain came back to an open group, which depends on the path.
+  Two groups that hold each other now keep only the one the world reaches.
+* **The depth limit is the traversal's.** A group is held once and may be reached at more than
+  one depth. An instance too deep on one chain is still held, and the traversal leaves it out
+  where its chain is full. `gather()` reports it once.
+* **A moved box has no margin.** Rays aimed at the corners and edges of 200 instances, randomly
+  turned, scaled and moved, met 25,594 triangles, and the hierarchy lost none without a margin.
+  The box test's widened far distance covers the rounding.
+* **The oracle agrees within a thousandth.** The brute-force traversal's triangles are moved into
+  the world and the hierarchy's rays into each instance. One ray of 3000 grazing a triangle
+  differed in its distance by a ten-thousandth, with the same primitive and chain.
+
+[Traversal.md](../offline/Traversal.md#a-hierarchy-per-prototype) states the rules.
 
 * **A hierarchy per prototype**, and one over the instances, each holding its prototype's
   hierarchy and its transformation. A ray is moved into the prototype's space as it enters.

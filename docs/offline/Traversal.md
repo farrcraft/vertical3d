@@ -15,6 +15,9 @@ the shutter.
 - **The interval is open at its end.** A primitive exactly at `end` is not met, so a shadow ray
   to a point on a light does not meet the light.
 - **By default a ray starts at zero and has no end.**
+- **A ray has a kind**: `kCameraRay`, `kShadowRay` or `kIndirectRay`, one bit each. An instance
+  hidden from a ray's kind is not met, and neither is anything it places. A ray is a camera ray
+  by default.
 
 ## Hits
 
@@ -98,36 +101,59 @@ scene's options name.
 Options that name no camera take every camera parameter's fallback, which is RI's default:
 orthographic, at the origin.
 
-## Placing the scene
+## Gathering the scene
 
-`geometry::flatten(scene, logger)` places every triangle the scene's instances reach in world
-space, in runs, one run for each chain of instances. `geometry::World` holds the result in a
-device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
+`geometry::gather(scene, logger)` gathers every prototype the scene's instances reach from the
+world into a `geometry::Prototypes`, each in its own space, with the instances that place them.
 
-- **Each instance in the world places its prototype**, and an instance of a group places every
-  instance in the group inside its own transformation. Runs follow the instances' indices.
-- **A triangle's primitive is its index within its geometry**, which is its index within its
-  run. A hit then names the same primitive whichever traversal found it, and `Placed` gives the
-  hit's geometric normal and its mesh's face from the chain and the primitive.
-- **Some chains are left out, and each reason is reported once**: a group that holds itself, a
-  chain deeper than a hit records, and a prototype of a kind not yet traced. Meshes alone are
-  traced. `Flat::reports` holds the reports, and the log has them too.
+- **A prototype placed many times is held once.** Each mesh's triangles are a run of the
+  triangles every mesh holds, three points each, with the face each was cut from.
+- **An instance names its prototype**, a mesh or a group, and its transformation into the space
+  of the group that holds it. It keeps its index in the scene. Its `camera`, `shadow` and
+  `indirect` parameters give the kinds of ray it is visible to.
+- **A group comes after every group it holds.** The world is the group of every instance in no
+  group. A group's instances, and the world's, follow their indices.
+- **Some instances are left out, and each reason is reported once**:
+  - an instance of a group that holds the instance's own group, directly or through another
+    group. A group that holds itself would otherwise have no bounds.
+  - an instance that would be deeper in a chain than a hit records. It is still held where a
+    shorter chain reaches it, and each traversal leaves it out where it is too deep.
+  - an instance of a prototype of a kind not yet traced. Meshes alone are traced.
+
+  `Prototypes::reports` holds the reports, and the log has them too.
 - **An instance whose prototype was removed places nothing**, and one whose group was removed is
   placed by nothing.
 - **A transformation is its first sample.**
+
+## Placing the scene
+
+`geometry::flatten(prototypes)` places every triangle the prototypes' instances reach in world
+space, in runs, one run for each chain of instances. `geometry::World` holds the result in a
+device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
+`flatten(scene, logger)` gathers the scene and places what it gathers.
+
+- **Each instance in the world places its prototype**, and an instance of a group places every
+  instance in the group inside its own transformation. Runs follow the instances' indices.
+- **A run is visible to the kinds of ray every instance of its chain is visible to.**
+- **A chain deeper than a hit records is left out.**
+- **A triangle's primitive is its index within its geometry**, which is its index within its
+  run. A hit then names the same primitive whichever traversal found it, and `Placed` gives the
+  hit's geometric normal and its mesh's face from the chain and the primitive.
 
 ## The brute-force traversal
 
 `kernel::geometry::BruteForce` tests every placed triangle for every ray. It is slow, and it is
 the reference every other traversal is compared with. Its `nearest()` keeps the nearest hit
-within the ray's interval, and its `any()` stops at the first.
+within the ray's interval, and its `any()` stops at the first. A run hidden from the ray's kind
+is passed over.
 
 ## The hit view
 
 The hit view is a picture of what rays hit, which lights nothing. `view::hits(device, scene,
-logger, time)` traces one ray through the centre of each pixel and of the lens, at a point over
-the shutter, with the brute-force traversal. `view::writeHits()` writes it as an EXR file of
-float channels, and `moya --hits` writes the hit view of a RIB file.
+logger, time, tracer)` traces one camera ray through the centre of each pixel and of the lens, at
+a point over the shutter, through the hierarchy unless the brute-force traversal is asked for.
+`view::writeHits()` writes it as an EXR file of float channels, and `moya --hits` writes the hit
+view of a RIB file.
 
 | Channel | A pixel whose ray hit | A pixel whose ray met nothing |
 |---|---|---|
@@ -170,9 +196,26 @@ by the surface area heuristic.
 
 Background: [ADR-0205](../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md)
 
+## A hierarchy per prototype
+
+`accel::assemble(device, prototypes)` builds a hierarchy for each mesh and each group of a
+scene's prototypes, and one for the world, all held in one array of nodes and one of references.
+An `accel::Assembly` gives each one's root.
+
+- **A mesh's hierarchy is built once**, however many instances place it, as `build()` builds one
+  over triangles. Its leaves hold the indices of its triangles within the mesh.
+- **A group's hierarchy is built over its instances**, with no spatial splits. Each instance is
+  bounded by its prototype's box with its eight corners moved by its transformation. A group's
+  leaves hold instances. Groups are built in their order, so each member's box is known.
+- **The world's hierarchy is a group's**, over the instances in no group.
+
+A `device::cpu::Instance` is an instance as the CPU traverses it: the inverse of its
+transformation, its prototype's root, its index in the scene and its visibility. An instance of a
+mesh names the mesh's first triangle, and one of a group names `kGroup`.
+
 ## The CPU's traversal
 
-`device::cpu::Traversal` traverses the hierarchy over the placed triangles, testing a node's eight
+`device::cpu::Traversal` traverses the hierarchies from the world's root, testing a node's eight
 children at once: as one AVX register for AVX2 and AVX-512, and as two SSE registers for SSE4.2.
 
 - **A box is entered at its near planes and left at its far ones**, chosen per axis by the sign of
@@ -183,10 +226,20 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
 - **`nearest()` tests the leaves it reaches nearest first**, and pushes the nodes it reaches
   farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
   passed over. `any()` stops at the first triangle it meets.
+- **A leaf of a group's hierarchy enters each of its instances**, and the ray is moved into the
+  instance's prototype's space, where it traverses the prototype's hierarchy. A distance along the
+  moved ray reaches the point the same distance along the ray it was moved from, so hits inside
+  and outside an instance are compared by their distances alone.
+- **A ray enters an instance only when the instance is visible to its kind**, and only when its
+  chain holds fewer instances than a hit records.
 - **A hit names the same primitive as the brute-force traversal's**: the triangle's index within
-  its run, with its run's chain of instances.
+  its mesh, with the chain of instances the ray entered to reach it, outermost first.
 
-`view::Tracing` holds a scene's placed triangles on a CPU device, with the hierarchy over them
-when it is traced through. `view::trace(device, flat, rays, tracer)` traces a list of rays and
-gives each one's nearest hit and whether anything lies on it. The hit view takes a `view::Tracer`
-too, the hierarchy unless the brute-force traversal is asked for.
+`view::Tracing` holds a scene's prototypes on a CPU device: their triangles placed in world space
+for the brute-force traversal, and the hierarchies when the hierarchy is traced through.
+`view::trace(device, prototypes, rays, tracer)` traces a list of rays and gives each one's
+nearest hit and whether anything lies on it.
+
+The brute-force traversal is the oracle for instances too. Its triangles are moved into the world
+and the hierarchy's rays into each instance, so the two round apart, and their distances agree
+within a tolerance rather than exactly.
