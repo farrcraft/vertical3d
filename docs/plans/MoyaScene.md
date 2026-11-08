@@ -126,7 +126,7 @@ among the options before the record was drafted. All four are accepted.
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | done |
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | done |
 | [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | done |
-| [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | open |
+| [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | done |
 | [14](#step-14--the-documents) | The reference pages for the scene | `docs` | — | open |
 
 ## What blocks what
@@ -513,6 +513,29 @@ become primvars or shader inputs through `ri/internal/Primvars.h`. Every one of 
 instances that follow it. An object instanced twice is one prototype and two instances.
 
 ### Step 13 — The editor client
+
+**Done.** `render::SceneTranslator` brings moya's scene in step with the editor's, and
+`MoyaDelegate` keeps one, updated and applied on each render. The translator and the RIB export
+read back through the RIB client describe alike, for a cube alone and for a hierarchy with
+every kind of light and two runs of curves. Four changes from the list below, which the owner
+chose so that the two paths could be compared:
+
+* **The RIB export names each block after its item**, and each light at world level before it,
+  where it named them by counters. The camera's light is `camera light`.
+* **The export writes a mesh as one `PointsPolygons`** of its triangles, where it wrote each
+  triangle as a `Polygon`. The old hiders draw the same triangles, and the editor's suite and
+  pictures are unchanged.
+* **The RIB client's material is shared by nested blocks**, and named after its surface shader.
+  It was cached in one attribute state, so each block made a material of its own for the same
+  `Surface`. The committed descriptions changed with it.
+* **A point light looks down z from its `from`** in both paths, since RI's `pointlight` has no
+  `to`. The client aimed it at RI's default `to` of the origin's +z, which turned it oddly.
+
+`shotCamera()` and `RIBExportVisitor::screen()` give both paths one camera, and
+`moya::scene::aimed()` one placement for a light. An update compares each value with the one it
+set before, rather than reading the items' revisions, so a moved item sets one transformation and
+an edit that changes nothing commits nothing. [Rendering.md](../editor/Rendering.md) states the
+rules.
 
 * **A translator in `vertical3d/src/render/`** that builds the editor's scene in the new scene.
   Each mesh is a prototype and an instance, and each curve that renders is a curves prototype.

@@ -74,6 +74,7 @@ add_library("v3dlib_editor"
 	"src/view/Picture.h"
 	"src/view/WireframeVisitor.h" "src/view/WireframeVisitor.cxx"
 	"src/render/RIBExportVisitor.h" "src/render/RIBExportVisitor.cxx"
+	"src/render/SceneTranslator.h" "src/render/SceneTranslator.cxx"
 	"src/store/Project.h" "src/store/Project.cxx"
 	"src/store/Scene.h" "src/store/Scene.cxx"
 	"src/store/internal/Loaded.h"
@@ -142,6 +143,7 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_image
 	v3dlib_interchange
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
 	v3dlib_render_offline
 	v3dlib_script
@@ -151,10 +153,11 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_window)
 
 # PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
-# store writes through the database, the document imports USD, moya renders the render window,
-# and the controller reads the mouse's held buttons and shows the version
+# store writes through the database, the document imports USD, and the controller reads the
+# mouse's held buttons and shows the version. moya is PUBLIC, since the moya delegate's header
+# holds moya's scene
 target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_input v3dlib_interchange_usd
-	v3dlib_moya v3dlib_version)
+	v3dlib_version)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")

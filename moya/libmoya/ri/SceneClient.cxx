@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
@@ -184,7 +185,7 @@ void SceneClient::worldBegin() {
     spaces_.clear();
     spaces_["camera"] = camera;
     current_.lights.clear();
-    current_.material = scene::Handle {};
+    current_.material = boost::make_shared<scene::Handle>();
     world_ = true;
 }
 

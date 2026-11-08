@@ -12,6 +12,7 @@
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
+#include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
@@ -27,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
@@ -45,30 +47,10 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 constexpr float kConeAngle = 0.5235988F;
 constexpr float kConeDelta = 0.0872665F;
 
-/** How nearly parallel a light's direction may be to up before another up is taken. **/
-constexpr float kParallel = 0.999F;
-
 /** A point a light's parameters give, or the fallback when they give none. **/
 glm::vec3 pointOf(const ParameterList & parameters, const std::string & name, const glm::vec3 & fallback) {
     const std::vector<glm::vec3> found = parameters.points(name);
     return found.empty() ? fallback : found.front();
-}
-
-/** A placement at one point that looks down its -z towards another, as UsdLux's lights emit. **/
-glm::mat4 aim(const glm::vec3 & from, const glm::vec3 & to) {
-    glm::mat4 placed(1.0F);
-    placed[3] = glm::vec4(from, 1.0F);
-    const glm::vec3 towards = to - from;
-    if (glm::length(towards) == 0.0F) {
-        return placed;
-    }
-    const glm::vec3 back = -glm::normalize(towards);
-    const glm::vec3 up = std::abs(back.y) > kParallel ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F, 1.0F, 0.0F);
-    const glm::vec3 right = glm::normalize(glm::cross(up, back));
-    placed[0] = glm::vec4(right, 0.0F);
-    placed[1] = glm::vec4(glm::cross(back, right), 0.0F);
-    placed[2] = glm::vec4(back, 0.0F);
-    return placed;
 }
 
 /** The points of a request: its "P", or its "Pw" divided out. **/
@@ -402,28 +384,29 @@ scene::Handle SceneClient::shaderNode(const Shader & shader, const std::string &
 }
 
 scene::Handle SceneClient::material() {
-    if (current_.material.valid()) {
-        return current_.material;
+    if (current_.material->valid()) {
+        return *current_.material;
     }
-    const scene::Handle surface = shaderNode(current_.surface, nameFor("shader", current_.surface.name));
+    // a material and its nodes are named after the surface shader, whatever geometry made them
+    const scene::Handle surface = shaderNode(current_.surface, unique("shader", current_.surface.name));
     for (const auto & [input, value] : { std::pair { "Cs", current_.colour }, std::pair { "Os", current_.opacity } }) {
         if (!current_.surface.parameters.has(input)) {
             scene_.declare(surface, scene::Declaration { .name = input, .type = scene::Type::Colour, .fallback = scene::Value::colour(value) });
         }
     }
-    const scene::Handle made = make("material", nameFor("material", "material"));
+    const scene::Handle made = make("material", unique("material", current_.surface.name));
     scene_.set(made, "surface", scene::Value::handle(surface));
     if (!current_.displacement.name.empty()) {
-        const scene::Handle displacement = shaderNode(current_.displacement, nameFor("shader", current_.displacement.name));
+        const scene::Handle displacement = shaderNode(current_.displacement, unique("shader", current_.displacement.name));
         scene_.set(made, "displacement", scene::Value::handle(displacement));
     }
-    current_.material = made;
+    *current_.material = made;
     return made;
 }
 
 scene::Handle SceneClient::light(const std::string & kind, const std::string & name, const ParameterList & parameters, const glm::vec3 & defaultTo) {
     const scene::Handle made = make(kind, name);
-    const glm::mat4 placed = aim(pointOf(parameters, "from", glm::vec3(0.0F)), pointOf(parameters, "to", defaultTo));
+    const glm::mat4 placed = scene::aimed(pointOf(parameters, "from", glm::vec3(0.0F)), pointOf(parameters, "to", defaultTo));
     Sampled transformation = current_.transformation;
     for (glm::mat4 & matrix : transformation.matrices) {
         matrix = matrix * placed;
@@ -455,12 +438,12 @@ void SceneClient::coordSysTransform(const std::string & space) {
 
 void SceneClient::color(const glm::vec3 & value) {
     current_.colour = value;
-    current_.material = scene::Handle {};
+    current_.material = boost::make_shared<scene::Handle>();
 }
 
 void SceneClient::opacity(const glm::vec3 & value) {
     current_.opacity = value;
-    current_.material = scene::Handle {};
+    current_.material = boost::make_shared<scene::Handle>();
 }
 
 void SceneClient::basis(const v3d::render::offline::rib::Basis & request) {
@@ -477,7 +460,7 @@ void SceneClient::surface(const std::string & name, const ParameterList & parame
         return;
     }
     current_.surface = Shader { .name = name, .parameters = parameters };
-    current_.material = scene::Handle {};
+    current_.material = boost::make_shared<scene::Handle>();
 }
 
 void SceneClient::displacement(const std::string & name, const ParameterList & parameters) {
@@ -485,7 +468,7 @@ void SceneClient::displacement(const std::string & name, const ParameterList & p
         return;
     }
     current_.displacement = Shader { .name = name, .parameters = parameters };
-    current_.material = scene::Handle {};
+    current_.material = boost::make_shared<scene::Handle>();
 }
 
 void SceneClient::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
@@ -499,7 +482,9 @@ void SceneClient::lightSource(const v3d::render::offline::rib::LightSource & req
     const std::string name = current_.name.empty() ? "light " + request.handle : current_.name;
     scene::Handle made;
     if (request.shader == "pointlight") {
-        made = light("sphereLight", unique("sphereLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F));
+        // a point light has no direction, so it looks down z from where it is
+        const glm::vec3 from = pointOf(parameters, "from", glm::vec3(0.0F));
+        made = light("sphereLight", unique("sphereLight", name), parameters, from + glm::vec3(0.0F, 0.0F, 1.0F));
         scene_.set(made, "radius", scene::Value::number(0.0F));
     } else if (request.shader == "distantlight") {
         made = light("distantLight", unique("distantLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F));

@@ -26,6 +26,7 @@ v3d_add_test(vertical3d
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
+	"render/SceneTranslatorTest.cxx"
 	"store/ProjectTest.cxx"
 	"store/CodecTest.cxx"
 	"store/SceneTest.cxx"
@@ -91,6 +92,7 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_image
 	v3dlib_interchange
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
 	v3dlib_render_offline
 	v3dlib_type

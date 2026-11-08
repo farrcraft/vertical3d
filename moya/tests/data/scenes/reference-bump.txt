@@ -21,14 +21,14 @@ instance "Polygon 1"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 1"
+    material handle = material "bumpy"
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
-material "material 1"
+material "bumpy"
     displacement handle = none
     displacementOutput string = "out"
-    surface handle = shader "bumpy 1"
+    surface handle = shader "bumpy"
     surfaceOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.2, -0.9, 5) (-1.2, 0.9, 5) (1.2, 0.9, 5) (1.2, -0.9, 5)
@@ -45,7 +45,7 @@ options "options"
     resolution integer[2] = 64 48
     samples integer = 1
     variance float = 0
-shader "bumpy 1"
+shader "bumpy"
     Cs colour = (0.85, 0.8, 0.7)
     Os colour = (1, 1, 1)
     language string = "ri"

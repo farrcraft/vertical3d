@@ -33,6 +33,22 @@ progress after each bucket of the reyes hider and each row of the ray-trace hide
 there when cancelled. moya resolves its samples into pixels only at
 the end of a frame, so the picture arrives when the render finishes, not bucket by bucket.
 
+**`MoyaDelegate` also keeps moya's new scene in step.** Each render brings the new core's
+retained scene in step with the editor's through a `SceneTranslator`, and applies the batch on
+the caller's thread. The new core does not render yet, so the picture still comes from the
+recorded shot. [The scene](../offline/Scene.md) describes what it holds.
+
+- **The translator makes what the RIB export makes through moya's RIB client**, so the two
+  describe alike. The options, the camera and the output come first. Each mesh is a prototype
+  and an instance, each run of a curve's curves is a prototype and an instance, and each light
+  is one of UsdLux's. Every surface takes one `matte` material, and a scene with no light gets the
+  camera's distant light.
+- **Each object is named after its item**, and kept by its kind and name from one render to the
+  next. A curve's second run is its name and `2`, and the camera's light is `camera light`.
+- **An update sets only what changed.** A parameter is set when its value differs from the one
+  set before, so moving one item sets its instance's transformation alone. An object no item
+  makes any more is removed. An update that changes nothing commits nothing.
+
 **A batch writes files and runs moya.exe.** `Batch` writes one RIB file per frame per camera,
 then runs `moya.exe` on each in turn on a thread of its own. The files stay, so a farm or another
 RenderMan renderer can render them instead. `runProgram()` in `src/render/Process.h` starts the
@@ -49,7 +65,14 @@ The camera is the one selected scene camera, or the active view when there is no
 `shotFrom()` in `src/render/Shot.h` picks it, and `shoot()` sends the scene from it to a RIB
 handler as the settings say. `writeShot()` is `shoot()` into a `rib::Writer`, which makes a RIB
 file of it for a batch and for the export. The camera takes the picture's size and frame aspect
-from the settings, so the picture is not stretched to the shape of the view.
+from the settings, so the picture is not stretched to the shape of the view. `shotCamera()`
+gives the camera both a shot and the translator look through.
+
+- **Each item's block is named after the item**, by `Attribute "identifier"`. A light is
+  written at world level, so its name is set there before it, and the camera's light is named
+  `camera light`.
+- **A mesh is one `PointsPolygons`**: every vertex, and the triangles each face is cut into,
+  since RI draws a polygon only when it is flat and convex.
 
 **Render settings** belong to the document and are saved with it:
 

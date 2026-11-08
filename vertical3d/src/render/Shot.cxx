@@ -12,6 +12,7 @@
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <ostream>
@@ -42,20 +43,25 @@ v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const b
 
 /**
  **/
+v3d::type::camera::Camera shotCamera(const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
+    v3d::type::camera::Profile profile(from);
+    profile.size(settings.size);
+    profile.pixelAspect(static_cast<float>(settings.size.x) / static_cast<float>(settings.size.y));
+    v3d::type::camera::Camera camera(profile);
+    camera.createProjection();
+    camera.createView();
+    return camera;
+}
+
+/**
+ **/
 void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
     const v3d::type::camera::Profile& from, const RIBExportVisitor::Output& output) {
     if (handler == nullptr) {
         return;
     }
-    v3d::type::camera::Profile profile(from);
-    profile.size(output.settings.size);
-    profile.pixelAspect(static_cast<float>(output.settings.size.x) / static_cast<float>(output.settings.size.y));
-    v3d::type::camera::Camera camera(profile);
-    camera.createProjection();
-    camera.createView();
-
     RIBExportVisitor visitor(handler);
-    visitor.begin(camera, output);
+    visitor.begin(shotCamera(from, output.settings), output);
     scene.accept(&visitor, evaluation, scene::Scene::Showing::Renders);
     visitor.end();
 }

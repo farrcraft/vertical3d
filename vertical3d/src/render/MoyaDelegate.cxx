@@ -11,7 +11,9 @@
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/state/Planes.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -22,6 +24,7 @@
 
 #include "Delegate.h"
 #include "RIBExportVisitor.h"
+#include "SceneTranslator.h"
 #include "Shot.h"
 
 #include <boost/make_shared.hpp>
@@ -59,6 +62,12 @@ Delegate::Status MoyaDelegate::status() const {
 
 /**
  **/
+const v3d::moya::scene::Scene& MoyaDelegate::retained() const noexcept {
+    return retained_;
+}
+
+/**
+ **/
 boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
     const std::scoped_lock lock(mutex_);
     return picture_;
@@ -67,8 +76,14 @@ boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
 /**
  **/
 void MoyaDelegate::start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
+    const scene::Evaluation evaluation = scene.evaluate();
+    const RIBExportVisitor::Output output{ .settings = settings };
+    if (translator_.update(scene, evaluation, from, output)) {
+        retained_.apply();
+    }
+
     const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
-    shoot(shot.get(), scene, scene.evaluate(), from, RIBExportVisitor::Output{ .settings = settings });
+    shoot(shot.get(), scene, evaluation, from, output);
     {
         const std::scoped_lock lock(mutex_);
         status_.state = State::Rendering;

@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -187,8 +188,12 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         Shader surface { .name = "defaultsurface" };
         Shader displacement;
 
-        /** The material the state above makes, or none until a geometry needs it. **/
-        scene::Handle material;
+        /**
+         * The material the state above makes, or none until a geometry needs it. AttributeBegin
+         * shares the slot, so a material made inside a block is the one its parent's state
+         * makes too. A change of shading gives the state a slot of its own.
+         **/
+        boost::shared_ptr<scene::Handle> material { boost::make_shared<scene::Handle>() };
 
         /** The lights that are on, by handle, and the area light the geometry after it makes. **/
         std::set<std::string> lights;

@@ -8,6 +8,7 @@
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
@@ -28,6 +29,7 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <array>
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -117,6 +119,28 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         }
     }
 
+    /**
+     * A mesh's faces, each booked as polygon() books a polygon, with its corners taken from the
+     * mesh's points by index.
+     **/
+    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        const std::vector<glm::vec3> points = parameters.points("P");
+        std::size_t at = 0;
+        for (const unsigned int count : request.counts) {
+            v3d::render::offline::rib::ParameterList face;
+            std::vector<float> corners;
+            for (unsigned int corner = 0; corner < count; ++corner) {
+                const glm::vec3 & point = points.at(request.indices.at(at + corner));
+                corners.insert(corners.end(), { point.x, point.y, point.z });
+            }
+            face.add("P", v3d::render::offline::rib::Declaration(v3d::render::offline::rib::Declaration::Storage::VERTEX,
+                v3d::render::offline::rib::Declaration::Type::POINT, 1), corners, {});
+            polygon(count, face);
+            at += count;
+        }
+    }
+
     std::vector<std::string> lights_;
     std::vector<glm::vec3> froms_;
     std::vector<glm::vec3> tos_;
@@ -193,11 +217,13 @@ bool reimport(const std::string & source, ImportHandler * handler) {
 }
 
 /**
- * A cube out of the editor comes back as six faces of four corners, inside one world block.
+ * A cube out of the editor comes back as six faces of four corners, inside one world block. Its
+ * block is named after the item, and the light the scene is given is named before it.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    scene->add(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube()));
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    scene->add(cube);
 
     const std::string exported = exportScene(scene, false);
 
@@ -218,8 +244,9 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     // each of the cube's six faces is two triangles
     BOOST_CHECK_EQUAL(handler.faces_, 12U);
     BOOST_CHECK_EQUAL(handler.corners_, 36U);
-    BOOST_REQUIRE_EQUAL(handler.names_.size(), 1U);
-    BOOST_CHECK_EQUAL(handler.names_[0], "mesh1");
+    BOOST_REQUIRE_EQUAL(handler.names_.size(), 2U);
+    BOOST_CHECK_EQUAL(handler.names_[0], "camera light");
+    BOOST_CHECK_EQUAL(handler.names_[1], cube->name());
 }
 
 /**
@@ -469,7 +496,8 @@ BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
     // mesh beneath it, and a light, write no block
     BOOST_CHECK_EQUAL(handler.shape_, "((P(P)))");
     BOOST_CHECK_EQUAL(handler.blocks_, 3U);
-    const std::vector<std::string> names{ "group1", "mesh1", "mesh2" };
+    // the light is named at world level, before the blocks
+    const std::vector<std::string> names{ light->name(), outer->name(), held->name(), inner->name() };
     BOOST_CHECK(handler.names_ == names);
 
     // each block holds its item's local matrix, which RI composes as the editor does

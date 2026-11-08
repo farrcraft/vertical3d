@@ -13,7 +13,7 @@ instance "Polygon 1"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 1"
+    material handle = material "constant"
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -21,7 +21,7 @@ instance "Polygon 2"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 2"
+    material handle = material "matte"
     prototype handle = mesh "Polygon 2"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -29,7 +29,7 @@ instance "Polygon 3"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 3"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -37,7 +37,7 @@ instance "Polygon 4"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 4"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -45,7 +45,7 @@ instance "Polygon 5"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 5"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -53,7 +53,7 @@ instance "Polygon 6"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 6"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -61,7 +61,7 @@ instance "Polygon 7"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 7"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -69,21 +69,21 @@ instance "Polygon 8"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 3"
+    material handle = material "matte 2"
     prototype handle = mesh "Polygon 8"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
-material "material 1"
+material "constant"
     displacement handle = none
     displacementOutput string = "out"
-    surface handle = shader "constant 1"
+    surface handle = shader "constant"
     surfaceOutput string = "out"
-material "material 2"
+material "matte"
     displacement handle = none
     displacementOutput string = "out"
-    surface handle = shader "matte 1"
+    surface handle = shader "matte"
     surfaceOutput string = "out"
-material "material 3"
+material "matte 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "matte 2"
@@ -141,12 +141,12 @@ options "options"
     resolution integer[2] = 64 48
     samples integer = 1
     variance float = 0
-shader "constant 1"
+shader "constant"
     Cs colour = (1, 1, 1)
     Os colour = (1, 1, 1)
     language string = "ri"
     shader string = "constant"
-shader "matte 1"
+shader "matte"
     Cs colour = (0.8, 0.8, 0.75)
     Os colour = (1, 1, 1)
     language string = "ri"

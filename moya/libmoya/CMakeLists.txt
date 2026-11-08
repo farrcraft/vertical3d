@@ -49,6 +49,7 @@ add_library("v3dlib_moya"
 
 	"scene/Description.h" "scene/Description.cxx"
 	"scene/Kinds.h" "scene/Kinds.cxx"
+	"scene/Placement.h" "scene/Placement.cxx"
 	"scene/Scene.h" "scene/Scene.cxx"
 	"scene/Schema.h" "scene/Schema.cxx"
 	"scene/Value.h" "scene/Value.cxx"

@@ -21,7 +21,7 @@ instance "unitcube"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -29,7 +29,7 @@ instance "unitcube 2"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube 2"
     shadow integer = 1
     transform matrix = [-4.37114e-08 0 -1 0 0 1 0 0 1 0 -4.37114e-08 0 0 0 0 1]
@@ -37,7 +37,7 @@ instance "unitcube 3"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube 3"
     shadow integer = 1
     transform matrix = [-1 0 8.74228e-08 0 0 1 0 0 -8.74228e-08 0 -1 0 0 0 0 1]
@@ -45,7 +45,7 @@ instance "unitcube 4"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube 4"
     shadow integer = 1
     transform matrix = [1.31134e-07 0 1 0 0 1 0 0 -1 0 1.31134e-07 0 0 0 0 1]
@@ -53,7 +53,7 @@ instance "unitcube 5"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube 5"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 -4.37114e-08 1 0 0 -1 -4.37114e-08 0 0 0 0 1]
@@ -61,14 +61,14 @@ instance "unitcube 6"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "unitcube"
+    material handle = material "defaultsurface"
     prototype handle = mesh "unitcube 6"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 -4.37114e-08 -1 0 0 1 -4.37114e-08 0 0 0 0 1]
-material "unitcube"
+material "defaultsurface"
     displacement handle = none
     displacementOutput string = "out"
-    surface handle = shader "unitcube"
+    surface handle = shader "defaultsurface"
     surfaceOutput string = "out"
 mesh "unitcube"
     P point[4] = (0.5, 0.5, 0.5) (-0.5, 0.5, 0.5) (-0.5, -0.5, 0.5) (0.5, -0.5, 0.5)
@@ -105,7 +105,7 @@ options "options"
     resolution integer[2] = 64 48
     samples integer = 4
     variance float = 0
-shader "unitcube"
+shader "defaultsurface"
     Cs colour = (1, 1, 1)
     Os colour = (1, 1, 1)
     language string = "ri"

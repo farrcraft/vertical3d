@@ -21,14 +21,14 @@ instance "Polygon 1"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 1"
+    material handle = material "matte"
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
-material "material 1"
-    displacement handle = shader "lift 1"
+material "matte"
+    displacement handle = shader "lift"
     displacementOutput string = "out"
-    surface handle = shader "matte 1"
+    surface handle = shader "matte"
     surfaceOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.2, -0.9, 5) (1.2, -0.9, 5) (1.2, 0.9, 5) (-1.2, 0.9, 5)
@@ -45,13 +45,13 @@ options "options"
     resolution integer[2] = 64 48
     samples integer = 1
     variance float = 0
-shader "lift 1"
+shader "lift"
     amount float = -0.08
     frequency float = 7.85398
     language string = "ri"
     shader string = "lift"
     wave float = 0.08
-shader "matte 1"
+shader "matte"
     Cs colour = (0.8, 0.8, 0.85)
     Os colour = (1, 1, 1)
     language string = "ri"

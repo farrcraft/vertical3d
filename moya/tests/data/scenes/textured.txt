@@ -13,14 +13,14 @@ instance "Polygon 1"
     camera integer = 1
     group handle = none
     indirect integer = 1
-    material handle = material "material 1"
+    material handle = material "paintedplastic"
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
-material "material 1"
+material "paintedplastic"
     displacement handle = none
     displacementOutput string = "out"
-    surface handle = shader "paintedplastic 1"
+    surface handle = shader "paintedplastic"
     surfaceOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-0.666667, -0.666667, 5) (0.666667, -0.666667, 5) (0.666667, 0.666667, 5) (-0.666667, 0.666667, 5)
@@ -38,7 +38,7 @@ options "options"
     resolution integer[2] = 64 48
     samples integer = 1
     variance float = 0
-shader "paintedplastic 1"
+shader "paintedplastic"
     Cs colour = (1, 1, 1)
     Kd float = 0
     Ks float = 0

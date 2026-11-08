@@ -9,6 +9,8 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
+#include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Scene.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -17,6 +19,7 @@
 #include <thread>
 
 #include "Delegate.h"
+#include "SceneTranslator.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -30,6 +33,10 @@ namespace v3d::editor::render {
  * them into a moya handler of its own, and the picture stays in that handler's framebuffer
  * rather than going through a file. moya reports its progress per bucket or per row, and stops
  * there when the render is cancelled.
+ *
+ * **It keeps moya's new scene in step.** Each render also brings the new core's retained scene
+ * in step with the editor's, changing only what moved, and applies the batch on the caller's
+ * thread. The new core does not render yet, so the picture still comes from the shot.
  **/
 class MoyaDelegate final : public Delegate {
  public:
@@ -49,6 +56,9 @@ class MoyaDelegate final : public Delegate {
     Status status() const override;
     boost::shared_ptr<v3d::image::Image> picture() const override;
 
+    /** moya's new scene, as the last render left it. **/
+    const v3d::moya::scene::Scene& retained() const noexcept;
+
  protected:
     void start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) override;
 
@@ -64,6 +74,10 @@ class MoyaDelegate final : public Delegate {
     Status status_;
     boost::shared_ptr<v3d::image::Image> picture_;
     std::jthread worker_;
+
+    // read and written on the caller's thread alone
+    v3d::moya::scene::Scene retained_{ v3d::moya::scene::kinds() };
+    SceneTranslator translator_{ &retained_ };
 };
 
 };  // namespace v3d::editor::render
