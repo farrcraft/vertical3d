@@ -19,14 +19,14 @@ Every object of the scene is of a kind, and a kind declares its parameters once.
 - **A string parameter may give its choices**, the strings it may hold. A string outside them is
   refused.
 - **The types** are integer, float, string, colour, point, vector, normal, matrix and handle. A
-  handle parameter names the kind of object it holds, its target.
+  handle parameter names the kinds of object it may hold, its targets.
 - **`Schema::add()` refuses a broken kind** with `std::invalid_argument`:
   - a kind or a parameter with no name, or two kinds or two parameters of one kind with the same
     name
   - a fallback whose type differs from its declaration's
   - a fallback whose count differs from its declaration's, or a string outside its choices
   - choices on a parameter that is not a string
-  - a handle parameter whose target is no kind added before it
+  - a handle parameter with no targets, or one that is no kind added before it
 
 Background: [ADR-0200](../adr/offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md)
 
@@ -50,6 +50,27 @@ then derived as RI derives it.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
   channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
   or `float`, and `compression`, one of OpenEXR's.
+- **`mesh`**: `P` over the shutter, `vertices`, the count of each face's vertices, and `indices`
+  into `P`, face after face.
+- **`subdivision`**: a mesh's three, then its `scheme`, `catmull-clark`, `loop` or `bilinear`.
+  `creases` holds the vertices of each crease in turn, `creaseLengths` how many each has, and
+  `creaseSharpness` one sharpness each. `corners` and `cornerSharpness`, `holes` by face, and
+  `boundary`, as RI's `interpolateboundary` gives it.
+- **`curves`**: `P` and `vertices` per curve, `type` linear or cubic, `basis` one of RI's five,
+  and `wrap`. `width` per vertex over the shutter, or `constantWidth` while it is empty, and
+  `profile`, flat or round.
+- **`points`**: `P`, and `width` per point or `constantWidth`.
+- **The quadrics**, `sphere`, `cone`, `cylinder`, `hyperboloid`, `paraboloid`, `disk` and `torus`,
+  take RI's dimensions, and each may move over the shutter. RI gives no defaults, so each is a
+  unit shape until a client sets it.
+- **`group`**: a prototype made of the instances that name it.
+- **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
+  to, or none for the world. `transform` over the shutter, and its visibility to `camera`,
+  `shadow` and `indirect` rays, each 1 or 0. An instance of a group places every instance in it,
+  so instancing nests. Flattening it into placements is the work of whatever is built from the
+  scene, which stops at a group that holds itself.
+- **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
+  geometry keeps its topology.
 
 ## Values
 
@@ -73,6 +94,8 @@ and the generation of that index.
 - **An index is used again** once its object is removed, with the next generation. The handle of
   a removed object therefore matches nothing, and every call that takes it refuses it.
 - **A handle no scene gave** has generation zero, and `valid()` is false.
+- **A handle parameter that names a removed object names nothing.** The scene does not clear it,
+  and a structure built from the scene treats it as absent.
 - **Every object has a name**, unique among the objects of its kind that have not been removed.
   An empty name, or one that another live object of the kind has, throws
   `std::invalid_argument`. A removed object's name is free again at once.

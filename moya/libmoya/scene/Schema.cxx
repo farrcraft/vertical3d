@@ -54,10 +54,15 @@ void Schema::check(const Declaration & declaration) const {
     }
     declaration.admit(declaration.fallback);
     if (declaration.type == Type::Handle) {
-        if (!find(declaration.target)) {
-            throw std::invalid_argument("parameter " + declaration.name + " names no kind of object: " + declaration.target);
+        if (declaration.targets.empty()) {
+            throw std::invalid_argument("handle parameter " + declaration.name + " names no kind of object");
         }
-    } else if (!declaration.target.empty()) {
+        for (const std::string & target : declaration.targets) {
+            if (!find(target)) {
+                throw std::invalid_argument("parameter " + declaration.name + " names no kind of object: " + target);
+            }
+        }
+    } else if (!declaration.targets.empty()) {
         throw std::invalid_argument("parameter " + declaration.name + " names a kind but is not a handle");
     }
 }

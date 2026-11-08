@@ -36,7 +36,7 @@ scene::Schema schema() {
             scene::Declaration { .name = "transform", .type = scene::Type::Matrix, .motion = true, .fallback = scene::Value::matrix(glm::mat4(1.0F)) },
             scene::Declaration { .name = "P", .type = scene::Type::Point, .count = scene::Declaration::kAny, .motion = true, .fallback = scene::Value::points({}) },
             scene::Declaration { .name = "sides", .type = scene::Type::Integer, .fallback = scene::Value::integer(1) },
-            scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .target = "look" } },
+            scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .targets = { "look" } } },
         .primvars = true });
     return made;
 }
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_schema_refuses_a_broken_kind_test) {
         std::invalid_argument);
     BOOST_CHECK_THROW(made.add(scene::Kind { .name = "pointer",
                           .parameters = { scene::Declaration {
-                              .name = "to", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .target = "nothing" } } }),
+                              .name = "to", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .targets = { "nothing" } } } }),
         std::invalid_argument);
 }
 

@@ -71,10 +71,11 @@ void Scene::checkTimes(const Declaration & declaration, const Samples & samples)
 }
 
 void Scene::checkHandles(const Declaration & declaration, const Value & value) const {
-    const std::optional<std::uint32_t> target = schema_.find(declaration.target);
     for (const Handle & named : value.handleArray()) {
-        if (!named.valid() || named.kind != target) {
-            throw std::invalid_argument("parameter " + declaration.name + " names something that is not a " + declaration.target);
+        const bool wanted = named.valid() && std::any_of(declaration.targets.begin(), declaration.targets.end(),
+            [this, &named](const std::string & target) { return schema_.find(target) == named.kind; });
+        if (!wanted) {
+            throw std::invalid_argument("parameter " + declaration.name + " names an object of a kind it does not take");
         }
     }
 }

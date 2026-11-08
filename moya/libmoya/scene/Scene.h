@@ -237,7 +237,7 @@ class Scene final {
     /** Check the times of samples against a declaration. **/
     static void checkTimes(const Declaration & declaration, const Samples & samples);
 
-    /** Check that each handle of a value names an object of the declaration's target. **/
+    /** Check that each handle of a value names an object of one of the declaration's targets. **/
     void checkHandles(const Declaration & declaration, const Value & value) const;
 
     /** The applied object a client's edit names, which a client's checks made sure exists. **/

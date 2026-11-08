@@ -35,7 +35,7 @@ scene::Schema schema() {
         .parameters = {
             scene::Declaration { .name = "P", .type = scene::Type::Point, .count = scene::Declaration::kAny, .motion = true, .fallback = scene::Value::points({}) },
             scene::Declaration { .name = "transform", .type = scene::Type::Matrix, .motion = true, .fallback = scene::Value::matrix(glm::mat4(1.0F)) },
-            scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .target = "look" } },
+            scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .targets = { "look" } } },
         .primvars = true });
     return made;
 }

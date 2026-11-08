@@ -32,6 +32,7 @@ v3d_add_test(moya
 	"ReyesPrimitiveTest.cxx"
 	"SamplesTest.cxx"
 	"SceneDescriptionTest.cxx"
+	"SceneGeometryTest.cxx"
 	"SceneKindsTest.cxx"
 	"SceneTest.cxx"
 	"SpectrumTest.cxx"

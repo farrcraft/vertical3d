@@ -121,7 +121,7 @@ among the options before the record was drafted. All four are accepted.
 | [5](#step-5--the-store-handles-parameters-and-changes) | The store: handles, parameters and changes | `moya/libmoya` | 0200, 0203 | done |
 | [6](#step-6--the-scene-description) | The scene description, for tests and `moya --scene` | `moya/libmoya`, `moya` | — | done |
 | [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | done |
-| [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | open |
+| [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | done |
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | open |
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | open |
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | open |
@@ -338,6 +338,26 @@ render output with no channels is refused.
 
 ### Step 8 — Geometry prototypes and instances
 
+**Done.** moya's schema adds `mesh`, `subdivision`, `curves`, `points`, RI's seven quadrics,
+`group` and `instance`. A handle parameter now names several kinds it may hold, since an
+instance's prototype may be any geometry or a group. Four changes from the list below:
+
+* **An instance names the group it belongs to**, rather than a group listing its instances. An
+  instance added to a group then changes that instance alone, and an instance in no group is in
+  the world.
+* **There is no single world transformation of a nested instance.** An instance inside a group has
+  one placement for each instance of the group. Flattening the placements is section 3's BVH,
+  which also stops at a group that contains itself.
+* **A handle to a removed object names nothing**, and the structure built from it treats it as
+  absent, as Hydra and Cycles do. Refusing it at commit would have the owner's `apply()` reject a
+  batch a client had already committed.
+* **Topology cannot change between times by construction.** Points over the shutter keep one
+  count at every time, and the topology's arrays are not declared for motion.
+
+A quadric's dimensions may move over the shutter, and each quadric is a unit shape until a client
+sets it, since RI gives no defaults. The material an instance names is step 9's, since the
+`material` kind comes with it. [Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
+
 * **Geometry prototypes**: polygon meshes, curves in each of RI's bases with a width per point,
   points with a width each, the six RI quadrics and the sphere, and subdivision meshes with
   creases and corners. Each holds its points and primvars, at the times step 2 decides.
@@ -364,7 +384,7 @@ world transformation is its own times its parent's.
   empty for all of them. Section 4 builds light linking on the second.
 
 **Tests:** a material's network describes as it was built. A mesh light whose prototype is
-deleted is refused at the next commit. A deleted material leaves its instances with none.
+removed names none. A removed material leaves its instances with none.
 
 ### Step 10 — The RIB reader's new requests
 

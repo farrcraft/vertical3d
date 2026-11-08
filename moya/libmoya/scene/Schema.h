@@ -57,8 +57,8 @@ struct Declaration {
     /** The strings a string parameter may hold. Empty for any string. **/
     std::vector<std::string> choices;
 
-    /** The kind of object a handle parameter names. Empty for any other type. **/
-    std::string target;
+    /** The kinds of object a handle parameter may name. Empty for any other type. **/
+    std::vector<std::string> targets;
 
     /** A primvar's interpolation class. An ordinary parameter is constant. **/
     Interpolation interpolation { Interpolation::Constant };
@@ -94,8 +94,9 @@ class Schema final {
      *
      * @return its index
      * @throws std::invalid_argument when the kind or a parameter has no name, or two share a
-     *         name. Also when a fallback's type, count or string breaks its declaration, a
-     *         parameter that is not a string has choices, or a handle names no kind added before
+     *         name. Also when a fallback's type, count or string breaks its declaration, or a
+     *         parameter that is not a string has choices. Also when a handle parameter has no
+     *         targets, or one that is no kind added before
      **/
     std::uint32_t add(const Kind & kind);
 
