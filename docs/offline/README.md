@@ -22,6 +22,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Sampler.md](Sampler.md) | Change how the new core draws the random numbers a path uses |
 | [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
 | [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
+| [Colour.md](Colour.md) | Change how the new core converts between colour spaces and shows a picture on a display |
 
 ## How a frame is made
 

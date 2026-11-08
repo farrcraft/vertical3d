@@ -57,8 +57,15 @@ struct ExrPart {
     Compression compression { Compression::Zip };
 };
 
-/** What an EXR file's header says about how its picture was made. **/
+/** What an EXR file's header says about its picture and how it was made. **/
 struct ExrMetadata {
+    /**
+     * The Color Interop Forum ID of the space the beauty is in, written as colorInteropID. The
+     * film holds ACEScg, lin_ap1_scene. An output converted into the working space names the
+     * working space's ID, which colour::Config::workingInteropId() gives. Empty writes none.
+     **/
+    std::string colourSpace { "lin_ap1_scene" };
+
     /** World to camera space, written as OpenEXR's worldToCamera. **/
     std::optional<glm::mat4> worldToCamera;
 
@@ -76,8 +83,9 @@ struct ExrMetadata {
  *
  * The beauty is the channels R, G and B. A channel of one float is named as the channel is. A
  * channel of several floats is named as the channel is, followed by .R, .G, .B and .A in order,
- * as albedo.R, albedo.G and albedo.B. Every part carries ACEScg's chromaticities, the space the
- * film holds its beauty in, and the metadata given.
+ * as albedo.R, albedo.G and albedo.B. Every part carries the metadata given. A colour space whose
+ * ID is one of the linear ones with standard primaries, AP0, AP1, Rec. 709, P3-D65, Rec. 2020 or
+ * Adobe RGB, also writes its chromaticities.
  *
  * @param path the file, as UTF-8
  * @throws std::invalid_argument for parts that cannot be written: none at all, a part with no

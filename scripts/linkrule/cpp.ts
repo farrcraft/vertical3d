@@ -25,6 +25,7 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['TBB::tbb', /^(tbb|oneapi\/tbb)\//],
     ['OpenEXR::OpenEXR', /^OpenEXR\//],
     ['Imath::Imath', /^Imath\//],
+    ['OpenColorIO::OpenColorIO', /^OpenColorIO\//],
 ];
 
 /**

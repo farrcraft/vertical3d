@@ -116,6 +116,7 @@
     - [The sampler](offline/Sampler.md)
     - [The film](offline/Film.md)
     - [Output](offline/Output.md)
+    - [Colour management](offline/Colour.md)
 
 # The applications
 

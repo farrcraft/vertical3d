@@ -21,7 +21,10 @@ add_library("v3dlib_moya"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
 
+	"colour/Config.h" "colour/Config.cxx"
 	"colour/RgbTables.h"
+	"colour/internal/Configuration.h"
+	"colour/internal/Processor.h"
 	"${V3D_MOYA_ACESCG_TABLE}"
 
 	"device/Buffer.h"
@@ -83,7 +86,8 @@ endif()
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
 # header includes the log's. moya's headers name glm types, and the device's headers name kernel
 # types. PRIVATE: only Display writes an image, encoding it with image and writing the file through
-# asset, only the CPU device's source includes TBB, and only the EXR writer's source includes
-# OpenEXR and Imath.
+# asset. Only the CPU device's source includes TBB, and only the EXR writer's source includes
+# OpenEXR and Imath. Only the colour configuration's source and its internal headers include
+# OpenColorIO.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenEXR::OpenEXR TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)

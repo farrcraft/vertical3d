@@ -193,6 +193,7 @@ BOOST_AUTO_TEST_CASE(moya_exr_the_header_holds_the_working_space_and_the_metadat
     const Imf::Chromaticities chromaticities = Imf::chromaticities(file.header());
     BOOST_TEST(chromaticities.red.x == 0.713F);
     BOOST_TEST(chromaticities.white.y == 0.33767F);
+    BOOST_TEST(Imf::colorInteropID(file.header()) == "lin_ap1_scene");
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             BOOST_TEST(Imf::worldToCamera(file.header())[i][j] == camera[i][j]);
@@ -200,6 +201,23 @@ BOOST_AUTO_TEST_CASE(moya_exr_the_header_holds_the_working_space_and_the_metadat
         }
     }
     BOOST_TEST(file.header().typedAttribute<Imf::FloatAttribute>("moya/renderTime").value() == 12.5F);
+}
+
+// a space with standard primaries writes them beside its ID, and a space with no ID writes neither
+BOOST_AUTO_TEST_CASE(moya_exr_the_header_names_the_colour_space_it_is_given_test) {
+    const Sandbox sandbox("space");
+    const std::string rec709 = sandbox.file("rec709.exr");
+    const std::string unnamed = sandbox.file("unnamed.exr");
+    output::writeExr(rec709, snapshot(), { { .name = "", .outputs = { "beauty" } } }, { .colourSpace = "lin_rec709_scene" });
+    output::writeExr(unnamed, snapshot(), { { .name = "", .outputs = { "beauty" } } }, { .colourSpace = "" });
+
+    const Imf::InputFile named(rec709.c_str());
+    BOOST_TEST(Imf::colorInteropID(named.header()) == "lin_rec709_scene");
+    BOOST_TEST(Imf::chromaticities(named.header()).red.x == 0.64F);
+    BOOST_TEST(Imf::chromaticities(named.header()).white.x == 0.3127F);
+    const Imf::InputFile bare(unnamed.c_str());
+    BOOST_TEST(!Imf::hasColorInteropID(bare.header()));
+    BOOST_TEST(!Imf::hasChromaticities(bare.header()));
 }
 
 BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {

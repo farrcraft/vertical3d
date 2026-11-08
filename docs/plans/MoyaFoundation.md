@@ -108,7 +108,7 @@ each step is where the survey points, not a conclusion.
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | done |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | done |
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | done |
-| [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | open |
+| [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | done |
 | [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | open |
 | [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | open |
 
@@ -471,6 +471,20 @@ exactly in float and within half's precision in half. A file of several parts ho
 channels and no others.
 
 ### Step 14 — Colour management
+
+**Done.** `colour::Config` is the built-in ACES 2.0 CG configuration, pinned by its versioned
+`ocio://` name, or another by path. `input(space)` converts into ACEScg for the spectrum table,
+and an empty name is the working space. `output()` converts the film's ACEScg into the working
+space, and `display(display, view)` goes on through a display's view. All three go through the
+configuration's interchange roles, so they work for a configuration whose working space is not
+ACEScg. Two things the list below did not foresee:
+
+* **An EXR header names its space by Color Interop Forum ID**, the `colorInteropID` attribute that
+  OpenEXR 3.4 and OpenColorIO 2.5 share. A configuration gives no space's own chromaticities, so a
+  header carries them only for the six linear spaces whose primaries are standard.
+* **8-bit output is step 15's.** This step gives the display transform it goes through.
+
+[Colour.md](../offline/Colour.md) states the rules.
 
 * **OpenColorIO's built-in ACES 2.0 configuration**, so no configuration file ships. A path to
   another configuration can be given.

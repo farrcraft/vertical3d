@@ -33,8 +33,13 @@ UTF-8.
 
 Every part's header holds:
 
-- **The chromaticities of ACEScg**, the space the film holds its beauty in: the AP1 primaries and
-  the ACES white point.
+- **`colorInteropID`**, the Color Interop Forum ID that `ExrMetadata::colourSpace` gives. It
+  is `lin_ap1_scene` unless set, since the film holds ACEScg. An output converted into the working
+  space by [`colour::Config::output()`](Colour.md) names the working space's ID instead. An
+  empty ID writes nothing.
+- **The chromaticities of the space**, when its ID is one of the linear spaces with standard
+  primaries: AP0, AP1, Rec. 709, P3-D65, Rec. 2020 and Adobe RGB. The ID of any other space is
+  written without them.
 - **`worldToCamera` and `worldToNDC`**, OpenEXR's standard matrices, when `ExrMetadata` gives
   them. A glm matrix is written with each float at the same indices. glm multiplies column vectors
   and Imath multiplies row vectors, so the matrix reads back in Imath as the same transform.
