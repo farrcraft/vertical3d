@@ -19,6 +19,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Kernel.md](Kernel.md) | Write kernel code for the new core, which every device compiles from one source |
 | [Devices.md](Devices.md) | Change how the new core holds memory on a device and launches kernel code |
 | [Spectra.md](Spectra.md) | Change how the new core carries light as wavelengths and turns it into colour |
+| [Sampler.md](Sampler.md) | Change how the new core draws the random numbers a path uses |
 
 ## How a frame is made
 

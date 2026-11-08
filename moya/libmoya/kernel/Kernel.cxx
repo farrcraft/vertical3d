@@ -10,6 +10,9 @@
 #include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/sample/Hash.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/sample/Sobol.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/sample/ZSobol.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Acescg.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieDaylight.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieD65.h>  // IWYU pragma: keep

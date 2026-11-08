@@ -103,7 +103,7 @@ each step is where the survey points, not a conclusion.
 | [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | done |
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | done |
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | done |
-| [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | open |
+| [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | done |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | open |
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | open |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | open |
@@ -353,6 +353,16 @@ builds moya both ways and runs its suite in each.
 within a stated tolerance after conversion to a spectrum and back through the observer.
 
 ### Step 9 — The ZSobol sampler
+
+**Done.** `sample::ZSobol` is in `kernel/sample/`, with `get1D` and `get2D` of a pixel, an
+index and a dimension. One change from the list below: **there is no table of direction
+numbers, and no notice.** ZSobol draws every dimension from the Sobol sequence's first two,
+which it tells apart by reordering the index's digits and by scrambling. Those two dimensions'
+matrices are the same in every construction of the sequence, van der Corput's and Pascal's
+triangle mod 2, so `SobolMatrices::make()` computes them, and Joe and Kuo's data is not needed. The
+scrambling is Laine and Karras's hash with Vegdahl's improvement. The (0,2)-net test runs for
+every power of two from 1 to 256 samples, odd and even. [Sampler.md](../offline/Sampler.md)
+states the rules.
 
 * **Sobol generator matrices** from Joe and Kuo's direction numbers, as a table in the source.
   The notices file gains their licence.

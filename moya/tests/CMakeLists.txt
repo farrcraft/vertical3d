@@ -28,7 +28,8 @@ v3d_add_test(moya
 	"ReyesPrimitiveTest.cxx"
 	"SamplesTest.cxx"
 	"SpectrumTest.cxx"
-	"VertexTest.cxx")
+	"VertexTest.cxx"
+	"ZSobolTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes
 # what it rendered through api/asset, reads RIB through api/render/offline, and builds loggers

@@ -113,6 +113,7 @@
     - [Kernel code](offline/Kernel.md)
     - [Devices](offline/Devices.md)
     - [Spectra](offline/Spectra.md)
+    - [The sampler](offline/Sampler.md)
 
 # The applications
 
