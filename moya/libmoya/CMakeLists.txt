@@ -21,6 +21,12 @@ add_library("v3dlib_moya"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
 
+	"accel/Box.h"
+	"accel/Builder.h" "accel/Builder.cxx"
+	"accel/Node.h"
+	"accel/Triangles.h" "accel/Triangles.cxx"
+	"accel/internal/Binary.h" "accel/internal/Binary.cxx"
+
 	"camera/Camera.h" "camera/Camera.cxx"
 
 	"colour/Config.h" "colour/Config.cxx"

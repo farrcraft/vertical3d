@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -48,6 +49,14 @@ class CpuDevice final : public Device {
 
     /** How many threads a launch runs on at most. **/
     unsigned int threads() const;
+
+    /**
+     * Runs host work on the device's threads: the task once for each index below count, in any
+     * order and on any thread, and returns when every one has run. A task may call each() again,
+     * and its work joins the same threads. Each task writes only what is its own index's, so the
+     * result does not depend on the order tasks finish in.
+     **/
+    void each(std::size_t count, const std::function<void(std::size_t)> & task);
 
     /**
      * Runs a kernel function once for each pixel of an image of the given size, and returns when

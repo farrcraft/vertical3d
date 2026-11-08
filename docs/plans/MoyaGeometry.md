@@ -130,7 +130,7 @@ among the options before the record is drafted.
 | [7](#step-7--rays-hits-and-triangles) | Rays, hits and watertight triangles | `moya/libmoya/kernel` | 0204 | done |
 | [8](#step-8--the-hit-view-and-the-brute-force-oracle) | The hit view and the brute-force oracle | `moya/libmoya`, `moya` | 0204 | done |
 | [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | done |
-| [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | open |
+| [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | done |
 | [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206 | open |
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | open |
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | open |
@@ -426,6 +426,24 @@ removed, the concave case failed. Two things the list below did not settle:
 of a face names the face. A face of two vertices is dropped.
 
 ### Step 10 — The builder
+
+**Done.** `accel::build()` builds a binary hierarchy by the surface area heuristic, with spatial
+splits where a node's best halves overlap, and collapses it into `accel::Node`s of eight children
+at full precision. `CpuDevice::each()` runs host work on the device's threads, so the builder
+reaches oneTBB only through the device. On long thin triangles along a diagonal, spatial splits
+lower the cost by about two fifths. Three things the list below did not settle:
+
+* **The budget is shared by counts.** Each node shares what is left of its budget of added
+  references between its halves by their counts. A budget that threads drew from as they went
+  would make the hierarchy depend on which thread split first, as Embree's spatial builder does.
+* **The collapse is greedy by area**, as Embree's is, not the optimal collapse of the compressed
+  wide hierarchy. Nodes average about four children over scattered triangles, since a leaf holds
+  up to eight references and is never opened.
+* **A primitive split in space is not unsplit.** Stich and others also try keeping a straddling
+  primitive whole on one side when that costs less. The budget bounds what the extra references
+  cost.
+
+[Traversal.md](../offline/Traversal.md#the-hierarchy) states the rules.
 
 * **`moya/libmoya/accel/`**, in `v3d::moya::accel`: host code that builds a hierarchy into
   device memory.

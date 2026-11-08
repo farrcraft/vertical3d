@@ -44,6 +44,11 @@ many threads run them.
   libmoya links it PRIVATE.
 - **An image with no pixels runs nothing.**
 
+**Host work runs on the same threads.** `CpuDevice::each(count, task)` runs a task once for
+each index below a count, in any order and on any thread, and returns when all have run. A task
+may call `each()` again, and its work joins the same threads. Each task writes only what is its
+own index's. The hierarchy builder runs on it, so a host that limits TBB limits the build too.
+
 A suite that launches on the CPU device finalizes TBB in its global fixture, so that TBB's
 worker threads end before the debug runtime looks for leaks. moya's suite does this in
 `TestMain.cxx`.

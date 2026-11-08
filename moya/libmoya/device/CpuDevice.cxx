@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/internal/Arena.h>
 #include <moya/libmoya/device/internal/HostBuffer.h>
 #include <moya/libmoya/kernel/Launch.h>
+#include <tbb/blocked_range.h>
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
 #include <tbb/partitioner.h>
@@ -17,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -61,6 +63,23 @@ void CpuDevice::download(const Buffer & from, void * to, std::size_t bytes) {
 
 unsigned int CpuDevice::threads() const {
     return static_cast<unsigned int>(arena_->get().max_concurrency());
+}
+
+void CpuDevice::each(std::size_t count, const std::function<void(std::size_t)> & task) {
+    if (count == 0) {
+        return;
+    }
+    // a grain of one with the simple partitioner gives each task an index of its own
+    arena_->get().execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<std::size_t>(0, count, 1),
+            [&](const tbb::blocked_range<std::size_t> & range) {
+                for (std::size_t index = range.begin(); index != range.end(); ++index) {
+                    task(index);
+                }
+            },
+            tbb::simple_partitioner());
+    });
 }
 
 void CpuDevice::run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound) {

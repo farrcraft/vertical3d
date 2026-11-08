@@ -5,6 +5,7 @@ v3d_add_test(moya
 	"FootprintTest.cxx"
 	"FoundationTest.cxx"
 	"BucketsTest.cxx"
+	"BuilderTest.cxx"
 	"ColourTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"

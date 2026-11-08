@@ -138,3 +138,33 @@ float channels, and `moya --hits` writes the hit view of a RIB file.
 | `coverage` | one | zero |
 
 The beauty is black.
+
+## The hierarchy
+
+`accel::build(device, bounds, clip, options)` builds a bounding volume hierarchy over primitives
+by their boxes, in host memory, in `moya/libmoya/accel/` and the namespace `v3d::moya::accel`.
+`clip` gives the bounds of the part of a primitive inside a box. `accel::triangleClip` does that
+for triangles of three points each.
+
+- **Each node is split by the surface area heuristic**, over 32 bins of the centroids along each
+  axis. A step costs as much as a test of one primitive.
+- **Spatial splits are tried where a node's best halves overlap**, by more than 1e-5 of the root's
+  area. 32 bins in space along each axis clip each primitive to the bins it crosses, and a
+  primitive split this way is referenced from each leaf that holds part of it.
+- **Spatial splits add at most a budget of references**, by default as many as there are
+  primitives. Each node shares what is left of its part between its halves by their counts.
+- **A node of eight references or fewer becomes a leaf** when that costs less than splitting it.
+  A node 64 deep is a leaf however many it holds.
+- **The binary hierarchy collapses to nodes of eight children.** A node opens its child of the
+  largest area that is not a leaf until it holds eight, or every child is a leaf.
+- **The hierarchy is the same on every run.** Splits depend only on the primitives. A node of 4096
+  references or more builds its halves on separate threads, each into a part of its own, and
+  joins them in order.
+
+An `accel::Node` holds up to eight children, packed from the first slot, each with its box at
+full precision. The boxes are stored plane by plane, so a SIMD test reads one plane of every child
+at once. A child is another node's index, `kLeaf` with its first reference and a count, or
+`kEmpty` with an empty box. The root is the first node, and a hierarchy of no primitives has one
+node of empty slots. `accel::cost()` gives a hierarchy's cost by the surface area heuristic.
+
+Background: [ADR-0205](../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md)
