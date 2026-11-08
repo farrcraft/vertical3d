@@ -24,6 +24,7 @@ v3d_add_test(moya
 	"RIBStateTest.cxx"
 	"RenderManTest.cxx"
 	"RendererTest.cxx"
+	"RgbTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"SamplesTest.cxx"
 	"SpectrumTest.cxx"

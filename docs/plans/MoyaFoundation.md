@@ -317,6 +317,24 @@ role, ACEScg in the default configuration, and builds the table for ACEScg alone
 
 ### Step 8 — RGB to spectrum
 
+**The table and its lookup are done. The RGB build is open.** `moya_rgbtable` fits the table at
+64 points along each axis of each cube, on oneTBB's threads, in about 25 seconds in a Debug build.
+libmoya compiles the source it writes, and `colour::acescgTable()` views it. The kernel's
+`RgbTable`, `reflectance()`, `unbounded()` and `illuminant()` read it. Three things the list
+below did not foresee:
+
+* **The fit needs ACES white as a spectrum,** which no CIE table gives. CIE daylight at 6000 K
+  has the ACES white point's chromaticity to five decimal places, so ACES white is that daylight.
+  The CIE's daylight components are a third table, under the same licence as the other two.
+* **The corners of ACEScg cannot be tested.** About one point in eight of the table is a colour
+  no reflectance has, ACEScg's most saturated, and the fit gives the nearest. The tests take
+  sRGB's primaries and secondaries in ACEScg instead, with Bradford adaptation, and they return
+  within 0.005 on each channel, as the 24 moderate colours of the chart do.
+* **The generated source is skipped by clang-tidy and `/analyze`**, which would spend minutes on
+  its literals.
+
+[Spectra.md](../offline/Spectra.md#rgb-to-spectrum) states the rules.
+
 * **A tool of moya's own, in C++, that builds Jakob and Hanika's table** for the working space,
   by fitting a three-coefficient sigmoid polynomial at each point of a grid over the gamut. It
   runs at build time, as a shader is compiled at build time, so the table is not committed.

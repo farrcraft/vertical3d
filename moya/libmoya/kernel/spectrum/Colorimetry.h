@@ -22,7 +22,7 @@ namespace v3d::moya::kernel::spectrum {
  * The integral of the observer's y function at 1 nm steps, which a luminance is divided by so
  * that a constant spectrum of one has a luminance of one.
  **/
-inline constexpr float kYIntegral = 106.856895F;
+inline constexpr float kYIntegral = 106.856917F;
 
 /** The temperature illuminant A is defined at, in kelvin. **/
 inline constexpr float kTemperatureA = 2848.0F;

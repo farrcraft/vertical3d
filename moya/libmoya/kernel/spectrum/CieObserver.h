@@ -2,8 +2,8 @@
  * The CIE 1931 standard colorimetric observer, 2 degree, at 1 nm steps, from the
  * International Commission on Illumination (CIE):
  *
- * CIE 2019, Colour-matching functions of CIE 1931 standard colorimetric observer, International
- * Commission on Illumination (CIE), Vienna, AT, DOI: 10.25039/CIE.DS.xvudnb9b
+ * CIE 2019. Colour-matching functions of CIE 1931 standard colorimetric observer.
+ * International Commission on Illumination (CIE), Vienna, AT. DOI: 10.25039/CIE.DS.xvudnb9b
  *
  * Copyright (c) CIE. This file is licensed under the Creative Commons Attribution-ShareAlike 4.0
  * International licence, https://creativecommons.org/licenses/by-sa/4.0/, unlike the rest of the

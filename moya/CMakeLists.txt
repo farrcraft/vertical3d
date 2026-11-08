@@ -1,4 +1,5 @@
 add_subdirectory("libmoya")
+add_subdirectory("tools/rgbtable")
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

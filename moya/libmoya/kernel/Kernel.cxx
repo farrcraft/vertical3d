@@ -10,9 +10,13 @@
 #include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/spectrum/Acescg.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/spectrum/CieDaylight.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieD65.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieObserver.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Colorimetry.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/spectrum/Daylight.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/spectrum/Rgb.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Visible.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>  // IWYU pragma: keep

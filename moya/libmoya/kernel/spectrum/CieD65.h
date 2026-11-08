@@ -2,8 +2,8 @@
  * CIE standard illuminant D65, at 1 nm steps, from the
  * International Commission on Illumination (CIE):
  *
- * CIE 2019, CIE standard illuminant D65, International Commission on Illumination (CIE), Vienna,
- * AT, DOI: 10.25039/CIE.DS.hjfjmt59
+ * CIE 2019. CIE standard illuminant D65.
+ * International Commission on Illumination (CIE), Vienna, AT. DOI: 10.25039/CIE.DS.hjfjmt59
  *
  * Copyright (c) CIE. This file is licensed under the Creative Commons Attribution-ShareAlike 4.0
  * International licence, https://creativecommons.org/licenses/by-sa/4.0/, unlike the rest of the

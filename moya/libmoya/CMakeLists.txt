@@ -1,11 +1,28 @@
 # Kernel code is a target of its own, compiled under the rules every device accepts.
 add_subdirectory("kernel")
 
+# The RGB-to-spectrum table, which moya_rgbtable fits when the tool or the kernel's colour code
+# changes. The output is generated, so it is not linted: clang-tidy and /analyze would spend
+# minutes on its millions of literals, which hold no code.
+set(V3D_MOYA_ACESCG_TABLE "${CMAKE_CURRENT_BINARY_DIR}/colour/AcescgTable.cxx")
+add_custom_command(OUTPUT "${V3D_MOYA_ACESCG_TABLE}"
+	COMMAND moya_rgbtable "${V3D_MOYA_ACESCG_TABLE}"
+	DEPENDS moya_rgbtable
+	COMMENT "Fitting the ACEScg RGB-to-spectrum table"
+	VERBATIM)
+set_source_files_properties("${V3D_MOYA_ACESCG_TABLE}" PROPERTIES SKIP_LINTING ON)
+if(MSVC)
+	set_source_files_properties("${V3D_MOYA_ACESCG_TABLE}" PROPERTIES COMPILE_OPTIONS "/analyze-")
+endif()
+
 add_library("v3dlib_moya"
 	"Curve.h" "Curve.cxx"
 	"Hider.h"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
+
+	"colour/RgbTables.h"
+	"${V3D_MOYA_ACESCG_TABLE}"
 
 	"device/Buffer.h"
 	"device/CpuDevice.h" "device/CpuDevice.cxx"

@@ -44,14 +44,64 @@ densities as a spectrum.
   Planckian radiator at 2848 K, with the second radiation constant 1.435 × 10⁷ nm K, normalised to
   100 at 560 nm.
 
-Both illuminants also take a `SampledWavelengths` and give a `SampledSpectrum`.
+- **`daylight(λ, T)`** is CIE daylight at a correlated colour temperature T in kelvin:
+  S0 + M1 S1 + M2 S2. M1 and M2 come from the daylight locus's chromaticity at T, rounded to
+  three decimal places as CIE 15 rounds them. The components are interpolated linearly between
+  the CIE's 5 nm rows. Daylight at 6504 K is D65 to within 0.05 at every 5 nm wavelength.
+
+Both illuminants, and ACES white below, also take a `SampledWavelengths` and give a
+`SampledSpectrum`.
+
+## ACEScg and ACES white
+
+ACEScg is the space the RGB-to-spectrum table is built for, and the working space when no
+OpenColorIO configuration names another.
+
+- **`acescgFromXyz` and `acescgToXyz`** convert by the matrices the AP1 primaries and the ACES
+  white point give, with no chromatic adaptation.
+- **`acesWhite(λ)`** is ACES white as a spectrum: CIE daylight at 6000 K, scaled to a luminance
+  of one. Integrated through the observer, it has the ACES white point's chromaticity,
+  (0.32168, 0.33767), to five decimal places, so its XYZ is ACEScg's (1, 1, 1).
+
+Background: [ADR-0198](../adr/offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md)
+
+## RGB to spectrum
+
+An RGB colour becomes a spectrum by Jakob and Hanika's method: a smooth curve,
+sigmoid(c0 λ² + c1 λ + c2), whose colour under ACES white is the RGB colour.
+
+- **`RgbTable`** gives the three coefficients, as an `RgbSigmoid`, for an ACEScg colour clamped
+  to [0, 1]. It interpolates trilinearly within one of three cubes, chosen by the colour's
+  largest channel. A grey is a constant spectrum, and its coefficients are found exactly.
+- **`reflectance(table, colour, wavelengths)`** is a surface's colour as a spectrum. It lies in
+  (0, 1) at every wavelength.
+- **`unbounded(...)`** is a colour that may exceed one: the reflectance of the colour divided by
+  twice its largest channel, scaled back up by that. A colour with no positive channel is zero.
+- **`illuminant(...)`** is a light's colour: its unbounded spectrum times ACES white. A light of
+  (1, 1, 1) shines with ACES white.
+
+A colour from another space is converted into ACEScg first.
+
+**The table is fitted when moya is built.** `moya_rgbtable`, in `moya/tools/rgbtable/`, fits
+the coefficients at each of 64 × 64 × 64 points of each cube. A Gauss–Newton solve minimises the
+CIELAB difference between the point's colour and its reflectance's colour under ACES white. Each
+solve starts from its neighbour's solution along the largest channel's axis. The tool writes a C++
+source of the coefficients, which libmoya compiles, and `colour::acescgTable()` returns a view
+of them. A device copies the table into its own memory. The source is generated, so clang-tidy
+and `/analyze` skip it.
+
+**Some ACEScg colours no reflectance has.** ACEScg's most saturated colours lie outside what a
+surface can reflect, and the fit gives the nearest it reaches. About one point in eight of the
+table misses its colour by more than one CIELAB unit, and the tool prints the count when it runs.
+The colours of the sRGB gamut and moderate colours return to within 0.005 on each channel.
 
 ## The CIE's tables
 
-The observer and D65 are measured data. They are the CIE's own tables, in `CieObserver.h` and
-`CieD65.h`, at 1 nm steps. Those two files hold the data and nothing else, because the CIE
-licenses its tables under CC BY-SA 4.0 and the rest of the tree is MIT. Each file states the
-licence and the CIE's citation. `CIE-NOTICE.txt` beside them is the notice a release shows, and
+The observer, D65 and the daylight components are measured data. They are the CIE's own tables,
+in `CieObserver.h` and `CieD65.h` at 1 nm steps and `CieDaylight.h` at 5 nm steps. Those three
+files hold the data and nothing else, because the CIE licenses its tables under CC BY-SA 4.0 and
+the rest of the tree is MIT. Each file states the licence and the CIE's citation.
+`CIE-NOTICE.txt` beside them is the notice a release shows, and
 [notices.ts](../contributing/Dependencies.md#third-party-notices) puts it in the notices file.
 
 The values are the CIE's, written as float literals. To replace a table, take the CSV from the
