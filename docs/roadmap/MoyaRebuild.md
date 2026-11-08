@@ -82,7 +82,8 @@ its plan, and [the offline README](../offline/README.md#the-new-core) describes 
 
 ### 2. The scene interface
 
-[MoyaScene](../plans/MoyaScene.md) is its plan.
+Done. [MoyaScene](../plans/completed/MoyaScene.md) was its plan, and [Scene.md](../offline/Scene.md)
+describes the scene it built.
 
 - **The retained scene**: geometry prototypes and instances, materials, lights, cameras and
   render outputs, each created, modified and deleted by handle. Transformations and geometry

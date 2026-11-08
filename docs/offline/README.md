@@ -154,8 +154,9 @@ Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-
 ## The new core
 
 moya is being rebuilt as a spectral path tracer, and its new core sits beside the two hiders.
-The hiders render every RIB scene as before. Nothing in the new core reads a scene or traces a
-ray yet, and nothing in it changes a picture the hiders make.
+The hiders render every RIB scene as before. The new core holds a scene, read from RIB or kept in
+step with the editor's, but traces no ray yet, and nothing in it changes a picture the hiders
+make.
 
 - **It lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
   client of the core is built in this tree.
@@ -175,6 +176,10 @@ ray yet, and nothing in it changes a picture the hiders make.
 - **Colour management** goes through OpenColorIO, with its ACES 2.0 configuration built in.
   [Colour.md](Colour.md)
 - **Output** is OpenEXR in the working space, or 8 bits through a display. [Output.md](Output.md)
+- **The scene** holds objects of declared kinds by handle, with samples over the shutter, and
+  records every change as a version, so what is built from it rebuilds only what changed.
+  `ri::SceneClient` fills it from RIB, and the editor keeps one in step with its own.
+  `moya --scene` prints the scene a file makes. [Scene.md](Scene.md)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
@@ -184,12 +189,14 @@ Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-l
 
 ## What is not built
 
-[TODO.md](../TODO.md) holds no open item for the offline renderer. These are not built:
+[TODO.md](../TODO.md#offline-rendering) holds the offline renderer's open items. These are not
+built:
 
 - Volume shaders, the `shadow()` built-in and shadow maps.
 - Deforming primitives inside a motion block.
 - Any geometry beyond `Polygon`, `PointsPolygons`, `Sphere` and `Curves`, and spheres under
-  the reyes hider.
+  the reyes hider. The reader reads `Points`, the other quadrics, `SubdivisionMesh` and objects,
+  and the hiders leave them out.
 - A curve's `"N"`, which would turn its ribbon to face a given way, its varying `"Cs"`, round
   curves, a displaced traced curve, and a curve joining an area light.
 - `Orientation`, any `Attribute` but `"light"`, `"displacementbound"` and `"trace"`, binary

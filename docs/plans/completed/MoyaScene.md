@@ -1,7 +1,7 @@
 # Moya Scene — A Retained Scene, Change Tracking, and the RIB and Editor Clients
 
 Drafted 2026-11-07 against `50ae0f16`. This plan takes up section 2 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core holds a
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core holds a
 retained scene of geometry prototypes and instances, materials, lights, cameras and render
 outputs, each created, modified and deleted by handle. Transformations and geometry carry
 samples over the shutter, and every change is tracked so that a later structure rebuilds only
@@ -13,14 +13,14 @@ picture they make changes.
 The rebuild's decisions are ADR-0186 to ADR-0194, and the foundation's are ADR-0195 to ADR-0199,
 all accepted. This plan follows four of them:
 
-* [ADR-0188](../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): a retained
+* [ADR-0188](../../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): a retained
   scene interface that moya owns, with RIB, the editor and Hydra as its clients.
-* [ADR-0190](../adr/offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md):
+* [ADR-0190](../../adr/offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md):
   materials as MaterialX graphs feeding moya's BSDF library, with OSL as a second pattern
   language.
-* [ADR-0193](../adr/offline/0193-offline-moya-owns-its-ray-acceleration-structure.md): moya's
+* [ADR-0193](../../adr/offline/0193-offline-moya-owns-its-ray-acceleration-structure.md): moya's
   own wide BVH, with motion over several segments and nested instances.
-* [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md): the new core
+* [ADR-0195](../../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md): the new core
   lives in `moya/libmoya`.
 
 The plan keeps the roadmap's order, with four changes:
@@ -127,7 +127,7 @@ among the options before the record was drafted. All four are accepted.
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | done |
 | [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | done |
 | [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | done |
-| [14](#step-14--the-documents) | The reference pages for the scene | `docs` | — | open |
+| [14](#step-14--the-documents) | The reference pages for the scene | `docs` | — | done |
 
 ## What blocks what
 
@@ -185,7 +185,7 @@ The record also settles what a handle is: an index with a generation, which a de
 handle no longer matches, or a shared pointer.
 
 **Drafted** as
-[ADR-0200](../adr/offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md),
+[ADR-0200](../../adr/offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md),
 accepted: each kind declares its parameters once, and clients set them by name. Arnold, Cycles
 and MoonRay, the renderers here that take edits while rendering, all work this way. A handle is
 an index and a generation.
@@ -209,7 +209,7 @@ The record also settles how a transformation is interpolated between samples: as
 matrices.
 
 **Drafted** as
-[ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md),
+[ADR-0201](../../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md),
 accepted: each object's own times, as RIB, USD and Riley give them. A consumer that needs even
 keys, as OptiX and Embree do, resamples when it builds. A transformation is interpolated by
 decomposition, as Cycles, pbrt and OptiX do.
@@ -229,7 +229,7 @@ a document of nodes. Section 13's OSL arrives as shaders and connections.
   arrive. One input form, and an OSL network would also have to become a MaterialX document.
 
 **Drafted** as
-[ADR-0202](../adr/offline/0202-offline-a-material-is-a-network-of-shading-nodes.md), accepted: a
+[ADR-0202](../../adr/offline/0202-offline-a-material-is-a-network-of-shading-nodes.md), accepted: a
 network of nodes with named terminals, shaped as Hydra's `HdMaterialNetwork2` and Riley's shading
 networks are. None of the renderers surveyed stores a MaterialX document as its material.
 
@@ -249,7 +249,7 @@ what a change touched, and section 9's edits arrive while sampling runs.
   that a render takes between passes.
 
 **Drafted** as
-[ADR-0203](../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md), accepted:
+[ADR-0203](../../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md), accepted:
 a version per change, stamped on each object and parameter, and edits committed between passes.
 Cycles' flags suit one sync of every structure, and moya's structures rebuild independently.
 Riley, Arnold and Embree all take edits in a batch, between renders or on commit.
@@ -270,7 +270,7 @@ settle:
 * **A handle parameter is checked for its kind when it is set.** Whether the object it names
   still exists is step 9's check, at commit.
 
-[Scene.md](../offline/Scene.md) states the rules.
+[Scene.md](../../offline/Scene.md) states the rules.
 
 * **`moya/libmoya/scene/`**, in `v3d::moya::scene`. Host code, not kernel code: no device sees
   the scene. Section 3 and section 4 build device structures from it.
@@ -296,7 +296,7 @@ objects were made in, and a name does not. A handle is described by its object's
 so two scenes describe alike whatever order they were built in. The RIB client takes a name from
 RI's `Attribute "identifier" "name"`, so step 13's two paths through the editor name objects
 alike. `moya --scene` is step 11's, since nothing reads RIB into the scene before it.
-[Scene.md](../offline/Scene.md#the-description) states the format.
+[Scene.md](../../offline/Scene.md#the-description) states the format.
 
 * **A text description of a scene**: every object, its handle, its parameters and their values,
   in an order that does not depend on the order objects were created in. Every later step's
@@ -322,7 +322,7 @@ list below:
 * **An output with no channels writes the beauty alone**, as RI's `"rgb"` mode does, rather
   than being refused.
 
-[Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
+[Scene.md](../../offline/Scene.md#moyas-kinds) lists the kinds.
 
 * **A camera**: perspective or orthographic, a screen window, clipping, depth of field by f-stop,
   focal length and focal distance, a shutter's open and close, and a transformation over the
@@ -356,7 +356,7 @@ instance's prototype may be any geometry or a group. Four changes from the list 
 
 A quadric's dimensions may move over the shutter, and each quadric is a unit shape until a client
 sets it, since RI gives no defaults. The material an instance names is step 9's, since the
-`material` kind comes with it. [Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
+`material` kind comes with it. [Scene.md](../../offline/Scene.md#moyas-kinds) lists the kinds.
 
 * **Geometry prototypes**: polygon meshes, curves in each of RI's bases with a width per point,
   points with a width each, the six RI quadrics and the sphere, and subdivision meshes with
@@ -387,7 +387,7 @@ seven lights. Three changes from the list below:
   prototype is removed names none, and so does an instance whose material is removed.
 
 A primvar of constant interpolation is described without its class, so a shader's inputs read as
-its parameters do. [Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
+its parameters do. [Scene.md](../../offline/Scene.md#moyas-kinds) lists the kinds.
 
 * **A material**: a network as step 3 decides, with a surface and a displacement terminal. A
   material whose network names an unknown shader is kept, and section 5 reports it.
@@ -419,8 +419,8 @@ list below did not say:
   string. The RIB client of step 12 decides how the C interface names an object.
 
 The fuzz corpus gains `geometry.rib`, which a reader case reads whole.
-[Rib.md](../offline/Rib.md) states the rules, and the manual's
-[Rib.md](../manual/moya/Rib.md) lists the requests.
+[Rib.md](../../offline/Rib.md) states the rules, and the manual's
+[Rib.md](../../manual/moya/Rib.md) lists the requests.
 
 * **`ObjectBegin`, `ObjectEnd` and `ObjectInstance`**, with RI's rule that an object holds
   geometry alone and takes the attributes in force where it is instanced.
@@ -453,7 +453,7 @@ list below:
 * **The committed descriptions of moya's scenes are step 12's.** Until the world is read, a
   description holds only a frame's options, camera and outputs, and each would be written twice.
 
-[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
+[Rib.md](../../offline/Rib.md#the-scene-client) states the rules.
 
 * **A RIB client in `moya/libmoya/ri/`**, beside `RIBHandler`, that keeps RI's graphics state
   and creates scene objects. `RIBHandler` keeps driving the old hiders until section 7 removes
@@ -493,7 +493,7 @@ become primvars or shader inputs through `ri/internal/Primvars.h`. Every one of 
 * **A new world removes the world before it**, so a file of several frames commits each frame's
   world whole.
 
-[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
+[Rib.md](../../offline/Rib.md#the-scene-client) states the rules.
 
 * **The attribute and transformation stacks**, coordinate systems and motion blocks, as
   `RIBHandler` keeps them today. A motion block's times are kept as step 2 decides.
@@ -534,7 +534,7 @@ chose so that the two paths could be compared:
 `shotCamera()` and `RIBExportVisitor::screen()` give both paths one camera, and
 `moya::scene::aimed()` one placement for a light. An update compares each value with the one it
 set before, rather than reading the items' revisions, so a moved item sets one transformation and
-an edit that changes nothing commits nothing. [Rendering.md](../editor/Rendering.md) states the
+an edit that changes nothing commits nothing. [Rendering.md](../../editor/Rendering.md) states the
 rules.
 
 * **A translator in `vertical3d/src/render/`** that builds the editor's scene in the new scene.
@@ -553,13 +553,67 @@ instance alone. Deleting an item deletes its objects.
 
 ### Step 14 — The documents
 
+**Done.** Each step wrote its own section, and this step read them as a whole. The offline
+README's section on the new core names the scene and its page. ADR-0188 and ADR-0202 name
+`Scene.md` in place of the roadmap and this plan. `TODO.md` gains an offline section, for the one
+item this plan left, and the editor's entry for a live render leaves it, since the roadmap's
+section 9 now orders that work.
+
 * **A new reference page**, `docs/offline/Scene.md`, for the scene's objects, handles,
   parameters, time samples and changes. The docs site's summary lists it.
-* **[Rib.md](../offline/Rib.md)** names the new requests and the RIB client.
-* **[The offline README](../offline/README.md)**'s section on the new core names the scene and
+* **[Rib.md](../../offline/Rib.md)** names the new requests and the RIB client.
+* **[The offline README](../../offline/README.md)**'s section on the new core names the scene and
   its page.
-* **[The editor's rendering page](../editor/Rendering.md)** says that the delegate keeps a scene
+* **[The editor's rendering page](../../editor/Rendering.md)** says that the delegate keeps a scene
   in step.
 * **Each record's `Documented in` line** names the reference page that states its rule, and
   ADR-0188's names `Scene.md` in place of the roadmap.
 * **The roadmap's section 2** links here, and says so when this plan closes.
+
+---
+
+## Outcome
+
+Closed 2026-11-07. moya's new core holds a retained scene. Each object is of a kind that declares
+its parameters, is reached by a handle and named, and may hold samples over the shutter at times
+of its own. Clients edit from any thread and commit, the owner applies each batch as a version,
+and each consumer asks what changed since its own. RIB fills the scene through a client that
+keeps RI's graphics state, and every one of moya's 22 test scenes reads into a committed
+description. The editor keeps a scene in step with its own, setting only what changed, and the
+two paths describe the editor's scenes alike. No picture the reyes and ray hiders make changed.
+
+**Delivered:**
+
+- The scene's schema (ADR-0200), time samples (ADR-0201), material networks (ADR-0202) and
+  versioned commits (ADR-0203).
+- The store, its names and its text description.
+- moya's kinds: cameras, options, channels and outputs, every geometry RI names, groups and
+  instances, material networks, and UsdLux's lights.
+- RIB's objects, points, quadrics and subdivision meshes in the reader, the writer, the recorder
+  and RI's C interface.
+- The RIB client, `moya --scene`, and a committed description of each test scene.
+- The editor's translator, kept in step by `MoyaDelegate`.
+- `Scene.md`, and the RIB, editor and offline pages brought up to date.
+
+**Different from the plan:**
+
+- Every object has a name, unique within its kind, so a description does not depend on the
+  order objects were made in.
+- A declaration gives an element count and a string's choices, and a handle parameter names
+  several kinds of target.
+- An instance names the group it belongs to, and a handle to a removed object names nothing
+  rather than being refused at commit.
+- A channel is an object of its own, the camera is the options', and an output with no channels
+  writes the beauty alone.
+- The description writes six significant digits and no negative zero, so it is the same under
+  every compiler's mathematics.
+- The RIB export names its blocks and lights after their items and writes a mesh as one
+  `PointsPolygons`, so that it and the translator could be compared.
+- The RIB client's material is shared by nested blocks, and a point light looks down z from its
+  `from`.
+
+**Left open:**
+
+- RI's C `RiObjectBegin` names no object. It is in [TODO.md](../../TODO.md#offline-rendering).
+- The committed descriptions have been compared only on Windows. portable.yml compares them on
+  Linux, under Clang and GCC, on the pull request that carries this plan.

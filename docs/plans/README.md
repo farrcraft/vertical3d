@@ -20,9 +20,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-| Plan | Area | What it delivers |
-|---|---|---|
-| [MoyaScene](MoyaScene.md) | Offline rendering, editor | The rebuilt moya's retained scene: objects by handle with samples over the shutter, change tracking, and RIB and the editor as its clients |
+None.
 
 ## Completed plans
 
@@ -30,6 +28,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaScene](completed/MoyaScene.md) | Offline rendering, editor | 2026-11-07 | The rebuilt moya's retained scene: objects of declared kinds by handle, with samples over the shutter and versioned commits, read from RIB by a client and kept in step with the editor's |
 | [MoyaFoundation](completed/MoyaFoundation.md) | Offline rendering, build | 2026-11-07 | The rebuilt moya's foundation: kernel code on a CPU device over oneTBB, sampled spectra and a fitted RGB-to-spectrum table, a ZSobol sampler, a film of AOVs that filters by importance sampling, EXR and 8-bit output, and colour management through OpenColorIO |
 | [Releases](completed/Releases.md) | Engine, apps, build, CI, documents | 2026-11-06 | Vertical3D 0.1.0: apps that run from an install with a version in each, install rules, a changelog and a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |
 | [DocsSite](completed/DocsSite.md) | Documents, CI, editor, moya | 2026-11-05 | A searchable site of the documents on GitHub Pages with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps made by scripts |

@@ -50,13 +50,24 @@ ending it with `--capture`, prints `VUID-vkDestroyInstance-instance-00629` with 
 destroyed, after the log is closed, so `v3d.log` shows nothing. Pong, tetris, odyssey and
 diorama destroy their surface.
 
+## Offline rendering
+
+Open work on moya. [offline/](offline/README.md) describes it.
+
+[] **RiObjectBegin names no object.** RI's C interface returns no handle from `RiObjectBegin`,
+and `RiObjectEnd` and `RiObjectInstance` reach no handler, so a program that calls RI directly
+cannot instance an object. RIB's `ObjectBegin` reaches the handler with a number or a string.
+RI's handle is a pointer, so the C interface needs a table from the handles it gives out to the
+handler's names.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
 menu's 98 commands has a handler. Each group below is a piece of work of its own, in any order.
-[EditorScripting](roadmap/EditorScripting.md) holds the scripting work: rotation order, shared
-meshes in a scene document, placing an item and setting a key's interpolation by command, a
-headless mode, and batches in parallel.
+[MoyaRebuild](roadmap/MoyaRebuild.md#9-interactive-rendering) holds taking an edit into a render
+that is running. [EditorScripting](roadmap/EditorScripting.md) holds the scripting work:
+rotation order, shared meshes in a scene document, placing an item and setting a key's
+interpolation by command, a headless mode, and batches in parallel.
 
 [] **A clicked button keeps the focus ring.** A press on a retained button gives it the focus, so
 a workspace tab or the search keeps the focus colour's outline after a click, until a press
@@ -76,9 +87,5 @@ ADR on how it relates to meshes, and moya's `NuPatch` and `TrimCurve` have empty
 [] **A render shows nothing until it finishes.** moya resolves its samples into pixels at the end
 of a frame, so the render view waits for the whole picture. Resolving each bucket as it
 finishes would let `Delegate` hand over pictures as they improve.
-
-[] **A live render starts again from nothing.** An edit restarts the whole render, because moya
-reads a scene once. Taking edits into a running render needs moya to keep its scene and update
-it, which the editor's interface already sends.
 
 

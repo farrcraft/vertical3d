@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-07
 **Tags**: offline, interchange
-**Documented in**: [plans/MoyaScene.md](../../plans/MoyaScene.md)
+**Documented in**: [offline/Scene.md](../../offline/Scene.md)
 
 ## Context
 
