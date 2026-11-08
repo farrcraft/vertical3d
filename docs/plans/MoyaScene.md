@@ -124,7 +124,7 @@ among the options before the record was drafted. All four are accepted.
 | [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | done |
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | done |
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | done |
-| [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | open |
+| [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | done |
 | [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | open |
 | [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | open |
 | [14](#step-14--the-documents) | The reference pages for the scene | `docs` | — | open |
@@ -436,6 +436,24 @@ The fuzz corpus gains `geometry.rib`, which a reader case reads whole.
 text. A malformed one is an error, not a crash. The fuzz corpus gains a fixture of each.
 
 ### Step 11 — The RIB client: the frame
+
+**Done.** `ri::SceneClient` makes the scene's `options` and `camera` when it is made, and the
+frame's requests set them. The current transformation holds a sample at each time of a motion
+block, so a moving camera keeps every time. Displays become outputs, `WorldEnd` commits and calls
+the owner, and `moya --scene` prints the description after each frame. Four changes from the
+list below:
+
+* **The description writes six significant digits, and no negative zero.** The first scene
+  printed through `--scene` showed the camera's inverse as `-0`, and Clang's and GCC's
+  mathematics round a sine or an inverse differently from MSVC's in a float's last bits.
+* **`WorldEnd` commits, not `FrameBegin`.** A file with no frame blocks still has one world, and
+  the world is what a frame renders.
+* **The options gain `variance`**, so `PixelVariance` has somewhere to go, as every request moya
+  reads today does.
+* **The committed descriptions of moya's scenes are step 12's.** Until the world is read, a
+  description holds only a frame's options, camera and outputs, and each would be written twice.
+
+[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
 
 * **A RIB client in `moya/libmoya/ri/`**, beside `RIBHandler`, that keeps RI's graphics state
   and creates scene objects. `RIBHandler` keeps driving the old hiders until section 7 removes

@@ -103,6 +103,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    pixelAspect float = 1\n"
         "    resolution integer[2] = 320 240\n"
         "    samples integer = 4\n"
+        "    variance float = 0\n"
         "output \"beauty\"\n"
         "    channels handle[1] = channel \"albedo\"\n"
         "    compression string = \"zip\"\n"

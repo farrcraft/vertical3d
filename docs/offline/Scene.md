@@ -186,9 +186,11 @@ whatever order they were made in.
 - **A parameter's line** gives its name and type, then its element count in brackets when it is
   an array, then a primvar's interpolation class unless it is constant. Its value follows `=`.
   A parameter with samples gives each one as `@ time = value`.
-- **A float** is the shortest text that reads back as the same float. A colour, point, vector or
-  normal is three floats in parentheses, and a colour with a space names it after `in`. A matrix
-  is sixteen floats in square brackets, column by column. A string is quoted, with a quote or a
-  backslash inside it escaped.
+- **A float** is written to six significant digits, and a negative zero as zero. Two compilers'
+  mathematics round a sine or an inverse differently in the last bits a float holds, and six
+  digits leave those bits out, so a description is the same on every platform. A colour, point,
+  vector or normal is three floats in parentheses, and a colour with a space names it after
+  `in`. A matrix is sixteen floats in square brackets, column by column. A string is quoted,
+  with a quote or a backslash inside it escaped.
 - **A handle** is its object's kind and quoted name, or `none` when the scene holds no object it
   names.

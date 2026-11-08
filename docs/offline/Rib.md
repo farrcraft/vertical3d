@@ -97,6 +97,32 @@ the reader and the handler.
   coordinates. The reyes hider interpolates `"st"` across a grid, as it does `"Cs"`, and carries
   both through a split. A grid whose corners have none uses its own parameters.
 
+### The scene client
+
+`moya::ri::SceneClient` fills the new core's scene from RI requests, beside `RIBHandler`, which
+drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fills.
+
+- **The options and the camera are made with the client**, named `options` and `camera`, so a
+  scene that names neither has RI's defaults. The frame's requests set their parameters.
+  `PixelSamples` sets the samples per pixel to its two counts multiplied.
+- **`WorldBegin` makes the current transformation the camera's.** It takes world space to camera
+  space, so the camera holds its inverse, and the transformation is reset for the world.
+- **The current transformation holds a sample at each time of a motion block.** Inside a block,
+  each request gives the transformation at the block's next time, built on the transformation
+  the block opened with. Outside a block, a request applies to every sample. A block whose times
+  do not rise is logged, and keeps its first time alone.
+- **A display becomes an output named after its file.** A name starting with `+` adds an output,
+  and any other replaces every output before it. A `.png` file is written as PNG, and any other
+  as EXR, unless the type is `"framebuffer"`. A mode of `"rgb"` or `"rgba"` writes the beauty
+  alone, and any other mode adds a channel of that source, named after it.
+- **A projection other than perspective or orthographic** is logged and changes nothing.
+- **`WorldEnd` commits the frame**, and calls the function the client's `frame()` was given, where
+  the scene's owner applies the batch. A file of several frames is a scene that changes between
+  commits.
+- **An object takes its name from `Attribute "identifier" "name"`**, held in the attribute state.
+- **`moya --scene`** reads a file through the client and prints the scene's description after
+  each frame, in place of rendering it.
+
 ### Writing and recording
 
 Two handlers in `api/render/offline/rib` take requests from anything that sends them, such as

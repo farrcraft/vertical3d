@@ -73,6 +73,7 @@ Kind options() {
             Declaration { .name = "frameAspect", .type = Type::Float, .fallback = Value::number(0.0F) },
             Declaration { .name = "crop", .type = Type::Float, .count = 4, .fallback = Value::floats({ 0.0F, 1.0F, 0.0F, 1.0F }) },
             Declaration { .name = "samples", .type = Type::Integer, .fallback = Value::integer(kSamples) },
+            Declaration { .name = "variance", .type = Type::Float, .fallback = Value::number(0.0F) },
             Declaration { .name = "filter",
                 .type = Type::String,
                 .fallback = Value::string("gaussian"),

@@ -8,6 +8,10 @@
 #include <api/render/offline/rib/Reader.h>
 #include <api/version/Version.h>
 #include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/ri/SceneClient.h>
+#include <moya/libmoya/scene/Description.h>
+#include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Scene.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -60,6 +64,25 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
     }
 }
 
+/**
+ * Read a file into the new core's scene, and print the scene's description after each frame
+ * the file commits, in place of rendering it.
+ **/
+int describe(const std::string & infile, const boost::shared_ptr<v3d::log::Logger> & logger) {
+    v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
+    v3d::moya::ri::SceneClient client(scene, logger);
+    client.frame([&scene]() {
+        scene.apply();
+        std::cout << v3d::moya::scene::describe(scene) << std::flush;
+    });
+    v3d::render::offline::rib::Reader reader(logger);
+    if (!reader.read(infile, &client)) {
+        std::cout << "error reading rib file - " << reader.error() << "\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int run(int argc, char *argv[]) {
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -70,6 +93,7 @@ int run(int argc, char *argv[]) {
         ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height")
         ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
         ("silent", "print no progress line")
+        ("scene", "print the scene the new core reads from the file, in place of rendering it")
         ("grid", boost::program_options::value<int>(),
             "micropolygon grid size, used whatever size the scene's Option \"limits\" names")
         ("bucket", boost::program_options::value<int>(),
@@ -110,6 +134,9 @@ int run(int argc, char *argv[]) {
 
     // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    if (var_map.count("scene") != 0) {
+        return describe(infile, logger);
+    }
     v3d::moya::ri::RIBHandler handler;
 
     if (!outfile.empty()) {

@@ -109,4 +109,16 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_description_holds_only_applied_objects_test) {
     BOOST_TEST(describe(scene).find("look handle = none") != std::string::npos);
 }
 
+BOOST_AUTO_TEST_CASE(moya_scene_a_description_writes_six_digits_and_no_negative_zero_test) {
+    scene::Scene scene(schema());
+    const scene::Handle look = scene.create("look", "grey");
+    scene.set(look, "roughness", scene::Value::number(1.0F / 3.0F));
+    scene.set(look, "normal", scene::Value::normal(glm::vec3(-0.0F, 123456789.0F, 1.0e-7F)));
+    scene.commit();
+    scene.apply();
+    const std::string text = describe(scene);
+    BOOST_TEST(text.find("    roughness float = 0.333333\n") != std::string::npos);
+    BOOST_TEST(text.find("    normal normal = (0, 1.23457e+08, 1e-07)\n") != std::string::npos);
+}
+
 };  // namespace

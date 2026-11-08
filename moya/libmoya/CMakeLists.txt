@@ -42,6 +42,7 @@ add_library("v3dlib_moya"
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/Renderer.h" "ri/Renderer.cxx"
+	"ri/SceneClient.h" "ri/SceneClient.cxx"
 	"ri/internal/Converter.h" "ri/internal/Converter.cxx"
 
 	"scene/Description.h" "scene/Description.cxx"

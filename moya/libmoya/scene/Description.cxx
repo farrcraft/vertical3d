@@ -27,10 +27,18 @@ namespace {
 /** The floats in a matrix. **/
 constexpr std::size_t kMatrixFloats = 16;
 
-/** The shortest text that reads back as the same float. **/
+/**
+ * The significant digits a float is written with. Two compilers' mathematics round a sine or an
+ * inverse differently in the last bits a float holds, and six digits leave those bits out.
+ **/
+constexpr int kDigits = 6;
+
+/** A float to kDigits significant digits, with a negative zero written as zero. **/
 std::string number(float value) {
     std::array<char, 32> digits {};
-    const std::to_chars_result written = std::to_chars(digits.data(), digits.data() + digits.size(), value);
+    const float shown = value == 0.0F ? 0.0F : value;
+    const std::to_chars_result written =
+        std::to_chars(digits.data(), digits.data() + digits.size(), shown, std::chars_format::general, kDigits);
     if (written.ec != std::errc()) {
         return "nan";
     }
