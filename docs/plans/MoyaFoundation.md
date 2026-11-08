@@ -105,7 +105,7 @@ each step is where the survey points, not a conclusion.
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | done |
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | done |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | done |
-| [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | open |
+| [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | done |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | open |
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | open |
 | [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | open |
@@ -398,6 +398,21 @@ its denoiser needs the importance-sampled mode, because it assumes no sample is 
 pixels. A one-pixel box, where the two coincide, is rejected beside splatting.
 
 ### Step 11 — The film
+
+**Done.** `film::Film` holds the beauty in ACEScg and any number of named channels, as
+weighted sums with one weight a pixel, in a device's memory. `pass()` runs one launch that adds
+each pixel's next samples, and `snapshot()`, from any thread, waits for a pass in progress and
+returns every pixel divided by its weight. `film::Filter` builds `kernel::film::PixelFilter`: a
+box and a triangle by their inverses, and the other three as tables of 32 cells a pixel of
+width. The new film is told apart from the old by its namespace, `moya::film` beside
+`render::offline::film`. Two things the list below did not settle:
+
+* **The working space is ACEScg alone for now.** Step 14 takes it from OpenColorIO's
+  configuration.
+* **The sums are floats**, as a GPU adds them, not the doubles pbrt-v4's film keeps.
+
+The shape test draws a million samples per filter. At 65,536 the strata of the test's own draws
+were coarser than its bins. [Film.md](../offline/Film.md) states the rules.
 
 * **AOV channels**: the beauty, then any number of named channels, each a float per component.
 * **Sums in a fixed order**: each pixel's samples are added in sample order, so a picture is the

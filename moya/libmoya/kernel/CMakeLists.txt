@@ -5,6 +5,8 @@
 # virtual function or an allocation.
 add_library("v3dlib_moya_kernel"
 	"Array.h"
+	"film/Filter.h"
+	"film/Pixels.h"
 	"Launch.h"
 	"Qualifiers.h"
 	"sample/Hash.h"

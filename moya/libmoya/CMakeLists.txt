@@ -30,6 +30,9 @@ add_library("v3dlib_moya"
 	"device/internal/Arena.h"
 	"device/internal/HostBuffer.h"
 
+	"film/Film.h" "film/Film.cxx"
+	"film/Filter.h" "film/Filter.cxx"
+
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/Renderer.h" "ri/Renderer.cxx"

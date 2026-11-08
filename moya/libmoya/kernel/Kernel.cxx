@@ -8,6 +8,8 @@
 // rules of whatever includes it.
 
 #include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/film/Filter.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/film/Pixels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/sample/Hash.h>  // IWYU pragma: keep
