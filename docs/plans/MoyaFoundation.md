@@ -104,7 +104,7 @@ each step is where the survey points, not a conclusion.
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | done |
 | [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | done |
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | done |
-| [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | open |
+| [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | done |
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | open |
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | open |
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | open |
@@ -391,7 +391,11 @@ film does, or lands in the one pixel it was drawn for, with its position drawn f
 * **Splatting**, as the old film does. Exact for every filter, but tiles write into one
   another's pixels, and neighbouring pixels' noise is correlated.
 
-**The lean** is filter importance sampling, with RI's five filters tabulated for sampling.
+**Drafted** as
+[ADR-0199](../adr/offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md),
+accepted: filter importance sampling. pbrt-v4 and Cycles do the same. RenderMan offers both, and
+its denoiser needs the importance-sampled mode, because it assumes no sample is shared between
+pixels. A one-pixel box, where the two coincide, is rejected beside splatting.
 
 ### Step 11 — The film
 

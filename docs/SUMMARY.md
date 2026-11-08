@@ -202,6 +202,7 @@
     - [ADR-0196: Offline: the CPU device runs on oneTBB](adr/offline/0196-offline-the-cpu-device-runs-on-onetbb.md)
     - [ADR-0197: Offline: kernel code uses glm for vectors and matrices](adr/offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md)
     - [ADR-0198: Offline: the working space is OpenColorIO's scene-linear role](adr/offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md)
+    - [ADR-0199: Offline: a sample lands in the one pixel it was drawn for](adr/offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

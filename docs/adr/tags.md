@@ -333,6 +333,7 @@ reported, so the table lists only tags in use.
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 | [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
+| [0199](offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md) | Offline: a sample lands in the one pixel it was drawn for |
 
 ### particles
 
