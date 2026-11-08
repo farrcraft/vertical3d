@@ -13,14 +13,20 @@
  **/
 namespace v3d::moya::kernel::spectrum {
 
+#ifdef MOYA_RGB
+/** How many values a colour holds: an RGB build carries ACEScg's three channels. **/
+inline constexpr int kSamples = 3;
+#else
 /** How many wavelengths each path carries. **/
 inline constexpr int kSamples = 4;
+#endif
 
 /**
  * A spectral quantity at the wavelengths of one path: radiance, reflectance or a throughput, one
- * value for each of the path's wavelengths, in the same order as its SampledWavelengths.
+ * value for each of the path's wavelengths, in the same order as its SampledWavelengths. In an RGB
+ * build, which defines MOYA_RGB, it holds ACEScg's red, green and blue instead.
  *
- * Arithmetic is per wavelength.
+ * Arithmetic is per wavelength, or per channel.
  **/
 struct SampledSpectrum {
     float values[kSamples] {};

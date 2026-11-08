@@ -102,7 +102,7 @@ each step is where the survey points, not a conclusion.
 | [5](#step-5--the-device-interface-and-the-cpu-device) | The device interface, and the CPU device over tiles | `moya/libmoya` | 0196 | done |
 | [6](#step-6--sampled-spectra) | Sampled spectra, hero wavelengths and the CIE observer | `moya/libmoya` | — | done |
 | [7](#step-7--the-record-the-working-space) | The record: the working space | `docs/adr` | **0198** | done |
-| [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | open |
+| [8](#step-8--rgb-to-spectrum) | RGB to spectrum by Jakob and Hanika's table, and the RGB build | `moya/libmoya` | 0198 | done |
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | open |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | open |
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | open |
@@ -317,7 +317,7 @@ role, ACEScg in the default configuration, and builds the table for ACEScg alone
 
 ### Step 8 — RGB to spectrum
 
-**The table and its lookup are done. The RGB build is open.** `moya_rgbtable` fits the table at
+**Done.** `moya_rgbtable` fits the table at
 64 points along each axis of each cube, on oneTBB's threads, in about 25 seconds in a Debug build.
 libmoya compiles the source it writes, and `colour::acescgTable()` views it. The kernel's
 `RgbTable`, `reflectance()`, `unbounded()` and `illuminant()` read it. Three things the list
@@ -333,6 +333,11 @@ below did not foresee:
 * **The generated source is skipped by clang-tidy and `/analyze`**, which would spend minutes on
   its literals.
 
+`V3D_MOYA_RGB` builds the colour type as ACEScg's three channels, and each spectral function has
+its RGB counterpart. Three cases of the spectrum suite, and one and a half of the RGB suite, need
+wavelengths, and an RGB build leaves them out. A case for the RGB build's own behaviour, and one
+that checks its illuminants' colours in both builds, take their place. portable.yml's clang job
+builds moya both ways and runs its suite in each.
 [Spectra.md](../offline/Spectra.md#rgb-to-spectrum) states the rules.
 
 * **A tool of moya's own, in C++, that builds Jakob and Hanika's table** for the working space,

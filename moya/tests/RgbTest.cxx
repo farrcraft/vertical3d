@@ -159,16 +159,46 @@ BOOST_AUTO_TEST_CASE(moya_rgb_a_light_has_its_colour_test) {
     for (int i = 0; i < 3; ++i) {
         BOOST_TEST(back[i] == colour[i], boost::test_tools::tolerance(0.01F));
     }
-    // illuminant() gives the same spectrum at a path's wavelengths
     const spectrum::SampledWavelengths wavelengths = spectrum::SampledWavelengths::visible(0.4F);
+    BOOST_TEST(spectrum::unbounded(table, glm::vec3(0.0F), wavelengths).black());
+#ifndef MOYA_RGB
+    // illuminant() gives the same spectrum at a path's wavelengths
     const spectrum::SampledSpectrum light = spectrum::illuminant(table, colour, wavelengths);
     for (int i = 0; i < spectrum::kSamples; ++i) {
         const float lambda = wavelengths.lambda[i];
         BOOST_TEST(light[i] == scale * sigmoid(lambda) * spectrum::acesWhite(lambda), boost::test_tools::tolerance(0.0001F));
     }
-    BOOST_TEST(spectrum::unbounded(table, glm::vec3(0.0F), wavelengths).black());
+#endif
 }
 
+// an RGB build's illuminants are these colours, so both builds check them against the tables
+BOOST_AUTO_TEST_CASE(moya_rgb_d65_and_illuminant_a_have_their_acescg_colours_test) {
+    const glm::vec3 d65 = spectrum::acescgFromXyz(exact([](float lambda) { return spectrum::d65(lambda); }));
+    const glm::vec3 warm = spectrum::acescgFromXyz(exact([](float lambda) { return spectrum::illuminantA(lambda); }));
+    for (int i = 0; i < 3; ++i) {
+        BOOST_TEST(spectrum::kD65Acescg[i] == d65[i], boost::test_tools::tolerance(0.0001F));
+        BOOST_TEST(spectrum::kIlluminantAAcescg[i] == warm[i], boost::test_tools::tolerance(0.0001F));
+    }
+}
+
+#ifdef MOYA_RGB
+// an RGB build carries a colour as ACEScg's channels, with no spectrum behind them
+BOOST_AUTO_TEST_CASE(moya_rgb_an_rgb_build_carries_acescg_channels_test) {
+    const spectrum::RgbTable table = v3d::moya::colour::acescgTable();
+    const spectrum::SampledWavelengths wavelengths = spectrum::SampledWavelengths::visible(0.4F);
+    const spectrum::SampledSpectrum surface = spectrum::reflectance(table, glm::vec3(0.3F, 1.5F, -0.2F), wavelengths);
+    BOOST_TEST(surface[0] == 0.3F);
+    BOOST_TEST(surface[1] == 1.0F);
+    BOOST_TEST(surface[2] == 0.0F);
+    const spectrum::SampledSpectrum light = spectrum::illuminant(table, glm::vec3(2.0F, 1.0F, -0.5F), wavelengths);
+    BOOST_TEST(light[0] == 2.0F);
+    BOOST_TEST(light[1] == 1.0F);
+    BOOST_TEST(light[2] == 0.0F);
+    const glm::vec3 xyz = spectrum::toXyz(spectrum::SampledSpectrum(1.0F), wavelengths);
+    BOOST_TEST(xyz.y == 1.0F, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(spectrum::d65(wavelengths)[1] == spectrum::kD65Acescg[1]);
+}
+#else
 BOOST_AUTO_TEST_CASE(moya_rgb_a_paths_reflectance_is_the_sigmoid_at_its_wavelengths_test) {
     const spectrum::RgbTable table = v3d::moya::colour::acescgTable();
     const glm::vec3 colour(0.3F, 0.6F, 0.2F);
@@ -178,5 +208,6 @@ BOOST_AUTO_TEST_CASE(moya_rgb_a_paths_reflectance_is_the_sigmoid_at_its_waveleng
         BOOST_TEST(value[i] == table(colour)(wavelengths.lambda[i]));
     }
 }
+#endif
 
 };  // namespace

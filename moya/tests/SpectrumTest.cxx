@@ -100,6 +100,8 @@ BOOST_AUTO_TEST_CASE(moya_spectrum_wavelengths_are_drawn_from_the_visible_densit
     }
 }
 
+// an RGB build carries no wavelengths, so the next three cases hold only in a spectral one
+#ifndef MOYA_RGB
 BOOST_AUTO_TEST_CASE(moya_spectrum_a_path_carries_four_wavelengths_spread_through_the_distribution_test) {
     const spectrum::SampledWavelengths wavelengths = spectrum::SampledWavelengths::visible(0.6F);
     BOOST_TEST(wavelengths.lambda[0] == spectrum::sampleVisible(0.6F));
@@ -136,27 +138,29 @@ BOOST_AUTO_TEST_CASE(moya_spectrum_a_wavelength_drawn_with_no_density_adds_nothi
     BOOST_TEST(three.y < all.y);
     BOOST_TEST(std::isfinite(three.y));
 }
+#endif
 
+// written for any number of values, so it holds in an RGB build as in a spectral one
 BOOST_AUTO_TEST_CASE(moya_spectrum_arithmetic_is_per_wavelength_test) {
+    const int last = spectrum::kSamples - 1;
     spectrum::SampledSpectrum ramp;
-    ramp[0] = 1.0F;
-    ramp[1] = 2.0F;
-    ramp[2] = 3.0F;
-    ramp[3] = 6.0F;
+    for (int i = 0; i < spectrum::kSamples; ++i) {
+        ramp[i] = static_cast<float>(i + 1);
+    }
     const spectrum::SampledSpectrum twos(2.0F);
-    BOOST_TEST((ramp * twos)[3] == 12.0F);
+    BOOST_TEST((ramp * twos)[last] == 2.0F * static_cast<float>(last + 1));
     BOOST_TEST((ramp + twos)[0] == 3.0F);
     BOOST_TEST((ramp - twos)[1] == 0.0F);
     BOOST_TEST((ramp / 2.0F)[2] == 1.5F);
-    BOOST_TEST((0.5F * ramp)[3] == 3.0F);
-    BOOST_TEST(ramp.average() == 3.0F);
-    BOOST_TEST(ramp.maximum() == 6.0F);
+    BOOST_TEST((0.5F * ramp)[last] == 0.5F * static_cast<float>(last + 1));
+    BOOST_TEST(ramp.average() == static_cast<float>(spectrum::kSamples + 1) / 2.0F);
+    BOOST_TEST(ramp.maximum() == static_cast<float>(spectrum::kSamples));
     BOOST_TEST(!ramp.black());
     BOOST_TEST(spectrum::SampledSpectrum().black());
     spectrum::SampledSpectrum zero(2.0F);
     zero[1] = 0.0F;
     BOOST_TEST(spectrum::safeDivide(ramp, zero)[1] == 0.0F);
-    BOOST_TEST(spectrum::safeDivide(ramp, zero)[3] == 3.0F);
+    BOOST_TEST(spectrum::safeDivide(ramp, zero)[last] == static_cast<float>(last + 1) / 2.0F);
 }
 
 };  // namespace

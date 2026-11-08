@@ -38,6 +38,23 @@ cmake -S "$src" -B "$work/build" -G Ninja \
 cmake --build "$work/build"
 ctest --test-dir "$work/build" --output-on-failure
 
+# moya's RGB build, whose colour is ACEScg's three channels rather than four wavelengths, so that
+# both colour types keep building and moya's suite passes in each. It needs only moya and the
+# api libraries moya links, which the configure adds.
+cmake -S "$src" -B "$work/rgb" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" \
+    -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
+    -DVCPKG_MANIFEST_FEATURES=moya \
+    -DV3D_BUILD_APPS=OFF \
+    -DV3D_BUILD_MOYA=ON \
+    -DV3D_BUILD_TESTS=ON \
+    -DV3D_SANITIZE=ON \
+    -DV3D_MOYA_RGB=ON \
+    "-DV3D_LIBRARIES=log"
+cmake --build "$work/rgb" --target v3dtest_moya
+ctest --test-dir "$work/rgb" -R '^moya$' --output-on-failure
+
 # Each fuzz target runs for FUZZ_SECONDS, starting from its fixtures. What it finds that reaches
 # new code is kept under $work/corpus, so a local run carries on from the last one. A failure
 # stops the script, and libFuzzer prints the input that caused it, which belongs in the

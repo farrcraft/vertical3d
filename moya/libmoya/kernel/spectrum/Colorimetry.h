@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/spectrum/CieD65.h>
 #include <moya/libmoya/kernel/spectrum/CieObserver.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
@@ -35,6 +36,12 @@ inline constexpr float kNormal = 560.0F;
 
 /** The power illuminant A's definition raises a wavelength ratio to. **/
 inline constexpr float kPowerA = 5.0F;
+
+/** D65's colour in ACEScg: its XYZ, summed at 1 nm through the observer, over kYIntegral. **/
+MOYA_KERNEL_DATA inline constexpr float kD65Acescg[3] = { 96.6664799F, 99.1653577F, 106.707226F };
+
+/** Illuminant A's colour in ACEScg, found as D65's is. **/
+MOYA_KERNEL_DATA inline constexpr float kIlluminantAAcescg[3] = { 140.728207F, 90.0931266F, 35.9775186F };
 
 /**
  * The colour-matching functions x, y and z at a wavelength in nanometres, interpolated linearly
@@ -79,20 +86,28 @@ MOYA_KERNEL inline float illuminantA(float lambda) {
     return 100.0F * ratio * normal / std::expm1(kRadiationA / (kTemperatureA * lambda));
 }
 
-/** D65 at the wavelengths a path carries. **/
-MOYA_KERNEL inline SampledSpectrum d65(const SampledWavelengths & wavelengths) {
+/** D65 at the wavelengths a path carries, or its ACEScg colour in an RGB build. **/
+MOYA_KERNEL inline SampledSpectrum d65([[maybe_unused]] const SampledWavelengths & wavelengths) {
     SampledSpectrum out;
     for (int i = 0; i < kSamples; ++i) {
+#ifdef MOYA_RGB
+        out[i] = kD65Acescg[i];
+#else
         out[i] = d65(wavelengths.lambda[i]);
+#endif
     }
     return out;
 }
 
-/** Illuminant A at the wavelengths a path carries. **/
-MOYA_KERNEL inline SampledSpectrum illuminantA(const SampledWavelengths & wavelengths) {
+/** Illuminant A at the wavelengths a path carries, or its ACEScg colour in an RGB build. **/
+MOYA_KERNEL inline SampledSpectrum illuminantA([[maybe_unused]] const SampledWavelengths & wavelengths) {
     SampledSpectrum out;
     for (int i = 0; i < kSamples; ++i) {
+#ifdef MOYA_RGB
+        out[i] = kIlluminantAAcescg[i];
+#else
         out[i] = illuminantA(wavelengths.lambda[i]);
+#endif
     }
     return out;
 }
@@ -102,8 +117,13 @@ MOYA_KERNEL inline SampledSpectrum illuminantA(const SampledWavelengths & wavele
  * Each wavelength's contribution is divided by the density it was drawn with, and the sum by
  * kYIntegral. The mean of many samples converges to the spectrum's XYZ, and a constant spectrum of
  * one has a Y of one. A wavelength drawn with no density contributes nothing.
+ *
+ * In an RGB build the spectrum is an ACEScg colour, and its XYZ is exact.
  **/
-MOYA_KERNEL inline glm::vec3 toXyz(const SampledSpectrum & spectrum, const SampledWavelengths & wavelengths) {
+MOYA_KERNEL inline glm::vec3 toXyz(const SampledSpectrum & spectrum, [[maybe_unused]] const SampledWavelengths & wavelengths) {
+#ifdef MOYA_RGB
+    return acescgToXyz(glm::vec3(spectrum[0], spectrum[1], spectrum[2]));
+#else
     glm::vec3 sum(0.0F);
     for (int i = 0; i < kSamples; ++i) {
         if (wavelengths.pdf[i] != 0.0F) {
@@ -111,6 +131,7 @@ MOYA_KERNEL inline glm::vec3 toXyz(const SampledSpectrum & spectrum, const Sampl
         }
     }
     return sum / (static_cast<float>(kSamples) * kYIntegral);
+#endif
 }
 
 };  // namespace v3d::moya::kernel::spectrum

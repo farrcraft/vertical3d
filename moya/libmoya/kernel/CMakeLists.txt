@@ -28,6 +28,12 @@ set_target_properties("v3dlib_moya_kernel" PROPERTIES CXX_STANDARD 20 V3D_KERNEL
 target_include_directories("v3dlib_moya_kernel" PUBLIC "${V3D_ROOT}")
 target_link_libraries("v3dlib_moya_kernel" PUBLIC glm::glm)
 
+# PUBLIC: the colour type is fixed when moya is compiled, so every source that compiles a kernel
+# header sees the same one.
+if(V3D_MOYA_RGB)
+	target_compile_definitions("v3dlib_moya_kernel" PUBLIC MOYA_RGB)
+endif()
+
 # No exceptions and no RTTI, which a GPU compiler does not support. The top-level build leaves
 # /EHsc off a target that sets V3D_KERNEL. _HAS_EXCEPTIONS=0 keeps MSVC's standard headers from
 # throwing, which they would do without unwind semantics.

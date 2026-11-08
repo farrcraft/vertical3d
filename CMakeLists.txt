@@ -20,6 +20,9 @@ option(V3D_BUILD_APPS "Build the applications as well as the api libraries" ${PR
 option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest" ${PROJECT_IS_TOP_LEVEL})
 # moya needs neither a window nor a device, so a build of the api libraries alone can add it.
 option(V3D_BUILD_MOYA "Build moya and its suite, also when the other apps are off" OFF)
+# moya carries light as four sampled wavelengths. An RGB build carries three ACEScg channels
+# instead, so that a picture can be compared with the spectral one.
+option(V3D_MOYA_RGB "Build moya's colour as three ACEScg channels rather than four wavelengths" OFF)
 
 # A release build shows the bare version. Any other build adds the commit it was built from, so
 # a bug report names it.

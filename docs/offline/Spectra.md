@@ -95,6 +95,26 @@ surface can reflect, and the fit gives the nearest it reaches. About one point i
 table misses its colour by more than one CIELAB unit, and the tool prints the count when it runs.
 The colours of the sRGB gamut and moderate colours return to within 0.005 on each channel.
 
+## The RGB build
+
+`V3D_MOYA_RGB` builds moya with its colour as ACEScg's three channels rather than four
+wavelengths, so that a picture can be compared with the spectral one. The kernel target then
+defines `MOYA_RGB` PUBLIC, so every source that compiles a kernel header sees the same colour
+type.
+
+- **`SampledSpectrum`** holds red, green and blue, and `kSamples` is 3.
+- **`SampledWavelengths::visible`** draws nothing. Each lambda is zero and each density one.
+- **`reflectance`** is the colour clamped to [0, 1], **`unbounded`** the colour with no channel
+  below zero, and **`illuminant`** the unbounded colour, since ACES white is (1, 1, 1).
+- **`toXyz`** is the ACEScg matrix, which is exact.
+- **`d65` and `illuminantA`**, given wavelengths, are their ACEScg colours, `kD65Acescg` and
+  `kIlluminantAAcescg`. Both builds' suites check those colours against the tables.
+
+Kernel code uses the functions above and never reads a wavelength itself, so it builds both ways.
+portable.yml's clang job builds moya both ways and runs moya's suite in each.
+
+Background: [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md)
+
 ## The CIE's tables
 
 The observer, D65 and the daylight components are measured data. They are the CIE's own tables,

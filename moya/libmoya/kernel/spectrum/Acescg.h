@@ -67,13 +67,17 @@ MOYA_KERNEL inline float acesWhite(float lambda) {
     return daylight(lambda, kAcesWhiteTemperature) * kAcesWhiteScale;
 }
 
-/** ACES white at the wavelengths a path carries. **/
-MOYA_KERNEL inline SampledSpectrum acesWhite(const SampledWavelengths & wavelengths) {
+/** ACES white at the wavelengths a path carries, or ACEScg's (1, 1, 1) in an RGB build. **/
+MOYA_KERNEL inline SampledSpectrum acesWhite([[maybe_unused]] const SampledWavelengths & wavelengths) {
+#ifdef MOYA_RGB
+    return SampledSpectrum(1.0F);
+#else
     SampledSpectrum out;
     for (int i = 0; i < kSamples; ++i) {
         out[i] = acesWhite(wavelengths.lambda[i]);
     }
     return out;
+#endif
 }
 
 };  // namespace v3d::moya::kernel::spectrum

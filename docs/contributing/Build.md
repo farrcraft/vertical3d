@@ -200,6 +200,7 @@ than an imported target, so it never appears in a link line.
 | `V3D_BUILD_APPS` | top level | Everything outside `api/` |
 | `V3D_BUILD_TESTS` | top level | The Boost.Test suites and their ctest entries |
 | `V3D_BUILD_MOYA` | `OFF` | moya and its suite in a build whose `V3D_BUILD_APPS` is off. See [Kernel.md](../offline/Kernel.md#building-moya-without-the-apps) |
+| `V3D_MOYA_RGB` | `OFF` | moya's colour as three ACEScg channels rather than four wavelengths. See [Spectra.md](../offline/Spectra.md#the-rgb-build) |
 | `V3D_RELEASE` | `OFF` | A release build, whose version is the bare number. See [api/engine/README.md](../api/engine/README.md#the-version) |
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
