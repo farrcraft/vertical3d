@@ -106,6 +106,17 @@ class Recorder final : public Handler {
     void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
     void sphere(const Sphere & request, const ParameterList & parameters) override;
     void curves(const Curves & request, const ParameterList & parameters) override;
+    void points(unsigned int count, const ParameterList & parameters) override;
+    void cone(const Cone & request, const ParameterList & parameters) override;
+    void cylinder(const Cylinder & request, const ParameterList & parameters) override;
+    void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) override;
+    void paraboloid(const Paraboloid & request, const ParameterList & parameters) override;
+    void disk(const Disk & request, const ParameterList & parameters) override;
+    void torus(const Torus & request, const ParameterList & parameters) override;
+    void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) override;
+    void objectBegin(const std::string & handle) override;
+    void objectEnd() override;
+    void objectInstance(const std::string & handle) override;
 
  private:
     typedef std::function<void(Handler &)> Request;
@@ -121,6 +132,14 @@ class Recorder final : public Handler {
         void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
         void sphere(const Sphere & request, const ParameterList & parameters) override;
         void curves(const Curves & request, const ParameterList & parameters) override;
+        void points(unsigned int count, const ParameterList & parameters) override;
+        void cone(const Cone & request, const ParameterList & parameters) override;
+        void cylinder(const Cylinder & request, const ParameterList & parameters) override;
+        void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) override;
+        void paraboloid(const Paraboloid & request, const ParameterList & parameters) override;
+        void disk(const Disk & request, const ParameterList & parameters) override;
+        void torus(const Torus & request, const ParameterList & parameters) override;
+        void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) override;
 
      private:
         /** Keep a primitive, for the deformation() of the handler replayed to. **/

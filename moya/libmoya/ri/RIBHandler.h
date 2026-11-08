@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -120,6 +121,26 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
+     * The reyes and ray hiders draw none of these. The first of each a scene names is reported,
+     * and the scene renders without them.
+     **/
+    void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cone(const v3d::render::offline::rib::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cylinder(const v3d::render::offline::rib::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void paraboloid(const v3d::render::offline::rib::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void disk(const v3d::render::offline::rib::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void torus(const v3d::render::offline::rib::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+
+    /**
+     * The hiders do not instance objects. The geometry inside an object's block is left out, as
+     * RI leaves it out where it is declared, and the first object a scene names is reported.
+     **/
+    void objectBegin(const std::string & handle) override;
+    void objectEnd() override;
+
+    /**
      * The context the requests reach. Its framebuffer holds the picture once the file has
      * been read.
      **/
@@ -178,6 +199,12 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     /** Whether the primitive arriving now deforms one already in the motion block. **/
     bool deforms();
 
+    /** Whether the primitive arriving now is left out: it deforms, or it is inside an object. **/
+    bool skipped();
+
+    /** Report the first request of a name that the hiders do not draw. **/
+    void unsupported(const std::string & request);
+
     state::RenderContext context_;
     v3d::render::offline::rib::Declarations declarations_;
     std::string output_;
@@ -187,6 +214,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     bool motion_ = false;
     unsigned int primitives_ = 0;
     bool deformed_ = false;
+    bool object_ = false;
+    std::set<std::string> unsupported_;
 };
 
 };  // namespace v3d::moya::ri

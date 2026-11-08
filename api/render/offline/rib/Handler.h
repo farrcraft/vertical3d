@@ -211,6 +211,53 @@ class Handler {
         (void)request;
         (void)parameters;
     }
+    /**
+     * Points, each a small sphere or disk. RIB carries no count. The reader takes it from the
+     * length of "P".
+     **/
+    virtual void points(unsigned int count, const ParameterList & parameters) {
+        (void)count;
+        (void)parameters;
+    }
+    virtual void cone(const Cone & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void cylinder(const Cylinder & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void disk(const Disk & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void torus(const Torus & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+
+    // instancing
+    /**
+     * RiObjectBegin: the geometry up to objectEnd() is an object, held to be instanced rather than
+     * drawn. RIB names it by a number or a string. An object holds geometry alone. Each instance
+     * takes the attributes and transformation in force where it is placed.
+     **/
+    virtual void objectBegin(const std::string & handle) { (void)handle; }
+    virtual void objectEnd() { }
+    /** RiObjectInstance: place an object, which an objectBegin() before it named. **/
+    virtual void objectInstance(const std::string & handle) { (void)handle; }
 };
 
 };  // namespace v3d::render::offline::rib

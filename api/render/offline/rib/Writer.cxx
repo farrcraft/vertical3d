@@ -85,6 +85,15 @@ Writer & Writer::counts(const std::vector<unsigned int> & values) {
     return *this;
 }
 
+Writer & Writer::strings(const std::vector<std::string> & values) {
+    *stream_ << " [";
+    for (const std::string & value : values) {
+        text(value);
+    }
+    *stream_ << " ]";
+    return *this;
+}
+
 Writer & Writer::handle(const std::string & value) {
     // a number only when it is one exactly as written, and within the range a reader takes
     constexpr int32_t LARGEST = 2000000000;
@@ -353,6 +362,68 @@ void Writer::sphere(const Sphere & request, const ParameterList & parameters) {
 void Writer::curves(const Curves & request, const ParameterList & parameters) {
     start("Curves").text(request.cubic ? "cubic" : "linear").counts(request.vertices)
         .text(request.periodic ? "periodic" : "nonperiodic").parameters(parameters).end();
+}
+
+// RIB carries no count: a reader takes it from the length of "P"
+void Writer::points(unsigned int count, const ParameterList & parameters) {
+    (void)count;
+    start("Points").parameters(parameters).end();
+}
+
+void Writer::cone(const Cone & request, const ParameterList & parameters) {
+    start("Cone").number(request.height).number(request.radius).number(request.thetamax).parameters(parameters).end();
+}
+
+void Writer::cylinder(const Cylinder & request, const ParameterList & parameters) {
+    start("Cylinder").number(request.radius).number(request.zmin).number(request.zmax).number(request.thetamax)
+        .parameters(parameters).end();
+}
+
+void Writer::hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+    start("Hyperboloid");
+    for (const float value : request.point1) {
+        number(value);
+    }
+    for (const float value : request.point2) {
+        number(value);
+    }
+    number(request.thetamax).parameters(parameters).end();
+}
+
+void Writer::paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+    start("Paraboloid").number(request.rmax).number(request.zmin).number(request.zmax).number(request.thetamax)
+        .parameters(parameters).end();
+}
+
+void Writer::disk(const Disk & request, const ParameterList & parameters) {
+    start("Disk").number(request.height).number(request.radius).number(request.thetamax).parameters(parameters).end();
+}
+
+void Writer::torus(const Torus & request, const ParameterList & parameters) {
+    start("Torus").number(request.majorRadius).number(request.minorRadius).number(request.phimin).number(request.phimax)
+        .number(request.thetamax).parameters(parameters).end();
+}
+
+// the strings' array follows only when each tag gives three counts, as RIB after RI 3.2 does
+void Writer::subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+    start("SubdivisionMesh").text(request.scheme).counts(request.counts).counts(request.indices).strings(request.tags)
+        .counts(request.arguments).counts(request.integers).array(request.floats);
+    if (!request.tags.empty() && request.arguments.size() == 3 * request.tags.size()) {
+        strings(request.strings);
+    }
+    this->parameters(parameters).end();
+}
+
+void Writer::objectBegin(const std::string & handle) {
+    start("ObjectBegin").handle(handle).end();
+}
+
+void Writer::objectEnd() {
+    start("ObjectEnd").end();
+}
+
+void Writer::objectInstance(const std::string & handle) {
+    start("ObjectInstance").handle(handle).end();
 }
 
 };  // namespace v3d::render::offline::rib

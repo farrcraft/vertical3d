@@ -180,6 +180,8 @@ again.
 | `PointsPolygons [counts] [indices] params` | A set of polygons that share points. Reads `"P"`, `"Cs"`, `"N"` and `"st"`, one value for each point |
 | `Sphere radius zmin zmax thetamax` | A sphere cut to the heights zmin to zmax and swept through thetamax degrees. Drawn by the ray-trace hider only. Reads no parameters |
 | `Curves "type" [counts] "wrap" params` | Ribbons along lines or cubic curves. See [Curves.md](Curves.md) |
+| `Points params`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk`, `Torus`, `SubdivisionMesh` | Read, and not yet drawn. The first of each a scene names is logged, and the picture is made without them |
+| `ObjectBegin handle`, `ObjectEnd`, `ObjectInstance handle` | Read, and not yet instanced. The geometry inside an object is not drawn, and the first object is logged |
 
 - **`"P"`** holds three numbers for each vertex. A polygon's number of vertices is the length of
   `"P"` divided by three.
@@ -201,6 +203,6 @@ again.
 
 ## What moya does not read
 
-Requests such as `Orientation`, `Sides`, `ObjectBegin`, `ReadArchive`, `Patch`, `NuPatch` and
-every quadric other than `Sphere` are skipped with a warning, as is every request this page does
+Requests such as `Orientation`, `Sides`, `ReadArchive`, `Patch` and `NuPatch` are skipped with a
+warning, as is every request this page does
 not list. moya has no volume shaders, no shadow maps and no `Display` mode other than RGB.

@@ -689,7 +689,7 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
         lexer->next();
         const std::optional<int32_t> number = v3d::type::toInteger(token.value(), {.minimum = -2000000000, .maximum = 2000000000});
         if (!number) {
-            return fail("expected a light handle", token);
+            return fail("expected a handle", token);
         }
         *value = std::to_string(*number);
         return true;
@@ -698,76 +698,23 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
 }
 
 /**
- * Reads a Curves request: its type, its counts, its wrap and its parameters.
+ * Reads the instancing requests. An object's handle is a number or a string, as a light's is.
  **/
-Reader::Result Reader::curvesRequest(Lexer * lexer, Handler * handler) {
-    ParameterList list;
-    std::string type;
-    std::vector<unsigned int> vertices;
-    std::string wrap;
-    const Token at = lexer->peek();
-    if (!text(lexer, &type) || !counts(lexer, &vertices) || !text(lexer, &wrap)) {
-        return Result::Failed;
-    }
-    if ((type != "linear" && type != "cubic") || (wrap != "periodic" && wrap != "nonperiodic")) {
-        fail("a curve is linear or cubic, and periodic or nonperiodic", at);
-        return Result::Failed;
-    }
-    // the length of a varying parameter depends on the basis's step, which the reader does
-    // not track, so no length is checked
-    if (!parameters(lexer, 0, &list)) {
-        return Result::Failed;
-    }
-    handler->curves({.cubic = type == "cubic", .vertices = std::move(vertices), .periodic = wrap == "periodic"}, list);
-    return Result::Handled;
-}
-
-/**
- * Reads the geometry.
- **/
-Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0F;
-    float arg2 = 0.0F;
-    float arg3 = 0.0F;
-    float arg4 = 0.0F;
-    ParameterList list;
-
-    if (name == "Polygon") {
-        // RIB carries no vertex count: it is the length of "P", "Pw" or "Pz"
-        if (!parameters(lexer, 0, &list)) {
+Reader::Result Reader::objectRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    if (name == "ObjectBegin" || name == "ObjectInstance") {
+        std::string value;
+        if (!handle(lexer, &value)) {
             return Result::Failed;
         }
-        unsigned int vertices = static_cast<unsigned int>(list.floats("P").size() / 3);
-        if (vertices == 0) {
-            vertices = static_cast<unsigned int>(list.floats("Pw").size() / 4);
+        if (name == "ObjectBegin") {
+            handler->objectBegin(value);
+        } else {
+            handler->objectInstance(value);
         }
-        if (vertices == 0) {
-            vertices = static_cast<unsigned int>(list.floats("Pz").size());
-        }
-        handler->polygon(vertices, list);
         return Result::Handled;
     }
-    if (name == "PointsPolygons") {
-        std::vector<unsigned int> perPolygon;
-        std::vector<unsigned int> indices;
-        if (!counts(lexer, &perPolygon) || !counts(lexer, &indices) || !parameters(lexer, 0, &list)) {
-            return Result::Failed;
-        }
-        handler->pointsPolygons({.counts = std::move(perPolygon), .indices = std::move(indices)}, list);
-        return Result::Handled;
-    }
-    if (name == "Curves") {
-        return curvesRequest(lexer, handler);
-    }
-    if (name == "Sphere") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
-            return Result::Failed;
-        }
-        // a quadric has a varying value at each of the four corners of its parameter space
-        if (!parameters(lexer, 4, &list)) {
-            return Result::Failed;
-        }
-        handler->sphere({.radius = arg1, .zmin = arg2, .zmax = arg3, .thetamax = arg4}, list);
+    if (name == "ObjectEnd") {
+        handler->objectEnd();
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -780,7 +727,7 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
     static const Group groups[] = {
         &Reader::namedRequest, &Reader::optionRequest, &Reader::cameraRequest, &Reader::displayRequest,
         &Reader::lensRequest, &Reader::sampleRequest, &Reader::blockRequest, &Reader::transformRequest,
-        &Reader::attributeRequest, &Reader::shaderRequest, &Reader::motionRequest
+        &Reader::attributeRequest, &Reader::shaderRequest, &Reader::motionRequest, &Reader::objectRequest
     };
     Result result = Result::Unhandled;
     for (const Group group : groups) {

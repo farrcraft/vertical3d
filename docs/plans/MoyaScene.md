@@ -123,7 +123,7 @@ among the options before the record was drafted. All four are accepted.
 | [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | done |
 | [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | done |
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | done |
-| [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | open |
+| [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | done |
 | [11](#step-11--the-rib-client-the-frame) | The RIB client: options, camera and outputs | `moya/libmoya` | — | open |
 | [12](#step-12--the-rib-client-the-world) | The RIB client: the world | `moya/libmoya` | — | open |
 | [13](#step-13--the-editor-client) | The editor client | `vertical3d/src/render` | 0203 | open |
@@ -403,6 +403,24 @@ its parameters do. [Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
 removed names none. A removed material leaves its instances with none.
 
 ### Step 10 — The RIB reader's new requests
+
+**Done.** The reader takes `ObjectBegin`, `ObjectEnd` and `ObjectInstance`, `Points`, the six
+quadrics besides the sphere, and `SubdivisionMesh`, with two or three argument counts per tag.
+The handler, the writer and the recorder carry each, and the geometry readers moved to
+`rib/Primitives.cxx`, since `Reader.cxx` would have passed the file length limit. Two things the
+list below did not say:
+
+* **`RIBHandler` leaves out an object's geometry**, as RI leaves it out where it is declared,
+  since its hiders do not instance. Before, the reader skipped `ObjectBegin` and the hiders drew
+  the object where it was declared. No committed scene uses an object, so no picture changed.
+* **RI's C interface reaches the handler for the quadrics, `RiPoints` and
+  `RiSubdivisionMesh`**, so each still reaches the same method as its RIB request.
+  `RiObjectBegin` returns no handle yet, because RI's handle is a pointer and the handler's is a
+  string. The RIB client of step 12 decides how the C interface names an object.
+
+The fuzz corpus gains `geometry.rib`, which a reader case reads whole.
+[Rib.md](../offline/Rib.md) states the rules, and the manual's
+[Rib.md](../manual/moya/Rib.md) lists the requests.
 
 * **`ObjectBegin`, `ObjectEnd` and `ObjectInstance`**, with RI's rule that an object holds
   geometry alone and takes the attributes in force where it is instanced.

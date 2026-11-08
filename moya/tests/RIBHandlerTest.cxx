@@ -113,5 +113,45 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_the_notice_is_printed_once_test) {
     BOOST_TEST(printed.str().empty());
 }
 
+/**
+ * The hiders do not instance objects, so the geometry inside an object's block is left out, as
+ * RI leaves it out where it is declared, and the first object is reported. A quad drawn in an
+ * object and instanced covers nothing.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_an_objects_geometry_is_left_out_test) {
+    v3d::moya::ri::RIBHandler handler;
+    const Heard heard(handler.context().logger()->get());
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "ObjectBegin 1\n"
+        "Polygon \"P\" [-0.9 -0.9 5  -0.9 0.9 5  0.9 0.9 5  0.9 -0.9 5]\n"
+        "ObjectEnd\n"
+        "ObjectInstance 1\n"
+        "WorldEnd\n", &handler));
+    BOOST_TEST(coverage(*handler.context().picture()) == 0U);
+    BOOST_TEST(heard.said("do not draw ObjectBegin"));
+}
+
+/**
+ * Each request the hiders do not draw is reported once, by name.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_geometry_the_hiders_do_not_draw_is_reported_test) {
+    v3d::moya::ri::RIBHandler handler;
+    const Heard heard(handler.context().logger()->get());
+    BOOST_REQUIRE(read(
+        "WorldBegin\n"
+        "Cone 1 1 360\nCone 1 1 360\nCylinder 1 -1 1 360\nHyperboloid 1 0 -1 1 0 1 360\nParaboloid 1 0 1 360\nDisk 0 1 360\n"
+        "Torus 1 0.25 0 360 360\nPoints \"P\" [0 0 5]\n"
+        "SubdivisionMesh \"catmull-clark\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 5 1 0 5 0 1 5]\n"
+        "WorldEnd\n", &handler));
+    for (const char * request : { "Cone", "Cylinder", "Hyperboloid", "Paraboloid", "Disk", "Torus", "Points", "SubdivisionMesh" }) {
+        BOOST_TEST(heard.said(std::string("do not draw ") + request), request);
+    }
+}
+
 };  // namespace
 };  // namespace v3d::moya::handling

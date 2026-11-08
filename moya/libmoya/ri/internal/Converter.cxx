@@ -126,6 +126,37 @@ std::optional<v3d::render::offline::rib::PointsPolygons> Converter::pointsPolygo
     return request;
 }
 
+std::optional<v3d::render::offline::rib::SubdivisionMesh> Converter::subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
+    const RtInt verts[], const Tags & tags, unsigned int* points) {
+    const std::optional<v3d::render::offline::rib::PointsPolygons> faces = pointsPolygons(nf, nverts, verts, points);
+    if (!faces || tags.ntags < 0) {
+        return std::nullopt;
+    }
+    v3d::render::offline::rib::SubdivisionMesh request { .scheme = text(mask), .counts = faces->counts, .indices = faces->indices };
+    std::size_t integers = 0;
+    std::size_t floats = 0;
+    for (std::size_t tag = 0; tag < static_cast<std::size_t>(tags.ntags); tag++) {
+        const RtInt ints = tags.numargs[2 * tag];
+        const RtInt reals = tags.numargs[(2 * tag) + 1];
+        if (ints < 0 || reals < 0) {
+            return std::nullopt;
+        }
+        request.tags.push_back(text(tags.tags[tag]));
+        request.arguments.push_back(static_cast<unsigned int>(ints));
+        request.arguments.push_back(static_cast<unsigned int>(reals));
+        integers += static_cast<std::size_t>(ints);
+        floats += static_cast<std::size_t>(reals);
+    }
+    for (std::size_t each = 0; each < integers; each++) {
+        if (tags.intargs[each] < 0) {
+            return std::nullopt;
+        }
+        request.integers.push_back(static_cast<unsigned int>(tags.intargs[each]));
+    }
+    request.floats.assign(tags.floatargs, tags.floatargs + floats);
+    return request;
+}
+
 std::optional<v3d::render::offline::rib::Curves> Converter::curves(RtToken type, RtInt nvcurves, const RtInt nvertices[],
     RtToken wrap, unsigned int* total) const {
     const std::string kind = text(type);

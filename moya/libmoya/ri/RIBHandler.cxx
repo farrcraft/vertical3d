@@ -323,6 +323,16 @@ bool RIBHandler::deforms() {
     return true;
 }
 
+bool RIBHandler::skipped() {
+    return object_ || deforms();
+}
+
+void RIBHandler::unsupported(const std::string & request) {
+    if (unsupported_.insert(request).second) {
+        context().logger()->get()->warn("the reyes and ray hiders do not draw {}, so this scene renders without it", request);
+    }
+}
+
 void RIBHandler::color(const glm::vec3 & value) {
     context().color(value);
 }
@@ -340,14 +350,14 @@ void RIBHandler::basis(const v3d::render::offline::rib::Basis & request) {
 }
 
 void RIBHandler::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
-    if (deforms()) {
+    if (skipped()) {
         return;
     }
     context().addCurves(request, parameters);
 }
 
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
-    if (deforms()) {
+    if (skipped()) {
         return;
     }
     const boost::shared_ptr<Polygon> polygon = Polygon::from(parameters, vertices);
@@ -358,7 +368,7 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
 
 void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
     (void)parameters;
-    if (deforms()) {
+    if (skipped()) {
         return;
     }
     if (!context().addSphere(request) && !spheres_) {
@@ -368,7 +378,7 @@ void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const
 }
 
 void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
-    if (deforms()) {
+    if (skipped()) {
         return;
     }
     const std::vector<unsigned int> & indices = request.indices;
@@ -387,6 +397,64 @@ void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons 
         }
         offset += count;
     }
+}
+
+void RIBHandler::points(unsigned int count, const ParameterList & parameters) {
+    (void)count;
+    (void)parameters;
+    unsupported("Points");
+}
+
+void RIBHandler::cone(const v3d::render::offline::rib::Cone & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Cone");
+}
+
+void RIBHandler::cylinder(const v3d::render::offline::rib::Cylinder & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Cylinder");
+}
+
+void RIBHandler::hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Hyperboloid");
+}
+
+void RIBHandler::paraboloid(const v3d::render::offline::rib::Paraboloid & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Paraboloid");
+}
+
+void RIBHandler::disk(const v3d::render::offline::rib::Disk & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Disk");
+}
+
+void RIBHandler::torus(const v3d::render::offline::rib::Torus & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("Torus");
+}
+
+void RIBHandler::subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const ParameterList & parameters) {
+    (void)request;
+    (void)parameters;
+    unsupported("SubdivisionMesh");
+}
+
+void RIBHandler::objectBegin(const std::string & handle) {
+    (void)handle;
+    object_ = true;
+    unsupported("ObjectBegin");
+}
+
+void RIBHandler::objectEnd() {
+    object_ = false;
 }
 
 };  // namespace v3d::moya::ri

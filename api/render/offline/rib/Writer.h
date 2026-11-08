@@ -102,6 +102,18 @@ class Writer final : public Handler {
     void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
     void sphere(const Sphere & request, const ParameterList & parameters) override;
     void curves(const Curves & request, const ParameterList & parameters) override;
+    void points(unsigned int count, const ParameterList & parameters) override;
+    void cone(const Cone & request, const ParameterList & parameters) override;
+    void cylinder(const Cylinder & request, const ParameterList & parameters) override;
+    void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) override;
+    void paraboloid(const Paraboloid & request, const ParameterList & parameters) override;
+    void disk(const Disk & request, const ParameterList & parameters) override;
+    void torus(const Torus & request, const ParameterList & parameters) override;
+    void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) override;
+
+    void objectBegin(const std::string & handle) override;
+    void objectEnd() override;
+    void objectInstance(const std::string & handle) override;
 
  private:
     /** A request's name, which starts its line. **/
@@ -114,7 +126,12 @@ class Writer final : public Handler {
     Writer & array(const std::vector<float> & values);
     /** Counts in brackets, after a space, written whole. **/
     Writer & counts(const std::vector<unsigned int> & values);
-    /** A light handle: a number when it is one, as RIB 3.03 writes it, and a string otherwise. **/
+    /** Strings in brackets, after a space, each as text() writes it. **/
+    Writer & strings(const std::vector<std::string> & values);
+    /**
+     * A light's or an object's handle: a number when it is one, as RIB 3.03 writes it, and a
+     * string otherwise.
+     **/
     Writer & handle(const std::string & value);
     /** Each parameter's name and its values, after a space. **/
     Writer & parameters(const ParameterList & list);

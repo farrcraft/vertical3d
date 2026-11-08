@@ -41,6 +41,35 @@ const Declaration UNIFORM_STRING(Declaration::Storage::UNIFORM, Declaration::Typ
 const Declaration VERTEX_POINT(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1);
 
 /**
+ * The quadrics but the sphere, points, a subdivision mesh with tags of two counts and of three,
+ * an object and its instance, and a cone that deforms.
+ **/
+void geometry(v3d::render::offline::rib::Handler * to) {
+    const v3d::render::offline::rib::ParameterList none;
+    const std::vector<float> quad = { 0, 0, 5, 1, 0, 5, 1, 1, 5, 0, 1, 5 };
+    to->objectBegin("leaf");
+    to->points(4, one("P", VERTEX_POINT, quad));
+    to->objectEnd();
+    to->objectInstance("leaf");
+    to->objectBegin("7");
+    to->disk({.height = 0.5F, .radius = 2, .thetamax = 180}, none);
+    to->objectEnd();
+    to->objectInstance("7");
+    to->motionBegin({ 0, 1 });
+    to->cone({.height = 2, .radius = 0.5F, .thetamax = 300}, none);
+    to->deformation()->cone({.height = 3, .radius = 0.5F, .thetamax = 300}, none);
+    to->motionEnd();
+    to->cylinder({.radius = 0.5F, .zmin = -2, .zmax = 2, .thetamax = 90}, none);
+    to->hyperboloid({.point1 = { 1, 2, 3 }, .point2 = { -1, -2, 4 }, .thetamax = 360}, none);
+    to->paraboloid({.rmax = 2, .zmin = 0.5F, .zmax = 1.5F, .thetamax = 120}, none);
+    to->torus({.majorRadius = 3, .minorRadius = 0.5F, .phimin = 10, .phimax = 350, .thetamax = 270}, none);
+    to->subdivisionMesh({.scheme = "catmull-clark", .counts = { 4 }, .indices = { 0, 1, 2, 3 }, .tags = { "crease", "interpolateboundary" },
+        .arguments = { 2, 1, 1, 0 }, .integers = { 0, 1, 1 }, .floats = { 2.5F }}, one("P", VERTEX_POINT, quad));
+    to->subdivisionMesh({.scheme = "loop", .counts = { 3 }, .indices = { 0, 1, 2 }, .tags = { "corner" }, .arguments = { 1, 1, 0 },
+        .integers = { 2 }, .floats = { 4 }}, one("P", VERTEX_POINT, { 0, 0, 0, 1, 0, 0, 0, 1, 0 }));
+}
+
+/**
  * Every request the handler interface has, once each, with values that are not the defaults.
  **/
 void everything(v3d::render::offline::rib::Handler * to) {
@@ -98,6 +127,7 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->sphere({.radius = 0.5F, .zmin = -0.5F, .zmax = 0.5F, .thetamax = 270}, none);
     to->curves({.cubic = true, .vertices = { 4 }, .periodic = false}, one("P", VERTEX_POINT, quad));
     to->curves({.cubic = false, .vertices = { 2, 2 }, .periodic = true}, one("P", VERTEX_POINT, quad));
+    geometry(to);
     to->attributeEnd();
     to->worldEnd();
     to->frameEnd();
@@ -125,6 +155,56 @@ BOOST_AUTO_TEST_CASE(ribwriter_every_request_reads_back_test) {
     everything(&writer);
 
     BOOST_TEST(written(first.str()) == first.str());
+}
+
+/**
+ * The geometry and instancing requests are written as RIB names them, and read back as the same
+ * requests. A subdivision mesh's strings follow only when each tag gives three counts.
+ **/
+BOOST_AUTO_TEST_CASE(ribwriter_geometry_and_instancing_read_back_test) {
+    std::ostringstream out;
+    v3d::render::offline::rib::Writer writer(&out);
+    geometry(&writer);
+
+    const std::string expected =
+        "ObjectBegin \"leaf\"\n"
+        "Points \"P\" [ 0 0 5 1 0 5 1 1 5 0 1 5 ]\n"
+        "ObjectEnd\n"
+        "ObjectInstance \"leaf\"\n"
+        "ObjectBegin 7\n"
+        "Disk 0.5 2 180\n"
+        "ObjectEnd\n"
+        "ObjectInstance 7\n"
+        "MotionBegin [ 0 1 ]\n"
+        "Cone 2 0.5 300\n"
+        "Cone 3 0.5 300\n"
+        "MotionEnd\n"
+        "Cylinder 0.5 -2 2 90\n"
+        "Hyperboloid 1 2 3 -1 -2 4 360\n"
+        "Paraboloid 2 0.5 1.5 120\n"
+        "Torus 3 0.5 10 350 270\n"
+        "SubdivisionMesh \"catmull-clark\" [ 4 ] [ 0 1 2 3 ] [ \"crease\" \"interpolateboundary\" ] [ 2 1 1 0 ] [ 0 1 1 ] [ 2.5 ]"
+        " \"P\" [ 0 0 5 1 0 5 1 1 5 0 1 5 ]\n"
+        "SubdivisionMesh \"loop\" [ 3 ] [ 0 1 2 ] [ \"corner\" ] [ 1 1 0 ] [ 2 ] [ 4 ] [ ] \"P\" [ 0 0 0 1 0 0 0 1 0 ]\n";
+    BOOST_TEST(out.str() == expected);
+    BOOST_TEST(written(out.str()) == out.str());
+}
+
+/**
+ * A recording replays the geometry and instancing requests, a deforming quadric to the
+ * deformation() of the handler replayed to.
+ **/
+BOOST_AUTO_TEST_CASE(ribrecorder_replays_geometry_and_instancing_test) {
+    std::ostringstream direct;
+    v3d::render::offline::rib::Writer writer(&direct);
+    geometry(&writer);
+
+    v3d::render::offline::rib::Recorder recording;
+    geometry(&recording);
+    std::ostringstream replayed;
+    v3d::render::offline::rib::Writer again(&replayed);
+    recording.replay(&again);
+    BOOST_TEST(replayed.str() == direct.str());
 }
 
 /**

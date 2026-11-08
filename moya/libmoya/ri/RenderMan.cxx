@@ -707,49 +707,63 @@ RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
+    RiConeV(height, radius, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().cone({.height = height, .radius = radius, .thetamax = tmax}, converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+    RiCylinderV(radius, zmin, zmax, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().cylinder({.radius = radius, .zmin = zmin, .zmax = zmax, .thetamax = tmax}, converter().parameters(n, tokens, parms, 4));
 }
 
 RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ...) {
+    RiHyperboloidV(point1, point2, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().hyperboloid({.point1 = { point1[0], point1[1], point1[2] }, .point2 = { point2[0], point2[1], point2[2] }, .thetamax = tmax},
+        converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+    RiParaboloidV(rmax, zmin, zmax, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().paraboloid({.rmax = rmax, .zmin = zmin, .zmax = zmax, .thetamax = tmax}, converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
+    RiDiskV(height, radius, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().disk({.height = height, .radius = radius, .thetamax = tmax}, converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, ...) {
+    RiTorusV(majrad, minrad, phimin, phimax, tmax, 0, nullptr, nullptr);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().torus({.majorRadius = majrad, .minorRadius = minrad, .phimin = phimin, .phimax = phimax, .thetamax = tmax},
+        converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -778,20 +792,43 @@ RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, 
 }
 
 RtVoid RiPoints(RtInt nverts, ...) {
+    va_list arguments;
+    va_start(arguments, nverts);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    Converter::collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiPointsV(nverts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    const unsigned int count = static_cast<unsigned int>(std::max(nverts, 0));
+    handler().points(count, converter().parameters(n, tokens, parms, count));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], ...) {
+    va_list arguments;
+    va_start(arguments, floatargs);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    Converter::collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, static_cast<RtInt>(tokens.size()), tokens.data(),
+        parms.data());
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], RtInt n, RtToken tokens[], RtPointer parms[]) {
+    unsigned int points = 0;
+    if (const std::optional<v3d::render::offline::rib::SubdivisionMesh> request =
+            Converter::subdivisionMesh(mask, nf, nverts, verts,
+                {.ntags = ntags, .tags = tags, .numargs = numargs, .intargs = intargs, .floatargs = floatargs}, &points)) {
+        handler().subdivisionMesh(*request, converter().parameters(n, tokens, parms, points));
+    }
 }
 
 RtVoid RiProcedural(RtPointer data, RtBound bound, RtVoid (*subdivfunc)(RtPointer, RtFloat), RtVoid (*freefunc)(RtPointer)) {

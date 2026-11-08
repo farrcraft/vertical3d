@@ -234,6 +234,50 @@ void Recorder::curves(const Curves & request, const ParameterList & parameters) 
     requests_.emplace_back([request, parameters](Handler & to) { to.curves(request, parameters); });
 }
 
+void Recorder::points(unsigned int count, const ParameterList & parameters) {
+    requests_.emplace_back([count, parameters](Handler & to) { to.points(count, parameters); });
+}
+
+void Recorder::cone(const Cone & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.cone(request, parameters); });
+}
+
+void Recorder::cylinder(const Cylinder & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.cylinder(request, parameters); });
+}
+
+void Recorder::hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.hyperboloid(request, parameters); });
+}
+
+void Recorder::paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.paraboloid(request, parameters); });
+}
+
+void Recorder::disk(const Disk & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.disk(request, parameters); });
+}
+
+void Recorder::torus(const Torus & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.torus(request, parameters); });
+}
+
+void Recorder::subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.subdivisionMesh(request, parameters); });
+}
+
+void Recorder::objectBegin(const std::string & handle) {
+    requests_.emplace_back([handle](Handler & to) { to.objectBegin(handle); });
+}
+
+void Recorder::objectEnd() {
+    requests_.emplace_back([](Handler & to) { to.objectEnd(); });
+}
+
+void Recorder::objectInstance(const std::string & handle) {
+    requests_.emplace_back([handle](Handler & to) { to.objectInstance(handle); });
+}
+
 Recorder::Deforming::Deforming(Recorder * recording) : recording_(recording) {
 }
 
@@ -261,6 +305,38 @@ void Recorder::Deforming::sphere(const Sphere & request, const ParameterList & p
 
 void Recorder::Deforming::curves(const Curves & request, const ParameterList & parameters) {
     keep([request, parameters](Handler & to) { to.curves(request, parameters); });
+}
+
+void Recorder::Deforming::points(unsigned int count, const ParameterList & parameters) {
+    keep([count, parameters](Handler & to) { to.points(count, parameters); });
+}
+
+void Recorder::Deforming::cone(const Cone & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.cone(request, parameters); });
+}
+
+void Recorder::Deforming::cylinder(const Cylinder & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.cylinder(request, parameters); });
+}
+
+void Recorder::Deforming::hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.hyperboloid(request, parameters); });
+}
+
+void Recorder::Deforming::paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.paraboloid(request, parameters); });
+}
+
+void Recorder::Deforming::disk(const Disk & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.disk(request, parameters); });
+}
+
+void Recorder::Deforming::torus(const Torus & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.torus(request, parameters); });
+}
+
+void Recorder::Deforming::subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.subdivisionMesh(request, parameters); });
 }
 
 };  // namespace v3d::render::offline::rib

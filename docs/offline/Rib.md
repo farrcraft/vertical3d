@@ -47,7 +47,9 @@ the reader and the handler.
 - **A C entry point and a file's request reach the same `RIBHandler` method.** A variadic entry
   point forwards to its `V` form, which converts the arguments and calls the handler, so the two
   forms of a request cannot differ. `RiPolygon` and the RIB `Polygon` both read `"P"`, `"Cs"`,
-  `"N"` and `"st"`.
+  `"N"` and `"st"`. The quadrics, `RiPoints` and `RiSubdivisionMesh` reach the handler as their
+  RIB requests do. The C interface gives a subdivision mesh's tags two counts each, as RI 3.2
+  defines it. `RiObjectBegin` returns no handle and reaches no handler.
 - **A shader, light or space with an empty name names nothing.** `RIBHandler` ignores the
   request, and the state stays as it was. The C interface passes `RI_NULL` on as the empty name.
 - **`RiGetContext` returns a handle that lasts until `RiEnd` ends its context.** `RiContext`
@@ -55,8 +57,14 @@ the reader and the handler.
   with no context begun does nothing.
 - **A predefined space cannot be saved over.** The camera sets them, so the hiders read the
   camera the scene set up. `RiCoordinateSystem` with one of them is logged and saves nothing.
-- **A `Sphere`'s varying parameters hold four values**, one at each corner of its parameter
-  space, as RI defines them for a quadric. A uniform one holds one.
+- **A quadric's varying parameters hold four values**, one at each corner of its parameter
+  space, as RI defines them. A uniform one holds one. The reader reads the seven quadrics alike.
+- **`Points` carries no count.** The count is the length of `"P"`, or of `"Pz"`, as a
+  `Polygon`'s is.
+- **A `SubdivisionMesh`'s tags each take two or three counts**, of integers, of floats and,
+  after RI 3.2, of strings. The arrays that follow must hold exactly what the counts add up to,
+  or the request is an error. The strings' array follows only when each tag gives three counts,
+  and the writer writes it only then.
 - **`rib::namedBasis()` gives a basis name's matrix**, in RI's row order, and `rib::basisName()`
   a matrix's name, which the writer uses to write a standard basis by name.
 - **A `Curves` request's varying parameters are not checked for length.** How many values one
@@ -64,8 +72,15 @@ the reader and the handler.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.
-- **A light handle may be a number or a string.** RIB 3.03 writes a number and later RIB
-  writes a string.
+- **A light's or an object's handle may be a number or a string.** RIB 3.03 writes a number and
+  later RIB writes a string.
+- **An object holds geometry alone.** `ObjectBegin` to `ObjectEnd` marks the geometry an
+  `ObjectInstance` places, with the attributes and transformation in force where it is placed.
+  `RIBHandler` does not instance, so it leaves out the geometry inside an object, as RI leaves it
+  out where it is declared, and logs the first object.
+- **`RIBHandler` logs each request its hiders do not draw**, once per name: `Points`, the quadrics
+  but `Sphere`, `SubdivisionMesh` and `ObjectBegin`. The handler's empty bodies accept them, so
+  another handler sees each one.
 - **A `PixelFilter` name the reader does not recognise never reaches the handler.** A
   `PixelSamples` rate reaches the handler as a count of at least one. `DepthOfField` with no
   arguments is sent as an infinite fstop.

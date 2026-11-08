@@ -107,8 +107,11 @@ class Reader final {
     Result motionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result objectRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result curvesRequest(Lexer * lexer, Handler * handler);
+    Result subdivisionRequest(Lexer * lexer, Handler * handler);
+    Result quadricRequest(const std::string & name, Lexer * lexer, Handler * handler);
 
     static void skipArguments(Lexer * lexer);
 
@@ -128,13 +131,18 @@ class Reader final {
 
     bool number(Lexer * lexer, float * value);
     /**
-     * A light handle, which RIB 3.03 writes as a number and later RIB writes as a string.
+     * A light's or an object's handle, which RIB 3.03 writes as a number and later RIB writes as
+     * a string.
      **/
     bool handle(Lexer * lexer, std::string * value);
     bool text(Lexer * lexer, std::string * value);
     bool numbers(Lexer * lexer, unsigned int count, std::vector<float> * out);
     bool matrix(Lexer * lexer, glm::mat4x4 * out);
     bool counts(Lexer * lexer, std::vector<unsigned int> * out);
+    /** A bracketed array of numbers of any length. **/
+    bool floatArray(Lexer * lexer, std::vector<float> * out);
+    /** A bracketed array of quoted strings of any length. **/
+    bool strings(Lexer * lexer, std::vector<std::string> * out);
 
     bool fail(const std::string & message, const Token & token);
 

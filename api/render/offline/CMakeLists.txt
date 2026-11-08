@@ -30,6 +30,7 @@ v3d_add_api_library(render_offline
 	"rib/Requests.h"
 	"rib/Bases.h" "rib/Bases.cxx"
 	"rib/Handler.h"
+	"rib/Primitives.cxx"
 	"rib/Reader.h" "rib/Reader.cxx"
 	"rib/Recorder.h" "rib/Recorder.cxx"
 	"rib/Writer.h" "rib/Writer.cxx"

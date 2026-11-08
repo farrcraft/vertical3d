@@ -100,6 +100,27 @@ class Converter {
         const RtInt verts[], unsigned int* points);
 
     /**
+     * RiSubdivisionMesh's tags, as its C form gives them: how many there are, their names, two
+     * counts for each, of integers and of floats, and the integers and floats themselves.
+     **/
+    struct Tags {
+        RtInt ntags = 0;
+        const RtToken* tags = nullptr;
+        const RtInt* numargs = nullptr;
+        const RtInt* intargs = nullptr;
+        const RtFloat* floatargs = nullptr;
+    };
+
+    /**
+     * RiSubdivisionMesh's scheme, faces and tags. The faces are read as pointsPolygons() reads
+     * them. A count or an index below zero skips the request.
+     *
+     * @param points set to the number of points the faces index
+     **/
+    static std::optional<v3d::render::offline::rib::SubdivisionMesh> subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
+        const RtInt verts[], const Tags & tags, unsigned int* points);
+
+    /**
      * RiCurves' kind and the number of control points of each curve. A kind other than linear
      * or cubic, a wrap other than periodic or nonperiodic, or a count below zero skips the
      * request.

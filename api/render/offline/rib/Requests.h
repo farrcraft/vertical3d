@@ -137,6 +137,82 @@ struct Sphere {
 };
 
 /**
+ * RiCone: a cone about z, its base at the origin and its apex at a height, swept through an angle
+ * in degrees.
+ **/
+struct Cone {
+    float height = 1.0F;
+    float radius = 1.0F;
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/** RiCylinder: a cylinder about z between two heights, swept through an angle in degrees. **/
+struct Cylinder {
+    float radius = 1.0F;
+    float zmin = -1.0F;
+    float zmax = 1.0F;
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/** RiHyperboloid: the line between two points, swept about z through an angle in degrees. **/
+struct Hyperboloid {
+    std::array<float, 3> point1 { 1.0F, 0.0F, -1.0F };
+    std::array<float, 3> point2 { 1.0F, 0.0F, 1.0F };
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/**
+ * RiParaboloid: a paraboloid about z, of radius rmax at zmax, cut at two heights and swept
+ * through an angle in degrees.
+ **/
+struct Paraboloid {
+    float rmax = 1.0F;
+    float zmin = 0.0F;
+    float zmax = 1.0F;
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/** RiDisk: a disk about z at a height, swept through an angle in degrees. **/
+struct Disk {
+    float height = 0.0F;
+    float radius = 1.0F;
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/**
+ * RiTorus: a circle of the minor radius, centred at the major radius from z, swept from phimin to
+ * phimax about its own centre and through thetamax about z, all in degrees.
+ **/
+struct Torus {
+    /** RI gives a torus no default. This is a ring a quarter as thick as it is wide. **/
+    static constexpr float DEFAULT_MINOR_RADIUS = 0.25F;
+
+    float majorRadius = 1.0F;
+    float minorRadius = DEFAULT_MINOR_RADIUS;
+    float phimin = 0.0F;
+    float phimax = Sphere::FULL_THETAMAX;
+    float thetamax = Sphere::FULL_THETAMAX;
+};
+
+/**
+ * RiSubdivisionMesh: a mesh's faces, as PointsPolygons gives them, refined by a scheme, with tags
+ * that mark creases, corners, holes and the boundary rule.
+ *
+ * Each tag takes a count of integers and of floats from the arrays after it, in order, and RIB
+ * after RI 3.2 adds a count of strings. arguments holds those counts, two or three per tag.
+ **/
+struct SubdivisionMesh {
+    std::string scheme;
+    std::vector<unsigned int> counts;   /**< how many vertices each face has **/
+    std::vector<unsigned int> indices;  /**< the vertices of every face in turn **/
+    std::vector<std::string> tags;
+    std::vector<unsigned int> arguments;
+    std::vector<unsigned int> integers;
+    std::vector<float> floats;
+    std::vector<std::string> strings;
+};
+
+/**
  * RiBasis: the matrices cubic patches and curves are evaluated through, and how many control
  * points each segment moves on, in u and in v. A curve runs in v.
  *

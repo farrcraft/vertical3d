@@ -19,6 +19,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -927,7 +928,7 @@ BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
 
     v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Illuminate 1e39 1\n", &handler, &second));
-    BOOST_CHECK(second.error().contains("expected a light handle"));
+    BOOST_CHECK(second.error().contains("expected a handle"));
 }
 
 /**
@@ -948,6 +949,53 @@ BOOST_AUTO_TEST_CASE(ribreader_a_sphere_reads_four_varying_values_test) {
     BOOST_CHECK_EQUAL(handler.colors_.size(), 4U);
     for (const std::string & line : heard->last_formatted()) {
         BOOST_CHECK_MESSAGE(!line.contains("carries"), line);
+    }
+}
+
+/**
+ * The geometry and instancing requests are recognised, so a scene that uses them reports none of
+ * them as unrecognised.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_geometry_and_instancing_are_recognised_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read("ObjectBegin 1\nCone 1 1 360\nObjectEnd\nObjectInstance 1\nCylinder 1 -1 1 360\nHyperboloid 1 0 -1 1 0 1 360\n"
+        "Paraboloid 1 0 1 360\nDisk 0 1 360\nTorus 1 0.25 0 360 360\nPoints \"P\" [0 0 0 1 1 1]\n"
+        "SubdivisionMesh \"catmull-clark\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 0 1 0 0 0 1 0]\n", &handler, &reader));
+    BOOST_TEST(reader.unrecognised().empty());
+}
+
+/**
+ * The fuzzer's fixture of the geometry and instancing requests reads whole, with nothing
+ * unrecognised.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_the_geometry_fixture_reads_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(reader.read("data/geometry.rib", &handler));
+    BOOST_TEST(reader.unrecognised().empty());
+}
+
+/**
+ * A malformed geometry or instancing request is an error, not a crash. The cases are a quadric
+ * short of its numbers, an object with no handle, and a subdivision mesh whose tags' counts do
+ * not match the arguments it gives.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_malformed_geometry_and_instancing_test) {
+    const std::vector<std::pair<std::string, std::string>> cases = {
+        { "Torus 1 0.25 0 360\n", "expected a number" },
+        { "Hyperboloid 1 0 -1 1 0\n", "expected a number" },
+        { "ObjectBegin\n", "expected a quoted string" },
+        { "ObjectInstance [1]\n", "expected a quoted string" },
+        { "SubdivisionMesh \"loop\" [3] [0 1 2] [\"corner\"] [1] [2] []\n", "two or three argument counts" },
+        { "SubdivisionMesh \"loop\" [3] [0 1 2] [\"corner\"] [1 1] [2] []\n", "more or fewer arguments" },
+        { "SubdivisionMesh \"loop\" [3] [0 1 2] [\"corner\"] [1 0 1] [2] []\n", "expected '['" },
+        { "SubdivisionMesh \"loop\" [3] [0 1 2] [corner] [] [] []\n", "expected a quoted string" } };
+    for (const auto & [source, error] : cases) {
+        CountingHandler handler;
+        v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+        BOOST_CHECK_MESSAGE(!read(source, &handler, &reader), source);
+        BOOST_CHECK_MESSAGE(reader.error().contains(error), source + " gave " + reader.error());
     }
 }
 
