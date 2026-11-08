@@ -1,8 +1,8 @@
 # The Flatpak of every app: the editor, moya, imagetool and the five demos. It runs on the
 # Freedesktop runtime and uses the runtime's SDL3, ICU, FreeType, HarfBuzz, libpng, libjpeg,
-# SQLite, zlib and Vulkan loader. Each other dependency is a module below, pinned to its source
-# archive at the version vcpkg's baseline builds. thorvg and OpenUSD carry the patches of their
-# overlay ports in ports/. docs/contributing/Releasing.md says how it is built and published.
+# SQLite, zlib, expat and Vulkan loader. Each other dependency is a module below, pinned to its
+# source archive at the version vcpkg's baseline builds. thorvg and OpenUSD carry the patches of
+# their overlay ports in ports/. docs/contributing/Releasing.md says how it is built and published.
 id: com.farrcraft.Vertical3D
 runtime: org.freedesktop.Platform
 runtime-version: '26.08'
@@ -154,6 +154,115 @@ modules:
       - type: archive
         url: https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v2022.3.0.tar.gz
         sha256: 01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a
+
+  - name: imath
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_TESTING=OFF
+      - -DIMATH_INSTALL_SYM_LINK=OFF
+    license-files:
+      - LICENSE.md
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/v3.2.2.tar.gz
+        sha256: b4275d83fb95521510e389b8d13af10298ed5bed1c8e13efd961d91b1105e462
+
+  - name: libdeflate
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DLIBDEFLATE_BUILD_STATIC_LIB=OFF
+      - -DLIBDEFLATE_BUILD_GZIP=OFF
+    sources:
+      - type: archive
+        url: https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.25.tar.gz
+        sha256: d11473c1ad4c57d874695e8026865e38b47116bbcb872bfc622ec8f37a86017d
+
+  - name: openjph
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DOJPH_BUILD_TESTS=OFF
+      - -DOJPH_BUILD_EXECUTABLES=OFF
+      - -DOJPH_ENABLE_TIFF_SUPPORT=OFF
+    sources:
+      - type: archive
+        url: https://github.com/aous72/OpenJPH/archive/refs/tags/0.27.1.tar.gz
+        sha256: 450c7af7819f86e28f810f8efb8bbe352db295b7112565ec3239f0a042bb30b6
+
+  - name: openexr
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_TESTING=OFF
+      - -DBUILD_WEBSITE=OFF
+      - -DCMAKE_REQUIRE_FIND_PACKAGE_libdeflate=ON
+      - -DOPENEXR_BUILD_EXAMPLES=OFF
+      - -DOPENEXR_BUILD_TOOLS=OFF
+      - -DOPENEXR_INSTALL_TOOLS=OFF
+    license-files:
+      - LICENSE.md
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.4.11.tar.gz
+        sha256: 63730442f5fd6c5a79395bdd199040ab3821c229066049f52a57424a984b16ed
+
+  # OpenColorIO's own dependencies. Its configure would download any it does not find, which a
+  # Flatpak build cannot, so each is a module and OCIO_INSTALL_EXT_PACKAGES is NONE
+  - name: pystring
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+    sources:
+      - type: archive
+        url: https://github.com/imageworks/pystring/archive/refs/tags/v1.1.5.tar.gz
+        sha256: 63c30c251b8017c897bd923826f400aee1d6e4f1c22ffbbd2104f150522a2040
+
+  - name: yaml-cpp
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DYAML_BUILD_SHARED_LIBS=ON
+      - -DYAML_CPP_BUILD_TESTS=OFF
+      - -DYAML_CPP_BUILD_TOOLS=OFF
+    sources:
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+        sha256: 25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
+
+  - name: minizip-ng
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+      - -DMZ_FETCH_LIBS=OFF
+      - -DMZ_LIB_SUFFIX=-ng
+      - -DMZ_ZLIB=ON
+      - -DMZ_BZIP2=OFF
+      - -DMZ_LZMA=OFF
+      - -DMZ_ZSTD=OFF
+      - -DMZ_OPENSSL=OFF
+      - -DMZ_PKCRYPT=OFF
+      - -DMZ_WZAES=OFF
+      - -DMZ_ICONV=OFF
+      - -DCMAKE_DISABLE_FIND_PACKAGE_ZLIBNG=ON
+    sources:
+      - type: archive
+        url: https://github.com/zlib-ng/minizip-ng/archive/refs/tags/4.1.0.tar.gz
+        sha256: 85417229bb0cd56403e811c316150eea1a3643346d9cec7512ddb7ea291b06f2
+
+  - name: opencolorio
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DOCIO_BUILD_APPS=OFF
+      - -DOCIO_BUILD_DOCS=OFF
+      - -DOCIO_BUILD_GPU_TESTS=OFF
+      - -DOCIO_BUILD_JAVA=OFF
+      - -DOCIO_BUILD_NUKE=OFF
+      - -DOCIO_BUILD_OPENFX=OFF
+      - -DOCIO_BUILD_PYTHON=OFF
+      - -DOCIO_BUILD_TESTS=OFF
+      - -DOCIO_INSTALL_EXT_PACKAGES=NONE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.5.1.tar.gz
+        sha256: 08cb6213ea4edee550ab050509d38204004bee6742c658166b1cf825d0a9381b
 
   - name: openusd
     buildsystem: cmake-ninja

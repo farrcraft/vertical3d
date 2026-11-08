@@ -106,7 +106,7 @@ each step is where the survey points, not a conclusion.
 | [9](#step-9--the-zsobol-sampler) | The ZSobol sampler | `moya/libmoya` | — | done |
 | [10](#step-10--the-record-how-a-sample-reaches-the-film) | The record: how a sample reaches the film | `docs/adr` | **0199** | done |
 | [11](#step-11--the-film) | The film: AOV channels, fixed-order sums and snapshots | `moya/libmoya` | 0199 | done |
-| [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | open |
+| [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | done |
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | open |
 | [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | open |
 | [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | open |
@@ -426,6 +426,15 @@ is a complete picture of the samples taken so far. Filtered samples drawn from e
 filters reproduce the filter's shape.
 
 ### Step 12 — OpenEXR, Imath and OpenColorIO in the tree
+
+**Done.** The three ports are in the manifest's `moya` feature, and `cmake/v3dDependencies.cmake`
+finds them when moya is built. OpenEXR brings libdeflate and OpenJPH, and OpenColorIO brings
+expat, minizip-ng, pystring, yaml-cpp and zlib. The Flatpak takes expat and zlib from the
+runtime and builds the other eight as modules, each pinned to the archive vcpkg's baseline
+builds, checked against vcpkg's SHA-512. OpenColorIO's module turns off its downloads of missing
+packages, which a Flatpak build cannot make. The notices file holds a copyright for each package.
+Nothing links them yet: `v3dlib_moya` links OpenEXR at step 13 and OpenColorIO at step 14,
+where the first source includes them. flatpak.yml is the first build of the modules.
 
 * **The three ports** in moya's manifest feature in `vcpkg.json`, which step 5 adds with oneTBB.
   `examples/starter/vcpkg.json` builds no moya, so it does not take them.

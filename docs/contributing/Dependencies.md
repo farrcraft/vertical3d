@@ -29,7 +29,8 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 `v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
 builds TBB and OpenUSD from source, which takes a long time.
 
-What moya alone uses is in the manifest's `moya` feature, also a default one. No api library
+What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
+Imath and OpenColorIO. No api library
 uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
 only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
 names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
@@ -42,10 +43,13 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | freetype | |
 | glm | |
 | harfbuzz | `v3dlib_font` shapes text through it, over the faces FreeType holds open. **It must have its `freetype` feature**, which builds the integration with FreeType. It is the `harfbuzz::harfbuzz` target of the `harfbuzz` config package, linked PRIVATE because no public header includes it |
+| imath | Imath, in the `moya` feature. OpenEXR's `half` type and its vectors come from it, and OpenEXR and OpenColorIO both depend on it. It is the `Imath::Imath` target |
 | icu | `v3dlib_font` finds grapheme clusters, words and line breaks through it. It comes from the tree's [overlay port](#the-icu-overlay-port), not vcpkg's own. It is the `ICU::uc` and `ICU::data` targets of `find_package(ICU COMPONENTS uc data)`, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
+| opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
+| openexr | OpenEXR, in the `moya` feature. moya writes its pictures through it. It is the `OpenEXR::OpenEXR` target. It brings libdeflate and OpenJPH, which the Flatpak builds as modules |
 | quickjs-ng | `v3dlib_script` runs scripts on it, as the `qjs` target of the `qjs` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |

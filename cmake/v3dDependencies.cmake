@@ -32,9 +32,13 @@ find_package(Boost 1.76.0 REQUIRED COMPONENTS ${v3d_boost_components})
 
 # The packages only moya uses, which no api library names, so the manifest of the api does not
 # find them. They come from the manifest's moya feature, and are looked for only when moya is
-# built. oneTBB schedules moya's CPU device.
+# built. oneTBB schedules moya's CPU device. OpenEXR writes its pictures, with Imath's half type,
+# and OpenColorIO converts between colour spaces.
 if(V3D_BUILD_APPS OR V3D_BUILD_MOYA)
 	find_package(TBB CONFIG REQUIRED)
+	find_package(Imath CONFIG REQUIRED)
+	find_package(OpenEXR CONFIG REQUIRED)
+	find_package(OpenColorIO CONFIG REQUIRED)
 endif()
 
 # Resolve the named packages.
