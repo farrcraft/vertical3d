@@ -87,8 +87,8 @@ void Scene::check(const Declaration & declaration, const Samples & samples) cons
     const std::size_t size = samples.values.front().size();
     for (const Value & value : samples.values) {
         if (value.type() != declaration.type) {
-            throw std::invalid_argument("parameter " + declaration.name + " is a " + name(declaration.type) + " and was set to a " +
-                name(value.type()));
+            throw std::invalid_argument("parameter " + declaration.name + " is a " + scene::name(declaration.type) + " and was set to a " +
+                scene::name(value.type()));
         }
         if (!declaration.array && value.size() != 1) {
             throw std::invalid_argument("parameter " + declaration.name + " holds one element and was set to " + std::to_string(value.size()));
@@ -102,13 +102,19 @@ void Scene::check(const Declaration & declaration, const Samples & samples) cons
     }
 }
 
-Handle Scene::create(const std::string & kind) {
+Handle Scene::create(const std::string & kind, const std::string & name) {
     const std::optional<std::uint32_t> index = schema_.find(kind);
     if (!index) {
         throw std::invalid_argument("no kind of object is named " + kind);
     }
+    if (name.empty()) {
+        throw std::invalid_argument("a " + kind + " with no name");
+    }
 
     const std::scoped_lock lock(mutex_);
+    if (names_.contains({ *index, name })) {
+        throw std::invalid_argument("two of kind " + kind + " named " + name);
+    }
     std::uint32_t at = 0;
     if (free_.empty()) {
         at = static_cast<std::uint32_t>(slots_.size());
@@ -121,10 +127,12 @@ Handle Scene::create(const std::string & kind) {
     made.kind = *index;
     made.generation++;
     made.live = true;
+    made.name = name;
     made.primvars.clear();
+    names_[{ *index, name }] = at;
 
     const Handle handle { .kind = *index, .index = at, .generation = made.generation };
-    pending_.push_back(Edit { .op = Edit::Op::Create, .handle = handle });
+    pending_.push_back(Edit { .op = Edit::Op::Create, .handle = handle, .parameter = name });
     return handle;
 }
 
@@ -175,6 +183,7 @@ void Scene::remove(const Handle & object) {
     Slot & found = slot(object);
     found.live = false;
     found.primvars.clear();
+    names_.erase({ found.kind, found.name });
     free_.push_back(object.index);
     pending_.push_back(Edit { .op = Edit::Op::Remove, .handle = object });
 }
@@ -208,7 +217,7 @@ void Scene::apply(const Edit & edit, std::uint64_t version) {
             if (objects_.size() <= edit.handle.index) {
                 objects_.resize(static_cast<std::size_t>(edit.handle.index) + 1);
             }
-            Object made { .handle = edit.handle, .created = version };
+            Object made { .handle = edit.handle, .name = edit.parameter, .created = version };
             for (const Declaration & declared : schema_.kind(edit.handle.kind).parameters) {
                 made.parameters[declared.name] = Parameter { .samples = Samples { .times = {}, .values = { declared.fallback } }, .version = version };
             }
@@ -249,7 +258,7 @@ Scene::Object & Scene::applied(const Handle & object) {
     return *held;
 }
 
-const Scene::Object * Scene::find(const Handle & object) const {
+const Scene::Object * Scene::held(const Handle & object) const {
     if (object.index >= objects_.size()) {
         return nullptr;
     }
@@ -261,7 +270,7 @@ const Scene::Object * Scene::find(const Handle & object) const {
 }
 
 bool Scene::contains(const Handle & object) const {
-    return find(object) != nullptr;
+    return held(object) != nullptr;
 }
 
 std::vector<Handle> Scene::objects(const std::string & kind) const {
@@ -278,8 +287,30 @@ std::vector<Handle> Scene::objects(const std::string & kind) const {
     return found;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the kind, then the name, as in create()
+std::optional<Handle> Scene::find(const std::string & kind, const std::string & name) const {
+    const std::optional<std::uint32_t> index = schema_.find(kind);
+    if (!index) {
+        return std::nullopt;
+    }
+    for (const std::optional<Object> & object : objects_) {
+        if (object && object->handle.kind == *index && object->name == name) {
+            return object->handle;
+        }
+    }
+    return std::nullopt;
+}
+
+const std::string & Scene::name(const Handle & object) const {
+    const Object * found = held(object);
+    if (found == nullptr) {
+        throw std::out_of_range("the scene holds no such object");
+    }
+    return found->name;
+}
+
 const Samples & Scene::samples(const Handle & object, const std::string & parameter) const {
-    const Object * found = find(object);
+    const Object * found = held(object);
     if (found == nullptr) {
         throw std::out_of_range("the scene holds no such object");
     }
@@ -295,7 +326,7 @@ const Value & Scene::value(const Handle & object, const std::string & parameter)
 }
 
 const std::vector<Declaration> & Scene::primvars(const Handle & object) const {
-    const Object * found = find(object);
+    const Object * found = held(object);
     if (found == nullptr) {
         throw std::out_of_range("the scene holds no such object");
     }

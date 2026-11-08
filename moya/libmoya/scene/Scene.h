@@ -46,7 +46,11 @@ struct Change {
 };
 
 /**
- * moya's retained scene: objects of the schema's kinds, each reached by a handle.
+ * moya's retained scene: objects of the schema's kinds, each reached by a handle and named.
+ *
+ * **Every object has a name**, unique among the objects of its kind that have not been removed.
+ * A name does not depend on the order objects were made in, as an index does, so a description
+ * of the scene and a client that looks an object up both use it.
  *
  * **Clients edit, and commit.** create(), set(), declare() and remove() may be called from any
  * thread. Each is checked when it is called and refused by an exception, and is then held back.
@@ -72,9 +76,10 @@ class Scene final {
     /**
      * An object of a kind, every parameter at its fallback.
      *
-     * @throws std::invalid_argument when the schema has no such kind
+     * @throws std::invalid_argument when the schema has no such kind, the name is empty, or an
+     *         object of the kind that has not been removed has the name
      **/
-    Handle create(const std::string & kind);
+    Handle create(const std::string & kind, const std::string & name);
 
     /**
      * One value of a parameter, at every time.
@@ -132,6 +137,16 @@ class Scene final {
     /** Every object of a kind, by index. **/
     std::vector<Handle> objects(const std::string & kind) const;
 
+    /** The object of a kind with a name, or nothing. **/
+    std::optional<Handle> find(const std::string & kind, const std::string & name) const;
+
+    /**
+     * An object's name.
+     *
+     * @throws std::out_of_range when the scene holds no such object
+     **/
+    const std::string & name(const Handle & object) const;
+
     /**
      * A parameter's samples, or its fallback until it is set.
      *
@@ -173,6 +188,8 @@ class Scene final {
 
         Op op { Op::Create };
         Handle handle;
+
+        /** The parameter set or declared, or the name of an object created. **/
         std::string parameter;
         Samples samples;
         Declaration primvar;
@@ -186,6 +203,7 @@ class Scene final {
         std::uint32_t kind { 0 };
         std::uint32_t generation { 0 };
         bool live { false };
+        std::string name;
         std::vector<Declaration> primvars;
     };
 
@@ -198,6 +216,7 @@ class Scene final {
     /** An object the applied batches hold. **/
     struct Object {
         Handle handle;
+        std::string name;
         std::uint64_t created { 0 };
         std::vector<Declaration> primvars;
         std::map<std::string, Parameter> parameters;
@@ -225,7 +244,7 @@ class Scene final {
     Object & applied(const Handle & object);
 
     /** The applied object a handle names, or nothing. **/
-    const Object * find(const Handle & object) const;
+    const Object * held(const Handle & object) const;
 
     void apply(const Edit & edit, std::uint64_t version);
 
@@ -235,6 +254,9 @@ class Scene final {
     mutable std::mutex mutex_;
     std::vector<Slot> slots_;
     std::vector<std::uint32_t> free_;
+
+    /** The index of each live slot, by its kind and its name. **/
+    std::map<std::pair<std::uint32_t, std::string>, std::uint32_t> names_;
     std::vector<Edit> pending_;
     std::vector<std::vector<Edit>> committed_;
 

@@ -119,7 +119,7 @@ among the options before the record was drafted. All four are accepted.
 | [3](#step-3--the-record-a-material-is-a-network) | The record: what a material holds | `docs/adr` | **0202** | done |
 | [4](#step-4--the-record-changes-and-commits) | The record: changes and commits | `docs/adr` | **0203** | done |
 | [5](#step-5--the-store-handles-parameters-and-changes) | The store: handles, parameters and changes | `moya/libmoya` | 0200, 0203 | done |
-| [6](#step-6--the-scene-description) | The scene description, for tests and `moya --scene` | `moya/libmoya`, `moya` | — | open |
+| [6](#step-6--the-scene-description) | The scene description, for tests and `moya --scene` | `moya/libmoya`, `moya` | — | done |
 | [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | open |
 | [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | open |
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | open |
@@ -290,6 +290,14 @@ version. A parameter of the wrong type is refused.
 
 ### Step 6 — The scene description
 
+**Done.** `scene::describe()` writes the applied scene as text, in name order. Every object now
+has a name, unique within its kind, given to `create(kind, name)`: an index depends on the order
+objects were made in, and a name does not. A handle is described by its object's kind and name,
+so two scenes describe alike whatever order they were built in. The RIB client takes a name from
+RI's `Attribute "identifier" "name"`, so step 13's two paths through the editor name objects
+alike. `moya --scene` is step 11's, since nothing reads RIB into the scene before it.
+[Scene.md](../offline/Scene.md#the-description) states the format.
+
 * **A text description of a scene**: every object, its handle, its parameters and their values,
   in an order that does not depend on the order objects were created in. Every later step's
   tests compare a scene with a committed description.
@@ -369,6 +377,10 @@ text. A malformed one is an error, not a crash. The fuzz corpus gains a fixture 
   does. A second `Display` with a `+` adds an output.
 * **Frames.** Each `FrameBegin` block is a commit, so a file of several frames is a scene that
   changes between commits.
+* **Names.** An object takes its name from RI's `Attribute "identifier" "name"`. One with none
+  is named after its request and its place in the file.
+* **`moya --scene`** reads a RIB file through the client and prints the scene's description, in
+  place of rendering it.
 
 **Tests:** the camera and displays of each of moya's RIB scenes describe as committed.
 

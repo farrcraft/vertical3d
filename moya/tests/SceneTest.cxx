@@ -61,7 +61,7 @@ std::vector<std::string> what(const scene::Scene & scene, std::uint64_t since) {
 
 BOOST_AUTO_TEST_CASE(moya_scene_an_object_holds_its_fallbacks_once_applied_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 1");
     BOOST_TEST(shape.valid());
     BOOST_TEST(!scene.contains(shape));
 
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_object_holds_its_fallbacks_once_applied_test)
 
 BOOST_AUTO_TEST_CASE(moya_scene_an_edit_waits_for_its_commit_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 2");
     scene.commit();
     scene.apply();
 
@@ -91,13 +91,13 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_edit_waits_for_its_commit_test) {
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_removed_handle_is_refused_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 3");
     scene.remove(shape);
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::integer(2)), std::invalid_argument);
     BOOST_CHECK_THROW(scene.remove(shape), std::invalid_argument);
 
     // the index is used again with the next generation, which the old handle does not match
-    const scene::Handle next = scene.create("shape");
+    const scene::Handle next = scene.create("shape", "shape 4");
     BOOST_TEST((next.index == shape.index));
     BOOST_TEST((next.generation == shape.generation + 1U));
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::integer(2)), std::invalid_argument);
@@ -115,9 +115,9 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_removed_handle_is_refused_test) {
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_value_that_breaks_its_declaration_is_refused_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
-    const scene::Handle look = scene.create("look");
-    BOOST_CHECK_THROW(scene.create("nothing"), std::invalid_argument);
+    const scene::Handle shape = scene.create("shape", "shape 5");
+    const scene::Handle look = scene.create("look", "look 6");
+    BOOST_CHECK_THROW(scene.create("nothing", "nothing 7"), std::invalid_argument);
     BOOST_CHECK_THROW(scene.set(shape, "missing", scene::Value::integer(1)), std::invalid_argument);
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::number(1.0F)), std::invalid_argument);
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::integers({ 1, 2 })), std::invalid_argument);
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_value_that_breaks_its_declaration_is_refused_t
 
 BOOST_AUTO_TEST_CASE(moya_scene_samples_over_the_shutter_keep_their_times_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 8");
     const std::vector<float> times = { 0.0F, 0.25F, 1.0F };
     const std::vector<scene::Value> points = {
         scene::Value::points({ glm::vec3(0.0F), glm::vec3(1.0F) }),
@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(moya_scene_samples_over_the_shutter_keep_their_times_test) 
 
 BOOST_AUTO_TEST_CASE(moya_scene_setting_a_parameter_changes_it_alone_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
-    const scene::Handle other = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 9");
+    const scene::Handle other = scene.create("shape", "shape 10");
     scene.commit();
     const std::uint64_t built = scene.apply();
     BOOST_TEST(what(scene, 0) == (std::vector<std::string> { "0 created", "1 created" }), boost::test_tools::per_element());
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_setting_a_parameter_changes_it_alone_test) {
 
 BOOST_AUTO_TEST_CASE(moya_scene_two_consumers_each_see_every_change_since_their_own_version_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 11");
     scene.commit();
     scene.apply();
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_commit_of_many_edits_is_one_version_test) {
     std::vector<scene::Handle> shapes;
     shapes.reserve(kShapes);
     for (int i = 0; i < kShapes; ++i) {
-        shapes.push_back(scene.create("shape"));
+        shapes.push_back(scene.create("shape", "shape " + std::to_string(i)));
     }
     for (const scene::Handle & shape : shapes) {
         scene.set(shape, "sides", scene::Value::integer(5));
@@ -216,12 +216,12 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_commit_of_many_edits_is_one_version_test) {
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_removal_is_reported_before_what_takes_its_index_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
+    const scene::Handle shape = scene.create("shape", "shape 13");
     scene.commit();
     const std::uint64_t built = scene.apply();
 
     scene.remove(shape);
-    const scene::Handle next = scene.create("look");
+    const scene::Handle next = scene.create("look", "look 14");
     scene.commit();
     scene.apply();
     BOOST_TEST((next.index == shape.index));
@@ -234,9 +234,9 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_removal_is_reported_before_what_takes_its_inde
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_primvar_is_declared_per_object_test) {
     scene::Scene scene(schema());
-    const scene::Handle shape = scene.create("shape");
-    const scene::Handle other = scene.create("shape");
-    const scene::Handle look = scene.create("look");
+    const scene::Handle shape = scene.create("shape", "shape 15");
+    const scene::Handle other = scene.create("shape", "shape 16");
+    const scene::Handle look = scene.create("look", "look 17");
     const scene::Declaration st { .name = "st",
         .type = scene::Type::Float,
         .array = true,
@@ -281,9 +281,9 @@ BOOST_AUTO_TEST_CASE(moya_scene_clients_on_several_threads_edit_one_scene_test) 
     std::vector<std::thread> clients;
     clients.reserve(kThreads);
     for (int t = 0; t < kThreads; ++t) {
-        clients.emplace_back([&scene]() {
+        clients.emplace_back([&scene, t]() {
             for (int i = 0; i < kEach; ++i) {
-                const scene::Handle shape = scene.create("shape");
+                const scene::Handle shape = scene.create("shape", "shape " + std::to_string(t) + " " + std::to_string(i));
                 scene.set(shape, "sides", scene::Value::integer(i));
                 scene.commit();
             }
@@ -298,6 +298,29 @@ BOOST_AUTO_TEST_CASE(moya_scene_clients_on_several_threads_edit_one_scene_test) 
     }
     scene.apply();
     BOOST_TEST(scene.objects("shape").size() == static_cast<std::size_t>(kThreads * kEach));
+}
+
+BOOST_AUTO_TEST_CASE(moya_scene_a_name_is_unique_within_its_kind_test) {
+    scene::Scene scene(schema());
+    const scene::Handle shape = scene.create("shape", "one");
+    const scene::Handle look = scene.create("look", "one");
+    BOOST_CHECK_THROW(scene.create("shape", "one"), std::invalid_argument);
+    BOOST_CHECK_THROW(scene.create("shape", ""), std::invalid_argument);
+    scene.commit();
+    scene.apply();
+    BOOST_TEST(scene.name(shape) == "one");
+    BOOST_TEST((scene.find("shape", "one") == shape));
+    BOOST_TEST((scene.find("look", "one") == look));
+    BOOST_TEST(!scene.find("shape", "two").has_value());
+    BOOST_TEST(!scene.find("nothing", "one").has_value());
+
+    // a removed object's name is free again
+    scene.remove(shape);
+    const scene::Handle again = scene.create("shape", "one");
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((scene.find("shape", "one") == again));
+    BOOST_CHECK_THROW(scene.name(shape), std::out_of_range);
 }
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_value_reads_back_as_it_was_made_test) {

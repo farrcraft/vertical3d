@@ -44,6 +44,7 @@ add_library("v3dlib_moya"
 	"ri/Renderer.h" "ri/Renderer.cxx"
 	"ri/internal/Converter.h" "ri/internal/Converter.cxx"
 
+	"scene/Description.h" "scene/Description.cxx"
 	"scene/Scene.h" "scene/Scene.cxx"
 	"scene/Schema.h" "scene/Schema.cxx"
 	"scene/Value.h" "scene/Value.cxx"

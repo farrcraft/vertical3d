@@ -39,14 +39,20 @@ A `Value` is an array of elements of one type.
   space.
 - **Reading a value as another type** throws `std::logic_error`.
 
-## Handles
+## Handles and names
 
-`create(kind)` returns a `Handle`: the object's kind, its index among the scene's objects, and
-the generation of that index.
+`create(kind, name)` returns a `Handle`: the object's kind, its index among the scene's objects,
+and the generation of that index.
 
 - **An index is used again** once its object is removed, with the next generation. The handle of
   a removed object therefore matches nothing, and every call that takes it refuses it.
 - **A handle no scene gave** has generation zero, and `valid()` is false.
+- **Every object has a name**, unique among the objects of its kind that have not been removed.
+  An empty name, or one that another live object of the kind has, throws
+  `std::invalid_argument`. A removed object's name is free again at once.
+- **A name does not depend on the order objects were made in**, as an index does.
+  `find(kind, name)` gives the handle of the object with a name, and `name(handle)` gives an
+  object's name.
 
 ## Samples over the shutter
 
@@ -83,7 +89,8 @@ A kind that holds primvars takes a declaration of each one from its client, per 
 - **The owner applies.** `apply()` makes each committed batch one new version of the scene, in
   the order they were committed. A render calls it between passes, never during one, so a pass
   sees whole batches. `apply()` and every read are called by one thread, the owner.
-- **The reads** are `contains()`, `objects()`, `samples()`, `value()` and `primvars()`. A read of
+- **The reads** are `contains()`, `objects()`, `find()`, `name()`, `samples()`, `value()` and
+  `primvars()`. A read of
   an object the scene does not hold throws `std::out_of_range`. An object a client created is not
   held until its batch is applied.
 
@@ -101,3 +108,23 @@ declared it.
   built past it.
 
 Background: [ADR-0203](../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md)
+
+## The description
+
+`scene::describe(scene)` writes the objects the applied batches hold as text. Tests compare a
+scene with a committed description, and two scenes that hold the same objects describe alike
+whatever order they were made in.
+
+- **The order is by name.** Kinds come in name order, the objects of each kind in name order,
+  and each object's parameters and primvars in name order.
+- **An object** is a line of its kind and its quoted name. Each parameter follows on a line of
+  its own, indented four spaces.
+- **A parameter's line** gives its name and type, then its element count in brackets when it is
+  an array, then a primvar's interpolation class. Its value follows `=`. A parameter with
+  samples gives each one as `@ time = value`.
+- **A float** is the shortest text that reads back as the same float. A colour, point, vector or
+  normal is three floats in parentheses, and a colour with a space names it after `in`. A matrix
+  is sixteen floats in square brackets, column by column. A string is quoted, with a quote or a
+  backslash inside it escaped.
+- **A handle** is its object's kind and quoted name, or `none` when the scene holds no object it
+  names.
