@@ -34,7 +34,7 @@ scene::Schema schema() {
     made.add(scene::Kind { .name = "shape",
         .parameters = {
             scene::Declaration { .name = "transform", .type = scene::Type::Matrix, .motion = true, .fallback = scene::Value::matrix(glm::mat4(1.0F)) },
-            scene::Declaration { .name = "P", .type = scene::Type::Point, .array = true, .motion = true, .fallback = scene::Value::points({}) },
+            scene::Declaration { .name = "P", .type = scene::Type::Point, .count = scene::Declaration::kAny, .motion = true, .fallback = scene::Value::points({}) },
             scene::Declaration { .name = "sides", .type = scene::Type::Integer, .fallback = scene::Value::integer(1) },
             scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .target = "look" } },
         .primvars = true });
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_primvar_is_declared_per_object_test) {
     const scene::Handle look = scene.create("look", "look 17");
     const scene::Declaration st { .name = "st",
         .type = scene::Type::Float,
-        .array = true,
+        .count = scene::Declaration::kAny,
         .fallback = scene::Value::floats({}),
         .interpolation = scene::Interpolation::FaceVarying };
     scene.declare(shape, st);

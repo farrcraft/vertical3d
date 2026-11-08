@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/scene/Value.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -26,6 +27,20 @@ const char * name(Interpolation interpolation) {
     return "unknown";
 }
 
+void Declaration::admit(const Value & value) const {
+    if (count != kAny && value.size() != count) {
+        throw std::invalid_argument("parameter " + name + " holds " + std::to_string(count) + " elements, not " + std::to_string(value.size()));
+    }
+    if (choices.empty()) {
+        return;
+    }
+    for (const std::string & chosen : value.stringArray()) {
+        if (std::find(choices.begin(), choices.end(), chosen) == choices.end()) {
+            throw std::invalid_argument("parameter " + name + " cannot be " + chosen);
+        }
+    }
+}
+
 void Schema::check(const Declaration & declaration) const {
     if (declaration.name.empty()) {
         throw std::invalid_argument("a parameter with no name");
@@ -34,10 +49,10 @@ void Schema::check(const Declaration & declaration) const {
         throw std::invalid_argument("parameter " + declaration.name + " is a " + name(declaration.type) + " with a fallback of type " +
             name(declaration.fallback.type()));
     }
-    if (!declaration.array && declaration.fallback.size() != 1) {
-        throw std::invalid_argument("parameter " + declaration.name + " holds one element, and its fallback holds " +
-            std::to_string(declaration.fallback.size()));
+    if (!declaration.choices.empty() && declaration.type != Type::String) {
+        throw std::invalid_argument("parameter " + declaration.name + " has choices but is not a string");
     }
+    declaration.admit(declaration.fallback);
     if (declaration.type == Type::Handle) {
         if (!find(declaration.target)) {
             throw std::invalid_argument("parameter " + declaration.name + " names no kind of object: " + declaration.target);

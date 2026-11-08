@@ -11,19 +11,45 @@ Every object of the scene is of a kind, and a kind declares its parameters once.
 
 - **A `Kind`** has a name and a list of `Declaration`s. A `Schema` holds the kinds a scene's
   objects can be, each reached by its index.
-- **A `Declaration`** gives a parameter's name, its `Type`, whether it is an array, whether it
-  holds samples over the shutter, and its fallback. An object's parameter holds its fallback
-  until a client sets it.
+- **A `Declaration`** gives a parameter's name, its `Type`, its element count, whether it holds
+  samples over the shutter, and its fallback. An object's parameter holds its fallback until a
+  client sets it.
+- **The count** is one for a parameter that is not an array, a number for an array of exactly
+  that many, or `Declaration::kAny` for an array of any length.
+- **A string parameter may give its choices**, the strings it may hold. A string outside them is
+  refused.
 - **The types** are integer, float, string, colour, point, vector, normal, matrix and handle. A
   handle parameter names the kind of object it holds, its target.
 - **`Schema::add()` refuses a broken kind** with `std::invalid_argument`:
   - a kind or a parameter with no name, or two kinds or two parameters of one kind with the same
     name
   - a fallback whose type differs from its declaration's
-  - a fallback of other than one element, for a parameter that is not an array
+  - a fallback whose count differs from its declaration's, or a string outside its choices
+  - choices on a parameter that is not a string
   - a handle parameter whose target is no kind added before it
 
 Background: [ADR-0200](../adr/offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md)
+
+## moya's kinds
+
+`scene::kinds()` gives the schema of moya's scene. Every default is RI's where RI names one. A
+parameter whose RI default depends on another is empty or zero until a client sets it, and is
+then derived as RI derives it.
+
+- **`camera`**: `transform` from camera space to world space, over the shutter. `projection`,
+  `orthographic` or `perspective`, and `fov` in degrees for a perspective one. `screen`, the
+  screen window as left, right, bottom and top, which is derived from the frame's aspect while it
+  is empty. `near` and `far` clipping. `fstop`, `focalLength` and `focalDistance` for depth of
+  field, with an infinite f-stop for a pinhole. `shutter`, its open and close times.
+- **`options`**: `resolution` in pixels, `pixelAspect`, and `frameAspect`, which is derived from
+  the resolution while it is zero. `crop` as RI's crop window. `samples` per pixel, the pixel
+  `filter`, one of RI's five, and `filterWidth`. `frame`, which seeds the sampler. `camera`, the
+  camera the render looks through.
+- **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
+  The channel's name is the object's.
+- **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
+  channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
+  or `float`, and `compression`, one of OpenEXR's.
 
 ## Values
 

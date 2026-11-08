@@ -33,7 +33,7 @@ scene::Schema schema() {
             scene::Declaration { .name = "up", .type = scene::Type::Vector, .fallback = scene::Value::vector(glm::vec3(0.0F, 1.0F, 0.0F)) } } });
     made.add(scene::Kind { .name = "shape",
         .parameters = {
-            scene::Declaration { .name = "P", .type = scene::Type::Point, .array = true, .motion = true, .fallback = scene::Value::points({}) },
+            scene::Declaration { .name = "P", .type = scene::Type::Point, .count = scene::Declaration::kAny, .motion = true, .fallback = scene::Value::points({}) },
             scene::Declaration { .name = "transform", .type = scene::Type::Matrix, .motion = true, .fallback = scene::Value::matrix(glm::mat4(1.0F)) },
             scene::Declaration { .name = "look", .type = scene::Type::Handle, .fallback = scene::Value::handle({}), .target = "look" } },
         .primvars = true });
@@ -57,7 +57,7 @@ std::string built(bool lookFirst) {
                                               scene::Value::points({ glm::vec3(0.5F), glm::vec3(1.5F, 2.5F, 3.5F) }) });
     scene.declare(second, scene::Declaration { .name = "st",
         .type = scene::Type::Float,
-        .array = true,
+        .count = scene::Declaration::kAny,
         .fallback = scene::Value::floats({}),
         .interpolation = scene::Interpolation::FaceVarying });
     scene.set(second, "st", scene::Value::floats({ 0.25F, 1.0F }));

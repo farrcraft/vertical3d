@@ -90,9 +90,7 @@ void Scene::check(const Declaration & declaration, const Samples & samples) cons
             throw std::invalid_argument("parameter " + declaration.name + " is a " + scene::name(declaration.type) + " and was set to a " +
                 scene::name(value.type()));
         }
-        if (!declaration.array && value.size() != 1) {
-            throw std::invalid_argument("parameter " + declaration.name + " holds one element and was set to " + std::to_string(value.size()));
-        }
+        declaration.admit(value);
         if (value.size() != size) {
             throw std::invalid_argument("parameter " + declaration.name + " set to samples of different sizes");
         }

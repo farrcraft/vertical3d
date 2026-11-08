@@ -39,23 +39,39 @@ struct Declaration {
     std::string name;
     Type type { Type::Float };
 
-    /** Whether it holds any number of elements. Otherwise it holds exactly one. **/
-    bool array { false };
+    /**
+     * How many elements its value holds: one for a parameter that is not an array, a count for an
+     * array of that many, or kAny for an array of any length.
+     **/
+    std::uint32_t count { 1 };
 
     /** Whether it may hold several samples, each at a time of its own. **/
     bool motion { false };
 
     /**
-     * Its value until a client sets one. It has the declared type, and holds one element unless
-     * the parameter is an array.
+     * Its value until a client sets one. It has the declared type, and holds as many elements as
+     * the count says. An array of any length may have an empty fallback.
      **/
     Value fallback;
+
+    /** The strings a string parameter may hold. Empty for any string. **/
+    std::vector<std::string> choices;
 
     /** The kind of object a handle parameter names. Empty for any other type. **/
     std::string target;
 
     /** A primvar's interpolation class. An ordinary parameter is constant. **/
     Interpolation interpolation { Interpolation::Constant };
+
+    /** The count of an array of any length. **/
+    static constexpr std::uint32_t kAny = 0;
+
+    /**
+     * Check a value's size and, for a string, its choices.
+     *
+     * @throws std::invalid_argument when the value breaks them
+     **/
+    void admit(const Value & value) const;
 };
 
 /**
@@ -77,9 +93,9 @@ class Schema final {
      * Add a kind, after checking each declaration.
      *
      * @return its index
-     * @throws std::invalid_argument when the kind or a parameter has no name, two share a name,
-     *         a fallback's type or size breaks its declaration, or a handle parameter names no kind
-     *         added before
+     * @throws std::invalid_argument when the kind or a parameter has no name, or two share a
+     *         name. Also when a fallback's type, count or string breaks its declaration, a
+     *         parameter that is not a string has choices, or a handle names no kind added before
      **/
     std::uint32_t add(const Kind & kind);
 

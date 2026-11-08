@@ -120,7 +120,7 @@ among the options before the record was drafted. All four are accepted.
 | [4](#step-4--the-record-changes-and-commits) | The record: changes and commits | `docs/adr` | **0203** | done |
 | [5](#step-5--the-store-handles-parameters-and-changes) | The store: handles, parameters and changes | `moya/libmoya` | 0200, 0203 | done |
 | [6](#step-6--the-scene-description) | The scene description, for tests and `moya --scene` | `moya/libmoya`, `moya` | — | done |
-| [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | open |
+| [7](#step-7--cameras-options-and-render-outputs) | Cameras, options and render outputs | `moya/libmoya` | 0201 | done |
 | [8](#step-8--geometry-prototypes-and-instances) | Geometry prototypes and instances, with motion | `moya/libmoya` | 0201 | open |
 | [9](#step-9--materials-and-lights) | Materials, lights and their bindings | `moya/libmoya` | 0202 | open |
 | [10](#step-10--the-rib-readers-new-requests) | The RIB reader's new requests | `api/render/offline/rib` | — | open |
@@ -308,6 +308,21 @@ alike. `moya --scene` is step 11's, since nothing reads RIB into the scene befor
 parameter step 5 stores.
 
 ### Step 7 — Cameras, options and render outputs
+
+**Done.** `scene::kinds()` gives moya's schema, which holds `camera`, `options`, `channel` and
+`output` so far. A declaration now gives an element count, one, a fixed number or any, in place
+of the flag for an array, and the strings a string parameter may hold. Three changes from the
+list below:
+
+* **A channel is an object of its own.** An output names its channels by handle, as Riley's
+  displays name their render outputs, so two outputs can share one. Its precision and compression
+  are the output's, as an EXR part's are.
+* **The camera is the options', not each output's.** Every output of a render comes from one film,
+  and a film is seen through one camera.
+* **An output with no channels writes the beauty alone**, as RI's `"rgb"` mode does, rather
+  than being refused.
+
+[Scene.md](../offline/Scene.md#moyas-kinds) lists the kinds.
 
 * **A camera**: perspective or orthographic, a screen window, clipping, depth of field by f-stop,
   focal length and focal distance, a shutter's open and close, and a transformation over the
