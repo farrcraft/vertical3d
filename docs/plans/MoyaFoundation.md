@@ -109,7 +109,7 @@ each step is where the survey points, not a conclusion.
 | [12](#step-12--openexr-imath-and-opencolorio-in-the-tree) | OpenEXR, Imath and OpenColorIO in the tree | `vcpkg.json`, `cmake`, `flatpak` | — | done |
 | [13](#step-13--exr-output) | EXR output: half and float channels, several parts | `moya/libmoya` | — | done |
 | [14](#step-14--colour-management) | Colour management through OpenColorIO's ACES 2.0 configuration | `moya/libmoya` | 0198 | done |
-| [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | open |
+| [15](#step-15--the-foundation-end-to-end) | The foundation end to end: a colour chart rendered to EXR | `moya/libmoya` | — | done |
 | [16](#step-16--the-documents) | The reference pages for the new core | `docs` | — | open |
 
 ## What blocks what
@@ -497,6 +497,18 @@ ACEScg. Two things the list below did not foresee:
 answer. An sRGB input converts to the ACEScg value the configuration gives.
 
 ### Step 15 — The foundation end to end
+
+**Done.** `FoundationTest.cxx` renders the 24-colour chart that the RGB suite checks the table
+with, now in `moya/tests/Chart.h`, at 64 samples a pixel under a 2-pixel Gaussian. The EXR's
+patches are within 0.015 of the chart's ACEScg, and one thread and every thread write the same
+EXR and PNG byte for byte. `output::displayed()` and `output::writePng()` give the 8-bit picture
+through a display. Two changes from the text below:
+
+* **The patches are lit by ACES white, not D65.** The spectrum table is fitted under ACES white,
+  so only under it does a patch come back as its ACEScg colour. Under D65 a white patch is not
+  ACEScg white.
+* **The reference PNG is checked in a spectral build alone.** An RGB build draws no wavelengths,
+  so its picture differs. Its suite still checks the patches and the thread counts.
 
 **A test renders a colour chart** with no geometry. Each pixel samples wavelengths and filter
 positions, takes its patch's RGB through step 8's spectrum under D65, and adds the result to the

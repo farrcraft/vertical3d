@@ -449,6 +449,8 @@ The moya suite renders scenes on the CPU and compares them with committed PNGs i
 - `raytrace-*.png` are rendered with the ray tracing hider.
 - Each PNG has a `.rib` file beside it that describes the same scene. The suite renders it from
   the file and from code, so both paths are tied to one picture.
+- `foundation-chart.png` is rendered by the new core, from code alone, and only in a spectral
+  build.
 
 The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
 differences between compilers. It reports the worst pixel and by how much. A failing case, or a

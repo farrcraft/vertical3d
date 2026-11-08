@@ -37,6 +37,7 @@ add_library("v3dlib_moya"
 	"film/Filter.h" "film/Filter.cxx"
 
 	"output/Exr.h" "output/Exr.cxx"
+	"output/Png.h" "output/Png.cxx"
 
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"

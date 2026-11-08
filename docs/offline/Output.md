@@ -1,6 +1,7 @@
 # Output
 
-This page is for anyone changing how moya's new core writes its pictures to files. The code is
+This page is for anyone changing how moya's new core writes its pictures to files and shows
+them on a display. The code is
 host code, in `moya/libmoya/output/` and the namespace `v3d::moya::output`. It writes a film's
 snapshot, which [The film](Film.md) describes.
 
@@ -44,6 +45,19 @@ Every part's header holds:
   them. A glm matrix is written with each float at the same indices. glm multiplies column vectors
   and Imath multiplies row vectors, so the matrix reads back in Imath as the same transform.
 - **`moya/renderTime`**, a float of seconds, when `ExrMetadata` gives one.
+
+## 8-bit pictures
+
+`displayed(snapshot, display)` gives a snapshot's beauty as a display shows it, for a PNG or the
+editor's render view. `writePng(path, snapshot, display, logger)` writes it to a PNG file.
+
+- **The display is a `colour::Transform`** from [`colour::Config::display()`](Colour.md), from the
+  film's ACEScg through a display's view.
+- **Each channel is 8 bits.** A value is clamped to [0, 1] and rounded to the nearest of 256 steps,
+  and a NaN is zero.
+- **The bytes are red, green and blue** for each pixel, row by row from the top left.
+- **`writePng` throws `std::runtime_error`** when the picture does not encode or the file cannot
+  be written.
 
 ## Errors
 

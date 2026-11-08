@@ -14,12 +14,13 @@
 #include <array>
 #include <cmath>
 #include <functional>
-#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+
+#include "Chart.h"
 
 namespace {
 
@@ -46,24 +47,6 @@ glm::vec3 fromRec709(const glm::vec3 & rgb) {
     glm::vec3 out(0.0F);
     for (int i = 0; i < 3; ++i) {
         out[i] = (kRec709ToAcescg[i][0] * rgb.x) + (kRec709ToAcescg[i][1] * rgb.y) + (kRec709ToAcescg[i][2] * rgb.z);
-    }
-    return out;
-}
-
-/**
- * A chart of 24 moderate colours: each of six hues, at two saturations and two brightnesses,
- * mixed with grey so that a reflectance reaches each.
- **/
-std::vector<glm::vec3> chart() {
-    const std::array<glm::vec3, 6> hues { glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 1), glm::vec3(0, 0, 1),
-        glm::vec3(1, 0, 1) };
-    std::vector<glm::vec3> out;
-    for (const glm::vec3 & hue : hues) {
-        for (const float saturation : { 0.25F, 0.5F }) {
-            for (const float brightness : { 0.2F, 0.8F }) {
-                out.push_back(brightness * ((glm::vec3(1.0F - saturation)) + (saturation * hue)));
-            }
-        }
     }
     return out;
 }
@@ -132,7 +115,7 @@ BOOST_AUTO_TEST_CASE(moya_rgb_srgbs_primaries_and_secondaries_return_to_their_co
 }
 
 BOOST_AUTO_TEST_CASE(moya_rgb_a_chart_of_moderate_colours_returns_to_its_colour_test) {
-    for (const glm::vec3 & colour : chart()) {
+    for (const glm::vec3 & colour : v3d::moya::chart::colours()) {
         checkRoundTrip(colour, 0.005F);
     }
 }
