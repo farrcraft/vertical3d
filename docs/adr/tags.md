@@ -205,6 +205,7 @@ reported, so the table lists only tags in use.
 | [0168](editor/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags |
 | [0169](editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked |
 | [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
 
 ### files
 
@@ -251,6 +252,9 @@ reported, so the table lists only tags in use.
 | [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
 | [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
 | [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0200](offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md) | Offline: scene objects are nodes of declared parameters |
+| [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
+| [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
 
 ### lighting
 
@@ -334,6 +338,10 @@ reported, so the table lists only tags in use.
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 | [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
 | [0199](offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md) | Offline: a sample lands in the one pixel it was drawn for |
+| [0200](offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md) | Offline: scene objects are nodes of declared parameters |
+| [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
+| [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
+| [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
 
 ### particles
 

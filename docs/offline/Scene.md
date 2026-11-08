@@ -1,0 +1,103 @@
+# The scene
+
+This page is for anyone writing a client of moya's new core, or a structure built from its
+scene. The scene is in `moya/libmoya/scene/`, in the namespace `v3d::moya::scene`. It is host
+code: no device reads it, and the structures a render needs are built from it. RIB and the editor
+fill it, and the reyes and ray hiders do not read it.
+
+## Kinds and their parameters
+
+Every object of the scene is of a kind, and a kind declares its parameters once.
+
+- **A `Kind`** has a name and a list of `Declaration`s. A `Schema` holds the kinds a scene's
+  objects can be, each reached by its index.
+- **A `Declaration`** gives a parameter's name, its `Type`, whether it is an array, whether it
+  holds samples over the shutter, and its fallback. An object's parameter holds its fallback
+  until a client sets it.
+- **The types** are integer, float, string, colour, point, vector, normal, matrix and handle. A
+  handle parameter names the kind of object it holds, its target.
+- **`Schema::add()` refuses a broken kind** with `std::invalid_argument`:
+  - a kind or a parameter with no name, or two kinds or two parameters of one kind with the same
+    name
+  - a fallback whose type differs from its declaration's
+  - a fallback of other than one element, for a parameter that is not an array
+  - a handle parameter whose target is no kind added before it
+
+Background: [ADR-0200](../adr/offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md)
+
+## Values
+
+A `Value` is an array of elements of one type.
+
+- **A parameter that is not an array holds a value of one element.** `Value::integer()`,
+  `number()`, `colour()` and the others make one, and `integers()`, `floats()`, `colours()` and
+  the others make an array.
+- **Colours, points, vectors, normals and matrices are floats.** `floatArray()` gives them element
+  after element, 3 floats for each colour, point, vector or normal and 16 for each matrix, column
+  by column. `triple()` and `matrixAt()` give one element.
+- **A colour value names its colour space** as OpenColorIO names it. An empty name is the working
+  space.
+- **Reading a value as another type** throws `std::logic_error`.
+
+## Handles
+
+`create(kind)` returns a `Handle`: the object's kind, its index among the scene's objects, and
+the generation of that index.
+
+- **An index is used again** once its object is removed, with the next generation. The handle of
+  a removed object therefore matches nothing, and every call that takes it refuses it.
+- **A handle no scene gave** has generation zero, and `valid()` is false.
+
+## Samples over the shutter
+
+A parameter declared for motion holds `Samples`: one value at each of a list of times.
+
+- **The times are the object's own**, as its client gave them. Two objects need not share times
+  or a count of samples.
+- **The times rise strictly**, there is one value at each, and every value has the same type and
+  size. A deforming geometry keeps its topology at every time.
+- **A value set with no times holds at every time.** A parameter not declared for motion takes
+  only that.
+
+Background: [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md)
+
+## Primvars
+
+A kind that holds primvars takes a declaration of each one from its client, per object, with
+`declare()`.
+
+- **A primvar's `Interpolation`** is one of RI's and USD's five classes: constant, uniform,
+  varying, vertex and face-varying.
+- **A primvar is set and read as a parameter** once it is declared, and holds its fallback until
+  it is set.
+- **Declaring a primvar the object already has replaces it**, and its value goes back to the new
+  declaration's fallback.
+- **A primvar cannot take the name of one of its kind's parameters.**
+
+## Edits, commits and versions
+
+- **A client edits from any thread.** `create()`, `set()`, `declare()` and `remove()` are checked
+  when they are called, and refused with `std::invalid_argument`. An edit that passes is held
+  back.
+- **`commit()` closes the edits since the last commit into one batch.**
+- **The owner applies.** `apply()` makes each committed batch one new version of the scene, in
+  the order they were committed. A render calls it between passes, never during one, so a pass
+  sees whole batches. `apply()` and every read are called by one thread, the owner.
+- **The reads** are `contains()`, `objects()`, `samples()`, `value()` and `primvars()`. A read of
+  an object the scene does not hold throws `std::out_of_range`. An object a client created is not
+  held until its batch is applied.
+
+## Changes
+
+Each object holds the version that created it, and each parameter the version that last set or
+declared it.
+
+- **A consumer keeps the version it last built from**, and `changes(since)` gives every object
+  created, modified or removed after it. A modified object lists the parameters that changed.
+- **Several consumers** each ask with their own version, so none hides a change from another.
+- **The changes are ordered by index.** At one index, a removal comes before the object made
+  there after it.
+- **`forget(through)`** drops the record of removals up to a version, once every consumer has
+  built past it.
+
+Background: [ADR-0203](../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md)

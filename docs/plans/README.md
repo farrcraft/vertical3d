@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [MoyaScene](MoyaScene.md) | Offline rendering, editor | The rebuilt moya's retained scene: objects by handle with samples over the shutter, change tracking, and RIB and the editor as its clients |
 
 ## Completed plans
 
