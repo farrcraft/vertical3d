@@ -5,8 +5,10 @@
 # virtual function or an allocation.
 add_library("v3dlib_moya_kernel"
 	"Array.h"
+	"camera/Camera.h"
 	"film/Filter.h"
 	"film/Pixels.h"
+	"geometry/BruteForce.h"
 	"geometry/Hit.h"
 	"geometry/Offset.h"
 	"geometry/Ray.h"
@@ -27,6 +29,7 @@ add_library("v3dlib_moya_kernel"
 	"spectrum/Spectrum.h"
 	"spectrum/Visible.h"
 	"spectrum/Wavelengths.h"
+	"view/HitView.h"
 	"Kernel.cxx"
 )
 

@@ -4,6 +4,7 @@
 moya.exe --file <scene.rib> [--output <image>] [--width <n> --height <n>]
          [--grid <n>] [--bucket <n>] [--silent]
 moya.exe --file <scene.rib> --scene
+moya.exe --file <scene.rib> --hits [--output <image.exr>]
 moya.exe --help
 moya.exe --version
 ```
@@ -29,6 +30,7 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--bucket <n>` | The reyes bucket size, n by n pixels, from 1 to 65536. Default 16. It wins over the scene's `Option "limits" "bucketsize"` |
 | `--silent` | Print no progress line |
 | `--scene` | Read the scene into moya's new core and print what it holds, in place of rendering. It prints after each frame the file describes. The new core does not render yet |
+| `--hits` | Read the scene into moya's new core and write what its rays hit, in place of rendering, to the `--output` file or to `hits.exr`. The EXR holds each pixel's `depth`, its surface's `normal`, its `instance`, its `face` and its `coverage`. It is written after each frame, so a file of several frames leaves the last. Only polygon meshes are hit yet |
 | `--help` | Print the options and exit |
 | `--version` | Print the version and Pixar's RenderMan copyright notice, and exit |
 

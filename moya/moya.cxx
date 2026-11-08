@@ -7,11 +7,13 @@
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/version/Version.h>
+#include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/view/Hits.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -83,6 +85,27 @@ int describe(const std::string & infile, const boost::shared_ptr<v3d::log::Logge
     return EXIT_SUCCESS;
 }
 
+/**
+ * Read a file into the new core's scene, and write its hit view after each frame the file
+ * commits, in place of rendering it. A file of several frames leaves the last frame's.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
+int showHits(const std::string & infile, const std::string & outfile, const boost::shared_ptr<v3d::log::Logger> & logger) {
+    v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
+    v3d::moya::ri::SceneClient client(scene, logger);
+    v3d::moya::device::CpuDevice device;
+    client.frame([&]() {
+        scene.apply();
+        v3d::moya::view::writeHits(outfile, v3d::moya::view::hits(device, scene, logger));
+    });
+    v3d::render::offline::rib::Reader reader(logger);
+    if (!reader.read(infile, &client)) {
+        std::cout << "error reading rib file - " << reader.error() << "\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int run(int argc, char *argv[]) {
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -94,6 +117,7 @@ int run(int argc, char *argv[]) {
         ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
         ("silent", "print no progress line")
         ("scene", "print the scene the new core reads from the file, in place of rendering it")
+        ("hits", "write what the new core's rays hit to --output, or hits.exr, as an EXR file, in place of rendering it")
         ("grid", boost::program_options::value<int>(),
             "micropolygon grid size, used whatever size the scene's Option \"limits\" names")
         ("bucket", boost::program_options::value<int>(),
@@ -134,6 +158,9 @@ int run(int argc, char *argv[]) {
 
     // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    if (var_map.count("hits") != 0) {
+        return showHits(infile, outfile.empty() ? std::string("hits.exr") : outfile, logger);
+    }
     if (var_map.count("scene") != 0) {
         return describe(infile, logger);
     }

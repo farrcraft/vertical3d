@@ -21,6 +21,8 @@ add_library("v3dlib_moya"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
 
+	"camera/Camera.h" "camera/Camera.cxx"
+
 	"colour/Config.h" "colour/Config.cxx"
 	"colour/RgbTables.h"
 	"colour/internal/Configuration.h"
@@ -35,6 +37,10 @@ add_library("v3dlib_moya"
 
 	"film/Film.h" "film/Film.cxx"
 	"film/Filter.h" "film/Filter.cxx"
+
+	"geometry/Triangulate.h" "geometry/Triangulate.cxx"
+	"geometry/World.h" "geometry/World.cxx"
+	"geometry/internal/Walk.h" "geometry/internal/Walk.cxx"
 
 	"output/Exr.h" "output/Exr.cxx"
 	"output/Png.h" "output/Png.cxx"
@@ -63,6 +69,8 @@ add_library("v3dlib_moya"
 	"state/Shaders.h" "state/Shaders.cxx"
 	"state/Shading.h"
 	"state/Transforms.h" "state/Transforms.cxx"
+
+	"view/Hits.h" "view/Hits.cxx"
 
 	"raytrace/Hider.h" "raytrace/Hider.cxx"
 	"raytrace/Pass.h"

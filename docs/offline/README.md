@@ -181,8 +181,11 @@ make.
   `ri::SceneClient` fills it from RIB, and the editor keeps one in step with its own.
   `moya --scene` prints the scene a file makes. [Scene.md](Scene.md)
 - **Rays and hits** are kernel code. A triangle is met watertight, a ray leaving a surface starts
-  off it, and a stage takes its traversal as a type, so each device brings its own.
-  [Traversal.md](Traversal.md)
+  off it, and a stage takes its traversal as a type, so each device brings its own. Camera rays
+  follow RI's camera, and `moya --hits` writes what they hit through the brute-force traversal,
+  the reference every other traversal is checked against. [Traversal.md](Traversal.md)
+- **Meshes become triangles** by ear clipping, each keeping its face.
+  [Geometry.md](Geometry.md)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through

@@ -128,8 +128,8 @@ among the options before the record is drafted.
 | [5](#step-5--the-record-curves) | The record: curves | `docs/adr` | **0208** | drafted |
 | [6](#step-6--the-record-tessellation) | The record: tessellation | `docs/adr` | **0209** | drafted |
 | [7](#step-7--rays-hits-and-triangles) | Rays, hits and watertight triangles | `moya/libmoya/kernel` | 0204 | done |
-| [8](#step-8--the-hit-view-and-the-brute-force-oracle) | The hit view and the brute-force oracle | `moya/libmoya`, `moya` | 0204 | open |
-| [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | open |
+| [8](#step-8--the-hit-view-and-the-brute-force-oracle) | The hit view and the brute-force oracle | `moya/libmoya`, `moya` | 0204 | done |
+| [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | done |
 | [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | open |
 | [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206 | open |
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | open |
@@ -364,6 +364,29 @@ its interval reports no hit.
 
 ### Step 8 — The hit view and the brute-force oracle
 
+**Done**, after step 9, since `moya --hits` reads RIB's polygons and needs their triangles.
+`camera::fromScene()` builds a `kernel::camera::Camera` with RI's derivations, and its `ray()`
+draws a point on the lens and a time over the shutter. `geometry::flatten()` places every
+triangle the scene's instances reach in world space, one run per chain of instances, and
+`geometry::World` holds them on a device. `kernel::geometry::BruteForce` tests them all, and
+`view::hits()` launches `kernel::view::hits` over the picture. Each case was run against broken
+code as well. A screen read upside down failed the coverage case, and a traversal that kept the
+last hit rather than the nearest failed the nearest-hit case once the near triangle was placed
+first. Four things the list below did not settle:
+
+* **The hit view takes one ray per pixel**, through the pixel's centre and the lens's, so its IDs
+  are whole and its depth is exact. Its time over the shutter is a parameter.
+* **Placement is the oracle's.** Flattening nested instances on the host is simple enough to
+  trust, so step 12's instance traversal is checked against it. A placed run also gives a hit's
+  normal and face from its chain and primitive, so the hit view works over any traversal.
+* **A transformation is its first sample** until step 13. Meshes alone are placed. Every other
+  prototype is reported once and left out until its step.
+* **An instance whose group was removed is placed by nothing**, rather than falling into the
+  world.
+
+[Traversal.md](../offline/Traversal.md) states the rules, and the moya manual's
+[CommandLine.md](../manual/moya/CommandLine.md) names `--hits`.
+
 * **Camera rays** from the scene's `camera`: perspective and orthographic, the screen window, a
   time drawn over the shutter and a point drawn on the lens, from the ZSobol sampler. Section 4's
   generate stage builds on them.
@@ -379,6 +402,17 @@ depth is its hit's distance along the camera's view. An orthographic camera's ra
 A ray drawn at a time inside the shutter carries that time.
 
 ### Step 9 — Meshes into triangles
+
+**Done**, before step 8. `geometry::triangulate()` cuts a mesh's faces by ear clipping in each
+face's own plane, and gives each triangle's corners as positions in the mesh's indices, so a
+face-varying primvar is read at the corner. With the ear test's check for corners inside an ear
+removed, the concave case failed. Two things the list below did not settle:
+
+* **A corner in line with its neighbours is left out before any ear is cut**, so no triangle is
+  a sliver along a straight edge.
+* **A face whose edges cross is cut as a fan** once no ear can be found.
+
+[Geometry.md](../offline/Geometry.md) states the rules.
 
 * **`moya/libmoya/geometry/`**, in `v3d::moya::geometry`: host code that turns the scene's
   geometry into what the hierarchy holds.

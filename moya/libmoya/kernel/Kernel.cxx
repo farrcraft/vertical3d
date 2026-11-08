@@ -8,8 +8,10 @@
 // rules of whatever includes it.
 
 #include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/camera/Camera.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/Filter.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/Pixels.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/BruteForce.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Hit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Offset.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Ray.h>  // IWYU pragma: keep
@@ -30,3 +32,4 @@
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Visible.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/view/HitView.h>  // IWYU pragma: keep

@@ -73,3 +73,68 @@ to the side the ray leaves by, and need not be unit length.
 
 This is Wächter and Binder's method. A ray that starts at an offset point needs no `start`
 above zero.
+
+## Camera rays
+
+`kernel::camera::Camera` is RI's camera as kernel code reads it, looking down +z of its own
+space with x to the right and y up. `camera::fromScene(scene)` builds it from the camera the
+scene's options name.
+
+- **A raster position maps onto the screen window.** The window spans the image, from its top
+  left at the raster's origin. While the camera gives none, a frame at least as wide as it is
+  tall spans `-aspect` to `aspect` across and -1 to 1 down. A taller one spans -1 to 1 across and
+  `-1 / aspect` to `1 / aspect` down. The aspect is the options' `frameAspect`, or the
+  resolution's times the pixel aspect while that is zero.
+- **A perspective camera's screen is the plane z = 1**, scaled by the tangent of half the field
+  of view. An orthographic camera's is the plane z = 0, in camera space's units.
+- **A ray's direction has a z of one in camera space**, so a distance along it is the depth of the
+  point it reaches. Its interval is the clipping planes'.
+- **Depth of field draws a point on the lens.** The lens's radius is the focal length over twice
+  the f-stop, and every ray through one pixel meets at the focal distance. A camera whose
+  f-stop, focal length or focal distance is not positive and finite is a pinhole.
+- **A ray's time is drawn over the shutter**, from its opening to its close.
+- **The camera's transformation is its first sample.**
+
+Options that name no camera take every camera parameter's fallback, which is RI's default:
+orthographic, at the origin.
+
+## Placing the scene
+
+`geometry::flatten(scene, logger)` places every triangle the scene's instances reach in world
+space, in runs, one run for each chain of instances. `geometry::World` holds the result in a
+device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
+
+- **Each instance in the world places its prototype**, and an instance of a group places every
+  instance in the group inside its own transformation. Runs follow the instances' indices.
+- **A triangle's primitive is its index within its geometry**, which is its index within its
+  run. A hit then names the same primitive whichever traversal found it, and `Placed` gives the
+  hit's geometric normal and its mesh's face from the chain and the primitive.
+- **Some chains are left out, and each reason is reported once**: a group that holds itself, a
+  chain deeper than a hit records, and a prototype of a kind not yet traced. Meshes alone are
+  traced. `Flat::reports` holds the reports, and the log has them too.
+- **An instance whose prototype was removed places nothing**, and one whose group was removed is
+  placed by nothing.
+- **A transformation is its first sample.**
+
+## The brute-force traversal
+
+`kernel::geometry::BruteForce` tests every placed triangle for every ray. It is slow, and it is
+the reference every other traversal is compared with. Its `nearest()` keeps the nearest hit
+within the ray's interval, and its `any()` stops at the first.
+
+## The hit view
+
+The hit view is a picture of what rays hit, which lights nothing. `view::hits(device, scene,
+logger, time)` traces one ray through the centre of each pixel and of the lens, at a point over
+the shutter, with the brute-force traversal. `view::writeHits()` writes it as an EXR file of
+float channels, and `moya --hits` writes the hit view of a RIB file.
+
+| Channel | A pixel whose ray hit | A pixel whose ray met nothing |
+|---|---|---|
+| `depth` | the hit's depth along the camera's view | infinity |
+| `normal` | the geometric normal in world space, by its triangle's winding | zero |
+| `instance` | the index of the innermost instance | -1 |
+| `face` | the face of its mesh | -1 |
+| `coverage` | one | zero |
+
+The beauty is black.
