@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
@@ -28,10 +29,19 @@ enum class Prototype : std::uint8_t {
     Group
 };
 
-/** A mesh's triangles, a run of the triangles every mesh holds. **/
+/**
+ * A mesh's triangles: a run of the faces every mesh's triangles were cut from, and the points of
+ * its triangles, three per triangle, at each of its samples.
+ **/
 struct Mesh {
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
+    kernel::geometry::PointSamples points;
+
+    /** Whether the mesh's points move over the shutter. **/
+    bool moves() const {
+        return points.samples > 1;
+    }
 };
 
 /**
@@ -48,8 +58,18 @@ struct Instance {
     /** The prototype's index among the meshes or the groups. **/
     std::uint32_t prototype { 0 };
 
+    /** The transformation at its first sample, which holds at every time when it has no keys. **/
     glm::mat4 transform { 1.0F };
+
+    /** The transformation at each of its samples, when it has more than one. **/
+    std::vector<kernel::geometry::Key> keys;
+
     std::uint32_t visibility { 0 };
+
+    /** Whether the instance's transformation moves over the shutter. **/
+    bool moves() const {
+        return keys.size() > 1;
+    }
 };
 
 /** The instances a group holds, each by its index among every instance. **/
@@ -65,8 +85,11 @@ struct Group {
  * each member's built first. The world is the group of every instance in no group.
  **/
 struct Prototypes {
-    /** Three points per triangle, each in its mesh's own space. **/
+    /** Three points per triangle at each of its mesh's samples, each in its mesh's own space. **/
     std::vector<glm::vec3> points;
+
+    /** The times of the samples of every mesh that has more than one. **/
+    std::vector<float> times;
 
     /** The face of its mesh each triangle was cut from. **/
     std::vector<std::uint32_t> faces;
@@ -75,6 +98,10 @@ struct Prototypes {
     std::vector<Group> groups;
     std::vector<Instance> instances;
     Group world;
+
+    /** The times the camera's shutter opens and closes. A time is held between them. **/
+    float open { 0.0F };
+    float close { 0.0F };
 
     /** What was left out and why, once each, as the log reports it. **/
     std::vector<std::string> reports;
@@ -94,8 +121,9 @@ struct Prototypes {
  * - an instance of a prototype of a kind not yet traced. Meshes alone are traced.
  *
  * An instance whose prototype was removed places nothing. One whose group was removed is in no
- * group, and so is placed by nothing. A transformation is its first sample. An instance is visible
- * to camera, shadow and indirect rays as its parameters of those names say.
+ * group, and so is placed by nothing. A transformation and a mesh's points keep every sample, at
+ * their own times. An instance is visible to camera, shadow and indirect rays as its parameters of
+ * those names say. The shutter is the camera's.
  **/
 Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger);
 

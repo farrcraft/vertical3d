@@ -32,7 +32,8 @@ namespace v3d::moya::view {
 film::Snapshot hits(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, float time,
     Tracer tracer) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
-    const Tracing tracing(device, geometry::gather(scene, logger), tracer);
+    // the brute-force traversal places the scene at the time every ray is drawn at
+    const Tracing tracing(device, geometry::gather(scene, logger), tracer, camera.open + (time * (camera.close - camera.open)));
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     film::Film picture(device, resolution,
         { { .name = kDepth, .components = 1 }, { .name = kNormal, .components = 3 }, { .name = kInstance, .components = 1 },

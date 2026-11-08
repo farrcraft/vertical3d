@@ -13,6 +13,7 @@
 #include <moya/libmoya/kernel/film/Pixels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/BruteForce.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Hit.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/Motion.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Offset.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Ray.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Trace.h>  // IWYU pragma: keep

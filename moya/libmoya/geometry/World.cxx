@@ -11,8 +11,10 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -35,13 +37,17 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
     return buffer;
 }
 
-/** Places a mesh's triangles at the end of a chain of instances, inside its transformation. **/
-void placeMesh(const Prototypes & prototypes, const Mesh & mesh, const glm::mat4 & toWorld, kernel::geometry::Placement placement,
+/**
+ * Places a mesh's triangles as they stand at a time, at the end of a chain of instances, inside
+ * its transformation.
+ **/
+void placeMesh(const Prototypes & prototypes, float time, const Mesh & mesh, const glm::mat4 & toWorld, kernel::geometry::Placement placement,
     Flat & out) {
     placement.first = static_cast<std::uint32_t>(out.faces.size());
     placement.count = mesh.count;
-    for (std::size_t corner = std::size_t { mesh.first } * 3; corner < (std::size_t { mesh.first } + mesh.count) * 3; ++corner) {
-        out.points.emplace_back(toWorld * glm::vec4(prototypes.points[corner], 1.0F));
+    for (std::uint32_t corner = 0; corner < mesh.points.count; ++corner) {
+        const glm::vec3 point = kernel::geometry::pointAt(mesh.points, prototypes.points.data(), prototypes.times.data(), corner, time);
+        out.points.emplace_back(toWorld * glm::vec4(point, 1.0F));
     }
     out.faces.insert(out.faces.end(), prototypes.faces.begin() + mesh.first, prototypes.faces.begin() + mesh.first + mesh.count);
     out.runs.insert(out.runs.end(), mesh.count, static_cast<std::uint32_t>(out.placements.size()));
@@ -49,11 +55,11 @@ void placeMesh(const Prototypes & prototypes, const Mesh & mesh, const glm::mat4
 }
 
 /**
- * Places every instance in a group, after the chain that reached the group and inside its
- * transformation.
+ * Places every instance in a group as it stands at a time, after the chain that reached the group
+ * and inside its transformation.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the group, then the chain that reached it
-void placeGroup(const Prototypes & prototypes, const Group & group, const glm::mat4 & toWorld, const kernel::geometry::Placement & chain,
+void placeGroup(const Prototypes & prototypes, float time, const Group & group, const glm::mat4 & toWorld, const kernel::geometry::Placement & chain,
     Flat & out) {
     if (chain.depth == kernel::geometry::kInstanceDepth) {
         return;
@@ -63,22 +69,35 @@ void placeGroup(const Prototypes & prototypes, const Group & group, const glm::m
         kernel::geometry::Placement placement = chain;
         placement.instances[placement.depth++] = instance.id;
         placement.visibility &= instance.visibility;
-        const glm::mat4 inner = toWorld * instance.transform;
+        const glm::mat4 inner = toWorld * transformAt(instance, time);
         if (instance.kind == Prototype::Group) {
-            placeGroup(prototypes, prototypes.groups[instance.prototype], inner, placement, out);
+            placeGroup(prototypes, time, prototypes.groups[instance.prototype], inner, placement, out);
         } else {
-            placeMesh(prototypes, prototypes.meshes[instance.prototype], inner, placement, out);
+            placeMesh(prototypes, time, prototypes.meshes[instance.prototype], inner, placement, out);
         }
     }
 }
 
 };  // namespace
 
-Flat flatten(const Prototypes & prototypes) {
+float heldTime(const Prototypes & prototypes, float time) {
+    return std::fmax(prototypes.open, std::fmin(time, prototypes.close));
+}
+
+glm::mat4 transformAt(const Instance & instance, float time) {
+    return instance.moves() ? kernel::geometry::transformAt(instance.keys.data(), static_cast<std::uint32_t>(instance.keys.size()), time) :
+                              instance.transform;
+}
+
+Flat flatten(const Prototypes & prototypes, float time) {
     Flat out;
-    placeGroup(prototypes, prototypes.world, glm::mat4(1.0F), kernel::geometry::Placement {}, out);
+    placeGroup(prototypes, heldTime(prototypes, time), prototypes.world, glm::mat4(1.0F), kernel::geometry::Placement {}, out);
     out.reports = prototypes.reports;
     return out;
+}
+
+Flat flatten(const Prototypes & prototypes) {
+    return flatten(prototypes, prototypes.open);
 }
 
 Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) {

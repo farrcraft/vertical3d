@@ -12,6 +12,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 /**
  * What only the CPU's libraries compile, each for its own instruction set. Nothing outside them
@@ -46,6 +47,32 @@ struct Reach {
  * test never misses a box the ray grazes, by Ize's bound of 1 + 2 gamma(3).
  **/
 inline constexpr float kFarScale = 1.0F + (2.0F * ((3.0F * 5.96046448e-8F) / (1.0F - (3.0F * 5.96046448e-8F))));
+
+/**
+ * A moving node as it stands at a time, each child's box interpolated between the ends of its
+ * range. A child whose range does not hold the time is left empty, so no ray reaches it.
+ **/
+inline Node at(const MotionNode & node, float time) {
+    Node out;
+    for (std::uint32_t slot = 0; slot < kWidth; ++slot) {
+        out.child[slot] = node.child[slot];
+        out.count[slot] = node.count[slot];
+        const bool held = time >= node.begin[slot] && time <= node.end[slot];
+        const float span = node.end[slot] - node.begin[slot];
+        const float along = held && span > 0.0F ? (time - node.begin[slot]) / span : 0.0F;
+        const auto lerp = [&](const float * start, const float * end, float empty) {
+            return held ? start[slot] + ((end[slot] - start[slot]) * along) : empty;
+        };
+        constexpr float kFar = std::numeric_limits<float>::infinity();
+        out.lowerX[slot] = lerp(node.lowerX, node.endLowerX, kFar);
+        out.lowerY[slot] = lerp(node.lowerY, node.endLowerY, kFar);
+        out.lowerZ[slot] = lerp(node.lowerZ, node.endLowerZ, kFar);
+        out.upperX[slot] = lerp(node.upperX, node.endUpperX, -kFar);
+        out.upperY[slot] = lerp(node.upperY, node.endUpperY, -kFar);
+        out.upperZ[slot] = lerp(node.upperZ, node.endUpperZ, -kFar);
+    }
+    return out;
+}
 
 /** The planes of one axis of a node, near first, for a ray running down it either way. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the near planes, then the far

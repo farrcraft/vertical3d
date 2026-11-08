@@ -107,7 +107,9 @@ orthographic, at the origin.
 world into a `geometry::Prototypes`, each in its own space, with the instances that place them.
 
 - **A prototype placed many times is held once.** Each mesh's triangles are a run of the
-  triangles every mesh holds, three points each, with the face each was cut from.
+  triangles every mesh holds, with the face each was cut from. Its points are three per
+  triangle at each of its samples, one sample after another, and the faces are cut where the
+  first sample's points lie.
 - **An instance names its prototype**, a mesh or a group, and its transformation into the space
   of the group that holds it. It keeps its index in the scene. Its `camera`, `shadow` and
   `indirect` parameters give the kinds of ray it is visible to.
@@ -123,12 +125,36 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
   `Prototypes::reports` holds the reports, and the log has them too.
 - **An instance whose prototype was removed places nothing**, and one whose group was removed is
   placed by nothing.
-- **A transformation is its first sample.**
+- **The shutter is the camera's.** `Prototypes::open` and `close` hold it.
+
+## Motion
+
+Each instance's transformation and each mesh's points keep every sample the scene holds, at
+their own times. Two objects need not share times or a count of samples. The interpolation is
+kernel code in `kernel/geometry/Motion.h`, so every traversal and the placing below read one
+motion.
+
+- **A time is held to the shutter.** A ray before the shutter opens is traced as at the opening,
+  and one after it closes as at the close. A hit keeps its ray's own time.
+- **A mesh's points are interpolated linearly** between the two samples around a time.
+  `pointAt()` reads them, and a time outside the samples takes the nearer end.
+- **A transformation is decomposed at each sample** by `geometry::decompose()`, by polar
+  decomposition, into a translation, a rotation and a symmetric scale that holds any shear. A
+  `kernel::geometry::Key` holds the three. A linear part that mirrors keeps a rotation, and its
+  scale mirrors.
+- **`transformAt()` interpolates between the keys around a time**: the translation and the scale
+  linearly, and the rotation the shortest way at an even speed. Each key's rotation takes the
+  sign nearer the key before it, so the shortest way is the one the samples meant.
+- **An instance with one sample holds still**, and is traced by its matrix as it stands, with no
+  decomposition.
+
+Background: [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md)
 
 ## Placing the scene
 
-`geometry::flatten(prototypes)` places every triangle the prototypes' instances reach in world
-space, in runs, one run for each chain of instances. `geometry::World` holds the result in a
+`geometry::flatten(prototypes, time)` places every triangle the prototypes' instances reach in
+world space as it stands at a time, in runs, one run for each chain of instances. With no time,
+it places them as they stand when the shutter opens. `geometry::World` holds the result in a
 device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
 `flatten(scene, logger)` gathers the scene and places what it gathers.
 
@@ -145,13 +171,16 @@ device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Pl
 `kernel::geometry::BruteForce` tests every placed triangle for every ray. It is slow, and it is
 the reference every other traversal is compared with. Its `nearest()` keeps the nearest hit
 within the ray's interval, and its `any()` stops at the first. A run hidden from the ray's kind
-is passed over.
+is passed over. It traces the triangles as they were placed, so it is right for a ray at the time
+they were placed at.
 
 ## The hit view
 
 The hit view is a picture of what rays hit, which lights nothing. `view::hits(device, scene,
 logger, time, tracer)` traces one camera ray through the centre of each pixel and of the lens, at
 a point over the shutter, through the hierarchy unless the brute-force traversal is asked for.
+The scene is placed at that time, for the brute-force traversal and for each hit's normal and
+face.
 `view::writeHits()` writes it as an EXR file of float channels, and `moya --hits` writes the hit
 view of a RIB file.
 
@@ -196,28 +225,73 @@ by the surface area heuristic.
 
 Background: [ADR-0205](../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md)
 
+## A hierarchy over motion
+
+`accel::buildMoving(device, count, sweep, begin, end, options)` builds a hierarchy over
+primitives that move, over a time range. `sweep` gives a primitive's bounds over any part of the
+range as an `accel::LinearBox`: a box at the part's start and one at its end, with the box at a
+time between interpolated linearly.
+
+- **Each node covers a time range**, and bounds each of its primitives over that range.
+- **A node is split by its primitives or by time**, whichever costs less by the surface area
+  heuristic. A split by primitives bins their centroids at the middle of the range, as `build()`
+  does. A split by time halves the range, keeps every primitive on both sides, and bounds each
+  again over its half. It pays where motion turns back within the range, as a bounce or a turn
+  does, so that bounds over the whole range are loose. A box's area is its area averaged over its
+  range, which three points give exactly. There are no spatial splits.
+- **The binary hierarchy collapses to eight children** as a still one does, each node opening the
+  child of the largest area times its share of the range. `Options::temporal` turns time splits
+  off, and `accel::cost()` weights each child by its share of the range.
+
+A `device::cpu::MotionNode` holds each child's box at the start and end of its range, and the
+range. A ray outside a child's range does not reach it. It is twice the size of a `Node`.
+
+The bounds that `sweep` gives are exact where the motion allows it.
+
+- **A moving triangle's** points move along lines between samples. The bounds at the range's ends
+  are pushed out until they hold each point at every sample inside the range, which is then
+  enough to hold them between.
+- **A box moved by an instance that moves** sweeps each corner along a curve. Between two keys,
+  each coordinate of a corner is `a0 + a1 w + (b0 + b1 w) cos(θ w) + (c0 + c1 w) sin(θ w)` of the
+  fraction `w` along the segment, where θ is the angle the rotation turns. `accel::sweepBox()`
+  pushes the bounds out by how far each corner strays from them. That is found where the
+  coordinate turns back, by halving the segment wherever a bound on how fast its slope changes
+  allows a turn. A corner that swings outside the boxes at the range's ends stays inside.
+- **Each bound is rounded outward** from double precision to single.
+
+Background: [ADR-0207](../adr/offline/0207-offline-the-hierarchy-splits-motion-by-time.md)
+
 ## A hierarchy per prototype
 
 `accel::assemble(device, prototypes)` builds a hierarchy for each mesh and each group of a
-scene's prototypes, and one for the world, all held in one array of nodes and one of references.
-An `accel::Assembly` gives each one's root.
+scene's prototypes, and one for the world. Still hierarchies are held in one array of nodes and
+moving ones in one of moving nodes, with one array of references. An `accel::Assembly` gives each
+one's root, and whether it moves.
 
-- **A mesh's hierarchy is built once**, however many instances place it, as `build()` builds one
-  over triangles. Its leaves hold the indices of its triangles within the mesh.
-- **A group's hierarchy is built over its instances**, with no spatial splits. Each instance is
-  bounded by its prototype's box with its eight corners moved by its transformation. A group's
-  leaves hold instances. Groups are built in their order, so each member's box is known.
+- **A mesh's hierarchy is built once**, however many instances place it. A mesh that holds still
+  is built as `build()` builds one over triangles, and one that moves as `buildMoving()` does,
+  over the shutter. Its leaves hold the indices of its triangles within the mesh.
+- **A group's hierarchy is built over its instances**, with no spatial splits. A group moves when
+  an instance in it moves, or places something that moves. One that holds still bounds each
+  instance by its prototype's box with its eight corners moved by its transformation.
+- **A moving group bounds each instance over each range its builder asks for**, by its
+  prototype's bounds over that range. An instance that holds still moves those bounds at each
+  end of the range. One that moves sweeps its prototype's box over the whole range along its
+  keys, as `sweepBox()` does. Groups are built in their order, so each member's bounds are known.
 - **The world's hierarchy is a group's**, over the instances in no group.
 
-A `device::cpu::Instance` is an instance as the CPU traverses it: the inverse of its
-transformation, its prototype's root, its index in the scene and its visibility. An instance of a
-mesh names the mesh's first triangle, and one of a group names `kGroup`.
+A `device::cpu::Instance` is an instance as the CPU traverses it. It holds the inverse of its
+transformation while it holds still, and its keys while it moves. It names its prototype's root
+and whether that moves, its mesh or `kGroup`, its index in the scene and its visibility.
 
 ## The CPU's traversal
 
 `device::cpu::Traversal` traverses the hierarchies from the world's root, testing a node's eight
 children at once: as one AVX register for AVX2 and AVX-512, and as two SSE registers for SSE4.2.
 
+- **A ray's time is held to the shutter.** A moving node stands at that time as a still one, each
+  child's box interpolated, and a child whose range does not hold the time left empty. A moving
+  mesh's points, and a moving instance's transformation, are interpolated at that time.
 - **A box is entered at its near planes and left at its far ones**, chosen per axis by the sign of
   the ray's direction. An empty child's near plane lies beyond its far one, so no ray reaches it.
   A distance that is not a number, from a ray along a box's plane, is passed over.
@@ -226,8 +300,9 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
 - **`nearest()` tests the leaves it reaches nearest first**, and pushes the nodes it reaches
   farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
   passed over. `any()` stops at the first triangle it meets.
-- **A leaf of a group's hierarchy enters each of its instances**, and the ray is moved into the
-  instance's prototype's space, where it traverses the prototype's hierarchy. A distance along the
+- **A leaf of a group's hierarchy enters each of its instances.** The ray is moved into the
+  instance's prototype's space by the inverse of its transformation at the ray's time, and
+  traverses the prototype's hierarchy there. A distance along the
   moved ray reaches the point the same distance along the ray it was moved from, so hits inside
   and outside an instance are compared by their distances alone.
 - **A ray enters an instance only when the instance is visible to its kind**, and only when its
@@ -236,10 +311,11 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   its mesh, with the chain of instances the ray entered to reach it, outermost first.
 
 `view::Tracing` holds a scene's prototypes on a CPU device: their triangles placed in world space
-for the brute-force traversal, and the hierarchies when the hierarchy is traced through.
+at a time for the brute-force traversal, and the hierarchies when the hierarchy is traced through.
 `view::trace(device, prototypes, rays, tracer)` traces a list of rays and gives each one's
-nearest hit and whether anything lies on it.
+nearest hit and whether anything lies on it. Through the brute-force traversal it places the
+scene again for each time a ray holds, so each ray is traced against the scene at its own time.
 
-The brute-force traversal is the oracle for instances too. Its triangles are moved into the world
-and the hierarchy's rays into each instance, so the two round apart, and their distances agree
-within a tolerance rather than exactly.
+The brute-force traversal is the oracle for instances and motion too. Its triangles are moved
+into the world and the hierarchy's rays into each instance, so the two round apart, and their
+distances agree within a tolerance rather than exactly.

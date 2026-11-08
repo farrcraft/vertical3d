@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
@@ -42,6 +43,24 @@ struct Options {
      * which thread builds which node.
      **/
     float budget { 1.0F };
+
+    /** Whether a hierarchy over moving primitives may split a node by time. **/
+    bool temporal { true };
+};
+
+/**
+ * A built hierarchy over primitives that move, in host memory, over the time range from begin to
+ * end. Its nodes are as Hierarchy's, with each child's box at the start and end of the child's
+ * own range.
+ **/
+struct MovingHierarchy {
+    std::vector<device::cpu::MotionNode> nodes;
+    std::vector<std::uint32_t> references;
+
+    /** The bounds of everything the hierarchy holds over its range. **/
+    LinearBox bounds;
+    float begin { 0.0F };
+    float end { 0.0F };
 };
 
 /**
@@ -70,5 +89,33 @@ Hierarchy build(device::CpuDevice & device, const std::vector<Box> & bounds, con
  * test of one primitive.
  **/
 double cost(const Hierarchy & hierarchy);
+
+/**
+ * Builds a hierarchy over moving primitives by their bounds over time.
+ *
+ * Each node covers a time range, and each of its primitives is bounded over that range by a box
+ * at each end. A node is split by the surface area heuristic, over 32 bins of the centroids at
+ * the middle of its range, or by time at the middle of its range. A split by time keeps every
+ * primitive on both sides, each bounded again over its half. It is taken where it costs less,
+ * as where motion turns back and its bounds over the whole range are loose. There are no spatial
+ * splits. A box's area is its area averaged over its range.
+ *
+ * The binary hierarchy is then collapsed to nodes of eight children as build() collapses one,
+ * opening the child of the largest area times its share of the range. The result depends only on
+ * the primitives.
+ *
+ * @param count how many primitives there are
+ * @param sweep each primitive's bounds over a time range
+ * @throws std::invalid_argument when the range is not finite or ends before it begins, or there are
+ *         2^31 primitives or more
+ **/
+MovingHierarchy buildMoving(device::CpuDevice & device, std::uint32_t count, const Sweep & sweep, float begin, float end,
+    const Options & options = {});
+
+/**
+ * A moving hierarchy's cost by the surface area heuristic, as cost() gives a still one's, with each
+ * child's area also weighted by its share of the hierarchy's time range.
+ **/
+double cost(const MovingHierarchy & hierarchy);
 
 };  // namespace v3d::moya::accel

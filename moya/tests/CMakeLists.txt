@@ -14,6 +14,7 @@ v3d_add_test(moya
 	"HitTest.cxx"
 	"HitViewTest.cxx"
 	"InstancesTest.cxx"
+	"MotionTest.cxx"
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
 	"PolygonTest.cxx"

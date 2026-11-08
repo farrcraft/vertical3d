@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 
 #include <cstdint>
@@ -19,8 +20,11 @@ namespace v3d::moya::device::cpu {
 
 /**
  * The CPU's traversal: a hierarchy of eight-wide nodes for each mesh and each group, whose nodes
- * are tested eight children at a time with SIMD. Every hierarchy is held in the one array of
- * nodes, and a ray starts at the world's.
+ * are tested eight children at a time with SIMD. Still hierarchies are held in one array of
+ * nodes and moving ones in another, and a ray starts at the world's.
+ *
+ * A ray's time is held to the shutter. Each moving transformation and each moving mesh's points
+ * are interpolated at that time, and a moving node's boxes too.
  *
  * A ray enters an instance only when the instance is visible to its kind and the chain it is
  * inside has room for one more. A hit's chain is the instances it entered, outermost first.
@@ -30,6 +34,7 @@ namespace v3d::moya::device::cpu {
  **/
 struct Traversal {
     kernel::Array<Node> nodes;
+    kernel::Array<MotionNode> motionNodes;
 
     /**
      * The hierarchies' references. A mesh's leaf holds the index of a triangle within its mesh,
@@ -37,13 +42,29 @@ struct Traversal {
      **/
     kernel::Array<std::uint32_t> references;
 
-    /** Three points per triangle of every mesh, each in its mesh's own space. **/
+    /** Three points per triangle of every mesh at each of its samples, in its mesh's space. **/
     kernel::Array<glm::vec3> points;
+
+    /** The times of every moving mesh's samples. **/
+    kernel::Array<float> times;
+
+    /** Where each mesh's points are held. **/
+    kernel::Array<kernel::geometry::PointSamples> meshes;
+
+    /** The keys of every moving instance. **/
+    kernel::Array<kernel::geometry::Key> keys;
 
     kernel::Array<Instance> instances;
 
     /** The root of the world's hierarchy, whose leaves hold the instances in no group. **/
     std::uint32_t world { 0 };
+
+    /** One when the world's hierarchy is of moving nodes. **/
+    std::uint32_t worldMoving { 0 };
+
+    /** The times the shutter opens and closes. **/
+    float open { 0.0F };
+    float close { 0.0F };
 
     kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray) const;
     bool any(const kernel::geometry::Ray & ray) const;

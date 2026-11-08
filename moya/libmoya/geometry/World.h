@@ -18,6 +18,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::log {
@@ -50,8 +51,18 @@ struct Flat {
  * mesh is one placement, in the order of the instances' indices, visible to the rays every
  * instance of the chain is. A chain deeper than kernel::geometry::kInstanceDepth is left out, as
  * gather() reports. The reports are the prototypes'.
+ *
+ * Each transformation and each mesh's points are placed as they stand at a time, which is held
+ * to the shutter. With no time, they are placed as they stand when the shutter opens.
  **/
+Flat flatten(const Prototypes & prototypes, float time);
 Flat flatten(const Prototypes & prototypes);
+
+/** A time held to the prototypes' shutter: the opening before it opens, and the closing after. **/
+float heldTime(const Prototypes & prototypes, float time);
+
+/** An instance's transformation at a time, interpolated between its keys when it moves. **/
+glm::mat4 transformAt(const Instance & instance, float time);
 
 /** The triangles of every mesh the scene's instances place: flatten() of what gather() gives. **/
 Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger);

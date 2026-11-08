@@ -6,8 +6,11 @@
 #include <moya/libmoya/geometry/internal/Walk.h>
 
 #include <api/log/Logger.h>
+#include <moya/libmoya/camera/Camera.h>
+#include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Triangulate.h>
+#include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -33,6 +36,9 @@ Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & lo
 }
 
 Prototypes Walk::take() {
+    const kernel::camera::Camera camera = camera::fromScene(scene_);
+    prototypes_.open = camera.open;
+    prototypes_.close = camera.close;
     prototypes_.world = members(scene::Handle {});
     deepen(prototypes_.world, 0);
     return std::move(prototypes_);
@@ -83,7 +89,11 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
     }
     Instance out;
     out.id = handle.index;
-    out.transform = scene_.value(handle, "transform").matrixAt(0);
+    const scene::Samples & transform = scene_.samples(handle, "transform");
+    out.transform = transform.values.front().matrixAt(0);
+    if (transform.values.size() > 1) {
+        out.keys = keys(transform);
+    }
     const std::pair<const char *, std::uint32_t> kinds[] = { { "camera", kernel::geometry::kCameraRay },
         { "shadow", kernel::geometry::kShadowRay }, { "indirect", kernel::geometry::kIndirectRay } };
     for (const auto & [name, bit] : kinds) {
@@ -132,11 +142,13 @@ std::uint32_t Walk::mesh(const scene::Handle & handle) {
     if (found != meshIndex_.end()) {
         return found->second;
     }
+    // the faces are cut where the first sample's points lie, and every sample shares the cut
+    const scene::Samples & samples = scene_.samples(handle, "P");
+    const scene::Value & firstSample = samples.values.front();
     std::vector<glm::vec3> points;
-    const scene::Value & values = scene_.value(handle, "P");
-    points.reserve(values.size());
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        points.push_back(values.triple(i));
+    points.reserve(firstSample.size());
+    for (std::size_t i = 0; i < firstSample.size(); ++i) {
+        points.push_back(firstSample.triple(i));
     }
     const std::vector<std::int32_t> & indices = scene_.value(handle, "indices").integerArray();
     const Triangles triangles = triangulate(points, scene_.value(handle, "vertices").integerArray(), indices);
@@ -146,8 +158,17 @@ std::uint32_t Walk::mesh(const scene::Handle & handle) {
     Mesh mesh;
     mesh.first = static_cast<std::uint32_t>(prototypes_.faces.size());
     mesh.count = static_cast<std::uint32_t>(triangles.faces.size());
-    for (const std::uint32_t corner : triangles.corners) {
-        prototypes_.points.push_back(points[static_cast<std::size_t>(indices[corner])]);
+    mesh.points.first = static_cast<std::uint32_t>(prototypes_.points.size());
+    mesh.points.count = static_cast<std::uint32_t>(triangles.corners.size());
+    mesh.points.times = static_cast<std::uint32_t>(prototypes_.times.size());
+    mesh.points.samples = static_cast<std::uint32_t>(samples.values.size());
+    if (mesh.moves()) {
+        prototypes_.times.insert(prototypes_.times.end(), samples.times.begin(), samples.times.end());
+    }
+    for (const scene::Value & sample : samples.values) {
+        for (const std::uint32_t corner : triangles.corners) {
+            prototypes_.points.push_back(sample.triple(static_cast<std::size_t>(indices[corner])));
+        }
     }
     prototypes_.faces.insert(prototypes_.faces.end(), triangles.faces.begin(), triangles.faces.end());
     const auto index = static_cast<std::uint32_t>(prototypes_.meshes.size());

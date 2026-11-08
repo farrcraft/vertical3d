@@ -12,7 +12,7 @@
 
 namespace v3d::moya::device::cpu {
 
-/** The first triangle of an instance that places a group, which holds none. **/
+/** The mesh of an instance that places a group, which places no mesh. **/
 inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max();
 
 /**
@@ -20,16 +20,24 @@ inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max(
  * that reaches one is moved into its prototype's space and traverses the prototype's hierarchy
  * from its root.
  *
- * An instance of a mesh names the mesh's first triangle, and the leaves of the mesh's hierarchy
- * hold triangles from there. An instance of a group names kGroup, and the leaves of the group's
- * hierarchy hold instances.
+ * An instance of a mesh names the mesh, and the leaves of the mesh's hierarchy hold the indices
+ * of its triangles. An instance of a group names kGroup, and the leaves of the group's hierarchy
+ * hold instances.
  **/
 struct Instance {
-    /** From the space of the group that holds the instance into its prototype's. **/
+    /** From the space of the group that holds the instance into its prototype's, when still. **/
     glm::mat4 toPrototype { 1.0F };
 
+    /** The instance's first key and how many it has, which is more than one when it moves. **/
+    std::uint32_t keys { 0 };
+    std::uint32_t keyCount { 0 };
+
     std::uint32_t root { 0 };
-    std::uint32_t first { kGroup };
+
+    /** One when the prototype's hierarchy is of moving nodes. **/
+    std::uint32_t moving { 0 };
+
+    std::uint32_t mesh { kGroup };
 
     /** The instance's index in the scene, which a hit's chain names it by. **/
     std::uint32_t id { 0 };

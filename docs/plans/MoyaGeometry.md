@@ -134,7 +134,7 @@ among the options before the record is drafted.
 | [10](#step-10--the-builder) | The builder: binned surface area with spatial splits | `moya/libmoya/accel` | 0205 | done |
 | [11](#step-11--the-cpu-traversal) | The CPU traversal | `moya/libmoya/device` | 0204, 0205, 0206, **0210** | done |
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | done |
-| [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | open |
+| [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | done |
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | open |
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208 | open |
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | open |
@@ -537,6 +537,34 @@ group places its geometry at both transformations. A group that holds itself is 
 left out. An instance hidden from shadows casts none.
 
 ### Step 13 — Motion
+
+**Done.** `geometry::gather()` keeps every sample of each transformation and each mesh's points,
+and decomposes each sampled transformation into keys. `kernel/geometry/Motion.h` interpolates
+both, so the traversal and `geometry::flatten(prototypes, time)` read one motion.
+`accel::buildMoving()` builds a hierarchy of `device::cpu::MotionNode`s over the shutter, split
+by primitives or by time. `accel::sweepBox()` bounds a moving instance's box from where each
+corner's coordinates turn back. Each case was run against broken code as well. With the sweep
+left at the boxes of the range's ends, the rotating bar and the swept box failed. With the keys
+ignored, the rotating bar and the random scene failed. With points read at the first sample, the
+bending mesh and the random scene failed. With a ray's time left unheld, the ray after the
+shutter failed. Five things the list below did not settle:
+
+* **A time is held to the shutter.** A ray before the shutter opens is traced as at the opening,
+  and one after it closes as at the close, through the hierarchy and the oracle alike.
+* **A group moves when anything in it does.** A still group keeps still nodes, so a scene with no
+  motion costs no more than it did. A moving group bounds a still instance by its prototype's
+  bounds at each end of a range. A moving instance of a moving prototype sweeps the prototype's
+  bounds over the whole range, which is looser, and time splits tighten it.
+* **A split by time is tried at every node.** Motion that comes back has the same bounds at both
+  ends of a range, so only bounding each half again shows whether a split pays. With triangles
+  that go out and come back, splitting by time lowers the cost by more than a fifth.
+* **A moving node has no margin.** Rays aimed at the corners and edges of moving triangles under
+  moving instances, at random times, met 20,351 triangles. The hierarchy lost none without a
+  margin.
+* **The moving builder runs on the device's threads** as the still one does, and depends only on
+  the primitives.
+
+[Traversal.md](../offline/Traversal.md#motion) states the rules.
 
 * **Transformation motion**: an instance's transformation at the ray's time, interpolated by
   decomposition, and bounded as step 4 decides.

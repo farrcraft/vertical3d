@@ -45,7 +45,7 @@ geometry::Prototypes placed(const std::vector<glm::vec3> & points) {
     for (std::uint32_t i = 0; i < count; ++i) {
         prototypes.faces[i] = i;
     }
-    prototypes.meshes.push_back(geometry::Mesh { .first = 0, .count = count });
+    prototypes.meshes.push_back(geometry::Mesh { .first = 0, .count = count, .points = { .first = 0, .count = count * 3 } });
     prototypes.instances.push_back(geometry::Instance { .id = 7, .visibility = kernel::geometry::kEveryRay });
     prototypes.world.instances.push_back(0);
     return prototypes;

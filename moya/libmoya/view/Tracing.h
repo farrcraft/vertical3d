@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
@@ -31,13 +32,14 @@ enum class Tracer : std::uint8_t {
 };
 
 /**
- * A scene's prototypes on a CPU device: their triangles placed in world space, and the hierarchy
- * of each prototype when the hierarchy is traced through. It reads the device's memory, so the
- * device outlives it.
+ * A scene's prototypes on a CPU device: their triangles placed in world space at a time, and the
+ * hierarchy of each prototype when the hierarchy is traced through. It reads the device's memory,
+ * so the device outlives it.
  **/
 class Tracing final {
  public:
-    Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer);
+    /** @param time when the triangles are placed, for the brute-force traversal **/
+    Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer, float time);
 
     Tracer tracer() const;
     const geometry::World & world() const;
@@ -52,10 +54,16 @@ class Tracing final {
     Tracer tracer_;
     geometry::World world_;
     boost::shared_ptr<device::Buffer> nodes_;
+    boost::shared_ptr<device::Buffer> motionNodes_;
     boost::shared_ptr<device::Buffer> references_;
     boost::shared_ptr<device::Buffer> points_;
+    boost::shared_ptr<device::Buffer> times_;
+    boost::shared_ptr<device::Buffer> meshes_;
+    boost::shared_ptr<device::Buffer> keys_;
     boost::shared_ptr<device::Buffer> instances_;
-    std::uint32_t root_ { 0 };
+    accel::Root worldRoot_;
+    float open_ { 0.0F };
+    float close_ { 0.0F };
 };
 
 /** Each ray's nearest hit, and whether anything lies on it. **/
@@ -65,7 +73,8 @@ struct Traced {
 };
 
 /**
- * Traces each of a list of rays through a scene's prototypes.
+ * Traces each of a list of rays through a scene's prototypes, each at its own time. The
+ * brute-force traversal places the scene again for each time a ray holds.
  *
  * @throws std::runtime_error when the hierarchy is asked for and the CPU device's library cannot be
  *         loaded
