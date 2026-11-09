@@ -228,10 +228,14 @@ void keep(const boost::shared_ptr<v3d::image::Image> & rendered, const std::stri
 void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* reference,
     const char* output);
 
-/** A scene file, and the hider to render it under, or null for the one the file names. **/
+/**
+ * A scene file, the hider to render it under, or null for the one the file names, and whether
+ * it takes one sample at each pixel's centre unless it names its own sampling.
+ **/
 struct Scene {
     const char* file = nullptr;
     const char* hider = nullptr;
+    bool centres = false;
 };
 
 /**

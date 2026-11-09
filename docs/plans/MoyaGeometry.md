@@ -142,7 +142,7 @@ among the options before the record is drafted.
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | done |
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | done |
 | [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | open |
-| [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | open |
+| [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | done |
 | [21](#step-21--the-documents) | The reference pages for geometry and traversal | `docs` | — | open |
 
 ## What blocks what
@@ -811,6 +811,28 @@ mesh's alone. A removed prototype's instances are left out.
 **Tests:** the benchmark builds and runs one short pass in the suite, so it does not rot.
 
 ### Step 20 — The RIB scenes through the hit view
+
+**Done.** Each of the 22 scenes has its hit view, as `moya --hits` writes it, committed as
+`moya/tests/data/scenes/<scene>.exr`, 83 KB in all. The suite traces every scene and compares
+it with its committed view. The 18 scenes that hold still and are not displaced are also
+rendered by the ray hider. At every pixel inside one surface, the hit view's depth is its depth
+plane's to a ten thousandth. The furthest apart any scene came was 7 millionths. Each case
+was run against broken code as well, one break at a time. A field of view an eleventh wider
+failed both cases in the perspective scenes, a sphere a hundredth larger failed both in the
+spheres, and a depth a thousandth long failed both in every scene. Three things the list below
+did not settle:
+
+* **The old depth plane is RI's screen depth**, moved onto [0, 2], so it is linear in depth only
+  under an orthographic camera. The test takes it back to depth through the camera's clipping
+  planes.
+* **The ray hider takes one sample at each pixel's centre** unless the scene names its own
+  sampling. Under RI's default of two by two samples and a gaussian, a sphere's filtered depth
+  came 0.7% nearer than its depth at the centre, which is the filter and not the geometry.
+* **A pixel on an edge is left out of both comparisons.** Where a neighbour's ray met something
+  else, rounding between compilers, or the old renderer's samples, can take the pixel to either
+  side.
+
+[Testing.md](../contributing/Testing.md#moya-references) states the rules.
 
 * **Every one of the 22 scenes in `moya/tests/data`** renders through `moya --hits`, and its hit
   view is committed beside the scene's description.

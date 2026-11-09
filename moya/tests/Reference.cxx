@@ -276,6 +276,9 @@ boost::shared_ptr<v3d::render::offline::film::FrameBuffer> read(const Scene & sc
     if (scene.hider != nullptr) {
         handler.context().hider(scene.hider);
     }
+    if (scene.centres) {
+        pixelCentres(handler.context());
+    }
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(reader.read(scene.file, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");

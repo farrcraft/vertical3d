@@ -457,6 +457,24 @@ differences between compilers. It reports the worst pixel and by how much. A fai
 case with no reference yet, writes what it rendered to `data_out/` beside the executable. Copy that
 file over the reference to change it on purpose.
 
+Each `.rib` file also has what the new core makes of it committed in `moya/tests/data/scenes/`:
+
+- `<scene>.txt` is the scene's description, as `moya --scene` prints it. The suite reads every
+  file through the scene client and compares the two exactly.
+- `<scene>.exr` is the scene's hit view, as `moya --hits` writes it. The suite traces every file
+  and compares the two. Depths agree to a ten thousandth of the depth, normals to a ten
+  thousandth, and what each ray met exactly. A pixel on an edge, where a neighbour's ray met
+  something else, is left out, since rounding between compilers can take a ray to either side.
+- **Depth is checked against the ray hider.** Each scene that holds still and is not displaced
+  is rendered by the ray hider too, one sample at each pixel's centre unless the scene names its
+  own sampling. Wherever both cover a pixel inside one surface, the hit view's depth is the ray
+  hider's to a ten thousandth. The old depth plane holds RI's screen depth on [0, 2], so the test
+  takes it back to depth along the view through the camera's clipping planes.
+
+Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/data/`, when the
+new core changes what a scene makes on purpose. `--scene` writes to standard output, so its line
+endings are made LF before the file is committed.
+
 ## Verifying a rendering change
 
 CI checks the four reference images and every other device case. That does not cover anything
