@@ -27,9 +27,11 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -216,8 +218,11 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_every_patch_face_keeps_its_faces_winding_t
     const std::vector<glm::vec3> corners { { 1.0F, 0.0F, -1.0F }, { -0.5F, 0.866F, -1.0F }, { -0.5F, -0.866F, -1.0F }, { 1.0F, 0.0F, 1.0F },
         { -0.5F, 0.866F, 1.0F }, { -0.5F, -0.866F, 1.0F } };
     const geometry::Surface surface(prism);
+    // an edge of a triangle is cut into 4 pieces, its halves into 2 each. A side face, of 4 pieces
+    // across and 3 up, is a grid of 2 cells and 20 triangles that join its sides. A triangle's
+    // patch face, of sides of 2, 3, 3 and 2 pieces, is a grid of 1 cell and 14 triangles
     const geometry::Tessellation cut = surface.cut(3);
-    BOOST_TEST(cut.faces.size() == (3U + 3U + 3U) * 3U * 3U * 2U);
+    BOOST_TEST(cut.faces.size() == (3U * (4U + 20U)) + (6U * (2U + 14U)));
     const std::vector<glm::vec3> places = pointsOf(surface.at(flat(corners), 3, Interpolation::Vertex, cut));
     std::size_t inward = 0;
     for (std::size_t triangle = 0; triangle < cut.faces.size(); ++triangle) {
@@ -254,6 +259,15 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_face_varying_value_keeps_its_seams_test)
     for (int face = 0; face < 6; ++face) {
         uv.insert(uv.end(), { 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F });
     }
+    // the cube's own tessellation shares the points of its edges, and keeps the seams of a
+    // face-varying value there
+    const std::vector<float> seams = surface.at(uv, 2, Interpolation::FaceVarying, cut);
+    std::size_t apartOnEdges = 0;
+    for (std::size_t place = 0; place < cut.shared.size(); ++place) {
+        const std::size_t other = cut.shared[place];
+        apartOnEdges += std::fabs(seams[place * 2] - seams[other * 2]) + std::fabs(seams[(place * 2) + 1] - seams[(other * 2) + 1]) > 0.5F ? 1 : 0;
+    }
+    BOOST_TEST(apartOnEdges > 0U);
     const std::vector<float> seamed = surface.at(uv, 2, Interpolation::FaceVarying,
         placesAt({ 0, 3, 3, 5 }, { glm::vec2(0.0F), glm::vec2(1.0F, 0.0F), glm::vec2(0.5F), glm::vec2(0.0F, 1.0F) }));
     const std::vector<float> want { 0.0F, 0.0F, 1.0F, 0.0F, 0.5F, 0.5F, 0.0F, 1.0F };
@@ -357,6 +371,9 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_subdivision_surface_is_traced_test) {
     const scene::Handle camera = still.create("camera", "camera");
     still.set(options, "resolution", scene::Value::integers({ 9, 9 }));
     still.set(options, "camera", scene::Value::handle(camera));
+    // every edge into as many pieces as it may be cut into, an even number, so that the top's
+    // middle is a place
+    still.set(options, "edgeLength", scene::Value::number(0.0F));
     still.set(camera, "projection", scene::Value::string("orthographic"));
     // the cube turned over about x, so that its top, face 4, faces the camera from z = 3
     const scene::Handle box = subdivision(still, "box", cube(), cubePoints());
@@ -367,6 +384,249 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_subdivision_surface_is_traced_test) {
     const v3d::moya::film::Snapshot snapshot = view::hits(device, still, {}, 0.0F, view::Tracer::Hierarchy);
     BOOST_TEST(snapshot.at(4, 4, snapshot.offset(view::kFace)) == 4.0F);
     BOOST_TEST(std::fabs(snapshot.at(4, 4, snapshot.offset(view::kDepth)) - (3.0F - (68.0F / 81.0F))) < 1.0e-4F);
+}
+
+
+/** A bilinear surface of two unit squares facing -z at two depths, its edges interpolated. **/
+scene::Handle squares(scene::Scene & scene, const std::string & name, float near, float far) {
+    geometry::Topology two;
+    two.vertices = { 4, 4 };
+    two.indices = { 0, 3, 2, 1, 4, 7, 6, 5 };
+    two.points = 8;
+    std::vector<glm::vec3> points;
+    for (const float depth : { near, far }) {
+        points.insert(points.end(), { { -0.5F, -0.5F, depth }, { 0.5F, -0.5F, depth }, { 0.5F, 0.5F, depth }, { -0.5F, 0.5F, depth } });
+    }
+    const scene::Handle out = subdivision(scene, name, two, points);
+    scene.set(out, "scheme", scene::Value::string("bilinear"));
+    scene.set(out, "boundary", scene::Value::string("edges"));
+    return out;
+}
+
+/** A perspective camera at a placement, of a field of view of 90 degrees, looking down its +z. **/
+scene::Handle perspective(scene::Scene & scene, const std::string & name, const glm::mat4 & placement) {
+    const scene::Handle out = scene.create("camera", name);
+    scene.set(out, "projection", scene::Value::string("perspective"));
+    scene.set(out, "fov", scene::Value::number(90.0F));
+    scene.set(out, "transform", scene::Value::matrix(placement));
+    return out;
+}
+
+/** How many of the prototypes' triangles were cut from each face, by the face. **/
+std::vector<std::uint32_t> trianglesOfFaces(const geometry::Prototypes & prototypes, std::size_t faces) {
+    std::vector<std::uint32_t> out(faces, 0);
+    for (const std::uint32_t face : prototypes.faces) {
+        out[face]++;
+    }
+    return out;
+}
+
+// a pixel of 100 across a field of view of 90 degrees is 0.02 wide at a depth of 1. A unit edge at
+// a depth of 2.2 is then 22.7 pixels long and is cut into 23 pieces, and one at 7.3 into 7. A
+// dicing camera on the far side measures them from there instead
+BOOST_AUTO_TEST_CASE(moya_subdivision_a_patch_nearer_the_camera_is_cut_more_finely_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = scene.create("options", "options");
+    scene.set(options, "resolution", scene::Value::integers({ 100, 100 }));
+    scene.set(options, "camera", scene::Value::handle(perspective(scene, "camera", glm::mat4(1.0F))));
+    instanced(scene, "squares", squares(scene, "squares", 2.2F, 7.3F), {}, glm::mat4(1.0F));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((trianglesOfFaces(geometry::gather(scene, {}), 2) == std::vector<std::uint32_t> { 23U * 23U * 2U, 7U * 7U * 2U }));
+
+    // at a depth of 10, turned to look back down -z, the squares are 7.8 and 2.7 away
+    const glm::mat4 behind = moved(0.0F, 0.0F, 10.0F) * glm::rotate(glm::mat4(1.0F), 3.14159265F, glm::vec3 { 0.0F, 1.0F, 0.0F });
+    scene.set(options, "dicingCamera", scene::Value::handle(perspective(scene, "dicing", behind)));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((trianglesOfFaces(geometry::gather(scene, {}), 2) == std::vector<std::uint32_t> { 7U * 7U * 2U, 19U * 19U * 2U }));
+
+    // twice the edge length, so 11.4 and 3.4 pieces, and 12 and 4 cut
+    scene.set(options, "edgeLength", scene::Value::number(2.0F));
+    scene.set(options, "dicingCamera", scene::Value::handle({}));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((trianglesOfFaces(geometry::gather(scene, {}), 2) == std::vector<std::uint32_t> { 12U * 12U * 2U, 4U * 4U * 2U }));
+}
+
+// a surface placed twice is cut once, as finely as its nearer placement needs, whichever instance
+// places it first
+BOOST_AUTO_TEST_CASE(moya_subdivision_a_surface_is_cut_for_its_nearest_placement_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = scene.create("options", "options");
+    scene.set(options, "resolution", scene::Value::integers({ 100, 100 }));
+    scene.set(options, "camera", scene::Value::handle(perspective(scene, "camera", glm::mat4(1.0F))));
+    const scene::Handle both = squares(scene, "squares", 0.0F, 0.0F);
+    const scene::Handle group = scene.create("group", "nested");
+    instanced(scene, "far", both, {}, moved(0.0F, 0.0F, 7.3F));
+    instanced(scene, "near", both, group, glm::mat4(1.0F));
+    instanced(scene, "group", group, {}, moved(0.0F, 0.0F, 2.2F));
+    scene.commit();
+    scene.apply();
+    const geometry::Prototypes prototypes = geometry::gather(scene, {});
+    BOOST_TEST(prototypes.geometries.size() == 1U);
+    BOOST_TEST((trianglesOfFaces(prototypes, 2) == std::vector<std::uint32_t> { 23U * 23U * 2U, 23U * 23U * 2U }));
+}
+
+// a patch face whose sides are all cut alike is cut into its grid's cells, two triangles to a
+// cell, so no triangle reaches further across it than a cell's diagonal
+BOOST_AUTO_TEST_CASE(moya_subdivision_a_patch_face_cut_evenly_is_cut_into_cells_test) {
+    const geometry::Tessellation cut = geometry::Surface(cube()).cut(8);
+    float longest = 0.0F;
+    std::size_t elsewhere = 0;
+    for (std::size_t corner = 0; corner < cut.corners.size(); ++corner) {
+        const std::size_t first = corner - (corner % 3);
+        const std::uint32_t from = cut.corners[corner];
+        const std::uint32_t to = cut.corners[first + (((corner - first) + 1) % 3)];
+        elsewhere += cut.patches[from] == cut.patches[to] ? 0 : 1;
+        longest = std::max(longest, glm::length(cut.positions[to] - cut.positions[from]));
+    }
+    BOOST_TEST(elsewhere == 0U);
+    BOOST_TEST(longest < (std::sqrt(2.0F) / 8.0F) + 1.0e-5F);
+}
+
+// a measure that cuts each edge by where it lies cuts neighbouring edges differently. Every
+// triangle's edge is still met by one other triangle, wound the other way, between the same
+// places, so no edge is cut on one side alone. Each place lies where its patch face puts it
+BOOST_AUTO_TEST_CASE(moya_subdivision_no_edge_is_cut_on_one_side_alone_test) {
+    geometry::Topology prism;
+    prism.points = 6;
+    prism.indices = { 0, 2, 1, 3, 4, 5, 0, 1, 4, 3, 1, 2, 5, 4, 2, 0, 3, 5 };
+    prism.vertices = { 3, 3, 4, 4, 4 };
+    geometry::Topology octahedron;
+    octahedron.scheme = geometry::Scheme::Loop;
+    octahedron.points = 6;
+    octahedron.indices = { 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 2, 1, 3, 2, 1, 4, 3, 1, 5, 4, 1, 2, 5 };
+    octahedron.vertices = std::vector<std::int32_t>(8, 3);
+    const std::vector<std::pair<geometry::Topology, std::vector<glm::vec3>>> surfaces { { cube(), cubePoints() },
+        { prism,
+            { { 1.0F, 0.0F, -1.0F }, { -0.5F, 0.866F, -1.0F }, { -0.5F, -0.866F, -1.0F }, { 1.0F, 0.0F, 1.0F }, { -0.5F, 0.866F, 1.0F },
+                { -0.5F, -0.866F, 1.0F } } },
+        { octahedron,
+            { { 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, -1.0F }, { 1.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F }, { -1.0F, 0.0F, 0.0F },
+                { 0.0F, -1.0F, 0.0F } } } };
+    const geometry::Surface::Measure byPlace = [](const std::vector<glm::vec3> & along) {
+        const glm::vec3 middle = (along.front() + along.back()) * 0.5F;
+        return 1U + static_cast<std::uint32_t>(std::fabs((middle.x * 3.0F) + (middle.y * 2.0F) + middle.z) * 2.0F);
+    };
+    for (std::size_t at = 0; at < surfaces.size(); ++at) {
+        const geometry::Surface surface(surfaces[at].first);
+        const std::vector<float> points = flat(surfaces[at].second);
+        const geometry::Tessellation cut = surface.cut(points, byPlace);
+        BOOST_TEST(cut.shared.size() == cut.patches.size(), at);
+        std::map<std::pair<std::uint32_t, std::uint32_t>, int> edges;
+        for (std::size_t corner = 0; corner < cut.corners.size(); ++corner) {
+            const std::size_t first = corner - (corner % 3);
+            const std::uint32_t from = cut.shared[cut.corners[corner]];
+            const std::uint32_t to = cut.shared[cut.corners[first + (((corner - first) + 1) % 3)]];
+            edges[{ from, to }]++;
+        }
+        std::size_t unmet = 0;
+        for (const auto & [edge, count] : edges) {
+            const auto back = edges.find({ edge.second, edge.first });
+            unmet += count == 1 && back != edges.end() && back->second == 1 ? 0 : 1;
+        }
+        BOOST_TEST(unmet == 0U, at);
+        // places on shared edges and corners take other places' points
+        const std::set<std::uint32_t> distinct(cut.shared.begin(), cut.shared.end());
+        BOOST_TEST(distinct.size() < cut.patches.size(), at);
+
+        geometry::Tessellation own = cut;
+        own.shared.clear();
+        const std::vector<glm::vec3> placed = pointsOf(surface.at(points, 3, Interpolation::Vertex, own));
+        const std::vector<glm::vec3> taken = pointsOf(surface.at(points, 3, Interpolation::Vertex, cut));
+        float apart = 0.0F;
+        for (std::size_t place = 0; place < placed.size(); ++place) {
+            apart = std::max(apart, glm::length(placed[place] - taken[place]));
+        }
+        BOOST_TEST(apart < 1.0e-5F, at);
+    }
+}
+
+/** The cube's subdivision surface, displaced by one height and held within a bound. **/
+scene::Handle displaced(scene::Scene & scene, float height, float bound) {
+    const scene::Handle out = subdivision(scene, "cage", cube(), cubePoints());
+    scene.declare(out, scene::Declaration { .name = "displacement", .type = scene::Type::Float, .fallback = scene::Value::number(0.0F) });
+    scene.set(out, "displacement", scene::Value::number(height));
+    scene.set(out, "displacementBound", scene::Value::number(bound));
+    return out;
+}
+
+/** Rays from the cube's centre through the middle of each face and through each corner. **/
+std::vector<kernel::geometry::Ray> outward() {
+    std::vector<kernel::geometry::Ray> out;
+    std::vector<glm::vec3> directions;
+    for (int axis = 0; axis < 3; ++axis) {
+        for (const float sign : { -1.0F, 1.0F }) {
+            glm::vec3 direction { 0.0F };
+            direction[axis] = sign;
+            directions.push_back(direction);
+        }
+    }
+    for (const glm::vec3 & corner : cubePoints()) {
+        directions.push_back(glm::normalize(corner));
+    }
+    for (const glm::vec3 & direction : directions) {
+        kernel::geometry::Ray ray;
+        ray.direction = direction;
+        out.push_back(ray);
+    }
+    return out;
+}
+
+// rays from the cube's centre meet its limit raised by its height along the normal: 68/81 out
+// through each face's middle, and half the diagonal through each corner. A height beyond the
+// bound is held to the bound, and reported
+BOOST_AUTO_TEST_CASE(moya_subdivision_a_displaced_surface_is_hit_at_its_height_test) {
+    for (const std::pair<float, float> & displacement : { std::pair { 0.25F, 0.5F }, std::pair { -0.125F, 0.5F }, std::pair { 1.0F, 0.25F } }) {
+        const float height = displacement.first;
+        const float bound = displacement.second;
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = scene.create("options", "options");
+        scene.set(options, "edgeLength", scene::Value::number(0.0F));
+        instanced(scene, "cage", displaced(scene, height, bound), {}, glm::mat4(1.0F));
+        scene.commit();
+        scene.apply();
+        const geometry::Prototypes prototypes = geometry::gather(scene, {});
+        const float raised = std::clamp(height, -bound, bound);
+        BOOST_TEST(reported(prototypes, "subdivision cage is displaced beyond its bound of 0.25, and is held to it") == (height > bound));
+        const std::vector<kernel::geometry::Ray> rays = outward();
+        eachTraversal([&](view::Tracer tracer, cpu::Isa isa) {
+            CpuDevice on(0, isa);
+            const view::Traced traced = view::trace(on, prototypes, rays, tracer);
+            for (std::size_t i = 0; i < rays.size(); ++i) {
+                const float want = (i < 6 ? 68.0F / 81.0F : std::sqrt(0.75F)) + raised;
+                BOOST_TEST(std::fabs(traced.nearest[i].distance - want) < 1.0e-4F, tracerName(tracer, isa) << ", height " << height << ", ray " << i);
+            }
+        });
+    }
+}
+
+// a height of no float, or of another count than its interpolation gives, is reported and leaves
+// the surface where its limit lies
+BOOST_AUTO_TEST_CASE(moya_subdivision_a_displacement_that_does_not_fit_is_reported_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle cage = displaced(scene, 0.25F, 0.5F);
+    scene.declare(cage, scene::Declaration { .name = "displacement",
+        .type = scene::Type::Float,
+        .count = scene::Declaration::kAny,
+        .fallback = scene::Value::floats({}),
+        .interpolation = scene::Interpolation::Vertex });
+    scene.set(cage, "displacement", scene::Value::floats({ 0.25F, 0.25F }));
+    const scene::Handle coloured = subdivision(scene, "coloured", cube(), cubePoints());
+    scene.declare(coloured, scene::Declaration { .name = "displacement", .type = scene::Type::Colour, .fallback = scene::Value::colour(glm::vec3(1.0F)) });
+    instanced(scene, "cage", cage, {}, glm::mat4(1.0F));
+    instanced(scene, "coloured", coloured, {}, glm::mat4(1.0F));
+    scene.commit();
+    scene.apply();
+    const geometry::Prototypes prototypes = geometry::gather(scene, {});
+    BOOST_TEST(reported(prototypes, "subdivision cage is not displaced, because a primvar of 2 floats is not 8 values"));
+    BOOST_TEST(reported(prototypes, "subdivision coloured's displacement is not a float, and it is not displaced"));
+    float farthest = 0.0F;
+    for (const glm::vec3 & point : prototypes.points) {
+        farthest = std::max(farthest, glm::length(point));
+    }
+    BOOST_TEST(farthest < std::sqrt(0.75F) + 1.0e-5F);
 }
 
 };  // namespace

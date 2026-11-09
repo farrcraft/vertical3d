@@ -47,15 +47,17 @@ float number(const scene::Value & value) {
     return value.floatArray().front();
 }
 
-};  // namespace
-
-kernel::camera::Camera fromScene(const scene::Scene & scene) {
+/** The scene's options, or a handle that names none when it has none. **/
+scene::Handle settingsOf(const scene::Scene & scene) {
     const std::vector<scene::Handle> options = scene.objects("options");
-    const scene::Handle settings = options.empty() ? scene::Handle {} : options.front();
+    return options.empty() ? scene::Handle {} : options.front();
+}
+
+/** A camera of the scene, with the options' resolution and frame. **/
+kernel::camera::Camera build(const scene::Scene & scene, const scene::Handle & settings, const scene::Handle & handle) {
     const auto read = [&](const std::string & name) -> const scene::Value & {
         return parameter(scene, "options", settings, name);
     };
-    const scene::Handle handle = read("camera").handleArray().front();
     const auto look = [&](const std::string & name) -> const scene::Value & {
         return parameter(scene, "camera", handle, name);
     };
@@ -94,6 +96,22 @@ kernel::camera::Camera fromScene(const scene::Scene & scene) {
     out.open = shutter[0];
     out.close = shutter[1];
     return out;
+}
+
+};  // namespace
+
+kernel::camera::Camera fromScene(const scene::Scene & scene) {
+    const scene::Handle settings = settingsOf(scene);
+    return build(scene, settings, parameter(scene, "options", settings, "camera").handleArray().front());
+}
+
+kernel::camera::Camera dicingFromScene(const scene::Scene & scene) {
+    const scene::Handle settings = settingsOf(scene);
+    const scene::Handle dicing = parameter(scene, "options", settings, "dicingCamera").handleArray().front();
+    if (dicing.valid() && scene.contains(dicing)) {
+        return build(scene, settings, dicing);
+    }
+    return fromScene(scene);
 }
 
 };  // namespace v3d::moya::camera

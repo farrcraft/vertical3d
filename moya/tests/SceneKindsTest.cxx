@@ -97,6 +97,8 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "options \"render\"\n"
         "    camera handle = camera \"main\"\n"
         "    crop float[4] = 0 1 0 1\n"
+        "    dicingCamera handle = none\n"
+        "    edgeLength float = 1\n"
         "    filter string = \"gaussian\"\n"
         "    filterWidth float[2] = 2 2\n"
         "    frame integer = 0\n"

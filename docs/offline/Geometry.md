@@ -37,16 +37,22 @@ points and every primvar is evaluated over them.
   of each vertex where two meet.
 - **Refinement is adaptive**, isolating creases and extraordinary vertices to 6 levels, with
   Gregory patches where it stops.
-- **`cut(rate)` cuts the surface into triangles** of a `Tessellation`, each side of each patch
-  face into a rate of pieces. A face of four vertices is one patch face, a Catmull-Clark or
-  bilinear face of n others is n, one at each corner, and a Loop face is one triangular patch
-  face. Each triangle keeps its face's winding, and the face it was cut from.
+- **`cut(points, measure)` cuts the surface into triangles** of a `Tessellation`, each edge into
+  the pieces the measure gives it, as [the next section](#tessellation-and-displacement) says.
+  `cut(rate)` cuts every edge into a rate of pieces. A face of four vertices is one patch face, a
+  Catmull-Clark or bilinear face of n others is n, one at each corner, and a Loop face is one
+  triangular patch face. Each triangle keeps its face's winding, and the face it was cut from.
 - **A tessellation's places are not shared between patch faces**, so a face-varying value can
-  differ on each side of an edge. Each place names its patch face and its position there.
+  differ on each side of an edge. Each place names its patch face and its position there, and
+  the place whose point it takes.
 - **`at(values, width, interpolation, tessellation)` evaluates a primvar at each place.** A
   vertex value is evaluated on the limit surface, as the points are, and a varying one
-  bilinearly across each patch face. A uniform value is its face's, and a constant one is the
-  same everywhere.
+  bilinearly across each patch face. Each place takes either from the place whose point it
+  takes. A uniform value is its face's, and a constant one is the same everywhere.
+- **`normals(points, tessellation)` gives the limit surface's unit normal at each place**, the
+  cross product of its derivatives along a patch face's first side and then its last. A face
+  wound counterclockwise as it is seen faces the viewer. Where the derivatives meet in a line,
+  the normal is taken a little inside the patch face.
 - **A face-varying value is given at each index**, as RI gives one. Corners of one vertex that
   give equal values share one, so a value that differs only across a seam keeps the seam. It is
   interpolated linearly at the corners of its seams, as RI's facevaryinginterpolateboundary does
@@ -56,6 +62,50 @@ points and every primvar is evaluated over them.
   three vertices, or a Loop face more. The counts may not add up to the indices, an index or a
   tagged vertex may lie outside the points, the tags' counts may not match, or a hole may name no
   face. Values of another count than their interpolation gives are refused too.
+
+## Tessellation and displacement
+
+`gather()` cuts every subdivision surface into triangles when it gathers the scene, before any
+hierarchy is built, so every device sees the same triangles.
+
+- **An edge is cut into its own number of pieces**, the same on both sides. An edge is an edge of
+  the control mesh, or an edge between two patch faces of one face. Each edge is measured once,
+  along the first face that reaches it, from points on the limit surface along it.
+- **A control edge beside a face of n vertices other than four is cut into an even number of
+  pieces**, in Catmull-Clark and bilinear surfaces. Its middle is then a corner of two of that
+  face's patch faces, which each take half of it.
+- **A place on an edge or a corner takes the point of the first place cut there**, so two patch
+  faces meet at the same points and the surface has no cracks. Face-varying and uniform values
+  are not shared, so a seam stays where it is.
+- **A patch face whose sides are all one piece is cut corner to corner.** Any other has a grid
+  inside it. The grid is as fine across as the finer of the sides across, and as fine up as the
+  finer of the sides up. It has at least two cells each way, and a triangular one three to a
+  side. Each side is joined to the grid's nearest row by a strip of triangles, the nearer of the
+  next two places joined first.
+- **`Dicing(camera, edgeLength, placement)` measures an edge in pixels**, as Cycles does. A
+  piece's length in pixels is its length over the width of a pixel at its middle's depth. An edge
+  seen end on is then cut as finely as one seen across. A pixel is the narrower of its width and
+  height on the screen, and a perspective camera's widens with depth. A point behind the camera
+  is measured by its distance from the camera's plane. An edge is cut into as many pieces as its
+  length in pixels over the edge length, rounded up, from 1 to `Dicing::kMostPieces`, which is
+  64. An edge length of zero or less cuts every edge into 64.
+- **The options give the edge length**, `edgeLength` in pixels, and the camera it is measured
+  from, `dicingCamera`. While they name no dicing camera, it is the render camera. Either takes
+  the options' resolution and frame.
+- **A surface placed many times is cut once**, for the placement nearest the dicing camera. That
+  is the one that brings the box of its first sample's points, grown by its displacement bound,
+  nearest the camera's position. Every placement down a chain of instances a traversal follows is
+  weighed. A surface is measured at its first sample, and its other samples share the cut.
+- **A surface is displaced by its `displacement` primvar**, a float of any interpolation, as a
+  height along its limit surface's normal in its own space. A positive height moves it toward the
+  side its faces are wound counterclockwise from. Each sample is displaced along its own normals,
+  and the points of shared places are shared again after it.
+- **A height is held within the surface's `displacementBound`**, in its own space, which is 0
+  until a client sets it, as RI's displacement bound is. A height beyond it is held to it, and
+  reported. A displacement that is not a float, or not of the count its interpolation gives, is
+  reported, and the surface lies on its limit.
+- **The hierarchy bounds the displaced triangles themselves**, so its boxes are not grown by the
+  bound.
 
 Background: [ADR-0209](../adr/offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md)
 

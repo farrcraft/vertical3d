@@ -5,6 +5,7 @@
 
 #include <moya/libmoya/geometry/Surface.h>
 
+#include <moya/libmoya/geometry/internal/Cutter.h>
 #include <moya/libmoya/geometry/internal/Patches.h>
 #include <moya/libmoya/geometry/internal/Scalar.h>
 #include <moya/libmoya/geometry/Tessellation.h>
@@ -15,7 +16,6 @@
 #include <opensubdiv/far/patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/primvarRefiner.h>
-#include <opensubdiv/far/ptexIndices.h>
 #include <opensubdiv/far/topologyDescriptor.h>
 #include <opensubdiv/far/topologyRefiner.h>
 #include <opensubdiv/far/topologyRefinerFactory.h>
@@ -23,8 +23,10 @@
 #include <opensubdiv/sdc/types.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -32,7 +34,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::moya::geometry {
 
@@ -293,56 +297,10 @@ std::vector<std::int32_t> welded(const Topology & topology, const std::vector<fl
     return out;
 }
 
-/** Appends the places and triangles of a four-sided patch face, each side cut a rate of times. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the patch face, its face, then the rate
-void cutQuad(std::uint32_t patch, std::uint32_t face, std::uint32_t rate, Tessellation & out) {
-    const auto first = static_cast<std::uint32_t>(out.patches.size());
-    const float step = 1.0F / static_cast<float>(rate);
-    for (std::uint32_t row = 0; row <= rate; ++row) {
-        for (std::uint32_t column = 0; column <= rate; ++column) {
-            out.patches.push_back(patch);
-            out.positions.emplace_back(static_cast<float>(column) * step, static_cast<float>(row) * step);
-            out.placeFaces.push_back(face);
-        }
-    }
-    const auto place = [&](std::uint32_t column, std::uint32_t row) {
-        return first + (row * (rate + 1)) + column;
-    };
-    for (std::uint32_t row = 0; row < rate; ++row) {
-        for (std::uint32_t column = 0; column < rate; ++column) {
-            out.corners.insert(out.corners.end(), { place(column, row), place(column + 1, row), place(column + 1, row + 1) });
-            out.corners.insert(out.corners.end(), { place(column, row), place(column + 1, row + 1), place(column, row + 1) });
-            out.faces.insert(out.faces.end(), 2, face);
-        }
-    }
-}
-
-/** Appends the places and triangles of a triangular patch face, each side cut a rate of times. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the patch face, its face, then the rate
-void cutTriangle(std::uint32_t patch, std::uint32_t face, std::uint32_t rate, Tessellation & out) {
-    const auto first = static_cast<std::uint32_t>(out.patches.size());
-    const float step = 1.0F / static_cast<float>(rate);
-    std::vector<std::uint32_t> rows;
-    for (std::uint32_t row = 0; row <= rate; ++row) {
-        rows.push_back(static_cast<std::uint32_t>(out.patches.size()) - first);
-        for (std::uint32_t column = 0; column + row <= rate; ++column) {
-            out.patches.push_back(patch);
-            out.positions.emplace_back(static_cast<float>(column) * step, static_cast<float>(row) * step);
-            out.placeFaces.push_back(face);
-        }
-    }
-    const auto place = [&](std::uint32_t column, std::uint32_t row) {
-        return first + rows[row] + column;
-    };
-    for (std::uint32_t row = 0; row < rate; ++row) {
-        for (std::uint32_t column = 0; column + row < rate; ++column) {
-            out.corners.insert(out.corners.end(), { place(column, row), place(column + 1, row), place(column, row + 1) });
-            out.faces.push_back(face);
-            if (column + row + 1 < rate) {
-                out.corners.insert(out.corners.end(), { place(column + 1, row), place(column + 1, row + 1), place(column, row + 1) });
-                out.faces.push_back(face);
-            }
-        }
+/** Throws std::invalid_argument for points of another count than a topology's. **/
+void checkPoints(const std::vector<float> & points, const Topology & topology) {
+    if (points.size() != static_cast<std::size_t>(topology.points) * 3U) {
+        throw std::invalid_argument("points of " + std::to_string(points.size()) + " floats are not " + std::to_string(topology.points) + " points");
     }
 }
 
@@ -356,29 +314,84 @@ Surface::Surface(const Topology & topology) : topology_(topology) {
     }
 }
 
+Tessellation Surface::cut(const std::vector<float> & points, const Measure & measure) const {
+    checkPoints(points, topology_);
+    if (!patches_) {
+        return {};
+    }
+    const internal::Cutter cutter(topology_, *patches_);
+    const std::vector<float> along = evaluated(*patches_, points, 3, scene::Interpolation::Vertex, cutter.along());
+    const std::vector<std::uint32_t> & runs = cutter.runs();
+    std::vector<std::uint32_t> pieces;
+    pieces.reserve(runs.size());
+    for (std::size_t run = 0; run + 1 < runs.size(); ++run) {
+        std::vector<glm::vec3> at;
+        for (std::size_t place = runs[run]; place < runs[run + 1]; ++place) {
+            at.emplace_back(along[place * 3], along[(place * 3) + 1], along[(place * 3) + 2]);
+        }
+        pieces.push_back(static_cast<std::uint32_t>(std::min<std::size_t>(measure(at), std::numeric_limits<std::uint32_t>::max())));
+    }
+    return cutter.cut(pieces);
+}
+
 Tessellation Surface::cut(std::uint32_t rate) const {
-    Tessellation out;
+    if (!patches_) {
+        return {};
+    }
+    const internal::Cutter cutter(topology_, *patches_);
+    return cutter.cut(std::vector<std::uint32_t>(cutter.runs().size(), rate));
+}
+
+std::vector<float> Surface::normals(const std::vector<float> & points, const Tessellation & tessellation) const {
+    checkPoints(points, topology_);
+    std::vector<float> out(tessellation.patches.size() * 3, 0.0F);
     if (!patches_) {
         return out;
     }
-    const far::PtexIndices ptex(patches_->refiner());
-    const bool triangular = topology_.scheme == Scheme::Loop;
-    for (std::size_t face = 0; face < topology_.vertices.size(); ++face) {
-        const int first = ptex.GetFaceId(static_cast<int>(face));
-        const std::int32_t count = triangular || topology_.vertices[face] == 4 ? 1 : topology_.vertices[face];
-        for (std::int32_t corner = 0; corner < count; ++corner) {
-            const auto patch = static_cast<std::uint32_t>(first + corner);
-            // a hole, or a face a boundary that is not interpolated leaves open, has no patch
-            const double middle = triangular ? 1.0 / 3.0 : 0.5;
-            if (patches_->map().FindPatch(static_cast<int>(patch), middle, middle) == nullptr) {
-                continue;
+    const far::PatchTable & table = patches_->table();
+    std::array<std::vector<internal::Scalar>, 3> refinedPoints;
+    for (std::size_t component = 0; component < 3; ++component) {
+        refinedPoints[component] = refined(*patches_, points, 3, component, scene::Interpolation::Vertex);
+    }
+    const glm::vec2 middle = topology_.scheme == Scheme::Loop ? glm::vec2(1.0F / 3.0F) : glm::vec2(0.5F);
+    // how far toward the middle of its patch face a normal is taken where the derivatives meet in
+    // a line, and how short their cross product is when they do
+    constexpr float kInside = 1.0e-3F;
+    constexpr float kParallel = 1.0e-12F;
+    for (std::size_t place = 0; place < tessellation.patches.size(); ++place) {
+        glm::vec2 at = tessellation.positions[place];
+        glm::vec3 normal { 0.0F };
+        for (int attempt = 0; attempt < 2; ++attempt) {
+            const far::PatchTable::PatchHandle * handle = patches_->map().FindPatch(static_cast<int>(tessellation.patches[place]), at.x, at.y);
+            if (handle == nullptr) {
+                break;
             }
-            if (triangular) {
-                cutTriangle(patch, static_cast<std::uint32_t>(face), std::max(rate, 1U), out);
-            } else {
-                cutQuad(patch, static_cast<std::uint32_t>(face), std::max(rate, 1U), out);
+            float weights[kMostPatchPoints] {};
+            float alongU[kMostPatchPoints] {};
+            float alongV[kMostPatchPoints] {};
+            table.EvaluateBasis(*handle, at.x, at.y, weights, alongU, alongV);
+            const far::ConstIndexArray indices = table.GetPatchVertices(*handle);
+            glm::vec3 du { 0.0F };
+            glm::vec3 dv { 0.0F };
+            for (int point = 0; point < indices.size(); ++point) {
+                const auto index = static_cast<std::size_t>(indices[point]);
+                const glm::vec3 value { refinedPoints[0][index].value, refinedPoints[1][index].value, refinedPoints[2][index].value };
+                du += alongU[point] * value;
+                dv += alongV[point] * value;
             }
+            normal = glm::cross(du, dv);
+            if (glm::dot(normal, normal) > kParallel) {
+                break;
+            }
+            at += (middle - at) * kInside;
         }
+        const float length = glm::length(normal);
+        if (length > 0.0F) {
+            normal /= length;
+        }
+        out[place * 3] = normal.x;
+        out[(place * 3) + 1] = normal.y;
+        out[(place * 3) + 2] = normal.z;
     }
     return out;
 }
@@ -422,7 +435,13 @@ std::vector<float> Surface::at(const std::vector<float> & values, std::size_t wi
         case scene::Interpolation::Vertex:
             break;
     }
-    return evaluated(*patches_, values, width, interpolation, tessellation);
+    out = evaluated(*patches_, values, width, interpolation, tessellation);
+    // a place's own value differs from its shared place's only by rounding
+    for (std::size_t place = 0; place < tessellation.shared.size(); ++place) {
+        const std::size_t from = static_cast<std::size_t>(tessellation.shared[place]) * width;
+        std::copy_n(out.begin() + static_cast<std::ptrdiff_t>(from), width, out.begin() + static_cast<std::ptrdiff_t>(place * width));
+    }
+    return out;
 }
 
 };  // namespace v3d::moya::geometry

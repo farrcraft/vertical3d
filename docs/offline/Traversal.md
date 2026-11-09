@@ -195,9 +195,11 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
   - A point cloud holds each point's centre and width at each sample. A cloud that gives a width
     for some points but not all takes its constant width, and is reported.
   - A quadric holds its dimensions at each sample.
-  - A subdivision surface becomes a mesh's triangles, cut from its limit surface, each side of
-    a patch face into 8 pieces. Each triangle keeps the face of the control mesh it was cut from,
-    and each sample's points are evaluated on the one surface.
+  - A subdivision surface becomes a mesh's triangles, cut from its limit surface to the options'
+    edge length in pixels and displaced, as [Geometry.md](Geometry.md#tessellation-and-displacement)
+    says. Each triangle keeps the face of the control mesh it was cut from, and each sample's
+    points are evaluated on the one surface. A displacement that does not fit, and a height
+    beyond the surface's bound, are reported.
   - A set of curves holds each segment's control points at each sample, with the curve it was
     cut from and whether it closes its curve. Curves whose widths are neither one per vertex nor
     one per varying value take their constant width, and are reported.

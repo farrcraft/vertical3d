@@ -139,7 +139,7 @@ among the options before the record is drafted.
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | done |
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208, **0211** | done |
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | done |
-| [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | open |
+| [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | done |
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | open |
 | [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | open |
 | [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | open |
@@ -706,6 +706,44 @@ the list below did not settle:
 it. A crease of infinite sharpness keeps its edge. A hole leaves its face open.
 
 ### Step 17 — Tessellation and displacement
+
+**Done.** `geometry::Surface::cut(points, measure)` cuts each edge into its own number of pieces,
+measured once along the first face that reaches it, and both patch faces beside it cut it alike.
+A place on an edge or a corner names the place whose point it takes, so the surface has no
+cracks. A patch face whose sides differ has a grid inside it that each side is stitched to.
+`geometry::Dicing` measures an edge in pixels from the dicing camera, and `gather()` cuts each
+surface once every instance is gathered, for its placement nearest that camera.
+`Surface::normals()` gives the limit surface's normals, and a surface is displaced along them by
+its `displacement` primvar, held within its `displacementBound`. Each case was run against
+broken code as well, one break at a time. Places that shared no points failed the edges cut on
+one side alone, the seams and the displaced hits. Odd halves of an n-sided face's edges failed
+the edges and the winding. The first placement in place of the nearest failed the nearest
+placement. The render camera in place of the dicing camera failed the finer cut near the camera,
+and so did an edge length ignored. A pixel that did not widen with depth failed it and the
+nearest placement. No clamp, a normal reversed, or displaced points that were not shared again
+failed the displaced hits. Face-varying values shared failed the seams. A grid as coarse as its
+coarser side failed the winding. A side joined to its grid's first place alone failed the cells,
+and no report of a displacement that does not fit failed that report. Five things the list below
+did not settle:
+
+* **A pixel is measured as Cycles measures it**: a piece's length over a pixel's width at its
+  depth, not its projection. An edge seen end on is cut as finely as one seen across, for the
+  rays that meet it from elsewhere. An edge is cut into at most 64 pieces, which also bounds an
+  edge near or behind the camera.
+* **The boxes are not grown by the bound.** The plan had them grow by it, but every surface is
+  displaced when it is gathered, so the hierarchy bounds the displaced triangles themselves. The
+  bound holds the height, and grows the box that picks a surface's nearest placement.
+* **The nearest placement weighs every placement** down the chains a traversal follows. A scene
+  of many nested placements of one surface pays for each of them once.
+* **The height is a float primvar named `displacement`**, of any interpolation, in the surface's
+  own space. Section 5 connects a material's displacement terminal in its place. A polygon mesh
+  is not tessellated or displaced: it is cut into its own triangles, as step 9 cuts it.
+* **A control edge beside a face of other than four vertices is cut evenly**, so that its middle
+  is a place that the face's patch faces meet at. `cut(rate)` follows the same rule, so a prism's
+  triangles cut at a rate of 3 cut their edges into 4.
+
+[Geometry.md](../offline/Geometry.md#tessellation-and-displacement) states the rules, and
+[Scene.md](../offline/Scene.md) names the new parameters.
 
 * **An edge length in pixels**, measured from the camera as step 6 decides, and set in the
   scene's `options`.

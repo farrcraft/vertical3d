@@ -44,7 +44,9 @@ then derived as RI derives it.
 - **`options`**: `resolution` in pixels, `pixelAspect`, and `frameAspect`, which is derived from
   the resolution while it is zero. `crop` as RI's crop window. `samples` per pixel, the pixel
   `filter`, one of RI's five, and `filterWidth`. `frame`, which seeds the sampler. `camera`, the
-  camera the render looks through.
+  camera the render looks through. `edgeLength`, the longest a tessellated edge may be in
+  pixels, 1 until a client sets it, and `dicingCamera`, the camera that length is measured
+  from, which is the render camera while it names none.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
@@ -55,7 +57,9 @@ then derived as RI derives it.
 - **`subdivision`**: a mesh's three, then its `scheme`, `catmull-clark`, `loop` or `bilinear`.
   `creases` holds the vertices of each crease in turn, `creaseLengths` how many each has, and
   `creaseSharpness` one sharpness each. `corners` and `cornerSharpness`, `holes` by face, and
-  `boundary`, as RI's `interpolateboundary` gives it.
+  `boundary`, as RI's `interpolateboundary` gives it. `displacementBound`, the furthest its
+  surface is displaced, in its own space. A float primvar named `displacement` gives the height
+  it is displaced by.
 - **`curves`**: `P` and `vertices` per curve, `type` linear or cubic, `basis` one of RI's five,
   and `wrap`. `width` per varying value or per vertex over the shutter, or `constantWidth` while
   it is empty, and `profile`, flat or round.

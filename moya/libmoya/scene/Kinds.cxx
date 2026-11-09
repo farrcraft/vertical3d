@@ -82,7 +82,9 @@ Kind options() {
                 .choices = { "box", "triangle", "catmull-rom", "gaussian", "sinc" } },
             Declaration { .name = "filterWidth", .type = Type::Float, .count = 2, .fallback = Value::floats({ kFilterWidth, kFilterWidth }) },
             Declaration { .name = "frame", .type = Type::Integer, .fallback = Value::integer(0) },
-            Declaration { .name = "camera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } } } };
+            Declaration { .name = "camera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } },
+            Declaration { .name = "edgeLength", .type = Type::Float, .fallback = Value::number(1.0F) },
+            Declaration { .name = "dicingCamera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } } } };
 }
 
 Kind channel() {
@@ -146,7 +148,8 @@ Kind subdivision() {
             Declaration { .name = "boundary",
                 .type = Type::String,
                 .fallback = Value::string("none"),
-                .choices = { "none", "edges", "edges-and-corners" } } },
+                .choices = { "none", "edges", "edges-and-corners" } },
+            Declaration { .name = "displacementBound", .type = Type::Float, .fallback = Value::number(0.0F) } },
         .primvars = true };
 }
 

@@ -28,4 +28,11 @@ namespace v3d::moya::camera {
  **/
 kernel::camera::Camera fromScene(const scene::Scene & scene);
 
+/**
+ * The camera a surface is measured from to be tessellated: the one the options name as their
+ * dicing camera, with the options' resolution and frame, or the render camera while they name
+ * none.
+ **/
+kernel::camera::Camera dicingFromScene(const scene::Scene & scene);
+
 };  // namespace v3d::moya::camera

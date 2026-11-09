@@ -7,6 +7,9 @@
 
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/geometry/Surface.h>
+#include <moya/libmoya/geometry/Tessellation.h>
+#include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -22,6 +25,8 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+
+#include <glm/mat4x4.hpp>
 
 namespace v3d::log {
 class Logger;
@@ -75,10 +80,25 @@ class Walk final {
     std::uint32_t quadric(const scene::Handle & handle);
 
     /**
-     * The index of a subdivision surface among the geometries, cut once from its limit surface
-     * into triangles, or nothing when OpenSubdiv cannot refine its topology.
+     * The index of a subdivision surface among the geometries, or nothing when OpenSubdiv cannot
+     * refine its topology. It is cut into triangles once every instance is gathered.
      **/
     std::optional<std::uint32_t> subdivision(const scene::Handle & handle);
+
+    /** Cuts every subdivision surface the instances reach, each where it is nearest the camera. **/
+    void cutSurfaces();
+
+    /**
+     * Each subdivision surface's placement nearest a camera, by its index among the geometries:
+     * the one that brings its points' box, grown by its displacement bound, nearest the camera.
+     **/
+    std::map<std::uint32_t, glm::mat4> nearest(const kernel::camera::Camera & camera) const;
+
+    /**
+     * Each place's height above a subdivision surface, from its displacement primvar and held
+     * within its bound, or none for a surface that is not displaced.
+     **/
+    std::vector<float> heights(const scene::Handle & handle, const Surface & surface, const Tessellation & tessellation);
 
     /**
      * The index of curves among the geometries, cut once, or nothing when they cannot be cut into
@@ -109,6 +129,15 @@ class Walk final {
 
     /** Each gathered instance's handle, by its index among the instances. **/
     std::vector<scene::Handle> handles_;
+
+    /** A subdivision surface waiting to be cut, and its index among the geometries. **/
+    struct Uncut {
+        scene::Handle handle;
+        std::uint32_t index;
+        Surface surface;
+    };
+
+    std::vector<Uncut> uncut_;
 
     Prototypes prototypes_;
 };

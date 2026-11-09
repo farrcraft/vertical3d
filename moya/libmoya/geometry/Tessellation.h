@@ -19,7 +19,8 @@ namespace v3d::moya::geometry {
  * corners, and a Loop face is one triangular patch face.
  *
  * Places are not shared between patch faces, so a face-varying value can differ on each side of
- * an edge.
+ * an edge. A place on an edge or a corner that several patch faces reach names the place whose
+ * point it takes, so that the surface has no cracks.
  **/
 struct Tessellation {
     /** The patch face of each place. **/
@@ -27,6 +28,12 @@ struct Tessellation {
 
     /** The position of each place on its patch face, from 0 to 1 on each side. **/
     std::vector<glm::vec2> positions;
+
+    /**
+     * The place whose point each place takes: the first place cut where it lies, which takes its
+     * own. It is empty for places that take their own points.
+     **/
+    std::vector<std::uint32_t> shared;
 
     /** The face of the control mesh each place lies on. **/
     std::vector<std::uint32_t> placeFaces;

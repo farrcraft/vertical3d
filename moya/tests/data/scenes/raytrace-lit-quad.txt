@@ -38,6 +38,8 @@ mesh "Polygon 1"
 options "options"
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
+    dicingCamera handle = none
+    edgeLength float = 1
     filter string = "gaussian"
     filterWidth float[2] = 2 2
     frame integer = 0
