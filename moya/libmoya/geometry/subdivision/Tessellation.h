@@ -10,7 +10,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 /**
  * A subdivision surface cut into triangles. Each place is a point on the limit surface, named by
@@ -45,4 +45,4 @@ struct Tessellation {
     std::vector<std::uint32_t> faces;
 };
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision

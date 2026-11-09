@@ -13,7 +13,11 @@
 namespace v3d::moya::geometry {
 
 Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) {
-    return internal::Walk(scene, logger).take();
+    return internal::Walk(scene, logger, nullptr).take();
+}
+
+Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, Cache & cache) {
+    return internal::Walk(scene, logger, &cache).take();
 }
 
 };  // namespace v3d::moya::geometry

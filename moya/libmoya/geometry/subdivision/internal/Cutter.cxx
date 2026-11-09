@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <moya/libmoya/geometry/internal/Cutter.h>
+#include <moya/libmoya/geometry/subdivision/internal/Cutter.h>
 
-#include <moya/libmoya/geometry/internal/Patches.h>
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/internal/Patches.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 
 #include <opensubdiv/far/ptexIndices.h>
 #include <opensubdiv/far/topologyLevel.h>
@@ -20,7 +20,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::moya::geometry::internal {
+namespace v3d::moya::geometry::subdivision::internal {
 
 namespace {
 
@@ -376,4 +376,4 @@ void Cutter::cutTriangle(Cutting & cutting, std::uint32_t patch, std::uint32_t f
     }
 }
 
-};  // namespace v3d::moya::geometry::internal
+};  // namespace v3d::moya::geometry::subdivision::internal

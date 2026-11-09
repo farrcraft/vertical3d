@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::moya::geometry::internal {
+namespace v3d::moya::geometry::subdivision::internal {
 
 /**
  * One float of a primvar, as OpenSubdiv's refinement and its patches interpolate a value. Its two
@@ -25,4 +25,4 @@ struct Scalar {
     }
 };
 
-};  // namespace v3d::moya::geometry::internal
+};  // namespace v3d::moya::geometry::subdivision::internal

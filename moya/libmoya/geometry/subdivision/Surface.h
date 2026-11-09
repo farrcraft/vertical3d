@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 #include <moya/libmoya/scene/Declaration.h>
 
 #include <cstddef>
@@ -18,7 +18,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 namespace internal {
 class Patches;
@@ -85,4 +85,4 @@ class Surface final {
     boost::shared_ptr<const internal::Patches> patches_;
 };
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision

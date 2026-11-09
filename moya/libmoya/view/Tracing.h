@@ -42,6 +42,9 @@ class Tracing final {
     /** @param time when the triangles are placed, for the brute-force traversal **/
     Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer, float time);
 
+    /** The prototypes traced through the hierarchies of an assembly built from them. **/
+    Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly, float time);
+
     Tracer tracer() const;
     const geometry::World & world() const;
 
@@ -52,6 +55,9 @@ class Tracing final {
     device::cpu::Traversal hierarchy() const;
 
  private:
+    /** Copies the prototypes and an assembly of their hierarchies to the device. **/
+    void upload(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly);
+
     Tracer tracer_;
     geometry::World world_;
     boost::shared_ptr<device::Buffer> nodes_;
@@ -80,5 +86,14 @@ class Tracing final {
  **/
 Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const std::vector<kernel::geometry::Ray> & rays,
     Tracer tracer);
+
+/**
+ * Traces each of a list of rays, each at its own time, through the hierarchies of an assembly
+ * built from a scene's prototypes.
+ *
+ * @throws std::runtime_error when the CPU device's library cannot be loaded
+ **/
+Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly,
+    const std::vector<kernel::geometry::Ray> & rays);
 
 };  // namespace v3d::moya::view

@@ -26,6 +26,9 @@ namespace v3d::moya::geometry {
 struct Geometry {
     kernel::geometry::primitive::Form form { kernel::geometry::primitive::Form::Triangles };
 
+    /** The geometry's index in the scene. **/
+    std::uint32_t id { 0 };
+
     /** The first of a mesh's faces or of curves' curves, and how many primitives it holds. **/
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };

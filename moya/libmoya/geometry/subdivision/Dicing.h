@@ -13,7 +13,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 /**
  * How finely a surface is cut to be seen through a dicing camera: each edge into pieces no longer
@@ -48,4 +48,4 @@ class Dicing final {
     float edgeLength_;
 };
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision

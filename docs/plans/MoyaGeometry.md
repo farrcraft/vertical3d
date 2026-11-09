@@ -140,7 +140,7 @@ among the options before the record is drafted.
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208, **0211** | done |
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | done |
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | done |
-| [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | open |
+| [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | done |
 | [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | open |
 | [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | open |
 | [21](#step-21--the-documents) | The reference pages for geometry and traversal | `docs` | — | open |
@@ -664,7 +664,7 @@ still covers the pixels along it.
 ### Step 16 — Subdivision surfaces
 
 **Done.** OpenSubdiv 3.5.0 is in the manifest's `moya` feature with none of its features, linked
-PRIVATE and static, and a module of the Flatpak. `geometry::Surface` refines a `Topology`
+PRIVATE and static, and a module of the Flatpak. `subdivision::Surface` refines a `Topology`
 adaptively and builds the table of patches over its limit surface. `cut()` cuts each patch face
 into triangles at a rate, and `at()` evaluates a primvar of any class over them.
 `geometry::gather()` cuts the scene's subdivision surfaces into a mesh's triangles, every sample's
@@ -707,11 +707,11 @@ it. A crease of infinite sharpness keeps its edge. A hole leaves its face open.
 
 ### Step 17 — Tessellation and displacement
 
-**Done.** `geometry::Surface::cut(points, measure)` cuts each edge into its own number of pieces,
+**Done.** `subdivision::Surface::cut(points, measure)` cuts each edge into its own number of pieces,
 measured once along the first face that reaches it, and both patch faces beside it cut it alike.
 A place on an edge or a corner names the place whose point it takes, so the surface has no
 cracks. A patch face whose sides differ has a grid inside it that each side is stitched to.
-`geometry::Dicing` measures an edge in pixels from the dicing camera, and `gather()` cuts each
+`subdivision::Dicing` measures an edge in pixels from the dicing camera, and `gather()` cuts each
 surface once every instance is gathered, for its placement nearest that camera.
 `Surface::normals()` gives the limit surface's normals, and a surface is displaced along them by
 its `displacement` primvar, held within its `displacementBound`. Each case was run against
@@ -758,6 +758,36 @@ meet at an edge one cut and the other did not. A displaced sphere's hits lie at 
 height beyond the bound is clamped.
 
 ### Step 18 — Rebuilding what changed
+
+**Done.** `accel::Assembler` keeps a scene's hierarchies, and `update()` brings them to the
+scene's version. It forgets each changed object's geometry in a `geometry::Cache`, and gathers
+again through it, so every other geometry is placed as it was made. A geometry's hierarchy is
+built again only when its geometry was made again, and a group's when the group, its instances,
+or one of their prototypes changed. `view::trace()` takes an assembly, so a test traces through
+the assembler's and through one built afresh, and every ray agrees. Each case was run against
+broken code as well, one break at a time. Every geometry built on every update failed every
+case. A geometry made again but not built again failed the changed mesh and the surface cut
+again. Changed objects left in the cache failed the changed mesh. A changed instance ignored
+failed the moved instance, and a member's prototype built again but ignored failed it, the
+changed mesh and the surface cut again. A group's members ignored failed the removed prototype.
+A dicing camera ignored failed the surface cut again. A geometry placed from the cache without
+moving its times, its points or its faces failed the removed prototype. The cache dropping
+nothing it did not place failed no case: the assembler drops that geometry's hierarchy anyway,
+so the drop only frees memory. Four things the list
+below did not settle:
+
+* **The gather runs again in full**, and places each geometry from the cache. Walking the
+  instances again is cheap beside cutting and building, and keeps one gather for both uses.
+* **A geometry keeps its hierarchy wherever it lands.** Its nodes count from its own first node
+  and its leaves from its own primitives, so the assembly is appended again from the parts each
+  update, and no node is moved in place.
+* **A group's hierarchy names its members by their place in it**, and its references are turned
+  into instances' indices as it is placed, since an instance's index moves as others come and go.
+* **Tessellation is redone through the cache**: a subdivision surface keeps its limit surface and
+  what it was measured from, and is cut again when its dicing camera, its edge length or its
+  nearest placement moved.
+
+[Traversal.md](../offline/Traversal.md#rebuilding-what-changed) states the rules.
 
 * **The hierarchy is a consumer of the scene.** It keeps the version it was built from, and asks
   for the changes since.

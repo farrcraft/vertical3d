@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 
 #include <array>
 #include <cstdint>
@@ -15,7 +15,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::moya::geometry::internal {
+namespace v3d::moya::geometry::subdivision::internal {
 
 class Patches;
 
@@ -115,4 +115,4 @@ class Cutter final {
     std::vector<std::uint32_t> runs_;
 };
 
-};  // namespace v3d::moya::geometry::internal
+};  // namespace v3d::moya::geometry::subdivision::internal

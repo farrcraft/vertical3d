@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <moya/libmoya/geometry/Dicing.h>
+#include <moya/libmoya/geometry/subdivision/Dicing.h>
 
 #include <moya/libmoya/kernel/camera/Camera.h>
 
@@ -19,7 +19,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 namespace {
 
@@ -53,4 +53,4 @@ std::uint32_t Dicing::operator()(const std::vector<glm::vec3> & along) const {
     return std::max(static_cast<std::uint32_t>(pieces), 1U);
 }
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision

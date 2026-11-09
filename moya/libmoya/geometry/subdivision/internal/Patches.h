@@ -13,7 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya::geometry::internal {
+namespace v3d::moya::geometry::subdivision::internal {
 
 /**
  * A topology refined adaptively by OpenSubdiv, and the table of patches over its limit surface,
@@ -43,4 +43,4 @@ class Patches final {
     OpenSubdiv::Far::PatchMap map_;
 };
 
-};  // namespace v3d::moya::geometry::internal
+};  // namespace v3d::moya::geometry::subdivision::internal

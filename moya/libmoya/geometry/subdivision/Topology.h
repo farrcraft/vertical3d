@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 /** How a subdivision surface is refined: by Catmull-Clark, Loop or bilinear subdivision. **/
 enum class Scheme : std::uint8_t {
@@ -56,4 +56,4 @@ struct Topology {
     Boundary boundary { Boundary::None };
 };
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision

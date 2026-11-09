@@ -7,18 +7,20 @@
 
 #include <api/log/Logger.h>
 #include <moya/libmoya/camera/Camera.h>
+#include <moya/libmoya/geometry/Cache.h>
 #include <moya/libmoya/geometry/Curves.h>
-#include <moya/libmoya/geometry/Dicing.h>
+#include <moya/libmoya/geometry/subdivision/Dicing.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
+#include <moya/libmoya/geometry/internal/Piece.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
 #include <moya/libmoya/geometry/Segments.h>
-#include <moya/libmoya/geometry/Surface.h>
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/Surface.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 #include <moya/libmoya/geometry/Triangulate.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
@@ -99,22 +101,22 @@ float distanceTo(const glm::vec3 & point, const std::pair<glm::vec3, glm::vec3> 
 }
 
 /** The topology of one of the scene's subdivision surfaces, with RI's tags. **/
-Topology topologyOf(const scene::Scene & scene, const scene::Handle & handle, std::uint32_t points) {
+subdivision::Topology topologyOf(const scene::Scene & scene, const scene::Handle & handle, std::uint32_t points) {
     const auto integers = [&](const char * name) {
         return scene.value(handle, name).integerArray();
     };
     const auto floats = [&](const char * name) {
         return scene.value(handle, name).floatArray();
     };
-    Topology out;
+    subdivision::Topology out;
     out.vertices = integers("vertices");
     out.indices = integers("indices");
     out.points = points;
     const std::string & scheme = scene.value(handle, "scheme").stringArray().front();
     if (scheme == "loop") {
-        out.scheme = Scheme::Loop;
+        out.scheme = subdivision::Scheme::Loop;
     } else if (scheme == "bilinear") {
-        out.scheme = Scheme::Bilinear;
+        out.scheme = subdivision::Scheme::Bilinear;
     }
     out.creases = integers("creases");
     out.creaseLengths = integers("creaseLengths");
@@ -124,17 +126,62 @@ Topology topologyOf(const scene::Scene & scene, const scene::Handle & handle, st
     out.holes = integers("holes");
     const std::string & boundary = scene.value(handle, "boundary").stringArray().front();
     if (boundary == "edges") {
-        out.boundary = Boundary::Edges;
+        out.boundary = subdivision::Boundary::Edges;
     } else if (boundary == "edges-and-corners") {
-        out.boundary = Boundary::EdgesAndCorners;
+        out.boundary = subdivision::Boundary::EdgesAndCorners;
     }
+    return out;
+}
+
+/**
+ * The points of a tessellation's places on a surface's limit through points, three floats each,
+ * each raised along the limit's normal by its height when there are heights.
+ **/
+std::vector<float> displaced(const subdivision::Surface & surface, const std::vector<float> & points, const subdivision::Tessellation & tessellation,
+    const std::vector<float> & heights) {
+    std::vector<float> out = surface.at(points, 3, scene::Interpolation::Vertex, tessellation);
+    if (heights.empty()) {
+        return out;
+    }
+    const std::vector<float> normals = surface.normals(points, tessellation);
+    for (std::size_t place = 0; place < heights.size(); ++place) {
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            out[(place * 3) + axis] += heights[place] * normals[(place * 3) + axis];
+        }
+    }
+    // a place on a shared edge takes its shared place's point, as the limit's points do
+    for (std::size_t place = 0; place < tessellation.shared.size(); ++place) {
+        const std::size_t from = static_cast<std::size_t>(tessellation.shared[place]) * 3;
+        std::copy_n(out.begin() + static_cast<std::ptrdiff_t>(from), 3, out.begin() + static_cast<std::ptrdiff_t>(place * 3));
+    }
+    return out;
+}
+
+/**
+ * Everything a subdivision surface's cut is measured from: the dicing camera, the edge length and
+ * the surface's placement. Two cuts measured from the same are the same cut.
+ **/
+std::vector<float> dicingOf(const kernel::camera::Camera & camera, float edgeLength, const glm::mat4 & placement) {
+    std::vector<float> out;
+    for (const glm::mat4 * matrix : { &camera.toWorld, &placement }) {
+        for (int column = 0; column < 4; ++column) {
+            for (int row = 0; row < 4; ++row) {
+                out.push_back((*matrix)[column][row]);
+            }
+        }
+    }
+    out.insert(out.end(), { camera.perspective ? 1.0F : 0.0F, camera.tanHalfFov, camera.screen.x, camera.screen.y, camera.screen.z, camera.screen.w,
+        camera.resolution.x, camera.resolution.y, edgeLength });
     return out;
 }
 
 };  // namespace
 
-Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) :
-    scene_(scene), logger_(logger), groups_(byGroup(scene)) {
+Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, Cache * cache) :
+    scene_(scene), logger_(logger), groups_(byGroup(scene)), cache_(cache) {
+    if (cache_ != nullptr) {
+        cache_->made_.clear();
+    }
 }
 
 Prototypes Walk::take() {
@@ -144,6 +191,9 @@ Prototypes Walk::take() {
     prototypes_.world = members(scene::Handle {});
     deepen(prototypes_.world, 0);
     cutSurfaces();
+    if (cache_ != nullptr) {
+        std::erase_if(cache_->pieces_, [&](const auto & held) { return !placed_.contains(held.first); });
+    }
     return std::move(prototypes_);
 }
 
@@ -152,7 +202,7 @@ std::map<std::uint32_t, std::vector<scene::Handle>> Walk::byGroup(const scene::S
     for (const scene::Handle & instance : scene.objects("instance")) {
         const scene::Handle group = scene.value(instance, "group").handleArray().front();
         if (!group.valid()) {
-            out[kWorld].push_back(instance);
+            out[Group::kWorld].push_back(instance);
         } else if (scene.contains(group)) {
             out[group.index].push_back(instance);
         }
@@ -172,7 +222,7 @@ void Walk::report(const std::string & message) {
 
 Group Walk::members(const scene::Handle & group) {
     Group out;
-    const auto found = groups_.find(group.valid() ? group.index : kWorld);
+    const auto found = groups_.find(group.valid() ? group.index : Group::kWorld);
     if (found == groups_.end()) {
         return out;
     }
@@ -213,37 +263,13 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         }
         out.kind = Prototype::Group;
         out.prototype = group(prototype);
-    } else if (kind == "mesh") {
-        const std::optional<std::uint32_t> cut = mesh(prototype);
-        if (!cut) {
-            return std::nullopt;
-        }
-        out.kind = Prototype::Geometry;
-        out.prototype = *cut;
-    } else if (kind == "points") {
-        out.kind = Prototype::Geometry;
-        out.prototype = cloud(prototype);
-    } else if (kind == "sphere" || kind == "cone" || kind == "cylinder" || kind == "hyperboloid" || kind == "paraboloid" || kind == "disk" ||
-        kind == "torus") {
-        out.kind = Prototype::Geometry;
-        out.prototype = quadric(prototype);
-    } else if (kind == "subdivision") {
-        const std::optional<std::uint32_t> cut = subdivision(prototype);
-        if (!cut) {
-            return std::nullopt;
-        }
-        out.kind = Prototype::Geometry;
-        out.prototype = *cut;
-    } else if (kind == "curves") {
-        const std::optional<std::uint32_t> cut = curves(prototype);
-        if (!cut) {
-            return std::nullopt;
-        }
-        out.kind = Prototype::Geometry;
-        out.prototype = *cut;
     } else {
-        report("a " + kind + " is not traced, so " + scene_.name(prototype) + " is left out");
-        return std::nullopt;
+        const std::optional<std::uint32_t> placed = geometry(prototype, kind);
+        if (!placed) {
+            return std::nullopt;
+        }
+        out.kind = Prototype::Geometry;
+        out.prototype = *placed;
     }
     const auto index = static_cast<std::uint32_t>(prototypes_.instances.size());
     prototypes_.instances.push_back(out);
@@ -259,17 +285,146 @@ std::uint32_t Walk::group(const scene::Handle & handle) {
     // its members first, so that a group comes after every group it holds. No member closes a
     // loop back to this group, so this ends
     Group gathered = members(handle);
+    gathered.id = handle.index;
     const auto index = static_cast<std::uint32_t>(prototypes_.groups.size());
     prototypes_.groups.push_back(std::move(gathered));
     groupIndex_.emplace(handle.index, index);
     return index;
 }
 
-std::optional<std::uint32_t> Walk::mesh(const scene::Handle & handle) {
+std::optional<std::uint32_t> Walk::geometry(const scene::Handle & handle, const std::string & kind) {
     const auto found = geometryIndex_.find(handle.index);
     if (found != geometryIndex_.end()) {
         return found->second;
     }
+    // a subdivision surface is placed from the cache, or cut, once every instance is gathered
+    if (kind == "subdivision") {
+        return subdivision(handle);
+    }
+    if (cache_ != nullptr) {
+        const auto held = cache_->pieces_.find(handle.index);
+        if (held != cache_->pieces_.end()) {
+            const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+            prototypes_.geometries.push_back(place(held->second));
+            geometryIndex_.emplace(handle.index, index);
+            placed_.insert(handle.index);
+            return index;
+        }
+    }
+    const Mark mark = marked();
+    std::optional<std::uint32_t> out;
+    if (kind == "mesh") {
+        out = mesh(handle);
+    } else if (kind == "points") {
+        out = cloud(handle);
+    } else if (kind == "sphere" || kind == "cone" || kind == "cylinder" || kind == "hyperboloid" || kind == "paraboloid" || kind == "disk" ||
+        kind == "torus") {
+        out = quadric(handle);
+    } else if (kind == "curves") {
+        out = curves(handle);
+    } else {
+        report("a " + kind + " is not traced, so " + scene_.name(handle) + " is left out");
+        return std::nullopt;
+    }
+    if (!out) {
+        return std::nullopt;
+    }
+    prototypes_.geometries[*out].id = handle.index;
+    placed_.insert(handle.index);
+    if (cache_ != nullptr) {
+        cache_->pieces_.insert_or_assign(handle.index, pieceOf(*out, mark));
+        cache_->made_.insert(handle.index);
+    }
+    return out;
+}
+
+Walk::Mark Walk::marked() const {
+    return Mark { .points = prototypes_.points.size(),
+        .widths = prototypes_.widths.size(),
+        .quadrics = prototypes_.quadrics.size(),
+        .controls = prototypes_.controls.size(),
+        .ends = prototypes_.ends.size(),
+        .times = prototypes_.times.size(),
+        .faces = prototypes_.faces.size(),
+        .reports = prototypes_.reports.size() };
+}
+
+Geometry Walk::shifted(Geometry geometry, const Mark & from, const Mark & to) {
+    const auto move = [](std::uint32_t & offset, std::size_t was, std::size_t is) {
+        offset = static_cast<std::uint32_t>((static_cast<std::size_t>(offset) - was) + is);
+    };
+    // only what a geometry holds is moved, so an offset it does not read is never taken below zero
+    const auto moveSampled = [&](kernel::geometry::Sampled & sampled, std::size_t was, std::size_t is) {
+        if (sampled.count > 0) {
+            move(sampled.first, was, is);
+        }
+        if (sampled.samples > 1) {
+            move(sampled.times, from.times, to.times);
+        }
+    };
+    using Form = kernel::geometry::primitive::Form;
+    switch (geometry.form) {
+        case Form::Triangles:
+            move(geometry.first, from.faces, to.faces);
+            moveSampled(geometry.points, from.points, to.points);
+            break;
+        case Form::RoundPoints:
+        case Form::FlatPoints:
+            moveSampled(geometry.points, from.points, to.points);
+            moveSampled(geometry.widths, from.widths, to.widths);
+            break;
+        case Form::Quadric:
+            moveSampled(geometry.quadric, from.quadrics, to.quadrics);
+            break;
+        case Form::RoundLinearCurves:
+        case Form::FlatLinearCurves:
+        case Form::RoundCubicCurves:
+        case Form::FlatCubicCurves:
+            move(geometry.first, from.faces, to.faces);
+            move(geometry.ends, from.ends, to.ends);
+            moveSampled(geometry.controls, from.controls, to.controls);
+            break;
+    }
+    return geometry;
+}
+
+Piece Walk::pieceOf(std::uint32_t index, const Mark & mark) const {
+    const auto since = [](const auto & values, std::size_t from) {
+        return std::vector(values.begin() + static_cast<std::ptrdiff_t>(from), values.end());
+    };
+    Piece out;
+    out.geometry = shifted(prototypes_.geometries[index], mark, Mark {});
+    out.points = since(prototypes_.points, mark.points);
+    out.widths = since(prototypes_.widths, mark.widths);
+    out.quadrics = since(prototypes_.quadrics, mark.quadrics);
+    out.controls = since(prototypes_.controls, mark.controls);
+    out.ends = since(prototypes_.ends, mark.ends);
+    out.times = since(prototypes_.times, mark.times);
+    out.faces = since(prototypes_.faces, mark.faces);
+    out.reports = since(prototypes_.reports, mark.reports);
+    out.made = true;
+    return out;
+}
+
+Geometry Walk::place(const Piece & piece) {
+    const Mark at = marked();
+    const auto append = [](auto & values, const auto & added) {
+        values.insert(values.end(), added.begin(), added.end());
+    };
+    append(prototypes_.points, piece.points);
+    append(prototypes_.widths, piece.widths);
+    append(prototypes_.quadrics, piece.quadrics);
+    append(prototypes_.controls, piece.controls);
+    append(prototypes_.ends, piece.ends);
+    append(prototypes_.times, piece.times);
+    append(prototypes_.faces, piece.faces);
+    for (const std::string & message : piece.reports) {
+        report(message);
+    }
+    return shifted(piece.geometry, Mark {}, at);
+}
+
+std::optional<std::uint32_t> Walk::mesh(const scene::Handle & handle) {
     // the faces are cut where the first sample's points lie, and every sample shares the cut
     const scene::Samples & samples = scene_.samples(handle, "P");
     const scene::Value & firstSample = samples.values.front();
@@ -307,10 +462,6 @@ std::optional<std::uint32_t> Walk::mesh(const scene::Handle & handle) {
 }
 
 std::uint32_t Walk::cloud(const scene::Handle & handle) {
-    const auto found = geometryIndex_.find(handle.index);
-    if (found != geometryIndex_.end()) {
-        return found->second;
-    }
     const scene::Samples & centres = scene_.samples(handle, "P");
     const std::size_t count = centres.values.front().size();
     Geometry cloud;
@@ -345,10 +496,6 @@ std::uint32_t Walk::cloud(const scene::Handle & handle) {
 }
 
 std::uint32_t Walk::quadric(const scene::Handle & handle) {
-    const auto found = geometryIndex_.find(handle.index);
-    if (found != geometryIndex_.end()) {
-        return found->second;
-    }
     // every time any dimension is sampled at, since each moves linearly between its own samples
     std::set<float> times;
     for (const scene::Declaration & declaration : scene_.schema().kind(handle.kind).parameters) {
@@ -372,21 +519,26 @@ std::uint32_t Walk::quadric(const scene::Handle & handle) {
 }
 
 std::optional<std::uint32_t> Walk::subdivision(const scene::Handle & handle) {
-    const auto found = geometryIndex_.find(handle.index);
-    if (found != geometryIndex_.end()) {
-        return found->second;
-    }
     const std::size_t count = scene_.samples(handle, "P").values.front().size();
-    std::optional<Surface> surface;
+    std::optional<subdivision::Surface> surface;
+    if (cache_ != nullptr) {
+        const auto held = cache_->pieces_.find(handle.index);
+        if (held != cache_->pieces_.end()) {
+            surface = held->second.surface;
+        }
+    }
     try {
-        surface.emplace(topologyOf(scene_, handle, static_cast<std::uint32_t>(count)));
+        if (!surface) {
+            surface.emplace(topologyOf(scene_, handle, static_cast<std::uint32_t>(count)));
+        }
     } catch (const std::invalid_argument & refused) {
         report("subdivision " + scene_.name(handle) + " is left out, because " + refused.what());
         return std::nullopt;
     }
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
-    prototypes_.geometries.emplace_back();
+    prototypes_.geometries.emplace_back().id = handle.index;
     geometryIndex_.emplace(handle.index, index);
+    placed_.insert(handle.index);
     uncut_.push_back(Uncut { .handle = handle, .index = index, .surface = std::move(*surface) });
     return index;
 }
@@ -400,10 +552,20 @@ void Walk::cutSurfaces() {
     const std::map<std::uint32_t, glm::mat4> placements = nearest(camera);
     for (const Uncut & uncut : uncut_) {
         const auto placed = placements.find(uncut.index);
-        const Dicing dicing(camera, edgeLength, placed == placements.end() ? glm::mat4(1.0F) : placed->second);
+        const glm::mat4 placement = placed == placements.end() ? glm::mat4(1.0F) : placed->second;
+        const std::vector<float> measure = dicingOf(camera, edgeLength, placement);
+        if (cache_ != nullptr) {
+            const auto held = cache_->pieces_.find(uncut.handle.index);
+            if (held != cache_->pieces_.end() && held->second.made && held->second.dicing == measure) {
+                prototypes_.geometries[uncut.index] = place(held->second);
+                continue;
+            }
+        }
+        const Mark mark = marked();
+        const subdivision::Dicing dicing(camera, edgeLength, placement);
         const scene::Samples & samples = scene_.samples(uncut.handle, "P");
         // the surface is measured at its first sample's points, and every sample shares the cut
-        const Tessellation tessellation = uncut.surface.cut(floatsOf(samples.values.front()), dicing);
+        const subdivision::Tessellation tessellation = uncut.surface.cut(floatsOf(samples.values.front()), dicing);
         const std::vector<float> raised = heights(uncut.handle, uncut.surface, tessellation);
         Geometry & mesh = prototypes_.geometries[uncut.index];
         mesh.form = kernel::geometry::primitive::Form::Triangles;
@@ -412,27 +574,20 @@ void Walk::cutSurfaces() {
         mesh.points = sampled(prototypes_.points.size(), tessellation.corners.size(), samples.times);
         // every sample's points are evaluated on the one surface, whose patches its topology fixes
         for (const scene::Value & sample : samples.values) {
-            const std::vector<float> points = floatsOf(sample);
-            std::vector<float> limit = uncut.surface.at(points, 3, scene::Interpolation::Vertex, tessellation);
-            if (!raised.empty()) {
-                const std::vector<float> normals = uncut.surface.normals(points, tessellation);
-                for (std::size_t place = 0; place < raised.size(); ++place) {
-                    for (std::size_t axis = 0; axis < 3; ++axis) {
-                        limit[(place * 3) + axis] += raised[place] * normals[(place * 3) + axis];
-                    }
-                }
-                // a place on a shared edge takes its shared place's point, as the limit's points do
-                for (std::size_t place = 0; place < tessellation.shared.size(); ++place) {
-                    const std::size_t from = static_cast<std::size_t>(tessellation.shared[place]) * 3;
-                    std::copy_n(limit.begin() + static_cast<std::ptrdiff_t>(from), 3, limit.begin() + static_cast<std::ptrdiff_t>(place * 3));
-                }
-            }
+            const std::vector<float> limit = displaced(uncut.surface, floatsOf(sample), tessellation, raised);
             for (const std::uint32_t corner : tessellation.corners) {
                 const std::size_t at = static_cast<std::size_t>(corner) * 3U;
                 prototypes_.points.emplace_back(limit[at], limit[at + 1U], limit[at + 2U]);
             }
         }
         prototypes_.faces.insert(prototypes_.faces.end(), tessellation.faces.begin(), tessellation.faces.end());
+        if (cache_ != nullptr) {
+            Piece piece = pieceOf(uncut.index, mark);
+            piece.surface = uncut.surface;
+            piece.dicing = measure;
+            cache_->pieces_.insert_or_assign(uncut.handle.index, std::move(piece));
+            cache_->made_.insert(uncut.handle.index);
+        }
     }
 }
 
@@ -483,7 +638,7 @@ std::map<std::uint32_t, glm::mat4> Walk::nearest(const kernel::camera::Camera & 
     return out;
 }
 
-std::vector<float> Walk::heights(const scene::Handle & handle, const Surface & surface, const Tessellation & tessellation) {
+std::vector<float> Walk::heights(const scene::Handle & handle, const subdivision::Surface & surface, const subdivision::Tessellation & tessellation) {
     const std::vector<scene::Declaration> & primvars = scene_.primvars(handle);
     const auto declared = std::ranges::find_if(primvars, [](const scene::Declaration & primvar) { return primvar.name == "displacement"; });
     if (declared == primvars.end()) {
@@ -518,10 +673,6 @@ std::vector<float> Walk::heights(const scene::Handle & handle, const Surface & s
 }
 
 std::optional<std::uint32_t> Walk::curves(const scene::Handle & handle) {
-    const auto found = geometryIndex_.find(handle.index);
-    if (found != geometryIndex_.end()) {
-        return found->second;
-    }
     const scene::Samples & positions = scene_.samples(handle, "P");
     const scene::Samples & widths = scene_.samples(handle, "width");
     const std::vector<std::int32_t> & vertices = scene_.value(handle, "vertices").integerArray();

@@ -8,9 +8,9 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Flat.h>
 #include <moya/libmoya/geometry/Prototypes.h>
-#include <moya/libmoya/geometry/Surface.h>
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/Surface.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/scene/Declaration.h>
@@ -65,8 +65,8 @@ std::vector<glm::vec3> cubePoints() {
 }
 
 /** The cube's six faces, wound outward. The fifth is its top, at z = 1, from its corner 4. **/
-geometry::Topology cube() {
-    geometry::Topology out;
+geometry::subdivision::Topology cube() {
+    geometry::subdivision::Topology out;
     out.vertices = std::vector<std::int32_t>(6, 4);
     out.indices = { 0, 2, 3, 1, 0, 1, 5, 4, 0, 4, 6, 2, 1, 3, 7, 5, 4, 5, 7, 6, 2, 6, 7, 3 };
     out.points = 8;
@@ -92,8 +92,8 @@ std::vector<glm::vec3> pointsOf(const std::vector<float> & floats) {
 }
 
 /** A tessellation of chosen places, each on a patch face of a face, and no triangles. **/
-geometry::Tessellation placesAt(const std::vector<std::uint32_t> & patches, const std::vector<glm::vec2> & positions) {
-    geometry::Tessellation out;
+geometry::subdivision::Tessellation placesAt(const std::vector<std::uint32_t> & patches, const std::vector<glm::vec2> & positions) {
+    geometry::subdivision::Tessellation out;
     out.patches = patches;
     out.positions = positions;
     out.placeFaces = patches;
@@ -101,7 +101,7 @@ geometry::Tessellation placesAt(const std::vector<std::uint32_t> & patches, cons
 }
 
 /** A subdivision surface of the scene through points, with a topology's faces and tags. **/
-scene::Handle subdivision(scene::Scene & scene, const std::string & name, const geometry::Topology & topology, const std::vector<glm::vec3> & points) {
+scene::Handle subdivision(scene::Scene & scene, const std::string & name, const geometry::subdivision::Topology & topology, const std::vector<glm::vec3> & points) {
     const scene::Handle out = scene.create("subdivision", name);
     scene.set(out, "P", scene::Value::points(points));
     scene.set(out, "vertices", scene::Value::integers(topology.vertices));
@@ -112,14 +112,14 @@ scene::Handle subdivision(scene::Scene & scene, const std::string & name, const 
 // a cube's corner and the middle of its faces lie on Catmull-Clark's limit surface, at a half
 // along each axis and 68/81 from its centre, and every place of the surface lies between them
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_cube_reaches_catmull_clarks_limit_test) {
-    const geometry::Surface surface(cube());
+    const geometry::subdivision::Surface surface(cube());
     const std::vector<float> points = flat(cubePoints());
     const std::vector<glm::vec3> limit =
         pointsOf(surface.at(points, 3, Interpolation::Vertex, placesAt({ 4, 4 }, { glm::vec2(0.0F), glm::vec2(0.5F) })));
     BOOST_TEST(glm::length(limit[0] - glm::vec3 { -0.5F, -0.5F, 0.5F }) < 1.0e-5F);
     BOOST_TEST(glm::length(limit[1] - glm::vec3 { 0.0F, 0.0F, 68.0F / 81.0F }) < 1.0e-5F);
 
-    const geometry::Tessellation cut = surface.cut(8);
+    const geometry::subdivision::Tessellation cut = surface.cut(8);
     BOOST_TEST(cut.faces.size() == 6U * 8U * 8U * 2U);
     for (const glm::vec3 & place : pointsOf(surface.at(points, 3, Interpolation::Vertex, cut))) {
         BOOST_TEST((glm::length(place) > (68.0F / 81.0F) - 1.0e-5F && glm::length(place) < std::sqrt(0.75F) + 1.0e-5F));
@@ -129,41 +129,41 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_cube_reaches_catmull_clarks_limit_test) 
 // a crease of infinite sharpness around the cube's top keeps that loop at the top's height, and
 // its corners where the crease's own B-spline puts them
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_crease_of_infinite_sharpness_keeps_its_edge_test) {
-    geometry::Topology creased = cube();
+    geometry::subdivision::Topology creased = cube();
     creased.creases = { 4, 5, 7, 6, 4 };
     creased.creaseLengths = { 5 };
     creased.creaseSharpness = { 10.0F };
     const std::vector<float> points = flat(cubePoints());
     // the top face's edges, from its corner 4 along each side
-    const geometry::Tessellation edges = placesAt({ 4, 4, 4, 4, 4 },
+    const geometry::subdivision::Tessellation edges = placesAt({ 4, 4, 4, 4, 4 },
         { glm::vec2(0.0F), glm::vec2(0.3F, 0.0F), glm::vec2(1.0F, 0.6F), glm::vec2(0.2F, 1.0F), glm::vec2(0.0F, 0.9F) });
-    const std::vector<glm::vec3> sharp = pointsOf(geometry::Surface(creased).at(points, 3, Interpolation::Vertex, edges));
+    const std::vector<glm::vec3> sharp = pointsOf(geometry::subdivision::Surface(creased).at(points, 3, Interpolation::Vertex, edges));
     for (const glm::vec3 & place : sharp) {
         BOOST_TEST(std::fabs(place.z - 1.0F) < 1.0e-5F, place.z);
     }
     BOOST_TEST(glm::length(sharp[0] - glm::vec3 { -2.0F / 3.0F, -2.0F / 3.0F, 1.0F }) < 1.0e-5F);
     // without the crease the same places sink below the top
-    for (const glm::vec3 & place : pointsOf(geometry::Surface(cube()).at(points, 3, Interpolation::Vertex, edges))) {
+    for (const glm::vec3 & place : pointsOf(geometry::subdivision::Surface(cube()).at(points, 3, Interpolation::Vertex, edges))) {
         BOOST_TEST(place.z < 0.95F);
     }
 }
 
 // a hole leaves its face open and every other face cut, and a hole that names no face is refused
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_hole_leaves_its_face_open_test) {
-    geometry::Topology holed = cube();
+    geometry::subdivision::Topology holed = cube();
     holed.holes = { 4 };
-    const geometry::Tessellation cut = geometry::Surface(holed).cut(4);
+    const geometry::subdivision::Tessellation cut = geometry::subdivision::Surface(holed).cut(4);
     const std::set<std::uint32_t> faces(cut.faces.begin(), cut.faces.end());
     BOOST_TEST((faces == std::set<std::uint32_t> { 0, 1, 2, 3, 5 }));
     BOOST_TEST(cut.faces.size() == 5U * 4U * 4U * 2U);
     holed.holes = { 6 };
-    BOOST_CHECK_THROW(geometry::Surface { holed }, std::invalid_argument);
+    BOOST_CHECK_THROW(geometry::subdivision::Surface { holed }, std::invalid_argument);
 }
 
 // a boundary that is not interpolated leaves the faces along it open, and one that is cuts them
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_boundary_is_open_until_it_is_interpolated_test) {
     // a grid of three by three faces, through four by four points
-    geometry::Topology grid;
+    geometry::subdivision::Topology grid;
     for (std::int32_t row = 0; row < 3; ++row) {
         for (std::int32_t column = 0; column < 3; ++column) {
             const std::int32_t corner = (row * 4) + column;
@@ -172,35 +172,35 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_boundary_is_open_until_it_is_interpolate
         }
     }
     grid.points = 16;
-    const auto faces = [&](geometry::Boundary boundary) {
+    const auto faces = [&](geometry::subdivision::Boundary boundary) {
         grid.boundary = boundary;
-        const geometry::Tessellation cut = geometry::Surface(grid).cut(2);
+        const geometry::subdivision::Tessellation cut = geometry::subdivision::Surface(grid).cut(2);
         return std::set<std::uint32_t>(cut.faces.begin(), cut.faces.end()).size();
     };
-    BOOST_TEST(faces(geometry::Boundary::None) == 1U);
-    BOOST_TEST(faces(geometry::Boundary::Edges) == 9U);
-    BOOST_TEST(faces(geometry::Boundary::EdgesAndCorners) == 9U);
+    BOOST_TEST(faces(geometry::subdivision::Boundary::None) == 1U);
+    BOOST_TEST(faces(geometry::subdivision::Boundary::Edges) == 9U);
+    BOOST_TEST(faces(geometry::subdivision::Boundary::EdgesAndCorners) == 9U);
 }
 
 // an octahedron's vertex reaches Loop's limit for a vertex of four neighbours, and a bilinear
 // cube's surface is its control mesh
 BOOST_AUTO_TEST_CASE(moya_subdivision_loop_and_bilinear_reach_their_limits_test) {
-    geometry::Topology octahedron;
-    octahedron.scheme = geometry::Scheme::Loop;
+    geometry::subdivision::Topology octahedron;
+    octahedron.scheme = geometry::subdivision::Scheme::Loop;
     octahedron.points = 6;
     // the top is 0 and the bottom 1, and the middle runs +x, +y, -x, -y
     octahedron.indices = { 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 2, 1, 3, 2, 1, 4, 3, 1, 5, 4, 1, 2, 5 };
     octahedron.vertices = std::vector<std::int32_t>(8, 3);
     const std::vector<float> points = flat({ { 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, -1.0F }, { 1.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F },
         { -1.0F, 0.0F, 0.0F }, { 0.0F, -1.0F, 0.0F } });
-    const geometry::Surface loop(octahedron);
+    const geometry::subdivision::Surface loop(octahedron);
     const std::vector<glm::vec3> top = pointsOf(loop.at(points, 3, Interpolation::Vertex, placesAt({ 0 }, { glm::vec2(0.0F) })));
     BOOST_TEST(glm::length(top[0] - glm::vec3 { 0.0F, 0.0F, 768.0F / 1760.0F }) < 1.0e-5F);
     BOOST_TEST(loop.cut(4).faces.size() == 8U * 4U * 4U);
 
-    geometry::Topology box = cube();
-    box.scheme = geometry::Scheme::Bilinear;
-    const geometry::Surface bilinear(box);
+    geometry::subdivision::Topology box = cube();
+    box.scheme = geometry::subdivision::Scheme::Bilinear;
+    const geometry::subdivision::Surface bilinear(box);
     for (const glm::vec3 & place : pointsOf(bilinear.at(flat(cubePoints()), 3, Interpolation::Vertex, bilinear.cut(3)))) {
         const float reach = std::max({ std::fabs(place.x), std::fabs(place.y), std::fabs(place.z) });
         BOOST_TEST(std::fabs(reach - 1.0F) < 1.0e-5F);
@@ -210,18 +210,18 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_loop_and_bilinear_reach_their_limits_test)
 // a triangular prism's triangles are cut into a patch face at each corner, and every triangle of
 // the closed surface faces outward, as the faces are wound
 BOOST_AUTO_TEST_CASE(moya_subdivision_every_patch_face_keeps_its_faces_winding_test) {
-    geometry::Topology prism;
+    geometry::subdivision::Topology prism;
     prism.points = 6;
     // a triangle at z = -1 and one at z = 1, and the three sides between
     prism.indices = { 0, 2, 1, 3, 4, 5, 0, 1, 4, 3, 1, 2, 5, 4, 2, 0, 3, 5 };
     prism.vertices = { 3, 3, 4, 4, 4 };
     const std::vector<glm::vec3> corners { { 1.0F, 0.0F, -1.0F }, { -0.5F, 0.866F, -1.0F }, { -0.5F, -0.866F, -1.0F }, { 1.0F, 0.0F, 1.0F },
         { -0.5F, 0.866F, 1.0F }, { -0.5F, -0.866F, 1.0F } };
-    const geometry::Surface surface(prism);
+    const geometry::subdivision::Surface surface(prism);
     // an edge of a triangle is cut into 4 pieces, its halves into 2 each. A side face, of 4 pieces
     // across and 3 up, is a grid of 2 cells and 20 triangles that join its sides. A triangle's
     // patch face, of sides of 2, 3, 3 and 2 pieces, is a grid of 1 cell and 14 triangles
-    const geometry::Tessellation cut = surface.cut(3);
+    const geometry::subdivision::Tessellation cut = surface.cut(3);
     BOOST_TEST(cut.faces.size() == (3U * (4U + 20U)) + (6U * (2U + 14U)));
     const std::vector<glm::vec3> places = pointsOf(surface.at(flat(corners), 3, Interpolation::Vertex, cut));
     std::size_t inward = 0;
@@ -237,10 +237,10 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_every_patch_face_keeps_its_faces_winding_t
 // a face-varying value equal at every corner of a vertex is smooth, as a vertex value is. One
 // that differs on each face keeps each face's own values at its corners and between them
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_face_varying_value_keeps_its_seams_test) {
-    const geometry::Topology box = cube();
-    const geometry::Surface surface(box);
+    const geometry::subdivision::Topology box = cube();
+    const geometry::subdivision::Surface surface(box);
     const std::vector<glm::vec3> corners = cubePoints();
-    const geometry::Tessellation cut = surface.cut(2);
+    const geometry::subdivision::Tessellation cut = surface.cut(2);
     std::vector<glm::vec3> atCorners;
     atCorners.reserve(box.indices.size());
     for (const std::int32_t index : box.indices) {
@@ -279,8 +279,8 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_face_varying_value_keeps_its_seams_test)
 // a varying value runs bilinearly across each patch face, a uniform one is its face's, and a
 // constant one is the same everywhere. Values of another count are refused
 BOOST_AUTO_TEST_CASE(moya_subdivision_varying_uniform_and_constant_values_test) {
-    const geometry::Surface surface(cube());
-    const geometry::Tessellation places = placesAt({ 4, 4, 0 }, { glm::vec2(0.5F), glm::vec2(0.25F, 0.0F), glm::vec2(0.5F) });
+    const geometry::subdivision::Surface surface(cube());
+    const geometry::subdivision::Tessellation places = placesAt({ 4, 4, 0 }, { glm::vec2(0.5F), glm::vec2(0.25F, 0.0F), glm::vec2(0.5F) });
     // the top's corners, 4, 5, 7 and 6, are 4, 5, 7 and 6
     const std::vector<float> varying = surface.at({ 0.0F, 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F }, 1, Interpolation::Varying, places);
     BOOST_TEST(std::fabs(varying[0] - 5.5F) < 1.0e-5F);
@@ -294,19 +294,19 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_varying_uniform_and_constant_values_test) 
 // a topology OpenSubdiv cannot refine is refused, and the scene's subdivision is left out and
 // reported for it
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_topology_that_cannot_be_refined_is_reported_test) {
-    geometry::Topology edge = cube();
+    geometry::subdivision::Topology edge = cube();
     edge.vertices = { 2, 4, 4, 4, 4, 4, 2 };
-    BOOST_CHECK_THROW(geometry::Surface { edge }, std::invalid_argument);
-    geometry::Topology quads = cube();
-    quads.scheme = geometry::Scheme::Loop;
-    BOOST_CHECK_THROW(geometry::Surface { quads }, std::invalid_argument);
-    geometry::Topology outside = cube();
+    BOOST_CHECK_THROW(geometry::subdivision::Surface { edge }, std::invalid_argument);
+    geometry::subdivision::Topology quads = cube();
+    quads.scheme = geometry::subdivision::Scheme::Loop;
+    BOOST_CHECK_THROW(geometry::subdivision::Surface { quads }, std::invalid_argument);
+    geometry::subdivision::Topology outside = cube();
     outside.indices[3] = 8;
-    BOOST_CHECK_THROW(geometry::Surface { outside }, std::invalid_argument);
-    geometry::Topology crease = cube();
+    BOOST_CHECK_THROW(geometry::subdivision::Surface { outside }, std::invalid_argument);
+    geometry::subdivision::Topology crease = cube();
     crease.creases = { 4, 5 };
     crease.creaseLengths = { 2 };
-    BOOST_CHECK_THROW(geometry::Surface { crease }, std::invalid_argument);
+    BOOST_CHECK_THROW(geometry::subdivision::Surface { crease }, std::invalid_argument);
 
     scene::Scene scene(scene::kinds());
     const scene::Handle cage = subdivision(scene, "cage", outside, cubePoints());
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_subdivision_surface_is_traced_test) {
 
 /** A bilinear surface of two unit squares facing -z at two depths, its edges interpolated. **/
 scene::Handle squares(scene::Scene & scene, const std::string & name, float near, float far) {
-    geometry::Topology two;
+    geometry::subdivision::Topology two;
     two.vertices = { 4, 4 };
     two.indices = { 0, 3, 2, 1, 4, 7, 6, 5 };
     two.points = 8;
@@ -471,7 +471,7 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_surface_is_cut_for_its_nearest_placement
 // a patch face whose sides are all cut alike is cut into its grid's cells, two triangles to a
 // cell, so no triangle reaches further across it than a cell's diagonal
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_patch_face_cut_evenly_is_cut_into_cells_test) {
-    const geometry::Tessellation cut = geometry::Surface(cube()).cut(8);
+    const geometry::subdivision::Tessellation cut = geometry::subdivision::Surface(cube()).cut(8);
     float longest = 0.0F;
     std::size_t elsewhere = 0;
     for (std::size_t corner = 0; corner < cut.corners.size(); ++corner) {
@@ -489,30 +489,30 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_patch_face_cut_evenly_is_cut_into_cells_
 // triangle's edge is still met by one other triangle, wound the other way, between the same
 // places, so no edge is cut on one side alone. Each place lies where its patch face puts it
 BOOST_AUTO_TEST_CASE(moya_subdivision_no_edge_is_cut_on_one_side_alone_test) {
-    geometry::Topology prism;
+    geometry::subdivision::Topology prism;
     prism.points = 6;
     prism.indices = { 0, 2, 1, 3, 4, 5, 0, 1, 4, 3, 1, 2, 5, 4, 2, 0, 3, 5 };
     prism.vertices = { 3, 3, 4, 4, 4 };
-    geometry::Topology octahedron;
-    octahedron.scheme = geometry::Scheme::Loop;
+    geometry::subdivision::Topology octahedron;
+    octahedron.scheme = geometry::subdivision::Scheme::Loop;
     octahedron.points = 6;
     octahedron.indices = { 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 2, 1, 3, 2, 1, 4, 3, 1, 5, 4, 1, 2, 5 };
     octahedron.vertices = std::vector<std::int32_t>(8, 3);
-    const std::vector<std::pair<geometry::Topology, std::vector<glm::vec3>>> surfaces { { cube(), cubePoints() },
+    const std::vector<std::pair<geometry::subdivision::Topology, std::vector<glm::vec3>>> surfaces { { cube(), cubePoints() },
         { prism,
             { { 1.0F, 0.0F, -1.0F }, { -0.5F, 0.866F, -1.0F }, { -0.5F, -0.866F, -1.0F }, { 1.0F, 0.0F, 1.0F }, { -0.5F, 0.866F, 1.0F },
                 { -0.5F, -0.866F, 1.0F } } },
         { octahedron,
             { { 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, -1.0F }, { 1.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F }, { -1.0F, 0.0F, 0.0F },
                 { 0.0F, -1.0F, 0.0F } } } };
-    const geometry::Surface::Measure byPlace = [](const std::vector<glm::vec3> & along) {
+    const geometry::subdivision::Surface::Measure byPlace = [](const std::vector<glm::vec3> & along) {
         const glm::vec3 middle = (along.front() + along.back()) * 0.5F;
         return 1U + static_cast<std::uint32_t>(std::fabs((middle.x * 3.0F) + (middle.y * 2.0F) + middle.z) * 2.0F);
     };
     for (std::size_t at = 0; at < surfaces.size(); ++at) {
-        const geometry::Surface surface(surfaces[at].first);
+        const geometry::subdivision::Surface surface(surfaces[at].first);
         const std::vector<float> points = flat(surfaces[at].second);
-        const geometry::Tessellation cut = surface.cut(points, byPlace);
+        const geometry::subdivision::Tessellation cut = surface.cut(points, byPlace);
         BOOST_TEST(cut.shared.size() == cut.patches.size(), at);
         std::map<std::pair<std::uint32_t, std::uint32_t>, int> edges;
         for (std::size_t corner = 0; corner < cut.corners.size(); ++corner) {
@@ -531,7 +531,7 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_no_edge_is_cut_on_one_side_alone_test) {
         const std::set<std::uint32_t> distinct(cut.shared.begin(), cut.shared.end());
         BOOST_TEST(distinct.size() < cut.patches.size(), at);
 
-        geometry::Tessellation own = cut;
+        geometry::subdivision::Tessellation own = cut;
         own.shared.clear();
         const std::vector<glm::vec3> placed = pointsOf(surface.at(points, 3, Interpolation::Vertex, own));
         const std::vector<glm::vec3> taken = pointsOf(surface.at(points, 3, Interpolation::Vertex, cut));

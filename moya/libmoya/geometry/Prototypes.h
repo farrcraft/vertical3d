@@ -27,6 +27,8 @@ class Logger;
 
 namespace v3d::moya::geometry {
 
+class Cache;
+
 /**
  * Every prototype the scene's instances reach, each in its own space, and the instances that place
  * them. A prototype placed many times is held once.
@@ -84,7 +86,7 @@ struct Prototypes {
  * - an instance that would be deeper in a chain than kernel::geometry::kInstanceDepth. It is still
  *   held where a shorter chain reaches it, and a traversal leaves it out where it is too deep.
  * - an instance of a subdivision surface that OpenSubdiv cannot refine, for the reasons
- *   geometry::Surface() refuses it.
+ *   geometry::subdivision::Surface() refuses it.
  * - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that do
  *   not add up to the indices, or an index outside the points.
  * - an instance of curves that cannot be cut into segments: a curve of fewer than two vertices,
@@ -99,5 +101,8 @@ struct Prototypes {
  * shadow and indirect rays as its parameters of those names say. The shutter is the camera's.
  **/
 Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger);
+
+/** The prototypes gather() gives, each geometry the cache holds placed from it, as Cache says. **/
+Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, Cache & cache);
 
 };  // namespace v3d::moya::geometry

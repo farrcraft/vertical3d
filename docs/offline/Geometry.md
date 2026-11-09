@@ -25,6 +25,9 @@ the rays and the tests kernel code runs against it.
 
 ## Subdivision surfaces
 
+Subdivision surfaces are in `moya/libmoya/geometry/subdivision/`, in the namespace
+`v3d::moya::geometry::subdivision`, with what cuts them into triangles.
+
 `Surface(topology)` is a subdivision surface's limit, through OpenSubdiv. A `Topology` holds the
 control mesh, its scheme and RI's tags. The patches are built once, and every sample of the
 points and every primvar is evaluated over them.

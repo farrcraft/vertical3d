@@ -203,6 +203,15 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
   - A set of curves holds each segment's control points at each sample, with the curve it was
     cut from and whether it closes its curve. Curves whose widths are neither one per vertex nor
     one per varying value take their constant width, and are reported.
+- **Each geometry and group keeps its index in the scene** as its `id`. The world's is
+  `Group::kWorld`, which no object has.
+- **`gather(scene, logger, cache)` places what a `geometry::Cache` holds.** A geometry the cache
+  holds is placed as it was made, with its reports, and only the others are made and kept there.
+  A subdivision surface is placed from the cache only when it is measured from the same dicing
+  camera, edge length and placement as it was cut for. Otherwise it is cut again from the limit
+  surface the cache keeps. The cache drops what the gather did not place, and `made()` names
+  what it made, by the scene's index. Whoever owns the cache forgets a changed object's geometry
+  before it gathers again.
 - **An instance names its prototype**, a geometry or a group, and its transformation into the space
   of the group that holds it. It keeps its index in the scene. Its `camera`, `shadow` and
   `indirect` parameters give the kinds of ray it is visible to.
@@ -214,7 +223,7 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
   - an instance that would be deeper in a chain than a hit records. It is still held where a
     shorter chain reaches it, and each traversal leaves it out where it is too deep.
   - an instance of a subdivision surface that cannot be refined, for the reasons
-    `geometry::Surface()` refuses it.
+    `geometry::subdivision::Surface()` refuses it.
   - an instance of curves that cannot be cut into segments, for the reasons `geometry::cut()`
     refuses them.
   - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that
@@ -401,6 +410,34 @@ A `device::cpu::Instance` is an instance as the CPU traverses it. It holds the i
 transformation while it holds still, and its keys while it moves. It names its prototype's root
 and whether that moves, its geometry or `kGroup`, its index in the scene and its visibility. A
 `device::cpu::Geometry` gives a geometry's form and where its samples are held.
+
+## Rebuilding what changed
+
+`accel::Assembler(device, logger)` keeps a scene's hierarchies as the scene changes. `update(scene)`
+brings them to the scene's version, and gives the same assembly `assemble()` builds from the same
+prototypes. `prototypes()` and `assembly()` give what the last update made.
+
+- **The assembler is a consumer of the scene.** It keeps the version it last built from, and asks
+  `changes()` for every object that changed since. The first update builds every hierarchy.
+- **The prototypes are gathered again through a `geometry::Cache`.** The assembler forgets each
+  changed object's geometry first, so the gather makes that geometry again and places every other
+  as it was made. A subdivision surface is also cut again when its dicing camera, its edge length
+  or its nearest placement moved.
+- **A geometry's hierarchy is built again only when its geometry was made again.** Its nodes
+  count from its own first node and its leaves name its own primitives, so the same nodes are
+  placed wherever its geometry lands.
+- **A group's hierarchy, and the world's, is built again** when the group or one of its
+  instances changed, or when it holds other instances than it was built over. It is built again
+  too when whether it moves changed, or one of its instances' prototypes was built again. A
+  moved instance builds the hierarchies that hold it, and each that holds those, and no
+  geometry's.
+- **What an update no longer places is dropped**, from the cache and from the hierarchies it
+  keeps. A removed prototype's instances place nothing, as `gather()` leaves them out.
+- **`builtGeometries()` and `builtGroups()` name what the last update built**, by the scene's
+  index, and `Group::kWorld` for the world.
+
+`view::trace(device, prototypes, assembly, rays)` traces rays through an assembly an assembler
+made, as `view::trace()` traces them through one `assemble()` builds.
 
 ## The CPU's traversal
 

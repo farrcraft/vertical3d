@@ -88,31 +88,39 @@ void traceList(device::CpuDevice & device, const Tracing & tracing, const std::v
 Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer, float time) :
     tracer_(tracer), world_(device, geometry::flatten(prototypes, time)) {
     if (tracer == Tracer::Hierarchy) {
-        const accel::Assembly assembly = accel::assemble(device, prototypes);
-        std::vector<device::cpu::Geometry> geometries;
-        geometries.reserve(prototypes.geometries.size());
-        for (const geometry::Geometry & geometry : prototypes.geometries) {
-            geometries.push_back(
-                device::cpu::Geometry { .form = geometry.form, .points = geometry.points, .widths = geometry.widths, .quadric = geometry.quadric,
-                .controls = geometry.controls,
-                .ends = geometry.ends });
-        }
-        nodes_ = uploaded(device, assembly.nodes);
-        motionNodes_ = uploaded(device, assembly.motionNodes);
-        references_ = uploaded(device, assembly.references);
-        points_ = uploaded(device, prototypes.points);
-        times_ = uploaded(device, prototypes.times);
-        widths_ = uploaded(device, prototypes.widths);
-        quadrics_ = uploaded(device, prototypes.quadrics);
-        controls_ = uploaded(device, prototypes.controls);
-        ends_ = uploaded(device, prototypes.ends);
-        geometries_ = uploaded(device, geometries);
-        keys_ = uploaded(device, assembly.keys);
-        instances_ = uploaded(device, assembly.instances);
-        worldRoot_ = assembly.world;
-        open_ = prototypes.open;
-        close_ = prototypes.close;
+        upload(device, prototypes, accel::assemble(device, prototypes));
     }
+}
+
+Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly, float time) :
+    tracer_(Tracer::Hierarchy), world_(device, geometry::flatten(prototypes, time)) {
+    upload(device, prototypes, assembly);
+}
+
+void Tracing::upload(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly) {
+    std::vector<device::cpu::Geometry> geometries;
+    geometries.reserve(prototypes.geometries.size());
+    for (const geometry::Geometry & geometry : prototypes.geometries) {
+        geometries.push_back(
+            device::cpu::Geometry { .form = geometry.form, .points = geometry.points, .widths = geometry.widths, .quadric = geometry.quadric,
+            .controls = geometry.controls,
+            .ends = geometry.ends });
+    }
+    nodes_ = uploaded(device, assembly.nodes);
+    motionNodes_ = uploaded(device, assembly.motionNodes);
+    references_ = uploaded(device, assembly.references);
+    points_ = uploaded(device, prototypes.points);
+    times_ = uploaded(device, prototypes.times);
+    widths_ = uploaded(device, prototypes.widths);
+    quadrics_ = uploaded(device, prototypes.quadrics);
+    controls_ = uploaded(device, prototypes.controls);
+    ends_ = uploaded(device, prototypes.ends);
+    geometries_ = uploaded(device, geometries);
+    keys_ = uploaded(device, assembly.keys);
+    instances_ = uploaded(device, assembly.instances);
+    worldRoot_ = assembly.world;
+    open_ = prototypes.open;
+    close_ = prototypes.close;
 }
 
 Tracer Tracing::tracer() const {
@@ -147,6 +155,23 @@ device::cpu::Traversal Tracing::hierarchy() const {
         .worldMoving = worldRoot_.moving ? 1U : 0U,
         .open = open_,
         .close = close_ };
+}
+
+Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly,
+    const std::vector<kernel::geometry::Ray> & rays) {
+    Traced out;
+    if (rays.empty()) {
+        return out;
+    }
+    out.nearest.resize(rays.size());
+    out.any.resize(rays.size());
+    std::vector<std::size_t> every(rays.size());
+    for (std::size_t i = 0; i < rays.size(); ++i) {
+        every[i] = i;
+    }
+    const Tracing tracing(device, prototypes, assembly, prototypes.open);
+    traceList(device, tracing, rays, every, out);
+    return out;
 }
 
 Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const std::vector<kernel::geometry::Ray> & rays,

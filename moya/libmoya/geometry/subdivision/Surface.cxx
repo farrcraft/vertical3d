@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <moya/libmoya/geometry/Surface.h>
+#include <moya/libmoya/geometry/subdivision/Surface.h>
 
-#include <moya/libmoya/geometry/internal/Cutter.h>
-#include <moya/libmoya/geometry/internal/Patches.h>
-#include <moya/libmoya/geometry/internal/Scalar.h>
-#include <moya/libmoya/geometry/Tessellation.h>
-#include <moya/libmoya/geometry/Topology.h>
+#include <moya/libmoya/geometry/subdivision/internal/Cutter.h>
+#include <moya/libmoya/geometry/subdivision/internal/Patches.h>
+#include <moya/libmoya/geometry/subdivision/internal/Scalar.h>
+#include <moya/libmoya/geometry/subdivision/Tessellation.h>
+#include <moya/libmoya/geometry/subdivision/Topology.h>
 #include <moya/libmoya/scene/Declaration.h>
 
 #include <opensubdiv/far/patchMap.h>
@@ -38,7 +38,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::geometry {
+namespace v3d::moya::geometry::subdivision {
 
 namespace {
 
@@ -444,4 +444,4 @@ std::vector<float> Surface::at(const std::vector<float> & values, std::size_t wi
     return out;
 }
 
-};  // namespace v3d::moya::geometry
+};  // namespace v3d::moya::geometry::subdivision
