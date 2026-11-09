@@ -39,12 +39,13 @@ TemporalBuilder::TemporalBuilder(device::CpuDevice & device, const Sweep & sweep
 
 MovingBinary TemporalBuilder::build(std::vector<MovingReference> references, float begin, float end) const {
     MovingBinary out;
-    node(std::move(references), begin, end, 0, out);
+    node(std::move(references), begin, end, 0, 0, out);
     return out;
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the range, then how deep the node lies
-std::uint32_t TemporalBuilder::node(std::vector<MovingReference> references, float begin, float end, int depth, MovingBinary & out) const {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the range, the depth, then the halvings
+std::uint32_t TemporalBuilder::node(std::vector<MovingReference> references, float begin, float end, int depth, int halvings,
+    MovingBinary & out) const {
     const std::size_t count = references.size();
     const LinearBox box = boundsOf(references);
     if (count <= 1 || depth >= kDeepest) {
@@ -55,23 +56,26 @@ std::uint32_t TemporalBuilder::node(std::vector<MovingReference> references, flo
     best.cost = std::numeric_limits<float>::infinity();
     objectSplit(references, best);
 
+    // costs are in tests of one primitive, a step costing as much as one test
+    const float area = box.area();
+    const float leafCost = static_cast<float>(count);
+
     // a split by time keeps every reference on both sides, each over half the range. Motion that
-    // turns back holds the same bounds at both ends, so only bounding each half again tells
+    // turns back holds the same bounds at both ends, so only bounding each half again tells. It
+    // doubles the references, so it is taken only where it costs less than a leaf, and only a
+    // few times on one path
     const float middle = (begin + end) * 0.5F;
     std::vector<MovingReference> early;
     std::vector<MovingReference> late;
-    if (options_.temporal && middle > begin && middle < end) {
+    if (options_.temporal && halvings < kHalvingsMost && middle > begin && middle < end && area > 0.0F) {
         early = within(references, begin, middle);
         late = within(references, middle, end);
         const float cost = 0.5F * static_cast<float>(count) * (boundsOf(early).area() + boundsOf(late).area());
-        if (cost < best.cost) {
+        if (cost < best.cost && 1.0F + (cost / area) < leafCost) {
             best = Split { .temporal = true, .cost = cost };
         }
     }
 
-    // costs are in tests of one primitive, a step costing as much as one test
-    const float area = box.area();
-    const float leafCost = static_cast<float>(count);
     const float splitCost = area > 0.0F ? 1.0F + (best.cost / area) : std::numeric_limits<float>::infinity();
     const bool split = std::isfinite(best.cost);
     if (count <= kLeafMost && (!split || leafCost <= splitCost)) {
@@ -81,6 +85,7 @@ std::uint32_t TemporalBuilder::node(std::vector<MovingReference> references, flo
     // a split by centroids keeps the range on both sides, and one by time halves it
     std::array<std::vector<MovingReference>, 2> halves;
     std::array<std::pair<float, float>, 2> ranges { std::pair { begin, end }, std::pair { begin, end } };
+    const int below = split && best.temporal ? halvings + 1 : halvings;
     if (split && best.temporal) {
         halves = { std::move(early), std::move(late) };
         ranges = { std::pair { begin, middle }, std::pair { middle, end } };
@@ -103,13 +108,13 @@ std::uint32_t TemporalBuilder::node(std::vector<MovingReference> references, flo
     if (count >= kParallel) {
         std::array<MovingBinary, 2> parts;
         device_.each(2, [&](std::size_t half) {
-            node(std::move(halves[half]), ranges[half].first, ranges[half].second, depth + 1, parts[half]);
+            node(std::move(halves[half]), ranges[half].first, ranges[half].second, depth + 1, below, parts[half]);
         });
         children[0] = join(parts[0], out);
         children[1] = join(parts[1], out);
     } else {
         for (std::size_t half = 0; half < 2; ++half) {
-            children[half] = node(std::move(halves[half]), ranges[half].first, ranges[half].second, depth + 1, out);
+            children[half] = node(std::move(halves[half]), ranges[half].first, ranges[half].second, depth + 1, below, out);
         }
     }
     out.nodes[at].left = children[0];

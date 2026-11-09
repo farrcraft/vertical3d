@@ -84,8 +84,14 @@ class TemporalBuilder final {
     /** The deepest a hierarchy grows. A node there is a leaf, however many references it holds. **/
     static constexpr int kDeepest = 64;
 
-    /** Adds the hierarchy over the references to out, and returns the index of its root. **/
-    std::uint32_t node(std::vector<MovingReference> references, float begin, float end, int depth, MovingBinary & out) const;
+    /** The most times one path from the root halves its time range, splitting it by time. **/
+    static constexpr int kHalvingsMost = 8;
+
+    /**
+     * Adds the hierarchy over the references to out, and returns the index of its root. Halvings
+     * counts the splits by time above the node.
+     **/
+    std::uint32_t node(std::vector<MovingReference> references, float begin, float end, int depth, int halvings, MovingBinary & out) const;
 
     /** The best split by centroids, or none when every centroid is at one place. **/
     static bool objectSplit(const std::vector<MovingReference> & references, Split & best);

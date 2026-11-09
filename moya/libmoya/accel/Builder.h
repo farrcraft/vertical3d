@@ -97,7 +97,9 @@ double cost(const Hierarchy & hierarchy);
  * at each end. A node is split by the surface area heuristic, over 32 bins of the centroids at
  * the middle of its range, or by time at the middle of its range. A split by time keeps every
  * primitive on both sides, each bounded again over its half. It is taken where it costs less,
- * as where motion turns back and its bounds over the whole range are loose. There are no spatial
+ * as where motion turns back and its bounds over the whole range are loose, and where it also
+ * costs less than a leaf. No path from the root splits by time more than eight times. A node of
+ * more than eight primitives that no split helps is halved in order. There are no spatial
  * splits. A box's area is its area averaged over its range.
  *
  * The binary hierarchy is then collapsed to nodes of eight children as build() collapses one,

@@ -5,15 +5,21 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
+#include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/accel/Triangles.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <exception>
+#include <future>
 #include <limits>
 #include <stdexcept>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -217,6 +223,31 @@ BOOST_AUTO_TEST_CASE(moya_builder_a_budget_that_is_not_a_count_is_refused_test) 
     for (const float budget : { -1.0F, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity() }) {
         BOOST_CHECK_THROW(accel::build(device, bounds, accel::triangleClip(points), { .budget = budget }), std::invalid_argument);
     }
+}
+
+// nine boxes that move together along x split by time only while that pays. A path splits so at
+// most eight times, and its node is then halved in order, so each reference is held at most 256
+// times. The build runs on a thread of its own, so a build that never ends fails the case rather
+// than hanging the suite
+BOOST_AUTO_TEST_CASE(moya_builder_primitives_moving_together_build_a_bounded_hierarchy_test) {
+    std::promise<std::size_t> built;
+    std::future<std::size_t> references = built.get_future();
+    std::thread([built = std::move(built)]() mutable {
+        try {
+            CpuDevice device;
+            const accel::Sweep sweep = [](std::uint32_t, float begin, float end) {
+                const auto at = [](float time) {
+                    return accel::Box { .lower = { 1000.0F * time, 0.0F, 0.0F }, .upper = { (1000.0F * time) + 1.0F, 1.0F, 1.0F } };
+                };
+                return accel::LinearBox { .start = at(begin), .end = at(end) };
+            };
+            built.set_value(accel::buildMoving(device, 9, sweep, 0.0F, 1.0F).references.size());
+        } catch (...) {
+            built.set_exception(std::current_exception());
+        }
+    }).detach();
+    BOOST_TEST_REQUIRE((references.wait_for(std::chrono::seconds(30)) == std::future_status::ready));
+    BOOST_TEST(references.get() <= 9U * 256U);
 }
 
 };  // namespace

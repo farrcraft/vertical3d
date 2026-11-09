@@ -284,6 +284,10 @@ time between interpolated linearly.
   again over its half. It pays where motion turns back within the range, as a bounce or a turn
   does, so that bounds over the whole range are loose. A box's area is its area averaged over its
   range, which three points give exactly. There are no spatial splits.
+- **A split by time is bounded**, because it doubles the references below it. It is taken only
+  where it also costs less than a leaf, and no path from the root splits by time more than eight
+  times. A node of more than eight primitives that no split helps, such as primitives that all
+  move together, is halved in order, so the build always ends.
 - **The binary hierarchy collapses to eight children** as a still one does, each node opening the
   child of the largest area times its share of the range. `Options::temporal` turns time splits
   off, and `accel::cost()` weights each child by its share of the range.
