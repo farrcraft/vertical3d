@@ -15,7 +15,18 @@ import { test } from 'node:test';
 import { parseOptions } from '../failsfirst.ts';
 import { dropNote, failedSources } from '../failsfirst/build.ts';
 import { casesIn, inBase, namedCommit } from '../failsfirst/cases.ts';
-import { dropArgument, dropCall, dropSource, missingLinks, missingSources, sourceOf, unknownCommands } from '../failsfirst/cmake.ts';
+import {
+    dropArgument,
+    dropArgumentHolding,
+    dropCall,
+    dropSource,
+    missingDependencies,
+    missingExpressions,
+    missingLinks,
+    missingSources,
+    sourceOf,
+    unknownCommands,
+} from '../failsfirst/cmake.ts';
 import { classify, describeExit, type Outcome } from '../failsfirst/run.ts';
 import { type Case, FAILS, NOT_RUN, PASSES, PASSES_COVERS, PASSES_STATED, SKIPPED } from '../failsfirst/types.ts';
 import { ROOT } from '../lib/tree.ts';
@@ -184,6 +195,50 @@ test('failsfirst drops one item from a call, and only a whole item', () => {
     );
     assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::i18n'), null);
     assert.equal(dropArgument(text, 1, 'target_link_libraries', 'ICU::uc'), null);
+});
+
+test('failsfirst reads each dependency on a target a failed configure cannot find', () => {
+    const output = [
+        'CMake Error at moya/tests/CMakeLists.txt:72 (add_dependencies):',
+        '  The dependency target "moya_bench" of target "v3dtest_moya" does not exist.',
+        '',
+        'CMake Error at api/font/tests/CMakeLists.txt:20 (target_link_libraries):',
+        '  Target "v3dtest_font" links to:',
+    ].join('\r\n');
+    assert.deepEqual(missingDependencies(output), [{ file: 'moya/tests/CMakeLists.txt', line: 72, target: 'moya_bench' }]);
+    assert.deepEqual(missingDependencies('-- Configuring done'), []);
+});
+
+test('failsfirst reads each generator expression that names a target the generate cannot find', () => {
+    const output = [
+        'CMake Error at moya/tests/CMakeLists.txt:73 (target_compile_definitions):',
+        '  Error evaluating generator expression:',
+        '',
+        '    $<TARGET_FILE:moya_bench>',
+        '',
+        '  No target "moya_bench"',
+        '',
+        '',
+        '-- Generating done (1.6s)',
+    ].join('\r\n');
+    assert.deepEqual(missingExpressions(output), [
+        { file: 'moya/tests/CMakeLists.txt', line: 73, command: 'target_compile_definitions', expression: '$<TARGET_FILE:moya_bench>' },
+    ]);
+    assert.deepEqual(missingExpressions('-- Generating done'), []);
+});
+
+test('failsfirst drops the whole argument that holds a fragment, and only from its call', () => {
+    const text = 'a(x)\ntarget_compile_definitions(t PRIVATE A="$<TARGET_FILE:a>"\n    B="$<TARGET_FILE:b>")\nb("$<TARGET_FILE:b>")\n';
+    assert.equal(
+        dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:b>'),
+        'a(x)\ntarget_compile_definitions(t PRIVATE A="$<TARGET_FILE:a>")\nb("$<TARGET_FILE:b>")\n',
+    );
+    assert.equal(
+        dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:a>'),
+        'a(x)\ntarget_compile_definitions(t PRIVATE\n    B="$<TARGET_FILE:b>")\nb("$<TARGET_FILE:b>")\n',
+    );
+    assert.equal(dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:c>'), null);
+    assert.equal(dropArgumentHolding(text, 4, 'target_compile_definitions', '$<TARGET_FILE:b>'), null);
 });
 
 test('failsfirst resolves a list entry against its directory, and gives up on another variable', () => {

@@ -8,7 +8,19 @@ import * as path from 'node:path';
 
 import { GateError } from '../lib/git.ts';
 import { ROOT, isTestPath } from '../lib/tree.ts';
-import { dropArgument, dropCall, dropSource, listedSources, missingLinks, missingSources, sourceOf, unknownCommands } from './cmake.ts';
+import {
+    dropArgument,
+    dropArgumentHolding,
+    dropCall,
+    dropSource,
+    listedSources,
+    missingDependencies,
+    missingExpressions,
+    missingLinks,
+    missingSources,
+    sourceOf,
+    unknownCommands,
+} from './cmake.ts';
 import { runLogged, tail } from './environment.ts';
 import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types.ts';
 
@@ -16,8 +28,10 @@ import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types
 // names it and resolves to a file the worktree lacks, and the configure runs again. A list in
 // another directory that spells the name the same way names a different file, and keeps it. The
 // drops are added to dropped, marked with whether the change added the source. A call in a
-// tests/ CMakeLists.txt that the configure reports as an unknown command is removed, and the
-// configure runs again.
+// tests/ CMakeLists.txt that the configure reports as an unknown command is removed. A target the
+// change added outside tests/ is removed where a tests/ CMakeLists.txt links it or depends on it,
+// and an argument there whose generator expression names it is removed too. The configure then
+// runs again.
 export function configure(
     worktree: string,
     build: string,
@@ -80,39 +94,56 @@ export function configure(
                 }
             }
         }
-        // a head tests/CMakeLists.txt can call a helper the change added outside tests/
-        for (const { file, line, command: name } of unknownCommands(output)) {
-            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
-            if (!isTestPath(relative)) {
-                continue;
-            }
-            const full = path.join(worktree, ...relative.split('/'));
-            const text = fs.existsSync(full) ? dropCall(fs.readFileSync(full, 'utf8'), line, name) : null;
-            if (text !== null) {
-                fs.writeFileSync(full, text);
-                console.log(`dropped the call to ${name} from ${relative}: the base has no such command`);
-                progress = true;
-            }
-        }
-        // a head tests/CMakeLists.txt can link a package the change added, which the base does
-        // not find. The suite then fails to build against the base, if it needs the package
-        for (const { file, line, target } of missingLinks(output)) {
-            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
-            if (!isTestPath(relative)) {
-                continue;
-            }
-            const full = path.join(worktree, ...relative.split('/'));
-            const text = fs.existsSync(full) ? dropArgument(fs.readFileSync(full, 'utf8'), line, 'target_link_libraries', target) : null;
-            if (text !== null) {
-                fs.writeFileSync(full, text);
-                console.log(`dropped ${target} from the link in ${relative}: the base does not find it`);
-                progress = true;
-            }
-        }
+        // a head tests/CMakeLists.txt can call a helper the change added outside tests/, link a
+        // package it added, or depend on a tool it added and name the tool's file. Each is
+        // removed, and the suite then fails to build against the base if it needs what it named
+        progress = repairTests(worktree, output) || progress;
         if (!progress || attempt >= 10) {
             throw new GateError('the worktree did not configure:\n' + tail(output));
         }
     }
+}
+
+// Rewrites a tests/ CMakeLists.txt a failed configure named, and logs what it dropped and why.
+// False when the file lies outside tests/, or the rewrite finds nothing to remove.
+function rewriteTest(worktree: string, file: string, rewrite: (text: string) => string | null, what: string, why: string): boolean {
+    const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
+    if (!isTestPath(relative)) {
+        return false;
+    }
+    const full = path.join(worktree, ...relative.split('/'));
+    const text = fs.existsSync(full) ? rewrite(fs.readFileSync(full, 'utf8')) : null;
+    if (text === null) {
+        return false;
+    }
+    fs.writeFileSync(full, text);
+    console.log(`dropped ${what} from ${relative}: ${why}`);
+    return true;
+}
+
+// Removes from the tests/ CMakeLists.txt files what a failed configure reports the base lacks.
+// That is a call to an unknown command, a link to a target no package defines, a dependency on a
+// target that does not exist, or an argument whose generator expression names one. True when
+// anything was removed.
+function repairTests(worktree: string, output: string): boolean {
+    let progress = false;
+    for (const { file, line, command } of unknownCommands(output)) {
+        const drop = (text: string): string | null => dropCall(text, line, command);
+        progress = rewriteTest(worktree, file, drop, `the call to ${command}`, 'the base has no such command') || progress;
+    }
+    for (const { file, line, target } of missingLinks(output)) {
+        const drop = (text: string): string | null => dropArgument(text, line, 'target_link_libraries', target);
+        progress = rewriteTest(worktree, file, drop, `${target} from the link`, 'the base does not find it') || progress;
+    }
+    for (const { file, line, target } of missingDependencies(output)) {
+        const drop = (text: string): string | null => dropArgument(text, line, 'add_dependencies', target);
+        progress = rewriteTest(worktree, file, drop, `the dependency on ${target}`, 'the base has no such target') || progress;
+    }
+    for (const { file, line, command, expression } of missingExpressions(output)) {
+        const drop = (text: string): string | null => dropArgumentHolding(text, line, command, expression);
+        progress = rewriteTest(worktree, file, drop, `the argument holding ${expression}`, 'the base has no such target') || progress;
+    }
+    return progress;
 }
 
 // The suite's own sources that failed to compile, or whose objects name a symbol the link of the

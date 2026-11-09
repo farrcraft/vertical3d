@@ -38,7 +38,12 @@
  *    When the configure reports the command unknown, the call is removed from the worktree.
  *    It can link a package the change added, which the base does not find. When the configure
  *    reports a linked target missing, the target is removed from that link in the worktree, and
- *    a suite that needs the package then fails to build.
+ *    a suite that needs the package then fails to build. It can depend on a target the change
+ *    added outside tests/, such as a tool a case runs, and name the tool's file in a definition.
+ *    When the configure reports the dependency's target missing, the target is removed from
+ *    that add_dependencies call. When a generator expression names a target that does not
+ *    exist, the argument holding it is removed, and a case that reads the definition then fails
+ *    to build.
  * 3. Configures the worktree into its own build directory and builds only the affected suites.
  *    The configure reuses the packages the main build already installed: it points
  *    VCPKG_INSTALLED_DIR at that install, turns VCPKG_MANIFEST_INSTALL off, and uses the
