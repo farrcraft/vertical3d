@@ -31,6 +31,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -86,14 +88,14 @@ void traceList(device::CpuDevice & device, const Tracing & tracing, const std::v
 };  // namespace
 
 Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer, float time) :
-    tracer_(tracer), world_(device, geometry::flatten(prototypes, time)) {
+    tracer_(tracer), world_(std::in_place, device, geometry::flatten(prototypes, time)) {
     if (tracer == Tracer::Hierarchy) {
         upload(device, prototypes, accel::assemble(device, prototypes));
     }
 }
 
-Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly, float time) :
-    tracer_(Tracer::Hierarchy), world_(device, geometry::flatten(prototypes, time)) {
+Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly) :
+    tracer_(Tracer::Hierarchy) {
     upload(device, prototypes, assembly);
 }
 
@@ -128,11 +130,14 @@ Tracer Tracing::tracer() const {
 }
 
 const geometry::World & Tracing::world() const {
-    return world_;
+    if (!world_) {
+        throw std::logic_error("a tracing made from an assembly holds no placed triangles");
+    }
+    return *world_;
 }
 
 kernel::geometry::BruteForce Tracing::bruteForce() const {
-    return kernel::geometry::BruteForce { .placed = world_.view() };
+    return kernel::geometry::BruteForce { .placed = world().view() };
 }
 
 device::cpu::Traversal Tracing::hierarchy() const {
@@ -169,7 +174,22 @@ Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes
     for (std::size_t i = 0; i < rays.size(); ++i) {
         every[i] = i;
     }
-    const Tracing tracing(device, prototypes, assembly, prototypes.open);
+    const Tracing tracing(device, prototypes, assembly);
+    traceList(device, tracing, rays, every, out);
+    return out;
+}
+
+Traced trace(device::CpuDevice & device, const Tracing & tracing, const std::vector<kernel::geometry::Ray> & rays) {
+    Traced out;
+    if (rays.empty()) {
+        return out;
+    }
+    out.nearest.resize(rays.size());
+    out.any.resize(rays.size());
+    std::vector<std::size_t> every(rays.size());
+    for (std::size_t i = 0; i < rays.size(); ++i) {
+        every[i] = i;
+    }
     traceList(device, tracing, rays, every, out);
     return out;
 }

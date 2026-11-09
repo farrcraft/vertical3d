@@ -17,6 +17,7 @@
 #include <moya/libmoya/view/Traced.h>
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -34,21 +35,30 @@ enum class Tracer : std::uint8_t {
 
 /**
  * A scene's prototypes on a CPU device: their triangles placed in world space at a time, and the
- * hierarchy of each prototype when the hierarchy is traced through. It reads the device's memory,
- * so the device outlives it.
+ * hierarchy of each prototype when the hierarchy is traced through. One made from an assembly
+ * holds the hierarchies alone. It reads the device's memory, so the device outlives it.
  **/
 class Tracing final {
  public:
     /** @param time when the triangles are placed, for the brute-force traversal **/
     Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, Tracer tracer, float time);
 
-    /** The prototypes traced through the hierarchies of an assembly built from them. **/
-    Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly, float time);
+    /** The prototypes traced through an assembly built from them, with no placed triangles. **/
+    Tracing(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly);
 
     Tracer tracer() const;
+    /**
+     * The placed triangles.
+     *
+     * @throws std::logic_error for a tracing made from an assembly, which holds none
+     **/
     const geometry::World & world() const;
 
-    /** The brute-force traversal over the placed triangles. **/
+    /**
+     * The brute-force traversal over the placed triangles.
+     *
+     * @throws std::logic_error for a tracing made from an assembly, which holds none
+     **/
     kernel::geometry::BruteForce bruteForce() const;
 
     /** The CPU's traversal over the hierarchies. Empty unless the hierarchy is traced through. **/
@@ -59,7 +69,7 @@ class Tracing final {
     void upload(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly);
 
     Tracer tracer_;
-    geometry::World world_;
+    std::optional<geometry::World> world_;
     boost::shared_ptr<device::Buffer> nodes_;
     boost::shared_ptr<device::Buffer> motionNodes_;
     boost::shared_ptr<device::Buffer> references_;
@@ -95,5 +105,16 @@ Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes
  **/
 Traced trace(device::CpuDevice & device, const geometry::Prototypes & prototypes, const accel::Assembly & assembly,
     const std::vector<kernel::geometry::Ray> & rays);
+
+/**
+ * Traces each of a list of rays, each at its own time, through a tracing already on the device,
+ * in one launch.
+ *
+ * @throws std::runtime_error when the hierarchy is traced through and the CPU device's library
+ *         cannot be loaded
+ * @throws std::logic_error when the brute-force traversal is asked of a tracing that holds no
+ *         placed triangles
+ **/
+Traced trace(device::CpuDevice & device, const Tracing & tracing, const std::vector<kernel::geometry::Ray> & rays);
 
 };  // namespace v3d::moya::view

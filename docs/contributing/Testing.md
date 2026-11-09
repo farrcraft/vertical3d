@@ -475,6 +475,15 @@ Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/d
 new core changes what a scene makes on purpose. `--scene` writes to standard output, so its line
 endings are made LF before the file is committed.
 
+### moya's benchmark
+
+`moya_bench` times the new core's hierarchies over fixed scenes, as
+[Traversal.md](../offline/Traversal.md#speed) describes. The suite runs one short pass of it,
+`--quick` at SSE4.2, in every build and checks that each scene is timed, so it keeps working. Its
+numbers mean something only in the `x64-Release` build. Compare a change against
+`moya/bench/Baseline.md` on the machine it names, and write that file again from a fresh run
+when a change moves the numbers on purpose.
+
 ## Verifying a rendering change
 
 CI checks the four reference images and every other device case. That does not cover anything

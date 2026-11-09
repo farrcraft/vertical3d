@@ -72,6 +72,16 @@ cannot instance an object. RIB's `ObjectBegin` reaches the handler with a number
 RI's handle is a pointer, so the C interface needs a table from the handles it gives out to the
 handler's names.
 
+[] **The new core's CPU traversal is several times slower than Embree's.** On a million
+triangles `moya_bench` traces 11 to 12.5 million rays a second. Embree's paper gives 38 to 59
+million on an older processor with half the cores. The build with spatial splits is five to
+seven times slower. Most of a ray's cost does not grow with the scene: 32 triangles
+trace at 8.5 million a second, and coherent rays come no faster than incoherent ones. Profile a
+trace to find where that cost goes, among the launch, the copies of the rays and hits, and the
+second traversal each ray takes for whether it meets anything, and then the build. ADR-0193's
+cost is that this traversal reaches Embree's speed. [Traversal.md](offline/Traversal.md#speed)
+has the figures, and `moya/bench/Baseline.md` the run to measure a change against.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the

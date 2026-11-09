@@ -1,0 +1,10 @@
+# moya_bench times the new core's hierarchies over fixed scenes. Its numbers mean something only
+# in a Release build. moya's suite runs one short pass in every build, which keeps it working.
+add_executable(moya_bench "Bench.cxx" "Rays.h" "Rays.cxx" "Scenes.h" "Scenes.cxx")
+
+# It reads the CPU device's node and instance records, and the kernel's rays and hits, to count
+# the hierarchies' bytes and the rays that met something.
+target_link_libraries(moya_bench PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel Boost::program_options)
+
+# It traces through the CPU device, which loads its libraries from beside the executable.
+v3d_moya_cpu_libraries(moya_bench)

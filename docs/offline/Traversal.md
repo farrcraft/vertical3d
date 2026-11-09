@@ -468,11 +468,90 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   its geometry, with the chain of instances the ray entered to reach it, outermost first.
 
 `view::Tracing` holds a scene's prototypes on a CPU device: their primitives placed at a time for
-the brute-force traversal, and the hierarchies when the hierarchy is traced through.
+the brute-force traversal, and the hierarchies when the hierarchy is traced through. One made
+from an assembly holds the hierarchies alone, and refuses the brute-force traversal.
 `view::trace(device, prototypes, rays, tracer)` traces a list of rays and gives each one's
 nearest hit and whether anything lies on it. Through the brute-force traversal it places the
 scene again for each time a ray holds, so each ray is traced against the scene at its own time.
+`view::trace(device, tracing, rays)` traces a list through a tracing already on the device, in
+one launch.
 
 The brute-force traversal is the oracle for instances, motion, points and quadrics too. Its
 triangles are moved into the world and the hierarchy's rays into each instance, so the two round
 apart, and their distances agree within a tolerance rather than exactly.
+
+## Speed
+
+`moya_bench`, in `moya/bench/`, times the hierarchies over five fixed scenes and prints one
+Markdown table. Its numbers mean something only in a Release build:
+
+```
+out/build/x64-Release/moya/bench/moya_bench.exe            # every instruction set the processor runs
+out/build/x64-Release/moya/bench/moya_bench.exe --isa avx2 # one
+```
+
+- **There are five scenes**, each the same on every run:
+  - a rippled grid of about a million small triangles.
+  - 32 large triangles that cross one another.
+  - 32768 round cubic curves.
+  - a patch of 20000 triangles, placed 1024 times through two levels of instances.
+  - a grid of 130000 triangles that rises over the shutter, and 64 patches whose instances move
+    across it.
+- **It times each scene's gather and its build**, the build at each instruction set, and counts
+  the bytes of the hierarchies' nodes, references, instances and keys for each primitive. A
+  primitive's own points are not counted, and an instanced geometry's primitives are counted once.
+- **It traces a million coherent rays and a million incoherent ones** at each instruction set and
+  gives the fastest of three traces, in millions a second. The coherent rays come straight down
+  over the scene, as a camera's do. The incoherent ones start at random inside the scene's box,
+  in random directions at random times. A ray is traced for its nearest hit and for whether it
+  meets anything, so each is two traversals, and the time takes in copying the rays to the device
+  and the hits back.
+- **`--quick` is a short pass**, the scenes 256 times smaller and 1024 rays of each kind traced
+  once, which moya's suite runs in every build so the benchmark does not rot.
+- **`moya/bench/Baseline.md` holds a run** on one machine, so a later change is measured against
+  it on the same machine. Two runs differ by up to a tenth in their rates.
+
+### Against Embree
+
+Embree's own papers give its numbers in a renderer, with shading and sampling counted, on the
+processors of their year. None gives a traversal alone or its thread count, so these figures
+bound the gap rather than measure it. moya's are the baseline's, on an 8-core Ryzen 7 5800X from
+2020 running 16 threads, with no shading.
+
+| | moya, baseline | Embree, published |
+|---|---|---|
+| Coherent rays, about a million triangles | 11 to 12.5 Mrays/s, two traversals each | 38 to 59 Mrays/s with simple shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
+| Incoherent rays, about a million triangles | 10 to 11 Mrays/s, two traversals each | 12 to 20 Mrays/s path traced with full shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
+| Build with spatial splits | 1.35 s for 1.05M triangles | 0.2 s for 0.8M triangles, with the scene's setup, 16 cores of two E5-2690s, Embree 2.2 [1] |
+| Build by binned surface area, no spatial splits | not timed apart | 142 ms for 0.8M triangles, 4-core i7-4770, Embree 2.2 [1] |
+| Memory | 57.5 bytes a triangle for the hierarchy, and 40 for its points and face | 68 to 76 bytes a triangle in all for the fastest BVH8, 35 to 38 for the smallest, Embree 3.0 [2] |
+| Motion | 6 to 7 Mrays/s, two segments | 17 to 122 Mrays/s path traced over 3 to 33 segments, 22-core E5-2699 v4 [3] |
+
+- **On triangles, moya traverses several times more slowly than Embree did in 2014**, on a newer
+  processor with twice the cores. Its coherent rays come no faster than its incoherent ones,
+  where Embree's are two to four times faster, and its 32-triangle scene traces at 8.5 Mrays/s,
+  near its million-triangle one. Most of a ray's cost in these scenes does not grow with the
+  scene.
+- **Its build with spatial splits is five to seven times slower** for each triangle, against
+  Embree's times that also take in the scene's setup.
+- **Its memory is above Embree's**: about 98 bytes a triangle in all, against 68 to 76 for
+  Embree's fastest BVH8.
+- **No comparison is made for curves or instances.** Embree's hair paper gives frames a second,
+  not rays [4], and its instancing papers give frames a second over whole renders [5].
+
+ADR-0193's cost is that moya's CPU traversal reaches Embree's speed. By these figures it does
+not yet.
+
+1. Wald, Woop, Benthin, Johnson and Ernst, "Embree: A Kernel Framework for Efficient CPU Ray
+   Tracing", ACM Transactions on Graphics 33(4), 2014, Tables 1, 2 and 4.
+   <https://www.sci.utah.edu/~wald/Publications/2014/embree/embree.pdf>
+2. Benthin, Wald, Woop and Áfra, "Compressed-Leaf Bounding Volume Hierarchies", HPG 2018,
+   Table 1, on two 28-core Xeon Platinum 8180s.
+   <https://www.embree.org/papers/2018-HPG-compressedleafbvh.pdf>
+3. Woop, Áfra and Benthin, "STBVH: A Spatial-Temporal BVH for Efficient Multi-Segment Motion
+   Blur", HPG 2017, Table 2. <https://www.embree.org/papers/2017-HPG-msmblur.pdf>
+4. Woop, Benthin, Wald, Johnson and Tabellion, "Exploiting Local Orientation Similarity for
+   Efficient Ray Traversal of Hair and Fur", HPG 2014, Table 2.
+   <https://www.sci.utah.edu/~wald/Publications/2014/hair/hair.pdf>
+5. Benthin, Woop, Wald and Áfra, "Improved Two-Level BVHs using Partial Re-Braiding", HPG 2017,
+   Table 1. <https://www.embree.org/papers/2017-HPG-openmerge.pdf>

@@ -141,7 +141,7 @@ among the options before the record is drafted.
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | done |
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | done |
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | done |
-| [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | open |
+| [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | done |
 | [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | done |
 | [21](#step-21--the-documents) | The reference pages for geometry and traversal | `docs` | — | open |
 
@@ -799,6 +799,31 @@ below did not settle:
 mesh's alone. A removed prototype's instances are left out.
 
 ### Step 19 — Speed
+
+**Done.** `moya_bench`, in `moya/bench/`, builds five fixed scenes through the scene. They are a
+million small triangles, 32 large ones, 32768 round curves, a patch placed 1024 times through two
+levels of instances, and a rising grid with moving instances. At each instruction set it prints the
+gather and build times, the hierarchies' bytes for each primitive, and a million coherent and a
+million incoherent rays a second. `moya/bench/Baseline.md` holds a Release run on a Ryzen 7
+5800X. The suite runs `--quick` at SSE4.2 and checks every scene is timed, and that an
+instruction set the processor cannot run is refused. `view::Tracing` can be made from an assembly
+without placing the triangles, and `view::trace()` takes a tracing already on the device, so the
+benchmark times only the traversal and the copies. [Traversal.md](../offline/Traversal.md#speed)
+records the comparison with Embree. Each case was run against broken code as well, one break at
+a time. A scene left out, or rays never traced, failed the short pass, and an unknown
+instruction set timed as SSE4.2 failed the refusal. Three things the list below did not settle:
+
+* **The comparison bounds the gap rather than measures it.** Embree's papers give rays a second
+  inside a renderer with shading, on the processors of 2014 to 2018, without thread counts. On
+  triangles moya traces several times more slowly, its build with spatial splits is five to seven
+  times slower, and its memory is about 98 bytes a triangle against Embree's 68 to 76. ADR-0193's
+  cost is that moya's traversal reaches Embree's speed, and by these figures it does not yet.
+* **Most of a ray's cost does not grow with the scene.** The 32-triangle scene traces at 8.5
+  Mrays/s, near the million-triangle one, and coherent rays come no faster than incoherent ones.
+  Each ray is two traversals, its nearest hit and whether it meets anything, and the time takes
+  in copying rays and hits. Where the rest goes is not measured yet.
+* **Curves and instances have no Embree figure to set beside them.** Its hair paper gives frames
+  a second, and its instancing papers frames a second over whole renders.
 
 * **A benchmark**, `moya/bench`, of fixed scenes: many small triangles, a few large ones, curves,
   instances and motion. It reports build time, memory per primitive, and rays per second for

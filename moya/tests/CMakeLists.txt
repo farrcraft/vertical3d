@@ -5,6 +5,7 @@ v3d_add_test(moya
 	"FootprintTest.cxx"
 	"FoundationTest.cxx"
 	"AssemblerTest.cxx"
+	"BenchTest.cxx"
 	"BucketsTest.cxx"
 	"BuilderTest.cxx"
 	"ColourTest.cxx"
@@ -66,10 +67,10 @@ v3d_add_test(moya
 target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
 	v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
 
-# The command line cases run the moya executable itself, by its path in the build tree, so it is
-# built before the suite.
-add_dependencies(v3dtest_moya moya)
-target_compile_definitions(v3dtest_moya PRIVATE V3D_MOYA_EXECUTABLE="$<TARGET_FILE:moya>")
+# The command line cases run the moya executable itself, and the benchmark's case runs
+# moya_bench, each by its path in the build tree, so both are built before the suite.
+add_dependencies(v3dtest_moya moya moya_bench)
+target_compile_definitions(v3dtest_moya PRIVATE V3D_MOYA_EXECUTABLE="$<TARGET_FILE:moya>" V3D_MOYA_BENCH_EXECUTABLE="$<TARGET_FILE:moya_bench>")
 
 # The reference image is resolved against the working directory. v3d_add_test sets that to the
 # directory of the executable, so the fixtures are copied beside it.
