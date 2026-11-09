@@ -13,9 +13,13 @@ The device layer is host code, in `moya/libmoya/device/` and the namespace `v3d:
   `std::out_of_range`.
 - **A `Buffer` belongs to the device that allocated it.** `address()` is where kernel code finds
   it, on that device. On a GPU the host cannot read through it.
+- **Every buffer is aligned to `Buffer::kAlignment`, 64 bytes.** That is enough for any type
+  kernel code reads, such as the hierarchy's 32-byte aligned nodes.
 - **Kernel code sees a buffer as a `kernel::Array<T>`**: a pointer and a 32-bit count, which owns
   nothing and checks no index. `device::view<T>(buffer)` makes one, holding as many whole values
-  as fit. A buffer of more values than a 32-bit index reaches throws `std::out_of_range`.
+  as fit. A buffer of more values than a 32-bit index reaches throws `std::out_of_range`, and one
+  whose address is not aligned throws `std::invalid_argument`. A type aligned more than a buffer
+  does not compile.
 
 ## Launching kernel code
 

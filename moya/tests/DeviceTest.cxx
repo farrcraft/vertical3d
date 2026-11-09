@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 namespace {
@@ -118,6 +119,21 @@ BOOST_AUTO_TEST_CASE(moya_device_a_copy_larger_than_its_buffer_is_refused_test) 
     std::vector<std::uint8_t> out(8, 0);
     BOOST_CHECK_THROW(device.upload(*buffer, bytes.data(), bytes.size()), std::out_of_range);
     BOOST_CHECK_THROW(device.download(*buffer, out.data(), out.size()), std::out_of_range);
+}
+
+// every buffer, of whatever size, starts at an address aligned to a buffer's alignment, so a view
+// of a hierarchy's 32-byte aligned nodes is never misaligned
+BOOST_AUTO_TEST_CASE(moya_device_every_buffer_is_aligned_for_kernel_code_test) {
+    CpuDevice device;
+    std::vector<boost::shared_ptr<v3d::moya::device::Buffer>> buffers;
+    std::size_t misaligned = 0;
+    for (std::size_t bytes = 1; bytes <= 256; ++bytes) {
+        buffers.push_back(device.allocate(bytes));
+        if (reinterpret_cast<std::uintptr_t>(buffers.back()->address()) % v3d::moya::device::Buffer::kAlignment != 0) {
+            ++misaligned;
+        }
+    }
+    BOOST_TEST(misaligned == 0U);
 }
 
 };  // namespace
