@@ -27,23 +27,6 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-/**
- * Whether any of a hit's lanes reached a trace or transmission call: whether one is live in the
- * mask the machine passed. A hit's neighbours can take another branch than the hit itself.
- **/
-bool live(const std::vector<char> & active, unsigned int first, unsigned int lanes) {
-    for (unsigned int lane = first; lane < first + lanes && lane < active.size(); lane++) {
-        if (active[lane] != 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-};  // namespace
-
 HitShader::HitShader(Tracer* tracer, const std::vector<const Hit*> & hits, const std::vector<float> & times,
     const std::vector<const Scene::Poses*> & poses) :
     tracer_(tracer), hits_(hits), times_(times), poses_(poses), placement_(hits.front()->primitive->surface().placement) {
@@ -51,6 +34,15 @@ HitShader::HitShader(Tracer* tracer, const std::vector<const Hit*> & hits, const
 
 HitShader::HitShader(Tracer* tracer, const Hit & hit) :
     HitShader(tracer, std::vector<const Hit*>{ &hit }, std::vector<float>{ tracer->time() }, std::vector<const Scene::Poses*>{ &tracer->poses() }) {
+}
+
+bool HitShader::live(const std::vector<char> & active, unsigned int first, unsigned int lanes) {
+    for (unsigned int lane = first; lane < first + lanes && lane < active.size(); lane++) {
+        if (active[lane] != 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 unsigned int HitShader::lanes() const {

@@ -55,6 +55,11 @@ struct LinearBox {
 
     /** The box of everything it holds over the range. **/
     Box swept() const;
+
+ private:
+    /** Simpson's rule over three points: the middle one's weight, and the sum of the weights. **/
+    static constexpr float kMiddle = 4.0F;
+    static constexpr float kWeights = 6.0F;
 };
 
 /**

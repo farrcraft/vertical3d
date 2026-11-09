@@ -31,6 +31,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -121,8 +122,12 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         out.kind = Prototype::Group;
         out.prototype = group(prototype);
     } else if (kind == "mesh") {
+        const std::optional<std::uint32_t> cut = mesh(prototype);
+        if (!cut) {
+            return std::nullopt;
+        }
         out.kind = Prototype::Geometry;
-        out.prototype = mesh(prototype);
+        out.prototype = *cut;
     } else if (kind == "points") {
         out.kind = Prototype::Geometry;
         out.prototype = cloud(prototype);
@@ -131,7 +136,7 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         out.kind = Prototype::Geometry;
         out.prototype = quadric(prototype);
     } else {
-        report("a " + kind + " is not yet traced, so " + scene_.name(prototype) + " is left out");
+        report("a " + kind + " is not traced, so " + scene_.name(prototype) + " is left out");
         return std::nullopt;
     }
     const auto index = static_cast<std::uint32_t>(prototypes_.instances.size());
@@ -154,7 +159,7 @@ std::uint32_t Walk::group(const scene::Handle & handle) {
     return index;
 }
 
-std::uint32_t Walk::mesh(const scene::Handle & handle) {
+std::optional<std::uint32_t> Walk::mesh(const scene::Handle & handle) {
     const auto found = geometryIndex_.find(handle.index);
     if (found != geometryIndex_.end()) {
         return found->second;
@@ -168,7 +173,13 @@ std::uint32_t Walk::mesh(const scene::Handle & handle) {
         points.push_back(firstSample.triple(i));
     }
     const std::vector<std::int32_t> & indices = scene_.value(handle, "indices").integerArray();
-    const Triangles triangles = triangulate(points, scene_.value(handle, "vertices").integerArray(), indices);
+    Triangles triangles;
+    try {
+        triangles = triangulate(points, scene_.value(handle, "vertices").integerArray(), indices);
+    } catch (const std::invalid_argument & refused) {
+        report("mesh " + scene_.name(handle) + " is left out, because " + refused.what());
+        return std::nullopt;
+    }
     if (triangles.dropped > 0) {
         report("mesh " + scene_.name(handle) + " has " + std::to_string(triangles.dropped) + " faces that cover no area");
     }

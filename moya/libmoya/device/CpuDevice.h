@@ -102,6 +102,9 @@ class CpuDevice final : public Device {
         }
     };
 
+    /** @throws std::out_of_range when a copy of bytes is larger than the buffer **/
+    static void check(const Buffer & buffer, std::size_t bytes);
+
     /** Runs call for each pixel, over tiles on the arena's threads. **/
     void run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound);
 

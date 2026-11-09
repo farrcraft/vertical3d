@@ -153,9 +153,8 @@ bool meets(const Traversal & traversal, const kernel::geometry::primitive::Shear
         case kernel::geometry::primitive::Form::Quadric:
             return kernel::geometry::primitive::intersectQuadric(kernel::geometry::primitive::sampledQuadric(held.quadric, traversal.quadrics.data, times, ray.time), ray,
                 ray.start, end, hit);
-        default:
-            return false;
     }
+    return false;
 }
 
 /** A node as it stands at a time: a still one as it is, and a moving one interpolated. **/
@@ -307,8 +306,9 @@ bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel
     return false;
 }
 
-/** The world as an instance that places it, and a ray with its time held to the shutter. **/
-Instance worldOf(const Traversal & traversal) {
+};  // namespace
+
+Instance Traversal::worldOf(const Traversal & traversal) {
     Instance out;
     out.root = traversal.world;
     out.moving = traversal.worldMoving;
@@ -316,13 +316,11 @@ Instance worldOf(const Traversal & traversal) {
     return out;
 }
 
-kernel::geometry::Ray held(const Traversal & traversal, const kernel::geometry::Ray & ray) {
+kernel::geometry::Ray Traversal::held(const Traversal & traversal, const kernel::geometry::Ray & ray) {
     kernel::geometry::Ray out = ray;
     out.time = std::fmax(traversal.open, std::fmin(ray.time, traversal.close));
     return out;
 }
-
-};  // namespace
 
 kernel::geometry::Hit Traversal::nearest(const kernel::geometry::Ray & ray) const {
     internal::Nearest search { .traversal = *this, .chain = {}, .closest = ray.end, .hit = {} };

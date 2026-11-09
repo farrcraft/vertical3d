@@ -15,9 +15,12 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/view/Hits.h>
 
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <initializer_list>
 #include <iostream>
 #include <string>
 
@@ -67,6 +70,44 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
 }
 
 /**
+ * Why the options cannot be used together, or empty when they can.
+ *
+ * --scene and --hits each read the scene into the new core in place of rendering it, so only one
+ * of them can be given. Both take the picture's size from the scene's Format, and neither
+ * renders in grids or buckets. --width, --height, --grid and --bucket are refused with either.
+ * --scene writes no file, so --output is refused with it. --hits writes an EXR file, so its
+ * --output has to end in .exr, in any case.
+ **/
+std::string conflict(const boost::program_options::variables_map& var_map) {
+    const bool scene = var_map.count("scene") > 0;
+    const bool hits = var_map.count("hits") > 0;
+    if (scene && hits) {
+        return "--scene and --hits cannot be given together";
+    }
+    if (!scene && !hits) {
+        return {};
+    }
+    const std::string mode = scene ? "--scene" : "--hits";
+    for (const char* const option : { "width", "height", "grid", "bucket" }) {
+        if (var_map.count(option) > 0) {
+            return "--" + std::string(option) + " cannot be given with " + mode + ", which takes the scene's own Format";
+        }
+    }
+    if (scene && var_map.count("output") > 0) {
+        return "--output cannot be given with --scene, which prints the scene and writes no file";
+    }
+    if (hits && var_map.count("output") > 0) {
+        std::string name = var_map["output"].as<std::string>();
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
+        const std::string extension = ".exr";
+        if (name.size() < extension.size() || name.compare(name.size() - extension.size(), extension.size(), extension) != 0) {
+            return "--output has to name an .exr file with --hits, which writes an EXR file";
+        }
+    }
+    return {};
+}
+
+/**
  * Read a file into the new core's scene, and print the scene's description after each frame
  * the file commits, in place of rendering it.
  **/
@@ -112,16 +153,17 @@ int run(int argc, char *argv[]) {
         ("help", "produce help message")
         ("version", "display version info")
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
-        ("output", boost::program_options::value<std::string>(), "filename to be written")
-        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height")
-        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
+        ("output", boost::program_options::value<std::string>(), "filename to be written; not with --scene")
+        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height; not with --scene or --hits")
+        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width; not with --scene or --hits")
         ("silent", "print no progress line")
-        ("scene", "print the scene the new core reads from the file, in place of rendering it")
-        ("hits", "write what the new core's rays hit to --output, or hits.exr, as an EXR file, in place of rendering it")
+        ("scene", "print the scene the new core reads from the file, in place of rendering it; not with --hits")
+        ("hits", "write what the new core's rays hit to --output, which has to end in .exr, or to hits.exr, as an EXR file, "
+            "in place of rendering it; not with --scene")
         ("grid", boost::program_options::value<int>(),
-            "micropolygon grid size, used whatever size the scene's Option \"limits\" names")
+            "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene or --hits")
         ("bucket", boost::program_options::value<int>(),
-            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names");
+            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene or --hits");
 
     boost::program_options::variables_map var_map;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts_desc), var_map);
@@ -154,6 +196,12 @@ int run(int argc, char *argv[]) {
     if (infile.empty()) {
         std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
+    }
+
+    const std::string refused = conflict(var_map);
+    if (!refused.empty()) {
+        std::cout << refused << "\n";
+        return EXIT_FAILURE;
     }
 
     // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them

@@ -50,6 +50,18 @@ ending it with `--capture`, prints `VUID-vkDestroyInstance-instance-00629` with 
 destroyed, after the log is closed, so `v3d.log` shows nothing. Pong, tetris, odyssey and
 diorama destroy their surface.
 
+[] **Semantics: a uniform parameter on a mesh is read as one value.** `rib::Declaration::elements`
+gives one element to a uniform parameter whatever the primitive. RenderMan gives a uniform
+parameter one value per face of a polygon mesh or subdivision mesh, so a uniform array passed to
+`RiPointsPolygons` with several faces is read as its first value.
+
+[] **Drift: a class's definitions spread over files named for something else.** Conventions.md
+"Size" asks for a class to be split rather than spread. `Eraser` is defined in
+`api/script/internal/EraserExpressions.cxx` and `EraserTypes.cxx`, `ui::Immediate` in the
+`api/ui/Immediate*.cpp` files, `sl::runtime::Machine` in `sl/runtime/Library.cxx`, and the
+editor's controller and area layout in `vertical3d/src/ControllerWindows.cxx` and
+`view/AreaLayout.cxx`. Some may be nested classes, which the rule allows.
+
 ## Offline rendering
 
 Open work on moya. [offline/](offline/README.md) describes it.

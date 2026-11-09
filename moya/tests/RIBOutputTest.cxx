@@ -29,6 +29,53 @@ namespace v3d::moya::handling {
 namespace {
 
 /**
+ * A red quad that covers an 8 by 6 picture, under the crop window's left half, with the hider
+ * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
+ **/
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> cropped(const std::string & hider) {
+    v3d::moya::ri::RIBHandler handler;
+    BOOST_REQUIRE(read(
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "CropWindow 0 0.5 0 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "Color [1 0 0]\n"
+        "Polygon \"P\" [-5 -5 5  5 -5 5  5 5 5  -5 5 5]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().picture();
+}
+
+void checkCropped(const v3d::render::offline::film::FrameBuffer & planes) {
+    for (unsigned int row = 0; row < planes.height(); row++) {
+        for (unsigned int column = 0; column < planes.width(); column++) {
+            const bool inside = column < 4;
+            BOOST_TEST_CONTEXT("pixel " << column << ", " << row) {
+                BOOST_TEST((planes.value(v3d::moya::state::Planes::RED, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::state::Planes::COVERAGE, column, row) > 0.5F) == inside);
+            }
+        }
+    }
+}
+
+/**
+ * A red square over the whole of a 64 by 48 picture, under either hider.
+ **/
+std::string covered(const char* hider) {
+    return std::string("Format 64 48 1\n") +
+        "Hider \"" + hider + "\"\n"
+        "Projection \"orthographic\"\n"
+        "ScreenWindow -1 1 -1 1\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Color [1 0 0]\n"
+        "Polygon \"P\" [-2 -2 5  2 -2 5  2 2 5  -2 2 5]\n"
+        "WorldEnd\n";
+}
+
+/**
  * A picture the image factory cannot write is reported through the context's own logger.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
@@ -87,38 +134,6 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
 }
 
 /**
- * A red quad that covers an 8 by 6 picture, under the crop window's left half, with the hider
- * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
- **/
-boost::shared_ptr<v3d::render::offline::film::FrameBuffer> cropped(const std::string & hider) {
-    v3d::moya::ri::RIBHandler handler;
-    BOOST_REQUIRE(read(
-        "Format 8 6 1\n"
-        "PixelSamples 1 1\n"
-        "PixelFilter \"box\" 1 1\n"
-        "CropWindow 0 0.5 0 1\n"
-        "Projection \"orthographic\"\n"
-        "Clipping 1 100\n" + hider +
-        "WorldBegin\n"
-        "Color [1 0 0]\n"
-        "Polygon \"P\" [-5 -5 5  5 -5 5  5 5 5  -5 5 5]\n"
-        "WorldEnd\n", &handler));
-    return handler.context().picture();
-}
-
-void checkCropped(const v3d::render::offline::film::FrameBuffer & planes) {
-    for (unsigned int row = 0; row < planes.height(); row++) {
-        for (unsigned int column = 0; column < planes.width(); column++) {
-            const bool inside = column < 4;
-            BOOST_TEST_CONTEXT("pixel " << column << ", " << row) {
-                BOOST_TEST((planes.value(v3d::moya::state::Planes::RED, column, row) > 0.5F) == inside);
-                BOOST_TEST((planes.value(v3d::moya::state::Planes::COVERAGE, column, row) > 0.5F) == inside);
-            }
-        }
-    }
-}
-
-/**
  * The reyes hider leaves every pixel outside the crop window empty.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_reyes_test) {
@@ -130,21 +145,6 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_reyes_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_the_ray_hider_test) {
     checkCropped(*cropped("Hider \"raytrace\"\n"));
-}
-
-/**
- * A red square over the whole of a 64 by 48 picture, under either hider.
- **/
-std::string covered(const char* hider) {
-    return std::string("Format 64 48 1\n") +
-        "Hider \"" + hider + "\"\n"
-        "Projection \"orthographic\"\n"
-        "ScreenWindow -1 1 -1 1\n"
-        "Clipping 1 100\n"
-        "WorldBegin\n"
-        "Color [1 0 0]\n"
-        "Polygon \"P\" [-2 -2 5  2 -2 5  2 2 5  -2 2 5]\n"
-        "WorldEnd\n";
 }
 
 /**

@@ -78,6 +78,13 @@ struct Traversal {
 
     kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray) const;
     bool any(const kernel::geometry::Ray & ray) const;
+
+ private:
+    /** The world as an instance that places it. **/
+    static Instance worldOf(const Traversal & traversal);
+
+    /** The ray with its time held to the shutter. **/
+    static kernel::geometry::Ray held(const Traversal & traversal, const kernel::geometry::Ray & ray);
 };
 
 };  // namespace v3d::moya::device::cpu

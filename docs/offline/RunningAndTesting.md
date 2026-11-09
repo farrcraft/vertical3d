@@ -80,8 +80,8 @@ editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
   describing the same scene, so the file route and the code route are pinned to one picture.
 - **`foundation-chart.png` is the new core's**: a chart of 24 colours with no geometry, sampled
   through the filter, the sampler and the spectrum table, and shown through the sRGB display. It
-  has no `.rib`, since the new core reads no RIB yet. An RGB build draws no wavelengths, so its
-  suite leaves this case out.
+  has no `.rib`, since the chart has no geometry for a RIB file to describe. An RGB build draws
+  no wavelengths, so its suite leaves this case out.
 - **A failing case writes what it rendered to `data_out/`** beside the test executable. That is
   also how a reference is regenerated when a change is meant to alter the picture.
 - **Fixtures are copied only when the test target relinks.** Editing a `.rib`, `.sl` or `.png`

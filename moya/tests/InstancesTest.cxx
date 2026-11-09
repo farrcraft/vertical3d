@@ -34,6 +34,9 @@
 #include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace cpu = v3d::moya::device::cpu;
@@ -42,38 +45,6 @@ namespace kernel = v3d::moya::kernel;
 namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
 typedef v3d::moya::device::CpuDevice CpuDevice;
-
-/** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
-float next(std::uint32_t & seed) {
-    seed = (seed * 1664525U) + 1013904223U;
-    return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
-}
-
-/** A mesh of triangles of three points each, a face each. **/
-scene::Handle mesh(scene::Scene & scene, const std::string & name, const std::vector<glm::vec3> & points) {
-    const scene::Handle out = scene.create("mesh", name);
-    std::vector<std::int32_t> indices;
-    indices.reserve(points.size());
-    for (std::size_t i = 0; i < points.size(); ++i) {
-        indices.push_back(static_cast<std::int32_t>(i));
-    }
-    scene.set(out, "P", scene::Value::points(points));
-    scene.set(out, "vertices", scene::Value::integers(std::vector<std::int32_t>(points.size() / 3, 3)));
-    scene.set(out, "indices", scene::Value::integers(indices));
-    return out;
-}
-
-/** An instance of a prototype, in a group or the world. **/
-scene::Handle instanced(scene::Scene & scene, const std::string & name, const scene::Handle & prototype, const scene::Handle & group,
-    const glm::mat4 & transform) {
-    const scene::Handle instance = scene.create("instance", name);
-    scene.set(instance, "prototype", scene::Value::handle(prototype));
-    if (group.valid()) {
-        scene.set(instance, "group", scene::Value::handle(group));
-    }
-    scene.set(instance, "transform", scene::Value::matrix(transform));
-    return instance;
-}
 
 /** One triangle with its right angle at the origin, in the plane z = 0. **/
 std::vector<glm::vec3> piece() {
@@ -87,42 +58,6 @@ kernel::geometry::Ray down(float x, float y, std::uint32_t kind = kernel::geomet
     ray.direction = glm::vec3 { 0.0F, 0.0F, -1.0F };
     ray.kind = kind;
     return ray;
-}
-
-glm::mat4 moved(float x, float y, float z) {  // NOLINT(bugprone-easily-swappable-parameters)
-    return glm::translate(glm::mat4(1.0F), glm::vec3 { x, y, z });
-}
-
-/** The instruction sets this processor runs, oldest first. **/
-std::vector<cpu::Isa> runnable() {
-    std::vector<cpu::Isa> out;
-    for (const cpu::Isa isa : { cpu::Isa::Sse42, cpu::Isa::Avx2, cpu::Isa::Avx512 }) {
-        if (isa <= v3d::moya::device::newestIsa()) {
-            out.push_back(isa);
-        }
-    }
-    return out;
-}
-
-/** Whether a report holds a phrase. **/
-bool reported(const geometry::Prototypes & prototypes, const std::string & phrase) {
-    return std::ranges::any_of(prototypes.reports, [&](const std::string & report) {
-        return report.find(phrase) != std::string::npos;
-    });
-}
-
-/** The name of a traversal at an instruction set, for a failure's message. **/
-std::string tracerName(view::Tracer tracer, cpu::Isa isa) {
-    return tracer == view::Tracer::BruteForce ? std::string("brute force") : v3d::moya::device::isaName(isa);
-}
-
-/** Runs a check on the brute-force traversal, and on the hierarchy at each instruction set. **/
-template <typename F>
-void eachTraversal(F && check) {
-    check(view::Tracer::BruteForce, cpu::Isa::Sse42);
-    for (const cpu::Isa isa : runnable()) {
-        check(view::Tracer::Hierarchy, isa);
-    }
 }
 
 // a mesh placed by two instances is one prototype and one hierarchy, and is hit in both places,
@@ -319,52 +254,14 @@ BOOST_AUTO_TEST_CASE(moya_instances_an_instance_hidden_from_shadows_casts_none_t
     });
 }
 
-/** Small triangles scattered through a cube of a side. **/
-std::vector<glm::vec3> scattered(std::size_t count, float side, std::uint32_t & seed) {  // NOLINT(bugprone-easily-swappable-parameters)
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const glm::vec3 centre = glm::vec3 { next(seed), next(seed), next(seed) } * side;
-        for (int corner = 0; corner < 3; ++corner) {
-            points.push_back(centre + (glm::vec3 { next(seed), next(seed), next(seed) } * (side / 10.0F)));
-        }
-    }
-    return points;
-}
-
-/** A turn about a random axis, a scale from a half to two, and a move of up to a reach. **/
-glm::mat4 randomly(float reach, std::uint32_t & seed) {
-    const glm::vec3 axis = glm::normalize(glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F);
-    const glm::mat4 turn = glm::rotate(glm::mat4(1.0F), next(seed) * 6.28F, axis);
-    const glm::mat4 scale = glm::scale(glm::mat4(1.0F), glm::vec3 { 0.5F + (next(seed) * 1.5F) });
-    return moved(next(seed) * reach, next(seed) * reach, next(seed) * reach) * turn * scale;
-}
-
-/**
- * Whether two traversals give one answer: both miss, or both meet the same primitive through the
- * same chain at distances within a thousandth. The oracle's triangles are moved into the world
- * and the hierarchy's rays into each instance, so the two round apart, most where a ray grazes a
- * triangle.
- **/
-bool agrees(const kernel::geometry::Hit & want, const kernel::geometry::Hit & got) {
-    if (want.found() != got.found()) {
-        return false;
-    }
-    if (!want.found()) {
-        return true;
-    }
-    const bool chain = want.depth == got.depth && std::equal(want.instances, want.instances + want.depth, got.instances);
-    return chain && want.primitive == got.primitive && std::fabs(want.distance - got.distance) <= 1.0e-3F * std::max(1.0F, want.distance);
-}
-
 // a scene of groups in groups is turned, scaled and moved, and some instances are hidden from some
 // kinds of ray. Over random rays of every kind, the hierarchy finds the brute-force traversal's
 // nearest hit, at every instruction set this processor runs
 BOOST_AUTO_TEST_CASE(moya_instances_the_hierarchy_finds_the_oracles_nearest_hit_through_nested_instances_test) {
     std::uint32_t seed = 17;
     scene::Scene scene(scene::kinds());
-    const scene::Handle many = mesh(scene, "many", scattered(300, 20.0F, seed));
-    const scene::Handle few = mesh(scene, "few", scattered(6, 10.0F, seed));
+    const scene::Handle many = mesh(scene, "many", scattered(300, 20.0F, 2.0F, seed));
+    const scene::Handle few = mesh(scene, "few", scattered(6, 10.0F, 1.0F, seed));
     const scene::Handle inner = scene.create("group", "inner");
     const scene::Handle outer = scene.create("group", "outer");
     for (int i = 0; i < 3; ++i) {
@@ -423,3 +320,4 @@ BOOST_AUTO_TEST_CASE(moya_instances_the_hierarchy_finds_the_oracles_nearest_hit_
 }
 
 };  // namespace
+};  // namespace v3d::moya::tracing

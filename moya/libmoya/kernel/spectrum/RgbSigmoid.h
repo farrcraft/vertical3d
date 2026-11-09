@@ -13,9 +13,9 @@ namespace v3d::moya::kernel::spectrum {
 
 /**
  * A smooth spectrum from three coefficients: sigmoid(c0 lambda^2 + c1 lambda + c2), with lambda
- * in nanometres and sigmoid(x) = 1/2 + x / (2 sqrt(1 + x^2)). It lies in (0, 1) at every
- * wavelength, so it is a reflectance a surface can have. Jakob and Hanika's method finds one for
- * an RGB colour.
+ * in nanometres and sigmoid(x) = 1/2 + x / (2 sqrt(1 + x^2)). It lies in [0, 1] at every
+ * wavelength, so it is a reflectance a surface can have. An infinite x gives exactly zero or one.
+ * Jakob and Hanika's method finds one for an RGB colour.
  **/
 struct RgbSigmoid {
     float c0 { 0.0F };

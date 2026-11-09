@@ -81,9 +81,11 @@ struct Placed {
                 return primitive::intersectFacing(glm::vec3(spheres[at]), spheres[at].w, ray, start, end, hit);
             case primitive::Form::Quadric:
                 return primitive::intersectQuadric(quadrics[at], ray, start, end, hit);
-            default:
-                return false;
+            // a run of shapes holds no triangles
+            case primitive::Form::Triangles:
+                break;
         }
+        return false;
     }
 
     /**
@@ -118,7 +120,8 @@ struct Placed {
             case primitive::Form::Quadric:
                 own = primitive::quadricNormal(quadrics[index], point);
                 break;
-            default:
+            // a run of shapes holds no triangles
+            case primitive::Form::Triangles:
                 break;
         }
         // a normal moves by the inverse transpose of the transformation to the world

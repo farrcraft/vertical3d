@@ -66,6 +66,8 @@ editor's render view. `writePng(path, snapshot, display, logger)` writes it to a
 - there are no parts;
 - a part holds no outputs, or one output twice;
 - an output is neither the beauty nor one of the snapshot's channels;
+- two of a part's channels have the same name in the file, such as a channel named `R` beside the
+  beauty, or a channel named `albedo.R` beside a three-float `albedo`;
 - a file of several parts has a part with no name, or two parts with the same name;
 - the snapshot's values do not fill its resolution.
 

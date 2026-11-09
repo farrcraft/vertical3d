@@ -3,9 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/output/ExrPart.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/view/Hits.h>
 #include <Imath/ImathBox.h>
 #include <Imath/half.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -33,11 +39,14 @@
 #include <boost/test/unit_test.hpp>
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
 namespace film = v3d::moya::film;
 namespace output = v3d::moya::output;
+namespace scene = v3d::moya::scene;
+namespace view = v3d::moya::view;
 
 constexpr std::uint32_t kWidth = 5;
 constexpr std::uint32_t kHeight = 4;
@@ -234,6 +243,80 @@ BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {
     BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "beauty" } }, { .name = "b", .outputs = { "depth" } } }, {}),
         std::invalid_argument);
     BOOST_TEST(!boost::filesystem::exists(path));
+}
+
+// a channel named R gives the file a second R beside the beauty's, and albedo.R a second albedo.R
+// beside a three-float albedo's, and OpenEXR would keep only one of each
+BOOST_AUTO_TEST_CASE(moya_exr_refuses_two_channels_of_one_name_in_a_part_test) {
+    const Sandbox sandbox("clash");
+    const std::string path = sandbox.file("clash.exr");
+    film::Snapshot written { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 8,
+        .channels = { { .name = "R", .components = 1 }, { .name = "albedo.R", .components = 1 }, { .name = "albedo", .components = 3 } },
+        .offsets = { 3, 4, 5 }, .values = {} };
+    written.values.assign(static_cast<std::size_t>(kWidth) * kHeight * 8, 0.5F);
+
+    BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "beauty", "R" } } }, {}), std::invalid_argument);
+    BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "albedo.R", "albedo" } } }, {}), std::invalid_argument);
+    BOOST_TEST(!boost::filesystem::exists(path));
+
+    const std::string apart = sandbox.file("apart.exr");
+    output::writeExr(apart, written,
+        { { .name = "rgba", .outputs = { "beauty" } }, { .name = "aovs", .outputs = { "R", "albedo" } } }, {});
+    const Imf::MultiPartInputFile file(apart.c_str());
+    BOOST_TEST(namesOf(file.header(1)) == std::vector<std::string>({ "R", "albedo.B", "albedo.G", "albedo.R" }), boost::test_tools::per_element());
+}
+
+/**
+ * A hit view written to a file holds the beauty and each hit channel as floats. A pixel whose ray
+ * met the triangle reads its depth and instance back, and one whose ray met nothing reads an
+ * infinite depth and an instance of -1.
+ *
+ * Covers the base: e8e902d8 added view::writeHits(). Checked by writing the hit view at half
+ * precision in writeHits(), and by leaving the instance channel out of its outputs. Each fails
+ * this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_exr_a_hit_view_reads_back_from_its_file_test) {
+    constexpr std::int32_t kSide = 8;
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = scene.create("options", "options");
+    const scene::Handle camera = scene.create("camera", "camera");
+    scene.set(options, "resolution", scene::Value::integers({ kSide, kSide }));
+    scene.set(options, "camera", scene::Value::handle(camera));
+    scene.set(camera, "projection", scene::Value::string("perspective"));
+    scene.set(camera, "transform", scene::Value::matrix(glm::mat4(1.0F)));
+    // the triangle covers the pixels below the screen's diagonal, at a depth of two
+    const scene::Handle mesh = scene.create("mesh", "triangle");
+    scene.set(mesh, "P", scene::Value::points({ { -2.0F, -2.0F, 2.0F }, { 2.0F, -2.0F, 2.0F }, { -2.0F, 2.0F, 2.0F } }));
+    scene.set(mesh, "vertices", scene::Value::integers({ 3 }));
+    scene.set(mesh, "indices", scene::Value::integers({ 0, 1, 2 }));
+    const scene::Handle instance = scene.create("instance", "triangle");
+    scene.set(instance, "prototype", scene::Value::handle(mesh));
+    scene.set(instance, "transform", scene::Value::matrix(glm::mat4(1.0F)));
+    scene.commit();
+    scene.apply();
+
+    const Sandbox sandbox("hits");
+    const std::string path = sandbox.file("hits.exr");
+    v3d::moya::device::CpuDevice device;
+    view::writeHits(path, view::hits(device, scene, {}));
+
+    Imf::InputFile file(path.c_str());
+    const std::vector<std::string> names = namesOf(file.header());
+    BOOST_TEST(names == std::vector<std::string>({ "B", "G", "R", "coverage", "depth", "face", "instance", "normal.B", "normal.G", "normal.R" }),
+        boost::test_tools::per_element());
+    for (const std::string & name : names) {
+        BOOST_TEST_CONTEXT(name) {
+            BOOST_TEST(file.header().channels().find(name).channel().type == Imf::FLOAT);
+        }
+    }
+    const std::vector<float> depth = channelOf(file.header(), "depth", file);
+    const std::vector<float> instances = channelOf(file.header(), "instance", file);
+    constexpr std::size_t kMet = static_cast<std::size_t>(kSide - 1) * kSide;  // the first column of the last row
+    constexpr std::size_t kMissed = kSide - 1;                                  // the last column of the first row
+    BOOST_TEST(std::fabs(depth[kMet] - 2.0F) < 1.0e-5F);
+    BOOST_TEST(instances[kMet] == static_cast<float>(instance.index));
+    BOOST_TEST(std::isinf(depth[kMissed]));
+    BOOST_TEST(instances[kMissed] == -1.0F);
 }
 
 };  // namespace

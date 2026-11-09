@@ -41,6 +41,9 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace accel = v3d::moya::accel;
@@ -51,65 +54,6 @@ namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
-/** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
-float next(std::uint32_t & seed) {
-    seed = (seed * 1664525U) + 1013904223U;
-    return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
-}
-
-/** The scene's camera, whose shutter opens at 0 and closes at 1. **/
-void shutter(scene::Scene & scene) {
-    const scene::Handle options = scene.create("options", "options");
-    const scene::Handle camera = scene.create("camera", "camera");
-    scene.set(options, "camera", scene::Value::handle(camera));
-    scene.set(camera, "shutter", scene::Value::floats({ 0.0F, 1.0F }));
-}
-
-/** A mesh of triangles of three points each, a face each, at each of its times. **/
-scene::Handle mesh(scene::Scene & scene, const std::string & name, const std::vector<float> & times,
-    const std::vector<std::vector<glm::vec3>> & samples) {
-    const scene::Handle out = scene.create("mesh", name);
-    std::vector<std::int32_t> indices;
-    indices.reserve(samples.front().size());
-    for (std::size_t i = 0; i < samples.front().size(); ++i) {
-        indices.push_back(static_cast<std::int32_t>(i));
-    }
-    std::vector<scene::Value> values;
-    values.reserve(samples.size());
-    for (const std::vector<glm::vec3> & points : samples) {
-        values.push_back(scene::Value::points(points));
-    }
-    if (times.empty()) {
-        scene.set(out, "P", values.front());
-    } else {
-        scene.set(out, "P", times, values);
-    }
-    scene.set(out, "vertices", scene::Value::integers(std::vector<std::int32_t>(samples.front().size() / 3, 3)));
-    scene.set(out, "indices", scene::Value::integers(indices));
-    return out;
-}
-
-/** An instance of a prototype, in a group or the world, with a transformation at each time. **/
-scene::Handle instanced(scene::Scene & scene, const std::string & name, const scene::Handle & prototype, const scene::Handle & group,
-    const std::vector<float> & times, const std::vector<glm::mat4> & transforms) {
-    const scene::Handle instance = scene.create("instance", name);
-    scene.set(instance, "prototype", scene::Value::handle(prototype));
-    if (group.valid()) {
-        scene.set(instance, "group", scene::Value::handle(group));
-    }
-    if (times.empty()) {
-        scene.set(instance, "transform", scene::Value::matrix(transforms.front()));
-    } else {
-        std::vector<scene::Value> values;
-        values.reserve(transforms.size());
-        for (const glm::mat4 & transform : transforms) {
-            values.push_back(scene::Value::matrix(transform));
-        }
-        scene.set(instance, "transform", times, values);
-    }
-    return instance;
-}
-
 /** A ray down -z from z = 50 through a point, at a time. **/
 kernel::geometry::Ray down(float x, float y, float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     kernel::geometry::Ray ray;
@@ -119,61 +63,14 @@ kernel::geometry::Ray down(float x, float y, float time) {  // NOLINT(bugprone-e
     return ray;
 }
 
-glm::mat4 moved(float x, float y, float z) {  // NOLINT(bugprone-easily-swappable-parameters)
-    return glm::translate(glm::mat4(1.0F), glm::vec3 { x, y, z });
-}
-
 glm::mat4 turned(float degrees) {
     return glm::rotate(glm::mat4(1.0F), glm::radians(degrees), glm::vec3 { 0.0F, 0.0F, 1.0F });
-}
-
-/** The instruction sets this processor runs, oldest first. **/
-std::vector<cpu::Isa> runnable() {
-    std::vector<cpu::Isa> out;
-    for (const cpu::Isa isa : { cpu::Isa::Sse42, cpu::Isa::Avx2, cpu::Isa::Avx512 }) {
-        if (isa <= v3d::moya::device::newestIsa()) {
-            out.push_back(isa);
-        }
-    }
-    return out;
-}
-
-/** The name of a traversal at an instruction set, for a failure's message. **/
-std::string tracerName(view::Tracer tracer, cpu::Isa isa) {
-    return tracer == view::Tracer::BruteForce ? std::string("brute force") : v3d::moya::device::isaName(isa);
-}
-
-/** Runs a check on the brute-force traversal, and on the hierarchy at each instruction set. **/
-template <typename F>
-void eachTraversal(F && check) {
-    check(view::Tracer::BruteForce, cpu::Isa::Sse42);
-    for (const cpu::Isa isa : runnable()) {
-        check(view::Tracer::Hierarchy, isa);
-    }
 }
 
 /** A thin bar along +x from the origin to x = 10, in the plane z = 0. **/
 std::vector<glm::vec3> bar() {
     return { { 0.0F, -0.1F, 0.0F }, { 10.0F, -0.1F, 0.0F }, { 10.0F, 0.1F, 0.0F }, { 0.0F, -0.1F, 0.0F }, { 10.0F, 0.1F, 0.0F },
         { 0.0F, 0.1F, 0.0F } };
-}
-
-// a transformation decomposed into a translation, a rotation and a scale composes back to itself,
-// a mirror and a shear included
-BOOST_AUTO_TEST_CASE(moya_motion_a_decomposed_transformation_composes_back_test) {
-    std::uint32_t seed = 3;
-    for (int trial = 0; trial < 50; ++trial) {
-        glm::mat4 transform = moved(next(seed) * 20.0F, next(seed) * 20.0F, next(seed) * 20.0F) *
-            glm::rotate(glm::mat4(1.0F), next(seed) * 6.0F, glm::normalize(glm::vec3 { next(seed), next(seed), next(seed) } + 0.1F));
-        transform[1][0] += next(seed) - 0.5F;
-        transform = transform * glm::scale(glm::mat4(1.0F), glm::vec3 { 0.5F + next(seed), trial % 5 == 0 ? -1.5F : 1.5F, 2.0F });
-        const glm::mat4 back = kernel::geometry::compose(geometry::decompose(transform, 0.0F));
-        float error = 0.0F;
-        for (int column = 0; column < 4; ++column) {
-            error = std::max(error, glm::length(back[column] - transform[column]));
-        }
-        BOOST_TEST(error < 1.0e-4F, "trial " << trial);
-    }
 }
 
 /** How many of a box's corners, at 401 times over a range, lie outside its sweep along keys. **/
@@ -196,6 +93,33 @@ std::size_t outsideSwept(const accel::Box & box, const std::vector<kernel::geome
         }
     }
     return out;
+}
+
+/** The same points, each moved by up to a reach. **/
+std::vector<glm::vec3> jostled(const std::vector<glm::vec3> & points, float reach, std::uint32_t & seed) {
+    std::vector<glm::vec3> out = points;
+    for (glm::vec3 & point : out) {
+        point += (glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F) * reach;
+    }
+    return out;
+}
+
+// a transformation decomposed into a translation, a rotation and a scale composes back to itself,
+// a mirror and a shear included
+BOOST_AUTO_TEST_CASE(moya_motion_a_decomposed_transformation_composes_back_test) {
+    std::uint32_t seed = 3;
+    for (int trial = 0; trial < 50; ++trial) {
+        glm::mat4 transform = moved(next(seed) * 20.0F, next(seed) * 20.0F, next(seed) * 20.0F) *
+            glm::rotate(glm::mat4(1.0F), next(seed) * 6.0F, glm::normalize(glm::vec3 { next(seed), next(seed), next(seed) } + 0.1F));
+        transform[1][0] += next(seed) - 0.5F;
+        transform = transform * glm::scale(glm::mat4(1.0F), glm::vec3 { 0.5F + next(seed), trial % 5 == 0 ? -1.5F : 1.5F, 2.0F });
+        const glm::mat4 back = kernel::geometry::compose(geometry::decompose(transform, 0.0F));
+        float error = 0.0F;
+        for (int column = 0; column < 4; ++column) {
+            error = std::max(error, glm::length(back[column] - transform[column]));
+        }
+        BOOST_TEST(error < 1.0e-4F, "trial " << trial);
+    }
 }
 
 // a box swept along a transformation that turns and moves between three keys holds each of its
@@ -277,52 +201,6 @@ BOOST_AUTO_TEST_CASE(moya_motion_a_mesh_at_three_times_bends_through_its_middle_
     });
 }
 
-/** Small triangles scattered through a cube of a side, at one sample. **/
-std::vector<glm::vec3> scattered(std::size_t count, float side, std::uint32_t & seed) {  // NOLINT(bugprone-easily-swappable-parameters)
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const glm::vec3 centre = glm::vec3 { next(seed), next(seed), next(seed) } * side;
-        for (int corner = 0; corner < 3; ++corner) {
-            points.push_back(centre + (glm::vec3 { next(seed), next(seed), next(seed) } * (side / 10.0F)));
-        }
-    }
-    return points;
-}
-
-/** The same points, each moved by up to a reach. **/
-std::vector<glm::vec3> jostled(const std::vector<glm::vec3> & points, float reach, std::uint32_t & seed) {
-    std::vector<glm::vec3> out = points;
-    for (glm::vec3 & point : out) {
-        point += (glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F) * reach;
-    }
-    return out;
-}
-
-/** A turn about a random axis, a scale from a half to two, and a move of up to a reach. **/
-glm::mat4 randomly(float reach, std::uint32_t & seed) {
-    const glm::vec3 axis = glm::normalize(glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F);
-    const glm::mat4 turn = glm::rotate(glm::mat4(1.0F), next(seed) * 6.28F, axis);
-    const glm::mat4 scale = glm::scale(glm::mat4(1.0F), glm::vec3 { 0.5F + (next(seed) * 1.5F) });
-    return moved(next(seed) * reach, next(seed) * reach, next(seed) * reach) * turn * scale;
-}
-
-/**
- * Whether two traversals give one answer: both miss, or both meet the same primitive through the
- * same chain at distances within a thousandth. The oracle's triangles are moved into the world
- * and the hierarchy's rays into each instance, so the two round apart.
- **/
-bool agrees(const kernel::geometry::Hit & want, const kernel::geometry::Hit & got) {
-    if (want.found() != got.found()) {
-        return false;
-    }
-    if (!want.found()) {
-        return true;
-    }
-    const bool chain = want.depth == got.depth && std::equal(want.instances, want.instances + want.depth, got.instances);
-    return chain && want.primitive == got.primitive && std::fabs(want.distance - got.distance) <= 1.0e-3F * std::max(1.0F, want.distance);
-}
-
 // a scene of groups in groups has instances that turn and move between their own keys, and meshes
 // that bend between their own samples. At each of several times, the hierarchy hits it as the
 // brute-force traversal hits the scene placed at that time, at every instruction set
@@ -330,10 +208,10 @@ BOOST_AUTO_TEST_CASE(moya_motion_a_moving_scene_is_hit_as_the_still_scene_at_eac
     std::uint32_t seed = 29;
     scene::Scene scene(scene::kinds());
     shutter(scene);
-    const std::vector<glm::vec3> many = scattered(400, 30.0F, seed);
+    const std::vector<glm::vec3> many = scattered(400, 30.0F, 3.0F, seed);
     const scene::Handle still = mesh(scene, "still", {}, { many });
     const scene::Handle bending = mesh(scene, "bending", { 0.0F, 1.0F }, { many, jostled(many, 6.0F, seed) });
-    const std::vector<glm::vec3> few = scattered(20, 10.0F, seed);
+    const std::vector<glm::vec3> few = scattered(20, 10.0F, 1.0F, seed);
     const scene::Handle wobbling = mesh(scene, "wobbling", { 0.1F, 0.3F, 0.8F }, { few, jostled(few, 3.0F, seed), jostled(few, 3.0F, seed) });
     const scene::Handle inner = scene.create("group", "inner");
     const scene::Handle outer = scene.create("group", "outer");
@@ -396,7 +274,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_a_moving_scene_is_hit_as_the_still_scene_at_eac
 BOOST_AUTO_TEST_CASE(moya_motion_splitting_by_time_lowers_the_cost_of_motion_that_turns_back_test) {
     std::uint32_t seed = 5;
     geometry::Prototypes prototypes;
-    const std::vector<glm::vec3> start = scattered(500, 100.0F, seed);
+    const std::vector<glm::vec3> start = scattered(500, 100.0F, 10.0F, seed);
     const std::vector<glm::vec3> away = jostled(start, 80.0F, seed);
     prototypes.points = start;
     prototypes.points.insert(prototypes.points.end(), away.begin(), away.end());
@@ -413,3 +291,4 @@ BOOST_AUTO_TEST_CASE(moya_motion_splitting_by_time_lowers_the_cost_of_motion_tha
 }
 
 };  // namespace
+};  // namespace v3d::moya::tracing

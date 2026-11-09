@@ -79,6 +79,9 @@ class Config final {
     Transform display(const std::string & display, const std::string & view) const;
 
  private:
+    /** The name ACEScg has in OpenColorIO's built-in configurations. **/
+    static constexpr const char * kAcescg = "ACEScg";
+
     boost::shared_ptr<const internal::Configuration> config_;
 };
 

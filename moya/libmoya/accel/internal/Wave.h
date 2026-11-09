@@ -56,6 +56,12 @@ struct Wave {
     static Wave carried(const kernel::geometry::Key & from, const kernel::geometry::Key & to, const glm::dvec3 & point, int axis);
 
  private:
+    /** How many times search() halves a range around a place the slope may be zero. **/
+    static constexpr int kDeepest = 16;
+
+    /** A rotation this near none turns nothing, and carried() finds no axis for it. **/
+    static constexpr double kStill = 1.0e-12;
+
     /** A bound on the slope's own slope over [0, 1], from the coefficients. **/
     double bend() const;
 

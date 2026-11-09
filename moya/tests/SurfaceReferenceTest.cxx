@@ -61,59 +61,6 @@ void bumpScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     rc.addPolygon(polygon);
 }
 
-/**
- * A bumped plane under the reyes hider. calculatenormal differences the bumped points across
- * each grid, so the shading follows the bumps.
- **/
-BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
-    v3d::moya::state::RenderContext rc;
-    bumpScene(rc, "hidden");
-    rc.render();
-
-    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), BUMP, BUMP_RENDERED);
-}
-
-/**
- * The same bumped plane said in RIB, against the same committed picture.
- **/
-BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
-    v3d::moya::ri::RIBHandler handler;
-    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
-
-    BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
-    BOOST_CHECK_EQUAL(reader.error(), "");
-
-    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
-        BUMP, BUMP_RIB_RENDERED);
-}
-
-/**
- * The bumped plane under the ray hider. Each hit is shaded with two neighbours a pixel away,
- * so calculatenormal follows the bumps here too. The hiders sample differently, so this
- * picture is not compared with reference-bump.png.
- **/
-BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
-    v3d::moya::state::RenderContext rc;
-    bumpScene(rc, "raytrace");
-    rc.render();
-
-    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
-}
-
-/**
- * The same traced bumped plane said in RIB, against the same committed picture.
- **/
-BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
-    v3d::moya::ri::RIBHandler handler;
-    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
-
-    BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
-    BOOST_CHECK_EQUAL(reader.error(), "");
-
-    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
-        TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
-}
-
 /*
     The same scene as data/reference-area.rib, and as data/raytrace-area.rib under the ray
     hider. A box stands in front of a wall, lit by a quad light up and to its left. The light
@@ -173,6 +120,139 @@ void areaScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     rc.attributeEnd();
 }
 
+/*
+    The same scene as data/reference-glass.rib. A blue quad of opacity one half stands in front
+    of a checked plane, which is tilted away from the camera so its checks run across both x
+    and z. The checks show through the quad, darkened by half and tinted.
+*/
+void glassScene(v3d::moya::state::RenderContext & rc) {
+    rc.imageResolution({64, 48}, 1.0F);
+    pixelCentres(rc);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
+    rc.searchpath("data:&");
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.3F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+    v3d::render::offline::rib::ParameterList ahead;
+    put(&ahead, "intensity", Declaration::Type::FLOAT, { 0.8F });
+    put(&ahead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, ahead);
+
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.9F, 0.85F, 0.7F));
+    v3d::render::offline::rib::ParameterList checks;
+    put(&checks, "size", Declaration::Type::FLOAT, { 0.4F });
+    rc.surface("checked", checks);
+    quadAt(rc, {glm::vec3(-1.4F, -1.1F, 4.0F), glm::vec3(-1.4F, 1.1F, 8.0F), glm::vec3(1.4F, 1.1F, 8.0F),
+        glm::vec3(1.4F, -1.1F, 4.0F)});
+    rc.attributeEnd();
+
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.2F, 0.5F, 0.9F));
+    rc.opacity(glm::vec3(0.5F));
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+    quadAt(rc, {glm::vec3(-0.6F, -0.5F, 3.0F), glm::vec3(-0.6F, 0.5F, 3.0F), glm::vec3(0.6F, 0.5F, 3.0F),
+        glm::vec3(0.6F, -0.5F, 3.0F)});
+    rc.attributeEnd();
+}
+
+/*
+    The same scene as data/reference-displaced.rib, and as data/raytrace-displaced.rib under the
+    ray hider. A plane is rippled three times across x by the lift displacement shader, toward
+    the camera, and lit from the left. The plane's normal points away from the camera, so the
+    amount is negative. Its trace bias clears the gap between the reyes grids and the traced
+    copy of the plane, which are diced apart.
+*/
+void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider, const glm::ivec2 & size = {64, 48}) {
+    rc.hider(hider);
+    rc.imageResolution(size, 1.0F);
+    pixelCentres(rc);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
+    rc.searchpath("data:&");
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.1F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+    v3d::render::offline::rib::ParameterList side;
+    put(&side, "intensity", Declaration::Type::FLOAT, { 1.0F });
+    put(&side, "to", Declaration::Type::POINT, { 0.8F, 0.0F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, side);
+
+    rc.color(glm::vec3(0.8F, 0.8F, 0.85F));
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    v3d::render::offline::rib::ParameterList bound;
+    put(&bound, "sphere", Declaration::Type::FLOAT, { 0.16F });
+    rc.attribute("displacementbound", bound);
+    v3d::render::offline::rib::ParameterList bias;
+    put(&bias, "bias", Declaration::Type::FLOAT, { 0.005F });
+    rc.attribute("trace", bias);
+    v3d::render::offline::rib::ParameterList ripples;
+    put(&ripples, "amount", Declaration::Type::FLOAT, { -0.08F });
+    put(&ripples, "wave", Declaration::Type::FLOAT, { 0.08F });
+    put(&ripples, "frequency", Declaration::Type::FLOAT, { 7.853982F });
+    rc.displacement("lift", ripples);
+    quadAt(rc, {glm::vec3(-1.2F, -0.9F, 5.0F), glm::vec3(1.2F, -0.9F, 5.0F), glm::vec3(1.2F, 0.9F, 5.0F),
+        glm::vec3(-1.2F, 0.9F, 5.0F)});
+}
+
+/**
+ * A bumped plane under the reyes hider. calculatenormal differences the bumped points across
+ * each grid, so the shading follows the bumps.
+ **/
+BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
+    v3d::moya::state::RenderContext rc;
+    bumpScene(rc, "hidden");
+    rc.render();
+
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), BUMP, BUMP_RENDERED);
+}
+
+/**
+ * The same bumped plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
+    v3d::moya::ri::RIBHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
+        BUMP, BUMP_RIB_RENDERED);
+}
+
+/**
+ * The bumped plane under the ray hider. Each hit is shaded with two neighbours a pixel away,
+ * so calculatenormal follows the bumps here too. The hiders sample differently, so this
+ * picture is not compared with reference-bump.png.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
+    v3d::moya::state::RenderContext rc;
+    bumpScene(rc, "raytrace");
+    rc.render();
+
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
+}
+
+/**
+ * The same traced bumped plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
+    v3d::moya::ri::RIBHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
+        TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
+}
+
 /**
  * A soft shadow from an area light under the reyes hider. Each grid vertex runs the light
  * at 16 points on its quad, each with its own shadow ray, so the shadow's edge is a gradient.
@@ -224,45 +304,6 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
         TRACED_AREA, TRACED_AREA_RIB_RENDERED);
 }
 
-/*
-    The same scene as data/reference-glass.rib. A blue quad of opacity one half stands in front
-    of a checked plane, which is tilted away from the camera so its checks run across both x
-    and z. The checks show through the quad, darkened by half and tinted.
-*/
-void glassScene(v3d::moya::state::RenderContext & rc) {
-    rc.imageResolution({64, 48}, 1.0F);
-    pixelCentres(rc);
-    rc.clipping({.hither = 1.0F, .yon = 100.0F});
-    rc.searchpath("data:&");
-    rc.prepareWorld();
-
-    typedef v3d::render::offline::rib::Declaration Declaration;
-    v3d::render::offline::rib::ParameterList ambient;
-    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.3F });
-    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
-    v3d::render::offline::rib::ParameterList ahead;
-    put(&ahead, "intensity", Declaration::Type::FLOAT, { 0.8F });
-    put(&ahead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, 1.0F });
-    rc.lightSource({.shader = "distantlight", .handle = "1"}, ahead);
-
-    rc.attributeBegin();
-    rc.color(glm::vec3(0.9F, 0.85F, 0.7F));
-    v3d::render::offline::rib::ParameterList checks;
-    put(&checks, "size", Declaration::Type::FLOAT, { 0.4F });
-    rc.surface("checked", checks);
-    quadAt(rc, {glm::vec3(-1.4F, -1.1F, 4.0F), glm::vec3(-1.4F, 1.1F, 8.0F), glm::vec3(1.4F, 1.1F, 8.0F),
-        glm::vec3(1.4F, -1.1F, 4.0F)});
-    rc.attributeEnd();
-
-    rc.attributeBegin();
-    rc.color(glm::vec3(0.2F, 0.5F, 0.9F));
-    rc.opacity(glm::vec3(0.5F));
-    rc.surface("constant", v3d::render::offline::rib::ParameterList());
-    quadAt(rc, {glm::vec3(-0.6F, -0.5F, 3.0F), glm::vec3(-0.6F, 0.5F, 3.0F), glm::vec3(0.6F, 0.5F, 3.0F),
-        glm::vec3(0.6F, -0.5F, 3.0F)});
-    rc.attributeEnd();
-}
-
 /**
  * A translucent surface under the reyes hider. Each sample keeps the quad and the plane behind
  * it, and composites them front to back once the buckets are done.
@@ -286,47 +327,6 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
     BOOST_CHECK_EQUAL(reader.error(), "");
 
     check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS), GLASS, GLASS_RIB_RENDERED);
-}
-
-/*
-    The same scene as data/reference-displaced.rib, and as data/raytrace-displaced.rib under the
-    ray hider. A plane is rippled three times across x by the lift displacement shader, toward
-    the camera, and lit from the left. The plane's normal points away from the camera, so the
-    amount is negative. Its trace bias clears the gap between the reyes grids and the traced
-    copy of the plane, which are diced apart.
-*/
-void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider, const glm::ivec2 & size = {64, 48}) {
-    rc.hider(hider);
-    rc.imageResolution(size, 1.0F);
-    pixelCentres(rc);
-    rc.clipping({.hither = 1.0F, .yon = 100.0F});
-    rc.searchpath("data:&");
-    rc.prepareWorld();
-
-    typedef v3d::render::offline::rib::Declaration Declaration;
-    v3d::render::offline::rib::ParameterList ambient;
-    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.1F });
-    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
-    v3d::render::offline::rib::ParameterList side;
-    put(&side, "intensity", Declaration::Type::FLOAT, { 1.0F });
-    put(&side, "to", Declaration::Type::POINT, { 0.8F, 0.0F, 1.0F });
-    rc.lightSource({.shader = "distantlight", .handle = "1"}, side);
-
-    rc.color(glm::vec3(0.8F, 0.8F, 0.85F));
-    rc.surface("matte", v3d::render::offline::rib::ParameterList());
-    v3d::render::offline::rib::ParameterList bound;
-    put(&bound, "sphere", Declaration::Type::FLOAT, { 0.16F });
-    rc.attribute("displacementbound", bound);
-    v3d::render::offline::rib::ParameterList bias;
-    put(&bias, "bias", Declaration::Type::FLOAT, { 0.005F });
-    rc.attribute("trace", bias);
-    v3d::render::offline::rib::ParameterList ripples;
-    put(&ripples, "amount", Declaration::Type::FLOAT, { -0.08F });
-    put(&ripples, "wave", Declaration::Type::FLOAT, { 0.08F });
-    put(&ripples, "frequency", Declaration::Type::FLOAT, { 7.853982F });
-    rc.displacement("lift", ripples);
-    quadAt(rc, {glm::vec3(-1.2F, -0.9F, 5.0F), glm::vec3(1.2F, -0.9F, 5.0F), glm::vec3(1.2F, 0.9F, 5.0F),
-        glm::vec3(-1.2F, 0.9F, 5.0F)});
 }
 
 /**

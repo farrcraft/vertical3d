@@ -43,6 +43,11 @@ float inDisc(const glm::vec2 & point) {
     return (point.x * point.x) + (point.y * point.y) < 1.0F ? 1.0F : 0.0F;
 }
 
+/** The n-th of a run of independent uniform numbers in [0, 1). **/
+float independent(std::uint64_t n) {
+    return sample::toUnit(static_cast<std::uint32_t>(sample::mix(n + 1U) >> 32U));
+}
+
 // the sequence's first eight values in each dimension, unscrambled, in index order rather than
 // the Gray-code order the sequence is often listed in
 BOOST_AUTO_TEST_CASE(moya_zsobol_the_matrices_give_the_sobol_sequence_test) {
@@ -87,11 +92,6 @@ BOOST_AUTO_TEST_CASE(moya_zsobol_a_pixels_samples_are_a_zero_two_net_test) {
             }
         }
     }
-}
-
-/** The n-th of a run of independent uniform numbers in [0, 1). **/
-float independent(std::uint64_t n) {
-    return sample::toUnit(static_cast<std::uint32_t>(sample::mix(n + 1U) >> 32U));
 }
 
 // the area of a quarter disc, estimated in each pixel of an image from 256 samples: the error over

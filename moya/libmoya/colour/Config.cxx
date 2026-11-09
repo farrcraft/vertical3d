@@ -21,9 +21,6 @@ namespace {
 
 namespace ocio = OCIO_NAMESPACE;
 
-/** The name ACEScg has in OpenColorIO's built-in configurations. **/
-constexpr const char * kAcescg = "ACEScg";
-
 /** A processor's CPU form, at 32-bit floats, as a Transform. **/
 Transform transformOf(const ocio::ConstProcessorRcPtr & processor) {
     return Transform(boost::make_shared<const internal::Processor>(processor->getDefaultCPUProcessor()));

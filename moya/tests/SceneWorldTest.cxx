@@ -75,7 +75,7 @@ class Read final {
         });
         v3d::render::offline::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(*stream, &client));
-        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out" }) {
+        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by" }) {
             if (heard.said(text)) {
                 heard_ += std::string(text) + "\n";
             }
@@ -242,6 +242,183 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_subdivision_meshs_tags_become_its_parame
     BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "holes") == scene::Value::integers({ 0 })));
     BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "boundary") == scene::Value::string("edges-and-corners")));
     BOOST_TEST(read.heard("does not read"));
+}
+
+/**
+ * Each quadric's request becomes its kind's parameters, each from its own argument. The values
+ * differ from each other and from each kind's defaults.
+ *
+ * Covers the base: 6787203e added the quadrics to the scene client. Checked by swapping zmin and
+ * zmax in the cylinder's shape, and phimin and phimax in the torus's, which each fail this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_each_quadric_takes_each_of_its_arguments_test) {
+    const Read read(world(
+        "Sphere 2 -0.5 1.5 270\n"
+        "Cone 3 1.5 180\n"
+        "Cylinder 1.25 -0.25 0.75 90\n"
+        "Hyperboloid 1 2 3 4 5 6 120\n"
+        "Paraboloid 2.5 0.5 1.5 300\n"
+        "Disk 0.5 2.5 45\n"
+        "Torus 3 0.5 30 200 330\n"));
+    BOOST_TEST((read.value("sphere", "Sphere 1", "radius") == scene::Value::number(2.0F)));
+    BOOST_TEST((read.value("sphere", "Sphere 1", "zmin") == scene::Value::number(-0.5F)));
+    BOOST_TEST((read.value("sphere", "Sphere 1", "zmax") == scene::Value::number(1.5F)));
+    BOOST_TEST((read.value("sphere", "Sphere 1", "thetamax") == scene::Value::number(270.0F)));
+
+    BOOST_TEST((read.value("cone", "Cone 1", "height") == scene::Value::number(3.0F)));
+    BOOST_TEST((read.value("cone", "Cone 1", "radius") == scene::Value::number(1.5F)));
+    BOOST_TEST((read.value("cone", "Cone 1", "thetamax") == scene::Value::number(180.0F)));
+
+    BOOST_TEST((read.value("cylinder", "Cylinder 1", "radius") == scene::Value::number(1.25F)));
+    BOOST_TEST((read.value("cylinder", "Cylinder 1", "zmin") == scene::Value::number(-0.25F)));
+    BOOST_TEST((read.value("cylinder", "Cylinder 1", "zmax") == scene::Value::number(0.75F)));
+    BOOST_TEST((read.value("cylinder", "Cylinder 1", "thetamax") == scene::Value::number(90.0F)));
+
+    BOOST_TEST((read.value("hyperboloid", "Hyperboloid 1", "point1") == scene::Value::point(glm::vec3(1.0F, 2.0F, 3.0F))));
+    BOOST_TEST((read.value("hyperboloid", "Hyperboloid 1", "point2") == scene::Value::point(glm::vec3(4.0F, 5.0F, 6.0F))));
+    BOOST_TEST((read.value("hyperboloid", "Hyperboloid 1", "thetamax") == scene::Value::number(120.0F)));
+
+    BOOST_TEST((read.value("paraboloid", "Paraboloid 1", "rmax") == scene::Value::number(2.5F)));
+    BOOST_TEST((read.value("paraboloid", "Paraboloid 1", "zmin") == scene::Value::number(0.5F)));
+    BOOST_TEST((read.value("paraboloid", "Paraboloid 1", "zmax") == scene::Value::number(1.5F)));
+    BOOST_TEST((read.value("paraboloid", "Paraboloid 1", "thetamax") == scene::Value::number(300.0F)));
+
+    BOOST_TEST((read.value("disk", "Disk 1", "height") == scene::Value::number(0.5F)));
+    BOOST_TEST((read.value("disk", "Disk 1", "radius") == scene::Value::number(2.5F)));
+    BOOST_TEST((read.value("disk", "Disk 1", "thetamax") == scene::Value::number(45.0F)));
+
+    BOOST_TEST((read.value("torus", "Torus 1", "majorRadius") == scene::Value::number(3.0F)));
+    BOOST_TEST((read.value("torus", "Torus 1", "minorRadius") == scene::Value::number(0.5F)));
+    BOOST_TEST((read.value("torus", "Torus 1", "phimin") == scene::Value::number(30.0F)));
+    BOOST_TEST((read.value("torus", "Torus 1", "phimax") == scene::Value::number(200.0F)));
+    BOOST_TEST((read.value("torus", "Torus 1", "thetamax") == scene::Value::number(330.0F)));
+}
+
+/**
+ * A curve takes its type, its wrap, its counts and the basis in force. Its "width" and
+ * "constantwidth" become the kind's widths, and not primvars.
+ *
+ * Covers the base: 6787203e added curves to the scene client. Checked by reading the curve's
+ * basis as "bezier" whatever Basis said, and by dropping its "constantwidth", which each fail this
+ * case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_curve_takes_its_basis_and_widths_test) {
+    const Read read(world(
+        "Basis \"catmull-rom\" 1 \"catmull-rom\" 1\n"
+        "Curves \"cubic\" [4] \"periodic\" \"P\" [0 0 0 1 0 0 1 1 0 0 1 0] \"width\" [0.1 0.2 0.3 0.4]\n"
+        "Curves \"linear\" [2] \"nonperiodic\" \"P\" [0 0 0 0 0 1] \"constantwidth\" [0.25]\n"));
+    BOOST_TEST((read.value("curves", "Curves 1", "type") == scene::Value::string("cubic")));
+    BOOST_TEST((read.value("curves", "Curves 1", "wrap") == scene::Value::string("periodic")));
+    BOOST_TEST((read.value("curves", "Curves 1", "basis") == scene::Value::string("catmull-rom")));
+    BOOST_TEST((read.value("curves", "Curves 1", "vertices") == scene::Value::integers({ 4 })));
+    BOOST_TEST((read.value("curves", "Curves 1", "width") == scene::Value::floats({ 0.1F, 0.2F, 0.3F, 0.4F })));
+    BOOST_TEST(read.scene().primvars(read.handle("curves", "Curves 1")).empty());
+
+    BOOST_TEST((read.value("curves", "Curves 2", "type") == scene::Value::string("linear")));
+    BOOST_TEST((read.value("curves", "Curves 2", "wrap") == scene::Value::string("nonperiodic")));
+    BOOST_TEST((read.value("curves", "Curves 2", "P") == scene::Value::points({ glm::vec3(0.0F), glm::vec3(0.0F, 0.0F, 1.0F) })));
+    BOOST_TEST((read.value("curves", "Curves 2", "constantWidth") == scene::Value::number(0.25F)));
+    BOOST_TEST(read.scene().primvars(read.handle("curves", "Curves 2")).empty());
+}
+
+/**
+ * Points take their positions, and their "width" or "constantwidth" as the kind's widths.
+ *
+ * Covers the base: 6787203e added points to the scene client. Checked by dropping the points'
+ * "width", which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_points_take_their_widths_test) {
+    const Read read(world(
+        "Points \"P\" [0 0 0 1 0 0] \"width\" [0.1 0.2]\n"
+        "Points \"P\" [0 1 0] \"constantwidth\" [0.5]\n"));
+    BOOST_TEST((read.value("points", "Points 1", "P") == scene::Value::points({ glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F) })));
+    BOOST_TEST((read.value("points", "Points 1", "width") == scene::Value::floats({ 0.1F, 0.2F })));
+    BOOST_TEST((read.value("points", "Points 2", "constantWidth") == scene::Value::number(0.5F)));
+    BOOST_TEST(read.scene().primvars(read.handle("points", "Points 1")).empty());
+}
+
+/**
+ * A quadric or a curve repeated in a motion block deforms: each parameter its kind declares for
+ * motion holds a sample at each of the block's times.
+ *
+ * Covers the base: 6787203e added deforming primitives to the scene client. Checked by leaving
+ * the cone and the curves out of the deforming handler's poses, which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_quadric_or_a_curve_deforms_test) {
+    const Read read(world(
+        "MotionBegin [0 1]\nCone 1 1 360\nCone 2 1.5 360\nMotionEnd\n"
+        "MotionBegin [0 0.5]\n"
+        "Curves \"linear\" [2] \"nonperiodic\" \"P\" [0 0 0 1 0 0] \"width\" [0.1 0.1]\n"
+        "Curves \"linear\" [2] \"nonperiodic\" \"P\" [0 1 0 1 1 0] \"width\" [0.2 0.3]\n"
+        "MotionEnd\n"));
+    const scene::Samples & height = read.scene().samples(read.handle("cone", "Cone 1"), "height");
+    BOOST_TEST(height.times == (std::vector<float> { 0.0F, 1.0F }), boost::test_tools::per_element());
+    BOOST_REQUIRE(height.values.size() == 2U);
+    BOOST_TEST((height.values[1] == scene::Value::number(2.0F)));
+    const scene::Samples & radius = read.scene().samples(read.handle("cone", "Cone 1"), "radius");
+    BOOST_REQUIRE(radius.values.size() == 2U);
+    BOOST_TEST((radius.values[1] == scene::Value::number(1.5F)));
+    BOOST_TEST(read.scene().objects("cone").size() == 1U);
+
+    const scene::Handle curves = read.handle("curves", "Curves 1");
+    const scene::Samples & points = read.scene().samples(curves, "P");
+    BOOST_TEST(points.times == (std::vector<float> { 0.0F, 0.5F }), boost::test_tools::per_element());
+    BOOST_REQUIRE(points.values.size() == 2U);
+    BOOST_TEST((points.values[1].triple(0) == glm::vec3(0.0F, 1.0F, 0.0F)));
+    const scene::Samples & width = read.scene().samples(curves, "width");
+    BOOST_REQUIRE(width.values.size() == 2U);
+    BOOST_TEST((width.values[1] == scene::Value::floats({ 0.2F, 0.3F })));
+    BOOST_TEST(read.scene().objects("curves").size() == 1U);
+}
+
+/**
+ * A subdivision mesh keeps a loop or a bilinear scheme, and one moya does not subdivide by is
+ * logged and becomes catmull-clark. A mesh with no tags has no creases, corners or holes, and
+ * no boundary rule.
+ *
+ * Covers the base: 6787203e added subdivision meshes to the scene client. Checked by reading
+ * every scheme as catmull-clark, and by starting a mesh's boundary at "edges", which each fail
+ * this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_subdivision_mesh_keeps_its_scheme_test) {
+    const Read read(world(
+        "SubdivisionMesh \"loop\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "SubdivisionMesh \"bilinear\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "SubdivisionMesh \"sqrt3\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "scheme") == scene::Value::string("loop")));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 2", "scheme") == scene::Value::string("bilinear")));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 3", "scheme") == scene::Value::string("catmull-clark")));
+    BOOST_TEST(read.heard("subdivided by"));
+
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "vertices") == scene::Value::integers({ 3 })));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "indices") == scene::Value::integers({ 0, 1, 2 })));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "creases") == scene::Value::integers({})));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "creaseLengths") == scene::Value::integers({})));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "corners") == scene::Value::integers({})));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "holes") == scene::Value::integers({})));
+    BOOST_TEST((read.value("subdivision", "SubdivisionMesh 1", "boundary") == scene::Value::string("none")));
+    BOOST_TEST(!read.heard("does not read"));
+}
+
+/**
+ * A facevarying primvar keeps its storage class, with a value at each corner of each face,
+ * whether the request declares it inline or a Declare does.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_facevarying_primvar_is_kept_test) {
+    const Read read(world(
+        "PointsPolygons [3 3] [0 1 2 0 2 3] \"P\" [0 0 0 1 0 0 1 1 0 0 1 0] \"facevarying float s\" [0 0.1 0.2 0.3 0.4 0.5]\n"
+        "Declare \"t\" \"facevarying float\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0] \"t\" [0 0.5 1]\n"));
+    const std::vector<scene::Declaration> & mesh = read.scene().primvars(read.handle("mesh", "PointsPolygons 1"));
+    BOOST_REQUIRE(mesh.size() == 1U);
+    BOOST_TEST(mesh.front().name == "s");
+    BOOST_TEST((mesh.front().interpolation == scene::Interpolation::FaceVarying));
+    BOOST_TEST((mesh.front().fallback == scene::Value::floats({ 0.0F, 0.1F, 0.2F, 0.3F, 0.4F, 0.5F })));
+
+    const std::vector<scene::Declaration> & polygon = read.scene().primvars(read.handle("mesh", "Polygon 1"));
+    BOOST_REQUIRE(polygon.size() == 1U);
+    BOOST_TEST((polygon.front().interpolation == scene::Interpolation::FaceVarying));
+    BOOST_TEST((polygon.front().fallback == scene::Value::floats({ 0.0F, 0.5F, 1.0F })));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_new_world_replaces_the_one_before_test) {

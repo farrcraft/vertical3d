@@ -35,6 +35,48 @@ namespace v3d::moya::handling {
 namespace {
 
 /**
+ * A quad at z = 4 in its own space, moved to z = 5 by a translation after the surface, drawn
+ * with a shader that shows the shading point in object space.
+ **/
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> inObjectSpace(const std::string & hider) {
+    v3d::moya::ri::RIBHandler handler;
+    BOOST_REQUIRE(read(
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "Surface \"objectspace\"\n"
+        "Translate 0 0 1\n"
+        "Polygon \"P\" [-5 -5 4  5 -5 4  5 5 4  -5 5 4]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().picture();
+}
+
+/**
+ * A quad lit by one light, under the hider given, with the surface and light named.
+ **/
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> messaged(const std::string & hider, const std::string & light,
+    const std::string & surface) {
+    v3d::moya::ri::RIBHandler handler;
+    BOOST_REQUIRE(read(
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "LightSource \"" + light + "\" 1\n"
+        "Surface \"" + surface + "\"\n"
+        "Polygon \"P\" [-5 -5 5  -5 5 5  5 5 5  5 -5 5]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().picture();
+}
+
+/**
  * RiColor is graphics state rather than a material, and it reaches the pixels.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
@@ -288,54 +330,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_trace_bias_reaches_the_traced_scene_test)
 }
 
 /**
- * A quad at z = 4 in its own space, moved to z = 5 by a translation after the surface, drawn
- * with a shader that shows the shading point in object space.
- **/
-boost::shared_ptr<v3d::render::offline::film::FrameBuffer> inObjectSpace(const std::string & hider) {
-    v3d::moya::ri::RIBHandler handler;
-    BOOST_REQUIRE(read(
-        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
-        "Format 8 6 1\n"
-        "PixelSamples 1 1\n"
-        "PixelFilter \"box\" 1 1\n"
-        "Projection \"orthographic\"\n"
-        "Clipping 1 100\n" + hider +
-        "WorldBegin\n"
-        "Surface \"objectspace\"\n"
-        "Translate 0 0 1\n"
-        "Polygon \"P\" [-5 -5 4  5 -5 4  5 5 4  -5 5 4]\n"
-        "WorldEnd\n", &handler));
-    return handler.context().picture();
-}
-
-/**
  * Both hiders answer "object" space with the primitive's own transformation, so the quad's
  * depth in its own space is 4 under either.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
     BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::state::Planes::BLUE, 4, 3), 4.0F, 0.01F);
     BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::state::Planes::BLUE, 4, 3), 4.0F, 0.01F);
-}
-
-/**
- * A quad lit by one light, under the hider given, with the surface and light named.
- **/
-boost::shared_ptr<v3d::render::offline::film::FrameBuffer> messaged(const std::string & hider, const std::string & light,
-    const std::string & surface) {
-    v3d::moya::ri::RIBHandler handler;
-    BOOST_REQUIRE(read(
-        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
-        "Format 8 6 1\n"
-        "PixelSamples 1 1\n"
-        "PixelFilter \"box\" 1 1\n"
-        "Projection \"orthographic\"\n"
-        "Clipping 1 100\n" + hider +
-        "WorldBegin\n"
-        "LightSource \"" + light + "\" 1\n"
-        "Surface \"" + surface + "\"\n"
-        "Polygon \"P\" [-5 -5 5  -5 5 5  5 5 5  5 -5 5]\n"
-        "WorldEnd\n", &handler));
-    return handler.context().picture();
 }
 
 /**

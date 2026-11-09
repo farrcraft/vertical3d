@@ -34,8 +34,10 @@ inline constexpr std::string_view kBeauty = "beauty";
  *
  * @param path the file, as UTF-8
  * @throws std::invalid_argument for parts that cannot be written: none at all, a part with no
- *         outputs or one output twice, or an output the snapshot does not hold. Several parts
- *         each need a name, and no two the same. Nothing is written then
+ *         outputs or one output twice, or an output the snapshot does not hold. It is thrown too
+ *         for a part whose outputs give two channels one name in the file, as a channel named R
+ *         beside the beauty does. Several parts each need a name, and no two the same. Nothing is
+ *         written then
  * @throws std::exception, from OpenEXR, when the file cannot be written
  **/
 void writeExr(const std::string & path, const film::Snapshot & snapshot, const std::vector<ExrPart> & parts,

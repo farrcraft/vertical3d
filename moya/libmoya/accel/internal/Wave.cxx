@@ -17,16 +17,6 @@
 
 namespace v3d::moya::accel::internal {
 
-namespace {
-
-/** How many times a range is halved around a place the slope may be zero. **/
-constexpr int kDeepest = 16;
-
-/** A rotation this near none turns nothing, and its axis is not found. **/
-constexpr double kStill = 1.0e-12;
-
-};  // namespace
-
 double Wave::at(double w) const {
     const double angle = theta * w;
     return a0 + (a1 * w) + ((b0 + (b1 * w)) * std::cos(angle)) + ((c0 + (c1 * w)) * std::sin(angle));

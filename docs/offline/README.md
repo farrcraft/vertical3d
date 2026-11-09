@@ -155,8 +155,8 @@ Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-
 
 moya is being rebuilt as a spectral path tracer, and its new core sits beside the two hiders.
 The hiders render every RIB scene as before. The new core holds a scene, read from RIB or kept in
-step with the editor's, but traces no ray yet, and nothing in it changes a picture the hiders
-make.
+step with the editor's, and traces rays through it. It lights nothing yet, and nothing in it
+changes a picture the hiders make.
 
 - **It lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
   client of the core is built in this tree.
@@ -182,8 +182,18 @@ make.
   `moya --scene` prints the scene a file makes. [Scene.md](Scene.md)
 - **Rays and hits** are kernel code. A triangle is met watertight, a ray leaving a surface starts
   off it, and a stage takes its traversal as a type, so each device brings its own. Camera rays
-  follow RI's camera, and `moya --hits` writes what they hit through the brute-force traversal,
-  the reference every other traversal is checked against. [Traversal.md](Traversal.md)
+  follow RI's camera, and `moya --hits` writes what they hit. Rays are traced through the
+  hierarchy unless the brute-force traversal is asked for. The brute-force traversal is the
+  reference every other traversal is checked against. [Traversal.md](Traversal.md)
+- **The hierarchy** is a bounding volume hierarchy of eight children a node, built by the surface
+  area heuristic with spatial splits. Each geometry and each group of a scene has one, and the
+  world has one over its instances. [Traversal.md](Traversal.md#the-hierarchy)
+- **The CPU's traversal** tests a node's eight children at once. It is built once for each of
+  SSE4.2, AVX2 and AVX-512, and the CPU device loads the newest build its processor runs.
+  [Traversal.md](Traversal.md#the-cpus-traversal)
+- **Instances place prototypes**, and an instance's transformation and a mesh's points can move
+  over the shutter. A ray is traced at its own time, through a hierarchy built over the motion.
+  [Traversal.md](Traversal.md#motion)
 - **Meshes become triangles** by ear clipping, each keeping its face.
   [Geometry.md](Geometry.md)
 

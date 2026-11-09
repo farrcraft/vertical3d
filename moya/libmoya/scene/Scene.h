@@ -63,7 +63,10 @@ class Scene final {
      *
      * @throws std::invalid_argument when the handle names no object, the object's kind and its
      *         primvars declare no such parameter, or the value's type or size breaks the
-     *         declaration. A handle value must name an object of the declared kind
+     *         declaration. Also when a handle in the value names no object, or an object of a
+     *         kind the declaration does not take. The null handle sets a parameter that is not
+     *         an array back to naming nothing. An array of handles names nothing when it is
+     *         empty, and takes no null handle
      **/
     void set(const Handle & object, const std::string & parameter, const Value & value);
 
@@ -214,7 +217,10 @@ class Scene final {
     /** Check the times of samples against a declaration. **/
     static void checkTimes(const Declaration & declaration, const Samples & samples);
 
-    /** Check that each handle of a value names an object of one of the declaration's targets. **/
+    /**
+     * Check that each handle of a value names a live object of one of the declaration's targets,
+     * or is the null handle of a parameter that is not an array. Called with the mutex held.
+     **/
     void checkHandles(const Declaration & declaration, const Value & value) const;
 
     /** The applied object a client's edit names, which a client's checks made sure exists. **/

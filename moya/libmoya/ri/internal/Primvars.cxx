@@ -102,6 +102,7 @@ scene::Interpolation interpolationOf(Declaration::Storage storage) {
         case Declaration::Storage::UNIFORM: return scene::Interpolation::Uniform;
         case Declaration::Storage::VARYING: return scene::Interpolation::Varying;
         case Declaration::Storage::VERTEX: return scene::Interpolation::Vertex;
+        case Declaration::Storage::FACEVARYING: return scene::Interpolation::FaceVarying;
     }
     return scene::Interpolation::Constant;
 }

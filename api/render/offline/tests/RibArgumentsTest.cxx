@@ -140,4 +140,23 @@ BOOST_AUTO_TEST_CASE(ribarguments_nulls_test) {
     BOOST_CHECK_EQUAL(nothing.size(), 0U);
 }
 
+/**
+ * A facevarying parameter from the C interface takes one element per corner of the faces, and a
+ * vertex one in the same list takes one per point.
+ **/
+BOOST_AUTO_TEST_CASE(ribarguments_facevarying_takes_the_corners_test) {
+    const Declarations declarations;
+    float s[6] = { 0.0F, 0.1F, 0.2F, 0.3F, 0.4F, 0.5F };
+    float points[12] = { 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                         1.0F, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F };
+    const char* const tokens[] = { "facevarying float s", "P" };
+    const void* const values[] = { s, points };
+
+    ParameterList list;
+    arguments(declarations, 2, tokens, values, 4, 6, &list);
+    BOOST_REQUIRE_EQUAL(list.floats("s").size(), 6U);
+    BOOST_CHECK_EQUAL(list.floats("s")[5], 0.5F);
+    BOOST_CHECK_EQUAL(list.points("P").size(), 4U);
+}
+
 };  // namespace

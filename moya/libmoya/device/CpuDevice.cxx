@@ -30,16 +30,6 @@
 
 namespace v3d::moya::device {
 
-namespace {
-
-void check(const Buffer & buffer, std::size_t bytes) {
-    if (bytes > buffer.bytes()) {
-        throw std::out_of_range("a copy larger than its buffer");
-    }
-}
-
-};  // namespace
-
 CpuDevice::CpuDevice(unsigned int threads, cpu::Isa newest) :
     arena_(boost::make_shared<internal::Arena>(threads)), isa_(std::min(newest, newestIsa())) {
 }
@@ -50,6 +40,12 @@ std::string CpuDevice::name() const {
 
 boost::shared_ptr<Buffer> CpuDevice::allocate(std::size_t bytes) {
     return boost::make_shared<internal::HostBuffer>(bytes);
+}
+
+void CpuDevice::check(const Buffer & buffer, std::size_t bytes) {
+    if (bytes > buffer.bytes()) {
+        throw std::out_of_range("a copy larger than its buffer");
+    }
 }
 
 void CpuDevice::upload(Buffer & to, const void * from, std::size_t bytes) {

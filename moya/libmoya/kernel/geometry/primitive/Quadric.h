@@ -14,7 +14,7 @@ namespace v3d::moya::kernel::geometry::primitive {
 /** A whole turn, in radians. **/
 inline constexpr float kWholeTurn = 6.28318530717958647692F;
 
-/** RI's tube of a torus, which it gives as a quarter of the ring's radius of one. **/
+/** A torus's tube radius until one is given: a quarter of the ring's default radius of one. **/
 inline constexpr float kMinorRadius = 0.25F;
 
 /** RI's seven quadrics. **/

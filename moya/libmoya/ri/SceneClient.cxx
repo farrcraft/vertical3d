@@ -7,25 +7,46 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/Bases.h>
+#include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/requests/Basis.h>
 #include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
 #include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
 #include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
 #include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
 #include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
+#include <moya/libmoya/ri/internal/Primvars.h>
+#include <moya/libmoya/ri/internal/Sampled.h>
+#include <moya/libmoya/ri/internal/Shape.h>
+#include <moya/libmoya/ri/internal/Shapes.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Kind.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <optional>
-#include <stdexcept>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -39,24 +60,16 @@
 
 namespace v3d::moya::ri {
 
-namespace {
-
-/** RI's default picture, which a side of zero in a Format asks for. **/
-constexpr int kWidth = 320;
-constexpr int kHeight = 240;
-
-/** Whether a file name ends with a suffix, compared exactly. **/
-bool endsWith(const std::string & text, const std::string & suffix) {
-    return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-};  // namespace
-
 SceneClient::SceneClient(scene::Scene & scene, const boost::shared_ptr<v3d::log::Logger> & logger) :
-    scene_(scene), logger_(logger) {
+    scene_(scene), logger_(logger), warnings_(logger), made_(&scene), lights_(&scene, &made_, &warnings_, logger),
+    deformations_(&scene, &warnings_, logger, current_.basis) {
     options_ = scene_.create("options", "options");
     camera_ = scene_.create("camera", "camera");
     scene_.set(options_, "camera", scene::Value::handle(camera_));
+}
+
+bool SceneClient::endsWith(const std::string & text, const std::string & suffix) {
+    return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 void SceneClient::frame(const std::function<void()> & committed) {
@@ -171,23 +184,16 @@ void SceneClient::frameBegin(int frame) {
 
 void SceneClient::worldBegin() {
     // the transformation now takes world space to camera space, and the camera holds the other way
-    Sampled camera = current_.transformation;
+    internal::Sampled camera = current_.transformation;
     for (glm::mat4 & matrix : camera.matrices) {
         matrix = glm::inverse(matrix);
     }
-    setSampled(camera_, "transform", camera);
-    current_.transformation = Sampled();
+    camera.set(&scene_, camera_, "transform", logger_);
+    current_.transformation = internal::Sampled();
 
     // a new world replaces everything the world before it made
-    for (const scene::Handle & made : made_) {
-        scene_.remove(made);
-    }
     made_.clear();
-    taken_.clear();
-    counts_.clear();
-    instances_.clear();
     lights_.clear();
-    unmade_.clear();
     objects_.clear();
     spaces_.clear();
     spaces_["camera"] = camera;
@@ -197,14 +203,7 @@ void SceneClient::worldBegin() {
 }
 
 void SceneClient::worldEnd() {
-    // a light that lit every instance keeps includeRoot, and any other names those it lit, which
-    // may be none
-    for (const auto & [handle, light] : lights_) {
-        if (light.lit.size() != instances_.size()) {
-            scene_.set(light.light, "includeRoot", scene::Value::integer(0));
-            scene_.set(light.light, "instances", scene::Value::handles(light.lit));
-        }
-    }
+    lights_.finish();
     world_ = false;
     scene_.commit();
     if (committed_) {
@@ -254,7 +253,7 @@ void SceneClient::replace(const glm::mat4 & matrix) {
         poses_.push_back(matrix);
         return;
     }
-    current_.transformation = Sampled { .times = {}, .matrices = { matrix } };
+    current_.transformation = internal::Sampled { .times = {}, .matrices = { matrix } };
 }
 
 void SceneClient::identity() {
@@ -287,8 +286,7 @@ void SceneClient::motionBegin(const std::vector<float> & times) {
     times_ = times;
     base_ = current_.transformation;
     poses_.clear();
-    deforming_ = scene::Handle {};
-    samples_.clear();
+    deformations_.clear();
 }
 
 void SceneClient::motionEnd() {
@@ -299,30 +297,14 @@ void SceneClient::motionEnd() {
 
     // a deforming primitive's poses become samples of its prototype, one at each of the block's
     // times
-    if (deforming_.valid()) {
-        for (const auto & [name, values] : samples_) {
-            const std::size_t count = std::min(values.size(), times_.size());
-            if (count < 2) {
-                continue;
-            }
-            try {
-                scene_.set(deforming_, name, std::vector<float>(times_.begin(), times_.begin() + static_cast<std::ptrdiff_t>(count)),
-                    std::vector<scene::Value>(values.begin(), values.begin() + static_cast<std::ptrdiff_t>(count)));
-            } catch (const std::invalid_argument & error) {
-                logger_->get()->warn("a deforming primitive's poses differ in their points or its times are not in order, so it keeps its first pose - {}",
-                    error.what());
-            }
-        }
-        deforming_ = scene::Handle {};
-        samples_.clear();
-    }
+    deformations_.end(times_);
 
     // a block that held one request, or named one time, moves nothing
     const std::size_t count = std::min(poses_.size(), times_.size());
     if (count == 1 || (count == 0 && !poses_.empty())) {
-        current_.transformation = Sampled { .times = {}, .matrices = { poses_.front() } };
+        current_.transformation = internal::Sampled { .times = {}, .matrices = { poses_.front() } };
     } else if (count > 1) {
-        current_.transformation = Sampled { .times = std::vector<float>(times_.begin(), times_.begin() + static_cast<std::ptrdiff_t>(count)),
+        current_.transformation = internal::Sampled { .times = std::vector<float>(times_.begin(), times_.begin() + static_cast<std::ptrdiff_t>(count)),
             .matrices = std::vector<glm::mat4>(poses_.begin(), poses_.begin() + static_cast<std::ptrdiff_t>(count)) };
     }
 }
@@ -333,23 +315,252 @@ void SceneClient::attribute(const std::string & name, const v3d::render::offline
     }
 }
 
-void SceneClient::setSampled(const scene::Handle & object, const std::string & parameter, const Sampled & sampled) {
-    if (sampled.times.empty()) {
-        scene_.set(object, parameter, scene::Value::matrix(sampled.matrices.front()));
+std::string SceneClient::nameFor(const std::string & kind, const std::string & request) {
+    return made_.name(kind, request, current_.name);
+}
+
+void SceneClient::place(const internal::Shape & shape) {
+    if (!world_) {
+        warnings_.once("outside", "a primitive outside WorldBegin and WorldEnd is not drawn");
         return;
     }
-    std::vector<scene::Value> values;
-    values.reserve(sampled.matrices.size());
-    for (const glm::mat4 & matrix : sampled.matrices) {
-        values.push_back(scene::Value::matrix(matrix));
+    const scene::Handle prototype = made_.make(shape.kind, nameFor(shape.kind, shape.request));
+    for (const auto & [name, value] : shape.parameters) {
+        scene_.set(prototype, name, value);
     }
-    try {
-        scene_.set(object, parameter, sampled.times, values);
-    } catch (const std::invalid_argument & error) {
-        // a motion block whose times do not rise keeps its first time alone
-        logger_->get()->warn("a motion block's times are not in order, so it holds its first time alone - {}", error.what());
-        scene_.set(object, parameter, values.front());
+
+    // the request's other parameters are primvars, unless the kind holds one of the name
+    std::set<std::string> except = shape.taken;
+    const scene::Kind & kind = scene_.schema().kind(prototype.kind);
+    for (const scene::Declaration & declared : kind.parameters) {
+        except.insert(declared.name);
     }
+    internal::declare(&scene_, prototype, shape.primvars, except, false);
+
+    // the first pose of a deforming primitive, whose later poses add samples to it
+    if (motion_) {
+        deformations_.begin(prototype, shape);
+    }
+
+    const bool inObject = current_.group.valid();
+    instance(prototype, nameFor("instance", shape.request), !inObject);
+
+    if (current_.area && !inObject) {
+        lights_.glow(prototype, current_.area->name, current_.area->parameters, current_.transformation);
+    }
+}
+
+scene::Handle SceneClient::instance(const scene::Handle & prototype, const std::string & name, bool lit) {
+    const scene::Handle placed = made_.make("instance", name);
+    scene_.set(placed, "prototype", scene::Value::handle(prototype));
+    current_.transformation.set(&scene_, placed, "transform", logger_);
+    if (current_.group.valid()) {
+        // an object's geometry takes the material in force where the object is placed
+        scene_.set(placed, "group", scene::Value::handle(current_.group));
+    } else {
+        scene_.set(placed, "material", scene::Value::handle(material()));
+    }
+    if (lit) {
+        lights_.lit(placed, current_.lights);
+    }
+    return placed;
+}
+
+scene::Handle SceneClient::shaderNode(const Shader & shader, const std::string & name) {
+    const scene::Handle node = made_.make("shader", name);
+    scene_.set(node, "shader", scene::Value::string(shader.name));
+    scene_.set(node, "language", scene::Value::string("ri"));
+    internal::declare(&scene_, node, shader.parameters, { "shader", "language" }, true);
+    return node;
+}
+
+scene::Handle SceneClient::material() {
+    if (current_.material->valid()) {
+        return *current_.material;
+    }
+    // a material and its nodes are named after the surface shader, whatever geometry made them
+    const scene::Handle surface = shaderNode(current_.surface, made_.unique("shader", current_.surface.name));
+    for (const auto & [input, value] : { std::pair { "Cs", current_.colour }, std::pair { "Os", current_.opacity } }) {
+        if (!current_.surface.parameters.has(input)) {
+            scene_.declare(surface, scene::Declaration { .name = input, .type = scene::Type::Colour, .fallback = scene::Value::colour(value) });
+        }
+    }
+    const scene::Handle made = made_.make("material", made_.unique("material", current_.surface.name));
+    scene_.set(made, "surface", scene::Value::handle(surface));
+    if (!current_.displacement.name.empty()) {
+        const scene::Handle displacement = shaderNode(current_.displacement, made_.unique("shader", current_.displacement.name));
+        scene_.set(made, "displacement", scene::Value::handle(displacement));
+    }
+    *current_.material = made;
+    return made;
+}
+
+void SceneClient::coordinateSystem(const std::string & space) {
+    if (!space.empty()) {
+        spaces_[space] = current_.transformation;
+    }
+}
+
+void SceneClient::coordSysTransform(const std::string & space) {
+    if (space == "world") {
+        current_.transformation = internal::Sampled();
+        return;
+    }
+    const auto found = spaces_.find(space);
+    if (found == spaces_.end()) {
+        warnings_.once("space " + space, "the space \"" + space + "\" was not named, so CoordSysTransform changes nothing");
+        return;
+    }
+    current_.transformation = found->second;
+}
+
+void SceneClient::color(const glm::vec3 & value) {
+    current_.colour = value;
+    current_.material = boost::make_shared<scene::Handle>();
+}
+
+void SceneClient::opacity(const glm::vec3 & value) {
+    current_.opacity = value;
+    current_.material = boost::make_shared<scene::Handle>();
+}
+
+void SceneClient::basis(const v3d::render::offline::rib::requests::Basis & request) {
+    std::string name = v3d::render::offline::rib::basisName(request.v);
+    if (name.empty()) {
+        warnings_.once("basis", "moya's curves take a basis RI names, so a basis of its own numbers is taken as bezier");
+        name = "bezier";
+    }
+    current_.basis = name;
+}
+
+void SceneClient::surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    current_.surface = Shader { .name = name, .parameters = parameters };
+    current_.material = boost::make_shared<scene::Handle>();
+}
+
+void SceneClient::displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    current_.displacement = Shader { .name = name, .parameters = parameters };
+    current_.material = boost::make_shared<scene::Handle>();
+}
+
+void SceneClient::lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
+    if (!world_) {
+        warnings_.once("light outside", "a light outside WorldBegin and WorldEnd makes no light");
+        return;
+    }
+    const std::string name = current_.name.empty() ? "light " + request.handle : current_.name;
+    if (lights_.source(request, parameters, name, current_.transformation)) {
+        current_.lights.insert(request.handle);
+    }
+}
+
+void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (request.shader.empty()) {
+        current_.area.reset();
+        return;
+    }
+    current_.area = Shader { .name = current_.name.empty() ? "light " + request.handle : current_.name, .parameters = parameters };
+}
+
+void SceneClient::illuminate(const std::string & handle, bool on) {
+    if (!lights_.named(handle)) {
+        return;
+    }
+    if (on) {
+        current_.lights.insert(handle);
+    } else {
+        current_.lights.erase(handle);
+    }
+}
+
+v3d::render::offline::rib::Handler* SceneClient::deformation() {
+    return &deformations_;
+}
+
+void SceneClient::polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::polygon(vertices, parameters));
+}
+
+void SceneClient::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::mesh(request, parameters));
+}
+
+void SceneClient::sphere(const v3d::render::offline::rib::requests::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::sphere(request, parameters));
+}
+
+void SceneClient::curves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::curves(request, parameters, current_.basis));
+}
+
+void SceneClient::points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) {
+    (void)count;
+    place(internal::Shapes::points(parameters));
+}
+
+void SceneClient::cone(const v3d::render::offline::rib::requests::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::cone(request, parameters));
+}
+
+void SceneClient::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::cylinder(request, parameters));
+}
+
+void SceneClient::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::hyperboloid(request, parameters));
+}
+
+void SceneClient::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::paraboloid(request, parameters));
+}
+
+void SceneClient::disk(const v3d::render::offline::rib::requests::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::disk(request, parameters));
+}
+
+void SceneClient::torus(const v3d::render::offline::rib::requests::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::torus(request, parameters));
+}
+
+void SceneClient::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    place(internal::Shapes::subdivision(request, parameters, &warnings_));
+}
+
+void SceneClient::objectBegin(const std::string & handle) {
+    if (!world_) {
+        warnings_.once("object outside", "an object outside WorldBegin and WorldEnd is not kept");
+    }
+    attributes_.push_back(current_);
+    const scene::Handle group = made_.make("group", made_.unique("group", current_.name.empty() ? "object " + handle : current_.name));
+    objects_[handle] = group;
+    current_.transformation = internal::Sampled();
+    current_.group = group;
+}
+
+void SceneClient::objectEnd() {
+    if (attributes_.empty() || !current_.group.valid()) {
+        return;
+    }
+    current_ = attributes_.back();
+    attributes_.pop_back();
+}
+
+void SceneClient::objectInstance(const std::string & handle) {
+    const auto found = objects_.find(handle);
+    if (found == objects_.end()) {
+        warnings_.once("object " + handle, "ObjectInstance names the object " + handle + ", which no ObjectBegin made");
+        return;
+    }
+    instance(found->second, nameFor("instance", "object " + handle), !current_.group.valid());
 }
 
 };  // namespace v3d::moya::ri

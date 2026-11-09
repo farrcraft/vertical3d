@@ -96,6 +96,18 @@ class RIBExportVisitor final : public scene::Visitor {
     /** The name of the light a scene with no light of its own is given. **/
     static constexpr const char* CAMERA_LIGHT = "camera light";
 
+    /** The surface every mesh and curve takes: RI's "matte", which the lights shade. **/
+    static constexpr const char* SURFACE = "matte";
+
+    /** The name of the display a picture kept in the renderer is sent to. **/
+    static constexpr const char* FRAMEBUFFER = "vertical3d";
+
+    /**
+     * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
+     * approximated by. Four keep a circle within 0.05% of its radius.
+     **/
+    static constexpr unsigned int APPROXIMATION_PIECES = 4;
+
     /**
      * Send the camera's light when the scene had none, then the meshes, and close the world
      * block. A render without this renders nothing.
@@ -128,11 +140,6 @@ class RIBExportVisitor final : public scene::Visitor {
     static constexpr float RIB_VERSION = 3.03F;
     /** An identifier attribute that names what follows. **/
     static v3d::render::offline::rib::ParameterList identifier(const std::string& name);
-    /**
-     * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
-     * approximated by. Four keep a circle within 0.05% of its radius.
-     **/
-    static constexpr unsigned int APPROXIMATION_PIECES = 4;
     static std::vector<float> floats(const glm::vec3& value);
 
     /**

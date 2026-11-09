@@ -18,7 +18,8 @@ namespace v3d::moya::kernel::spectrum {
 
 /**
  * The reflectance of an ACEScg colour at the wavelengths a path carries. The colour is clamped to
- * [0, 1], and its spectrum lies in (0, 1). In an RGB build it is the clamped colour.
+ * [0, 1], and its spectrum lies in [0, 1]. A grey of zero or one gives exactly zero or one. In an
+ * RGB build it is the clamped colour.
  **/
 MOYA_KERNEL inline SampledSpectrum reflectance([[maybe_unused]] const RgbTable & table, const glm::vec3 & colour,
     [[maybe_unused]] const SampledWavelengths & wavelengths) {
@@ -37,8 +38,8 @@ MOYA_KERNEL inline SampledSpectrum reflectance([[maybe_unused]] const RgbTable &
 }
 
 /**
- * An ACEScg colour that may exceed one, as a spectrum: the reflectance of the colour halved by its
- * largest channel, scaled back up by twice that channel. Its value at any wavelength is at most
+ * An ACEScg colour that may exceed one, as a spectrum: the reflectance of colour / (2 * largest),
+ * where largest is its largest channel, times 2 * largest. Its value at any wavelength is at most
  * twice the largest channel. A colour with no positive channel gives zero. In an RGB build it is
  * the colour with no channel below zero.
  **/

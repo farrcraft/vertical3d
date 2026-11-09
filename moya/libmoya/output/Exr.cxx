@@ -61,20 +61,30 @@ constexpr float kLinearPrimaries[6][4][2] = {
 /** The suffixes of a channel of several floats, in order. **/
 constexpr const char * const kComponents[4] = { "R", "G", "B", "A" };
 
-/** The channels a part holds, in the order its outputs name them. **/
+/**
+ * The channels a part holds, in the order its outputs name them. OpenEXR keeps one channel of a
+ * name, so two outputs that give the same name in the file are refused.
+ **/
 FileChannels channelsOf(const film::Snapshot & snapshot, const ExrPart & part) {
     if (part.outputs.empty()) {
         throw std::invalid_argument("an EXR part with no outputs");
     }
     FileChannels out;
     std::set<std::string> named;
+    std::set<std::string> inFile;
+    const auto add = [&out, &inFile](const std::string & name, std::uint32_t offset) {
+        if (!inFile.insert(name).second) {
+            throw std::invalid_argument("an EXR part would hold two channels named " + name);
+        }
+        out.emplace_back(name, offset);
+    };
     for (const std::string & output : part.outputs) {
         if (!named.insert(output).second) {
             throw std::invalid_argument("an EXR part holds " + output + " twice");
         }
         if (output == kBeauty) {
             for (std::uint32_t i = 0; i < 3; ++i) {
-                out.emplace_back(kComponents[i], i);
+                add(kComponents[i], i);
             }
             continue;
         }
@@ -88,11 +98,11 @@ FileChannels channelsOf(const film::Snapshot & snapshot, const ExrPart & part) {
         const film::Channel & channel = snapshot.channels[index];
         const std::uint32_t first = snapshot.offsets.at(index);
         if (channel.components == 1) {
-            out.emplace_back(channel.name, first);
+            add(channel.name, first);
             continue;
         }
         for (std::uint32_t i = 0; i < channel.components; ++i) {
-            out.emplace_back(channel.name + "." + kComponents[i], first + i);
+            add(channel.name + "." + kComponents[i], first + i);
         }
     }
     return out;

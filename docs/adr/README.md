@@ -137,7 +137,7 @@ The next record is ADR-0211.
 | [0113](offline/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted | offline |
 | [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted | offline |
 | [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted | offline |
-| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias | proposed | offline |
+| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias | accepted | offline |
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone | accepted | offline, lighting, shaders |
 | [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats | accepted | offline, build, interchange |
 | [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns | accepted | offline, editor, interchange |

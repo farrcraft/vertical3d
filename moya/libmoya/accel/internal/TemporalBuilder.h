@@ -71,6 +71,9 @@ class TemporalBuilder final {
      **/
     std::uint32_t node(std::vector<MovingReference> references, float begin, float end, int depth, int halvings, MovingBinary & out) const;
 
+    /** The box that holds every reference's over the range. **/
+    static LinearBox boundsOf(const std::vector<MovingReference> & references);
+
     /** The best split by centroids, or none when every centroid is at one place. **/
     static bool objectSplit(const std::vector<MovingReference> & references, Split & best);
 

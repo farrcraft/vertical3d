@@ -76,8 +76,10 @@ struct Prototypes {
  *   A group that holds itself would otherwise have no bounds.
  * - an instance that would be deeper in a chain than kernel::geometry::kInstanceDepth. It is still
  *   held where a shorter chain reaches it, and a traversal leaves it out where it is too deep.
- * - an instance of a prototype of a kind not yet traced. Meshes, points and the quadrics are
- *   traced.
+ * - an instance of a subdivision or of curves. Neither kind is traced, so its instances are left
+ *   out.
+ * - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that do
+ *   not add up to the indices, or an index outside the points.
  *
  * An instance whose prototype was removed places nothing. One whose group was removed is in no
  * group, and so is placed by nothing. A transformation, a mesh's points, a point cloud's centres

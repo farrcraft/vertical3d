@@ -67,8 +67,8 @@ meets either side.
 ## Points and quadrics
 
 Points and RI's quadrics are intersected by moya's own kernel code, in
-`kernel/geometry/primitive/Shapes.h`, so every device runs the same tests. Each is tested in its
-own space. A `ShapeHit` gives the distance and the position on the surface.
+`kernel/geometry/primitive/Shapes.h`, so every device runs the same tests. Each is tested in its own
+space. A `ShapeHit` gives the distance and the position on the surface.
 
 - **A round point is a sphere** of half its width about its centre, and **a flat point a disk**
   of the same radius facing the ray, in the plane through its centre. `intersectSphere()` and
@@ -88,10 +88,12 @@ own space. A `ShapeHit` gives the distance and the position on the surface.
   small. `rootsIn()` then isolates each root between the polynomial's turning points, the roots of
   its derivative found the same way, and halves each interval that changes sign. A ray down the
   torus's axis passes through its hole.
-- **The position on a quadric is RI's**: u along the sweep from 0 to 1, and v along the profile.
-  v runs by latitude on a sphere, and by height on a cone, a cylinder or a paraboloid. It runs
-  along the line of a hyperboloid, inwards on a disk, and around the tube of a torus. A
-  hyperboloid's sweep starts at its line's own angle at the hit's height.
+- **The position on a quadric is RI's**: u along the sweep from 0 to 1, and v along the profile. v
+  runs by latitude on a sphere, and by height on a cone, a cylinder or a paraboloid. It runs along
+  the line of a hyperboloid, inwards on a disk, and around the tube of a torus. On a rising
+  hyperboloid, v is the place along the line at the hit's height. On one whose line lies flat, it is
+  the first place from `point1` whose distance from z is the hit's. A hyperboloid's sweep starts at
+  its line's own angle at that place.
 - **`quadricNormal()` gives the geometric normal** from the surface's implicit form.
 
 A quadric's dimensions may each move over the shutter on their own times. `geometry::gather()`
@@ -102,12 +104,13 @@ each keep their own samples.
 ## Leaving a surface
 
 `offsetStart(point, normal)` moves the start of a ray that leaves a surface off it, along the
-geometric normal, so the ray does not meet the surface again where it starts. The normal points
-to the side the ray leaves by, and need not be unit length.
+geometric normal, so the ray does not meet the surface again where it starts. The normal points to
+the side the ray leaves by. It need not be unit length, as only its direction counts. A normal of
+zero, or one with a component that is infinite or not a number, leaves the point where it is.
 
-- **Each coordinate moves by a count of representable floats** in proportion to the normal, so
-  the move grows with the point's distance from the origin, as the hit's rounding does.
-- **Near the origin, where floats are densest, it moves by a fixed fraction of the normal.**
+- **Each coordinate moves by a count of representable floats** in proportion to the unit normal,
+  so the move grows with the point's distance from the origin, as the hit's rounding does.
+- **Near the origin, where floats are densest, it moves by a fixed fraction of the unit normal.**
 
 This is Wächter and Binder's method. A ray that starts at an offset point needs no `start`
 above zero.
@@ -159,8 +162,10 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
     group. A group that holds itself would otherwise have no bounds.
   - an instance that would be deeper in a chain than a hit records. It is still held where a
     shorter chain reaches it, and each traversal leaves it out where it is too deep.
-  - an instance of a prototype of a kind not yet traced. Meshes, points and the quadrics are
-    traced.
+  - an instance of a subdivision or of curves. Neither kind is traced, so its instances are left
+    out.
+  - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that
+    do not add up to the indices, or an index outside the points.
 
   `Prototypes::reports` holds the reports, and the log has them too.
 - **An instance whose prototype was removed places nothing**, and one whose group was removed is
@@ -192,14 +197,13 @@ Background: [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-o
 
 ## Placing the scene
 
-`geometry::flatten(prototypes, time)` places every primitive the prototypes' instances reach as
-it stands at a time, in runs, one run for each chain of instances. Triangles are placed in world
-space. Points and quadrics are held in their own space, each run as a `PlacedShapes` with the
-transformation into it from the world, since a sphere stretched by a transformation is no longer
-a sphere. With no time,
-it places them as they stand when the shutter opens. `geometry::World` holds the result in a
-device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Placed`.
-`flatten(scene, logger)` gathers the scene and places what it gathers.
+`geometry::flatten(prototypes, time)` places every primitive the prototypes' instances reach as it
+stands at a time, in runs, one run for each chain of instances. Triangles are placed in world space.
+Points and quadrics are held in their own space, each run as a `PlacedShapes` with the
+transformation into it from the world, since a sphere stretched by a transformation is no longer a
+sphere. With no time, it places them as they stand when the shutter opens. `geometry::World` holds
+the result in a device's memory, and `view()` gives it to kernel code as a
+`kernel::geometry::Placed`. `flatten(scene, logger)` gathers the scene and places what it gathers.
 
 - **Each instance in the world places its prototype**, and an instance of a group places every
   instance in the group inside its own transformation. Runs follow the instances' indices.
@@ -212,22 +216,21 @@ device's memory, and `view()` gives it to kernel code as a `kernel::geometry::Pl
 
 ## The brute-force traversal
 
-`kernel::geometry::BruteForce` tests every placed primitive for every ray, moving the ray into
-each run of points or quadrics. It is slow, and it is
-the reference every other traversal is compared with. Its `nearest()` keeps the nearest hit
-within the ray's interval, and its `any()` stops at the first. A run hidden from the ray's kind
-is passed over. It traces the triangles as they were placed, so it is right for a ray at the time
-they were placed at.
+`kernel::geometry::BruteForce` tests every placed primitive for every ray, moving the ray into each
+run of points or quadrics. It is slow, and it is the reference every other traversal is compared
+with. Its `nearest()` keeps the nearest hit within the ray's interval, and its `any()` stops at the
+first. A run hidden from the ray's kind is passed over. It traces the triangles as they were placed,
+so it is right for a ray at the time they were placed at.
 
 ## The hit view
 
-The hit view is a picture of what rays hit, which lights nothing. `view::hits(device, scene,
-logger, time, tracer)` traces one camera ray through the centre of each pixel and of the lens, at
-a point over the shutter, through the hierarchy unless the brute-force traversal is asked for.
-The scene is placed at that time, for the brute-force traversal and for each hit's normal and
-face.
+The hit view is a picture of what rays hit, which lights nothing. `view::hits(device, scene, logger,
+time, tracer)` traces one camera ray through the centre of each pixel and of the lens, at a point
+over the shutter, through the hierarchy unless the brute-force traversal is asked for. The scene is
+placed at that time, for the brute-force traversal and for each hit's normal and face.
 `view::writeHits()` writes it as an EXR file of float channels, and `moya --hits` writes the hit
-view of a RIB file.
+view of a RIB file. [CommandLine.md](../manual/moya/CommandLine.md) lists the options `--hits` takes
+and refuses.
 
 | Channel | A pixel whose ray hit | A pixel whose ray met nothing |
 |---|---|---|

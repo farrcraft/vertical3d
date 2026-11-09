@@ -112,9 +112,15 @@ and the generation of that index.
 
 - **An index is used again** once its object is removed, with the next generation. The handle of
   a removed object therefore matches nothing, and every call that takes it refuses it.
-- **A handle no scene gave** has generation zero, and `valid()` is false.
-- **A handle parameter that names a removed object names nothing.** The scene does not clear it,
-  and a structure built from the scene treats it as absent.
+- **A handle no scene gave** has generation zero, and `valid()` is false. `Value::handle({})` is
+  the null handle.
+- **A handle parameter is set to a live object** of one of its targets. `set()` refuses a handle
+  that names no object, as a removed object's does, and one of a kind the parameter does not
+  take.
+- **The null handle sets a parameter that is not an array back to naming nothing**, its
+  fallback. An array of handles names nothing when it is empty, and takes no null handle.
+- **A handle parameter that names an object removed after it was set names nothing.** The scene
+  does not clear it, and a structure built from the scene treats it as absent.
 - **Every object has a name**, unique among the objects of its kind that have not been removed.
   An empty name, or one that another live object of the kind has, throws
   `std::invalid_argument`. A removed object's name is free again at once.

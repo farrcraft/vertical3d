@@ -7,19 +7,17 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/internal/Operands.h>
+#include <api/render/offline/rib/internal/Primitives.h>
 #include <api/render/offline/rib/requests/Basis.h>
 #include <api/type/Checked.h>
 
-#include "Bases.h"
-#include "Declaration.h"
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
 #include "Token.h"
 
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <ios>
@@ -27,132 +25,16 @@
 #include <limits>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
-#include <glm/gtc/type_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::rib {
 
-std::string Reader::position(const Token & token) {
-    return " at line " + std::to_string(token.line()) + ", column " + std::to_string(token.column());
-}
-
-Reader::Reader(const boost::shared_ptr<v3d::log::Logger> & logger) : logger_(logger) {
-}
-
-bool Reader::fail(const std::string & message, const Token & token) {
-    if (error_.empty()) {
-        error_ = message + position(token);
-    }
-    return false;
-}
-
-bool Reader::number(Lexer * lexer, float * value) {
-    const Token token = lexer->next();
-    if (token.kind() != Kind::NUMBER) {
-        return fail("expected a number", token);
-    }
-    *value = token.value();
-    return true;
-}
-
-bool Reader::text(Lexer * lexer, std::string * value) {
-    const Token token = lexer->next();
-    if (token.kind() != Kind::STRING) {
-        return fail("expected a quoted string", token);
-    }
-    *value = token.text();
-    return true;
-}
-
-bool Reader::numbers(Lexer * lexer, unsigned int count, std::vector<float> * out) {
-    const bool bracketed = lexer->peek().kind() == Kind::ARRAY_BEGIN;
-    if (bracketed) {
-        lexer->next();
-    }
-    for (unsigned int i = 0; i < count; i++) {
-        float value = 0.0F;
-        if (!number(lexer, &value)) {
-            return false;
-        }
-        out->push_back(value);
-    }
-    if (bracketed) {
-        const Token token = lexer->next();
-        if (token.kind() != Kind::ARRAY_END) {
-            return fail("expected ']'", token);
-        }
-    }
-    return true;
-}
-
-bool Reader::matrix(Lexer * lexer, glm::mat4x4 * out) {
-    std::vector<float> values;
-    if (!numbers(lexer, 16, &values)) {
-        return false;
-    }
-    // read in RIB's order with no transpose, as ParameterList::matrix explains
-    *out = glm::make_mat4(values.data());
-    return true;
-}
-
-bool Reader::basis(Lexer * lexer, requests::Basis::Matrix * matrix, unsigned int * step) {
-    const Token token = lexer->peek();
-    if (token.kind() == Kind::STRING) {
-        lexer->next();
-        if (!namedBasis(token.text(), matrix)) {
-            return fail("expected a basis RI names, or sixteen numbers", token);
-        }
-    } else {
-        std::vector<float> values;
-        if (!numbers(lexer, 16, &values)) {
-            return false;
-        }
-        std::copy(values.begin(), values.end(), matrix->begin());
-    }
-    const Token stepped = lexer->peek();
-    float value = 0.0F;
-    if (!number(lexer, &value)) {
-        return false;
-    }
-    const std::optional<uint32_t> count = v3d::type::toCount(value, 4);
-    if (!count || *count == 0) {
-        return fail("expected a step from 1 to 4", stepped);
-    }
-    *step = *count;
-    return true;
-}
-
-bool Reader::counts(Lexer * lexer, std::vector<unsigned int> * out) {
-    const Token open = lexer->next();
-    if (open.kind() != Kind::ARRAY_BEGIN) {
-        return fail("expected '['", open);
-    }
-    for (;;) {
-        const Token token = lexer->next();
-        if (token.kind() == Kind::ARRAY_END) {
-            return true;
-        }
-        const std::optional<uint32_t> count = token.kind() == Kind::NUMBER ?
-            v3d::type::toCount(token.value(), std::numeric_limits<uint32_t>::max()) : std::nullopt;
-        if (!count) {
-            return fail("expected a count", token);
-        }
-        out->push_back(*count);
-    }
-}
-
-void Reader::skipArray(Lexer * lexer) {
-    lexer->next();  // the opening bracket
-    for (;;) {
-        const Token token = lexer->next();
-        if (token.kind() == Kind::ARRAY_END || token.kind() == Kind::END) {
-            return;
-        }
-    }
+Reader::Reader(const boost::shared_ptr<v3d::log::Logger> & logger) : logger_(logger), operands_(logger) {
 }
 
 void Reader::skipArguments(Lexer * lexer) {
@@ -163,85 +45,6 @@ void Reader::skipArguments(Lexer * lexer) {
         }
         lexer->next();
     }
-}
-
-bool Reader::values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,
-    const std::string & name, std::vector<float> * floats, std::vector<std::string> * strings) {
-    if (lexer->peek().kind() == Kind::ARRAY_BEGIN) {
-        lexer->next();
-        for (;;) {
-            const Token token = lexer->next();
-            if (token.kind() == Kind::ARRAY_END) {
-                return true;
-            }
-            if (token.kind() == Kind::NUMBER) {
-                floats->push_back(token.value());
-            } else if (token.kind() == Kind::STRING) {
-                strings->push_back(token.text());
-            } else {
-                return fail("unterminated array for parameter '" + name + "'", token);
-            }
-        }
-    }
-
-    // a bare value is not self-delimiting: only the declaration's type says how much of
-    // what follows belongs to it
-    const unsigned int elements = declaration.elements(vertices);
-    if (elements == 0) {
-        return fail("parameter '" + name + "' is varying or vertex and carries no array, so its length is unknowable",
-            lexer->peek());
-    }
-    const unsigned int wanted = elements * declaration.count();
-    if (declaration.type() == Declaration::Type::STRING) {
-        for (unsigned int i = 0; i < wanted; i++) {
-            std::string value;
-            if (!text(lexer, &value)) {
-                return false;
-            }
-            strings->push_back(value);
-        }
-        return true;
-    }
-    return numbers(lexer, wanted * declaration.floats(), floats);
-}
-
-bool Reader::parameters(Lexer * lexer, unsigned int vertices, ParameterList * list) {
-    while (lexer->peek().kind() == Kind::STRING) {
-        const Token token = lexer->next();
-        std::string name;
-        Declaration declaration;
-        if (!declarations_.resolve(token.text(), &name, &declaration)) {
-            if (lexer->peek().kind() != Kind::ARRAY_BEGIN) {
-                return fail("undeclared parameter '" + name + "' carries no array to bound it", token);
-            }
-            // a bracketed array is self-delimiting, so an undeclared name is recoverable
-            skipArray(lexer);
-            if (reported_.insert("parameter " + name).second) {
-                logger_->get()->warn("RIB parameter '{}' was not declared and was skipped", name);
-            }
-            continue;
-        }
-
-        std::vector<float> floats;
-        std::vector<std::string> strings;
-        if (!values(lexer, declaration, vertices, name, &floats, &strings)) {
-            return false;
-        }
-
-        // check the length when it is known: an array that disagrees with its declaration
-        // is an error in the scene
-        if (declaration.elements(vertices) != 0 && declaration.type() != Declaration::Type::STRING) {
-            const std::size_t expected = static_cast<std::size_t>(declaration.elements(vertices)) *
-                declaration.count() * declaration.floats();
-            if (floats.size() != expected && reported_.insert("length " + name).second) {
-                logger_->get()->warn("RIB parameter '{}' carries {} values where its declaration asks for {}",
-                    name, floats.size(), expected);
-            }
-        }
-
-        list->add(name, declaration, floats, strings);
-    }
-    return true;
 }
 
 Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -261,7 +64,7 @@ Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Han
         }
         std::string first;
         ParameterList list;
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
+        if (!operands_.text(lexer, &first) || !operands_.parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
         (handler->*entry.forward)(first, list);
@@ -281,24 +84,24 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
     std::string second;
 
     if (name == "version") {
-        if (!number(lexer, &arg1)) {
+        if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;
         }
         handler->version(arg1);
         return Result::Handled;
     }
     if (name == "Declare") {
-        if (!text(lexer, &first) || !text(lexer, &second)) {
+        if (!operands_.text(lexer, &first) || !operands_.text(lexer, &second)) {
             return Result::Failed;
         }
-        if (!declarations_.declare({.name = first, .type = second})) {
+        if (!operands_.declare({.name = first, .type = second})) {
             logger_->get()->warn("RIB declaration of '{}' does not name a type", first);
         }
         handler->declare({.name = first, .type = second});
         return Result::Handled;
     }
     if (name == "Format") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2) || !operands_.number(lexer, &arg3)) {
             return Result::Failed;
         }
         // a side that formatSide() refuses skips the request. A side of zero or less arrives
@@ -326,28 +129,28 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
     float arg4 = 0.0F;
 
     if (name == "FrameAspectRatio") {
-        if (!number(lexer, &arg1)) {
+        if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;
         }
         handler->frameAspectRatio(arg1);
         return Result::Handled;
     }
     if (name == "ScreenWindow") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2) || !operands_.number(lexer, &arg3) || !operands_.number(lexer, &arg4)) {
             return Result::Failed;
         }
         handler->screenWindow({.left = arg1, .right = arg2, .bottom = arg3, .top = arg4});
         return Result::Handled;
     }
     if (name == "CropWindow") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2) || !operands_.number(lexer, &arg3) || !operands_.number(lexer, &arg4)) {
             return Result::Failed;
         }
         handler->cropWindow({.xmin = arg1, .xmax = arg2, .ymin = arg3, .ymax = arg4});
         return Result::Handled;
     }
     if (name == "Clipping") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2)) {
             return Result::Failed;
         }
         handler->clipping({.hither = arg1, .yon = arg2});
@@ -367,17 +170,17 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
     ParameterList list;
 
     if (name == "Display") {
-        if (!text(lexer, &first) || !text(lexer, &second) || !text(lexer, &third)) {
+        if (!operands_.text(lexer, &first) || !operands_.text(lexer, &second) || !operands_.text(lexer, &third)) {
             return Result::Failed;
         }
-        if (!parameters(lexer, 1, &list)) {
+        if (!operands_.parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
         handler->display({.name = first, .type = second, .mode = third}, list);
         return Result::Handled;
     }
     if (name == "FrameBegin") {
-        if (!number(lexer, &arg1)) {
+        if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;
         }
         const std::optional<int32_t> frame = v3d::type::toInteger(arg1, {.minimum = -2000000000, .maximum = 2000000000});
@@ -409,14 +212,14 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
             handler->depthOfField({.fstop = std::numeric_limits<float>::infinity(), .focalLength = 0.0F, .focalDistance = 0.0F});
             return Result::Handled;
         }
-        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2) || !operands_.number(lexer, &arg3)) {
             return Result::Failed;
         }
         handler->depthOfField({.fstop = arg1, .focalLength = arg2, .focalDistance = arg3});
         return Result::Handled;
     }
     if (name == "Shutter") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2)) {
             return Result::Failed;
         }
         handler->shutter({.open = arg1, .close = arg2});
@@ -434,14 +237,14 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
     std::string first;
 
     if (name == "PixelSamples") {
-        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
+        if (!operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2)) {
             return Result::Failed;
         }
         handler->pixelSamples(glm::uvec2(film::sampleCount(arg1), film::sampleCount(arg2)));
         return Result::Handled;
     }
     if (name == "PixelFilter") {
-        if (!text(lexer, &first) || !number(lexer, &arg1) || !number(lexer, &arg2)) {
+        if (!operands_.text(lexer, &first) || !operands_.number(lexer, &arg1) || !operands_.number(lexer, &arg2)) {
             return Result::Failed;
         }
         film::Filter filter = film::Filter::Gaussian;
@@ -461,7 +264,7 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
         return Result::Handled;
     }
     if (name == "PixelVariance") {
-        if (!number(lexer, &arg1)) {
+        if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;
         }
         handler->pixelVariance(arg1);
@@ -516,35 +319,35 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
         return Result::Handled;
     }
     if (name == "Transform") {
-        if (!matrix(lexer, &transformation)) {
+        if (!operands_.matrix(lexer, &transformation)) {
             return Result::Failed;
         }
         handler->transform(transformation);
         return Result::Handled;
     }
     if (name == "ConcatTransform") {
-        if (!matrix(lexer, &transformation)) {
+        if (!operands_.matrix(lexer, &transformation)) {
             return Result::Failed;
         }
         handler->concatTransform(transformation);
         return Result::Handled;
     }
     if (name == "Translate") {
-        if (!numbers(lexer, 3, &triple)) {
+        if (!operands_.numbers(lexer, 3, &triple)) {
             return Result::Failed;
         }
         handler->translate(triple[0], triple[1], triple[2]);
         return Result::Handled;
     }
     if (name == "Rotate") {
-        if (!numbers(lexer, 4, &triple)) {
+        if (!operands_.numbers(lexer, 4, &triple)) {
             return Result::Failed;
         }
         handler->rotate(triple[0], glm::vec3(triple[1], triple[2], triple[3]));
         return Result::Handled;
     }
     if (name == "Scale") {
-        if (!numbers(lexer, 3, &triple)) {
+        if (!operands_.numbers(lexer, 3, &triple)) {
             return Result::Failed;
         }
         handler->scale(triple[0], triple[1], triple[2]);
@@ -552,7 +355,7 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
     }
     if (name == "CoordinateSystem" || name == "CoordSysTransform") {
         std::string space;
-        if (!text(lexer, &space)) {
+        if (!operands_.text(lexer, &space)) {
             return Result::Failed;
         }
         if (name == "CoordinateSystem") {
@@ -573,7 +376,7 @@ Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Ha
         std::vector<float> times;
         const Token open = lexer->next();
         if (open.kind() != Kind::ARRAY_BEGIN) {
-            fail("expected '['", open);
+            operands_.fail("expected '['", open);
             return Result::Failed;
         }
         while (lexer->peek().kind() == Kind::NUMBER) {
@@ -581,7 +384,7 @@ Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Ha
         }
         const Token close = lexer->next();
         if (close.kind() != Kind::ARRAY_END) {
-            fail("expected ']'", close);
+            operands_.fail("expected ']'", close);
             return Result::Failed;
         }
         motion_ = true;
@@ -605,21 +408,21 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
     std::vector<float> triple;
 
     if (name == "Color") {
-        if (!numbers(lexer, 3, &triple)) {
+        if (!operands_.numbers(lexer, 3, &triple)) {
             return Result::Failed;
         }
         handler->color(glm::vec3(triple[0], triple[1], triple[2]));
         return Result::Handled;
     }
     if (name == "Opacity") {
-        if (!numbers(lexer, 3, &triple)) {
+        if (!operands_.numbers(lexer, 3, &triple)) {
             return Result::Failed;
         }
         handler->opacity(glm::vec3(triple[0], triple[1], triple[2]));
         return Result::Handled;
     }
     if (name == "ShadingRate") {
-        if (!number(lexer, &arg1)) {
+        if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;
         }
         handler->shadingRate(arg1);
@@ -627,7 +430,7 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
     }
     if (name == "Basis") {
         requests::Basis request;
-        if (!basis(lexer, &request.u, &request.ustep) || !basis(lexer, &request.v, &request.vstep)) {
+        if (!operands_.basis(lexer, &request.u, &request.ustep) || !operands_.basis(lexer, &request.v, &request.vstep)) {
             return Result::Failed;
         }
         handler->basis(request);
@@ -645,10 +448,10 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
     ParameterList list;
 
     if (name == "LightSource" || name == "AreaLightSource") {
-        if (!text(lexer, &first) || !handle(lexer, &second)) {
+        if (!operands_.text(lexer, &first) || !operands_.handle(lexer, &second)) {
             return Result::Failed;
         }
-        if (!parameters(lexer, 1, &list)) {
+        if (!operands_.parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
         if (name == "AreaLightSource") {
@@ -660,7 +463,7 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
     }
     if (name == "Illuminate") {
         float on = 0.0F;
-        if (!handle(lexer, &first) || !number(lexer, &on)) {
+        if (!operands_.handle(lexer, &first) || !operands_.number(lexer, &on)) {
             return Result::Failed;
         }
         handler->illuminate(first, on != 0.0F);
@@ -672,8 +475,8 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         std::string filter;
         float swidth = 0.0F;
         float twidth = 0.0F;
-        if (!text(lexer, &first) || !text(lexer, &second) || !text(lexer, &swrap) || !text(lexer, &twrap) ||
-            !text(lexer, &filter) || !number(lexer, &swidth) || !number(lexer, &twidth) || !parameters(lexer, 1, &list)) {
+        if (!operands_.text(lexer, &first) || !operands_.text(lexer, &second) || !operands_.text(lexer, &swrap) || !operands_.text(lexer, &twrap) ||
+            !operands_.text(lexer, &filter) || !operands_.number(lexer, &swidth) || !operands_.number(lexer, &twidth) || !operands_.parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
         handler->makeTexture({.picture = first, .texture = second, .swrap = swrap, .twrap = twrap, .filter = filter, .swidth = swidth, .twidth = twidth}, list);
@@ -682,28 +485,13 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
     return Result::Unhandled;
 }
 
-bool Reader::handle(Lexer * lexer, std::string * value) {
-    // a number or a string, and a string to the handler either way
-    const Token token = lexer->peek();
-    if (token.kind() == Kind::NUMBER) {
-        lexer->next();
-        const std::optional<int32_t> number = v3d::type::toInteger(token.value(), {.minimum = -2000000000, .maximum = 2000000000});
-        if (!number) {
-            return fail("expected a handle", token);
-        }
-        *value = std::to_string(*number);
-        return true;
-    }
-    return text(lexer, value);
-}
-
 /**
  * Reads the instancing requests. An object's handle is a number or a string, as a light's is.
  **/
 Reader::Result Reader::objectRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     if (name == "ObjectBegin" || name == "ObjectInstance") {
         std::string value;
-        if (!handle(lexer, &value)) {
+        if (!operands_.handle(lexer, &value)) {
             return Result::Failed;
         }
         if (name == "ObjectBegin") {
@@ -718,6 +506,14 @@ Reader::Result Reader::objectRequest(const std::string & name, Lexer * lexer, Ha
         return Result::Handled;
     }
     return Result::Unhandled;
+}
+
+Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    if (!internal::Primitives::recognises(name)) {
+        return Result::Unhandled;
+    }
+    internal::Primitives primitives(&operands_);
+    return primitives.read(name, lexer, handler) ? Result::Handled : Result::Failed;
 }
 
 bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -768,13 +564,12 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
 }
 
 bool Reader::read(std::istream & stream, Handler * handler) {
-    error_.clear();
+    operands_.reset();
     unrecognised_.clear();
     unsupported_.clear();
     reported_.clear();
     motion_ = false;
     motionPrimitives_ = 0;
-    declarations_ = Declarations();
 
     Lexer lexer(stream);
     for (;;) {
@@ -783,7 +578,7 @@ bool Reader::read(std::istream & stream, Handler * handler) {
             break;
         }
         if (token.kind() != Kind::IDENTIFIER) {
-            fail("expected a request", token);
+            operands_.fail("expected a request", token);
             break;
         }
         if (!request(token.text(), &lexer, handler)) {
@@ -791,15 +586,15 @@ bool Reader::read(std::istream & stream, Handler * handler) {
         }
     }
 
-    if (error_.empty() && !lexer.error().empty()) {
-        error_ = lexer.error();
+    if (!lexer.error().empty()) {
+        operands_.stop(lexer.error());
     }
 
     for (const std::string & name : unrecognised_) {
         logger_->get()->warn("RIB request '{}' is not implemented and was skipped", name);
     }
-    if (!error_.empty()) {
-        logger_->get()->error("RIB parse failed - {}", error_);
+    if (!operands_.error().empty()) {
+        logger_->get()->error("RIB parse failed - {}", operands_.error());
         return false;
     }
     return true;
@@ -810,15 +605,16 @@ bool Reader::read(const std::string & path, Handler * handler) {
     // binary or gzipped RIB. The lexer treats a carriage return as whitespace.
     std::ifstream file(path.c_str(), std::ios::binary);
     if (!file.is_open()) {
-        error_ = "could not open '" + path + "'";
-        logger_->get()->error("RIB read failed - {}", error_);
+        operands_.reset();
+        operands_.stop("could not open '" + path + "'");
+        logger_->get()->error("RIB read failed - {}", operands_.error());
         return false;
     }
     return read(file, handler);
 }
 
 const std::string & Reader::error() const {
-    return error_;
+    return operands_.error();
 }
 
 const std::vector<std::string> & Reader::unrecognised() const {

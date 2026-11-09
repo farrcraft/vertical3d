@@ -654,7 +654,8 @@ RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
     unsigned int points = 0;
     if (const std::optional<v3d::render::offline::rib::requests::PointsPolygons> request = Converter::pointsPolygons(npolys, nverts, verts, &points)) {
-        handler().pointsPolygons(*request, converter().parameters(n, tokens, parms, points));
+        const unsigned int corners = static_cast<unsigned int>(request->indices.size());
+        handler().pointsPolygons(*request, converter().meshParameters(n, tokens, parms, points, corners));
     }
 }
 
@@ -832,7 +833,8 @@ RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[],
     if (const std::optional<v3d::render::offline::rib::requests::SubdivisionMesh> request =
             Converter::subdivisionMesh(mask, nf, nverts, verts,
                 {.ntags = ntags, .tags = tags, .numargs = numargs, .intargs = intargs, .floatargs = floatargs}, &points)) {
-        handler().subdivisionMesh(*request, converter().parameters(n, tokens, parms, points));
+        const unsigned int corners = static_cast<unsigned int>(request->indices.size());
+        handler().subdivisionMesh(*request, converter().meshParameters(n, tokens, parms, points, corners));
     }
 }
 

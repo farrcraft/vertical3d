@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/internal/Operands.h>
 
 #include <cstdint>
 #include <iosfwd>
@@ -14,15 +14,11 @@
 #include <string>
 #include <vector>
 
-#include "Declaration.h"
-#include "Declarations.h"
 #include "Handler.h"
 #include "Lexer.h"
-#include "Parameters.h"
 #include "Token.h"
 
 #include <boost/shared_ptr.hpp>
-#include <glm/mat4x4.hpp>
 
 /**
  * RIB: the lexer and the reader of an ASCII RIB stream, the handler a renderer implements, the
@@ -72,8 +68,6 @@ class Reader final {
  private:
     typedef Token::Kind Kind;
 
-    static std::string position(const Token & token);
-
     /**
      * The result of offering a request name to one group of requests.
      *
@@ -108,49 +102,18 @@ class Reader final {
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result objectRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    /** The geometric primitives, which internal::Primitives reads. **/
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
-    Result curvesRequest(Lexer * lexer, Handler * handler);
-    Result subdivisionRequest(Lexer * lexer, Handler * handler);
-    Result quadricRequest(const std::string & name, Lexer * lexer, Handler * handler);
 
+    /** Skip an unrecognised request's arguments, up to the next request's name. **/
     static void skipArguments(Lexer * lexer);
 
-    /**
-     * The token-value pairs that close a request.
-     *
-     * @param vertices how many vertices the primitive has, or 0 when the count is the
-     *        length of "P" and is not known until the list has been read. With 0, an
-     *        unbracketed varying or vertex parameter has no known length and ends the parse.
-     **/
-    bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
-    /** One direction of a Basis request: a name or sixteen numbers, then a step from 1 to 4. **/
-    bool basis(Lexer * lexer, requests::Basis::Matrix * matrix, unsigned int * step);
-    bool values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,
-        const std::string & name, std::vector<float> * floats, std::vector<std::string> * strings);
-    static void skipArray(Lexer * lexer);
-
-    bool number(Lexer * lexer, float * value);
-    /**
-     * A light's or an object's handle, which RIB 3.03 writes as a number and later RIB writes as
-     * a string.
-     **/
-    bool handle(Lexer * lexer, std::string * value);
-    bool text(Lexer * lexer, std::string * value);
-    bool numbers(Lexer * lexer, unsigned int count, std::vector<float> * out);
-    bool matrix(Lexer * lexer, glm::mat4x4 * out);
-    bool counts(Lexer * lexer, std::vector<unsigned int> * out);
-    /** A bracketed array of numbers of any length. **/
-    bool floatArray(Lexer * lexer, std::vector<float> * out);
-    /** A bracketed array of quoted strings of any length. **/
-    bool strings(Lexer * lexer, std::vector<std::string> * out);
-
-    bool fail(const std::string & message, const Token & token);
-
     boost::shared_ptr<v3d::log::Logger> logger_;
-    Declarations declarations_;
-    std::string error_;
+    /** Reads each request's arguments, and holds what the stream declared and what stopped it. **/
+    internal::Operands operands_;
     std::vector<std::string> unrecognised_;
     std::vector<std::string> unsupported_;
+    /** The requests and filters already reported, so each is reported once. **/
     std::set<std::string> reported_;
     /** Whether a motion block is open, and how many primitives it has held. **/
     bool motion_ = false;

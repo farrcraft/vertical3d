@@ -96,16 +96,26 @@ describes the scene it built.
 
 ### 3. Geometry and ray traversal
 
-[MoyaGeometry](../plans/MoyaGeometry.md) is its plan.
+In progress. [MoyaGeometry](../plans/MoyaGeometry.md) is its plan, and
+[Traversal.md](../offline/Traversal.md) describes what it has built.
 
-- **The BVH.** Four or eight children per node, traversed with AVX2 or AVX-512. Built by binned
-  surface area with spatial splits. Motion over several segments, and nested instances.
+Done:
+
+- **The BVH.** Eight children per node. Built by binned surface area with spatial splits. Motion
+  over several segments, and nested instances.
+- **The CPU traversal**, built once for each of SSE4.2, AVX2 and AVX-512, each a library of its
+  own, with the newest the processor runs chosen when the device is made.
 - **Triangles**, intersected watertight, and ray starts offset by Wächter and Binder's method.
-- **Curves**, round and flat, in every RI basis. **Points**, and the RI quadrics.
+- **Points**, and the RI quadrics.
+- **Transformation and deformation motion**: instances and geometry given at several times
+  inside a motion block.
+
+Open:
+
+- **Curves**, round and flat, in every RI basis.
 - **Subdivision surfaces** through OpenSubdiv, with creases and corners.
 - **Tessellation** to an edge length in pixels, and displacement of the tessellated surface
   within a displacement bound.
-- **Deformation motion**: geometry given at several times inside a motion block.
 
 ### 4. The path tracer
 

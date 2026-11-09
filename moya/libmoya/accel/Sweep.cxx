@@ -29,10 +29,6 @@ namespace v3d::moya::accel {
 
 namespace {
 
-/** Simpson's rule over three points: the weight of the middle one, and the sum of the weights. **/
-constexpr float kMiddle = 4.0F;
-constexpr float kWeights = 6.0F;
-
 /** The float at or below a double. **/
 float down(double value) {
     const auto out = static_cast<float>(value);

@@ -26,12 +26,12 @@ as `"intensity" [0.5]`.
   name, give the type in the name, as in `"uniform float frequency" [6]`, or declare it once with
   `Declare`. A name with no type is skipped with a warning, and a shader then uses its default.
 - A type in the name is a storage class, which may be left out, then a type. The classes are
-  `constant`, `uniform`, `varying` and `vertex`. The types are `float`, `integer` (or `int`),
-  `string`, `color`, `point`, `vector`, `normal`, `hpoint` and `matrix`. A type may end with a
-  count in brackets, such as `float[2]`.
-- **Bracket the values of a varying or vertex parameter**, such as `"P"`. moya finds the number
-  of vertices of a polygon from the length of `"P"`, so an unbracketed value there ends the
-  request's parameters.
+  `constant`, `uniform`, `varying`, `vertex` and `facevarying`. The types are `float`,
+  `integer` (or `int`), `string`, `color`, `point`, `vector`, `normal`, `hpoint` and `matrix`. A
+  type may end with a count in brackets, such as `float[2]`.
+- **Bracket the values of a varying, vertex or facevarying parameter**, such as `"P"`. moya
+  finds the number of vertices of a polygon from the length of `"P"`, so an unbracketed value
+  there ends the request's parameters.
 - A parameter a request does not use is ignored. `Display` logs each parameter it is given.
 
 The names with known types:

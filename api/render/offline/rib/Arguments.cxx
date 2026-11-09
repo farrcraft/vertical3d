@@ -32,6 +32,12 @@ void append(const void* values, unsigned int count, std::vector<float>* floats) 
 void arguments(const Declarations & declarations, int count,
     const char* const* tokens, const void* const* values, unsigned int vertices,
     ParameterList* list, std::vector<std::string>* unresolved) {
+    arguments(declarations, count, tokens, values, vertices, vertices, list, unresolved);
+}
+
+void arguments(const Declarations & declarations, int count,
+    const char* const* tokens, const void* const* values, unsigned int vertices, unsigned int corners,
+    ParameterList* list, std::vector<std::string>* unresolved) {
     if (tokens == nullptr || values == nullptr || list == nullptr) {
         return;
     }
@@ -52,7 +58,7 @@ void arguments(const Declarations & declarations, int count,
             continue;
         }
 
-        const unsigned int elements = declaration.elements(vertices) * declaration.count();
+        const unsigned int elements = declaration.elements(vertices, corners) * declaration.count();
         std::vector<float> floats;
         std::vector<std::string> strings;
         if (declaration.type() == Declaration::Type::STRING) {

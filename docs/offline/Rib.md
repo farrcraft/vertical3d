@@ -21,6 +21,9 @@ the reader and the handler.
 
 ### Rules
 
+- **`rib::Reader` takes each request's name and calls the handler.** It reads a request's
+  arguments through `rib::internal::Operands`, which holds the stream's declarations and the
+  first error, and the geometric primitives through `rib::internal::Primitives`.
 - **Only ASCII RIB is read.** A binary or gzipped stream is rejected with a message naming
   which it is. A stream is read from where it stands rather than from its beginning.
 - **A request whose number cannot be used is skipped with a warning.** `RiFormat` and
@@ -42,6 +45,14 @@ the reader and the handler.
 - **A parameter is typed by a declaration, or it is dropped.** The reader declares RI's
   standard names, including `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader`
   and `texture`, and nothing else.
+- **A declaration's storage class is `constant`, `uniform`, `varying`, `vertex` or
+  `facevarying`**, and one with none is `uniform`. A constant or uniform parameter holds one
+  element. A varying or vertex one holds an element per vertex. A facevarying one holds an
+  element per corner of each face, which for a mesh is the length of its indices, and for any
+  other primitive is its vertex count.
+- **The C interface counts a facevarying array by its faces' corners.** `RiPointsPolygons` and
+  `RiSubdivisionMesh` read one element per index of their faces, and their varying and vertex
+  arrays one element per point the faces index.
 - **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
   array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
   `RtFloat`s.
@@ -58,8 +69,9 @@ the reader and the handler.
   with no context begun does nothing.
 - **A predefined space cannot be saved over.** The camera sets them, so the hiders read the
   camera the scene set up. `RiCoordinateSystem` with one of them is logged and saves nothing.
-- **A quadric's varying parameters hold four values**, one at each corner of its parameter
-  space, as RI defines them. A uniform one holds one. The reader reads the seven quadrics alike.
+- **A quadric's varying and facevarying parameters hold four values**, one at each corner of its
+  parameter space, as RI defines them. A uniform one holds one. The reader reads the seven
+  quadrics alike.
 - **`Points` carries no count.** The count is the length of `"P"`, or of `"Pz"`, as a
   `Polygon`'s is.
 - **A `SubdivisionMesh`'s tags each take two or three counts**, of integers, of floats and,
@@ -127,7 +139,15 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **Each primitive is a geometry prototype and an instance of it**, at the current
   transformation. `Polygon` and `PointsPolygons` are meshes, and the other primitives have
   kinds of their own. The request's parameters that the kind does not hold become primvars, with
-  their RIB storage class. `"P"` comes from `"Pw"` divided out when there is no `"P"`.
+  their RIB storage class, so a `facevarying` one is a facevarying primvar. `"P"` comes from
+  `"Pw"` divided out when there is no `"P"`.
+- **A curve or a point cloud takes `"width"` and `"constantwidth"` as its kind's widths**, and
+  neither becomes a primvar. A cubic curve takes the basis in force, and a basis RI does not name
+  is logged and taken as Bezier.
+- **A subdivision mesh keeps a `catmull-clark`, `loop` or `bilinear` scheme.** Another scheme
+  is logged and subdivided by catmull-clark. The tags `crease`, `corner`, `hole` and
+  `interpolateboundary` become the mesh's parameters, and another tag is logged. A mesh with no
+  `interpolateboundary` has a boundary rule of none.
 - **A primitive repeated inside a motion block deforms.** Each later pose adds a sample, at the
   block's next time, to each parameter of the first pose's prototype that may move. A pose whose
   points differ in number keeps the first pose alone, and is logged.
@@ -159,6 +179,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   is logged.
 - **A new world replaces the one before it.** `WorldBegin` removes every object the world before
   it made, and keeps the options, the camera and the outputs.
+- **The client's jobs are classes of their own**, in `moya/libmoya/ri/internal`. `Shapes`
+  turns each primitive request into a scene kind and its parameters. `Deforming` takes a
+  deforming primitive's later poses. `Lights` makes the lights and records what each lit.
+  `Objects` makes the world's objects and names them.
 - **`moya --scene`** reads a file through the client and prints the scene's description after
   each frame, in place of rendering it.
 

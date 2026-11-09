@@ -74,7 +74,7 @@ sigmoid(c0 λ² + c1 λ + c2), whose colour under ACES white is the RGB colour.
   to [0, 1]. It interpolates trilinearly within one of three cubes, chosen by the colour's
   largest channel. A grey is a constant spectrum, and its coefficients are found exactly.
 - **`reflectance(table, colour, wavelengths)`** is a surface's colour as a spectrum. It lies in
-  (0, 1) at every wavelength.
+  [0, 1] at every wavelength, and a grey of zero or one gives exactly zero or one.
 - **`unbounded(...)`** is a colour that may exceed one: the reflectance of the colour divided by
   twice its largest channel, scaled back up by that. A colour with no positive channel is zero.
 - **`illuminant(...)`** is a light's colour: its unbounded spectrum times ACES white. A light of

@@ -14,8 +14,10 @@
 #include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,6 +27,9 @@
 #include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace cpu = v3d::moya::device::cpu;
@@ -32,12 +37,6 @@ namespace geometry = v3d::moya::geometry;
 namespace kernel = v3d::moya::kernel;
 namespace view = v3d::moya::view;
 typedef v3d::moya::device::CpuDevice CpuDevice;
-
-/** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
-float next(std::uint32_t & seed) {
-    seed = (seed * 1664525U) + 1013904223U;
-    return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
-}
 
 /** Triangles of three points each, as one mesh placed in the world by one instance. **/
 geometry::Prototypes placed(const std::vector<glm::vec3> & points) {
@@ -54,30 +53,9 @@ geometry::Prototypes placed(const std::vector<glm::vec3> & points) {
     return prototypes;
 }
 
-/** Small triangles scattered through a cube of side 100. **/
+/** Small triangles scattered through a cube of side 100, each up to 4 across. **/
 std::vector<glm::vec3> scattered(std::size_t count, std::uint32_t seed) {  // NOLINT(bugprone-easily-swappable-parameters)
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const glm::vec3 centre { next(seed) * 100.0F, next(seed) * 100.0F, next(seed) * 100.0F };
-        for (int corner = 0; corner < 3; ++corner) {
-            points.push_back(centre + (glm::vec3 { next(seed), next(seed), next(seed) } * 4.0F));
-        }
-    }
-    return points;
-}
-
-/** Long thin triangles along a diagonal, whose boxes overlap far more than they do. **/
-std::vector<glm::vec3> slivers(std::size_t count) {
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const float offset = static_cast<float>(i) * (90.0F / static_cast<float>(count));
-        points.emplace_back(offset, 0.0F, 0.0F);
-        points.emplace_back(100.0F, 100.0F - offset, 0.0F);
-        points.emplace_back(100.0F, 100.0F - offset, 1.0F);
-    }
-    return points;
+    return tracing::scattered(count, 100.0F, 4.0F, seed);
 }
 
 /** A closed box of side 100 in twelve triangles, which a ray from inside always hits. **/
@@ -117,20 +95,11 @@ std::vector<kernel::geometry::Ray> rays(std::size_t count, std::uint32_t seed) {
     return out;
 }
 
-/** The instruction sets this processor runs, oldest first. **/
-std::vector<cpu::Isa> runnable() {
-    std::vector<cpu::Isa> out;
-    for (const cpu::Isa isa : { cpu::Isa::Sse42, cpu::Isa::Avx2, cpu::Isa::Avx512 }) {
-        if (isa <= v3d::moya::device::newestIsa()) {
-            out.push_back(isa);
-        }
-    }
-    return out;
-}
-
 /**
  * How many rays the hierarchy at an instruction set answers otherwise than the brute-force
- * traversal. Two hits at one distance are the same answer, whichever primitive each names.
+ * traversal. An answer is a miss, or a hit on one primitive through one chain at one distance.
+ * Both traverse one mesh placed by one instance that does not move it, so a hit's distance is the
+ * same to the bit.
  **/
 std::size_t disagreements(const geometry::Prototypes & prototypes, const std::vector<kernel::geometry::Ray> & list, cpu::Isa isa) {
     CpuDevice device(0, isa);
@@ -140,8 +109,9 @@ std::size_t disagreements(const geometry::Prototypes & prototypes, const std::ve
     for (std::size_t i = 0; i < list.size(); ++i) {
         const kernel::geometry::Hit & want = reference.nearest[i];
         const kernel::geometry::Hit & got = traced.nearest[i];
-        const bool same = want.found() == got.found() && (!want.found() || (want.distance == got.distance && got.depth == want.depth &&
-            got.instances[0] == want.instances[0] && (got.primitive == want.primitive || got.distance == want.distance)));
+        const bool same = want.found() == got.found() &&
+            (!want.found() || (want.distance == got.distance && want.primitive == got.primitive && want.depth == got.depth &&
+                std::equal(want.instances, want.instances + want.depth, got.instances)));
         if (!same || reference.any[i] != traced.any[i]) {
             ++out;
         }
@@ -153,7 +123,7 @@ std::size_t disagreements(const geometry::Prototypes & prototypes, const std::ve
 // nearest hit, at every instruction set this processor runs
 BOOST_AUTO_TEST_CASE(moya_traversal_the_hierarchy_finds_the_oracles_nearest_hit_test) {
     const std::vector<std::pair<std::string, std::vector<glm::vec3>>> scenes { { "scattered", scattered(4000, 9) },
-        { "slivers", slivers(300) }, { "closed box", closedBox() }, { "one triangle", scattered(1, 4) } };
+        { "slivers", slivers(300, 1.0F) }, { "closed box", closedBox() }, { "one triangle", scattered(1, 4) } };
     const std::vector<kernel::geometry::Ray> list = rays(3000, 21);
     for (const cpu::Isa isa : runnable()) {
         for (const auto & [name, points] : scenes) {
@@ -195,4 +165,20 @@ BOOST_AUTO_TEST_CASE(moya_traversal_a_device_takes_the_older_of_its_and_the_proc
     }
 }
 
+/**
+ * A library whose table names another instruction set than the one asked for is refused. An
+ * instruction set past the last is named as SSE4.2 is, so its library is the SSE4.2 one, whose
+ * table names SSE4.2.
+ *
+ * Covers the base: 067d6944 added the check to CpuLibrary's constructor. Checked by deleting its
+ * comparison of the table's instruction set, which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traversal_a_library_for_another_instruction_set_is_refused_test) {
+    const auto unknown = static_cast<cpu::Isa>(static_cast<std::uint8_t>(cpu::Isa::Avx512) + 1U);
+    BOOST_TEST(v3d::moya::device::isaName(unknown) == "sse42");
+    BOOST_CHECK_THROW(static_cast<void>(v3d::moya::device::CpuLibrary(unknown)), std::runtime_error);
+    BOOST_CHECK_NO_THROW(static_cast<void>(v3d::moya::device::CpuLibrary(cpu::Isa::Sse42)));
+}
+
 };  // namespace
+};  // namespace v3d::moya::tracing

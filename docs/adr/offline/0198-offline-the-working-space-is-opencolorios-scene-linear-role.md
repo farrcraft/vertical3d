@@ -54,8 +54,9 @@ before its spectrum is found.
   - One table, built once, finds the spectrum of an RGB value from any working space a pipeline
     uses.
 - **Costs**:
-  - An RGB input in another space is converted into ACEScg before its spectrum is found, and the
-    film converts each sample's XYZ into the working space: a matrix for each.
+  - An RGB input in another space is converted into ACEScg before its spectrum is found. The
+    film holds ACEScg, and a picture in another working space is converted into it once, when
+    the picture is written or displayed.
   - A colour outside ACEScg's gamut gets the nearest spectrum the table holds, not its own. Some
     camera gamuts, such as ARRI Wide Gamut and S-Gamut3, reach beyond it.
   - A RIB scene's colours are read as ACEScg when they name no space, so a scene made for moya's

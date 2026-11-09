@@ -128,6 +128,12 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     glm::vec2 neighbours(const Hit & hit, const Scene::Poses & poses, Hit* alongU, Hit* alongV) const;
 
+    /**
+     * Whether any of a hit's lanes reached a trace or transmission call: whether one is live in the
+     * mask the machine passed. A hit's neighbours can take another branch than the hit itself.
+     **/
+    static bool live(const std::vector<char> & active, unsigned int first, unsigned int lanes);
+
     /** The machines whose output parameters a message reads, or null. **/
     const v3d::render::offline::sl::runtime::Machine* surfaceMachine_ = nullptr;
     const v3d::render::offline::sl::runtime::Machine* lightMachine_ = nullptr;

@@ -14,6 +14,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -183,6 +184,29 @@ BOOST_AUTO_TEST_CASE(moya_hit_a_ray_offset_from_its_hit_does_not_meet_the_surfac
             }
         }
         BOOST_TEST(again == 0, "at " << far);
+    }
+}
+
+// a ray leaves a surface by the same start whatever the length of the normal it is given. A normal
+// of zero, or one that is infinite or not a number, leaves the point where it is
+BOOST_AUTO_TEST_CASE(moya_hit_an_offset_start_depends_only_on_the_normals_direction_test) {
+    const glm::vec3 unit = glm::normalize(glm::vec3 { 0.3F, -0.5F, 0.8F });
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+    // one coordinate near the origin, where the move is a fraction of the normal, and two far
+    for (const glm::vec3 & point : { glm::vec3 { 0.01F, 5.0F, -300.0F }, glm::vec3 { -0.02F, -40.0F, 1.0e6F } }) {
+        const glm::vec3 want = geometry::offsetStart(point, unit);
+        BOOST_TEST_REQUIRE((want != point));
+        // powers of two, so the scaled normal holds the unit one exactly. The largest squares past
+        // the largest float
+        for (const int power : { -20, -2, 3, 20, 100 }) {
+            const float length = std::ldexp(1.0F, power);
+            const glm::vec3 got = geometry::offsetStart(point, unit * length);
+            BOOST_TEST((got == want), "length " << length << " at " << point.x);
+        }
+        for (const glm::vec3 & normal : { glm::vec3 { 0.0F }, glm::vec3 { nan, 0.0F, 1.0F }, glm::vec3 { 0.0F, infinity, 0.0F } }) {
+            BOOST_TEST((geometry::offsetStart(point, normal) == point));
+        }
     }
 }
 

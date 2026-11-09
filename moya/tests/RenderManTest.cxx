@@ -12,6 +12,7 @@
 #include <moya/libmoya/state/Shading.h>
 
 #include <cmath>
+#include <functional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -20,6 +21,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <boost/test/unit_test.hpp>
+
+#include "Handling.h"
 
 namespace {
 
@@ -31,6 +34,9 @@ namespace {
 const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
 
 const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
+
+/** A unit square's corners, as RiSubdivisionMesh's and RiPoints' "P". **/
+const RtPoint SQUARE[4] = { { 0.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F } };
 
 /**
  * The context the C entry points write to. RiGetContext is RI's own query for it, and the
@@ -54,6 +60,36 @@ void checkRed() {
     BOOST_REQUIRE(planes);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 4, 3), 1.0F, 0.01F);
     BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 4, 3), 0.001F);
+}
+
+/**
+ * Whether a call reaches the handler's request of a name. The reyes and ray hiders draw no
+ * quadric but the sphere, no points and no subdivision mesh, and the handler logs each such
+ * request by its name the first time it arrives. The call runs in a context of its own, so
+ * nothing an earlier call logged is counted.
+ **/
+bool reaches(const std::function<void()> & call, const std::string & request) {
+    RiBegin(RI_NULL);
+    const v3d::moya::handling::Heard heard(context().logger()->get());
+    call();
+    const bool said = heard.said("do not draw " + request + ",");
+    RiEnd();
+    return said;
+}
+
+/**
+ * RiSubdivisionMesh of one square face with one crease tag, from counts that may be negative.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the counts, in RiSubdivisionMesh order
+void subdivide(RtInt nverts, RtInt vertex, RtInt ntags, RtInt numargs, RtInt intarg) {
+    RtInt faces[1] = { nverts };
+    RtInt verts[4] = { 0, 1, 2, vertex };
+    RtToken tags[1] = { const_cast<char*>("crease") };
+    RtInt counts[2] = { numargs, 1 };
+    RtInt integers[2] = { 0, intarg };
+    RtFloat floats[1] = { 2.0F };
+    RiSubdivisionMesh(const_cast<char*>("catmull-clark"), 1, faces, verts, ntags, tags, counts, integers, floats,
+        RI_P, const_cast<RtPoint*>(SQUARE), RI_NULL);
 }
 
 /**
@@ -494,6 +530,61 @@ BOOST_AUTO_TEST_CASE(renderman_standard_error_handlers_can_be_passed_test) {
     RiErrorHandler(RiErrorPrint);
     RiErrorHandler(RiErrorAbort);
     BOOST_TEST((std::is_same_v<RtErrorHandler, RtVoid(RtInt, RtInt, char*)>));
+}
+
+/**
+ * Each quadric's C entry point, in both its forms, reaches the handler's request of the same
+ * name.
+ *
+ * Covers the base: fb7c2973 added the quadrics' entry points. Checked by having RiCylinderV call
+ * the handler's cone() and RiTorus call RiDiskV, which each fail this case.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_each_quadric_reaches_its_own_request_test) {
+    RtPoint bottom[1] = { { 1.0F, 0.0F, -1.0F } };
+    RtPoint top[1] = { { 1.0F, 0.0F, 1.0F } };
+    BOOST_TEST(reaches([]() { RiCone(1.0F, 1.0F, 360.0F, RI_NULL); }, "Cone"));
+    BOOST_TEST(reaches([]() { RiConeV(1.0F, 1.0F, 360.0F, 0, nullptr, nullptr); }, "Cone"));
+    BOOST_TEST(reaches([]() { RiCylinder(1.0F, -1.0F, 1.0F, 360.0F, RI_NULL); }, "Cylinder"));
+    BOOST_TEST(reaches([]() { RiCylinderV(1.0F, -1.0F, 1.0F, 360.0F, 0, nullptr, nullptr); }, "Cylinder"));
+    BOOST_TEST(reaches([&bottom, &top]() { RiHyperboloid(bottom[0], top[0], 360.0F, RI_NULL); }, "Hyperboloid"));
+    BOOST_TEST(reaches([&bottom, &top]() { RiHyperboloidV(bottom[0], top[0], 360.0F, 0, nullptr, nullptr); }, "Hyperboloid"));
+    BOOST_TEST(reaches([]() { RiParaboloid(1.0F, 0.0F, 1.0F, 360.0F, RI_NULL); }, "Paraboloid"));
+    BOOST_TEST(reaches([]() { RiParaboloidV(1.0F, 0.0F, 1.0F, 360.0F, 0, nullptr, nullptr); }, "Paraboloid"));
+    BOOST_TEST(reaches([]() { RiDisk(0.0F, 1.0F, 360.0F, RI_NULL); }, "Disk"));
+    BOOST_TEST(reaches([]() { RiDiskV(0.0F, 1.0F, 360.0F, 0, nullptr, nullptr); }, "Disk"));
+    BOOST_TEST(reaches([]() { RiTorus(1.0F, 0.25F, 0.0F, 360.0F, 360.0F, RI_NULL); }, "Torus"));
+    BOOST_TEST(reaches([]() { RiTorusV(1.0F, 0.25F, 0.0F, 360.0F, 360.0F, 0, nullptr, nullptr); }, "Torus"));
+}
+
+/**
+ * RiPoints and RiPointsV reach the handler's points request.
+ *
+ * Covers the base: fb7c2973 added RiPoints. Checked by having RiPointsV return before it calls
+ * the handler, which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_points_reach_the_handler_test) {
+    BOOST_TEST(reaches([]() { RiPoints(4, RI_P, const_cast<RtPoint*>(SQUARE), RI_NULL); }, "Points"));
+    RtToken tokens[1] = { RI_P };
+    RtPointer parms[1] = { const_cast<RtPoint*>(SQUARE) };
+    BOOST_TEST(reaches([&tokens, &parms]() { RiPointsV(4, 1, tokens, parms); }, "Points"));
+}
+
+/**
+ * RiSubdivisionMesh reaches the handler's subdivision mesh request. A face count, a vertex
+ * index, a tag count, an argument count or a tag's integer below zero skips the request, as the
+ * RIB reader refuses one in a file.
+ *
+ * Covers the base: fb7c2973 added RiSubdivisionMesh and its conversion. Checked by deleting the
+ * check of each tag's integers in Converter::subdivisionMesh, and by passing the request on when
+ * the tag count is below zero, which each fail this case.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_a_subdivision_mesh_skips_a_negative_count_test) {
+    BOOST_TEST(reaches([]() { subdivide(4, 3, 1, 2, 1); }, "SubdivisionMesh"));
+    BOOST_TEST(!reaches([]() { subdivide(-1, 3, 1, 2, 1); }, "SubdivisionMesh"));
+    BOOST_TEST(!reaches([]() { subdivide(4, -1, 1, 2, 1); }, "SubdivisionMesh"));
+    BOOST_TEST(!reaches([]() { subdivide(4, 3, -1, 2, 1); }, "SubdivisionMesh"));
+    BOOST_TEST(!reaches([]() { subdivide(4, 3, 1, -1, 1); }, "SubdivisionMesh"));
+    BOOST_TEST(!reaches([]() { subdivide(4, 3, 1, 2, -1); }, "SubdivisionMesh"));
 }
 
 };  // namespace

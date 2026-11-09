@@ -42,6 +42,9 @@
 #include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace cpu = v3d::moya::device::cpu;
@@ -51,63 +54,6 @@ namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 typedef kernel::geometry::primitive::Shape Shape;
-
-/** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
-float next(std::uint32_t & seed) {
-    seed = (seed * 1664525U) + 1013904223U;
-    return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
-}
-
-/** The instruction sets this processor runs, oldest first. **/
-std::vector<cpu::Isa> runnable() {
-    std::vector<cpu::Isa> out;
-    for (const cpu::Isa isa : { cpu::Isa::Sse42, cpu::Isa::Avx2, cpu::Isa::Avx512 }) {
-        if (isa <= v3d::moya::device::newestIsa()) {
-            out.push_back(isa);
-        }
-    }
-    return out;
-}
-
-/** The name of a traversal at an instruction set, for a failure's message. **/
-std::string tracerName(view::Tracer tracer, cpu::Isa isa) {
-    return tracer == view::Tracer::BruteForce ? std::string("brute force") : v3d::moya::device::isaName(isa);
-}
-
-/** Runs a check on the brute-force traversal, and on the hierarchy at each instruction set. **/
-template <typename F>
-void eachTraversal(F && check) {
-    check(view::Tracer::BruteForce, cpu::Isa::Sse42);
-    for (const cpu::Isa isa : runnable()) {
-        check(view::Tracer::Hierarchy, isa);
-    }
-}
-
-/** An instance of a prototype in the world, with its transformation at each of its times. **/
-scene::Handle instanced(scene::Scene & scene, const std::string & name, const scene::Handle & prototype, const std::vector<float> & times,
-    const std::vector<glm::mat4> & transforms) {
-    const scene::Handle instance = scene.create("instance", name);
-    scene.set(instance, "prototype", scene::Value::handle(prototype));
-    if (times.empty()) {
-        scene.set(instance, "transform", scene::Value::matrix(transforms.front()));
-    } else {
-        std::vector<scene::Value> values;
-        values.reserve(transforms.size());
-        for (const glm::mat4 & transform : transforms) {
-            values.push_back(scene::Value::matrix(transform));
-        }
-        scene.set(instance, "transform", times, values);
-    }
-    return instance;
-}
-
-/** The scene's camera, whose shutter opens at 0 and closes at 1. **/
-void shutter(scene::Scene & scene) {
-    const scene::Handle options = scene.create("options", "options");
-    const scene::Handle camera = scene.create("camera", "camera");
-    scene.set(options, "camera", scene::Value::handle(camera));
-    scene.set(camera, "shutter", scene::Value::floats({ 0.0F, 1.0F }));
-}
 
 /** Each of the seven quadrics, cut and swept short of a whole turn, so every limit is met. **/
 std::vector<kernel::geometry::primitive::Quadric> quadrics() {
@@ -147,6 +93,15 @@ float offSurface(const kernel::geometry::primitive::Quadric & quadric, const glm
             return std::sqrt(((reach - quadric.radius) * (reach - quadric.radius)) + (point.z * point.z)) - quadric.minorRadius;
     }
     return 0.0F;
+}
+
+/** A quadric of the scene with a dimension that moves over the shutter, and RI's defaults. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the kind, then the dimension that moves
+scene::Handle movingQuadric(scene::Scene & scene, const std::string & kind, const std::string & dimension, float from, float to) {
+    const scene::Handle out = scene.create(kind, kind);
+    scene.set(out, dimension, { 0.0F, 1.0F }, { scene::Value::number(from), scene::Value::number(to) });
+    scene.set(out, "thetamax", scene::Value::number(300.0F));
+    return out;
 }
 
 // the four roots of (x - 1)(x - 2)(x - 3)(x - 4) are found in order, and only those in the
@@ -229,6 +184,41 @@ BOOST_AUTO_TEST_CASE(moya_shapes_a_torus_answers_for_any_tube_limit_test) {
     }
 }
 
+// a hyperboloid whose line lies flat is a ring, and v runs along the line from point1. On a line
+// that runs out from z it runs from point1's radius to point2's. On a skewed line it is the place
+// at the hit's distance from z, and the hit's sweep starts at the line's angle there
+BOOST_AUTO_TEST_CASE(moya_shapes_a_flat_hyperboloids_v_runs_along_its_line_test) {
+    const float whole = glm::radians(360.0F);
+    const kernel::geometry::primitive::Quadric outwards { .shape = Shape::Hyperboloid, .point1 = { 1.0F, 0.0F, 0.0F }, .point2 = { 2.0F, 0.0F, 0.0F },
+        .thetamax = whole };
+    const kernel::geometry::primitive::Quadric skewed { .shape = Shape::Hyperboloid, .point1 = { 1.0F, 0.0F, 0.0F }, .point2 = { 0.0F, 2.0F, 0.0F },
+        .thetamax = whole };
+    // the skewed line is (0.5, 1) half way along it, at sqrt(1.25) from z
+    const float lineAngle = std::atan2(1.0F, 0.5F);
+    const float reach = std::sqrt(1.25F);
+    struct Case {
+        const kernel::geometry::primitive::Quadric & quadric;
+        glm::vec3 point;
+        glm::vec2 uv;
+    };
+    const Case cases[] = {
+        { outwards, { 1.5F, 0.0F, 0.0F }, { 0.0F, 0.5F } },
+        { outwards, { 0.0F, 1.25F, 0.0F }, { 0.25F, 0.25F } },
+        { outwards, { -1.9F, 0.0F, 0.0F }, { 0.5F, 0.9F } },
+        { skewed, glm::vec3 { std::cos(lineAngle + 1.0F), std::sin(lineAngle + 1.0F), 0.0F } * reach, { 1.0F / whole, 0.5F } },
+    };
+    for (const Case & each : cases) {
+        kernel::geometry::Ray ray;
+        ray.origin = each.point + glm::vec3 { 0.0F, 0.0F, 5.0F };
+        ray.direction = glm::vec3 { 0.0F, 0.0F, -1.0F };
+        kernel::geometry::primitive::ShapeHit hit;
+        BOOST_TEST_REQUIRE(kernel::geometry::primitive::intersectQuadric(each.quadric, ray, 0.0F, 100.0F, hit));
+        BOOST_TEST(std::fabs(hit.distance - 5.0F) < 1.0e-5F);
+        BOOST_TEST(std::fabs(hit.uv.y - each.uv.y) < 1.0e-5F, "v " << hit.uv.y << " at " << each.point.x << ", " << each.point.y);
+        BOOST_TEST(std::fabs(hit.uv.x - each.uv.x) < 1.0e-5F, "u " << hit.uv.x << " at " << each.point.x << ", " << each.point.y);
+    }
+}
+
 // a flat point of width two is met from every direction within its radius of its centre, and
 // missed just beyond it. It is met in the plane through its centre that faces the ray, and a
 // round point at its surface
@@ -240,7 +230,7 @@ BOOST_AUTO_TEST_CASE(moya_shapes_a_flat_point_is_hit_from_any_direction_at_its_w
         scene.set(cloud, "P", scene::Value::points({ centre }));
         scene.set(cloud, "constantWidth", scene::Value::number(2.0F));
         scene.set(cloud, "profile", scene::Value::string(profile));
-        instanced(scene, "cloud", cloud, {}, { glm::mat4(1.0F) });
+        instanced(scene, "cloud", cloud, {}, {}, { glm::mat4(1.0F) });
         scene.commit();
         scene.apply();
         const geometry::Prototypes prototypes = geometry::gather(scene, {});
@@ -269,30 +259,6 @@ BOOST_AUTO_TEST_CASE(moya_shapes_a_flat_point_is_hit_from_any_direction_at_its_w
             BOOST_TEST(wrong == 0U, profile << ", " << tracerName(tracer, isa));
         });
     }
-}
-
-/**
- * Whether two traversals give one answer: both miss, or both meet the same primitive through the
- * same chain at distances within a thousandth.
- **/
-bool agrees(const kernel::geometry::Hit & want, const kernel::geometry::Hit & got) {
-    if (want.found() != got.found()) {
-        return false;
-    }
-    if (!want.found()) {
-        return true;
-    }
-    const bool chain = want.depth == got.depth && std::equal(want.instances, want.instances + want.depth, got.instances);
-    return chain && want.primitive == got.primitive && std::fabs(want.distance - got.distance) <= 1.0e-3F * std::max(1.0F, want.distance);
-}
-
-/** A quadric of the scene with a dimension that moves over the shutter, and RI's defaults. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the kind, then the dimension that moves
-scene::Handle movingQuadric(scene::Scene & scene, const std::string & kind, const std::string & dimension, float from, float to) {
-    const scene::Handle out = scene.create(kind, kind);
-    scene.set(out, dimension, { 0.0F, 1.0F }, { scene::Value::number(from), scene::Value::number(to) });
-    scene.set(out, "thetamax", scene::Value::number(300.0F));
-    return out;
 }
 
 // a scene holds every quadric and points round and flat, each moving, stretched, or both. The
@@ -336,9 +302,9 @@ BOOST_AUTO_TEST_CASE(moya_shapes_the_hierarchy_finds_the_oracles_nearest_hit_on_
                 glm::scale(glm::mat4(1.0F), glm::vec3 { 0.5F + next(seed), 0.5F + (2.0F * next(seed)), 1.0F });
             const std::string name = "copy " + std::to_string(count++);
             if (copy == 2) {
-                instanced(scene, name, prototype, { 0.0F, 1.0F }, { place, glm::translate(place, glm::vec3 { 2.0F, 0.0F, 1.0F }) });
+                instanced(scene, name, prototype, {}, { 0.0F, 1.0F }, { place, glm::translate(place, glm::vec3 { 2.0F, 0.0F, 1.0F }) });
             } else {
-                instanced(scene, name, prototype, {}, { place });
+                instanced(scene, name, prototype, {}, {}, { place });
             }
         }
     }
@@ -388,7 +354,7 @@ BOOST_AUTO_TEST_CASE(moya_shapes_the_hit_view_gives_a_quadrics_normal_test) {
     scene.set(options, "camera", scene::Value::handle(camera));
     scene.set(camera, "projection", scene::Value::string("perspective"));
     const scene::Handle ball = scene.create("sphere", "ball");
-    instanced(scene, "ball", ball, {}, { glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, 0.0F, 5.0F }) });
+    instanced(scene, "ball", ball, {}, {}, { glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, 0.0F, 5.0F }) });
     scene.commit();
     scene.apply();
 
@@ -403,3 +369,4 @@ BOOST_AUTO_TEST_CASE(moya_shapes_the_hit_view_gives_a_quadrics_normal_test) {
 }
 
 };  // namespace
+};  // namespace v3d::moya::tracing

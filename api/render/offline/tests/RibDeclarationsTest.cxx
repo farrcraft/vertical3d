@@ -216,4 +216,21 @@ BOOST_AUTO_TEST_CASE(parameterlist_matrix_convention_test) {
     BOOST_CHECK_EQUAL(moved.z, 4.0F);
 }
 
+/**
+ * A facevarying parameter takes one element per corner of each face, and a mesh whose faces
+ * share points has more corners than points. Given only a vertex count, it takes one element
+ * per vertex.
+ **/
+BOOST_AUTO_TEST_CASE(ribdeclaration_facevarying_counts_the_corners_test) {
+    Declaration declaration;
+    BOOST_REQUIRE(Declaration::parse("facevarying float", &declaration));
+    BOOST_CHECK(declaration.storage() == Declaration::Storage::FACEVARYING);
+    BOOST_CHECK_EQUAL(declaration.text(), "facevarying float");
+    BOOST_CHECK_EQUAL(declaration.elements(4, 6), 6U);
+    BOOST_CHECK_EQUAL(declaration.elements(4), 4U);
+
+    BOOST_REQUIRE(Declaration::parse("varying float", &declaration));
+    BOOST_CHECK_EQUAL(declaration.elements(4, 6), 4U);
+}
+
 };  // namespace

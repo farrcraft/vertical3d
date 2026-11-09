@@ -30,7 +30,7 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--bucket <n>` | The reyes bucket size, n by n pixels, from 1 to 65536. Default 16. It wins over the scene's `Option "limits" "bucketsize"` |
 | `--silent` | Print no progress line |
 | `--scene` | Read the scene into moya's new core and print what it holds, in place of rendering. It prints after each frame the file describes. The new core does not render yet |
-| `--hits` | Read the scene into moya's new core and write what its rays hit, in place of rendering, to the `--output` file or to `hits.exr`. The EXR holds each pixel's `depth`, its surface's `normal`, its `instance`, its `face` and its `coverage`. It is written after each frame, so a file of several frames leaves the last. Only polygon meshes are hit yet |
+| `--hits` | Read the scene into moya's new core and write what its rays hit, in place of rendering, to the `--output` file or to `hits.exr`. The `--output` file has to end in `.exr`. The EXR holds each pixel's `depth`, its surface's `normal`, its `instance`, its `face` and its `coverage`. It is written after each frame, so a file of several frames leaves the last. Polygon meshes, points and quadrics are hit, and other geometry is not yet |
 | `--help` | Print the options and exit |
 | `--version` | Print the version and Pixar's RenderMan copyright notice, and exit |
 
@@ -38,6 +38,12 @@ the directories on a search path. Give full paths to work with files elsewhere.
   line that says so and uses the scene's size.
 - A `--grid` or `--bucket` outside its range is refused. moya prints a line that says so. The
   size then comes from the scene's `Option "limits"`, or is the default.
+- `--scene` and `--hits` are refused together. `--width`, `--height`, `--grid` and `--bucket`
+  are refused with either. The hit view takes its size from the scene's `Format`, and neither
+  renders in grids or buckets. `--output`
+  is refused with `--scene`, which writes no file. With `--hits`, an `--output` that does not end
+  in `.exr` is refused. moya prints a line that says which option was refused, and exits with
+  failure.
 - An option moya does not recognise, or one with a value that is not a number where a number is
   needed, prints `error:` and the reason, and moya exits with failure.
 

@@ -95,10 +95,15 @@ std::optional<v3d::render::offline::film::Filter> Converter::filter(RtFilterFunc
 
 v3d::render::offline::rib::ParameterList Converter::parameters(RtInt n, RtToken tokens[], RtPointer parms[],
     unsigned int vertices) const {
+    return meshParameters(n, tokens, parms, vertices, vertices);
+}
+
+v3d::render::offline::rib::ParameterList Converter::meshParameters(RtInt n, RtToken tokens[], RtPointer parms[], unsigned int points,
+    unsigned int corners) const {
     RIBHandler & active = renderer_->active();
     v3d::render::offline::rib::ParameterList list;
     std::vector<std::string> unresolved;
-    v3d::render::offline::rib::arguments(active.declarations(), n, tokens, parms, vertices, &list,
+    v3d::render::offline::rib::arguments(active.declarations(), n, tokens, parms, points, corners, &list,
         &unresolved);
     for (const std::string & name : unresolved) {
         // a name with no declaration has no length either, so it is dropped rather than

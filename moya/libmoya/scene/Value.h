@@ -18,7 +18,7 @@
 
 /**
  * The new core's retained scene: objects of declared kinds, their parameters, and the versions
- * that record each change. RIB, the editor and later a Hydra delegate are its clients.
+ * that record each change. RIB and the editor are its clients.
  **/
 namespace v3d::moya::scene {
 

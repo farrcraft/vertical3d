@@ -75,7 +75,7 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     handler_->pixelSamples(glm::uvec2(settings.samples));
     handler_->hider(settings.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
     if (output.file.empty()) {
-        handler_->display({.name = "vertical3d", .type = "framebuffer", .mode = "rgb"}, ParameterList());
+        handler_->display({.name = FRAMEBUFFER, .type = "framebuffer", .mode = "rgb"}, ParameterList());
     } else {
         handler_->display({.name = output.file, .type = "file", .mode = "rgb"}, ParameterList());
     }
@@ -100,7 +100,7 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     handler_->transform(camera.view());  // NOLINT(build/include_what_you_use)
 
     handler_->worldBegin();
-    handler_->surface("matte", ParameterList());
+    handler_->surface(SURFACE, ParameterList());
 }
 
 void RIBExportVisitor::end() {

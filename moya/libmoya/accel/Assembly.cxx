@@ -83,13 +83,12 @@ Sweep sweepOf(const geometry::Prototypes & prototypes, const geometry::Geometry 
         case kernel::geometry::primitive::Form::FlatPoints:
             return pointSweep(geometry.points, geometry.widths, prototypes.points, prototypes.widths, prototypes.times);
         case kernel::geometry::primitive::Form::Quadric:
-        default: {
-            const kernel::geometry::Sampled held = geometry.quadric;
-            return [held, &prototypes](std::uint32_t, float begin, float end) {
-                return quadricSweep(held, prototypes.quadrics, prototypes.times, begin, end);
-            };
-        }
+            break;
     }
+    const kernel::geometry::Sampled held = geometry.quadric;
+    return [held, &prototypes](std::uint32_t, float begin, float end) {
+        return quadricSweep(held, prototypes.quadrics, prototypes.times, begin, end);
+    };
 }
 
 /** Builds each geometry's hierarchy into an assembly, and gives its bounds over the shutter. **/

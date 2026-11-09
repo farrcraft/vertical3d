@@ -35,6 +35,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace scene = v3d::moya::scene;
@@ -72,25 +75,6 @@ scene::Handle placed(scene::Scene & scene, const std::string & name, const std::
     }
     scene.set(instance, "transform", scene::Value::matrix(transform));
     return instance;
-}
-
-/** An instance of a prototype, in a group or the world. **/
-scene::Handle instanced(scene::Scene & scene, const std::string & name, const scene::Handle & prototype, const scene::Handle & group,
-    const glm::mat4 & transform) {
-    const scene::Handle instance = scene.create("instance", name);
-    scene.set(instance, "prototype", scene::Value::handle(prototype));
-    if (group.valid()) {
-        scene.set(instance, "group", scene::Value::handle(group));
-    }
-    scene.set(instance, "transform", scene::Value::matrix(transform));
-    return instance;
-}
-
-/** Whether a report holds a phrase. **/
-bool reported(const geometry::Flat & flat, const std::string & phrase) {
-    return std::ranges::any_of(flat.reports, [&](const std::string & report) {
-        return report.find(phrase) != std::string::npos;
-    });
 }
 
 // a triangle whose corners project onto three corners of the screen covers the pixels on its side
@@ -311,7 +295,7 @@ BOOST_AUTO_TEST_CASE(moya_hitview_a_chain_deeper_than_a_hit_records_is_left_out_
     BOOST_TEST(flat.placements[0].depth == 2U);
 }
 
-BOOST_AUTO_TEST_CASE(moya_hitview_a_prototype_not_yet_traced_is_reported_test) {
+BOOST_AUTO_TEST_CASE(moya_hitview_a_prototype_that_is_not_traced_is_reported_test) {
     scene::Scene scene(scene::kinds());
     const scene::Handle cage = scene.create("subdivision", "cage");
     instanced(scene, "cage", cage, {}, glm::mat4(1.0F));
@@ -321,9 +305,10 @@ BOOST_AUTO_TEST_CASE(moya_hitview_a_prototype_not_yet_traced_is_reported_test) {
 
     const geometry::Flat flat = geometry::flatten(scene, {});
     BOOST_TEST(flat.reports.size() == 1U);
-    BOOST_TEST(reported(flat, "a subdivision is not yet traced"));
+    BOOST_TEST(reported(flat, "a subdivision is not traced"));
     BOOST_TEST(flat.placements.empty());
     BOOST_TEST(flat.shapes.empty());
 }
 
 };  // namespace
+};  // namespace v3d::moya::tracing

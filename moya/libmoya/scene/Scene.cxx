@@ -77,10 +77,19 @@ void Scene::checkTimes(const Declaration & declaration, const Samples & samples)
 
 void Scene::checkHandles(const Declaration & declaration, const Value & value) const {
     for (const Handle & named : value.handleArray()) {
+        // the null handle sets a parameter that is not an array back to naming nothing
+        if (!named.valid() && declaration.count == 1) {
+            continue;
+        }
         const bool wanted = named.valid() && std::any_of(declaration.targets.begin(), declaration.targets.end(),
             [this, &named](const std::string & target) { return schema_.find(target) == named.kind; });
         if (!wanted) {
             throw std::invalid_argument("parameter " + declaration.name + " names an object of a kind it does not take");
+        }
+        const bool live = named.index < slots_.size() && slots_[named.index].live && slots_[named.index].generation == named.generation &&
+            slots_[named.index].kind == named.kind;
+        if (!live) {
+            throw std::invalid_argument("parameter " + declaration.name + " names no object");
         }
     }
 }

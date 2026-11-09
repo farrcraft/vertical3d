@@ -211,13 +211,38 @@ MOYA_KERNEL inline bool torusProfile(const Quadric & torus, const glm::vec3 & po
 }
 
 /**
+ * The fraction along a flat hyperboloid's line of a point in its plane: the first place from
+ * point1 whose distance from z is the point's, within [0, 1]. A distance the line does not reach
+ * gives the nearest place it does.
+ **/
+MOYA_KERNEL inline float flatAlong(const Quadric & hyperboloid, const glm::vec3 & point) {
+    const glm::vec3 along = hyperboloid.point2 - hyperboloid.point1;
+    const float spread = (along.x * along.x) + (along.y * along.y);
+    const float cross = (hyperboloid.point1.x * along.x) + (hyperboloid.point1.y * along.y);
+    // |point1 + along v|^2 in the plane, less the point's distance from z squared
+    const Quadratic terms { .squared = spread,
+        .linear = 2.0F * cross,
+        .constant = (hyperboloid.point1.x * hyperboloid.point1.x) + (hyperboloid.point1.y * hyperboloid.point1.y) - (point.x * point.x) -
+                    (point.y * point.y) };
+    float near = 0.0F;
+    float far = 0.0F;
+    if (quadraticRoots(terms, near, far) == 0) {
+        // nearer z than the line reaches, which rounding gives at its nearest place
+        return spread > 0.0F ? std::fmax(0.0F, std::fmin(1.0F, -cross / spread)) : 0.0F;
+    }
+    const float first = near >= 0.0F || far < 0.0F ? near : far;
+    return std::fmax(0.0F, std::fmin(1.0F, first));
+}
+
+/**
  * A hyperboloid's v at a point on it, the fraction along its line, and its angle about z from the
- * line's own angle at that height, where the sweep starts.
+ * line's own angle at that place, where the sweep starts. On a rising line the place is at the
+ * point's height, and on a flat one flatAlong() finds it.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the angle, then the fraction along
 MOYA_KERNEL inline bool hyperboloidProfile(const Quadric & hyperboloid, const glm::vec3 & point, float & theta, float & v) {
     const glm::vec3 along = hyperboloid.point2 - hyperboloid.point1;
-    v = along.z != 0.0F ? (point.z - hyperboloid.point1.z) / along.z : 0.0F;
+    v = along.z != 0.0F ? (point.z - hyperboloid.point1.z) / along.z : flatAlong(hyperboloid, point);
     if (v < 0.0F || v > 1.0F) {
         return false;
     }
@@ -358,9 +383,13 @@ MOYA_KERNEL inline Quadratic quadricTerms(const Quadric & quadric, const Ray & r
                 .linear = flat.linear - (2.0F * ((cross * rise) + (spread * from * rise))),
                 .constant = flat.constant - (base + (2.0F * cross * from) + (spread * from * from)) };
         }
-        default:
-            return {};
+        // a sphere, a disk and a torus are not met by a quadratic in the distance
+        case Shape::Sphere:
+        case Shape::Disk:
+        case Shape::Torus:
+            break;
     }
+    return {};
 }
 
 /** Whether a ray meets a sphere cut at zmin and zmax and swept by thetamax, and where. **/

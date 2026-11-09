@@ -94,6 +94,17 @@ class Converter {
         unsigned int vertices = 1) const;
 
     /**
+     * A mesh's parameter list, typed by what the active handler has declared. A facevarying
+     * array has one element per corner of each face, and the others are read as parameters()
+     * reads them.
+     *
+     * @param points how many points the faces index
+     * @param corners how many corners the faces have in all
+     **/
+    v3d::render::offline::rib::ParameterList meshParameters(RtInt n, RtToken tokens[], RtPointer parms[], unsigned int points,
+        unsigned int corners) const;
+
+    /**
      * RiPointsPolygons' faces. A vertex or varying value is one element per point the faces
      * index, so the arrays are as long as the largest index plus one. A count or an index below
      * zero skips the request.

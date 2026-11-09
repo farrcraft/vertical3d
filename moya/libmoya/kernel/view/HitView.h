@@ -28,7 +28,8 @@ namespace v3d::moya::kernel::view {
 
 /**
  * What the hit view's kernel function reads: the film, the camera, a traversal, and the placed
- * triangles, which give a hit's normal and face whichever traversal found it.
+ * surfaces, its triangles, points and quadrics, which give a hit's normal and face whichever
+ * traversal found it.
  **/
 template <geometry::Traversal T>
 struct HitView {

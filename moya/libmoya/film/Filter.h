@@ -11,6 +11,7 @@
 #include <api/render/offline/film/Sampling.h>
 
 #include <cstdint>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -48,6 +49,18 @@ class Filter final {
     boost::shared_ptr<device::Buffer> values_;
     boost::shared_ptr<device::Buffer> rowCdf_;
     boost::shared_ptr<device::Buffer> cellCdf_;
+
+    /** The cells a table has along an axis of the given width, in pixels. **/
+    static std::uint32_t cells(float width);
+
+    /** A buffer on the device holding the values. **/
+    static boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::vector<float> & values);
+
+    /**
+     * Divides a run of running sums, which starts at zero, by its last, so that it rises to one. A
+     * run that sums to nothing rises evenly instead, since no sample is drawn from it.
+     **/
+    static void normalise(float * cdf, std::uint32_t count);
 };
 
 };  // namespace v3d::moya::film

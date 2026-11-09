@@ -23,7 +23,8 @@ class Declaration final {
         CONSTANT,
         UNIFORM,
         VARYING,
-        VERTEX
+        VERTEX,
+        FACEVARYING
     };
 
     enum class Type : std::uint8_t {
@@ -65,9 +66,19 @@ class Declaration final {
 
     /**
      * How many elements a primitive of this many vertices carries: one for constant and
-     * uniform, one per vertex for varying and vertex.
+     * uniform, and one per vertex for varying, vertex and facevarying. The facevarying count
+     * holds for a primitive whose corners are its vertices, such as a polygon or a quadric.
      **/
     unsigned int elements(unsigned int vertices) const;
+
+    /**
+     * How many elements a primitive carries, as elements(vertices) says, except that a
+     * facevarying parameter has one per corner of each face.
+     *
+     * @param vertices how many vertices the primitive has
+     * @param corners how many corners its faces have in all: the length of a mesh's indices
+     **/
+    unsigned int elements(unsigned int vertices, unsigned int corners) const;
 
     /**
      * The declaration as parse() reads it, with its storage class always given, such as

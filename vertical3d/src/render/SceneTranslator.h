@@ -96,6 +96,12 @@ class SceneTranslator final {
     /** Set a parameter when its value differs from the one set before. **/
     void put(const v3d::moya::scene::Handle& object, const std::string& parameter, const v3d::moya::scene::Value& value);
 
+    /**
+     * Set a parameter an update set before back to its kind's fallback, for a value an item no
+     * longer gives. Nothing is set when the parameter was never set or already holds it.
+     **/
+    void reset(const v3d::moya::scene::Handle& object, const std::string& parameter);
+
     /** The one material every surface takes, made when the first surface needs it. **/
     v3d::moya::scene::Handle material();
 

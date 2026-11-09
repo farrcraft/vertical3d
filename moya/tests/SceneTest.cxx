@@ -7,6 +7,7 @@
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kind.h>
+#include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
@@ -127,9 +128,53 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_value_that_breaks_its_declaration_is_refused_t
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::integers({ 1, 2 })), std::invalid_argument);
     BOOST_CHECK_THROW(scene.set(shape, "sides", scene::Value::integers({})), std::invalid_argument);
     BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle(shape)), std::invalid_argument);
-    BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle({})), std::invalid_argument);
     scene.set(shape, "look", scene::Value::handle(look));
     scene.set(shape, "P", scene::Value::points({ glm::vec3(0.0F), glm::vec3(1.0F) }));
+}
+
+BOOST_AUTO_TEST_CASE(moya_scene_a_handle_value_names_a_live_object_test) {
+    scene::Scene scene(schema());
+    const scene::Handle shape = scene.create("shape", "shape 30");
+    const scene::Handle look = scene.create("look", "look 31");
+    scene.remove(look);
+    BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle(look)), std::invalid_argument);
+
+    // the index is used again with the next generation, which the old handle does not match
+    const scene::Handle next = scene.create("look", "look 32");
+    BOOST_TEST((next.index == look.index));
+    BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle(look)), std::invalid_argument);
+
+    // handles the scene never gave: a later generation of a live index, and an index never made
+    const scene::Handle later { .kind = next.kind, .index = next.index, .generation = next.generation + 1U };
+    const scene::Handle beyond { .kind = next.kind, .index = 99U, .generation = 1U };
+    BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle(later)), std::invalid_argument);
+    BOOST_CHECK_THROW(scene.set(shape, "look", scene::Value::handle(beyond)), std::invalid_argument);
+
+    scene.set(shape, "look", scene::Value::handle(next));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((scene.value(shape, "look") == scene::Value::handle(next)));
+}
+
+BOOST_AUTO_TEST_CASE(moya_scene_the_null_handle_sets_a_handle_back_to_nothing_test) {
+    scene::Scene scene(schema());
+    const scene::Handle shape = scene.create("shape", "shape 33");
+    const scene::Handle look = scene.create("look", "look 34");
+    scene.set(shape, "look", scene::Value::handle(look));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((scene.value(shape, "look") == scene::Value::handle(look)));
+
+    BOOST_CHECK_NO_THROW(scene.set(shape, "look", scene::Value::handle({})));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST((scene.value(shape, "look") == scene::Value::handle({})));
+
+    // an array of handles names nothing when it is empty, and takes no null handle
+    scene::Scene moya(scene::kinds());
+    const scene::Handle output = moya.create("output", "picture");
+    moya.set(output, "channels", scene::Value::handles({}));
+    BOOST_CHECK_THROW(moya.set(output, "channels", scene::Value::handles({ scene::Handle {} })), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(moya_scene_samples_over_the_shutter_keep_their_times_test) {

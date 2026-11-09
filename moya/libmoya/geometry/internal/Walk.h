@@ -62,8 +62,11 @@ class Walk final {
     /** The index of a group among the groups, gathered once. **/
     std::uint32_t group(const scene::Handle & handle);
 
-    /** The index of a mesh among the geometries, cut once. **/
-    std::uint32_t mesh(const scene::Handle & handle);
+    /**
+     * The index of a mesh among the geometries, cut once, or nothing when its faces cannot be
+     * cut from its points and indices.
+     **/
+    std::optional<std::uint32_t> mesh(const scene::Handle & handle);
 
     /** The index of a point cloud among the geometries, gathered once. **/
     std::uint32_t cloud(const scene::Handle & handle);

@@ -40,4 +40,24 @@ void arguments(const Declarations & declarations, int count,
     const char* const* tokens, const void* const* values, unsigned int vertices,
     ParameterList* list, std::vector<std::string>* unresolved = nullptr);
 
+/**
+ * The parameters of a primitive whose faces have more corners than it has vertices, such as a
+ * mesh whose faces share points. A facevarying array has one element per corner, and the others
+ * are read as the form above reads them.
+ *
+ * @param declarations what the scene has declared, and what the standard declares for it
+ * @param count how many parameters, which is RI's `n`
+ * @param tokens the names, one per parameter
+ * @param values the value arrays, one per parameter; an entry that is null is skipped
+ * @param vertices how many vertices the primitive has, which decides the length of a varying or
+ *        a vertex array
+ * @param corners how many corners the faces have in all: the length of the mesh's indices, which
+ *        decides the length of a facevarying array
+ * @param list where the parameters go, added to whatever it already holds
+ * @param unresolved where the names that could not be resolved go, or null to drop them
+ **/
+void arguments(const Declarations & declarations, int count,
+    const char* const* tokens, const void* const* values, unsigned int vertices, unsigned int corners,
+    ParameterList* list, std::vector<std::string>* unresolved = nullptr);
+
 };  // namespace v3d::render::offline::rib

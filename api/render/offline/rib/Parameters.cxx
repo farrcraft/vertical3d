@@ -16,13 +16,6 @@
 
 namespace v3d::render::offline::rib {
 
-namespace {
-
-const std::vector<float> NO_FLOATS;
-const std::vector<std::string> NO_STRINGS;
-
-};  // namespace
-
 void ParameterList::add(const std::string & name, const Declaration & declaration,
     const std::vector<float> & values, const std::vector<std::string> & strings) {
     Parameter parameter;
@@ -56,12 +49,15 @@ const Declaration * ParameterList::declaration(const std::string & name) const {
 
 const std::vector<float> & ParameterList::floats(const std::string & name) const {
     const std::map<std::string, Parameter>::const_iterator found = parameters_.find(name);
-    return found == parameters_.end() ? NO_FLOATS : found->second.values;
+    // what a name the list does not hold reads as
+    static const std::vector<float> none;
+    return found == parameters_.end() ? none : found->second.values;
 }
 
 const std::vector<std::string> & ParameterList::strings(const std::string & name) const {
     const std::map<std::string, Parameter>::const_iterator found = parameters_.find(name);
-    return found == parameters_.end() ? NO_STRINGS : found->second.strings;
+    static const std::vector<std::string> none;
+    return found == parameters_.end() ? none : found->second.strings;
 }
 
 std::vector<glm::vec3> ParameterList::points(const std::string & name) const {

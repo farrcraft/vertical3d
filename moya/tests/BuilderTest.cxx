@@ -6,11 +6,13 @@
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
 #include <moya/libmoya/accel/Hierarchy.h>
+#include <moya/libmoya/accel/MovingHierarchy.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/accel/Triangles.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -18,6 +20,7 @@
 #include <exception>
 #include <future>
 #include <limits>
+#include <numeric>
 #include <stdexcept>
 #include <thread>
 #include <utility>
@@ -27,51 +30,44 @@
 
 #include <glm/vec3.hpp>
 
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
 namespace {
 
 namespace accel = v3d::moya::accel;
 namespace cpu = v3d::moya::device::cpu;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
-/** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
-float next(std::uint32_t & seed) {
-    seed = (seed * 1664525U) + 1013904223U;
-    return static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
-}
-
-/** Small triangles scattered through a cube of side 100, three points each. **/
+/** Small triangles scattered through a cube of side 100, each up to 1 across. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - how many, then the seed
 std::vector<glm::vec3> scattered(std::size_t count, std::uint32_t seed) {
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const glm::vec3 centre { next(seed) * 100.0F, next(seed) * 100.0F, next(seed) * 100.0F };
-        for (int corner = 0; corner < 3; ++corner) {
-            points.push_back(centre + glm::vec3 { next(seed), next(seed), next(seed) });
-        }
-    }
-    return points;
-}
-
-/**
- * Long thin triangles along the diagonal of a square of side 100, each moved along x from the one
- * before. Their boxes overlap far more than the triangles do.
- **/
-std::vector<glm::vec3> slivers(std::size_t count) {
-    std::vector<glm::vec3> points;
-    points.reserve(count * 3);
-    for (std::size_t i = 0; i < count; ++i) {
-        const float offset = static_cast<float>(i) * (90.0F / static_cast<float>(count));
-        points.emplace_back(offset, 0.0F, 0.0F);
-        points.emplace_back(100.0F, 100.0F - offset, 0.0F);
-        points.emplace_back(100.0F, 100.0F - offset, 0.01F);
-    }
-    return points;
+    return tracing::scattered(count, 100.0F, 1.0F, seed);
 }
 
 accel::Box boxOf(const cpu::Node & node, std::uint32_t slot) {
     return accel::Box { .lower = { node.lowerX[slot], node.lowerY[slot], node.lowerZ[slot] },
         .upper = { node.upperX[slot], node.upperY[slot], node.upperZ[slot] } };
+}
+
+/** The most references a leaf of a hierarchy holds, of still nodes or moving ones. **/
+template <typename N>
+std::uint32_t fullestLeaf(const std::vector<N> & nodes) {
+    std::uint32_t out = 0;
+    for (const N & node : nodes) {
+        for (std::uint32_t slot = 0; slot < cpu::kWidth; ++slot) {
+            if (node.child[slot] != cpu::kEmpty && (node.child[slot] & cpu::kLeaf) != 0) {
+                out = std::max(out, node.count[slot]);
+            }
+        }
+    }
+    return out;
+}
+
+/** A hierarchy's references in order. **/
+std::vector<std::uint32_t> sorted(std::vector<std::uint32_t> references) {
+    std::ranges::sort(references);
+    return references;
 }
 
 /**
@@ -138,7 +134,7 @@ BOOST_AUTO_TEST_CASE(moya_builder_every_primitive_is_reachable_from_the_root_tes
 // triangles whose boxes overlap far more than the triangles do cost less with spatial splits
 BOOST_AUTO_TEST_CASE(moya_builder_spatial_splits_lower_the_cost_of_long_thin_triangles_test) {
     CpuDevice device;
-    const std::vector<glm::vec3> points = slivers(500);
+    const std::vector<glm::vec3> points = slivers(500, 0.01F);
     const std::vector<accel::Box> bounds = accel::triangleBounds(points);
     const double without = accel::cost(accel::build(device, bounds, accel::triangleClip(points), { .spatial = false }));
     const accel::Hierarchy split = accel::build(device, bounds, accel::triangleClip(points), { .spatial = true });
@@ -251,4 +247,72 @@ BOOST_AUTO_TEST_CASE(moya_builder_primitives_moving_together_build_a_bounded_hie
     BOOST_TEST(references.get() <= 9U * 256U);
 }
 
+/**
+ * Forty triangles at one place have no split by centroids. Each build halves them in order until
+ * each leaf holds at most eight, so every one of them is referenced once.
+ *
+ * Covers the base: bd5b1376 added the halving to the still build, and 165a2635 to the moving one.
+ * Checked by making the halving in BinaryBuilder::node() drop the last reference, and by deleting
+ * the halving in TemporalBuilder::node(), each of which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_builder_coincident_centroids_are_halved_in_order_test) {
+    CpuDevice device;
+    std::vector<glm::vec3> points;
+    for (int i = 0; i < 40; ++i) {
+        points.insert(points.end(), { { 0.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 1.0F } });
+    }
+    const std::vector<accel::Box> bounds = accel::triangleBounds(points);
+    std::vector<std::uint32_t> every(bounds.size());
+    std::iota(every.begin(), every.end(), 0U);
+
+    const accel::Hierarchy still = accel::build(device, bounds, accel::triangleClip(points), { .spatial = false });
+    BOOST_TEST(sorted(still.references) == every, boost::test_tools::per_element());
+    BOOST_TEST(fullestLeaf(still.nodes) <= 8U);
+
+    const accel::Sweep sweep = [&bounds](std::uint32_t primitive, float, float) {
+        return accel::LinearBox::still(bounds[primitive]);
+    };
+    const accel::MovingHierarchy moving = accel::buildMoving(device, static_cast<std::uint32_t>(bounds.size()), sweep, 0.0F, 1.0F, { .temporal = false });
+    BOOST_TEST(sorted(moving.references) == every, boost::test_tools::per_element());
+    BOOST_TEST(fullestLeaf(moving.nodes) <= 8U);
+}
+
+/**
+ * A moving hierarchy is refused a time range that is not finite or ends before it begins, and a
+ * count of primitives a leaf's first reference cannot name. A range that begins and ends at once
+ * is built.
+ *
+ * Covers the base: 165a2635 added the checks to buildMoving(). Checked by deleting the range's
+ * check and by letting the count's pass at 2^31, each of which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_builder_a_moving_build_refuses_a_bad_range_or_count_test) {
+    CpuDevice device;
+    const accel::Sweep sweep = [](std::uint32_t, float, float) {
+        return accel::LinearBox::still(accel::Box { .lower = glm::vec3 { 0.0F }, .upper = glm::vec3 { 1.0F } });
+    };
+    // a build that goes ahead with 2^31 primitives runs out of memory rather than refusing them
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count, then the range
+    const auto refused = [&](std::uint32_t count, float begin, float end) {
+        try {
+            static_cast<void>(accel::buildMoving(device, count, sweep, begin, end));
+        } catch (const std::invalid_argument &) {
+            return true;
+        } catch (const std::exception &) {
+            return false;
+        }
+        return false;
+    };
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+    const std::pair<float, float> ranges[] = { { nan, 1.0F }, { 0.0F, nan }, { -infinity, 1.0F }, { 0.0F, infinity }, { 1.0F, 0.0F } };
+    for (const auto & [begin, end] : ranges) {
+        BOOST_TEST(refused(1, begin, end), "from " << begin << " to " << end);
+    }
+    for (const std::uint32_t count : { cpu::kLeaf, std::numeric_limits<std::uint32_t>::max() }) {
+        BOOST_TEST(refused(count, 0.0F, 1.0F), count << " primitives");
+    }
+    BOOST_TEST(accel::buildMoving(device, 1, sweep, 0.5F, 0.5F).references.size() == 1U);
+}
+
 };  // namespace
+};  // namespace v3d::moya::tracing

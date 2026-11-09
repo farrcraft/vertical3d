@@ -21,7 +21,7 @@ struct ShadowFit final {
     float alpha = 1.0F;
     /**
      * Where the casters' meshes resolve, so that the fit covers each caster's whole model rather
-     * than its origin. Null fits the origins alone
+     * than its origin. Null fits the origins alone.
      **/
     const resource::MeshRegistry* meshes = nullptr;
 };

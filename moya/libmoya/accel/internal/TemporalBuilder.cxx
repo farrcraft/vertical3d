@@ -24,20 +24,16 @@
 
 namespace v3d::moya::accel::internal {
 
-namespace {
+TemporalBuilder::TemporalBuilder(device::CpuDevice & device, const Sweep & sweep, const Options & options) :
+    device_(device), sweep_(sweep), options_(options) {
+}
 
-LinearBox boundsOf(const std::vector<MovingReference> & references) {
+LinearBox TemporalBuilder::boundsOf(const std::vector<MovingReference> & references) {
     LinearBox out;
     for (const MovingReference & reference : references) {
         out.grow(reference.box);
     }
     return out;
-}
-
-};  // namespace
-
-TemporalBuilder::TemporalBuilder(device::CpuDevice & device, const Sweep & sweep, const Options & options) :
-    device_(device), sweep_(sweep), options_(options) {
 }
 
 MovingBinary TemporalBuilder::build(std::vector<MovingReference> references, float begin, float end) const {

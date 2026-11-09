@@ -16,8 +16,10 @@
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Kind.h>
 #include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Placed.h>
@@ -53,12 +55,6 @@ namespace v3d::editor::render {
 namespace {
 
 namespace moya = v3d::moya::scene;
-
-/** How many Bezier segments each span of a NURBS curve becomes, as the RIB export makes them. **/
-constexpr unsigned int kPieces = 4;
-
-/** The name of the surface every instance takes, as the RIB export binds it. **/
-constexpr const char* kSurface = "matte";
 
 };  // namespace
 
@@ -123,7 +119,7 @@ void SceneTranslator::Walk::visit(const boost::shared_ptr<scene::item::Curve>& c
     const v3d::curve::Curves& geometry = *curve->geometry();
     std::vector<std::vector<v3d::curve::BasisCurve>> runs;
     for (std::size_t index = 0; index < geometry.size(); index++) {
-        v3d::curve::BasisCurve converted = v3d::curve::toBasis(geometry.curve(index), kPieces);
+        v3d::curve::BasisCurve converted = v3d::curve::toBasis(geometry.curve(index), RIBExportVisitor::APPROXIMATION_PIECES);
         if (runs.empty() || runs.back().front().basis != converted.basis || runs.back().front().periodic != converted.periodic) {
             runs.emplace_back();
         }
@@ -175,9 +171,13 @@ void SceneTranslator::Walk::visit(const boost::shared_ptr<scene::item::Light>& l
         return;
     }
     translator_->put(made, "radius", moya::Value::number(0.0F));
+    // a point light shares a spot light's kind, so a light that stops being a spot loses its cone
     if (emission.type == scene::item::Light::Type::Spot) {
         translator_->put(made, "coneAngle", moya::Value::number(glm::degrees(emission.cone)));
         translator_->put(made, "coneSoftness", moya::Value::number(emission.cone > 0.0F ? std::clamp(emission.delta / emission.cone, 0.0F, 1.0F) : 0.0F));
+    } else {
+        translator_->reset(made, "coneAngle");
+        translator_->reset(made, "coneSoftness");
     }
 }
 
@@ -211,6 +211,19 @@ v3d::moya::scene::Handle SceneTranslator::object(const std::string& kind, const 
     return made;
 }
 
+void SceneTranslator::reset(const v3d::moya::scene::Handle& object, const std::string& parameter) {
+    const auto held = values_.find({ object.index, object.generation });
+    if (held == values_.end() || !held->second.contains(parameter)) {
+        return;
+    }
+    for (const moya::Declaration& declared : scene_->schema().kind(object.kind).parameters) {
+        if (declared.name == parameter) {
+            put(object, parameter, declared.fallback);
+            return;
+        }
+    }
+}
+
 void SceneTranslator::put(const v3d::moya::scene::Handle& object, const std::string& parameter, const v3d::moya::scene::Value& value) {
     std::map<std::string, moya::Value>& values = values_[{ object.index, object.generation }];
     const auto found = values.find(parameter);
@@ -223,17 +236,17 @@ void SceneTranslator::put(const v3d::moya::scene::Handle& object, const std::str
 }
 
 v3d::moya::scene::Handle SceneTranslator::material() {
-    const bool made = !objects_.contains({ "shader", kSurface });
-    const moya::Handle surface = object("shader", kSurface);
+    const bool made = !objects_.contains({ "shader", RIBExportVisitor::SURFACE });
+    const moya::Handle surface = object("shader", RIBExportVisitor::SURFACE);
     if (made) {
         // the colour and opacity RI's state gives a surface that names neither
         for (const char* input : { "Cs", "Os" }) {
             scene_->declare(surface, moya::Declaration { .name = input, .type = moya::Type::Colour, .fallback = moya::Value::colour(glm::vec3(1.0F)) });
         }
     }
-    put(surface, "shader", moya::Value::string(kSurface));
+    put(surface, "shader", moya::Value::string(RIBExportVisitor::SURFACE));
     put(surface, "language", moya::Value::string("ri"));
-    const moya::Handle material = object("material", kSurface);
+    const moya::Handle material = object("material", RIBExportVisitor::SURFACE);
     put(material, "surface", moya::Value::handle(surface));
     return material;
 }
@@ -253,7 +266,10 @@ bool SceneTranslator::update(const scene::Scene& scene, const scene::Evaluation&
     put(options, "pixelAspect", moya::Value::number(1.0F));
     put(options, "samples", moya::Value::integer(static_cast<std::int32_t>(output.settings.samples * output.settings.samples)));
     put(lens, "projection", moya::Value::string(profile.orthographic() ? "orthographic" : "perspective"));
-    if (!profile.orthographic()) {
+    // an orthographic camera has no field of view, so one that turns orthographic loses it
+    if (profile.orthographic()) {
+        reset(lens, "fov");
+    } else {
         put(lens, "fov", moya::Value::number(profile.fov()));
     }
     const v3d::render::offline::rib::requests::ScreenWindow screen = RIBExportVisitor::screen(profile);
@@ -261,7 +277,7 @@ bool SceneTranslator::update(const scene::Scene& scene, const scene::Evaluation&
     put(lens, "near", moya::Value::number(profile.clipping().x));
     put(lens, "far", moya::Value::number(profile.clipping().y));
     put(lens, "transform", moya::Value::matrix(glm::inverse(camera.view())));
-    const std::string file = output.file.empty() ? "vertical3d" : output.file;
+    const std::string file = output.file.empty() ? RIBExportVisitor::FRAMEBUFFER : output.file;
     const moya::Handle written = object("output", file);
     put(written, "file", moya::Value::string(file));
     std::string format = file.ends_with(".png") ? "png" : "exr";

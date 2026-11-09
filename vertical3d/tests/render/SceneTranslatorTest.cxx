@@ -185,6 +185,51 @@ BOOST_AUTO_TEST_CASE(translator_removing_an_item_removes_its_objects_test) {
     BOOST_TEST(made.objects("mesh").size() == 1U);
 }
 
+BOOST_AUTO_TEST_CASE(translator_a_spot_light_made_a_point_light_loses_its_cone_test) {
+    scene::Scene editor;
+    const boost::shared_ptr<scene::item::Light> light = boost::make_shared<scene::item::Light>();
+    scene::item::Light::Emission emission;
+    emission.type = scene::item::Light::Type::Spot;
+    emission.cone = 0.5F;
+    emission.delta = 0.1F;
+    light->emission(emission);
+    editor.add(light);
+    editor.add(boost::make_shared<scene::item::Mesh>(v3d::brep::cube()));
+    moya::Scene made(moya::kinds());
+    v3d::editor::render::SceneTranslator translator(&made);
+    translator.update(editor, editor.evaluate(), view(), output());
+    made.apply();
+
+    // a point light is a sphereLight as a spot light is, so the same object is updated
+    emission.type = scene::item::Light::Type::Point;
+    light->emission(emission);
+    BOOST_TEST(translator.update(editor, editor.evaluate(), view(), output()));
+    made.apply();
+    BOOST_TEST(moya::describe(made) == translated(editor));
+}
+
+BOOST_AUTO_TEST_CASE(translator_a_camera_made_orthographic_loses_its_field_of_view_test) {
+    scene::Scene editor;
+    editor.add(boost::make_shared<scene::item::Mesh>(v3d::brep::cube()));
+    moya::Scene made(moya::kinds());
+    v3d::editor::render::SceneTranslator translator(&made);
+    v3d::type::camera::Profile deep = view();
+    deep.orthographic(false);
+    translator.update(editor, editor.evaluate(), deep, output());
+    made.apply();
+
+    v3d::type::camera::Profile flat = view();
+    flat.orthographic(true);
+    BOOST_TEST(translator.update(editor, editor.evaluate(), flat, output()));
+    made.apply();
+
+    moya::Scene fresh(moya::kinds());
+    v3d::editor::render::SceneTranslator direct(&fresh);
+    direct.update(editor, editor.evaluate(), flat, output());
+    fresh.apply();
+    BOOST_TEST(moya::describe(made) == moya::describe(fresh));
+}
+
 BOOST_AUTO_TEST_CASE(translator_the_moya_delegate_keeps_its_scene_in_step_test) {
     scene::Scene editor;
     const boost::shared_ptr<scene::item::Mesh> cube = boost::make_shared<scene::item::Mesh>(v3d::brep::cube());

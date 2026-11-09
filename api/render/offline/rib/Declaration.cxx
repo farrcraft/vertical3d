@@ -22,6 +22,8 @@ bool Declaration::storageWord(const std::string & word, Declaration::Storage * s
         *storage = Declaration::Storage::VARYING;
     } else if (word == "vertex") {
         *storage = Declaration::Storage::VERTEX;
+    } else if (word == "facevarying") {
+        *storage = Declaration::Storage::FACEVARYING;
     } else {
         return false;
     }
@@ -138,6 +140,7 @@ std::string Declaration::text() const {
         case Storage::UNIFORM: storage = "uniform"; break;
         case Storage::VARYING: storage = "varying"; break;
         case Storage::VERTEX: storage = "vertex"; break;
+        case Storage::FACEVARYING: storage = "facevarying"; break;
     }
     std::string type;
     switch (type_) {
@@ -162,10 +165,16 @@ bool Declaration::operator==(const Declaration & other) const {
 }
 
 unsigned int Declaration::elements(unsigned int vertices) const {
+    return elements(vertices, vertices);
+}
+
+unsigned int Declaration::elements(unsigned int vertices, unsigned int corners) const {
     switch (storage_) {
         case Storage::VARYING:
         case Storage::VERTEX:
             return vertices;
+        case Storage::FACEVARYING:
+            return corners;
         case Storage::CONSTANT:
         case Storage::UNIFORM:
             return 1;

@@ -27,33 +27,6 @@ namespace {
 
 namespace offline = v3d::render::offline::film;
 
-/** The cells a table has along an axis of the given width, in pixels. **/
-std::uint32_t cells(float width) {
-    const float wanted = std::ceil(width * static_cast<float>(Filter::kPerPixel));
-    const float count = std::clamp(wanted, 1.0F, static_cast<float>(Filter::kMostCells));
-    return static_cast<std::uint32_t>(count);  // checked: finite, and clamped to 1 to kMostCells
-}
-
-/** A buffer on the device holding the values. **/
-boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::vector<float> & values) {
-    const std::size_t bytes = values.size() * sizeof(float);
-    auto buffer = device.allocate(bytes);
-    device.upload(*buffer, values.data(), bytes);
-    return buffer;
-}
-
-/**
- * Divides a run of running sums, which starts at zero, by its last, so that it rises to one. A run
- * that sums to nothing rises evenly instead, since no sample is drawn from it.
- **/
-void normalise(float * cdf, std::uint32_t count) {
-    const float total = cdf[count];
-    for (std::uint32_t i = 1; i <= count; ++i) {
-        cdf[i] = total > 0.0F ? cdf[i] / total : static_cast<float>(i) / static_cast<float>(count);
-    }
-    cdf[count] = 1.0F;
-}
-
 };  // namespace
 
 Filter::Filter(device::Device & device, offline::Filter kind, const glm::vec2 & width) {
@@ -111,6 +84,27 @@ Filter::Filter(device::Device & device, offline::Filter kind, const glm::vec2 & 
 
 kernel::film::PixelFilter Filter::view() const {
     return filter_;
+}
+
+std::uint32_t Filter::cells(float width) {
+    const float wanted = std::ceil(width * static_cast<float>(kPerPixel));
+    const float count = std::clamp(wanted, 1.0F, static_cast<float>(kMostCells));
+    return static_cast<std::uint32_t>(count);  // checked: finite, and clamped to 1 to kMostCells
+}
+
+boost::shared_ptr<device::Buffer> Filter::uploaded(device::Device & device, const std::vector<float> & values) {
+    const std::size_t bytes = values.size() * sizeof(float);
+    auto buffer = device.allocate(bytes);
+    device.upload(*buffer, values.data(), bytes);
+    return buffer;
+}
+
+void Filter::normalise(float * cdf, std::uint32_t count) {
+    const float total = cdf[count];
+    for (std::uint32_t i = 1; i <= count; ++i) {
+        cdf[i] = total > 0.0F ? cdf[i] / total : static_cast<float>(i) / static_cast<float>(count);
+    }
+    cdf[count] = 1.0F;
 }
 
 };  // namespace v3d::moya::film
