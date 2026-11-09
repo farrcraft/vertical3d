@@ -21,9 +21,11 @@
 #include <moya/libmoya/kernel/geometry/Placed.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/PlacedShapes.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Placement.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/primitive/Curves.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/Polynomial.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/Quadratic.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/primitive/RayFrame.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/primitive/Shear.h>  // IWYU pragma: keep

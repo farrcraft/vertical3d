@@ -18,6 +18,7 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::accel {
 
@@ -98,6 +99,19 @@ LinearBox sweepBox(const Box & box, const std::vector<kernel::geometry::Key> & k
  **/
 Sweep pointSweep(const kernel::geometry::Sampled & centres, const kernel::geometry::Sampled & widths, const std::vector<glm::vec3> & points,
     const std::vector<float> & widthValues, const std::vector<float> & times);
+
+/**
+ * The bounds over a time range of segments of curves whose control points move between samples. A
+ * segment lies inside the hull of its control points, each grown by its radius. Each control
+ * point's centre and radius moves linearly between the samples, so the least of them is concave
+ * between two samples and the greatest convex. Bounds that hold at every sample inside the range
+ * then hold between.
+ *
+ * @param held where the control points are, perSegment to a segment in each sample
+ * @param controls every segment's control points
+ **/
+Sweep curveSweep(const kernel::geometry::Sampled & held, std::uint32_t perSegment, const std::vector<glm::vec4> & controls,
+    const std::vector<float> & times);
 
 /**
  * The box of a quadric whose dimensions each lie between least's and most's. It holds the whole

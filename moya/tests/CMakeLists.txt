@@ -8,6 +8,7 @@ v3d_add_test(moya
 	"BuilderTest.cxx"
 	"ColourTest.cxx"
 	"CommandLineTest.cxx"
+	"CurvesTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"
 	"FilmTest.cxx"

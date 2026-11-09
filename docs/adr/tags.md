@@ -352,6 +352,7 @@ reported, so the table lists only tags in use.
 | [0208](offline/0208-offline-curves-are-swept-and-converted-to-bezier.md) | Offline: curves are swept and converted to Bézier |
 | [0209](offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md) | Offline: surfaces are tessellated when the hierarchy is built |
 | [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
+| [0211](offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md) | Offline: a round curve is swept by a sphere |
 
 ### particles
 

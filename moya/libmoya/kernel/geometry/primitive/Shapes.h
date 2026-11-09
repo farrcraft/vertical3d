@@ -28,12 +28,19 @@
  **/
 namespace v3d::moya::kernel::geometry::primitive {
 
-/** What a geometry's primitives are: triangles, round points, flat points, or one quadric. **/
+/**
+ * What a geometry's primitives are: triangles, round points, flat points, one quadric, or the
+ * segments of curves, linear or cubic, each round or flat.
+ **/
 enum class Form : std::uint8_t {
     Triangles,
     RoundPoints,
     FlatPoints,
-    Quadric
+    Quadric,
+    RoundLinearCurves,
+    FlatLinearCurves,
+    RoundCubicCurves,
+    FlatCubicCurves
 };
 
 /** A quadric between two of its samples, each dimension interpolated linearly. **/

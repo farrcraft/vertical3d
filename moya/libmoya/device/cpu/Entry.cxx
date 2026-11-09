@@ -18,6 +18,7 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shear.h>
@@ -123,7 +124,8 @@ kernel::geometry::Ray into(const Traversal & traversal, const Instance & instanc
 
 /**
  * Whether a ray meets a primitive of a geometry within [start, end), as the geometry stands at the
- * ray's time, and where: a triangle, a round or a flat point, or a quadric.
+ * ray's time, and where. A primitive is a triangle, a round or a flat point, a quadric, or a
+ * segment of curves.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then the primitive
 bool meets(const Traversal & traversal, const kernel::geometry::primitive::Shear & shear, std::uint32_t geometry, std::uint32_t primitive,
@@ -153,6 +155,18 @@ bool meets(const Traversal & traversal, const kernel::geometry::primitive::Shear
         case kernel::geometry::primitive::Form::Quadric:
             return kernel::geometry::primitive::intersectQuadric(kernel::geometry::primitive::sampledQuadric(held.quadric, traversal.quadrics.data, times, ray.time), ray,
                 ray.start, end, hit);
+        case kernel::geometry::primitive::Form::RoundLinearCurves:
+        case kernel::geometry::primitive::Form::FlatLinearCurves:
+        case kernel::geometry::primitive::Form::RoundCubicCurves:
+        case kernel::geometry::primitive::Form::FlatCubicCurves: {
+            const std::uint32_t count = kernel::geometry::primitive::controlsOf(held.form);
+            glm::vec4 controls[4];
+            for (std::uint32_t control = 0; control < count; ++control) {
+                controls[control] = kernel::geometry::sampleAt(held.controls, traversal.controls.data, times, (primitive * count) + control, ray.time);
+            }
+            const bool closes = traversal.ends[held.ends + primitive] != 0U;
+            return kernel::geometry::primitive::intersectCurve(held.form, controls, closes, ray, ray.start, end, hit);
+        }
     }
     return false;
 }

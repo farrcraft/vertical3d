@@ -29,7 +29,7 @@ namespace v3d::moya::geometry {
 
 /**
  * Every primitive of every geometry the prototypes' instances place: triangles in world space, and
- * points and quadrics in their own space with the transformation into it.
+ * points, quadrics and the segments of curves in their own space with the transformation into it.
  *
  * Each instance in the world places its prototype, and an instance of a group places every
  * instance in the group, inside its own transformation. Each chain of instances that reaches a
@@ -78,6 +78,9 @@ class World final {
     boost::shared_ptr<device::Buffer> shapes_;
     boost::shared_ptr<device::Buffer> spheres_;
     boost::shared_ptr<device::Buffer> quadrics_;
+    boost::shared_ptr<device::Buffer> controls_;
+    boost::shared_ptr<device::Buffer> curves_;
+    boost::shared_ptr<device::Buffer> ends_;
 };
 
 };  // namespace v3d::moya::geometry

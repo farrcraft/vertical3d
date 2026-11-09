@@ -1,9 +1,10 @@
 # ADR-0208: Offline: curves are swept and converted to Bézier
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-08
 **Tags**: offline
-**Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
+**Amended by**: ADR-0211
+**Documented in**: [offline/Traversal.md](../../offline/Traversal.md)
 
 ## Context
 

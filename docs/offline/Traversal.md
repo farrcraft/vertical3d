@@ -28,7 +28,8 @@ same fields.
 - **`primitive`**, the index within the geometry the innermost instance places. `kNoPrimitive`
   means the ray met nothing, which `found()` reports.
 - **`uv`**, the position on the primitive. For a triangle it is the weight of its second and
-  third vertices, and for a quadric RI's parameters. A point has none, and its `uv` is zero.
+  third vertices, and for a quadric RI's parameters. For a segment of curves it is across the
+  width and along the segment. A point has none, and its `uv` is zero.
 - **`instances`**, the chain of instances that placed the primitive, outermost first, and
   **`depth`**, how many there are. The chain holds at most `kInstanceDepth`, which is 4.
 
@@ -101,6 +102,47 @@ samples them together at every time any of them is sampled at, which holds each 
 samples exactly, and `sampledQuadric()` interpolates them. A point cloud's centres and widths
 each keep their own samples.
 
+## Curves
+
+Curves are intersected by moya's own kernel code, in `kernel/geometry/primitive/Curves.h`, a
+segment at a time and in the segment's own space. A segment's control points each hold a centre
+and a radius: two to a linear segment, and four to a cubic one. Every cubic basis is converted to
+Bézier when the scene is gathered, so there is one cubic test and one linear one.
+[Geometry.md](Geometry.md#curves-into-segments) covers the conversion.
+
+- **A round segment is the surface a sphere of the curve's radius sweeps** as it moves along the
+  curve. A linear one is a sphere at each end and the cone that touches both. The cone's
+  crossings are the roots of a quadratic, taken about the distance at which the ray passes
+  nearest, so a segment far off keeps its radius.
+- **A cubic segment is halved four times** in the ray's own frame, where the ray runs down z. A
+  piece is passed over when the ray misses the box of its control points grown by their largest
+  radius, which holds it. A hit on each piece left is refined by Newton's method on the swept
+  surface. The guess is where the ray enters the piece's chord as a round linear segment, or
+  else where it passes nearest the chord. A hit that does not settle within a thousandth of the
+  radius of the surface is not one, and neither is one outside the segment.
+- **A flat segment faces the ray.** The ray meets it where it passes within the radius of a point
+  on the centre line, as the ray sees the curve. It meets the round segment at the same places.
+  The hit is at the depth of the point the ray passes deepest inside, by the square of the
+  distance from the point less the square of its radius. On a linear segment that is the least of
+  a quadratic. On a cubic one it is refined by Newton's method on each piece left.
+- **Two segments share the point where one ends and the next starts, and the next holds it.** A
+  ray through a joint meets one segment, whichever traversal traces it. The segment that closes a
+  curve holds its end too, so a round curve's ends are the spheres there.
+- **A curve's width is exact.** A curve thinner than a pixel is met by a share of the pixel's rays
+  as large as its share of the pixel, and nothing widens it.
+- **A hit's `uv` is across the width and along the segment.** u runs from 0 to 1 with a half on
+  the centre line, and is more to the left of the curve as the ray sees it. v runs from 0 at the
+  segment's start to 1 at its end.
+- **`curveNormal()` gives the geometric normal**: from the centre line at the hit's v on a round
+  curve, and back along the ray on a flat one.
+
+A segment's control points move linearly between their samples, as a point's centre and width
+do. `geometry::gather()` samples a set of curves' points and widths together at every time either
+is sampled at, which holds each between its own samples exactly.
+
+Background: [ADR-0208](../adr/offline/0208-offline-curves-are-swept-and-converted-to-bezier.md),
+[ADR-0211](../adr/offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md)
+
 ## Leaving a surface
 
 `offsetStart(point, normal)` moves the start of a ray that leaves a surface off it, along the
@@ -144,14 +186,18 @@ orthographic, at the origin.
 `geometry::gather(scene, logger)` gathers every prototype the scene's instances reach from the
 world into a `geometry::Prototypes`, each in its own space, with the instances that place them.
 
-- **A prototype placed many times is held once.** A `Geometry` is a mesh, a point cloud or a
-  quadric, and says its `Form`: triangles, round points, flat points or a quadric.
+- **A prototype placed many times is held once.** A `Geometry` is a mesh, a point cloud, a
+  quadric or a set of curves. It says its `Form`: triangles, round points, flat points, a quadric,
+  or the segments of curves, linear or cubic and round or flat.
   - A mesh's triangles are a run of the triangles every mesh holds, with the face each was cut
     from. Its points are three per triangle at each of its samples, one sample after another, and
     the faces are cut where the first sample's points lie.
   - A point cloud holds each point's centre and width at each sample. A cloud that gives a width
     for some points but not all takes its constant width, and is reported.
   - A quadric holds its dimensions at each sample.
+  - A set of curves holds each segment's control points at each sample, with the curve it was
+    cut from and whether it closes its curve. Curves whose widths are neither one per vertex nor
+    one per varying value take their constant width, and are reported.
 - **An instance names its prototype**, a geometry or a group, and its transformation into the space
   of the group that holds it. It keeps its index in the scene. Its `camera`, `shadow` and
   `indirect` parameters give the kinds of ray it is visible to.
@@ -162,8 +208,9 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
     group. A group that holds itself would otherwise have no bounds.
   - an instance that would be deeper in a chain than a hit records. It is still held where a
     shorter chain reaches it, and each traversal leaves it out where it is too deep.
-  - an instance of a subdivision or of curves. Neither kind is traced, so its instances are left
-    out.
+  - an instance of a subdivision, which is not traced.
+  - an instance of curves that cannot be cut into segments, for the reasons `geometry::cut()`
+    refuses them.
   - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that
     do not add up to the indices, or an index outside the points.
 
@@ -199,11 +246,12 @@ Background: [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-o
 
 `geometry::flatten(prototypes, time)` places every primitive the prototypes' instances reach as it
 stands at a time, in runs, one run for each chain of instances. Triangles are placed in world space.
-Points and quadrics are held in their own space, each run as a `PlacedShapes` with the
-transformation into it from the world, since a sphere stretched by a transformation is no longer a
-sphere. With no time, it places them as they stand when the shutter opens. `geometry::World` holds
-the result in a device's memory, and `view()` gives it to kernel code as a
-`kernel::geometry::Placed`. `flatten(scene, logger)` gathers the scene and places what it gathers.
+Points, quadrics and the segments of curves are held in their own space. Each run is a
+`PlacedShapes` with the transformation into it from the world, since a sphere stretched by a
+transformation is no longer a sphere. With no time, it places them as they stand when the shutter
+opens. `geometry::World` holds the result in a device's memory, and `view()` gives it to kernel
+code as a `kernel::geometry::Placed`. `flatten(scene, logger)` gathers the scene and places what it
+gathers.
 
 - **Each instance in the world places its prototype**, and an instance of a group places every
   instance in the group inside its own transformation. Runs follow the instances' indices.
@@ -217,10 +265,10 @@ the result in a device's memory, and `view()` gives it to kernel code as a
 ## The brute-force traversal
 
 `kernel::geometry::BruteForce` tests every placed primitive for every ray, moving the ray into each
-run of points or quadrics. It is slow, and it is the reference every other traversal is compared
-with. Its `nearest()` keeps the nearest hit within the ray's interval, and its `any()` stops at the
-first. A run hidden from the ray's kind is passed over. It traces the triangles as they were placed,
-so it is right for a ray at the time they were placed at.
+run of points, quadrics or curves. It is slow, and it is the reference every other traversal is
+compared with. Its `nearest()` keeps the nearest hit within the ray's interval, and its `any()`
+stops at the first. A run hidden from the ray's kind is passed over. It traces the triangles as they
+were placed, so it is right for a ray at the time they were placed at.
 
 ## The hit view
 
@@ -235,9 +283,9 @@ and refuses.
 | Channel | A pixel whose ray hit | A pixel whose ray met nothing |
 |---|---|---|
 | `depth` | the hit's depth along the camera's view | infinity |
-| `normal` | the geometric normal in world space: by a triangle's winding, from a round point's centre or a quadric's surface, and back along the ray for a flat point | zero |
+| `normal` | the geometric normal in world space: by a triangle's winding, from a round point's centre, a quadric's surface or a round curve's centre line, and back along the ray for a flat point or a flat curve | zero |
 | `instance` | the index of the innermost instance | -1 |
-| `face` | the face of its mesh, the point it met, or 0 for a quadric | -1 |
+| `face` | the face of its mesh, the curve of its segment, the point it met, or 0 for a quadric | -1 |
 | `coverage` | one | zero |
 
 The beauty is black.
@@ -322,10 +370,14 @@ one's root, and whether it moves.
 
 - **A geometry's hierarchy is built once**, however many instances place it, and its leaves hold
   the indices of its primitives within it. One that holds still is built as `build()` builds one:
-  a mesh over its triangles with spatial splits, and points over their boxes without. One that
-  moves is built as `buildMoving()` does, over the shutter.
+  a mesh over its triangles with spatial splits, and points and curves over their boxes without.
+  One that moves is built as `buildMoving()` does, over the shutter.
 - **A point is bounded** by its centre and half its width, which `accel::pointSweep()` bounds
   over a time range as a moving triangle's points are bounded.
+- **A segment of curves is bounded** by its control points, each grown by its radius, whose hull
+  holds it. `accel::curveSweep()` bounds it over a time range. Each bound is the least or
+  greatest of lines between samples, so bounds that hold at the samples inside the range hold
+  throughout.
 - **A quadric is one primitive.** `accel::quadricBounds()` gives the box of its whole surface of
   revolution from the least and greatest of each dimension, so it holds whatever the sweep. Over
   a time range, `accel::quadricSweep()` takes each dimension's least and greatest at the samples
@@ -361,7 +413,7 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
   passed over. `any()` stops at the first primitive it meets.
 - **A leaf of a geometry's hierarchy tests each primitive by the geometry's form**: a triangle,
-  a round or flat point, or the quadric, as it stands at the ray's time.
+  a round or flat point, the quadric, or a segment of curves, as it stands at the ray's time.
 - **A leaf of a group's hierarchy enters each of its instances.** The ray is moved into the
   instance's prototype's space by the inverse of its transformation at the ray's time, and
   traverses the prototype's hierarchy there. A distance along the

@@ -18,6 +18,7 @@
 #include <moya/libmoya/kernel/geometry/Placed.h>
 #include <moya/libmoya/kernel/geometry/PlacedShapes.h>
 #include <moya/libmoya/kernel/geometry/Placement.h>
+#include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -64,8 +65,9 @@ void placeMesh(const Prototypes & prototypes, float time, const Geometry & mesh,
 }
 
 /**
- * Places a geometry's points or its quadric as they stand at a time, at the end of a chain of
- * instances, in their own space with the transformation into it from the world.
+ * Places a geometry's points, its quadric or its segments of curves as they stand at a time, at
+ * the end of a chain of instances. They are held in their own space, with the transformation into
+ * it from the world. A segment takes four control points, of which a linear one reads two.
  **/
 void placeShapes(const Prototypes & prototypes, float time, const Geometry & geometry, const glm::mat4 & toWorld,
     kernel::geometry::Placement placement, Flat & out) {
@@ -73,9 +75,21 @@ void placeShapes(const Prototypes & prototypes, float time, const Geometry & geo
     shapes.form = geometry.form;
     shapes.toShape = glm::inverse(toWorld);
     placement.count = geometry.count;
+    const std::uint32_t controls = kernel::geometry::primitive::controlsOf(geometry.form);
     if (geometry.form == kernel::geometry::primitive::Form::Quadric) {
         placement.first = static_cast<std::uint32_t>(out.quadrics.size());
         out.quadrics.push_back(kernel::geometry::primitive::sampledQuadric(geometry.quadric, prototypes.quadrics.data(), prototypes.times.data(), time));
+    } else if (controls > 0) {
+        placement.first = static_cast<std::uint32_t>(out.curves.size());
+        for (std::uint32_t segment = 0; segment < geometry.count; ++segment) {
+            for (std::uint32_t control = 0; control < 4; ++control) {
+                out.controls.push_back(control < controls ? kernel::geometry::sampleAt(geometry.controls, prototypes.controls.data(), prototypes.times.data(),
+                                                                (segment * controls) + control, time) :
+                                                            glm::vec4 { 0.0F });
+            }
+        }
+        out.curves.insert(out.curves.end(), prototypes.faces.begin() + geometry.first, prototypes.faces.begin() + geometry.first + geometry.count);
+        out.ends.insert(out.ends.end(), prototypes.ends.begin() + geometry.ends, prototypes.ends.begin() + geometry.ends + geometry.count);
     } else {
         placement.first = static_cast<std::uint32_t>(out.spheres.size());
         for (std::uint32_t point = 0; point < geometry.count; ++point) {
@@ -146,7 +160,8 @@ Flat flatten(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & 
 World::World(device::Device & device, const Flat & flat) :
     points_(uploaded(device, flat.points)), faces_(uploaded(device, flat.faces)), placements_(uploaded(device, flat.placements)),
     runs_(uploaded(device, flat.runs)), shapes_(uploaded(device, flat.shapes)), spheres_(uploaded(device, flat.spheres)),
-    quadrics_(uploaded(device, flat.quadrics)) {
+    quadrics_(uploaded(device, flat.quadrics)), controls_(uploaded(device, flat.controls)), curves_(uploaded(device, flat.curves)),
+    ends_(uploaded(device, flat.ends)) {
 }
 
 kernel::geometry::Placed World::view() const {
@@ -154,7 +169,10 @@ kernel::geometry::Placed World::view() const {
         .placements = device::view<kernel::geometry::Placement>(*placements_),
         .shapes = device::view<kernel::geometry::PlacedShapes>(*shapes_),
         .spheres = device::view<glm::vec4>(*spheres_),
-        .quadrics = device::view<kernel::geometry::primitive::Quadric>(*quadrics_) };
+        .quadrics = device::view<kernel::geometry::primitive::Quadric>(*quadrics_),
+        .controls = device::view<glm::vec4>(*controls_),
+        .curves = device::view<std::uint32_t>(*curves_),
+        .ends = device::view<std::uint32_t>(*ends_) };
 }
 
 kernel::Array<std::uint32_t> World::runs() const {

@@ -20,21 +20,25 @@ namespace v3d::moya::geometry {
  *   mesh's triangles were cut from, from first.
  * - points, round or flat, each point's centre, and its width in the widths.
  * - a quadric, its dimensions in the quadrics, one per sample.
+ * - curves, the control points of each segment, two or four, a run of the curves each segment
+ *   was cut from, from first, and a run of which segments close their curves, from ends.
  **/
 struct Geometry {
     kernel::geometry::primitive::Form form { kernel::geometry::primitive::Form::Triangles };
 
-    /** The first of a mesh's faces, and how many primitives the geometry holds. **/
+    /** The first of a mesh's faces or of curves' curves, and how many primitives it holds. **/
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
 
     kernel::geometry::Sampled points;
     kernel::geometry::Sampled widths;
     kernel::geometry::Sampled quadric;
+    kernel::geometry::Sampled controls;
+    std::uint32_t ends { 0 };
 
     /** Whether the geometry moves over the shutter. **/
     bool moves() const {
-        return points.samples > 1 || widths.samples > 1 || quadric.samples > 1;
+        return points.samples > 1 || widths.samples > 1 || quadric.samples > 1 || controls.samples > 1;
     }
 };
 

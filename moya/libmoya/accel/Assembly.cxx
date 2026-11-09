@@ -20,6 +20,7 @@
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 
@@ -82,6 +83,11 @@ Sweep sweepOf(const geometry::Prototypes & prototypes, const geometry::Geometry 
         case kernel::geometry::primitive::Form::RoundPoints:
         case kernel::geometry::primitive::Form::FlatPoints:
             return pointSweep(geometry.points, geometry.widths, prototypes.points, prototypes.widths, prototypes.times);
+        case kernel::geometry::primitive::Form::RoundLinearCurves:
+        case kernel::geometry::primitive::Form::FlatLinearCurves:
+        case kernel::geometry::primitive::Form::RoundCubicCurves:
+        case kernel::geometry::primitive::Form::FlatCubicCurves:
+            return curveSweep(geometry.controls, kernel::geometry::primitive::controlsOf(geometry.form), prototypes.controls, prototypes.times);
         case kernel::geometry::primitive::Form::Quadric:
             break;
     }

@@ -7,12 +7,14 @@
 
 #include <api/log/Logger.h>
 #include <moya/libmoya/camera/Camera.h>
+#include <moya/libmoya/geometry/Curves.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
+#include <moya/libmoya/geometry/Segments.h>
 #include <moya/libmoya/geometry/Triangulate.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
@@ -135,6 +137,13 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         kind == "torus") {
         out.kind = Prototype::Geometry;
         out.prototype = quadric(prototype);
+    } else if (kind == "curves") {
+        const std::optional<std::uint32_t> cut = curves(prototype);
+        if (!cut) {
+            return std::nullopt;
+        }
+        out.kind = Prototype::Geometry;
+        out.prototype = *cut;
     } else {
         report("a " + kind + " is not traced, so " + scene_.name(prototype) + " is left out");
         return std::nullopt;
@@ -259,6 +268,82 @@ std::uint32_t Walk::quadric(const scene::Handle & handle) {
     for (const float time : at) {
         prototypes_.quadrics.push_back(quadricAt(scene_, handle, time));
     }
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(shape);
+    geometryIndex_.emplace(handle.index, index);
+    return index;
+}
+
+std::optional<std::uint32_t> Walk::curves(const scene::Handle & handle) {
+    const auto found = geometryIndex_.find(handle.index);
+    if (found != geometryIndex_.end()) {
+        return found->second;
+    }
+    const scene::Samples & positions = scene_.samples(handle, "P");
+    const scene::Samples & widths = scene_.samples(handle, "width");
+    const std::vector<std::int32_t> & vertices = scene_.value(handle, "vertices").integerArray();
+    const bool cubic = scene_.value(handle, "type").stringArray().front() == "cubic";
+    const std::string & basis = scene_.value(handle, "basis").stringArray().front();
+    const bool periodic = scene_.value(handle, "wrap").stringArray().front() == "periodic";
+    const bool flat = scene_.value(handle, "profile").stringArray().front() == "flat";
+    const std::size_t count = positions.values.front().size();
+    std::size_t varying = 0;
+    try {
+        varying = varyingCount(vertices, cubic, basis, periodic);
+    } catch (const std::invalid_argument & refused) {
+        report("curves " + scene_.name(handle) + " is left out, because " + refused.what());
+        return std::nullopt;
+    }
+    // a width for each varying value or each vertex at each sample, or the one constant width
+    const std::size_t given = widths.values.front().floatArray().size();
+    const bool constant = given != varying && given != count;
+    if (constant && given > 0) {
+        report("curves " + scene_.name(handle) + " has a width for some of its vertices but not all, and takes its constant width");
+    }
+    // every time the points or the widths are sampled at, since each moves linearly between its
+    // own samples and the segments are linear in both
+    std::set<float> times(positions.times.begin(), positions.times.end());
+    if (!constant) {
+        times.insert(widths.times.begin(), widths.times.end());
+    }
+    const std::vector<float> at = times.size() > 1 ? std::vector<float>(times.begin(), times.end()) : std::vector<float> { 0.0F };
+    const float constantWidth = scene_.value(handle, "constantWidth").floatArray().front();
+    std::vector<Segments> cut;
+    try {
+        for (const float time : at) {
+            std::vector<glm::vec3> points;
+            points.reserve(count);
+            for (std::size_t point = 0; point < count; ++point) {
+                points.push_back(pointOf(positions, point, time));
+            }
+            std::vector<float> diameters(varying, constantWidth);
+            if (!constant) {
+                diameters.resize(given);
+                for (std::size_t width = 0; width < given; ++width) {
+                    diameters[width] = numberAt(widths, width, time);
+                }
+            }
+            cut.push_back(geometry::cut(points, diameters, vertices, cubic, basis, periodic));
+        }
+    } catch (const std::invalid_argument & refused) {
+        report("curves " + scene_.name(handle) + " is left out, because " + refused.what());
+        return std::nullopt;
+    }
+    Geometry shape;
+    if (cubic) {
+        shape.form = flat ? kernel::geometry::primitive::Form::FlatCubicCurves : kernel::geometry::primitive::Form::RoundCubicCurves;
+    } else {
+        shape.form = flat ? kernel::geometry::primitive::Form::FlatLinearCurves : kernel::geometry::primitive::Form::RoundLinearCurves;
+    }
+    shape.first = static_cast<std::uint32_t>(prototypes_.faces.size());
+    shape.count = static_cast<std::uint32_t>(cut.front().curves.size());
+    shape.controls = sampled(prototypes_.controls.size(), cut.front().controls.size(), at.size() > 1 ? at : std::vector<float> {});
+    for (const Segments & segments : cut) {
+        prototypes_.controls.insert(prototypes_.controls.end(), segments.controls.begin(), segments.controls.end());
+    }
+    prototypes_.faces.insert(prototypes_.faces.end(), cut.front().curves.begin(), cut.front().curves.end());
+    shape.ends = static_cast<std::uint32_t>(prototypes_.ends.size());
+    prototypes_.ends.insert(prototypes_.ends.end(), cut.front().ends.begin(), cut.front().ends.end());
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(shape);
     geometryIndex_.emplace(handle.index, index);

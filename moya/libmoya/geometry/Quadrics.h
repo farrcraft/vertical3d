@@ -11,6 +11,8 @@
 #include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstddef>
+
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::geometry {
@@ -20,6 +22,14 @@ float numberAt(const scene::Samples & samples, float time);
 
 /** A sampled point at a time, interpolated as numberAt() interpolates a number. **/
 glm::vec3 pointOf(const scene::Samples & samples, float time);
+
+/** One number of a sampled array at a time, interpolated as numberAt() interpolates a number. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, then the time
+float numberAt(const scene::Samples & samples, std::size_t index, float time);
+
+/** One point of a sampled array at a time, interpolated as numberAt() interpolates a number. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, then the time
+glm::vec3 pointOf(const scene::Samples & samples, std::size_t index, float time);
 
 /**
  * One of the scene's quadrics as it stands at a time, each dimension interpolated between its own

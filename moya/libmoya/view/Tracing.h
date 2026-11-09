@@ -61,6 +61,8 @@ class Tracing final {
     boost::shared_ptr<device::Buffer> times_;
     boost::shared_ptr<device::Buffer> widths_;
     boost::shared_ptr<device::Buffer> quadrics_;
+    boost::shared_ptr<device::Buffer> controls_;
+    boost::shared_ptr<device::Buffer> ends_;
     boost::shared_ptr<device::Buffer> geometries_;
     boost::shared_ptr<device::Buffer> keys_;
     boost::shared_ptr<device::Buffer> instances_;

@@ -41,14 +41,24 @@ T sampledAt(const scene::Samples & samples, float time, const Value & value) {
 };  // namespace
 
 float numberAt(const scene::Samples & samples, float time) {
-    return sampledAt<float>(samples, time, [&](std::size_t sample) {
-        return samples.values[sample].floatArray().front();
-    });
+    return numberAt(samples, 0, time);
 }
 
 glm::vec3 pointOf(const scene::Samples & samples, float time) {
+    return pointOf(samples, 0, time);
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, then the time
+float numberAt(const scene::Samples & samples, std::size_t index, float time) {
+    return sampledAt<float>(samples, time, [&](std::size_t sample) {
+        return samples.values[sample].floatArray()[index];
+    });
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, then the time
+glm::vec3 pointOf(const scene::Samples & samples, std::size_t index, float time) {
     return sampledAt<glm::vec3>(samples, time, [&](std::size_t sample) {
-        return samples.values[sample].triple(0);
+        return samples.values[sample].triple(index);
     });
 }
 

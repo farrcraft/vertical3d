@@ -112,6 +112,7 @@ OpenColorIO, OpenEXR and oneTBB (`vcpkg.json:40`).
 | 0208 | How curves are intersected | [5](#step-5--the-record-curves) |
 | 0209 | When surfaces are tessellated | [6](#step-6--the-record-tessellation) |
 | 0210 | Each CPU instruction set is a library, amending 0206 | [11](#step-11--the-cpu-traversal) |
+| 0211 | A round curve is swept by a sphere, amending 0208 | [15](#step-15--curves) |
 
 Each record step researches how production renderers make the choice, and the owner chooses
 among the options before the record is drafted.
@@ -136,7 +137,7 @@ among the options before the record is drafted.
 | [12](#step-12--instances) | Instances, nested | `moya/libmoya/accel`, `device` | 0204 | done |
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | done |
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | done |
-| [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208 | open |
+| [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208, **0211** | done |
 | [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | open |
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | open |
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | open |
@@ -614,6 +615,41 @@ width, the random scene failed. Four things the list below did not settle:
 torus's axis misses it. A flat point is hit from any direction at its width.
 
 ### Step 15 — Curves
+
+**Done.** `geometry::cut()` cuts the scene's curves into segments, each cubic basis converted
+exactly to Bézier, and `kernel/geometry/primitive/Curves.h` intersects them, linear and cubic,
+round and flat. `geometry::gather()` gathers curves as geometries of four new forms, with their
+points and widths sampled together. The brute-force traversal and the CPU's both test every form,
+and `accel::curveSweep()` bounds a segment by its control points grown by their radii. Each case
+was run against broken code as well, one break at a time. Every basis read as Bézier failed the
+conversion and the basis cases. A periodic curve one segment short failed the counts. Widths
+taken from a curve's first vertex failed the vertex widths. A circle's sweep, or a linear segment
+without its start's sphere, failed the round case. A flat hit at the centre line's nearest point
+failed the flat case. A piece culled without its radius failed the thin curve. A curve read at
+the shutter's opening failed motion and the oracle, and so did a segment bounded without its
+radius. A face that named the segment failed the hit view, and a segment that held its own end
+failed the joint. Five things the list below did not settle:
+
+* **A curve's width is exact**, by the owner's choice over a least width in pixels, which Embree
+  4, Arnold and RenderMan offer. The hit view's one ray per pixel then misses most of a curve
+  thinner than a pixel, and the thin curve's test spreads rays across it instead. A curve a
+  tenth as wide as their spread is met by a tenth of them, at every traversal.
+* **A round curve is swept by a sphere, by
+  [ADR-0211](../adr/offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md)**, where ADR-0208
+  said a circle. A linear segment is then two spheres and the cone that touches both, in closed
+  form, and a cubic segment's ends are the spheres there.
+* **A flat curve is met where the round one is.** Its hit is at the depth of the point the ray
+  passes deepest inside, by the square of the distance less the square of the radius. A hit at
+  the centre line's nearest point missed rays where the radius grows along the segment.
+* **A joint belongs to the segment after it.** Two segments that share an end gave one distance,
+  and the brute-force traversal and the hierarchy kept different segments. Each segment holds its
+  start, and only the segment that closes its curve holds its end.
+* **A cubic piece's refinement starts where the ray enters its chord** as a round linear segment.
+  A guess at the point nearest the chord led Newton's method to a farther surface for a ray
+  running along the curve.
+
+[Traversal.md](../offline/Traversal.md#curves) and
+[Geometry.md](../offline/Geometry.md#curves-into-segments) state the rules.
 
 * **Round and flat curves** as step 5 decides, in each of RI's five bases, linear or cubic,
   with a width at each vertex or one for the curve.

@@ -20,6 +20,7 @@
 #include <cstdint>
 
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::device::cpu {
 
@@ -55,6 +56,12 @@ struct Traversal {
 
     /** Every quadric's dimensions, at each sample. **/
     kernel::Array<kernel::geometry::primitive::Quadric> quadrics;
+
+    /** Every segment's control points, two or four to a segment, at each sample. **/
+    kernel::Array<glm::vec4> controls;
+
+    /** One for each segment that closes its curve, and zero for one the next carries on from. **/
+    kernel::Array<std::uint32_t> ends;
 
     /** The times of the samples of everything that moves. **/
     kernel::Array<float> times;

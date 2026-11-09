@@ -57,8 +57,8 @@ then derived as RI derives it.
   `creaseSharpness` one sharpness each. `corners` and `cornerSharpness`, `holes` by face, and
   `boundary`, as RI's `interpolateboundary` gives it.
 - **`curves`**: `P` and `vertices` per curve, `type` linear or cubic, `basis` one of RI's five,
-  and `wrap`. `width` per vertex over the shutter, or `constantWidth` while it is empty, and
-  `profile`, flat or round.
+  and `wrap`. `width` per varying value or per vertex over the shutter, or `constantWidth` while
+  it is empty, and `profile`, flat or round.
 - **`points`**: `P`, and `width` per point or `constantWidth`. A `profile` of `round`, RI's
   default, makes each point a sphere, and `flat` a disk that faces the ray.
 - **The quadrics**, `sphere`, `cone`, `cylinder`, `hyperboloid`, `paraboloid`, `disk` and `torus`,

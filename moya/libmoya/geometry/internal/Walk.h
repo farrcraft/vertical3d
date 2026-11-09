@@ -75,6 +75,12 @@ class Walk final {
     std::uint32_t quadric(const scene::Handle & handle);
 
     /**
+     * The index of curves among the geometries, cut once, or nothing when they cannot be cut into
+     * segments.
+     **/
+    std::optional<std::uint32_t> curves(const scene::Handle & handle);
+
+    /**
      * Where values are held from first, count for each of a list of samples' times, which the
      * prototypes keep when there is more than one.
      **/

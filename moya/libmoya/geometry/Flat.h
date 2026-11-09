@@ -35,6 +35,9 @@ struct Flat {
     std::vector<kernel::geometry::PlacedShapes> shapes;
     std::vector<glm::vec4> spheres;
     std::vector<kernel::geometry::primitive::Quadric> quadrics;
+    std::vector<glm::vec4> controls;
+    std::vector<std::uint32_t> curves;
+    std::vector<std::uint32_t> ends;
 
     /** What was left out and why, once each, as the log reports it. **/
     std::vector<std::string> reports;

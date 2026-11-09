@@ -9,6 +9,7 @@
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/PlacedShapes.h>
 #include <moya/libmoya/kernel/geometry/Placement.h>
+#include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
@@ -27,12 +28,12 @@ namespace v3d::moya::kernel::geometry {
 
 /**
  * Every primitive of a scene placed, in runs, one run per chain of instances. Triangles are
- * placed in world space. Points and quadrics are held in their own space, each run with the
- * transformation into it.
+ * placed in world space. Points, quadrics and the segments of curves are held in their own space,
+ * each run with the transformation into it.
  *
  * A primitive is its index within its run, which is its index within its geometry, so a hit names
  * the same primitive whichever traversal found it. Each triangle also keeps the face of its mesh
- * that it was cut from.
+ * that it was cut from, and each segment the curve.
  **/
 struct Placed {
     /** Three points per triangle, in world space. **/
@@ -49,6 +50,18 @@ struct Placed {
     Array<glm::vec4> spheres;
 
     Array<primitive::Quadric> quadrics;
+
+    /**
+     * Each segment's control points, in its run's own space, four to a segment, of which a linear
+     * segment reads two.
+     **/
+    Array<glm::vec4> controls;
+
+    /** The curve of its geometry each segment was cut from. **/
+    Array<std::uint32_t> curves;
+
+    /** One for each segment that closes its curve, and zero for one the next carries on from. **/
+    Array<std::uint32_t> ends;
 
     /** The index among every placed triangle of a hit's triangle, or kNoPrimitive. **/
     MOYA_KERNEL std::uint32_t triangle(const Hit & hit) const {
@@ -81,6 +94,11 @@ struct Placed {
                 return primitive::intersectFacing(glm::vec3(spheres[at]), spheres[at].w, ray, start, end, hit);
             case primitive::Form::Quadric:
                 return primitive::intersectQuadric(quadrics[at], ray, start, end, hit);
+            case primitive::Form::RoundLinearCurves:
+            case primitive::Form::FlatLinearCurves:
+            case primitive::Form::RoundCubicCurves:
+            case primitive::Form::FlatCubicCurves:
+                return primitive::intersectCurve(run.form, &controls[at * 4U], ends[at] != 0U, ray, start, end, hit);
             // a run of shapes holds no triangles
             case primitive::Form::Triangles:
                 break;
@@ -90,8 +108,9 @@ struct Placed {
 
     /**
      * A hit's geometric normal in world space, of unit length. A triangle's is by the winding of
-     * its points, a round point's from its centre, and a quadric's from its surface. A flat
-     * point's faces back along the ray. Zero for a hit this scene does not hold.
+     * its points, a round point's from its centre, a quadric's from its surface, and a round
+     * curve's from its centre line. A flat point's and a flat curve's face back along the ray.
+     * Zero for a hit this scene does not hold.
      **/
     MOYA_KERNEL glm::vec3 normal(const Hit & hit, const Ray & ray) const {
         const std::uint32_t at = triangle(hit);
@@ -120,6 +139,12 @@ struct Placed {
             case primitive::Form::Quadric:
                 own = primitive::quadricNormal(quadrics[index], point);
                 break;
+            case primitive::Form::RoundLinearCurves:
+            case primitive::Form::FlatLinearCurves:
+            case primitive::Form::RoundCubicCurves:
+            case primitive::Form::FlatCubicCurves:
+                own = primitive::curveNormal(placed.form, &controls[index * 4U], point, hit.uv.y, local.direction);
+                break;
             // a run of shapes holds no triangles
             case primitive::Form::Triangles:
                 break;
@@ -128,13 +153,21 @@ struct Placed {
         return glm::normalize(glm::transpose(glm::mat3(placed.toShape)) * own);
     }
 
-    /** The face a hit's triangle was cut from, the point a hit met, or kNoPrimitive. **/
+    /**
+     * The face a hit's triangle was cut from, the curve a hit's segment was, the point a hit met,
+     * or kNoPrimitive.
+     **/
     MOYA_KERNEL std::uint32_t face(const Hit & hit) const {
         const std::uint32_t at = triangle(hit);
         if (at != kNoPrimitive) {
             return faces[at];
         }
-        return shapeRun(hit) == kNoPrimitive ? kNoPrimitive : hit.primitive;
+        const std::uint32_t run = shapeRun(hit);
+        if (run == kNoPrimitive) {
+            return kNoPrimitive;
+        }
+        const PlacedShapes & placed = shapes[run];
+        return primitive::controlsOf(placed.form) > 0U ? curves[placed.placement.first + hit.primitive] : hit.primitive;
     }
 };
 

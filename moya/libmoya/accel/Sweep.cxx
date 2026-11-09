@@ -280,6 +280,50 @@ Sweep pointSweep(const kernel::geometry::Sampled & centres, const kernel::geomet
     };
 }
 
+Sweep curveSweep(const kernel::geometry::Sampled & held, std::uint32_t perSegment, const std::vector<glm::vec4> & controls,
+    const std::vector<float> & times) {
+    return [held, perSegment, &controls, &times](std::uint32_t primitive, float begin, float end) {
+        // each extent is the least or greatest of the control points' centres less or more their
+        // radii. Each of those moves linearly between samples, so the least is concave between
+        // them and the greatest convex, and the bounds need only hold at the samples
+        std::vector<double> breaks;
+        for (std::uint32_t sample = 0; sample < held.samples && held.samples > 1; ++sample) {
+            const double time = times[held.times + sample];
+            if (time > static_cast<double>(begin) && time < static_cast<double>(end)) {
+                breaks.push_back(time);
+            }
+        }
+        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the time
+        const auto extent = [&](int axis, double side, double time) {
+            const float at = static_cast<float>(time);
+            double out = side * -std::numeric_limits<double>::infinity();
+            for (std::uint32_t control = 0; control < perSegment; ++control) {
+                const glm::vec4 point = kernel::geometry::sampleAt(held, controls.data(), times.data(), (primitive * perSegment) + control, at);
+                const double reach = static_cast<double>(point[axis]) + (side * static_cast<double>(point.w));
+                out = side > 0.0 ? std::max(out, reach) : std::min(out, reach);
+            }
+            return out;
+        };
+        LinearBox out;
+        for (int axis = 0; axis < 3; ++axis) {
+            const double lower[2] = { extent(axis, -1.0, begin), extent(axis, -1.0, end) };
+            const double upper[2] = { extent(axis, 1.0, begin), extent(axis, 1.0, end) };
+            double under = 0.0;
+            double over = 0.0;
+            for (const double time : breaks) {
+                const double along = (time - begin) / (static_cast<double>(end) - begin);
+                under = std::max(under, (lower[0] + ((lower[1] - lower[0]) * along)) - extent(axis, -1.0, time));
+                over = std::max(over, extent(axis, 1.0, time) - (upper[0] + ((upper[1] - upper[0]) * along)));
+            }
+            out.start.lower[axis] = down(lower[0] - under);
+            out.end.lower[axis] = down(lower[1] - under);
+            out.start.upper[axis] = up(upper[0] + over);
+            out.end.upper[axis] = up(upper[1] + over);
+        }
+        return out;
+    };
+}
+
 Box quadricBounds(const kernel::geometry::primitive::Quadric & least, const kernel::geometry::primitive::Quadric & most) {
     const auto largest = [](float first, float second) {
         return std::max(std::fabs(first), std::fabs(second));

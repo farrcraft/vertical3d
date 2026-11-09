@@ -36,6 +36,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::view {
 
@@ -92,7 +93,9 @@ Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & protot
         geometries.reserve(prototypes.geometries.size());
         for (const geometry::Geometry & geometry : prototypes.geometries) {
             geometries.push_back(
-                device::cpu::Geometry { .form = geometry.form, .points = geometry.points, .widths = geometry.widths, .quadric = geometry.quadric });
+                device::cpu::Geometry { .form = geometry.form, .points = geometry.points, .widths = geometry.widths, .quadric = geometry.quadric,
+                .controls = geometry.controls,
+                .ends = geometry.ends });
         }
         nodes_ = uploaded(device, assembly.nodes);
         motionNodes_ = uploaded(device, assembly.motionNodes);
@@ -101,6 +104,8 @@ Tracing::Tracing(device::CpuDevice & device, const geometry::Prototypes & protot
         times_ = uploaded(device, prototypes.times);
         widths_ = uploaded(device, prototypes.widths);
         quadrics_ = uploaded(device, prototypes.quadrics);
+        controls_ = uploaded(device, prototypes.controls);
+        ends_ = uploaded(device, prototypes.ends);
         geometries_ = uploaded(device, geometries);
         keys_ = uploaded(device, assembly.keys);
         instances_ = uploaded(device, assembly.instances);
@@ -132,6 +137,8 @@ device::cpu::Traversal Tracing::hierarchy() const {
         .points = device::view<glm::vec3>(*points_),
         .widths = device::view<float>(*widths_),
         .quadrics = device::view<kernel::geometry::primitive::Quadric>(*quadrics_),
+        .controls = device::view<glm::vec4>(*controls_),
+        .ends = device::view<std::uint32_t>(*ends_),
         .times = device::view<float>(*times_),
         .geometries = device::view<device::cpu::Geometry>(*geometries_),
         .keys = device::view<kernel::geometry::Key>(*keys_),
