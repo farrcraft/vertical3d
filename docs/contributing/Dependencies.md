@@ -30,7 +30,7 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 builds TBB and OpenUSD from source, which takes a long time.
 
 What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
-Imath and OpenColorIO. No api library
+Imath, OpenColorIO and OpenSubdiv. No api library
 uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
 only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
 names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
@@ -49,6 +49,7 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | libpng | |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
+| opensubdiv | OpenSubdiv, in the `moya` feature, with none of its features, so it has no OpenGL or GPU backend. moya evaluates subdivision surfaces through it. vcpkg builds it static on Windows, and it is linked as the `OpenSubdiv::osdCPU_static` target on every platform, PRIVATE because only the subdivision surface's source includes it. Its scheme headers use `M_PI`, so that source is compiled with `_USE_MATH_DEFINES` on MSVC. The Flatpak builds it as a module |
 | openexr | OpenEXR, in the `moya` feature. moya writes its pictures through it. It is the `OpenEXR::OpenEXR` target. It brings libdeflate and OpenJPH, which the Flatpak builds as modules |
 | quickjs-ng | `v3dlib_script` runs scripts on it, as the `qjs` target of the `qjs` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |

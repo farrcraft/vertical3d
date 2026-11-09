@@ -75,6 +75,12 @@ class Walk final {
     std::uint32_t quadric(const scene::Handle & handle);
 
     /**
+     * The index of a subdivision surface among the geometries, cut once from its limit surface
+     * into triangles, or nothing when OpenSubdiv cannot refine its topology.
+     **/
+    std::optional<std::uint32_t> subdivision(const scene::Handle & handle);
+
+    /**
      * The index of curves among the geometries, cut once, or nothing when they cannot be cut into
      * segments.
      **/

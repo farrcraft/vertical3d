@@ -77,8 +77,11 @@ constexpr std::size_t kPixels = static_cast<std::size_t>(kWidth) * kHeight;
 
 constexpr std::uint32_t kSamples = 64;
 
+// an RGB build renders no reference chart
+#ifndef MOYA_RGB
 constexpr const char * kReference = "data/foundation-chart.png";
 constexpr const char * kRendered = "data_out/foundation-chart.png";
+#endif
 
 /** What the chart's kernel function reads. **/
 struct Chart {

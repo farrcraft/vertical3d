@@ -38,11 +38,12 @@
   ],
   "features": {
     "moya": {
-      "description": "What moya alone uses: oneTBB, which its CPU device schedules its work on, OpenEXR and Imath, which it writes pictures through, and OpenColorIO, which manages its colour",
+      "description": "What moya alone uses: oneTBB, which its CPU device schedules its work on, OpenEXR and Imath, which it writes pictures through, OpenColorIO, which manages its colour, and OpenSubdiv, which evaluates its subdivision surfaces",
       "dependencies": [
         "imath",
         "opencolorio",
         "openexr",
+        "opensubdiv",
         "tbb"
       ]
     },

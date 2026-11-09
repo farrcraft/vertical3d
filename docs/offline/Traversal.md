@@ -195,6 +195,9 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
   - A point cloud holds each point's centre and width at each sample. A cloud that gives a width
     for some points but not all takes its constant width, and is reported.
   - A quadric holds its dimensions at each sample.
+  - A subdivision surface becomes a mesh's triangles, cut from its limit surface, each side of
+    a patch face into 8 pieces. Each triangle keeps the face of the control mesh it was cut from,
+    and each sample's points are evaluated on the one surface.
   - A set of curves holds each segment's control points at each sample, with the curve it was
     cut from and whether it closes its curve. Curves whose widths are neither one per vertex nor
     one per varying value take their constant width, and are reported.
@@ -208,7 +211,8 @@ world into a `geometry::Prototypes`, each in its own space, with the instances t
     group. A group that holds itself would otherwise have no bounds.
   - an instance that would be deeper in a chain than a hit records. It is still held where a
     shorter chain reaches it, and each traversal leaves it out where it is too deep.
-  - an instance of a subdivision, which is not traced.
+  - an instance of a subdivision surface that cannot be refined, for the reasons
+    `geometry::Surface()` refuses it.
   - an instance of curves that cannot be cut into segments, for the reasons `geometry::cut()`
     refuses them.
   - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that

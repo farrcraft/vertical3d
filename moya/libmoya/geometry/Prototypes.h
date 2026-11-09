@@ -83,7 +83,8 @@ struct Prototypes {
  *   A group that holds itself would otherwise have no bounds.
  * - an instance that would be deeper in a chain than kernel::geometry::kInstanceDepth. It is still
  *   held where a shorter chain reaches it, and a traversal leaves it out where it is too deep.
- * - an instance of a subdivision, which is not traced.
+ * - an instance of a subdivision surface that OpenSubdiv cannot refine, for the reasons
+ *   geometry::Surface() refuses it.
  * - an instance of a mesh whose faces cannot be cut: a negative count of vertices, counts that do
  *   not add up to the indices, or an index outside the points.
  * - an instance of curves that cannot be cut into segments: a curve of fewer than two vertices,

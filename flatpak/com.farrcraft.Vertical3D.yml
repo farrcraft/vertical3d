@@ -264,6 +264,37 @@ modules:
         url: https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.5.1.tar.gz
         sha256: 08cb6213ea4edee550ab050509d38204004bee6742c658166b1cf825d0a9381b
 
+  # OpenSubdiv's CPU library alone, static and position-independent as vcpkg builds it, with
+  # every GPU and threading backend off
+  - name: opensubdiv
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DNO_CLEW=ON
+      - -DNO_CUDA=ON
+      - -DNO_DOC=ON
+      - -DNO_DX=ON
+      - -DNO_EXAMPLES=ON
+      - -DNO_GLEW=ON
+      - -DNO_GLFW=ON
+      - -DNO_GLTESTS=ON
+      - -DNO_METAL=ON
+      - -DNO_OMP=ON
+      - -DNO_OPENCL=ON
+      - -DNO_OPENGL=ON
+      - -DNO_PTEX=ON
+      - -DNO_REGRESSION=ON
+      - -DNO_TBB=ON
+      - -DNO_TESTS=ON
+      - -DNO_TUTORIALS=ON
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/PixarAnimationStudios/OpenSubdiv/archive/refs/tags/v3_5_0.tar.gz
+        sha256: 8f5044f453b94162755131f77c08069004f25306fd6dc2192b6d49889efb8095
+
   - name: openusd
     buildsystem: cmake-ninja
     config-opts:

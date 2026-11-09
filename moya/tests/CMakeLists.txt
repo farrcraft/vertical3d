@@ -49,6 +49,7 @@ v3d_add_test(moya
 	"SceneWorldTest.cxx"
 	"ShapesTest.cxx"
 	"SpectrumTest.cxx"
+	"SubdivisionTest.cxx"
 	"VertexTest.cxx"
 	"ZSobolTest.cxx")
 

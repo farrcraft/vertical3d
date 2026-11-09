@@ -18,6 +18,11 @@ if(MSVC)
 	set_source_files_properties("${V3D_MOYA_ACESCG_TABLE}" PROPERTIES COMPILE_OPTIONS "/analyze-")
 endif()
 
+# OpenSubdiv's scheme headers use M_PI, which MSVC's <cmath> defines only when it is asked to.
+if(MSVC)
+	set_source_files_properties("geometry/Surface.cxx" PROPERTIES COMPILE_DEFINITIONS "_USE_MATH_DEFINES")
+endif()
+
 add_library("v3dlib_moya"
 	"Curve.h" "Curve.cxx"
 	"Hider.h"
@@ -73,8 +78,13 @@ add_library("v3dlib_moya"
 	"geometry/Prototypes.h" "geometry/Prototypes.cxx"
 	"geometry/Quadrics.h" "geometry/Quadrics.cxx"
 	"geometry/Segments.h"
+	"geometry/Surface.h" "geometry/Surface.cxx"
+	"geometry/Tessellation.h"
+	"geometry/Topology.h"
 	"geometry/Triangulate.h" "geometry/Triangulate.cxx"
 	"geometry/World.h" "geometry/World.cxx"
+	"geometry/internal/Patches.h"
+	"geometry/internal/Scalar.h"
 	"geometry/internal/Walk.h" "geometry/internal/Walk.cxx"
 
 	"output/ExrPart.h"
@@ -158,9 +168,10 @@ endif()
 # PRIVATE: only Display writes an image, encoding it with image and writing the file through
 # asset. Only the CPU device's source includes TBB, and only the EXR writer's source includes
 # OpenEXR and Imath. Only the colour configuration's source and its internal headers include
-# OpenColorIO.
+# OpenColorIO, and only the subdivision surface's OpenSubdiv. OpenSubdiv is linked static on every
+# platform, as vcpkg builds it on Windows.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static TBB::tbb)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
 # platforms, and finds it by its path.

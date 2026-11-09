@@ -138,7 +138,7 @@ among the options before the record is drafted.
 | [13](#step-13--motion) | Transformation and deformation motion | `moya/libmoya/accel`, `kernel` | 0207 | done |
 | [14](#step-14--points-and-the-quadrics) | Points and the quadrics | `moya/libmoya/kernel` | — | done |
 | [15](#step-15--curves) | Curves, round and flat | `moya/libmoya/kernel`, `geometry` | 0208, **0211** | done |
-| [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | open |
+| [16](#step-16--subdivision-surfaces) | Subdivision surfaces through OpenSubdiv | `moya/libmoya/geometry`, `vcpkg.json` | 0209 | done |
 | [17](#step-17--tessellation-and-displacement) | Tessellation and displacement | `moya/libmoya/geometry` | 0209 | open |
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | open |
 | [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | open |
@@ -662,6 +662,37 @@ ray. A curve in each basis is hit where the oracle hits it. A curve a fraction o
 still covers the pixels along it.
 
 ### Step 16 — Subdivision surfaces
+
+**Done.** OpenSubdiv 3.5.0 is in the manifest's `moya` feature with none of its features, linked
+PRIVATE and static, and a module of the Flatpak. `geometry::Surface` refines a `Topology`
+adaptively and builds the table of patches over its limit surface. `cut()` cuts each patch face
+into triangles at a rate, and `at()` evaluates a primvar of any class over them.
+`geometry::gather()` cuts the scene's subdivision surfaces into a mesh's triangles, every sample's
+points evaluated on the one surface. Each case was run against broken code as well, one break at
+a time. Catmull-Clark refined as bilinear failed the cube and the traced surface. Creases of no
+sharpness failed the crease, ignored holes the hole, and a boundary always interpolated the
+boundary. Loop refined as Catmull-Clark failed Loop's limit. A quad's triangles wound backward, or
+an n-sided face cut as one patch face, failed the winding. Values never welded, or legacy linear
+patches, failed the face-varying case, and varying values read as vertex values the varying one.
+A surface of no faces refined failed the empty surface, and no report the refused topology. Every
+sample cut from the first, or every triangle naming face 0, failed the traced surface. Four things
+the list below did not settle:
+
+* **The rate is 8 pieces a side until step 17**, which measures an edge length in pixels. Places
+  are not shared between patch faces, so two faces' points on a shared edge agree only to
+  rounding until step 17 closes cracks.
+* **Face-varying values are welded by value.** RI gives one per corner and no indices, so corners
+  of one vertex with equal values share one of OpenSubdiv's values, and a seam is where they
+  differ. OpenSubdiv's legacy linear face-varying patches are off. With them, a face-varying
+  value with no seams strayed 0.04 from the same value interpolated by vertex on a cube.
+* **Primvars are evaluated and not yet held.** No geometry holds primvars until section 5 shades,
+  so `at()` is tested on its own.
+* **A surface of no faces skips OpenSubdiv**, whose debug build asserts on an empty mesh. Every
+  kind of geometry is now traced, so the hit view's case of a prototype that is not traced is
+  gone. Its scene is the subdivision suite's case of a surface of no faces.
+
+[Geometry.md](../offline/Geometry.md#subdivision-surfaces) states the rules, and
+[Dependencies.md](../contributing/Dependencies.md) records OpenSubdiv.
 
 * **OpenSubdiv as a dependency**: a `moya` feature dependency in `vcpkg.json` with no OpenGL,
   linked PRIVATE to libmoya, and built on Linux in CI.

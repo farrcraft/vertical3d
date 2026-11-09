@@ -23,6 +23,42 @@ the rays and the tests kernel code runs against it.
 - **Counts that do not fit are refused** with `std::invalid_argument`: a negative count, counts
   that do not add up to the indices, or an index outside the points.
 
+## Subdivision surfaces
+
+`Surface(topology)` is a subdivision surface's limit, through OpenSubdiv. A `Topology` holds the
+control mesh, its scheme and RI's tags. The patches are built once, and every sample of the
+points and every primvar is evaluated over them.
+
+- **The schemes are Catmull-Clark, Loop and bilinear.** A Loop surface's faces are triangles.
+- **Creases, corners and holes follow RI's tags.** A crease of n vertices is n - 1 edges of its
+  sharpness, and a sharpness of 10 or more is infinite. A hole's face is left open.
+- **The boundary follows RI's interpolateboundary.** Where it is not interpolated, the faces
+  along it are left open. `Edges` interpolates its edges, and `EdgesAndCorners` makes a corner
+  of each vertex where two meet.
+- **Refinement is adaptive**, isolating creases and extraordinary vertices to 6 levels, with
+  Gregory patches where it stops.
+- **`cut(rate)` cuts the surface into triangles** of a `Tessellation`, each side of each patch
+  face into a rate of pieces. A face of four vertices is one patch face, a Catmull-Clark or
+  bilinear face of n others is n, one at each corner, and a Loop face is one triangular patch
+  face. Each triangle keeps its face's winding, and the face it was cut from.
+- **A tessellation's places are not shared between patch faces**, so a face-varying value can
+  differ on each side of an edge. Each place names its patch face and its position there.
+- **`at(values, width, interpolation, tessellation)` evaluates a primvar at each place.** A
+  vertex value is evaluated on the limit surface, as the points are, and a varying one
+  bilinearly across each patch face. A uniform value is its face's, and a constant one is the
+  same everywhere.
+- **A face-varying value is given at each index**, as RI gives one. Corners of one vertex that
+  give equal values share one, so a value that differs only across a seam keeps the seam. It is
+  interpolated linearly at the corners of its seams, as RI's facevaryinginterpolateboundary does
+  by default, and smoothly elsewhere.
+- **A surface of no faces has no patches**, and is cut into nothing.
+- **What cannot be refined is refused** with `std::invalid_argument`. A face may have fewer than
+  three vertices, or a Loop face more. The counts may not add up to the indices, an index or a
+  tagged vertex may lie outside the points, the tags' counts may not match, or a hole may name no
+  face. Values of another count than their interpolation gives are refused too.
+
+Background: [ADR-0209](../adr/offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md)
+
 ## Curves into segments
 
 `cut(points, widths, vertices, cubic, basis, periodic)` cuts a set of curves into segments, and

@@ -15,6 +15,9 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
 #include <moya/libmoya/geometry/Segments.h>
+#include <moya/libmoya/geometry/Surface.h>
+#include <moya/libmoya/geometry/Tessellation.h>
+#include <moya/libmoya/geometry/Topology.h>
 #include <moya/libmoya/geometry/Triangulate.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
@@ -43,6 +46,46 @@
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::geometry::internal {
+
+namespace {
+
+/** How many pieces each side of a subdivision surface's patch faces is cut into. **/
+constexpr std::uint32_t kSubdivisionRate = 8;
+
+/** The topology of one of the scene's subdivision surfaces, with RI's tags. **/
+Topology topologyOf(const scene::Scene & scene, const scene::Handle & handle, std::uint32_t points) {
+    const auto integers = [&](const char * name) {
+        return scene.value(handle, name).integerArray();
+    };
+    const auto floats = [&](const char * name) {
+        return scene.value(handle, name).floatArray();
+    };
+    Topology out;
+    out.vertices = integers("vertices");
+    out.indices = integers("indices");
+    out.points = points;
+    const std::string & scheme = scene.value(handle, "scheme").stringArray().front();
+    if (scheme == "loop") {
+        out.scheme = Scheme::Loop;
+    } else if (scheme == "bilinear") {
+        out.scheme = Scheme::Bilinear;
+    }
+    out.creases = integers("creases");
+    out.creaseLengths = integers("creaseLengths");
+    out.creaseSharpness = floats("creaseSharpness");
+    out.corners = integers("corners");
+    out.cornerSharpness = floats("cornerSharpness");
+    out.holes = integers("holes");
+    const std::string & boundary = scene.value(handle, "boundary").stringArray().front();
+    if (boundary == "edges") {
+        out.boundary = Boundary::Edges;
+    } else if (boundary == "edges-and-corners") {
+        out.boundary = Boundary::EdgesAndCorners;
+    }
+    return out;
+}
+
+};  // namespace
 
 Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) :
     scene_(scene), logger_(logger), groups_(byGroup(scene)) {
@@ -137,6 +180,13 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         kind == "torus") {
         out.kind = Prototype::Geometry;
         out.prototype = quadric(prototype);
+    } else if (kind == "subdivision") {
+        const std::optional<std::uint32_t> cut = subdivision(prototype);
+        if (!cut) {
+            return std::nullopt;
+        }
+        out.kind = Prototype::Geometry;
+        out.prototype = *cut;
     } else if (kind == "curves") {
         const std::optional<std::uint32_t> cut = curves(prototype);
         if (!cut) {
@@ -270,6 +320,47 @@ std::uint32_t Walk::quadric(const scene::Handle & handle) {
     }
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(shape);
+    geometryIndex_.emplace(handle.index, index);
+    return index;
+}
+
+std::optional<std::uint32_t> Walk::subdivision(const scene::Handle & handle) {
+    const auto found = geometryIndex_.find(handle.index);
+    if (found != geometryIndex_.end()) {
+        return found->second;
+    }
+    const scene::Samples & samples = scene_.samples(handle, "P");
+    const std::size_t count = samples.values.front().size();
+    std::optional<Surface> surface;
+    try {
+        surface.emplace(topologyOf(scene_, handle, static_cast<std::uint32_t>(count)));
+    } catch (const std::invalid_argument & refused) {
+        report("subdivision " + scene_.name(handle) + " is left out, because " + refused.what());
+        return std::nullopt;
+    }
+    const Tessellation tessellation = surface->cut(kSubdivisionRate);
+    Geometry mesh;
+    mesh.form = kernel::geometry::primitive::Form::Triangles;
+    mesh.first = static_cast<std::uint32_t>(prototypes_.faces.size());
+    mesh.count = static_cast<std::uint32_t>(tessellation.faces.size());
+    mesh.points = sampled(prototypes_.points.size(), tessellation.corners.size(), samples.times);
+    // every sample's points are evaluated on the one surface, whose patches its topology fixes
+    for (const scene::Value & sample : samples.values) {
+        std::vector<float> points;
+        points.reserve(count * 3);
+        for (std::size_t point = 0; point < count; ++point) {
+            const glm::vec3 at = sample.triple(point);
+            points.insert(points.end(), { at.x, at.y, at.z });
+        }
+        const std::vector<float> limit = surface->at(points, 3, scene::Interpolation::Vertex, tessellation);
+        for (const std::uint32_t corner : tessellation.corners) {
+            const std::size_t at = static_cast<std::size_t>(corner) * 3U;
+            prototypes_.points.emplace_back(limit[at], limit[at + 1U], limit[at + 2U]);
+        }
+    }
+    prototypes_.faces.insert(prototypes_.faces.end(), tessellation.faces.begin(), tessellation.faces.end());
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(mesh);
     geometryIndex_.emplace(handle.index, index);
     return index;
 }
