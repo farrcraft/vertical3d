@@ -8,6 +8,8 @@
 #include <moya/libmoya/kernel/spectrum/Colorimetry.h>
 #include <moya/libmoya/kernel/spectrum/Daylight.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
+#include <moya/libmoya/kernel/spectrum/RgbSigmoid.h>
+#include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 

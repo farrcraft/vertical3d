@@ -5,12 +5,25 @@
 
 #pragma once
 
-#include <api/ui/Image.h>
+#include <api/ui/Clock.h>
 #include <api/ui/Immediate.h>
-#include <api/ui/Transition.h>
+#include <api/ui/immediate/Body.h>
+#include <api/ui/immediate/Field.h>
+#include <api/ui/immediate/Id.h>
+#include <api/ui/immediate/Number.h>
+#include <api/ui/immediate/Popup.h>
+#include <api/ui/immediate/Reaction.h>
+#include <api/ui/immediate/Retained.h>
+#include <api/ui/immediate/Row.h>
+#include <api/ui/immediate/Scrolled.h>
+#include <api/ui/immediate/TabStrip.h>
+#include <api/ui/immediate/Table.h>
+#include <api/ui/immediate/Tip.h>
+#include <api/ui/immediate/Window.h>
+#include <api/ui/input/Clipboard.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
-#include <api/ui/style/Style.h>
+#include <api/ui/style/Overlay.h>
 
 #include <cstdint>
 #include <functional>
@@ -37,201 +50,6 @@ class TextRenderer;
  * tables, tab strips and popups, and how a widget reacted to the cursor.
  **/
 namespace v3d::ui::immediate {
-
-/**
- * A widget's identity, as Immediate::Id.
- **/
-typedef Immediate::Id Id;
-
-/**
- * What a widget's box did with the cursor this frame.
- **/
-struct Reaction final {
-    Reaction() noexcept;
-
-    bool hovered;  /**< the cursor is on it, and was on nothing over it last frame **/
-    bool held;     /**< a press went down on it and has not come up **/
-    bool clicked;  /**< a press and a release both landed on it **/
-};
-
-/**
- * The few bits a widget cannot work out again from the state it reads.
- **/
-struct Retained final {
-    Retained() noexcept;
-
-    std::uint64_t frame;  /**< the last frame that asked for it, which it is aged out from **/
-    unsigned int tab;  /**< which tab of a strip is selected **/
-    unsigned int tabs; /**< how many tabs the strip held last frame, which share its width out **/
-    float scroll;      /**< how far the content is scrolled up, in pixels **/
-    float content;     /**< how tall what it held came to last frame **/
-    glm::vec2 offset;  /**< how far a window has been dragged from where the caller put it **/
-    bool collapsed;    /**< whether a window is folded to its title bar **/
-    bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
-    int chosen;        /**< the item a combo's list was clicked on, taken next frame, or -1 **/
-    Transition face;   /**< the fill of its box, easing from one colour to the next **/
-};
-
-/**
- * Where the next widget goes, and what the row being written has come to.
- **/
-struct Row final {
-    Row() noexcept;
-
-    float margin;     /**< where a new row starts **/
-    float right;      /**< where the room a widget may take ends **/
-    float penY;       /**< where the next row starts **/
-    float top;        /**< the top of the row being written **/
-    float height;     /**< the tallest thing on it so far **/
-    float lastRight;  /**< just past the last widget, which sameLine() starts from **/
-    bool sameLine;
-};
-
-/**
- * The window being written, and the row state it interrupted.
- **/
-struct Window final {
-    Window() noexcept;
-
-    bool open;           /**< whether a window is being written at all **/
-    float margin;        /**< the row margin to go back to at endWindow() **/
-    float right;         /**< and the right edge **/
-    Id id;               /**< the id that holds the window's scroll and content **/
-    Id scroll;           /**< the id its scrollbar is hit tested under **/
-    glm::vec2 bodyMin;   /**< the part of it below the title bar, which is clipped to **/
-    glm::vec2 bodyMax;
-    float contentTop;    /**< where its content would start if it were not scrolled **/
-    bool scrolls;
-    bool clipped;
-};
-
-/**
- * The tab strip being written.
- **/
-struct TabStrip final {
-    TabStrip() noexcept;
-
-    Id id;
-    bool open;
-    float pen;              /**< how far along the strip the next tab goes **/
-    float top;
-    float share;            /**< how wide each tab is, or 0 for as wide as its label **/
-    unsigned int index;     /**< which tab of the strip this one is **/
-    unsigned int wanted;    /**< the tab a click asked for, taken at endTabBar() **/
-    bool changed;
-    bool taken;             /**< whether the selected tab was drawn at all **/
-};
-
-/**
- * The table being written.
- **/
-struct Table final {
-    Table() noexcept;
-
-    bool open;
-    std::vector<std::string> headers;
-    std::vector<float> widths;
-    float left;             /**< where the row starts, which columns are measured from **/
-    unsigned int column;    /**< which column the pen is in **/
-    Id id;                  /**< the id that holds the table's scroll and content **/
-    Id scroll;              /**< the id its scrollbar is hit tested under **/
-    float right;            /**< the row right to go back to, and the region's right edge **/
-    float height;           /**< how tall it is, or zero for a table that does not scroll **/
-    float top;              /**< where it starts, which its height is measured from **/
-    float contentTop;       /**< where its rows start, below the header **/
-    bool clipped;
-};
-
-/**
- * The list an open combo shows, drawn over everything at end().
- **/
-struct Popup final {
-    Popup() noexcept;
-
-    Id id;             /**< the combo that is open, or nothing **/
-    bool asked;        /**< whether the combo was drawn this frame **/
-    glm::vec2 boxMin;  /**< the combo's own box, where a press does not close the list **/
-    glm::vec2 boxMax;
-    std::vector<std::string> items;
-    int selected;
-};
-
-/**
- * The tooltip of the widget under the cursor, drawn over everything at end().
- **/
-struct Tip final {
-    Id id = 0;               /**< the widget the cursor rests on, or nothing **/
-    bool asked = false;      /**< whether that widget was drawn under the cursor this frame **/
-    float since = 0.0F;      /**< when the cursor came to rest on it, on the layer's clock **/
-    std::optional<float> shown;  /**< when a tooltip was last drawn, on the layer's clock, or never **/
-    bool hidden = false;     /**< whether a press put it away **/
-    glm::vec2 pressAt{0.0F}; /**< where that press went down, which the cursor has to leave **/
-    std::string text;
-    std::string keys;
-    glm::vec2 boxMin{0.0F};  /**< the widget's box, which the tooltip hangs under **/
-    glm::vec2 boxMax{0.0F};
-};
-
-/**
- * Whether a scrolled region puts up its scrollbar: a window decides at its start, from what
- * it drew last frame, and a table whenever there is more than it shows.
- **/
-enum class Bar : std::uint8_t { Never, Always, WhenNeeded };
-
-/**
- * A scrolled region. id holds its scroll and content, and scroll is the id its scrollbar is
- * hit tested under. contentTop is where its content would start if it were not scrolled.
- * bodyMax is the bottom right corner of its body, which the scrollbar runs down to.
- **/
-struct Scrolled {
-    Id id = 0;
-    Id scroll = 0;
-    float contentTop = 0.0F;
-    glm::vec2 bodyMax{0.0F};
-};
-
-/**
- * The body of a window or a region: the id that holds its scroll and content, the id its
- * scrollbar is hit tested under, its box, and where the part below any title bar starts.
- **/
-struct Body {
-    Id id = 0;
-    Id scroll = 0;
-    glm::vec2 min{0.0F};
-    glm::vec2 max{0.0F};
-    float top = 0.0F;
-};
-
-/**
- * A text field being drawn: its id, its label, the value it shows, its box, and what leads it.
- **/
-struct Field {
-    Id id = 0;
-    std::string label;
-    const std::string* value = nullptr;
-    glm::vec2 min{0.0F};
-    glm::vec2 max{0.0F};
-    Image icon;                // drawn at the left, or nothing when it is not valid
-    float iconSide = 0.0F;     // how big the icon is drawn
-    float start = 0.0F;        // where the label starts, past the icon
-    bool labelled = false;     // the label is drawn after the icon, and not as a placeholder
-    glm::vec2 low{0.0F};       // where the text starts, past both
-    glm::vec2 high{0.0F};      // where the text ends
-};
-
-/**
- * A number field being drawn: its id, its label, the value it shows, and its box.
- **/
-struct Number {
-    Id id = 0;
-    std::string label;
-    float value = 0.0F;
-    glm::vec2 min{0.0F};
-    glm::vec2 max{0.0F};
-    std::optional<glm::vec4> labelColour;  // in place of secondary text
-    std::string unit;                      // written straight after the value
-    std::optional<glm::vec4> edge;         // a rule down the left side
-};
 
 /**
  * Everything an Immediate holds, and the steps its widgets share.

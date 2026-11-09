@@ -5,15 +5,21 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Primitives.h>
-#include <api/curve/Curve.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
-#include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/rib/Writer.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
@@ -50,7 +56,7 @@ namespace {
  **/
 class ImportHandler final : public v3d::render::offline::rib::Handler {
  public:
-    void format(const v3d::render::offline::rib::Format & request) override {
+    void format(const v3d::render::offline::rib::requests::Format & request) override {
         width_ = request.width;
         height_ = request.height;
     }
@@ -58,11 +64,11 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         (void)parameters;
         projection_ = name;
     }
-    void screenWindow(const v3d::render::offline::rib::ScreenWindow & request) override {
+    void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) override {
         right_ = request.right;
         top_ = request.top;
     }
-    void clipping(const v3d::render::offline::rib::Clipping & request) override {
+    void clipping(const v3d::render::offline::rib::requests::Clipping & request) override {
         hither_ = request.hither;
         yon_ = request.yon;
     }
@@ -77,7 +83,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         (void)parameters;
         hider_ = name;
     }
-    void display(const v3d::render::offline::rib::Display & request,
+    void display(const v3d::render::offline::rib::requests::Display & request,
         const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         display_ = request;
@@ -97,7 +103,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         (void)name;
         names_.push_back(parameters.string("name"));
     }
-    void lightSource(const v3d::render::offline::rib::LightSource & request,
+    void lightSource(const v3d::render::offline::rib::requests::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override {
         lights_.push_back(request.shader);
         order_ += "L";
@@ -123,7 +129,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
      * A mesh's faces, each booked as polygon() books a polygon, with its corners taken from the
      * mesh's points by index.
      **/
-    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request,
+    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request,
         const v3d::render::offline::rib::ParameterList & parameters) override {
         const std::vector<glm::vec3> points = parameters.points("P");
         std::size_t at = 0;
@@ -157,7 +163,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     std::string projection_;
     glm::uvec2 samples_ = glm::uvec2(0U);
     std::string hider_;
-    v3d::render::offline::rib::Display display_;
+    v3d::render::offline::rib::requests::Display display_;
     std::string surface_;
     float right_ = 0.0F;
     float top_ = 0.0F;

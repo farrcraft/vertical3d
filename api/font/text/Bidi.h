@@ -28,33 +28,11 @@ enum class BaseDirection : std::uint8_t {
 };
 
 /**
- * A stretch of text at one embedding level. An even level reads left to right and an odd one
- * right to left.
- **/
-struct LevelRun final {
-    std::size_t start = 0;   /**< the byte offset where it starts **/
-    std::size_t end = 0;     /**< and one past where it ends **/
-    std::uint8_t level = 0;
-
-    bool rightToLeft() const noexcept {
-        return (level & 1U) != 0;
-    }
-};
-
-/**
  * Which character a caret goes with, where the two either side of it are drawn apart.
  **/
 enum class Affinity : std::uint8_t {
     Upstream,   /**< the character before it, as after typing or moving forwards onto it **/
     Downstream  /**< the character after it **/
-};
-
-/**
- * Where a caret is drawn: against one edge of one character's glyphs.
- **/
-struct CaretEdge final {
-    std::size_t character = 0;  /**< the byte offset where the character starts **/
-    bool right = false;         /**< whether the caret is at its right edge, rather than its left **/
 };
 
 /**
@@ -70,6 +48,28 @@ struct CaretEdge final {
  **/
 class Bidi final {
  public:
+    /**
+     * A stretch of text at one embedding level. An even level reads left to right and an odd one
+     * right to left.
+     **/
+    struct LevelRun final {
+        std::size_t start = 0;   /**< the byte offset where it starts **/
+        std::size_t end = 0;     /**< and one past where it ends **/
+        std::uint8_t level = 0;
+
+        bool rightToLeft() const noexcept {
+            return (level & 1U) != 0;
+        }
+    };
+
+    /**
+     * Where a caret is drawn: against one edge of one character's glyphs.
+     **/
+    struct CaretEdge final {
+        std::size_t character = 0;  /**< the byte offset where the character starts **/
+        bool right = false;         /**< whether the caret is at its right edge, rather than its left **/
+    };
+
     Bidi(std::string_view utf8, BaseDirection base);
 
     /**

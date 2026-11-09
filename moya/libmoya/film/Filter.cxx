@@ -7,7 +7,7 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
-#include <moya/libmoya/kernel/film/Filter.h>
+#include <moya/libmoya/kernel/film/PixelFilter.h>
 #include <api/render/offline/film/Sampling.h>
 
 #include <algorithm>

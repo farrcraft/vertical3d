@@ -3,8 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/ExrPart.h>
 #include <Imath/ImathBox.h>
 #include <Imath/half.h>
 #include <OpenEXR/ImfChannelList.h>

@@ -5,6 +5,8 @@
 
 #include <api/script/Strip.h>
 
+#include <api/script/Stripped.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>

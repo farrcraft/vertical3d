@@ -9,6 +9,7 @@
 #include <api/log/Logger.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
+#include <vertical3d/src/control/chrome/Status.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Light.h>

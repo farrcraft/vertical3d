@@ -5,8 +5,13 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Primitives.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Nurbs.h>
+#include <api/curve/Poly.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/item/Group.h>
@@ -14,6 +19,7 @@
 #include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/store/Blob.h>
+#include <vertical3d/src/store/Buffer.h>
 #include <vertical3d/src/store/Codec.h>
 
 #include <cstddef>

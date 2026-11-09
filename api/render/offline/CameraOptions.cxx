@@ -7,7 +7,8 @@
 
 #include <api/render/offline/Camera.h>
 #include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
 
 #include <cmath>
 #include <string>
@@ -50,12 +51,12 @@ void CameraOptions::frameAspectRatio(float aspect) {
     screenNamed_ = false;
 }
 
-void CameraOptions::screenWindow(const rib::ScreenWindow & window) {
+void CameraOptions::screenWindow(const rib::requests::ScreenWindow & window) {
     screen_ = window;
     screenNamed_ = true;
 }
 
-void CameraOptions::clipping(const rib::Clipping & planes) {
+void CameraOptions::clipping(const rib::requests::Clipping & planes) {
     hither_ = planes.hither;
     yon_ = planes.yon;
 }

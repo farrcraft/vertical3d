@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "Property.h"
+#include "Selector.h"
 
 namespace v3d::ui::style {
 

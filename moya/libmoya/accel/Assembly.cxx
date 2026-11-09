@@ -7,14 +7,21 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
+#include <moya/libmoya/accel/Hierarchy.h>
+#include <moya/libmoya/accel/MovingHierarchy.h>
+#include <moya/libmoya/accel/Options.h>
+#include <moya/libmoya/accel/Root.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/accel/Triangles.h>
 #include <moya/libmoya/device/cpu/Instance.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/geometry/Geometry.h>
+#include <moya/libmoya/geometry/Group.h>
+#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
-#include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -70,12 +77,12 @@ LinearBox restrict(const LinearBox & bounds, const geometry::Prototypes & protot
 /** The bounds over a time range of each of a geometry's primitives, by its form. **/
 Sweep sweepOf(const geometry::Prototypes & prototypes, const geometry::Geometry & geometry) {
     switch (geometry.form) {
-        case kernel::geometry::Form::Triangles:
+        case kernel::geometry::primitive::Form::Triangles:
             return triangleSweep(geometry.points, prototypes.points, prototypes.times);
-        case kernel::geometry::Form::RoundPoints:
-        case kernel::geometry::Form::FlatPoints:
+        case kernel::geometry::primitive::Form::RoundPoints:
+        case kernel::geometry::primitive::Form::FlatPoints:
             return pointSweep(geometry.points, geometry.widths, prototypes.points, prototypes.widths, prototypes.times);
-        case kernel::geometry::Form::Quadric:
+        case kernel::geometry::primitive::Form::Quadric:
         default: {
             const kernel::geometry::Sampled held = geometry.quadric;
             return [held, &prototypes](std::uint32_t, float begin, float end) {
@@ -100,7 +107,7 @@ std::vector<LinearBox> assembleGeometries(device::CpuDevice & device, const geom
             continue;
         }
         Hierarchy hierarchy;
-        if (geometry.form == kernel::geometry::Form::Triangles) {
+        if (geometry.form == kernel::geometry::primitive::Form::Triangles) {
             const auto first = static_cast<std::ptrdiff_t>(geometry.points.first);
             const std::vector<glm::vec3> points(prototypes.points.begin() + first, prototypes.points.begin() + first + geometry.points.count);
             hierarchy = build(device, triangleBounds(points), triangleClip(points));

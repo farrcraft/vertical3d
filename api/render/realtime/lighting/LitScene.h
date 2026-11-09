@@ -15,7 +15,7 @@
 #include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/entity/Poses.h>
 #include <api/render/realtime/lighting/Settings.h>
-#include <api/render/realtime/lighting/Shadow.h>
+#include <api/render/realtime/lighting/Cascades.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 

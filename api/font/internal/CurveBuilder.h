@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/curve/Quadratic.h>
 
 #include <vector>
 
@@ -43,7 +43,7 @@ class CurveBuilder final {
     /**
      * @return the curves built, every contour closed
      **/
-    std::vector<glyph::QuadraticCurve> take();
+    std::vector<glyph::curve::Quadratic> take();
 
  private:
     /**
@@ -75,7 +75,7 @@ class CurveBuilder final {
     glm::mat3 transform_;
     glm::vec2 pen_{ 0.0F };
     glm::vec2 start_{ 0.0F };
-    std::vector<glyph::QuadraticCurve> curves_;
+    std::vector<glyph::curve::Quadratic> curves_;
 };
 
 };  // namespace v3d::font::internal

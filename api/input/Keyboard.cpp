@@ -5,7 +5,7 @@
 
 #include "Keyboard.h"
 
-#include <api/event/Chord.h>
+#include <api/event/Modifiers.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>

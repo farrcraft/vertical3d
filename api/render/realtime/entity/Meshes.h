@@ -7,7 +7,7 @@
 
 #include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/frame/Pass.h>
-#include <api/render/realtime/lighting/Shadow.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
 
 #include "Poses.h"
 

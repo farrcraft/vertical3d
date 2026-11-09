@@ -7,7 +7,12 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/component/Scrollbar.h>
+#include <api/ui/immediate/Body.h>
 #include <api/ui/immediate/Context.h>
+#include <api/ui/immediate/Id.h>
+#include <api/ui/immediate/Reaction.h>
+#include <api/ui/immediate/Retained.h>
+#include <api/ui/immediate/Scrolled.h>
 #include <api/ui/paint/Painter.h>
 
 #include <algorithm>

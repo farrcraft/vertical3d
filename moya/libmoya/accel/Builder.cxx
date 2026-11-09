@@ -6,9 +6,19 @@
 #include <moya/libmoya/accel/Builder.h>
 
 #include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
+#include <moya/libmoya/accel/Hierarchy.h>
+#include <moya/libmoya/accel/MovingHierarchy.h>
+#include <moya/libmoya/accel/Options.h>
 #include <moya/libmoya/accel/internal/Binary.h>
-#include <moya/libmoya/accel/internal/Temporal.h>
+#include <moya/libmoya/accel/internal/BinaryBuilder.h>
+#include <moya/libmoya/accel/internal/BinaryNode.h>
+#include <moya/libmoya/accel/internal/MovingBinary.h>
+#include <moya/libmoya/accel/internal/MovingBinaryNode.h>
+#include <moya/libmoya/accel/internal/MovingReference.h>
+#include <moya/libmoya/accel/internal/Reference.h>
+#include <moya/libmoya/accel/internal/TemporalBuilder.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/CpuDevice.h>
 

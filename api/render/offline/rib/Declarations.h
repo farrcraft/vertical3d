@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <api/render/offline/rib/requests/Declare.h>
+
 #include <map>
 #include <string>
 
 #include "Declaration.h"
-#include "Requests.h"
 
 namespace v3d::render::offline::rib {
 
@@ -29,7 +30,7 @@ class Declarations final {
      *
      * @return false when the declaration text does not parse, leaving the table alone
      **/
-    bool declare(const Declare & request);
+    bool declare(const requests::Declare & request);
 
     /**
      * Resolve a parameter name.

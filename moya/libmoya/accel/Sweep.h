@@ -6,8 +6,11 @@
 #pragma once
 
 #include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
 
 #include <cstdint>
 #include <functional>
@@ -95,14 +98,14 @@ Sweep pointSweep(const kernel::geometry::Sampled & centres, const kernel::geomet
  * The box of a quadric whose dimensions each lie between least's and most's. It holds the whole
  * surface of revolution, whatever its sweep.
  **/
-Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometry::Quadric & most);
+Box quadricBounds(const kernel::geometry::primitive::Quadric & least, const kernel::geometry::primitive::Quadric & most);
 
 /**
  * The bounds over a time range of a quadric whose dimensions move between samples. Each dimension
  * moves linearly, so its least and its greatest over the range are at a sample inside it or at an
  * end, and quadricBounds() of those holds the quadric throughout. The bounds hold still.
  **/
-LinearBox quadricSweep(const kernel::geometry::Sampled & held, const std::vector<kernel::geometry::Quadric> & quadrics,
+LinearBox quadricSweep(const kernel::geometry::Sampled & held, const std::vector<kernel::geometry::primitive::Quadric> & quadrics,
     const std::vector<float> & times, float begin, float end);
 
 /** A box moved by a transformation: the box of its eight corners moved. Empty for an empty box. **/

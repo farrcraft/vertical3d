@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/type/geometry/Line.h>
 
 #include <glm/mat4x4.hpp>
@@ -35,7 +35,7 @@ class Sphere final : public Primitive {
      * @param placement object to world, at the reference end of its motion
      * @param colour the colour that was current, which is SL's Cs
      **/
-    Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour);
+    Sphere(const v3d::render::offline::rib::requests::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour);
 
     /**
      * Where a line meets the sphere, as a parameter along it, nearest past `from`.

@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "Scene.h"
+#include "Imported.h"
 
 namespace v3d::interchange {
 

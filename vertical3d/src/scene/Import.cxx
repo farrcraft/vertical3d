@@ -5,6 +5,8 @@
 
 #include "Import.h"
 
+#include "Into.h"
+
 #include <api/interchange/Rescale.h>
 #include <api/interchange/Scene.h>
 #include <vertical3d/src/scene/Importer.h>

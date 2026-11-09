@@ -19,6 +19,7 @@
 
 #include <glm/vec4.hpp>
 
+#include "Overlay.h"
 #include "Theme.h"
 
 namespace v3d::ui::style {

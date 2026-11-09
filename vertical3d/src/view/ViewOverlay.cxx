@@ -16,6 +16,9 @@
 #include <string_view>
 #include <vector>
 
+#include "AxisEnd.h"
+#include "OverlayLook.h"
+#include "OverlayMetrics.h"
 #include "ViewPort.h"
 
 #include <glm/geometric.hpp>
@@ -68,13 +71,6 @@ void letter(v3d::render::realtime::canvas::Canvas* canvas, std::size_t axis, con
 }
 
 };  // namespace
-
-/**
- **/
-OverlayMetrics OverlayMetrics::scaled(float factor, float top) {
-    return OverlayMetrics{ .marker = MARKER * factor, .inset = INSET * factor, .gizmo = GIZMO * factor, .ball = BALL * factor,
-        .margin = MARGIN * factor, .top = top };
-}
 
 /**
  **/

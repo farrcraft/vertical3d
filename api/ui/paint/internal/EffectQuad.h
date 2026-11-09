@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/font/text/Paragraph.h>
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <cstddef>
@@ -20,16 +21,17 @@ namespace v3d::font::glyph {
 class Store;
 };  // namespace v3d::font::glyph
 
-namespace v3d::font::text {
-struct LineRun;
+namespace v3d::font::text::style {
 struct Effect;
-};  // namespace v3d::font::text
+};  // namespace v3d::font::text::style
 
 namespace v3d::ui::paint {
 class GlyphPages;
 };  // namespace v3d::ui::paint
 
 namespace v3d::ui::paint::internal {
+
+struct PlacedEffect;
 
 /**
  * The quad an effect is drawn over, from its glyph's distance field.
@@ -44,16 +46,6 @@ struct EffectQuad final {
 };
 
 /**
- * An effect laid out in a paragraph's space: its quad moved to its glyph's pen, its place among
- * its glyph's effects, and its colour.
- **/
-struct PlacedEffect final {
-    EffectQuad quad;
-    std::size_t layer = 0;
-    glm::vec4 colour{ 1.0F };
-};
-
-/**
  * Find a glyph's field in a store, made the first time it is asked for with a spread wide
  * enough for the effect, and the quad the effect is drawn over. The field is made from the
  * glyph in its run's face, at the run's coordinates. The quad is the field scaled to the run's
@@ -61,15 +53,15 @@ struct PlacedEffect final {
  *
  * @return the quad, or nothing for a glyph with no outline or a field the store cannot hold
  **/
-std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::LineRun& run, unsigned int index, const font::text::Effect& effect);
+std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Effect& effect);
 
 /**
  * Lay out each of a glyph's effects at its pen, appending them in the order given.
  *
  * @param pen the glyph's pen in the paragraph's space, in pixels with y downwards
  **/
-void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::LineRun& run, unsigned int index,
-    const std::vector<font::text::Effect>& effects, const glm::vec2& pen);
+void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::Paragraph::LineRun& run, unsigned int index,
+    const std::vector<font::text::style::Effect>& effects, const glm::vec2& pen);
 
 /**
  * Put laid out effects in the order they are drawn: every glyph's first effect, then every

@@ -7,47 +7,25 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/geometry/Flat.h>
+#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Placed.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
-#include <string>
-#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
 #include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
 
 namespace v3d::log {
 class Logger;
 };  // namespace v3d::log
 
 namespace v3d::moya::geometry {
-
-/**
- * Every primitive of a scene placed, in host memory, as kernel::geometry::Placed holds it on a
- * device.
- **/
-struct Flat {
-    std::vector<glm::vec3> points;
-    std::vector<std::uint32_t> faces;
-    std::vector<kernel::geometry::Placement> placements;
-
-    /** The placement each triangle belongs to, one per triangle. **/
-    std::vector<std::uint32_t> runs;
-
-    std::vector<kernel::geometry::PlacedShapes> shapes;
-    std::vector<glm::vec4> spheres;
-    std::vector<kernel::geometry::Quadric> quadrics;
-
-    /** What was left out and why, once each, as the log reports it. **/
-    std::vector<std::string> reports;
-};
 
 /**
  * Every primitive of every geometry the prototypes' instances place: triangles in world space, and

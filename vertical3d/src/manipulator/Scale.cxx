@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "Manipulator.h"
+#include "Motion.h"
 #include "Screen.h"
 #include "Target.h"
 

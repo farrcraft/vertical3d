@@ -7,8 +7,10 @@
 
 #include <api/engine/Launch.h>
 #include <api/log/Logger.h>
+#include <api/script/Problem.h>
+#include <api/script/Refused.h>
+#include <api/script/Result.h>
 #include <api/script/Runtime.h>
-#include <api/script/Strip.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/script/Declarations.h>
 #include <vertical3d/src/script/Journal.h>

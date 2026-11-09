@@ -6,9 +6,9 @@
 #include "Keys.h"
 
 #include <api/animation/Curve.h>
+#include <vertical3d/src/scene/FrameKey.h>
 #include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/Timeline.h>
 
 #include <algorithm>
 #include <cmath>

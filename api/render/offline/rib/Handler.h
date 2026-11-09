@@ -6,12 +6,32 @@
 #pragma once
 
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
 
 #include <string>
 #include <vector>
 
 #include "Parameters.h"
-#include "Requests.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -35,7 +55,7 @@ class Handler {
     virtual ~Handler() { }
 
     virtual void version(float number) { (void)number; }
-    virtual void declare(const Declare & request) { (void)request; }
+    virtual void declare(const requests::Declare & request) { (void)request; }
     virtual void option(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
@@ -50,20 +70,20 @@ class Handler {
     }
 
     // the camera
-    virtual void format(const Format & request) { (void)request; }
+    virtual void format(const requests::Format & request) { (void)request; }
     virtual void frameAspectRatio(float aspect) { (void)aspect; }
-    virtual void screenWindow(const ScreenWindow & request) { (void)request; }
-    virtual void cropWindow(const CropWindow & request) { (void)request; }
+    virtual void screenWindow(const requests::ScreenWindow & request) { (void)request; }
+    virtual void cropWindow(const requests::CropWindow & request) { (void)request; }
     virtual void projection(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
     }
-    virtual void clipping(const Clipping & request) { (void)request; }
+    virtual void clipping(const requests::Clipping & request) { (void)request; }
     /**
      * RIB's DepthOfField with no arguments sets a pinhole, which arrives as an infinite fstop.
      **/
-    virtual void depthOfField(const DepthOfField & request) { (void)request; }
-    virtual void shutter(const Shutter & request) { (void)request; }
+    virtual void depthOfField(const requests::DepthOfField & request) { (void)request; }
+    virtual void shutter(const requests::Shutter & request) { (void)request; }
 
     // how a pixel is sampled
     virtual void pixelSamples(const glm::uvec2 & samples) { (void)samples; }
@@ -73,7 +93,7 @@ class Handler {
         (void)ywidth;
     }
     virtual void pixelVariance(float variation) { (void)variation; }
-    virtual void display(const Display & request, const ParameterList & parameters) {
+    virtual void display(const requests::Display & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
@@ -136,7 +156,7 @@ class Handler {
         (void)name;
         (void)parameters;
     }
-    virtual void basis(const Basis & request) { (void)request; }
+    virtual void basis(const requests::Basis & request) { (void)request; }
     virtual void surface(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
@@ -145,7 +165,7 @@ class Handler {
         (void)name;
         (void)parameters;
     }
-    virtual void lightSource(const LightSource & request, const ParameterList & parameters) {
+    virtual void lightSource(const requests::LightSource & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
@@ -154,7 +174,7 @@ class Handler {
      * cannot sample a light's area treats it as an ordinary light. The default body does
      * this, so a scene that uses one is still lit.
      **/
-    virtual void areaLightSource(const LightSource & request, const ParameterList & parameters) {
+    virtual void areaLightSource(const requests::LightSource & request, const ParameterList & parameters) {
         lightSource(request, parameters);
     }
     /**
@@ -169,7 +189,7 @@ class Handler {
      * named image directly as the texture has nothing to make. The reader still counts the
      * request as recognised.
      **/
-    virtual void makeTexture(const MakeTexture & request, const ParameterList & parameters) {
+    virtual void makeTexture(const requests::MakeTexture & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
@@ -199,15 +219,15 @@ class Handler {
         (void)vertices;
         (void)parameters;
     }
-    virtual void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) {
+    virtual void pointsPolygons(const requests::PointsPolygons & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void sphere(const Sphere & request, const ParameterList & parameters) {
+    virtual void sphere(const requests::Sphere & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void curves(const Curves & request, const ParameterList & parameters) {
+    virtual void curves(const requests::Curves & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
@@ -219,31 +239,31 @@ class Handler {
         (void)count;
         (void)parameters;
     }
-    virtual void cone(const Cone & request, const ParameterList & parameters) {
+    virtual void cone(const requests::Cone & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void cylinder(const Cylinder & request, const ParameterList & parameters) {
+    virtual void cylinder(const requests::Cylinder & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+    virtual void hyperboloid(const requests::Hyperboloid & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+    virtual void paraboloid(const requests::Paraboloid & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void disk(const Disk & request, const ParameterList & parameters) {
+    virtual void disk(const requests::Disk & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void torus(const Torus & request, const ParameterList & parameters) {
+    virtual void torus(const requests::Torus & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }
-    virtual void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+    virtual void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }

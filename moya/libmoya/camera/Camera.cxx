@@ -6,6 +6,8 @@
 #include <moya/libmoya/camera/Camera.h>
 
 #include <moya/libmoya/kernel/camera/Camera.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>

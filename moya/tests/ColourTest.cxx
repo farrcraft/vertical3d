@@ -4,6 +4,7 @@
  */
 
 #include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/colour/Transform.h>
 #include <OpenColorIO/OpenColorIO.h>
 
 #include <fstream>

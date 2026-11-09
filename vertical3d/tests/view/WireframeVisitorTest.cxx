@@ -6,14 +6,14 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
-#include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/item/Curve.h>
-#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/item/Group.h>
 #include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/item/Mesh.h>

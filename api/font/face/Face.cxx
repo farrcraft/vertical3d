@@ -11,7 +11,8 @@
 #include <hb-ot.h>
 #include <hb.h>
 
-#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/colour/Tables.h>
+#include "Axis.h"
 #include "Metrics.h"
 #include "Style.h"
 #include "Library.h"
@@ -198,7 +199,7 @@ Metrics Face::metrics(float size, const std::vector<std::int32_t>& coordinates) 
         .strikeoutThickness = measure(HB_OT_METRICS_TAG_STRIKEOUT_SIZE) };
 }
 
-glyph::ColourTables Face::colour() const {
+glyph::colour::Tables Face::colour() const {
     hb_face_t* face = handle_->shaping;
     const auto holds = [face](hb_tag_t tag) {
         hb_blob_t* table = hb_face_reference_table(face, tag);
@@ -206,7 +207,7 @@ glyph::ColourTables Face::colour() const {
         hb_blob_destroy(table);
         return held;
     };
-    return glyph::ColourTables{ .layers = hb_ot_color_has_layers(face) != 0,
+    return glyph::colour::Tables{ .layers = hb_ot_color_has_layers(face) != 0,
         .paint = hb_ot_color_has_paint(face) != 0,
         .svg = hb_ot_color_has_svg(face) != 0,
         .cbdt = holds(HB_TAG('C', 'B', 'D', 'T')),

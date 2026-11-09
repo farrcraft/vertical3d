@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Arguments.h"
+#include "Parameter.h"
 
 namespace v3d::editor::script {
 

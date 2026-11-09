@@ -6,10 +6,12 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/ri/SceneClient.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <fstream>

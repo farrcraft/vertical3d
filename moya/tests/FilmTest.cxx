@@ -6,9 +6,11 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/film/Filter.h>
-#include <moya/libmoya/kernel/Launch.h>
-#include <moya/libmoya/kernel/film/Filter.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/kernel/film/FilterSample.h>
+#include <moya/libmoya/kernel/film/PixelFilter.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
+#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/spectrum/Colorimetry.h>

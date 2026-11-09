@@ -5,6 +5,8 @@
 
 #include "StatusBar.h"
 
+#include "Status.h"
+
 #include <api/brep/BRep.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>

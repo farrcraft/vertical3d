@@ -15,6 +15,7 @@
 
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/tools/rgbtable/Fit.h>
+#include <moya/tools/rgbtable/Table.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 

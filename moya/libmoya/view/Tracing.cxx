@@ -8,21 +8,24 @@
 #include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/device/cpu/Geometry.h>
 #include <moya/libmoya/device/cpu/Instance.h>
+#include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
+#include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
-#include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
+#include <moya/libmoya/view/Traced.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -128,7 +131,7 @@ device::cpu::Traversal Tracing::hierarchy() const {
         .references = device::view<std::uint32_t>(*references_),
         .points = device::view<glm::vec3>(*points_),
         .widths = device::view<float>(*widths_),
-        .quadrics = device::view<kernel::geometry::Quadric>(*quadrics_),
+        .quadrics = device::view<kernel::geometry::primitive::Quadric>(*quadrics_),
         .times = device::view<float>(*times_),
         .geometries = device::view<device::cpu::Geometry>(*geometries_),
         .keys = device::view<kernel::geometry::Key>(*keys_),

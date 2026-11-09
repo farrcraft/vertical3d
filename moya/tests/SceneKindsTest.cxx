@@ -5,6 +5,7 @@
 
 #include <api/render/offline/CameraOptions.h>
 #include <moya/libmoya/scene/Description.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>

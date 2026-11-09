@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/offline/Area.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/trace/Primitive.h>
 
@@ -33,7 +33,7 @@ class Attributes final {
     /** RiShadingRate: the area of one micropolygon, in pixels. **/
     float shadingRate = 1.0F;
     /** RiBasis: what a cubic curve is evaluated through, Bezier stepping by 3 by default. **/
-    v3d::render::offline::rib::Basis basis;
+    v3d::render::offline::rib::requests::Basis basis;
     /** RiSurface, placed in camera space. No shader is the default, "constant". **/
     v3d::render::offline::sl::Placed surface;
     /** RiDisplacement, placed in camera space, and how far it may move a point there. **/

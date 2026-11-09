@@ -6,7 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/device/CpuDevice.h>
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/view/Tracing.h>
 

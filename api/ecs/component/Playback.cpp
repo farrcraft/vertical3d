@@ -38,7 +38,7 @@ float unrolled(const Playback& earlier, const Playback& later) {
 
 };  // namespace
 
-void play(Playback* playback, const Start& start) {
+void play(Playback* playback, const Playback::Start& start) {
     const uint32_t clip = start.clip;
     const float duration = start.duration;
     const bool loops = start.loops;

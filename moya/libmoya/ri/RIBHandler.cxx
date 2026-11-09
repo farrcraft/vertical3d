@@ -7,7 +7,26 @@
 
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Declarations.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
 #include <api/type/Checked.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/state/RenderContext.h>
@@ -55,7 +74,7 @@ const v3d::render::offline::rib::Declarations & RIBHandler::declarations() const
     return declarations_;
 }
 
-void RIBHandler::declare(const v3d::render::offline::rib::Declare & request) {
+void RIBHandler::declare(const v3d::render::offline::rib::requests::Declare & request) {
     // a declaration that names no type declares nothing. The reader has already reported it
     // for a file, and RiDeclare has nothing to report it to
     (void)declarations_.declare(request);
@@ -122,7 +141,7 @@ void RIBHandler::surface(const std::string & name, const ParameterList & paramet
     context().surface(name, parameters);
 }
 
-void RIBHandler::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+void RIBHandler::lightSource(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters) {
     if (request.shader.empty()) {
         return;
     }
@@ -140,7 +159,7 @@ void RIBHandler::attribute(const std::string & name, const ParameterList & param
     context().attribute(name, parameters);
 }
 
-void RIBHandler::areaLightSource(const v3d::render::offline::rib::LightSource & request,
+void RIBHandler::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request,
     const ParameterList & parameters) {
     if (request.shader.empty()) {
         return;
@@ -162,7 +181,7 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
     context().imager(name, parameters);
 }
 
-void RIBHandler::format(const v3d::render::offline::rib::Format & request) {
+void RIBHandler::format(const v3d::render::offline::rib::requests::Format & request) {
     unsigned int width = request.width;
     unsigned int height = request.height;
     if (width_ > 0 && height_ > 0) {
@@ -176,11 +195,11 @@ void RIBHandler::frameAspectRatio(float aspect) {
     context().frameAspectRatio(aspect);
 }
 
-void RIBHandler::screenWindow(const v3d::render::offline::rib::ScreenWindow & request) {
+void RIBHandler::screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) {
     context().screenWindow(request);
 }
 
-void RIBHandler::cropWindow(const v3d::render::offline::rib::CropWindow & request) {
+void RIBHandler::cropWindow(const v3d::render::offline::rib::requests::CropWindow & request) {
     context().cropWindow(request);
 }
 
@@ -188,17 +207,17 @@ void RIBHandler::projection(const std::string & name, const ParameterList & para
     context().projection(name, parameters.number("fov", state::RenderContext::defaultFov));
 }
 
-void RIBHandler::clipping(const v3d::render::offline::rib::Clipping & request) {
+void RIBHandler::clipping(const v3d::render::offline::rib::requests::Clipping & request) {
     context().clipping(request);
 }
 
-void RIBHandler::depthOfField(const v3d::render::offline::rib::DepthOfField & request) {
+void RIBHandler::depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) {
     context().sampling().fstop = request.fstop;
     context().sampling().focalLength = request.focalLength;
     context().sampling().focalDistance = request.focalDistance;
 }
 
-void RIBHandler::shutter(const v3d::render::offline::rib::Shutter & request) {
+void RIBHandler::shutter(const v3d::render::offline::rib::requests::Shutter & request) {
     context().sampling().shutter = glm::vec2(request.open, request.close);
 }
 
@@ -230,7 +249,7 @@ bool RIBHandler::resolution(int width, int height) {
     return true;
 }
 
-void RIBHandler::display(const v3d::render::offline::rib::Display & request, const ParameterList & parameters) {
+void RIBHandler::display(const v3d::render::offline::rib::requests::Display & request, const ParameterList & parameters) {
     if (!output_.empty()) {
         context().display({.name = output_, .type = "file", .mode = request.mode}, parameters);
         return;
@@ -345,11 +364,11 @@ void RIBHandler::shadingRate(float size) {
     context().shadingRate(size);
 }
 
-void RIBHandler::basis(const v3d::render::offline::rib::Basis & request) {
+void RIBHandler::basis(const v3d::render::offline::rib::requests::Basis & request) {
     context().basis(request);
 }
 
-void RIBHandler::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
+void RIBHandler::curves(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters) {
     if (skipped()) {
         return;
     }
@@ -366,7 +385,7 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     }
 }
 
-void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
+void RIBHandler::sphere(const v3d::render::offline::rib::requests::Sphere & request, const ParameterList & parameters) {
     (void)parameters;
     if (skipped()) {
         return;
@@ -377,7 +396,7 @@ void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const
     }
 }
 
-void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+void RIBHandler::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     if (skipped()) {
         return;
     }
@@ -405,43 +424,43 @@ void RIBHandler::points(unsigned int count, const ParameterList & parameters) {
     unsupported("Points");
 }
 
-void RIBHandler::cone(const v3d::render::offline::rib::Cone & request, const ParameterList & parameters) {
+void RIBHandler::cone(const v3d::render::offline::rib::requests::Cone & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Cone");
 }
 
-void RIBHandler::cylinder(const v3d::render::offline::rib::Cylinder & request, const ParameterList & parameters) {
+void RIBHandler::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Cylinder");
 }
 
-void RIBHandler::hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const ParameterList & parameters) {
+void RIBHandler::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Hyperboloid");
 }
 
-void RIBHandler::paraboloid(const v3d::render::offline::rib::Paraboloid & request, const ParameterList & parameters) {
+void RIBHandler::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Paraboloid");
 }
 
-void RIBHandler::disk(const v3d::render::offline::rib::Disk & request, const ParameterList & parameters) {
+void RIBHandler::disk(const v3d::render::offline::rib::requests::Disk & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Disk");
 }
 
-void RIBHandler::torus(const v3d::render::offline::rib::Torus & request, const ParameterList & parameters) {
+void RIBHandler::torus(const v3d::render::offline::rib::requests::Torus & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("Torus");
 }
 
-void RIBHandler::subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const ParameterList & parameters) {
+void RIBHandler::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
     (void)request;
     (void)parameters;
     unsupported("SubdivisionMesh");

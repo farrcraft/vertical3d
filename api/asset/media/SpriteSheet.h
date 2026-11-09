@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include <api/image/Pack.h>
+#include <api/image/Packing.h>
+#include <api/image/Placement.h>
 
 #include "SpriteRegion.h"
 

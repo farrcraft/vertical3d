@@ -4,6 +4,15 @@
  */
 
 #include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/Poly.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Curves.h>
+#include <api/interchange/Imported.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <api/interchange/usd/Usd.h>
 

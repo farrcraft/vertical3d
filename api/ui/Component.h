@@ -7,7 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Type.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Motion.h>
 
 #include <string>
 #include <vector>

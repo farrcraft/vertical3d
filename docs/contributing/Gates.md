@@ -23,7 +23,7 @@ document for its subject, which the table links to.
 | `readmes.ts` | Each component has a README with a heading and links that resolve, and a library's README describes it as the table does | The tree | [Conventions.md](Conventions.md#readmes) |
 | `summary.ts` | `docs/SUMMARY.md` lists each page under `docs/` once, outside `completed/` directories | The tree | [Conventions.md](Conventions.md#the-documentation-site) |
 | `adr.ts` | Each decision record is in its area's folder, numbered, tagged and linked both ways, and the indexes made from the records are current. `--write` writes the indexes | The tree | [adr/README.md](../adr/README.md#how-the-records-are-kept) |
-| `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
+| `filelocal.ts` | What a source file keeps to itself, and one class per header | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself), [Conventions.md](Conventions.md#one-class-per-header) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
 | `namespaces.ts` | Each C++ file is in its directory's namespace, and each namespace of the API reference is described once | The tree | [Conventions.md](Conventions.md#language), [Conventions.md](Conventions.md#doc-comments-in-a-public-header) |

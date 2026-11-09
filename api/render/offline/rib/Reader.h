@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/offline/rib/requests/Basis.h>
 
 #include <cstdint>
 #include <iosfwd>
@@ -18,7 +19,6 @@
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
-#include "Requests.h"
 #include "Token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -124,7 +124,7 @@ class Reader final {
      **/
     bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
     /** One direction of a Basis request: a name or sixteen numbers, then a step from 1 to 4. **/
-    bool basis(Lexer * lexer, Basis::Matrix * matrix, unsigned int * step);
+    bool basis(Lexer * lexer, requests::Basis::Matrix * matrix, unsigned int * step);
     bool values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,
         const std::string & name, std::vector<float> * floats, std::vector<std::string> * strings);
     static void skipArray(Lexer * lexer);

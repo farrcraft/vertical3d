@@ -7,11 +7,14 @@
 
 #include <moya/libmoya/device/cpu/Geometry.h>
 #include <moya/libmoya/device/cpu/Instance.h>
+#include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 
 #include <cstdint>
@@ -51,7 +54,7 @@ struct Traversal {
     kernel::Array<float> widths;
 
     /** Every quadric's dimensions, at each sample. **/
-    kernel::Array<kernel::geometry::Quadric> quadrics;
+    kernel::Array<kernel::geometry::primitive::Quadric> quadrics;
 
     /** The times of the samples of everything that moves. **/
     kernel::Array<float> times;

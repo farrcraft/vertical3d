@@ -8,7 +8,7 @@
 #include <api/font/glyph/Store.h>
 #include <api/font/face/Library.h>
 #include <api/font/glyph/Rasterize.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Effect.h>
 #include <api/log/Logger.h>
 
 #include <cmath>
@@ -37,8 +37,8 @@ struct Fields {
     /**
      * @return the key of a character's field with a spread
      **/
-    v3d::font::glyph::Key key(char32_t charcode, std::uint8_t spread) const {
-        return v3d::font::glyph::Key{ .face = inter.get(), .index = inter->glyphIndex(charcode), .size = v3d::font::glyph::FIELD_SIZE,
+    v3d::font::glyph::Store::Key key(char32_t charcode, std::uint8_t spread) const {
+        return v3d::font::glyph::Store::Key{ .face = inter.get(), .index = inter->glyphIndex(charcode), .size = v3d::font::glyph::FIELD_SIZE,
             .mode = v3d::font::glyph::Mode::Distance, .spread = spread };
     }
 
@@ -50,7 +50,7 @@ struct Fields {
 /**
  * @return a pixel of a bitmap
  **/
-int at(const v3d::font::glyph::Bitmap& bitmap, unsigned int x, unsigned int y) {
+int at(const v3d::font::glyph::Store::Bitmap& bitmap, unsigned int x, unsigned int y) {
     return bitmap.pixels[(static_cast<std::size_t>(y) * bitmap.size.x) + x];
 }
 
@@ -58,10 +58,10 @@ BOOST_FIXTURE_TEST_SUITE(field, Fields)
 
 BOOST_AUTO_TEST_CASE(reaches_the_spread_past_the_outline) {
     // I is one stem, so its field is its coverage grown by the spread on every side
-    v3d::font::glyph::Key coverageKey = key(U'I', 0);
+    v3d::font::glyph::Store::Key coverageKey = key(U'I', 0);
     coverageKey.mode = v3d::font::glyph::Mode::Coverage;
-    const v3d::font::glyph::Bitmap coverage = v3d::font::glyph::rasterize(coverageKey);
-    const v3d::font::glyph::Bitmap distance = v3d::font::glyph::field(key(U'I', 8));
+    const v3d::font::glyph::Store::Bitmap coverage = v3d::font::glyph::rasterize(coverageKey);
+    const v3d::font::glyph::Store::Bitmap distance = v3d::font::glyph::field(key(U'I', 8));
     BOOST_REQUIRE_GT(coverage.size.x, 0U);
     BOOST_REQUIRE_EQUAL(distance.pixels.size(), static_cast<std::size_t>(distance.size.x) * distance.size.y);
     BOOST_CHECK_LE(std::abs(static_cast<int>(distance.size.x) - static_cast<int>(coverage.size.x + 16)), 2);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(reaches_the_spread_past_the_outline) {
 
 BOOST_AUTO_TEST_CASE(is_above_the_middle_inside_and_falls_by_the_spread) {
     const std::uint8_t spread = 8;
-    const v3d::font::glyph::Bitmap distance = v3d::font::glyph::field(key(U'I', spread));
+    const v3d::font::glyph::Store::Bitmap distance = v3d::font::glyph::field(key(U'I', spread));
     BOOST_REQUIRE_GT(distance.size.x, 0U);
     const unsigned int row = distance.size.y / 2;
     const unsigned int middle = distance.size.x / 2;
@@ -90,16 +90,16 @@ BOOST_AUTO_TEST_CASE(is_above_the_middle_inside_and_falls_by_the_spread) {
 }
 
 BOOST_AUTO_TEST_CASE(another_mode_or_no_spread_makes_nothing) {
-    v3d::font::glyph::Key coverage = key(U'I', 8);
+    v3d::font::glyph::Store::Key coverage = key(U'I', 8);
     coverage.mode = v3d::font::glyph::Mode::Coverage;
     BOOST_CHECK(v3d::font::glyph::field(coverage).pixels.empty());
     BOOST_CHECK(v3d::font::glyph::field(key(U'I', 0)).pixels.empty());
-    BOOST_CHECK(v3d::font::glyph::field(v3d::font::glyph::Key{ .mode = v3d::font::glyph::Mode::Distance, .spread = 8 }).pixels.empty());
+    BOOST_CHECK(v3d::font::glyph::field(v3d::font::glyph::Store::Key{ .mode = v3d::font::glyph::Mode::Distance, .spread = 8 }).pixels.empty());
 }
 
 BOOST_AUTO_TEST_CASE(a_spread_past_the_widest_is_the_widest) {
-    const v3d::font::glyph::Bitmap widest = v3d::font::glyph::field(key(U'I', v3d::font::glyph::MAX_SPREAD));
-    const v3d::font::glyph::Bitmap past = v3d::font::glyph::field(key(U'I', 64));
+    const v3d::font::glyph::Store::Bitmap widest = v3d::font::glyph::field(key(U'I', v3d::font::glyph::MAX_SPREAD));
+    const v3d::font::glyph::Store::Bitmap past = v3d::font::glyph::field(key(U'I', 64));
     BOOST_CHECK(widest.size == past.size);
 }
 
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(a_spread_covers_the_reach_in_steps) {
     BOOST_CHECK_EQUAL(v3d::font::glyph::fieldSpread(0.2F), 16);
     BOOST_CHECK_EQUAL(v3d::font::glyph::fieldSpread(10.0F), v3d::font::glyph::MAX_SPREAD);
 
-    const v3d::font::glyph::Key made = v3d::font::glyph::fieldKey(inter.get(), 5, 0.2F);
+    const v3d::font::glyph::Store::Key made = v3d::font::glyph::fieldKey(inter.get(), 5, 0.2F);
     BOOST_CHECK(made.mode == v3d::font::glyph::Mode::Distance);
     BOOST_CHECK_EQUAL(made.size, v3d::font::glyph::FIELD_SIZE);
     BOOST_CHECK_EQUAL(made.spread, 16);
@@ -119,23 +119,23 @@ BOOST_AUTO_TEST_CASE(a_spread_covers_the_reach_in_steps) {
 }
 
 BOOST_AUTO_TEST_CASE(an_effect_reaches_past_its_width_by_its_softness) {
-    BOOST_CHECK_CLOSE(v3d::font::glyph::effectReach(v3d::font::text::Effect{ .width = 2.0F, .softness = 1.0F }, 16.0F), 3.0F / 16.0F, 0.001);
-    BOOST_CHECK_CLOSE(v3d::font::glyph::effectReach(v3d::font::text::Effect{ .width = -1.0F }, 16.0F), 1.0F / 16.0F, 0.001);
-    BOOST_CHECK_EQUAL(v3d::font::glyph::effectReach(v3d::font::text::Effect{ .width = 2.0F }, 0.0F), 0.0F);
+    BOOST_CHECK_CLOSE(v3d::font::glyph::effectReach(v3d::font::text::style::Effect{ .width = 2.0F, .softness = 1.0F }, 16.0F), 3.0F / 16.0F, 0.001);
+    BOOST_CHECK_CLOSE(v3d::font::glyph::effectReach(v3d::font::text::style::Effect{ .width = -1.0F }, 16.0F), 1.0F / 16.0F, 0.001);
+    BOOST_CHECK_EQUAL(v3d::font::glyph::effectReach(v3d::font::text::style::Effect{ .width = 2.0F }, 0.0F), 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(an_effect_ramps_between_field_values) {
     // at 16 pixels with a spread of 16, a pixel of the text is an eighth of the field's values
-    const glm::vec2 outline = v3d::font::glyph::effectRamp(v3d::font::text::Effect{ .width = 2.0F }, 16.0F, 16);
+    const glm::vec2 outline = v3d::font::glyph::effectRamp(v3d::font::text::style::Effect{ .width = 2.0F }, 16.0F, 16);
     BOOST_CHECK_CLOSE(outline.x, 0.25F, 0.001);
     BOOST_CHECK_CLOSE(outline.y, 0.25F, 0.001);
-    const glm::vec2 glow = v3d::font::glyph::effectRamp(v3d::font::text::Effect{ .width = 1.0F, .softness = 2.0F }, 16.0F, 16);
+    const glm::vec2 glow = v3d::font::glyph::effectRamp(v3d::font::text::style::Effect{ .width = 1.0F, .softness = 2.0F }, 16.0F, 16);
     BOOST_CHECK_CLOSE(glow.x, 0.375F, 0.001);
     BOOST_CHECK_CLOSE(glow.y, 0.125F, 0.001);
-    const glm::vec2 inside = v3d::font::glyph::effectRamp(v3d::font::text::Effect{ .width = -1.0F }, 16.0F, 16);
+    const glm::vec2 inside = v3d::font::glyph::effectRamp(v3d::font::text::style::Effect{ .width = -1.0F }, 16.0F, 16);
     BOOST_CHECK_CLOSE(inside.x, 0.625F, 0.001);
     // a reach past the spread is cut at the field's last value
-    const glm::vec2 cut = v3d::font::glyph::effectRamp(v3d::font::text::Effect{ .width = 10.0F }, 16.0F, 16);
+    const glm::vec2 cut = v3d::font::glyph::effectRamp(v3d::font::text::style::Effect{ .width = 10.0F }, 16.0F, 16);
     BOOST_CHECK_EQUAL(cut.x, 0.0F);
 }
 

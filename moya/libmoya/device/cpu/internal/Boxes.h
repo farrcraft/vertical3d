@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 

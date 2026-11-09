@@ -22,6 +22,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/style/Selector.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>

@@ -12,8 +12,9 @@
 #include <api/font/face/FallbackChain.h>
 #include <api/font/face/Library.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapingCache.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
+#include <api/font/text/style/Effect.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/frame/Frame.h>
@@ -76,16 +77,16 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
         logger->get()->warn("{} could not be opened, so the well has no sign", SIGN_FONT);
         return;
     }
-    v3d::font::text::Style style;
+    v3d::font::text::style::Style style;
     style.fonts = boost::make_shared<v3d::font::face::FallbackChain>();
     style.fonts->add(family);
     style.size = SIGN_SIZE;
     style.colour = SIGN_COLOUR;
     // a shadow beneath an outline, so the sign reads against the grass and the sky alike
     style.effects = {
-        v3d::font::text::Effect{.colour = SIGN_SHADOW_COLOUR, .width = SIGN_OUTLINE_WIDTH, .softness = SIGN_SHADOW_SOFTNESS, .offset = SIGN_SHADOW_OFFSET},
-        v3d::font::text::Effect{.colour = SIGN_OUTLINE_COLOUR, .width = SIGN_OUTLINE_WIDTH}};
-    shaping_ = boost::make_shared<v3d::font::text::ShapingCache>("", logger);
+        v3d::font::text::style::Effect{.colour = SIGN_SHADOW_COLOUR, .width = SIGN_OUTLINE_WIDTH, .softness = SIGN_SHADOW_SOFTNESS, .offset = SIGN_SHADOW_OFFSET},
+        v3d::font::text::style::Effect{.colour = SIGN_OUTLINE_COLOUR, .width = SIGN_OUTLINE_WIDTH}};
+    shaping_ = boost::make_shared<v3d::font::text::shaping::Cache>("", logger);
     sign_.emplace(shaping_, SIGN, style);
 
     // the sign's curves, and the fields its effects are drawn from, are textures on the device

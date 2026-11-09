@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/font/glyph/CurveStore.h>
+#include <api/font/glyph/curve/Store.h>
 #include <api/render/realtime/resource/Handle.h>
 
 #include <cstdint>
@@ -51,7 +51,7 @@ class CurvePages final {
     /**
      * Bring the textures in step with the store.
      **/
-    void sync(font::glyph::CurveStore* store);
+    void sync(font::glyph::curve::Store* store);
 
     /**
      * @return the curves' texture, unset until the store holds a curve and has been synced
@@ -75,7 +75,7 @@ class CurvePages final {
     /**
      * Bring one array's texture in step with its rows.
      **/
-    void sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::CurveStore::Changed& changed);
+    void sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::curve::Store::Changed& changed);
 
     Create create_;
     Update update_;

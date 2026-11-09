@@ -8,6 +8,7 @@
 #include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Emphasis.h>
 #include <api/ui/paint/Type.h>
 
 #include <functional>

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <moya/libmoya/kernel/spectrum/Rgb.h>
+#include <moya/libmoya/kernel/spectrum/RgbTable.h>
 
 /**
  * The colour tables the build fits for moya: data kernel code reads, which host code hands to a

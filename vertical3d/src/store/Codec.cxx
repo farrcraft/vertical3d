@@ -11,6 +11,7 @@
 #include <string_view>
 #include <vector>
 
+#include "Buffer.h"
 #include "CameraCodec.h"
 #include "CurveCodec.h"
 #include "GroupCodec.h"

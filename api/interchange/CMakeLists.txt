@@ -1,4 +1,11 @@
 v3d_add_api_library(interchange
+	"Camera.h"
+	"Channel.h"
+	"Curves.h"
+	"Imported.h"
+	"Light.h"
+	"Mesh.h"
+	"Node.h"
 	"Scene.h"
 	"Placement.h" "Placement.cxx"
 	"Rescale.h" "Rescale.cxx"

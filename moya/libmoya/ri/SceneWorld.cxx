@@ -11,7 +11,21 @@
 #include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Kind.h>
 #include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
@@ -112,17 +126,17 @@ void SceneClient::Deforming::polygon(unsigned int vertices, const ParameterList 
     client_->deform(polygonShape(vertices, parameters));
 }
 
-void SceneClient::Deforming::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+void SceneClient::Deforming::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     client_->deform(meshShape(request, parameters));
 }
 
-void SceneClient::Deforming::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
+void SceneClient::Deforming::sphere(const v3d::render::offline::rib::requests::Sphere & request, const ParameterList & parameters) {
     client_->deform(quadricShape("sphere", "Sphere", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
+void SceneClient::Deforming::curves(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters) {
     client_->deform(client_->curvesShape(request, parameters));
 }
 
@@ -131,42 +145,42 @@ void SceneClient::Deforming::points(unsigned int count, const ParameterList & pa
     client_->deform(pointsShape(parameters));
 }
 
-void SceneClient::Deforming::cone(const v3d::render::offline::rib::Cone & request, const ParameterList & parameters) {
+void SceneClient::Deforming::cone(const v3d::render::offline::rib::requests::Cone & request, const ParameterList & parameters) {
     client_->deform(quadricShape("cone", "Cone", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::cylinder(const v3d::render::offline::rib::Cylinder & request, const ParameterList & parameters) {
+void SceneClient::Deforming::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const ParameterList & parameters) {
     client_->deform(quadricShape("cylinder", "Cylinder", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const ParameterList & parameters) {
+void SceneClient::Deforming::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
     client_->deform(quadricShape("hyperboloid", "Hyperboloid", parameters, {
         { "point1", scene::Value::point(glm::vec3(request.point1[0], request.point1[1], request.point1[2])) },
         { "point2", scene::Value::point(glm::vec3(request.point2[0], request.point2[1], request.point2[2])) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::paraboloid(const v3d::render::offline::rib::Paraboloid & request, const ParameterList & parameters) {
+void SceneClient::Deforming::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const ParameterList & parameters) {
     client_->deform(quadricShape("paraboloid", "Paraboloid", parameters, { { "rmax", scene::Value::number(request.rmax) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::disk(const v3d::render::offline::rib::Disk & request, const ParameterList & parameters) {
+void SceneClient::Deforming::disk(const v3d::render::offline::rib::requests::Disk & request, const ParameterList & parameters) {
     client_->deform(quadricShape("disk", "Disk", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::torus(const v3d::render::offline::rib::Torus & request, const ParameterList & parameters) {
+void SceneClient::Deforming::torus(const v3d::render::offline::rib::requests::Torus & request, const ParameterList & parameters) {
     client_->deform(quadricShape("torus", "Torus", parameters, { { "majorRadius", scene::Value::number(request.majorRadius) },
         { "minorRadius", scene::Value::number(request.minorRadius) }, { "phimin", scene::Value::number(request.phimin) },
         { "phimax", scene::Value::number(request.phimax) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::Deforming::subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const ParameterList & parameters) {
+void SceneClient::Deforming::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
     client_->deform(client_->subdivisionShape(request, parameters));
 }
 
@@ -212,7 +226,7 @@ SceneClient::Shape SceneClient::polygonShape(unsigned int vertices, const Parame
         .taken = { "P", "Pw", "Pz" } };
 }
 
-SceneClient::Shape SceneClient::meshShape(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+SceneClient::Shape SceneClient::meshShape(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     return Shape { .kind = "mesh",
         .request = "PointsPolygons",
         .parameters = { { "P", pointsOf(parameters) }, { "vertices", integersOf(request.counts) }, { "indices", integersOf(request.indices) } },
@@ -220,7 +234,7 @@ SceneClient::Shape SceneClient::meshShape(const v3d::render::offline::rib::Point
         .taken = { "P", "Pw", "Pz" } };
 }
 
-SceneClient::Shape SceneClient::curvesShape(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) const {
+SceneClient::Shape SceneClient::curvesShape(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters) const {
     Shape shape { .kind = "curves",
         .request = "Curves",
         .parameters = { { "P", pointsOf(parameters) }, { "vertices", integersOf(request.vertices) },
@@ -253,7 +267,7 @@ SceneClient::Shape SceneClient::pointsShape(const ParameterList & parameters) {
     return shape;
 }
 
-SceneClient::Shape SceneClient::subdivisionShape(const v3d::render::offline::rib::SubdivisionMesh & request, const ParameterList & parameters) {
+SceneClient::Shape SceneClient::subdivisionShape(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
     std::string scheme = request.scheme;
     if (scheme != "catmull-clark" && scheme != "loop" && scheme != "bilinear") {
         once("scheme " + scheme, "moya subdivides by catmull-clark, loop or bilinear, so a \"" + scheme + "\" mesh is subdivided by catmull-clark");
@@ -446,7 +460,7 @@ void SceneClient::opacity(const glm::vec3 & value) {
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::basis(const v3d::render::offline::rib::Basis & request) {
+void SceneClient::basis(const v3d::render::offline::rib::requests::Basis & request) {
     std::string name = v3d::render::offline::rib::basisName(request.v);
     if (name.empty()) {
         once("basis", "moya's curves take a basis RI names, so a basis of its own numbers is taken as bezier");
@@ -471,7 +485,7 @@ void SceneClient::displacement(const std::string & name, const ParameterList & p
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+void SceneClient::lightSource(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters) {
     if (request.shader.empty()) {
         return;
     }
@@ -505,7 +519,7 @@ void SceneClient::lightSource(const v3d::render::offline::rib::LightSource & req
     current_.lights.insert(request.handle);
 }
 
-void SceneClient::areaLightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters) {
     if (request.shader.empty()) {
         current_.area.reset();
         return;
@@ -536,17 +550,17 @@ void SceneClient::polygon(unsigned int vertices, const ParameterList & parameter
     place(polygonShape(vertices, parameters));
 }
 
-void SceneClient::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+void SceneClient::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     place(meshShape(request, parameters));
 }
 
-void SceneClient::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
+void SceneClient::sphere(const v3d::render::offline::rib::requests::Sphere & request, const ParameterList & parameters) {
     place(quadricShape("sphere", "Sphere", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
+void SceneClient::curves(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters) {
     place(curvesShape(request, parameters));
 }
 
@@ -555,42 +569,42 @@ void SceneClient::points(unsigned int count, const ParameterList & parameters) {
     place(pointsShape(parameters));
 }
 
-void SceneClient::cone(const v3d::render::offline::rib::Cone & request, const ParameterList & parameters) {
+void SceneClient::cone(const v3d::render::offline::rib::requests::Cone & request, const ParameterList & parameters) {
     place(quadricShape("cone", "Cone", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::cylinder(const v3d::render::offline::rib::Cylinder & request, const ParameterList & parameters) {
+void SceneClient::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const ParameterList & parameters) {
     place(quadricShape("cylinder", "Cylinder", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const ParameterList & parameters) {
+void SceneClient::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
     place(quadricShape("hyperboloid", "Hyperboloid", parameters, {
         { "point1", scene::Value::point(glm::vec3(request.point1[0], request.point1[1], request.point1[2])) },
         { "point2", scene::Value::point(glm::vec3(request.point2[0], request.point2[1], request.point2[2])) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::paraboloid(const v3d::render::offline::rib::Paraboloid & request, const ParameterList & parameters) {
+void SceneClient::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const ParameterList & parameters) {
     place(quadricShape("paraboloid", "Paraboloid", parameters, { { "rmax", scene::Value::number(request.rmax) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::disk(const v3d::render::offline::rib::Disk & request, const ParameterList & parameters) {
+void SceneClient::disk(const v3d::render::offline::rib::requests::Disk & request, const ParameterList & parameters) {
     place(quadricShape("disk", "Disk", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::torus(const v3d::render::offline::rib::Torus & request, const ParameterList & parameters) {
+void SceneClient::torus(const v3d::render::offline::rib::requests::Torus & request, const ParameterList & parameters) {
     place(quadricShape("torus", "Torus", parameters, { { "majorRadius", scene::Value::number(request.majorRadius) },
         { "minorRadius", scene::Value::number(request.minorRadius) }, { "phimin", scene::Value::number(request.phimin) },
         { "phimax", scene::Value::number(request.phimax) }, { "thetamax", scene::Value::number(request.thetamax) } }));
 }
 
-void SceneClient::subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const ParameterList & parameters) {
+void SceneClient::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
     place(subdivisionShape(request, parameters));
 }
 

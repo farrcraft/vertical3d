@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/interchange/Scene.h>
+#include <api/interchange/Imported.h>
 
 #include <string>
 

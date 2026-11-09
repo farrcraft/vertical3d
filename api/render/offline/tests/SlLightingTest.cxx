@@ -8,6 +8,7 @@
 #include <api/render/offline/sl/compiler/Compiler.h>
 #include <api/render/offline/sl/compiler/Emitter.h>
 #include <api/render/offline/sl/compiler/Parser.h>
+#include <api/render/offline/sl/runtime/Cone.h>
 #include <api/render/offline/sl/runtime/Instruction.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>

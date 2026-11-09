@@ -6,7 +6,7 @@
 #include "Scene.h"
 
 #include <api/render/offline/MovingTransform.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/trace/Curve.h>
 #include <api/render/offline/trace/Primitive.h>
@@ -169,7 +169,7 @@ void Scene::add(const Curve & segment, const state::Shading & state, const Submi
     scene_.add(curve, *with.transform);
 }
 
-void Scene::add(const v3d::render::offline::rib::Sphere & shape, const state::Shading & state, const Submission & with) {
+void Scene::add(const v3d::render::offline::rib::requests::Sphere & shape, const state::Shading & state, const Submission & with) {
     // placed by the reference end of its motion, as a polygon's points are
     v3d::render::offline::trace::Sphere sphere(shape, with.transform->reference(), with.colour);
     shade(&sphere, state, with);

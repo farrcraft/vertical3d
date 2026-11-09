@@ -6,9 +6,11 @@
 #include <api/animation/Curve.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Nurbs.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/item/Curve.h>

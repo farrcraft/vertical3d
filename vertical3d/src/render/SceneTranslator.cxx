@@ -11,14 +11,16 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Basis.h>
 #include <api/curve/Curves.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 #include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/item/Group.h>
@@ -254,7 +256,7 @@ bool SceneTranslator::update(const scene::Scene& scene, const scene::Evaluation&
     if (!profile.orthographic()) {
         put(lens, "fov", moya::Value::number(profile.fov()));
     }
-    const v3d::render::offline::rib::ScreenWindow screen = RIBExportVisitor::screen(profile);
+    const v3d::render::offline::rib::requests::ScreenWindow screen = RIBExportVisitor::screen(profile);
     put(lens, "screen", moya::Value::floats({ screen.left, screen.right, screen.bottom, screen.top }));
     put(lens, "near", moya::Value::number(profile.clipping().x));
     put(lens, "far", moya::Value::number(profile.clipping().y));

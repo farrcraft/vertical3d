@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/font/text/Bidi.h>
+#include <api/ui/input/Clipboard.h>
 #include <api/ui/paint/Text.h>
 
 #include <cstddef>
@@ -22,19 +23,6 @@ class Type;
 };  // namespace v3d::ui::paint
 
 namespace v3d::ui::input {
-
-/**
- * The platform's clipboard, as a pair of callbacks. This library cannot reach the clipboard
- * without depending on SDL, so the app supplies it, as it supplies text measuring.
- *
- * An editor given neither callback still handles every other edit. A cut with no write
- * callback leaves the text in place, so the text is never lost. A paste with no read callback
- * inserts nothing.
- **/
-struct Clipboard final {
-    std::function<std::string()> read;
-    std::function<void(std::string_view)> write;
-};
 
 /**
  * One line of utf-8 text being edited, with a caret and a selection in it.

@@ -13,8 +13,8 @@
 #include <glm/vec3.hpp>
 
 /**
- * Rays, what they hit, and the tests that find it. Every primitive but the triangle is intersected
- * here on every device. A device's traversal finds which primitives a ray reaches.
+ * Rays, what they hit, and the traversals that find it. A device's traversal finds which
+ * primitives a ray reaches.
  **/
 namespace v3d::moya::kernel::geometry {
 

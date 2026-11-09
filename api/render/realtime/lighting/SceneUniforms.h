@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Settings.h"
-#include "Shadow.h"
+#include "Cascades.h"
 
 #include <array>
 

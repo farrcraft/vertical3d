@@ -15,6 +15,7 @@
 
 #include "Allocator.h"
 #include "Buffer.h"
+#include "BufferSpec.h"
 #include "Uploader.h"
 
 namespace v3d::render::realtime::vulkan::memory {

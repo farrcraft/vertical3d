@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
 
 #include <glm/vec3.hpp>

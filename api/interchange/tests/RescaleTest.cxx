@@ -4,7 +4,13 @@
  */
 
 #include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/Nurbs.h>
 #include <api/interchange/Rescale.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 
 #include <variant>

@@ -15,7 +15,7 @@
 
 #include <api/font/face/Face.h>
 #include <api/font/face/Library.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Effect.h>
 
 #include <algorithm>
 #include <cmath>
@@ -38,13 +38,13 @@ constexpr unsigned int SPREAD_STEP = 4;
 
 };  // namespace
 
-Bitmap field(const Key& key) {
+Store::Bitmap field(const Store::Key& key) {
     if (key.face == nullptr || key.mode != Mode::Distance || key.spread == 0) {
-        return Bitmap();
+        return Store::Bitmap();
     }
     font::internal::FaceHandle& handle = key.face->handle();
     if (!handle.vary(key.coordinates) || !handle.size(key.size)) {
-        return Bitmap();
+        return Store::Bitmap();
     }
     // the spread is the library's, not the face's, so it is set for each field made
     FT_Int spread = std::min(key.spread, MAX_SPREAD);
@@ -59,7 +59,7 @@ Bitmap field(const Key& key) {
     FT_Set_Transform(handle.face, &matrix, nullptr);
     if (FT_Load_Glyph(handle.face, key.index, FT_LOAD_NO_HINTING | FT_LOAD_NO_BITMAP) != 0 ||
         FT_Render_Glyph(handle.face->glyph, FT_RENDER_MODE_SDF) != 0) {
-        return Bitmap();
+        return Store::Bitmap();
     }
     return internal::slotBitmap(*handle.face->glyph);
 }
@@ -73,11 +73,11 @@ std::uint8_t fieldSpread(float reach) {
     return static_cast<std::uint8_t>(std::min(stepped, static_cast<float>(MAX_SPREAD)));  // checked: from 4 to 32
 }
 
-Key fieldKey(const face::Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates) {
-    return Key{ .face = face, .index = index, .size = FIELD_SIZE, .mode = Mode::Distance, .spread = fieldSpread(reach), .coordinates = coordinates };
+Store::Key fieldKey(const face::Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates) {
+    return Store::Key{ .face = face, .index = index, .size = FIELD_SIZE, .mode = Mode::Distance, .spread = fieldSpread(reach), .coordinates = coordinates };
 }
 
-float effectReach(const text::Effect& effect, float size) {
+float effectReach(const text::style::Effect& effect, float size) {
     if (!(size > 0.0F)) {
         return 0.0F;
     }
@@ -85,7 +85,7 @@ float effectReach(const text::Effect& effect, float size) {
     return std::max(std::abs(width), width + std::max(effect.softness, 0.0F)) / size;
 }
 
-glm::vec2 effectRamp(const text::Effect& effect, float size, std::uint8_t spread) {
+glm::vec2 effectRamp(const text::style::Effect& effect, float size, std::uint8_t spread) {
     if (!(size > 0.0F) || spread == 0) {
         return glm::vec2(0.5F);
     }

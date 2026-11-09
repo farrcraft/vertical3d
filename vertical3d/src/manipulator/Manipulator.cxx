@@ -10,6 +10,7 @@
 
 #include <cmath>
 
+#include "Motion.h"
 #include "Screen.h"
 #include "Target.h"
 

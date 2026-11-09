@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "Blob.h"
+#include "Buffer.h"
 #include "Bytes.h"
 #include "Codec.h"
 #include "Cursor.h"

@@ -7,14 +7,21 @@
 
 #include <api/log/Logger.h>
 #include <moya/libmoya/camera/Camera.h>
+#include <moya/libmoya/geometry/Geometry.h>
+#include <moya/libmoya/geometry/Group.h>
+#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
 #include <moya/libmoya/geometry/Triangulate.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
@@ -166,7 +173,7 @@ std::uint32_t Walk::mesh(const scene::Handle & handle) {
         report("mesh " + scene_.name(handle) + " has " + std::to_string(triangles.dropped) + " faces that cover no area");
     }
     Geometry mesh;
-    mesh.form = kernel::geometry::Form::Triangles;
+    mesh.form = kernel::geometry::primitive::Form::Triangles;
     mesh.first = static_cast<std::uint32_t>(prototypes_.faces.size());
     mesh.count = static_cast<std::uint32_t>(triangles.faces.size());
     mesh.points = sampled(prototypes_.points.size(), triangles.corners.size(), samples.times);
@@ -190,8 +197,8 @@ std::uint32_t Walk::cloud(const scene::Handle & handle) {
     const scene::Samples & centres = scene_.samples(handle, "P");
     const std::size_t count = centres.values.front().size();
     Geometry cloud;
-    cloud.form = scene_.value(handle, "profile").stringArray().front() == "flat" ? kernel::geometry::Form::FlatPoints :
-                                                                                 kernel::geometry::Form::RoundPoints;
+    cloud.form = scene_.value(handle, "profile").stringArray().front() == "flat" ? kernel::geometry::primitive::Form::FlatPoints :
+                                                                                 kernel::geometry::primitive::Form::RoundPoints;
     cloud.count = static_cast<std::uint32_t>(count);
     cloud.points = sampled(prototypes_.points.size(), count, centres.times);
     for (const scene::Value & sample : centres.values) {
@@ -235,7 +242,7 @@ std::uint32_t Walk::quadric(const scene::Handle & handle) {
     }
     const std::vector<float> at = times.empty() ? std::vector<float> { 0.0F } : std::vector<float>(times.begin(), times.end());
     Geometry shape;
-    shape.form = kernel::geometry::Form::Quadric;
+    shape.form = kernel::geometry::primitive::Form::Quadric;
     shape.count = 1;
     shape.quadric = sampled(prototypes_.quadrics.size(), 1, times.empty() ? std::vector<float> {} : at);
     for (const float time : at) {

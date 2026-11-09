@@ -20,6 +20,7 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/paint/Emphasis.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>

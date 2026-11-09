@@ -4,10 +4,13 @@
  */
 
 #include <api/brep/BRep.h>
+#include <api/brep/BuildOptions.h>
 #include <api/brep/Builder.h>
+#include <api/brep/Built.h>
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Polygons.h>
 #include <api/brep/Topology.h>
 
 #include <algorithm>

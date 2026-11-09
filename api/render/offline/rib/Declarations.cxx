@@ -5,8 +5,9 @@
 
 #include "Declarations.h"
 
+#include <api/render/offline/rib/requests/Declare.h>
+
 #include "Declaration.h"
-#include "Requests.h"
 #include "Words.h"
 
 #include <map>
@@ -71,7 +72,7 @@ Declarations::Declarations() {
     declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 }
 
-bool Declarations::declare(const Declare & request) {
+bool Declarations::declare(const requests::Declare & request) {
     Declaration declaration;
     if (!Declaration::parse(request.type, &declaration)) {
         return false;

@@ -5,9 +5,12 @@
 
 #pragma once
 
+#include <api/render/realtime/lighting/CascadeFit.h>
+#include <api/render/realtime/lighting/Cascades.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
+#include <api/render/realtime/lighting/ShadowFit.h>
 #include <api/type/camera/Profile.h>
 
-#include <array>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -18,10 +21,6 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime::resource {
-class MeshRegistry;
-};  // namespace v3d::render::realtime::resource
-
 namespace v3d::render::realtime::lighting {
 
 /**
@@ -29,29 +28,6 @@ namespace v3d::render::realtime::lighting {
  * so a fit never returns zero or less.
  **/
 inline constexpr float minimumShadowRadius = 0.01F;
-
-/**
- * A sphere a directional light's shadow map is fitted to.
- **/
-struct ShadowBounds final {
-    glm::vec3 centre{0.0F};
-    float radius = 0.0F;
-};
-
-/**
- * How fitShadow() reads the casters. The margin is added to the radius around them. alpha is
- * engine::Engine::alpha(), the fraction of a step elapsed since the last one. At one, the
- * current step's positions are read.
- **/
-struct ShadowFit final {
-    float margin = 0.0F;
-    float alpha = 1.0F;
-    /**
-     * Where the casters' meshes resolve, so that the fit covers each caster's whole model rather
-     * than its origin. Null fits the origins alone
-     **/
-    const resource::MeshRegistry* meshes = nullptr;
-};
 
 /**
  * A sphere around a registered model where a matrix places it: the entry's bound moved by the
@@ -131,11 +107,6 @@ std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<
 std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels);
 
 /**
- * The most cascades a shadow map has. SceneUniforms holds this many.
- **/
-inline constexpr uint32_t maximumCascades = 4;
-
-/**
  * Where each cascade of a shadow map ends, by the practical split scheme. Each split is a blend
  * of a logarithmic split and a uniform one. A logarithmic split gives every cascade the same
  * ratio of far to near, and a uniform split gives every cascade the same length.
@@ -152,41 +123,6 @@ inline constexpr uint32_t maximumCascades = 4;
  *         is out of range
  **/
 std::vector<float> splitView(float near, float distance, uint32_t count, float lambda);
-
-/**
- * How fitCascades() fits a shadow map's cascades.
- **/
-struct CascadeFit final {
-    /** each layer's width in texels, at least 4 **/
-    uint32_t texels = 2048;
-    /**
-     * The part of each cascade's far distance over which it blends into the next. The next
-     * cascade starts that much nearer, so both cover the band. Held between 0 and 0.5
-     **/
-    float blend = 0.1F;
-    /** the hand of the camera the scene is drawn through, as shadowLight() takes it **/
-    type::camera::Profile::Hand hand = type::camera::Profile::Hand::UpCrossDirection;
-};
-
-/**
- * A shadow map's cascades: a slice of the camera's view for each, and the matrix its layer is
- * drawn through. pack() writes them into SceneUniforms.
- **/
-struct Cascades final {
-    uint32_t count = 0;
-    /** the matrix each cascade's shadow pass draws through, from shadowLight() **/
-    std::array<glm::mat4, maximumCascades> lights{};
-    /** the sphere each cascade covers, which entity::casters() culls against **/
-    std::array<ShadowBounds, maximumCascades> bounds{};
-    /** where each cascade ends, measured from the near plane, as the splits were given **/
-    std::array<float, maximumCascades> far{};
-    /**
-     * The camera's near plane, as a normal along its view direction and an offset, so that
-     * dot(xyz, p) + w is a point's distance from the near plane
-     **/
-    glm::vec4 plane{0.0F};
-    float blend = 0.0F;
-};
 
 /**
  * Fit a cascade to each slice of the camera's view. Cascade i covers the view from the end of

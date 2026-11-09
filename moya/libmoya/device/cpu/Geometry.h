@@ -6,7 +6,8 @@
 #pragma once
 
 #include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
 
 namespace v3d::moya::device::cpu {
 
@@ -16,7 +17,7 @@ namespace v3d::moya::device::cpu {
  * their widths. A quadric reads its dimensions.
  **/
 struct Geometry {
-    kernel::geometry::Form form { kernel::geometry::Form::Triangles };
+    kernel::geometry::primitive::Form form { kernel::geometry::primitive::Form::Triangles };
     kernel::geometry::Sampled points;
     kernel::geometry::Sampled widths;
     kernel::geometry::Sampled quadric;

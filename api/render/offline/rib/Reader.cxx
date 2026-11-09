@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/requests/Basis.h>
 #include <api/type/Checked.h>
 
 #include "Bases.h"
@@ -14,7 +15,6 @@
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
-#include "Requests.h"
 #include "Token.h"
 
 #include <algorithm>
@@ -99,7 +99,7 @@ bool Reader::matrix(Lexer * lexer, glm::mat4x4 * out) {
     return true;
 }
 
-bool Reader::basis(Lexer * lexer, Basis::Matrix * matrix, unsigned int * step) {
+bool Reader::basis(Lexer * lexer, requests::Basis::Matrix * matrix, unsigned int * step) {
     const Token token = lexer->peek();
     if (token.kind() == Kind::STRING) {
         lexer->next();
@@ -626,7 +626,7 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
         return Result::Handled;
     }
     if (name == "Basis") {
-        Basis request;
+        requests::Basis request;
         if (!basis(lexer, &request.u, &request.ustep) || !basis(lexer, &request.v, &request.vstep)) {
             return Result::Failed;
         }

@@ -22,12 +22,6 @@ namespace v3d::moya::tools::rgbtable {
 using Vector = std::array<double, 3>;
 using Matrix = std::array<Vector, 3>;
 
-/** What moya_rgbtable fits: each point's three coefficients, and its final CIELAB difference. **/
-struct Table {
-    std::vector<float> coefficients;
-    std::vector<float> misses;
-};
-
 /**
  * Fits the three coefficients of a sigmoid polynomial whose spectrum, as a reflectance under ACES
  * white, has a given colour. The polynomial is in the wavelength normalised to [0, 1] over the

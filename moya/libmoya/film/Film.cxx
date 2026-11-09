@@ -7,6 +7,8 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/film/Channel.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 
 #include <cstddef>
@@ -20,19 +22,6 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::moya::film {
-
-float Snapshot::at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const {
-    return values.at((((static_cast<std::size_t>(y) * resolution.x) + x) * stride) + offset);
-}
-
-std::uint32_t Snapshot::offset(const std::string & name) const {
-    for (std::size_t i = 0; i < channels.size(); ++i) {
-        if (channels[i].name == name) {
-            return offsets.at(i);
-        }
-    }
-    throw std::out_of_range("the snapshot has no channel named " + name);
-}
 
 Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::vector<Channel> & channels) :
     device_(device), resolution_(resolution), channels_(channels) {

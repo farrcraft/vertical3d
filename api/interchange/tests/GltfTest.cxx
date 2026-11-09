@@ -4,6 +4,12 @@
  */
 
 #include <api/interchange/Gltf.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Imported.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 
 #include <cmath>

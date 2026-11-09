@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/colour/Tables.h>
 #include <api/log/Logger.h>
 
 #include <cstdint>
@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "Axis.h"
 #include "Metrics.h"
 #include "Style.h"
 #include "Variation.h"
@@ -30,16 +31,6 @@ class FaceHandle;
 namespace v3d::font::face {
 
 class Library;
-
-/**
- * One axis of a variable font, in the units its values are given in.
- **/
-struct Axis final {
-    std::string tag;           /**< its four letter name, such as "wght" **/
-    float min = 0.0F;
-    float initial = 0.0F;      /**< the value the face is drawn at when none is given **/
-    float max = 0.0F;
-};
 
 /**
  * One font file, held open from open() until the last holder lets it go.
@@ -111,7 +102,7 @@ class Face final {
     /**
      * @return the colour tables the face holds
      **/
-    glyph::ColourTables colour() const;
+    glyph::colour::Tables colour() const;
 
     /**
      * @return whether a glyph is drawn in colour, from any of the face's colour tables

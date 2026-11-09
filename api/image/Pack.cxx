@@ -19,7 +19,11 @@
 
 #include "Crop.h"
 #include "Image.h"
+#include "Packing.h"
+#include "Placement.h"
+#include "Sprite.h"
 #include "TextureAtlas.h"
+#include "Unpacking.h"
 
 namespace {
 

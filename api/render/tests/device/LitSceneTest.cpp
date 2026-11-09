@@ -10,6 +10,8 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/lighting/Cascades.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
 #include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/frame/Frame.h>

@@ -6,6 +6,7 @@ add_library("v3dlib_moya_cpu" INTERFACE
 	"Instance.h"
 	"Isa.h"
 	"Module.h"
+	"MotionNode.h"
 	"Node.h"
 	"Traversal.h"
 )
@@ -19,7 +20,7 @@ target_link_libraries("v3dlib_moya_cpu" INTERFACE v3dlib_moya_kernel glm::glm)
 # compiles for its instruction set reaches libmoya or another library. Its symbols are hidden but
 # for the table it exports, so none of its inline functions stands in for an executable's own.
 foreach(isa "sse42" "avx2" "avx512")
-	add_library("moya_cpu_${isa}" SHARED "Entry.cxx" "internal/Boxes.h" "internal/Search.h")
+	add_library("moya_cpu_${isa}" SHARED "Entry.cxx" "internal/Boxes.h" "internal/Nearest.h")
 	set_target_properties("moya_cpu_${isa}" PROPERTIES PREFIX "" CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 	string(TOUPPER "${isa}" upper)
 	target_compile_definitions("moya_cpu_${isa}" PRIVATE "MOYA_CPU_${upper}")

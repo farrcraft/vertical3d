@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/sl/runtime/Cone.h>
 #include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>

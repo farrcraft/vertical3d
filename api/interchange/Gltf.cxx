@@ -6,7 +6,7 @@
 #include "Gltf.h"
 
 #include <api/asset/File.h>
-#include <api/interchange/Scene.h>
+#include <api/interchange/Imported.h>
 #include <api/interchange/internal/Reader.h>
 
 #include <algorithm>

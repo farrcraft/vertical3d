@@ -27,8 +27,9 @@ export const LIMIT = 15;
  * is one member of a family that is used together.
  */
 export const COHESIVE: ReadonlyMap<string, string> = new Map([
+    ['api/render/offline/rib/requests', 'the arguments of the RIB requests, one header per request'],
     ['api/render/offline/sl/syntax', 'the shading language syntax tree, one header per kind of node'],
-    ['api/ui/component', 'the widgets, one header per widget'],
+    ['api/ui/component', 'the widgets, one header per widget, and the parts and types they share'],
     ['vertical3d/src/command', 'the editor commands, one header per command family'],
 ]);
 

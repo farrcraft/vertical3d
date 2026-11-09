@@ -9,6 +9,7 @@
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/RenderSettingsEditor.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 

@@ -7,9 +7,10 @@ How moya reads a RenderMan scene file. The terms used here are defined in
 
 The RIB reader is in `api/render/offline/rib`. It calls `offline::rib::Handler`, a C++
 interface with typed parameter lists, not the RI C API. A request that takes several values
-of one type passes them as one struct named after the request, from `rib/Requests.h`, so a call
-names each value: `handler->clipping({.hither = 0.1F, .yon = 100.0F})`. moya implements the
-handler as `moya::ri::RIBHandler`. The editor exports its scenes to RIB, one way; see
+of one type passes them as one struct named after the request, so a call names each value:
+`handler->clipping({.hither = 0.1F, .yon = 100.0F})`. Each struct has its own header in
+`rib/requests/`, in the namespace `offline::rib::requests`. moya implements the handler as
+`moya::ri::RIBHandler`. The editor exports its scenes to RIB, one way; see
 [editor/](../editor/README.md).
 
 ### What is read

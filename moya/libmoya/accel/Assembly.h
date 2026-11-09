@@ -5,23 +5,20 @@
 
 #pragma once
 
+#include <moya/libmoya/accel/Root.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/cpu/Instance.h>
+#include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
 
 #include <cstdint>
 #include <vector>
 
 namespace v3d::moya::accel {
-
-/** Where a prototype's hierarchy starts, and whether its nodes are moving ones. **/
-struct Root {
-    std::uint32_t node { 0 };
-    bool moving { false };
-};
 
 /**
  * A hierarchy for each geometry and each group of a scene's prototypes, and the instances that

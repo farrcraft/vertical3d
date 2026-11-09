@@ -9,77 +9,19 @@
 #include <api/type/camera/Camera.h>
 #include <api/ui/paint/Type.h>
 
-#include <array>
 #include <cstddef>
 #include <optional>
 #include <vector>
 
+#include "AxisEnd.h"
+#include "OverlayLook.h"
+#include "OverlayMetrics.h"
 #include "ViewPort.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::editor::view {
-
-/**
- * Where a view's axis marker and navigation gizmo sit, and how large they are, in pixels.
- *
- * The marker sits in the view's lower left corner. The gizmo sits in the upper right corner,
- * under the area's header, and only a perspective view has one.
- **/
-struct OverlayMetrics final {
-    static constexpr float MARKER = 20.0F;
-    static constexpr float INSET = 36.0F;
-    static constexpr float GIZMO = 30.0F;
-    static constexpr float BALL = 9.0F;
-    static constexpr float MARGIN = 8.0F;
-
-    float marker = MARKER;   /**< how long each line of the marker is **/
-    float inset = INSET;     /**< how far the marker's centre is from the view's left and bottom edges **/
-    float gizmo = GIZMO;     /**< how far each of the gizmo's balls is from its centre **/
-    float ball = BALL;       /**< the radius of a ball **/
-    float margin = MARGIN;   /**< between the gizmo's balls and the view's right edge or the header **/
-    float top = 0.0F;        /**< how much of the top of the view the header covers **/
-
-    /**
-     * @return the metrics at a ui scale, under a header of a height already at that scale
-     **/
-    static OverlayMetrics scaled(float factor, float top);
-};
-
-/**
- * One end of a world axis, as the marker or the gizmo draws it.
- **/
-struct AxisEnd final {
-    std::size_t axis = 0;      /**< 0, 1 or 2 for x, y and z **/
-    bool positive = true;      /**< whether this is the axis's positive end **/
-    glm::vec2 point{ 0.0F };   /**< where it is drawn, in window pixels **/
-    float depth = 0.0F;        /**< how far it points toward the viewer, from -1 to 1 **/
-};
-
-/**
- * The colours the overlays are drawn in.
- **/
-struct OverlayLook final {
-    static constexpr glm::vec4 X_AXIS{ 0.851F, 0.349F, 0.373F, 1.0F };
-    static constexpr glm::vec4 Y_AXIS{ 0.447F, 0.690F, 0.322F, 1.0F };
-    static constexpr glm::vec4 Z_AXIS{ 0.333F, 0.565F, 0.910F, 1.0F };
-    static constexpr glm::vec4 LABEL{ 0.067F, 0.071F, 0.078F, 1.0F };
-    static constexpr glm::vec4 REST{ 1.0F, 1.0F, 1.0F, 0.05F };
-    static constexpr glm::vec4 HOVER{ 1.0F, 1.0F, 1.0F, 0.10F };
-    static constexpr glm::vec4 PASSEPARTOUT{ 0.0F, 0.0F, 0.0F, 0.45F };
-    static constexpr float TEXT = 11.0F;
-    static constexpr float LINE = 2.0F;
-
-    std::array<glm::vec4, 3> axes{ X_AXIS, Y_AXIS, Z_AXIS };   /**< x, y and z **/
-    glm::vec4 label = LABEL;                                  /**< a letter on a ball **/
-    glm::vec4 rest = REST;                                    /**< the disc behind the gizmo **/
-    glm::vec4 hover = HOVER;                                  /**< the disc behind the gizmo under the cursor **/
-    glm::vec4 lit{ 1.0F };                                    /**< the ring around the ball under the cursor **/
-    glm::vec4 passepartout = PASSEPARTOUT;                    /**< laid over a camera's view outside the render's frame **/
-    float text = TEXT;                                        /**< how large a letter is drawn, in pixels **/
-    float line = LINE;                                        /**< how thick a line is, and a ring around a ball **/
-};
 
 /**
  * The ends of the three world axes as a camera sees them, about a centre on the screen.

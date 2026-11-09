@@ -8,6 +8,7 @@
 #include <api/type/Checked.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 
 #include <cmath>

@@ -80,7 +80,7 @@ std::vector<std::size_t> Segmenter::graphemes(std::string_view utf8) const {
     return offsets;
 }
 
-std::vector<WordSegment> Segmenter::words(std::string_view utf8) const {
+std::vector<Segmenter::WordSegment> Segmenter::words(std::string_view utf8) const {
     std::vector<WordSegment> segments;
     if (utf8.empty()) {
         return segments;
@@ -100,7 +100,7 @@ std::vector<WordSegment> Segmenter::words(std::string_view utf8) const {
     return segments;
 }
 
-std::vector<LineBreak> Segmenter::lineBreaks(std::string_view utf8) const {
+std::vector<Segmenter::LineBreak> Segmenter::lineBreaks(std::string_view utf8) const {
     std::vector<LineBreak> breaks;
     if (utf8.empty()) {
         return breaks;

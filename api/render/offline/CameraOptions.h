@@ -6,7 +6,8 @@
 #pragma once
 
 #include <api/render/offline/Camera.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
 
 #include <string>
 
@@ -53,9 +54,9 @@ class CameraOptions final {
      * it follows the frame aspect a: [-a, a] by [-1, 1] when a is at least 1, and [-1, 1] by
      * [-1/a, 1/a] otherwise.
      **/
-    void screenWindow(const rib::ScreenWindow & window);
+    void screenWindow(const rib::requests::ScreenWindow & window);
     /** RiClipping: the camera space depth of the near and far clipping planes. **/
-    void clipping(const rib::Clipping & planes);
+    void clipping(const rib::requests::Clipping & planes);
     /**
      * RiProjection. An empty name is RI_NULL, which applies no projection, so camera space is
      * screen space. "perspective" reads fov, the full angle in degrees across screen x from -1
@@ -90,7 +91,7 @@ class CameraOptions final {
     unsigned int height_ = defaultHeight;
     float pixelAspect_ = 1.0F;
     float frameAspect_ = defaultFrameAspectRatio;
-    rib::ScreenWindow screen_{ .left = -defaultFrameAspectRatio, .right = defaultFrameAspectRatio, .bottom = -1.0F, .top = 1.0F };
+    rib::requests::ScreenWindow screen_{ .left = -defaultFrameAspectRatio, .right = defaultFrameAspectRatio, .bottom = -1.0F, .top = 1.0F };
     bool frameAspectNamed_ = false;
     bool screenNamed_ = false;
     bool projectionNamed_ = false;

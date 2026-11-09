@@ -8,7 +8,7 @@
 #include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Clock.h>
 #include <api/ui/style/Resolver.h>
 
 #include <functional>
@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "Dressing.h"
+#include "Emphasis.h"
 #include "Text.h"
 #include "Type.h"
 

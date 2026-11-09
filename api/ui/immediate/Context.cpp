@@ -5,6 +5,10 @@
 
 #include "Context.h"
 
+#include "Id.h"
+#include "Reaction.h"
+#include "Retained.h"
+
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
@@ -19,80 +23,6 @@
 #include <glm/vec4.hpp>
 
 namespace v3d::ui::immediate {
-
-Reaction::Reaction() noexcept :
-hovered(false),
-held(false),
-clicked(false) {
-}
-
-Retained::Retained() noexcept :
-frame(0),
-tab(0),
-tabs(0),
-scroll(0.0F),
-content(0.0F),
-offset(0.0F, 0.0F),
-collapsed(false),
-dragging(false),
-chosen(-1) {
-}
-
-Popup::Popup() noexcept :
-id(0),
-asked(false),
-boxMin(0.0F, 0.0F),
-boxMax(0.0F, 0.0F),
-selected(-1) {
-}
-
-Row::Row() noexcept :
-margin(0.0F),
-right(0.0F),
-penY(0.0F),
-top(0.0F),
-height(0.0F),
-lastRight(0.0F),
-sameLine(false) {
-}
-
-Window::Window() noexcept :
-open(false),
-margin(0.0F),
-right(0.0F),
-id(0),
-scroll(0),
-bodyMin(0.0F, 0.0F),
-bodyMax(0.0F, 0.0F),
-contentTop(0.0F),
-scrolls(false),
-clipped(false) {
-}
-
-TabStrip::TabStrip() noexcept :
-id(0),
-open(false),
-pen(0.0F),
-top(0.0F),
-share(0.0F),
-index(0),
-wanted(0),
-changed(false),
-taken(false) {
-}
-
-Table::Table() noexcept :
-open(false),
-left(0.0F),
-column(0),
-id(0),
-scroll(0),
-right(0.0F),
-height(0.0F),
-top(0.0F),
-contentTop(0.0F),
-clipped(false) {
-}
 
 Context::Context(const boost::shared_ptr<paint::TextRenderer>& renderer, float size) :
     text(renderer),

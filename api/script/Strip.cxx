@@ -5,6 +5,9 @@
 
 #include "Strip.h"
 
+#include "Problem.h"
+#include "Stripped.h"
+
 #include <api/script/internal/Eraser.h>
 
 #include <algorithm>

@@ -5,14 +5,14 @@
 
 #include "Bases.h"
 
+#include <api/render/offline/rib/requests/Basis.h>
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "Requests.h"
 
 #include <glm/vec3.hpp>
 
@@ -33,8 +33,8 @@ constexpr float THIRD = 1.0F / DEGREE;
 /**
  * RI's standard bases, as its specification gives them.
  **/
-constexpr auto STANDARD = std::to_array<std::pair<const char*, Basis::Matrix>>({
-    { "bezier", Basis::BEZIER },
+constexpr auto STANDARD = std::to_array<std::pair<const char*, requests::Basis::Matrix>>({
+    { "bezier", requests::Basis::BEZIER },
     { "b-spline", { -SIXTH, 0.5F, -0.5F, SIXTH, 0.5F, -1, 0.5F, 0, -0.5F, 0, 0.5F, 0, SIXTH, TWO_THIRDS, SIXTH, 0 } },
     { "catmull-rom", { -0.5F, 1.5F, -1.5F, 0.5F, 1, -2.5F, 2, -0.5F, -0.5F, 0, 0.5F, 0, 0, 1, 0, 0 } },
     { "hermite", { 2, 1, -2, 1, -3, -2, 3, -1, 0, 1, 0, 0, 1, 0, 0, 0 } },
@@ -59,7 +59,7 @@ std::size_t segmentCount(std::size_t points, bool cubic, bool periodic, unsigned
 
 };  // namespace
 
-bool namedBasis(const std::string & name, Basis::Matrix * matrix) {
+bool namedBasis(const std::string & name, requests::Basis::Matrix * matrix) {
     const auto found = std::ranges::find_if(STANDARD, [&name](const auto& known) { return name == known.first; });
     if (found == STANDARD.end()) {
         return false;
@@ -68,12 +68,12 @@ bool namedBasis(const std::string & name, Basis::Matrix * matrix) {
     return true;
 }
 
-std::string basisName(const Basis::Matrix & matrix) {
+std::string basisName(const requests::Basis::Matrix & matrix) {
     const auto found = std::ranges::find_if(STANDARD, [&matrix](const auto& known) { return matrix == known.second; });
     return found == STANDARD.end() ? std::string() : std::string(found->first);
 }
 
-Segment toBezier(const Basis::Matrix & basis, const Segment & points) {
+Segment toBezier(const requests::Basis::Matrix & basis, const Segment & points) {
     // the basis times the points gives the cubic's coefficients, of t^3, t^2, t and 1 in that
     // order, and those give the Bezier points that make the same cubic
     std::array<glm::vec3, 4> coefficient{};
@@ -90,7 +90,7 @@ Segment toBezier(const Basis::Matrix & basis, const Segment & points) {
 }
 
 std::vector<Segment> segments(const std::vector<glm::vec3> & points, bool cubic, bool periodic,
-    const Basis::Matrix & basis, unsigned int step) {
+    const requests::Basis::Matrix & basis, unsigned int step) {
     std::vector<Segment> made;
     const std::size_t count = points.size();
     const auto at = [&points, count](std::size_t index) { return points[index % count]; };

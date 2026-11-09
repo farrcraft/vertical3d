@@ -7,6 +7,7 @@
 
 #include "Button.h"
 #include "Menu.h"
+#include "Selector.h"
 #include "Style.h"
 
 #include <cstddef>

@@ -13,7 +13,7 @@
 #include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Clock.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
@@ -51,6 +51,7 @@
 #include <vector>
 
 #include "Dressing.h"
+#include "Emphasis.h"
 #include "Painter.h"
 #include "Text.h"
 #include "Type.h"

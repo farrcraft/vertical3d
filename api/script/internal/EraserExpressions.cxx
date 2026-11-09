@@ -10,6 +10,7 @@
 #include <string_view>
 #include <utility>
 
+#include "Lexeme.h"
 #include "Scanner.h"
 
 namespace v3d::script::internal {

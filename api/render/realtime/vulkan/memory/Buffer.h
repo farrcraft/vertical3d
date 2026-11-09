@@ -10,18 +10,11 @@
 #include <vulkan/vulkan.h>
 
 #include "Allocation.h"
+#include "BufferSpec.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime::vulkan::memory {
-
-/**
- * What a buffer is bound as (vertex, index, uniform or transfer), and the size it starts at.
- **/
-struct BufferSpec {
-    VkBufferUsageFlags usage = 0;
-    VkDeviceSize bytes = 0;
-};
 
 /**
  * A host visible buffer the CPU writes directly, kept mapped for its whole life.

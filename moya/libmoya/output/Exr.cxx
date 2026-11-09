@@ -5,7 +5,10 @@
 
 #include <moya/libmoya/output/Exr.h>
 
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Channel.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/output/ExrMetadata.h>
+#include <moya/libmoya/output/ExrPart.h>
 #include <Imath/ImathMatrix.h>
 #include <Imath/half.h>
 #include <Imath/ImathVec.h>

@@ -14,6 +14,7 @@
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/command/Vertex.h>
+#include <vertical3d/src/manipulator/Motion.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Mesh.h>

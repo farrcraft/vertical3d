@@ -17,6 +17,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/script/Arguments.h>
 #include <vertical3d/src/script/Journal.h>
+#include <vertical3d/src/script/Parameter.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/view/AreaLayout.h>

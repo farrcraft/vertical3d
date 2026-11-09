@@ -10,8 +10,10 @@
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Cone.h>
 #include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Point.h>
 #include <api/render/offline/sl/runtime/Value.h>
 
 #include <string>

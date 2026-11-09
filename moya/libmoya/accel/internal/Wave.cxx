@@ -5,7 +5,7 @@
 
 #include <moya/libmoya/accel/internal/Wave.h>
 
-#include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 
 #include <algorithm>
 #include <cmath>

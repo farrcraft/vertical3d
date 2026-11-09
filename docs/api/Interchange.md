@@ -15,7 +15,8 @@ Background: [ADR-0123](../adr/scene/0123-interchange-file-readers-fill-a-neutral
 ## The scene
 
 `interchange::Scene` ([api/interchange/Scene.h](../../api/interchange/Scene.h)) holds six lists.
-Up is +y.
+Up is +y. Each list holds one kind of record, and each kind has a header of its own beside
+`Scene.h`, named after it, such as `Node.h` and `Mesh.h`.
 
 - **Nodes.** Each has a name, a parent, a placement and up to one mesh, one camera, one light and
   one set of curves, each by its index in the scene. A node with none of them only groups its

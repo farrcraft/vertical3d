@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 

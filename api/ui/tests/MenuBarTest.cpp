@@ -20,6 +20,7 @@
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Emphasis.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
 

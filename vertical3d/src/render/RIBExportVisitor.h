@@ -8,9 +8,9 @@
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Recorder.h>
-#include <api/render/offline/rib/Requests.h>
-#include <api/type/camera/Profile.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/item/Group.h>
@@ -91,7 +91,7 @@ class RIBExportVisitor final : public scene::Visitor {
      * The screen window a camera is sent with: its ortho zoom by its pixel aspect for an
      * orthographic camera, and the pixel aspect by one for a perspective one.
      **/
-    static v3d::render::offline::rib::ScreenWindow screen(const v3d::type::camera::Profile& profile);
+    static v3d::render::offline::rib::requests::ScreenWindow screen(const v3d::type::camera::Profile& profile);
 
     /** The name of the light a scene with no light of its own is given. **/
     static constexpr const char* CAMERA_LIGHT = "camera light";

@@ -8,6 +8,7 @@
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/item/Item.h>
 
+#include "Placed.h"
 #include "Properties.h"
 
 #include <glm/ext/matrix_transform.hpp>

@@ -5,7 +5,7 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/rib/Bases.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
 #include <api/render/offline/trace/Curve.h>
 #include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/Intersection.h>
@@ -54,7 +54,7 @@ v3d::type::geometry::Ray down(float x, float y) {
  * A point on a cubic under a basis matrix, as RI defines it: [t^3 t^2 t 1] times the matrix
  * times the four points.
  **/
-glm::vec3 underBasis(const v3d::render::offline::rib::Basis::Matrix & basis, const v3d::render::offline::rib::Segment & points, float t) {
+glm::vec3 underBasis(const v3d::render::offline::rib::requests::Basis::Matrix & basis, const v3d::render::offline::rib::Segment & points, float t) {
     const float powers[4] = { t * t * t, t * t, t, 1.0F };
     glm::vec3 point(0.0F);
     for (std::size_t row = 0; row < 4; row++) {
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(a_scene_traces_a_curve) {
 BOOST_AUTO_TEST_CASE(a_basis_segment_is_a_bezier_segment) {
     const v3d::render::offline::rib::Segment points{ glm::vec3(0, 0, 0), glm::vec3(1, 2, 0), glm::vec3(3, -1, 1), glm::vec3(4, 1, 0) };
     for (const char* name : { "bezier", "b-spline", "catmull-rom", "power" }) {
-        v3d::render::offline::rib::Basis::Matrix basis{};
+        v3d::render::offline::rib::requests::Basis::Matrix basis{};
         BOOST_REQUIRE(v3d::render::offline::rib::namedBasis(name, &basis));
         const v3d::render::offline::rib::Segment bezier = v3d::render::offline::rib::toBezier(basis, points);
         for (const float t : { 0.0F, 0.3F, 0.5F, 1.0F }) {
@@ -175,9 +175,9 @@ BOOST_AUTO_TEST_CASE(a_curve_has_a_segment_per_step) {
     using v3d::render::offline::rib::segments;
     using v3d::render::offline::rib::varyingCount;
     const std::vector<glm::vec3> seven(7, glm::vec3(0.0F));
-    BOOST_CHECK_EQUAL(segments(seven, true, false, v3d::render::offline::rib::Basis::BEZIER, 3).size(), 2U);
+    BOOST_CHECK_EQUAL(segments(seven, true, false, v3d::render::offline::rib::requests::Basis::BEZIER, 3).size(), 2U);
     BOOST_CHECK_EQUAL(varyingCount(7, true, false, 3), 3U);
-    v3d::render::offline::rib::Basis::Matrix catmullRom{};
+    v3d::render::offline::rib::requests::Basis::Matrix catmullRom{};
     BOOST_REQUIRE(v3d::render::offline::rib::namedBasis("catmull-rom", &catmullRom));
     BOOST_CHECK_EQUAL(segments(seven, true, false, catmullRom, 1).size(), 4U);
     BOOST_CHECK_EQUAL(segments(seven, true, true, catmullRom, 1).size(), 7U);

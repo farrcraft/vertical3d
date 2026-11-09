@@ -7,6 +7,7 @@
 
 #include <api/render/offline/texture/Texture.h>
 
+#include "Cone.h"
 #include "Value.h"
 
 #include <string>

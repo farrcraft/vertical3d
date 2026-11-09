@@ -52,8 +52,57 @@ test('filelocal reports a type defined in a source file, but not in a header or 
         '};  // namespace',
     ];
     assert.deepEqual(check(SOURCE, lines), ['2: type-in-source', '5: type-in-source']);
-    assert.deepEqual(check('api/example/Example.h', lines), []);
+    assert.deepEqual(check('api/example/Example.h', lines), ['5: second-class-in-header']);
     assert.deepEqual(check(TEST, lines), []);
+});
+
+test('filelocal reports each class after the first a header defines at namespace scope', () => {
+    const lines = [
+        'namespace v3d::example {',
+        'class Later;',
+        'enum class Mode { On, Off };',
+        'struct Placement {',
+        '    struct Nested {',
+        '        int x;',
+        '    };',
+        '};',
+        'struct alignas(32) Node {',
+        '    float box[8];',
+        '};',
+        'union Bits {',
+        '    float f;',
+        '};',
+        '};  // namespace v3d::example',
+    ];
+    assert.deepEqual(check('api/example/Placement.h', lines), ['9: second-class-in-header', '12: second-class-in-header']);
+    assert.deepEqual(check('api/example/tests/Fixtures.h', lines), []);
+});
+
+test('filelocal accepts one class beside its enums, forward declarations and a specialization', () => {
+    assert.deepEqual(
+        check('api/example/Item.h', [
+            'namespace v3d::example {',
+            'class Store;',
+            'enum Kind { Plain, Fancy };',
+            'class Item {',
+            ' public:',
+            '    class Builder {',
+            '    };',
+            '};',
+            '};  // namespace v3d::example',
+            'template <>',
+            'struct std::hash<v3d::example::Item> {',
+            '    std::size_t operator()(const v3d::example::Item& item) const;',
+            '};',
+        ]),
+        [],
+    );
+});
+
+test('filelocal reads a type aligned with alignas as a type, not a function', () => {
+    assert.deepEqual(check(SOURCE, ['namespace {', 'struct alignas(16) Lane {', '    float x[4];', '};', '};  // namespace']), [
+        '2: type-in-source',
+    ]);
 });
 
 test('filelocal reports a declaration below a function, and an anonymous namespace below one', () => {

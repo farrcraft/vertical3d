@@ -7,7 +7,11 @@
 
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
 #include <moya/libmoya/ri/RenderMan.h>
 #include <moya/libmoya/ri/Renderer.h>
 
@@ -70,7 +74,7 @@ class Converter {
      * The image size RiFormat names, from its resolution in x and y. A side the RIB reader
      * would refuse is refused here too, and the request is skipped.
      **/
-    static std::optional<v3d::render::offline::rib::Format> format(const glm::ivec2 & resolution, RtFloat aspect);
+    static std::optional<v3d::render::offline::rib::requests::Format> format(const glm::ivec2 & resolution, RtFloat aspect);
 
     /**
      * The filter RiPixelFilter names. The C interface names a filter by its function, and only
@@ -96,7 +100,7 @@ class Converter {
      *
      * @param points set to the number of points the faces index
      **/
-    static std::optional<v3d::render::offline::rib::PointsPolygons> pointsPolygons(RtInt npolys, const RtInt nverts[],
+    static std::optional<v3d::render::offline::rib::requests::PointsPolygons> pointsPolygons(RtInt npolys, const RtInt nverts[],
         const RtInt verts[], unsigned int* points);
 
     /**
@@ -117,7 +121,7 @@ class Converter {
      *
      * @param points set to the number of points the faces index
      **/
-    static std::optional<v3d::render::offline::rib::SubdivisionMesh> subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
+    static std::optional<v3d::render::offline::rib::requests::SubdivisionMesh> subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
         const RtInt verts[], const Tags & tags, unsigned int* points);
 
     /**
@@ -127,7 +131,7 @@ class Converter {
      *
      * @param total set to the number of control points the curves have in all
      **/
-    std::optional<v3d::render::offline::rib::Curves> curves(RtToken type, RtInt nvcurves, const RtInt nvertices[],
+    std::optional<v3d::render::offline::rib::requests::Curves> curves(RtToken type, RtInt nvcurves, const RtInt nvertices[],
         RtToken wrap, unsigned int* total) const;
 
     /**
@@ -144,7 +148,7 @@ class Converter {
      * RiBasis' two matrices and steps. RI's own order is row by row, and a Basis holds a matrix
      * the same way. A step outside 1 to 4 is not one a basis has, and the request is dropped.
      **/
-    std::optional<v3d::render::offline::rib::Basis> basis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) const;
+    std::optional<v3d::render::offline::rib::requests::Basis> basis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) const;
 
  private:
     Renderer* renderer_;

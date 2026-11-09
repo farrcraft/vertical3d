@@ -6,6 +6,11 @@
 #pragma once
 
 #include <api/curve/Curve.h>
+#include <api/interchange/Curves.h>
+#include <api/interchange/Imported.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3f.h>

@@ -6,7 +6,7 @@
 #include "BidiHandle.h"
 
 #include <api/font/text/Utf8.h>
-#include <api/font/text/internal/Icu.h>
+#include "Icu.h"
 #include <unicode/ubidi.h>
 #include <unicode/utypes.h>
 

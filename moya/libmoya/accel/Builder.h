@@ -6,8 +6,10 @@
 #pragma once
 
 #include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/accel/Hierarchy.h>
+#include <moya/libmoya/accel/MovingHierarchy.h>
+#include <moya/libmoya/accel/Options.h>
 #include <moya/libmoya/accel/Sweep.h>
-#include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 
 #include <cstdint>
@@ -16,52 +18,8 @@
 
 namespace v3d::moya::accel {
 
-/**
- * A built hierarchy, in host memory. The root is the first node, and a scene of no primitives has
- * one node whose children are all empty. A leaf's references are primitive indices, and a
- * primitive split in space is referenced from each leaf that holds part of it.
- **/
-struct Hierarchy {
-    std::vector<device::cpu::Node> nodes;
-    std::vector<std::uint32_t> references;
-
-    /** The box of everything the hierarchy holds. **/
-    Box bounds;
-};
-
 /** The bounds of the part of a primitive inside a box, which a spatial split needs. **/
 using Clip = std::function<Box(std::uint32_t primitive, const Box & within)>;
-
-/** How a hierarchy is built. **/
-struct Options {
-    /** Whether a primitive may be split in space, so that it is referenced from two leaves. **/
-    bool spatial { true };
-
-    /**
-     * How many references spatial splits may add, as a fraction of the primitives. Each node
-     * shares its own part among its children by their counts, so the budget does not depend on
-     * which thread builds which node.
-     **/
-    float budget { 1.0F };
-
-    /** Whether a hierarchy over moving primitives may split a node by time. **/
-    bool temporal { true };
-};
-
-/**
- * A built hierarchy over primitives that move, in host memory, over the time range from begin to
- * end. Its nodes are as Hierarchy's, with each child's box at the start and end of the child's
- * own range.
- **/
-struct MovingHierarchy {
-    std::vector<device::cpu::MotionNode> nodes;
-    std::vector<std::uint32_t> references;
-
-    /** The bounds of everything the hierarchy holds over its range. **/
-    LinearBox bounds;
-    float begin { 0.0F };
-    float end { 0.0F };
-};
 
 /**
  * Builds a hierarchy over primitives by their bounds.

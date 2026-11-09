@@ -12,7 +12,14 @@
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/texture/Textures.h>
 #include <api/render/offline/trace/Primitive.h>
@@ -135,12 +142,12 @@ class RenderContext {
          * follows the frame aspect a: [-a, a] by [-1, 1] when a is at least 1, and
          * [-1, 1] by [-1/a, 1/a] otherwise.
          **/
-        void screenWindow(const v3d::render::offline::rib::ScreenWindow & window);
+        void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & window);
         /**
          * maps to RiClipping(hither, yon)
          * Sets the eye space depth of the near and far clipping planes.
          **/
-        void clipping(const v3d::render::offline::rib::Clipping & planes);
+        void clipping(const v3d::render::offline::rib::requests::Clipping & planes);
 
         /**
          * maps to RiProjection()
@@ -186,19 +193,19 @@ class RenderContext {
          * through image::Factory, which picks the format from the name's extension. An
          * empty name or any other type writes nothing. The mode is stored and not read.
          **/
-        void display(const v3d::render::offline::rib::Display & display);
+        void display(const v3d::render::offline::rib::requests::Display & display);
         /**
          * The same, with the request's parameter list. No display parameter is read, so each
          * one is logged as not used.
          **/
-        void display(const v3d::render::offline::rib::Display & display,
+        void display(const v3d::render::offline::rib::requests::Display & display,
             const v3d::render::offline::rib::ParameterList & parameters);
         /**
          * maps to RiCropWindow()
          * The part of the image to render, as fractions of its width and height. The window
          * is held to [0, 1] on each axis. A window with no area is logged and refused.
          **/
-        void cropWindow(const v3d::render::offline::rib::CropWindow & window);
+        void cropWindow(const v3d::render::offline::rib::requests::CropWindow & window);
         /**
          * The pixels inside the crop window: columns x to y and rows z to w, each range
          * including its start and excluding its end. RI renders the columns from
@@ -271,7 +278,7 @@ class RenderContext {
          **/
         void shadingRate(float size);
         /** maps to RiBasis(), which a later cubic curve is evaluated through **/
-        void basis(const v3d::render::offline::rib::Basis & request);
+        void basis(const v3d::render::offline::rib::requests::Basis & request);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
         /**
@@ -307,7 +314,7 @@ class RenderContext {
          * an AttributeBegin block is local to that block. A light that does not compile is
          * left out.
          **/
-        void lightSource(const v3d::render::offline::rib::LightSource & request,
+        void lightSource(const v3d::render::offline::rib::requests::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
         /**
          * maps to RiAttribute()
@@ -327,7 +334,7 @@ class RenderContext {
          * hider draws them. That geometry renders as a surface too. Geometry after the block
          * ends does not join it.
          **/
-        void areaLightSource(const v3d::render::offline::rib::LightSource & request,
+        void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
         /** The geometry of the area light being declared, or null outside its attribute block. **/
         const boost::shared_ptr<v3d::render::offline::Area> & areaLight() const;
@@ -385,7 +392,7 @@ class RenderContext {
          *
          * @return false when the hider cannot draw spheres
          **/
-        bool addSphere(const v3d::render::offline::rib::Sphere & shape);
+        bool addSphere(const v3d::render::offline::rib::requests::Sphere & shape);
         /**
          * maps to RiCurves()
          * Each curve is cut into segments by the current basis. Each is drawn as a ribbon of
@@ -397,7 +404,7 @@ class RenderContext {
          * Each segment is added to the traced scene. Under the reyes hider it is also placed
          * with the current state and handed to the hider, as a polygon is.
          **/
-        void addCurves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters);
+        void addCurves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters);
 
         /**
          * The matrix of a named coordinate system. "camera" is world to camera, and "screen",

@@ -7,12 +7,19 @@
 
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/geometry/Flat.h>
+#include <moya/libmoya/geometry/Geometry.h>
+#include <moya/libmoya/geometry/Group.h>
+#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/Array.h>
-#include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Placed.h>
+#include <moya/libmoya/kernel/geometry/PlacedShapes.h>
+#include <moya/libmoya/kernel/geometry/Placement.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cmath>
@@ -66,9 +73,9 @@ void placeShapes(const Prototypes & prototypes, float time, const Geometry & geo
     shapes.form = geometry.form;
     shapes.toShape = glm::inverse(toWorld);
     placement.count = geometry.count;
-    if (geometry.form == kernel::geometry::Form::Quadric) {
+    if (geometry.form == kernel::geometry::primitive::Form::Quadric) {
         placement.first = static_cast<std::uint32_t>(out.quadrics.size());
-        out.quadrics.push_back(kernel::geometry::sampledQuadric(geometry.quadric, prototypes.quadrics.data(), prototypes.times.data(), time));
+        out.quadrics.push_back(kernel::geometry::primitive::sampledQuadric(geometry.quadric, prototypes.quadrics.data(), prototypes.times.data(), time));
     } else {
         placement.first = static_cast<std::uint32_t>(out.spheres.size());
         for (std::uint32_t point = 0; point < geometry.count; ++point) {
@@ -101,7 +108,7 @@ void placeGroup(const Prototypes & prototypes, float time, const Group & group, 
             placeGroup(prototypes, time, prototypes.groups[instance.prototype], inner, placement, out);
         } else {
             const Geometry & geometry = prototypes.geometries[instance.prototype];
-            if (geometry.form == kernel::geometry::Form::Triangles) {
+            if (geometry.form == kernel::geometry::primitive::Form::Triangles) {
                 placeMesh(prototypes, time, geometry, inner, placement, out);
             } else {
                 placeShapes(prototypes, time, geometry, inner, placement, out);
@@ -147,7 +154,7 @@ kernel::geometry::Placed World::view() const {
         .placements = device::view<kernel::geometry::Placement>(*placements_),
         .shapes = device::view<kernel::geometry::PlacedShapes>(*shapes_),
         .spheres = device::view<glm::vec4>(*spheres_),
-        .quadrics = device::view<kernel::geometry::Quadric>(*quadrics_) };
+        .quadrics = device::view<kernel::geometry::primitive::Quadric>(*quadrics_) };
 }
 
 kernel::Array<std::uint32_t> World::runs() const {

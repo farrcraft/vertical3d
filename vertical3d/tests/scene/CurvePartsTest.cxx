@@ -4,9 +4,15 @@
  */
 
 #include <api/brep/Index.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Nurbs.h>
+#include <api/curve/Poly.h>
+#include <vertical3d/src/scene/item/CurveHandle.h>
 #include <vertical3d/src/scene/item/CurveParts.h>
+#include <vertical3d/src/scene/item/CurvePoint.h>
 
 #include <optional>
 #include <utility>

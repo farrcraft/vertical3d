@@ -6,7 +6,7 @@
 #include "SceneUniforms.h"
 
 #include "Settings.h"
-#include "Shadow.h"
+#include "Cascades.h"
 
 #include <cstddef>
 #include <cstdint>

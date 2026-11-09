@@ -7,6 +7,26 @@
 
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
 #include <moya/libmoya/state/RenderContext.h>
 
 #include <cstdint>
@@ -47,23 +67,23 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      * Records the declaration for the parameters the C interface passes. The RIB reader keeps
      * its own for the file it reads, and this one as well.
      **/
-    void declare(const v3d::render::offline::rib::Declare & request) override;
+    void declare(const v3d::render::offline::rib::requests::Declare & request) override;
 
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
-    void format(const v3d::render::offline::rib::Format & request) override;
+    void format(const v3d::render::offline::rib::requests::Format & request) override;
     void frameAspectRatio(float aspect) override;
-    void screenWindow(const v3d::render::offline::rib::ScreenWindow & request) override;
-    void cropWindow(const v3d::render::offline::rib::CropWindow & request) override;
+    void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) override;
+    void cropWindow(const v3d::render::offline::rib::requests::CropWindow & request) override;
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void clipping(const v3d::render::offline::rib::Clipping & request) override;
-    void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override;
-    void shutter(const v3d::render::offline::rib::Shutter & request) override;
+    void clipping(const v3d::render::offline::rib::requests::Clipping & request) override;
+    void depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) override;
+    void shutter(const v3d::render::offline::rib::requests::Shutter & request) override;
     void pixelSamples(const glm::uvec2 & samples) override;
     void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
-    void display(const v3d::render::offline::rib::Display & request,
+    void display(const v3d::render::offline::rib::requests::Display & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void worldBegin() override;
@@ -92,32 +112,32 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void color(const glm::vec3 & value) override;
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
-    void basis(const v3d::render::offline::rib::Basis & request) override;
+    void basis(const v3d::render::offline::rib::requests::Basis & request) override;
 
     void surface(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
-    void lightSource(const v3d::render::offline::rib::LightSource & request,
+    void lightSource(const v3d::render::offline::rib::requests::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void displacement(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void attribute(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
-    void areaLightSource(const v3d::render::offline::rib::LightSource & request,
+    void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
     void imager(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request,
+    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
-    void curves(const v3d::render::offline::rib::Curves & request,
+    void curves(const v3d::render::offline::rib::requests::Curves & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     /**
      * Drawn by the ray hider only, because the reyes hider does not dice spheres. The first
      * sphere a scene names under the reyes hider is reported.
      **/
-    void sphere(const v3d::render::offline::rib::Sphere & request,
+    void sphere(const v3d::render::offline::rib::requests::Sphere & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
@@ -125,13 +145,13 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      * and the scene renders without them.
      **/
     void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cone(const v3d::render::offline::rib::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cylinder(const v3d::render::offline::rib::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void hyperboloid(const v3d::render::offline::rib::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void paraboloid(const v3d::render::offline::rib::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void disk(const v3d::render::offline::rib::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void torus(const v3d::render::offline::rib::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void subdivisionMesh(const v3d::render::offline::rib::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cone(const v3d::render::offline::rib::requests::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void disk(const v3d::render::offline::rib::requests::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void torus(const v3d::render::offline::rib::requests::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * The hiders do not instance objects. The geometry inside an object's block is left out, as

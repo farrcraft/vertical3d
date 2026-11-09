@@ -8,9 +8,9 @@
 #include <cstddef>
 #include <vector>
 
-namespace v3d::font::text {
-struct ShapedText;
-};  // namespace v3d::font::text
+namespace v3d::font::text::shaping {
+struct Text;
+};  // namespace v3d::font::text::shaping
 
 namespace v3d::font::text::internal {
 
@@ -22,7 +22,7 @@ namespace v3d::font::text::internal {
  **/
 class Measure {
  public:
-    explicit Measure(const ShapedText& shaped);
+    explicit Measure(const shaping::Text& shaped);
 
     /**
      * @return the advance of the bytes from one offset to another
@@ -84,7 +84,7 @@ class Measure {
      **/
     std::size_t trim(std::size_t start, std::size_t end, bool (*test)(char32_t)) const;
 
-    const ShapedText& shaped_;
+    const shaping::Text& shaped_;
     std::vector<float> prefix_;  // the advance of each byte and every byte before it, from 0
 };
 

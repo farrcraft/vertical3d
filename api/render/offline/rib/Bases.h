@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/render/offline/rib/requests/Basis.h>
+
 #include <array>
 #include <cstddef>
 #include <string>
 #include <vector>
-
-#include "Requests.h"
 
 #include <glm/vec3.hpp>
 
@@ -22,12 +22,12 @@ namespace v3d::render::offline::rib {
  *
  * @return whether the name is one of them
  **/
-bool namedBasis(const std::string & name, Basis::Matrix * matrix);
+bool namedBasis(const std::string & name, requests::Basis::Matrix * matrix);
 
 /**
  * @return the name RI gives a basis matrix, or empty for a matrix that is not one of its own
  **/
-std::string basisName(const Basis::Matrix & matrix);
+std::string basisName(const requests::Basis::Matrix & matrix);
 
 /**
  * Four points in order, such as one segment's control points.
@@ -38,7 +38,7 @@ using Segment = std::array<glm::vec3, 4>;
  * The control points of the Bezier segment that is the same curve as four control points
  * under a basis matrix. A curve under any basis is drawn as such segments.
  **/
-Segment toBezier(const Basis::Matrix & basis, const Segment & points);
+Segment toBezier(const requests::Basis::Matrix & basis, const Segment & points);
 
 /**
  * The segments of one curve of a Curves request, each as the Bezier segment it is, from the
@@ -57,7 +57,7 @@ Segment toBezier(const Basis::Matrix & basis, const Segment & points);
  *        curve ignores it, and a step of zero gives a cubic curve no segments
  **/
 std::vector<Segment> segments(const std::vector<glm::vec3> & points, bool cubic, bool periodic,
-    const Basis::Matrix & basis, unsigned int step);
+    const requests::Basis::Matrix & basis, unsigned int step);
 
 /**
  * How many varying values one curve of a Curves request has: one at each end of each segment,

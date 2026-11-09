@@ -8,10 +8,12 @@
 
 #include "Reader.h"
 
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
-#include "Requests.h"
 #include "Token.h"
 
 #include <algorithm>
@@ -94,7 +96,7 @@ Reader::Result Reader::curvesRequest(Lexer * lexer, Handler * handler) {
  * parameters. The tags' arguments are checked against the counts each tag gives.
  **/
 Reader::Result Reader::subdivisionRequest(Lexer * lexer, Handler * handler) {
-    SubdivisionMesh mesh;
+    requests::SubdivisionMesh mesh;
     const Token at = lexer->peek();
     if (!text(lexer, &mesh.scheme) || !counts(lexer, &mesh.counts) || !counts(lexer, &mesh.indices) || !strings(lexer, &mesh.tags) ||
         !counts(lexer, &mesh.arguments) || !counts(lexer, &mesh.integers) || !floatArray(lexer, &mesh.floats)) {
@@ -158,7 +160,7 @@ Reader::Result Reader::quadricRequest(const std::string & name, Lexer * lexer, H
         handler->cylinder({.radius = values[0], .zmin = values[1], .zmax = values[2], .thetamax = values[3]}, list);
     } else if (name == "Hyperboloid") {
         // two points of three numbers each, then the sweep
-        Hyperboloid hyperboloid { .thetamax = values.back() };
+        requests::Hyperboloid hyperboloid { .thetamax = values.back() };
         std::copy_n(values.begin(), hyperboloid.point1.size(), hyperboloid.point1.begin());
         std::copy_n(values.begin() + static_cast<std::ptrdiff_t>(hyperboloid.point1.size()), hyperboloid.point2.size(), hyperboloid.point2.begin());
         handler->hyperboloid(hyperboloid, list);

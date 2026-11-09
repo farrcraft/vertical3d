@@ -18,6 +18,7 @@
 
 #include "Barriers.h"
 #include "Buffer.h"
+#include "BufferSpec.h"
 #include "Image.h"
 #include "Uploader.h"
 

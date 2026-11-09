@@ -5,6 +5,10 @@
 
 #include "Painter.h"
 
+#include "Chevron.h"
+#include "Plate.h"
+#include "Shadow.h"
+
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <algorithm>

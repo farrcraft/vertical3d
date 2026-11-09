@@ -7,13 +7,16 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/CpuLibrary.h>
+#include <moya/libmoya/geometry/Flat.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>

@@ -5,7 +5,7 @@
 
 #include "BreakHandle.h"
 
-#include <api/font/text/internal/Icu.h>
+#include "Icu.h"
 #include <unicode/ubrk.h>
 #include <unicode/uloc.h>
 #include <unicode/utypes.h>

@@ -5,19 +5,25 @@
 
 #include "Target.h"
 
+#include "Motion.h"
+
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveHandle.h>
 #include <vertical3d/src/scene/item/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/item/CurvePoint.h>
 #include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>

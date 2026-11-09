@@ -8,7 +8,8 @@
 #include <cstdint>
 #include <vector>
 
-#include "Stacks.h"
+#include "ClipStack.h"
+#include "TransformStack.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>

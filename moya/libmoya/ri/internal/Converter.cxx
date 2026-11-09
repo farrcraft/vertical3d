@@ -8,7 +8,11 @@
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/RenderMan.h>
 #include <moya/libmoya/ri/Renderer.h>
@@ -59,13 +63,13 @@ glm::mat4x4 Converter::matrix(RtMatrix transform) {
     return glm::make_mat4(&transform[0][0]);
 }
 
-std::optional<v3d::render::offline::rib::Format> Converter::format(const glm::ivec2 & resolution, RtFloat aspect) {
+std::optional<v3d::render::offline::rib::requests::Format> Converter::format(const glm::ivec2 & resolution, RtFloat aspect) {
     const std::optional<uint32_t> width = v3d::render::offline::film::formatSide(static_cast<float>(resolution.x));
     const std::optional<uint32_t> height = v3d::render::offline::film::formatSide(static_cast<float>(resolution.y));
     if (!width || !height) {
         return std::nullopt;
     }
-    return v3d::render::offline::rib::Format{.width = *width, .height = *height, .pixelAspect = aspect};
+    return v3d::render::offline::rib::requests::Format{.width = *width, .height = *height, .pixelAspect = aspect};
 }
 
 std::optional<v3d::render::offline::film::Filter> Converter::filter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
@@ -104,9 +108,9 @@ v3d::render::offline::rib::ParameterList Converter::parameters(RtInt n, RtToken 
     return list;
 }
 
-std::optional<v3d::render::offline::rib::PointsPolygons> Converter::pointsPolygons(RtInt npolys, const RtInt nverts[],
+std::optional<v3d::render::offline::rib::requests::PointsPolygons> Converter::pointsPolygons(RtInt npolys, const RtInt nverts[],
     const RtInt verts[], unsigned int* points) {
-    v3d::render::offline::rib::PointsPolygons request;
+    v3d::render::offline::rib::requests::PointsPolygons request;
     std::size_t total = 0;
     for (RtInt each = 0; each < npolys; each++) {
         if (nverts[each] < 0) {
@@ -126,13 +130,13 @@ std::optional<v3d::render::offline::rib::PointsPolygons> Converter::pointsPolygo
     return request;
 }
 
-std::optional<v3d::render::offline::rib::SubdivisionMesh> Converter::subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
+std::optional<v3d::render::offline::rib::requests::SubdivisionMesh> Converter::subdivisionMesh(RtToken mask, RtInt nf, const RtInt nverts[],
     const RtInt verts[], const Tags & tags, unsigned int* points) {
-    const std::optional<v3d::render::offline::rib::PointsPolygons> faces = pointsPolygons(nf, nverts, verts, points);
+    const std::optional<v3d::render::offline::rib::requests::PointsPolygons> faces = pointsPolygons(nf, nverts, verts, points);
     if (!faces || tags.ntags < 0) {
         return std::nullopt;
     }
-    v3d::render::offline::rib::SubdivisionMesh request { .scheme = text(mask), .counts = faces->counts, .indices = faces->indices };
+    v3d::render::offline::rib::requests::SubdivisionMesh request { .scheme = text(mask), .counts = faces->counts, .indices = faces->indices };
     std::size_t integers = 0;
     std::size_t floats = 0;
     for (std::size_t tag = 0; tag < static_cast<std::size_t>(tags.ntags); tag++) {
@@ -157,7 +161,7 @@ std::optional<v3d::render::offline::rib::SubdivisionMesh> Converter::subdivision
     return request;
 }
 
-std::optional<v3d::render::offline::rib::Curves> Converter::curves(RtToken type, RtInt nvcurves, const RtInt nvertices[],
+std::optional<v3d::render::offline::rib::requests::Curves> Converter::curves(RtToken type, RtInt nvcurves, const RtInt nvertices[],
     RtToken wrap, unsigned int* total) const {
     const std::string kind = text(type);
     const std::string wrapping = text(wrap);
@@ -166,7 +170,7 @@ std::optional<v3d::render::offline::rib::Curves> Converter::curves(RtToken type,
             kind, wrapping);
         return std::nullopt;
     }
-    v3d::render::offline::rib::Curves request;
+    v3d::render::offline::rib::requests::Curves request;
     request.cubic = kind == "cubic";
     request.periodic = wrapping == "periodic";
     *total = 0;
@@ -196,12 +200,12 @@ v3d::render::offline::rib::ParameterList Converter::curveParameters(RtInt n, RtT
     return parameters(static_cast<RtInt>(kept.size()), kept.data(), values.data(), vertices);
 }
 
-std::optional<v3d::render::offline::rib::Basis> Converter::basis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) const {
+std::optional<v3d::render::offline::rib::requests::Basis> Converter::basis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) const {
     if (ustep < 1 || ustep > 4 || vstep < 1 || vstep > 4) {
         renderer_->active().context().logger()->get()->warn("RiBasis steps by {} and {}, and a basis steps by 1 to 4", ustep, vstep);
         return std::nullopt;
     }
-    v3d::render::offline::rib::Basis request;
+    v3d::render::offline::rib::requests::Basis request;
     for (std::size_t row = 0; row < 4; row++) {
         for (std::size_t column = 0; column < 4; column++) {
             request.u[(row * 4) + column] = ubasis[row][column];

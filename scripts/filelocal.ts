@@ -1,6 +1,7 @@
 /**
- * Check what a C++ file keeps to itself, against the rules in docs/contributing/Conventions.md
- * under "What a source file keeps to itself".
+ * Check what a C++ file keeps to itself, and that a header holds one class, against the rules in
+ * docs/contributing/Conventions.md under "What a source file keeps to itself" and "One class per
+ * header".
  *
  * The script reads every tracked .h, .cpp and .cxx file but the vendored ones, and reports:
  *
@@ -22,6 +23,11 @@
  *   internal-include     an include of a header under an internal/ directory, from a file
  *                        outside the directory that holds that internal/. Such a header belongs
  *                        to its library's own sources and tests.
+ *   second-class-in-header
+ *                        a class, struct or union defined at namespace scope in a header that
+ *                        already defines one, from Conventions.md "One class per header". An
+ *                        enum, a forward declaration, a nested class and an explicit
+ *                        specialization are not counted, and a header under tests is exempt.
  *
  * A file is a test file when its path has a tests directory in it. The check reads code through
  * scripts/lib/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor
@@ -49,7 +55,8 @@ export type Rule =
     | 'second-anonymous'
     | 'anonymous-late'
     | 'after-function'
-    | 'internal-include';
+    | 'internal-include'
+    | 'second-class-in-header';
 
 /** One report, and the line it is on. */
 export interface Finding {
@@ -146,6 +153,14 @@ function typeName(head: string): string | null {
     return name === undefined ? null : name === '' ? '(unnamed)' : name;
 }
 
+/**
+ * A head without its alignas specifiers, whose parentheses do not make a type's head read as a
+ * function's.
+ */
+function withoutAlignment(head: string): string {
+    return head.replace(/\balignas\s*\([^)]*\)/g, '');
+}
+
 /** The name a variable declaration defines: the last identifier before its initialiser. */
 function variableName(declarator: string): string {
     const names = declarator.replace(/\[[^\]]*\]/g, '').match(/[\w:]+/g);
@@ -218,6 +233,8 @@ class Walk {
     private anonymous = 0;
     private firstFunction = 0;
     private afterTypedef = false;
+    /** The first class a header defines at namespace scope, and its line. */
+    private firstClass: { name: string; line: number } | null = null;
     /** The text since the last brace or semicolon inside a class or a function. */
     private inner = '';
 
@@ -265,7 +282,7 @@ class Walk {
         if (c === '{') {
             // a class nested in a class holds members, not locals
             const nested = stripPrefixes(this.inner.replace(/^\s*((public|protected|private)\s*:\s*)+/, ''));
-            this.stack.push(typeName(nested) !== null && !this.inner.includes('(') ? 'type' : 'body');
+            this.stack.push(typeName(nested) !== null && !withoutAlignment(this.inner).includes('(') ? 'type' : 'body');
             this.inner = '';
         } else if (c === ';') {
             this.inner = '';
@@ -364,6 +381,26 @@ class Walk {
         }
     }
 
+    /**
+     * Check that a header outside tests defines one class at namespace scope. An enum may sit
+     * beside the class that gives it meaning, and an explicit specialization, such as of
+     * std::hash, defines no new class.
+     */
+    private oneClass(raw: string, text: string, type: string, line: number): void {
+        if (this.kind.source || this.kind.test || /^(typedef\s+)?enum\b/.test(text) || /^\s*template\s*<\s*>/.test(raw)) {
+            return;
+        }
+        if (this.firstClass === null) {
+            this.firstClass = { name: type, line };
+            return;
+        }
+        this.add(
+            line,
+            'second-class-in-header',
+            `${type} is a second class in this header, after ${this.firstClass.name} on line ${this.firstClass.line}; give it a header of its own, or nest it in the class that owns it`,
+        );
+    }
+
     /** Sort a head that ended in an opening brace at namespace scope, and say what it opens. */
     private opening(raw: string, line: number): Scope {
         const text = stripPrefixes(raw);
@@ -388,7 +425,7 @@ class Walk {
             return 'extern';
         }
         const type = typeName(text);
-        if (type !== null && !text.includes('(')) {
+        if (type !== null && !withoutAlignment(text).includes('(')) {
             if (this.kind.source && !this.kind.test) {
                 this.add(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
             }
@@ -396,6 +433,7 @@ class Walk {
                 this.add(line, 'after-function', `${type} is defined below the function definition on line ${this.firstFunction}`);
             }
             this.afterTypedef = /^typedef\b/.test(text);
+            this.oneClass(raw, text, type, line);
             return 'type';
         }
         if (this.parens > 0 || assigns(text) || !text.includes('(') || memberInitialiser(text)) {
@@ -444,7 +482,7 @@ function main(): number {
             message,
         })),
     );
-    return report(found, 'breaks "What a source file keeps to itself" in docs/contributing/Conventions.md.');
+    return report(found, 'breaks "What a source file keeps to itself" or "One class per header" in docs/contributing/Conventions.md.');
 }
 
 runGate(import.meta.url, main);

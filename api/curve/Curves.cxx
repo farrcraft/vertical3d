@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "Bezier.h"
 #include "Curve.h"
 
 #include <glm/vec3.hpp>

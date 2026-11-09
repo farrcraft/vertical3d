@@ -5,7 +5,6 @@
 
 #include "MouseMotion.h"
 
-#include <api/event/Chord.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 

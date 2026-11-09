@@ -7,6 +7,7 @@
 
 #include "Chord.h"
 #include "Event.h"
+#include "Modifiers.h"
 #include "State.h"
 
 #include <algorithm>

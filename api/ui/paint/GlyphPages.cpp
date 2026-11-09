@@ -40,7 +40,7 @@ void GlyphPages::sync(font::glyph::Store* store) {
     for (std::size_t page = kept; page < store->pages(); page++) {
         textures_.push_back(create_(store->pixels(page).data(), side, channels));
     }
-    for (const font::glyph::Region& region : store->regions()) {
+    for (const font::glyph::Store::Region& region : store->regions()) {
         if (region.page >= kept) {
             continue;
         }

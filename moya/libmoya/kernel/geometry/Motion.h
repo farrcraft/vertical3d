@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Between.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cstdint>
@@ -17,39 +20,6 @@
 #include <glm/vec4.hpp>
 
 namespace v3d::moya::kernel::geometry {
-
-/**
- * One sample of a transformation, decomposed into a translation, a rotation and a symmetric
- * scale, which holds any shear. The transformation is the translation, then the rotation, then the
- * scale, applied to a point from the right.
- **/
-struct Key {
-    float time { 0.0F };
-    glm::vec3 translation { 0.0F };
-    glm::quat rotation { 1.0F, 0.0F, 0.0F, 0.0F };
-    glm::mat3 scale { 1.0F };
-};
-
-/**
- * Where a time falls among samples: the sample at or before it, and how far it lies towards the
- * next, from 0 to 1. A time before the first sample is at the first, and one after the last is at
- * the last.
- **/
-struct Between {
-    std::uint32_t at { 0 };
-    float along { 0.0F };
-};
-
-/**
- * Where a geometry's values are held: count values for each of its samples, one sample after
- * another from first, at the times from times on. A geometry of one sample holds it at every time.
- **/
-struct Sampled {
-    std::uint32_t first { 0 };
-    std::uint32_t count { 0 };
-    std::uint32_t times { 0 };
-    std::uint32_t samples { 1 };
-};
 
 /** Where a time falls among count rising times, of which time(i) gives the i-th. **/
 template <typename Time>

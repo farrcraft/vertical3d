@@ -7,7 +7,9 @@
 
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Cone.h>
 #include <api/render/offline/sl/runtime/Globals.h>
+#include <api/render/offline/sl/runtime/Point.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/texture/Texture.h>
 #include <api/render/offline/trace/Scene.h>

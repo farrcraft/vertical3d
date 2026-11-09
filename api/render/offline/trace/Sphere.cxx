@@ -6,7 +6,7 @@
 #include "Sphere.h"
 
 #include <api/render/offline/Units.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
@@ -27,13 +27,13 @@
 
 namespace v3d::render::offline::trace {
 
-Sphere::Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
+Sphere::Sphere(const v3d::render::offline::rib::requests::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
     Primitive(colour), radius_(shape.radius),
     // clamped to the absolute radius, so a negative radius still gives a valid range. A
     // sphere with a negative radius is never hit
     zmin_(std::clamp(std::min(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
     zmax_(std::clamp(std::max(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
-    thetamax_(std::clamp(shape.thetamax, 0.0F, v3d::render::offline::rib::Sphere::FULL_THETAMAX) * PI / HALF_TURN_DEGREES),
+    thetamax_(std::clamp(shape.thetamax, 0.0F, v3d::render::offline::rib::requests::Sphere::FULL_THETAMAX) * PI / HALF_TURN_DEGREES),
     toObject_(glm::inverse(placement)) {
 }
 

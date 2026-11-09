@@ -5,7 +5,9 @@
 
 #include <moya/libmoya/geometry/Quadrics.h>
 
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -50,33 +52,33 @@ glm::vec3 pointOf(const scene::Samples & samples, float time) {
     });
 }
 
-kernel::geometry::Quadric quadricAt(const scene::Scene & scene, const scene::Handle & handle, float time) {
+kernel::geometry::primitive::Quadric quadricAt(const scene::Scene & scene, const scene::Handle & handle, float time) {
     const auto number = [&](const char * name) {
         return numberAt(scene.samples(handle, name), time);
     };
     const std::string & kind = scene.schema().kind(handle.kind).name;
-    kernel::geometry::Quadric out;
+    kernel::geometry::primitive::Quadric out;
     out.thetamax = glm::radians(number("thetamax"));
     if (kind == "sphere" || kind == "cylinder") {
-        out.shape = kind == "sphere" ? kernel::geometry::Shape::Sphere : kernel::geometry::Shape::Cylinder;
+        out.shape = kind == "sphere" ? kernel::geometry::primitive::Shape::Sphere : kernel::geometry::primitive::Shape::Cylinder;
         out.radius = number("radius");
         out.zmin = number("zmin");
         out.zmax = number("zmax");
     } else if (kind == "cone" || kind == "disk") {
-        out.shape = kind == "cone" ? kernel::geometry::Shape::Cone : kernel::geometry::Shape::Disk;
+        out.shape = kind == "cone" ? kernel::geometry::primitive::Shape::Cone : kernel::geometry::primitive::Shape::Disk;
         out.radius = number("radius");
         out.height = number("height");
     } else if (kind == "paraboloid") {
-        out.shape = kernel::geometry::Shape::Paraboloid;
+        out.shape = kernel::geometry::primitive::Shape::Paraboloid;
         out.radius = number("rmax");
         out.zmin = number("zmin");
         out.zmax = number("zmax");
     } else if (kind == "hyperboloid") {
-        out.shape = kernel::geometry::Shape::Hyperboloid;
+        out.shape = kernel::geometry::primitive::Shape::Hyperboloid;
         out.point1 = pointOf(scene.samples(handle, "point1"), time);
         out.point2 = pointOf(scene.samples(handle, "point2"), time);
     } else {
-        out.shape = kernel::geometry::Shape::Torus;
+        out.shape = kernel::geometry::primitive::Shape::Torus;
         out.radius = number("majorRadius");
         out.minorRadius = number("minorRadius");
         out.phimin = glm::radians(number("phimin"));

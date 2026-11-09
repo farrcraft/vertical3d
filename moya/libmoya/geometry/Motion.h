@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <vector>

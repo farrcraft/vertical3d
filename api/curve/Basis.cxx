@@ -10,7 +10,12 @@
 #include <variant>
 #include <vector>
 
+#include "Bezier.h"
+#include "BezierPoint.h"
+#include "CatmullRom.h"
 #include "Curve.h"
+#include "Nurbs.h"
+#include "Poly.h"
 #include "Segment.h"
 #include "Spline.h"
 

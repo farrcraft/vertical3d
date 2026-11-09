@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "SelectList.h"
+#include "Thumb.h"
 #include "Type.h"
 
 namespace v3d::ui::component {

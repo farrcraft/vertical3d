@@ -5,44 +5,18 @@
 
 #pragma once
 
-#include <cstddef>
+#include <moya/libmoya/colour/Transform.h>
+
 #include <string>
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
 
-#include <glm/vec3.hpp>
-
 namespace v3d::moya::colour {
 
 namespace internal {
-class Processor;
 class Configuration;
 };  // namespace internal
-
-/**
- * A conversion between colour spaces that an OpenColorIO configuration gives. It is safe to apply
- * from any number of threads at once.
- **/
-class Transform final {
- public:
-    explicit Transform(boost::shared_ptr<const internal::Processor> processor);
-
-    /** One colour, converted. **/
-    glm::vec3 apply(const glm::vec3 & rgb) const;
-
-    /**
-     * Converts the first three floats of each of a run of pixels in place, leaving the rest.
-     *
-     * @param values the first pixel's first float
-     * @param pixels how many pixels
-     * @param stride the floats from one pixel's start to the next's, at least 3
-     **/
-    void apply(float * values, std::size_t pixels, std::size_t stride) const;
-
- private:
-    boost::shared_ptr<const internal::Processor> processor_;
-};
 
 /**
  * An OpenColorIO configuration: the colour spaces colours are named in, the working space, and the

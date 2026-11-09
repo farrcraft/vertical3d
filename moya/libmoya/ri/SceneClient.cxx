@@ -8,7 +8,14 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -56,7 +63,7 @@ void SceneClient::frame(const std::function<void()> & committed) {
     committed_ = committed;
 }
 
-void SceneClient::format(const v3d::render::offline::rib::Format & request) {
+void SceneClient::format(const v3d::render::offline::rib::requests::Format & request) {
     const int width = request.width == 0 ? kWidth : static_cast<int>(request.width);
     const int height = request.height == 0 ? kHeight : static_cast<int>(request.height);
     scene_.set(options_, "resolution", scene::Value::integers({ width, height }));
@@ -67,11 +74,11 @@ void SceneClient::frameAspectRatio(float aspect) {
     scene_.set(options_, "frameAspect", scene::Value::number(aspect));
 }
 
-void SceneClient::screenWindow(const v3d::render::offline::rib::ScreenWindow & request) {
+void SceneClient::screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) {
     scene_.set(camera_, "screen", scene::Value::floats({ request.left, request.right, request.bottom, request.top }));
 }
 
-void SceneClient::cropWindow(const v3d::render::offline::rib::CropWindow & request) {
+void SceneClient::cropWindow(const v3d::render::offline::rib::requests::CropWindow & request) {
     scene_.set(options_, "crop", scene::Value::floats({ request.xmin, request.xmax, request.ymin, request.ymax }));
 }
 
@@ -86,18 +93,18 @@ void SceneClient::projection(const std::string & name, const v3d::render::offlin
     }
 }
 
-void SceneClient::clipping(const v3d::render::offline::rib::Clipping & request) {
+void SceneClient::clipping(const v3d::render::offline::rib::requests::Clipping & request) {
     scene_.set(camera_, "near", scene::Value::number(request.hither));
     scene_.set(camera_, "far", scene::Value::number(request.yon));
 }
 
-void SceneClient::depthOfField(const v3d::render::offline::rib::DepthOfField & request) {
+void SceneClient::depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) {
     scene_.set(camera_, "fstop", scene::Value::number(request.fstop));
     scene_.set(camera_, "focalLength", scene::Value::number(request.focalLength));
     scene_.set(camera_, "focalDistance", scene::Value::number(request.focalDistance));
 }
 
-void SceneClient::shutter(const v3d::render::offline::rib::Shutter & request) {
+void SceneClient::shutter(const v3d::render::offline::rib::requests::Shutter & request) {
     scene_.set(camera_, "shutter", scene::Value::floats({ request.open, request.close }));
 }
 
@@ -125,7 +132,7 @@ scene::Handle SceneClient::output(const std::string & file) {
     return made;
 }
 
-void SceneClient::display(const v3d::render::offline::rib::Display & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) {
     (void)parameters;
     const bool adds = !request.name.empty() && request.name.front() == '+';
     const std::string file = adds ? request.name.substr(1) : request.name;

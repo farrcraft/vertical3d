@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/ui/Clock.h>
+#include <api/ui/Opening.h>
 #include <api/ui/Transition.h>
 
 #include <glm/vec4.hpp>

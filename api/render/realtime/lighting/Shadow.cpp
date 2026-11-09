@@ -5,6 +5,11 @@
 
 #include "Shadow.h"
 
+#include "CascadeFit.h"
+#include "Cascades.h"
+#include "ShadowBounds.h"
+#include "ShadowFit.h"
+
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/lighting/internal/Basis.h>
 #include <api/render/realtime/lighting/internal/Volume.h>

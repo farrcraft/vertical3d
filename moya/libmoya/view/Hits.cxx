@@ -9,14 +9,17 @@
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
-#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
+#include <moya/libmoya/kernel/Launch.h>
+#include <moya/libmoya/kernel/view/HitChannels.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 #include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/view/Tracing.h>
 

@@ -7,6 +7,7 @@
 
 #include <api/render/offline/sl/Types.h>
 
+#include "Cone.h"
 #include "Instruction.h"
 #include "Program.h"
 #include "Register.h"

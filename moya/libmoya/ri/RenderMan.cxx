@@ -8,7 +8,12 @@
 #include "Renderer.h"
 
 #include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
 #include <moya/libmoya/ri/internal/Converter.h>
 
 #include <stdarg.h>
@@ -66,7 +71,7 @@ RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], 
         nothing on or off.
     */
     const std::string handle = std::to_string(renderer().nextLight());
-    const v3d::render::offline::rib::LightSource request = {.shader = Converter::text(name), .handle = handle};
+    const v3d::render::offline::rib::requests::LightSource request = {.shader = Converter::text(name), .handle = handle};
     if (area) {
         handler().areaLightSource(request, converter().parameters(n, tokens, parms));
     } else {
@@ -274,7 +279,7 @@ RtVoid RiWorldEnd(void) {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    if (const std::optional<v3d::render::offline::rib::Format> request = Converter::format(glm::ivec2(xres, yres), aspect)) {
+    if (const std::optional<v3d::render::offline::rib::requests::Format> request = Converter::format(glm::ivec2(xres, yres), aspect)) {
         handler().format(*request);
     }
 }
@@ -648,7 +653,7 @@ RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
 
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
     unsigned int points = 0;
-    if (const std::optional<v3d::render::offline::rib::PointsPolygons> request = Converter::pointsPolygons(npolys, nverts, verts, &points)) {
+    if (const std::optional<v3d::render::offline::rib::requests::PointsPolygons> request = Converter::pointsPolygons(npolys, nverts, verts, &points)) {
         handler().pointsPolygons(*request, converter().parameters(n, tokens, parms, points));
     }
 }
@@ -662,7 +667,7 @@ RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], Rt
 }
 
 RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
-    if (const std::optional<v3d::render::offline::rib::Basis> request = converter().basis(ubasis, ustep, vbasis, vstep)) {
+    if (const std::optional<v3d::render::offline::rib::requests::Basis> request = converter().basis(ubasis, ustep, vbasis, vstep)) {
         handler().basis(*request);
     }
 }
@@ -786,7 +791,7 @@ RtVoid RiCurves(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, .
 
 RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[], RtPointer parms[]) {
     unsigned int total = 0;
-    if (const std::optional<v3d::render::offline::rib::Curves> request = converter().curves(type, nvcurves, nvertices, wrap, &total)) {
+    if (const std::optional<v3d::render::offline::rib::requests::Curves> request = converter().curves(type, nvcurves, nvertices, wrap, &total)) {
         handler().curves(*request, converter().curveParameters(n, tokens, parms, total));
     }
 }
@@ -824,7 +829,7 @@ RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], 
 RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], RtInt n, RtToken tokens[], RtPointer parms[]) {
     unsigned int points = 0;
-    if (const std::optional<v3d::render::offline::rib::SubdivisionMesh> request =
+    if (const std::optional<v3d::render::offline::rib::requests::SubdivisionMesh> request =
             Converter::subdivisionMesh(mask, nf, nverts, verts,
                 {.ntags = ntags, .tags = tags, .numargs = numargs, .intargs = intargs, .floatargs = floatargs}, &points)) {
         handler().subdivisionMesh(*request, converter().parameters(n, tokens, parms, points));

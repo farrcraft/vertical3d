@@ -5,6 +5,8 @@
 
 #include <moya/libmoya/scene/Kinds.h>
 
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Kind.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 

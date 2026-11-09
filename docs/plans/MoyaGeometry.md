@@ -79,8 +79,8 @@ The tree was read at `25ff996c`. Line numbers are from that commit.
   ([Scene.md](../offline/Scene.md#samples-over-the-shutter)).
 * **A nested instance has no single world transformation**, and a group that holds itself is
   stopped by whatever is built from the scene, not by the scene.
-* **A consumer asks for changes since its own version** (`moya/libmoya/scene/Scene.h:171`),
-  after the owner's `apply()` (`:129`). The hierarchy is the first consumer.
+* **A consumer asks for changes since its own version** (`moya/libmoya/scene/Scene.h:148`),
+  after the owner's `apply()` (`:106`). The hierarchy is the first consumer.
 * **`points` has no profile.** Curves are flat or round, and points have only a width.
 
 **The old renderer:**
@@ -578,8 +578,8 @@ would miss it. A geometry at three times bends through the middle sample.
 
 ### Step 14 — Points and the quadrics
 
-**Done.** `kernel/geometry/Shapes.h` intersects round points, flat points and RI's seven
-quadrics, and `kernel/geometry/Polynomial.h` finds the torus's roots. `geometry::gather()`
+**Done.** `kernel/geometry/primitive/Shapes.h` intersects round points, flat points and RI's seven
+quadrics, and `kernel/geometry/primitive/Polynomial.h` finds the torus's roots. `geometry::gather()`
 gathers point clouds and quadrics as geometries beside meshes, each of a `Form`, and the
 brute-force traversal and the CPU's both test every form. The scene's `points` gains a `profile`,
 round by default. Each case was run against broken code as well. With the sweep's limit ignored,

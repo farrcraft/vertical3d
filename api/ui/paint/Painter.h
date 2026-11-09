@@ -7,6 +7,10 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 
+#include "Chevron.h"
+#include "Plate.h"
+#include "Shadow.h"
+
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
@@ -56,14 +60,6 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
     float radius, float width, const glm::vec4& colour);
 
 /**
- * What a box is filled with, and what its outline is drawn in.
- **/
-struct Plate {
-    glm::vec4 inside{1.0F};
-    glm::vec4 outline{1.0F};
-};
-
-/**
  * Fill a box inside an outline, both rounded.
  *
  * The outline is traced around the fill, not drawn as a box behind it, because the fill
@@ -80,16 +76,6 @@ struct Plate {
  **/
 void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const Plate& colours);
-
-/**
- * How a shadow is drawn: the box's corner radius, how far past the box the fade reaches, and
- * the colour at its darkest. A reach of zero draws the box alone.
- **/
-struct Shadow {
-    float radius = 0.0F;
-    float reach = 0.0F;
-    glm::vec4 colour{0.0F};
-};
 
 /**
  * A shadow: a rounded box filled with a colour, with an edge that fades out to nothing.
@@ -115,16 +101,6 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
  * @param colour what the mark is drawn in
  **/
 void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);
-
-/**
- * The three points of a chevron, in canvas pixels, and how thick its strokes are.
- **/
-struct Chevron {
-    glm::vec2 from{0.0F};
-    glm::vec2 tip{0.0F};
-    glm::vec2 to{0.0F};
-    float width = 0.0F;
-};
 
 /**
  * Draw a chevron: a stroke from its start to its tip and another on to its end, each smoothed

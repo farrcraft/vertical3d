@@ -11,6 +11,7 @@
 
 #include "Allocation.h"
 #include "Buffer.h"
+#include "BufferSpec.h"
 #include "Uploader.h"
 
 #include <boost/shared_ptr.hpp>

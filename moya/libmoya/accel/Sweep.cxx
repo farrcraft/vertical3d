@@ -7,8 +7,11 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/internal/Wave.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
 
 #include <algorithm>
 #include <array>
@@ -281,7 +284,7 @@ Sweep pointSweep(const kernel::geometry::Sampled & centres, const kernel::geomet
     };
 }
 
-Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometry::Quadric & most) {
+Box quadricBounds(const kernel::geometry::primitive::Quadric & least, const kernel::geometry::primitive::Quadric & most) {
     const auto largest = [](float first, float second) {
         return std::max(std::fabs(first), std::fabs(second));
     };
@@ -289,24 +292,24 @@ Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometr
     float lower = 0.0F;
     float upper = 0.0F;
     switch (least.shape) {
-        case kernel::geometry::Shape::Sphere:
+        case kernel::geometry::primitive::Shape::Sphere:
             lower = std::max(-reach, std::min(least.zmin, least.zmax));
             upper = std::min(reach, std::max(most.zmin, most.zmax));
             break;
-        case kernel::geometry::Shape::Cylinder:
-        case kernel::geometry::Shape::Paraboloid:
+        case kernel::geometry::primitive::Shape::Cylinder:
+        case kernel::geometry::primitive::Shape::Paraboloid:
             lower = std::min(least.zmin, least.zmax);
             upper = std::max(most.zmin, most.zmax);
             break;
-        case kernel::geometry::Shape::Cone:
+        case kernel::geometry::primitive::Shape::Cone:
             lower = std::min(0.0F, least.height);
             upper = std::max(0.0F, most.height);
             break;
-        case kernel::geometry::Shape::Disk:
+        case kernel::geometry::primitive::Shape::Disk:
             lower = least.height;
             upper = most.height;
             break;
-        case kernel::geometry::Shape::Hyperboloid: {
+        case kernel::geometry::primitive::Shape::Hyperboloid: {
             // the line's farthest reach from z is at one of its ends
             const float x = std::max(largest(least.point1.x, most.point1.x), largest(least.point2.x, most.point2.x));
             const float y = std::max(largest(least.point1.y, most.point1.y), largest(least.point2.y, most.point2.y));
@@ -315,7 +318,7 @@ Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometr
             upper = std::max(most.point1.z, most.point2.z);
             break;
         }
-        case kernel::geometry::Shape::Torus: {
+        case kernel::geometry::primitive::Shape::Torus: {
             const float tube = largest(least.minorRadius, most.minorRadius);
             reach += tube;
             lower = -tube;
@@ -326,24 +329,24 @@ Box quadricBounds(const kernel::geometry::Quadric & least, const kernel::geometr
     return Box { .lower = { -reach, -reach, lower }, .upper = { reach, reach, upper } };
 }
 
-LinearBox quadricSweep(const kernel::geometry::Sampled & held, const std::vector<kernel::geometry::Quadric> & quadrics,
+LinearBox quadricSweep(const kernel::geometry::Sampled & held, const std::vector<kernel::geometry::primitive::Quadric> & quadrics,
     const std::vector<float> & times, float begin, float end) {
-    std::vector<kernel::geometry::Quadric> standing { kernel::geometry::sampledQuadric(held, quadrics.data(), times.data(), begin),
-        kernel::geometry::sampledQuadric(held, quadrics.data(), times.data(), end) };
+    std::vector<kernel::geometry::primitive::Quadric> standing { kernel::geometry::primitive::sampledQuadric(held, quadrics.data(), times.data(), begin),
+        kernel::geometry::primitive::sampledQuadric(held, quadrics.data(), times.data(), end) };
     for (std::uint32_t sample = 0; sample < held.samples && held.samples > 1; ++sample) {
         const float time = times[held.times + sample];
         if (time > begin && time < end) {
             standing.push_back(quadrics[held.first + sample]);
         }
     }
-    kernel::geometry::Quadric least = standing.front();
-    kernel::geometry::Quadric most = standing.front();
+    kernel::geometry::primitive::Quadric least = standing.front();
+    kernel::geometry::primitive::Quadric most = standing.front();
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the least, then the greatest
     const auto bound = [](float & low, float & high, float value) {
         low = std::min(low, value);
         high = std::max(high, value);
     };
-    for (const kernel::geometry::Quadric & quadric : standing) {
+    for (const kernel::geometry::primitive::Quadric & quadric : standing) {
         bound(least.radius, most.radius, quadric.radius);
         bound(least.minorRadius, most.minorRadius, quadric.minorRadius);
         bound(least.zmin, most.zmin, quadric.zmin);

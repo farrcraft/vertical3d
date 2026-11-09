@@ -9,7 +9,8 @@
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/film/FrameBuffer.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Display.h>
 
 #include <algorithm>
 #include <cmath>
@@ -24,7 +25,7 @@
 
 namespace v3d::moya::state {
 
-void Display::request(const v3d::render::offline::rib::Display & display) {
+void Display::request(const v3d::render::offline::rib::requests::Display & display) {
     name_ = display.name;
     type_ = display.type;
     mode_ = display.mode;
@@ -34,8 +35,8 @@ const std::string & Display::name() const {
     return name_;
 }
 
-bool Display::crop(const v3d::render::offline::rib::CropWindow & window) {
-    v3d::render::offline::rib::CropWindow held;
+bool Display::crop(const v3d::render::offline::rib::requests::CropWindow & window) {
+    v3d::render::offline::rib::requests::CropWindow held;
     held.xmin = std::clamp(window.xmin, 0.0F, 1.0F);
     held.xmax = std::clamp(window.xmax, 0.0F, 1.0F);
     held.ymin = std::clamp(window.ymin, 0.0F, 1.0F);

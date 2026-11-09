@@ -41,25 +41,25 @@ struct Playback final {
 
     float fade{ 1.0F };      /**< how far the fade into clip has gone, 1 when it has finished or there is none **/
     float fadeDuration{ 0.0F };
+
+    /**
+     * The arguments to play(). play() starts a clip from its beginning, and fades into it from the
+     * clip that was playing.
+     *
+     * Playing the clip that is already playing changes nothing, so a game can call play() every
+     * step. With a fade of zero, or no clip playing before, the new clip starts at full weight.
+     *
+     * The clip's duration and the fade are in seconds.
+     **/
+    struct Start {
+        uint32_t clip = none;
+        float duration = 0.0F;
+        bool loops = false;
+        float fade = 0.0F;
+    };
 };
 
-/**
- * The arguments to play(). play() starts a clip from its beginning, and fades into it from the
- * clip that was playing.
- *
- * Playing the clip that is already playing changes nothing, so a game can call play() every
- * step. With a fade of zero, or no clip playing before, the new clip starts at full weight.
- *
- * The clip's duration and the fade are in seconds.
- **/
-struct Start {
-    uint32_t clip = Playback::none;
-    float duration = 0.0F;
-    bool loops = false;
-    float fade = 0.0F;
-};
-
-void play(Playback* playback, const Start& start);
+void play(Playback* playback, const Playback::Start& start);
 
 /**
  * Move one playback on by a step: its clip, the clip it is fading from, and the fade.

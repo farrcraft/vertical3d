@@ -7,7 +7,7 @@
 
 #include <api/render/offline/Area.h>
 #include <api/render/offline/MovingTransform.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/Curve.h>
@@ -56,7 +56,7 @@ class Scene final {
      **/
     void add(const Polygon & poly, const state::Shading & state, const Submission & with);
     /** Add a sphere, which a ray meets exactly. **/
-    void add(const v3d::render::offline::rib::Sphere & shape, const state::Shading & state, const Submission & with);
+    void add(const v3d::render::offline::rib::requests::Sphere & shape, const state::Shading & state, const Submission & with);
     /**
      * Add a curve segment, which a ray meets as a ribbon facing it. A displacement shader does
      * not move it, and it does not join the area light.

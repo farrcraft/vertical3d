@@ -6,7 +6,7 @@
 #include "Component.h"
 
 #include <api/type/geometry/Bound2D.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Motion.h>
 #include <api/ui/component/Type.h>
 
 #include "Layout.h"

@@ -6,6 +6,27 @@
 #pragma once
 
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
 
 #include <functional>
 #include <string>
@@ -13,7 +34,6 @@
 
 #include "Handler.h"
 #include "Parameters.h"
-#include "Requests.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -50,23 +70,23 @@ class Recorder final : public Handler {
     bool empty() const;
 
     void version(float number) override;
-    void declare(const Declare & request) override;
+    void declare(const requests::Declare & request) override;
     void option(const std::string & name, const ParameterList & parameters) override;
     void hider(const std::string & name, const ParameterList & parameters) override;
 
-    void format(const Format & request) override;
+    void format(const requests::Format & request) override;
     void frameAspectRatio(float aspect) override;
-    void screenWindow(const ScreenWindow & request) override;
-    void cropWindow(const CropWindow & request) override;
+    void screenWindow(const requests::ScreenWindow & request) override;
+    void cropWindow(const requests::CropWindow & request) override;
     void projection(const std::string & name, const ParameterList & parameters) override;
-    void clipping(const Clipping & request) override;
-    void depthOfField(const DepthOfField & request) override;
-    void shutter(const Shutter & request) override;
+    void clipping(const requests::Clipping & request) override;
+    void depthOfField(const requests::DepthOfField & request) override;
+    void shutter(const requests::Shutter & request) override;
 
     void pixelSamples(const glm::uvec2 & samples) override;
     void pixelFilter(film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
-    void display(const Display & request, const ParameterList & parameters) override;
+    void display(const requests::Display & request, const ParameterList & parameters) override;
 
     void frameBegin(int frame) override;
     void frameEnd() override;
@@ -89,31 +109,31 @@ class Recorder final : public Handler {
     void motionEnd() override;
 
     void color(const glm::vec3 & value) override;
-    void basis(const Basis & request) override;
+    void basis(const requests::Basis & request) override;
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
     void attribute(const std::string & name, const ParameterList & parameters) override;
     void surface(const std::string & name, const ParameterList & parameters) override;
     void displacement(const std::string & name, const ParameterList & parameters) override;
-    void lightSource(const LightSource & request, const ParameterList & parameters) override;
-    void areaLightSource(const LightSource & request, const ParameterList & parameters) override;
+    void lightSource(const requests::LightSource & request, const ParameterList & parameters) override;
+    void areaLightSource(const requests::LightSource & request, const ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
-    void makeTexture(const MakeTexture & request, const ParameterList & parameters) override;
+    void makeTexture(const requests::MakeTexture & request, const ParameterList & parameters) override;
     void imager(const std::string & name, const ParameterList & parameters) override;
 
     Handler* deformation() override;
     void polygon(unsigned int vertices, const ParameterList & parameters) override;
-    void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
-    void sphere(const Sphere & request, const ParameterList & parameters) override;
-    void curves(const Curves & request, const ParameterList & parameters) override;
+    void pointsPolygons(const requests::PointsPolygons & request, const ParameterList & parameters) override;
+    void sphere(const requests::Sphere & request, const ParameterList & parameters) override;
+    void curves(const requests::Curves & request, const ParameterList & parameters) override;
     void points(unsigned int count, const ParameterList & parameters) override;
-    void cone(const Cone & request, const ParameterList & parameters) override;
-    void cylinder(const Cylinder & request, const ParameterList & parameters) override;
-    void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) override;
-    void paraboloid(const Paraboloid & request, const ParameterList & parameters) override;
-    void disk(const Disk & request, const ParameterList & parameters) override;
-    void torus(const Torus & request, const ParameterList & parameters) override;
-    void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) override;
+    void cone(const requests::Cone & request, const ParameterList & parameters) override;
+    void cylinder(const requests::Cylinder & request, const ParameterList & parameters) override;
+    void hyperboloid(const requests::Hyperboloid & request, const ParameterList & parameters) override;
+    void paraboloid(const requests::Paraboloid & request, const ParameterList & parameters) override;
+    void disk(const requests::Disk & request, const ParameterList & parameters) override;
+    void torus(const requests::Torus & request, const ParameterList & parameters) override;
+    void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) override;
     void objectBegin(const std::string & handle) override;
     void objectEnd() override;
     void objectInstance(const std::string & handle) override;
@@ -129,17 +149,17 @@ class Recorder final : public Handler {
      public:
         explicit Deforming(Recorder * recording);
         void polygon(unsigned int vertices, const ParameterList & parameters) override;
-        void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
-        void sphere(const Sphere & request, const ParameterList & parameters) override;
-        void curves(const Curves & request, const ParameterList & parameters) override;
+        void pointsPolygons(const requests::PointsPolygons & request, const ParameterList & parameters) override;
+        void sphere(const requests::Sphere & request, const ParameterList & parameters) override;
+        void curves(const requests::Curves & request, const ParameterList & parameters) override;
         void points(unsigned int count, const ParameterList & parameters) override;
-        void cone(const Cone & request, const ParameterList & parameters) override;
-        void cylinder(const Cylinder & request, const ParameterList & parameters) override;
-        void hyperboloid(const Hyperboloid & request, const ParameterList & parameters) override;
-        void paraboloid(const Paraboloid & request, const ParameterList & parameters) override;
-        void disk(const Disk & request, const ParameterList & parameters) override;
-        void torus(const Torus & request, const ParameterList & parameters) override;
-        void subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) override;
+        void cone(const requests::Cone & request, const ParameterList & parameters) override;
+        void cylinder(const requests::Cylinder & request, const ParameterList & parameters) override;
+        void hyperboloid(const requests::Hyperboloid & request, const ParameterList & parameters) override;
+        void paraboloid(const requests::Paraboloid & request, const ParameterList & parameters) override;
+        void disk(const requests::Disk & request, const ParameterList & parameters) override;
+        void torus(const requests::Torus & request, const ParameterList & parameters) override;
+        void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) override;
 
      private:
         /** Keep a primitive, for the deformation() of the handler replayed to. **/

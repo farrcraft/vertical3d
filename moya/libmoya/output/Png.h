@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <moya/libmoya/colour/Config.h>
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/colour/Transform.h>
+#include <moya/libmoya/film/Snapshot.h>
 
 #include <cstdint>
 #include <string>

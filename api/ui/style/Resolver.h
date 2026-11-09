@@ -7,6 +7,7 @@
 
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Palette.h>
+#include <api/ui/style/Overlay.h>
 #include <api/ui/style/Style.h>
 
 #include <array>

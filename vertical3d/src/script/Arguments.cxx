@@ -5,6 +5,8 @@
 
 #include "Arguments.h"
 
+#include "Parameter.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

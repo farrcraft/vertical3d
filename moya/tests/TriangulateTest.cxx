@@ -4,8 +4,10 @@
  */
 
 #include <moya/libmoya/geometry/Triangulate.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shear.h>
+#include <moya/libmoya/kernel/geometry/primitive/Triangle.h>
+#include <moya/libmoya/kernel/geometry/primitive/TriangleHit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
-#include <moya/libmoya/kernel/geometry/Triangle.h>
 
 #include <cmath>
 #include <cstddef>
@@ -118,14 +120,14 @@ BOOST_AUTO_TEST_CASE(moya_triangulate_a_hit_on_any_triangle_of_a_face_names_the_
     for (std::size_t i = 0; i < xs.size(); ++i) {
         v3d::moya::kernel::geometry::Ray ray;
         ray.origin = glm::vec3 { xs[i], 0.4F, 0.0F };
-        const auto shear = v3d::moya::kernel::geometry::Shear::of(ray);
+        const auto shear = v3d::moya::kernel::geometry::primitive::Shear::of(ray);
         std::uint32_t named = 99;
         for (std::size_t t = 0; t < triangles.faces.size(); ++t) {
-            v3d::moya::kernel::geometry::TriangleHit hit;
+            v3d::moya::kernel::geometry::primitive::TriangleHit hit;
             const glm::vec3 & p0 = points[static_cast<std::size_t>(indices[triangles.corners[(t * 3) + 0]])];
             const glm::vec3 & p1 = points[static_cast<std::size_t>(indices[triangles.corners[(t * 3) + 1]])];
             const glm::vec3 & p2 = points[static_cast<std::size_t>(indices[triangles.corners[(t * 3) + 2]])];
-            if (v3d::moya::kernel::geometry::intersectTriangle(shear, p0, p1, p2, ray.start, ray.end, hit)) {
+            if (v3d::moya::kernel::geometry::primitive::intersectTriangle(shear, p0, p1, p2, ray.start, ray.end, hit)) {
                 named = triangles.faces[t];
             }
         }

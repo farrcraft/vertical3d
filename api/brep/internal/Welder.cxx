@@ -5,8 +5,8 @@
 
 #include "Welder.h"
 
-#include <api/brep/Builder.h>
 #include <api/brep/Index.h>
+#include <api/brep/Polygons.h>
 
 #include <bit>
 #include <cstddef>

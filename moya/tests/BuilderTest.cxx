@@ -5,6 +5,7 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
+#include <moya/libmoya/accel/Hierarchy.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/accel/Triangles.h>

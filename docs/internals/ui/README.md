@@ -32,12 +32,12 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `component::*` | [component/](../../../api/ui/component) | one class per type, plus `Type`, `name()`, `parse()` and `traits()` in [Type.h](../../../api/ui/component/Type.h) |
 | `Arranger` | [Arranger.h](../../../api/ui/Arranger.h) | resolves every box in a tree and calls back to paint each one |
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
-| `Clock`, `Transition`, `Opening`, `Motion` | [Transition.h](../../../api/ui/Transition.h) | the ui's time, a colour easing toward what is asked for, how far something has opened, and what a component or a widget keeps of them |
+| `Clock`, `Transition`, `Opening`, `Motion` | [Clock.h](../../../api/ui/Clock.h), [Transition.h](../../../api/ui/Transition.h), [Opening.h](../../../api/ui/Opening.h), [Motion.h](../../../api/ui/Motion.h) | the ui's time, a colour easing toward what is asked for, how far something has opened, and what a component or a widget keeps of them |
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Weight` | [paint/Text.h](../../../api/ui/paint/Text.h) | a face's weight, and where a line's baseline sits |
-| `paint::Type`, `paint::Setting`, `paint::Emphasis` | [paint/Type.h](../../../api/ui/paint/Type.h) | a text renderer at one size and weight, which the retained ui measures and draws through, and the settings a centred menu sets apart |
+| `paint::Type`, `paint::Setting`, `paint::Emphasis` | [paint/Type.h](../../../api/ui/paint/Type.h), [paint/Setting.h](../../../api/ui/paint/Setting.h), [paint/Emphasis.h](../../../api/ui/paint/Emphasis.h) | a text renderer at one size and weight, which the retained ui measures and draws through, and the settings a centred menu sets apart |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, the glyph store, and the callbacks over them |
 | `paint::CurveText`, `paint::CurvePages` | [paint/CurveText.h](../../../api/ui/paint/CurveText.h) | text drawn from its curves, and the device's copy of the curve store |
 | `paint::GlyphPages` | [paint/GlyphPages.h](../../../api/ui/paint/GlyphPages.h) | the device's copy of the glyph store's pages |
@@ -49,7 +49,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `input::LineEdit`, `input::edit()` | [input/LineEdit.h](../../../api/ui/input/LineEdit.h) | one line of text with a caret and a selection, and the edit a key names on it; a `TextBox` and `Immediate::textField()` both edit through them |
 | `input::command()`, `input::send()` | [input/Command.h](../../../api/ui/input/Command.h) | which event a component sends when activated, and the one place events are sent |
 | `Immediate` | [Immediate.h](../../../api/ui/Immediate.h) | the immediate-mode layer: only what an app calls |
-| `immediate::Context` | [immediate/Context.h](../../../api/ui/immediate/Context.h) | everything an `Immediate` holds, and the layout, hit testing and drawing its widgets share |
+| `immediate::Context` | [immediate/Context.h](../../../api/ui/immediate/Context.h) | everything an `Immediate` holds, and the layout, hit testing and drawing its widgets share. What it keeps for a window, a row, a table and each other kind of widget has a header of its own in [immediate/](../../../api/ui/immediate) |
 | `shell::Screen` | [shell/Screen.h](../../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `WindowRenderer` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
 | `shell::Tooltip` | [shell/Tooltip.h](../../../api/ui/shell/Tooltip.h) | when the tooltip of what the cursor rests on is due; the screen draws it |

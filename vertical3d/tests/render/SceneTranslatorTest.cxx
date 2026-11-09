@@ -4,11 +4,13 @@
  */
 
 #include <api/brep/Primitives.h>
-#include <api/curve/Curve.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/ri/SceneClient.h>
+#include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>

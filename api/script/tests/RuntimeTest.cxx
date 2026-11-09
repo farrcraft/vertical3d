@@ -4,7 +4,10 @@
  */
 
 #include <api/script/Runtime.h>
-#include <api/script/Strip.h>
+
+#include <api/script/Problem.h>
+#include <api/script/Refused.h>
+#include <api/script/Result.h>
 
 #include <chrono>
 #include <string>

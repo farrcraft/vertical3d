@@ -15,6 +15,7 @@
 #include "Events.h"
 #include "Listener.h"
 #include "Play.h"
+#include "Stereo.h"
 
 #include <SDL3_mixer/SDL_mixer.h>
 

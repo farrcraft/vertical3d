@@ -13,7 +13,14 @@
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/Types.h>
@@ -188,11 +195,11 @@ void RenderContext::frameAspectRatio(float aspect) {
     options_.frameAspectRatio(aspect);
 }
 
-void RenderContext::screenWindow(const v3d::render::offline::rib::ScreenWindow & window) {
+void RenderContext::screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & window) {
     options_.screenWindow(window);
 }
 
-void RenderContext::clipping(const v3d::render::offline::rib::Clipping & planes) {
+void RenderContext::clipping(const v3d::render::offline::rib::requests::Clipping & planes) {
     options_.clipping(planes);
 }
 
@@ -279,7 +286,7 @@ void RenderContext::shadingRate(float size) {
     attributes_.shadingRate = size;
 }
 
-void RenderContext::basis(const v3d::render::offline::rib::Basis & request) {
+void RenderContext::basis(const v3d::render::offline::rib::requests::Basis & request) {
     attributes_.basis = request;
 }
 
@@ -363,7 +370,7 @@ void RenderContext::displacement(const std::string & name,
     attributes_.displacement.placement = coordinateSystem("camera") * transforms_.current().reference();
 }
 
-void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
+void RenderContext::lightSource(const v3d::render::offline::rib::requests::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     Lights::Light light;
     light.handle = request.handle;
@@ -379,7 +386,7 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
     illuminate(request.handle, true);
 }
 
-void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource & request,
+void RenderContext::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     const std::size_t before = lights_.size();
     lightSource(request, parameters);
@@ -508,7 +515,7 @@ raytrace::Scene::Submission RenderContext::submission(const Shading & state) {
     return with;
 }
 
-bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
+bool RenderContext::addSphere(const v3d::render::offline::rib::requests::Sphere & shape) {
     // an area light keeps its sphere whichever hider draws it, and the reyes hider draws none
     if (attributes_.areaLight && shape.radius > 0.0F) {
         attributes_.areaLight->add({.placement = transforms_.current().reference(), .radius = shape.radius});
@@ -573,7 +580,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     hider_->add(poly, this);
 }
 
-void RenderContext::addCurves(const v3d::render::offline::rib::Curves & request,
+void RenderContext::addCurves(const v3d::render::offline::rib::requests::Curves & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     if (beforeWorld() || flatMotion()) {
         return;
@@ -582,7 +589,7 @@ void RenderContext::addCurves(const v3d::render::offline::rib::Curves & request,
     const std::vector<float> & varying = parameters.floats("width");
     const std::vector<float> & constant = parameters.floats("constantwidth");
     const float everywhere = constant.empty() ? 1.0F : constant.front();
-    const v3d::render::offline::rib::Basis & basis = attributes_.basis;
+    const v3d::render::offline::rib::requests::Basis & basis = attributes_.basis;
     const Shading state = shading();
     const raytrace::Scene::Submission with = submission(state);
     std::size_t first = 0;
@@ -614,11 +621,11 @@ void RenderContext::addCurves(const v3d::render::offline::rib::Curves & request,
     }
 }
 
-void RenderContext::display(const v3d::render::offline::rib::Display & display) {
+void RenderContext::display(const v3d::render::offline::rib::requests::Display & display) {
     display_.request(display);
 }
 
-void RenderContext::display(const v3d::render::offline::rib::Display & display,
+void RenderContext::display(const v3d::render::offline::rib::requests::Display & display,
     const v3d::render::offline::rib::ParameterList & parameters) {
     this->display(display);
     for (const std::string & name : parameters.names()) {
@@ -626,7 +633,7 @@ void RenderContext::display(const v3d::render::offline::rib::Display & display,
     }
 }
 
-void RenderContext::cropWindow(const v3d::render::offline::rib::CropWindow & window) {
+void RenderContext::cropWindow(const v3d::render::offline::rib::requests::CropWindow & window) {
     if (!display_.crop(window)) {
         logger_->get()->warn("a crop window from ({}, {}) to ({}, {}) has no area, and is not used",
             window.xmin, window.ymin, window.xmax, window.ymax);

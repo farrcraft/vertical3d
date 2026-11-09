@@ -5,7 +5,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapedGlyph.h>
+#include <api/font/text/shaping/Glyph.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/frame/Frame.h>
@@ -100,9 +100,9 @@ BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     for (std::size_t line = 0; line < kLines.size(); line++) {
         const v3d::font::text::Paragraph paragraph(text.shaping(), std::string(kLines[line]), text.style(kSize));
         BOOST_TEST_CONTEXT("line " << line) {
-            for (const v3d::font::text::Line& shown : paragraph.lines()) {
-                for (const v3d::font::text::LineRun& run : shown.runs) {
-                    for (const v3d::font::text::ShapedGlyph& glyph : run.glyphs) {
+            for (const v3d::font::text::Paragraph::Line& shown : paragraph.lines()) {
+                for (const v3d::font::text::Paragraph::LineRun& run : shown.runs) {
+                    for (const v3d::font::text::shaping::Glyph& glyph : run.glyphs) {
                         BOOST_CHECK_NE(glyph.index, 0U);
                     }
                 }

@@ -6,9 +6,12 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/CpuLibrary.h>
+#include <moya/libmoya/geometry/Geometry.h>
+#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
 #include <cstddef>

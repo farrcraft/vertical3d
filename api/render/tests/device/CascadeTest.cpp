@@ -10,6 +10,7 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/frame/DrawItem.h>
 #include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/lighting/Cascades.h>
 #include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/frame/Pass.h>

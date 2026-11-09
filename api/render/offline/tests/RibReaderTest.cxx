@@ -9,7 +9,18 @@
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
 
 #include <spdlog/sinks/ringbuffer_sink.h>
 
@@ -36,7 +47,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         version_ = number;
         counts_["version"]++;
     }
-    void declare(const v3d::render::offline::rib::Declare & request) override {
+    void declare(const v3d::render::offline::rib::requests::Declare & request) override {
         declared_.push_back(request.name);
         counts_["Declare"]++;
     }
@@ -53,7 +64,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         hider_ = name;
         counts_["Hider"]++;
     }
-    void format(const v3d::render::offline::rib::Format & request) override {
+    void format(const v3d::render::offline::rib::requests::Format & request) override {
         width_ = request.width;
         height_ = request.height;
         pixelAspect_ = request.pixelAspect;
@@ -64,21 +75,21 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         fov_ = parameters.number("fov", 90.0F);
         counts_["Projection"]++;
     }
-    void clipping(const v3d::render::offline::rib::Clipping & request) override {
+    void clipping(const v3d::render::offline::rib::requests::Clipping & request) override {
         hither_ = request.hither;
         yon_ = request.yon;
         counts_["Clipping"]++;
     }
-    void display(const v3d::render::offline::rib::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         display_ = request.name + "|" + request.type + "|" + request.mode;
         counts_["Display"]++;
     }
-    void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override {
+    void depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) override {
         lens_ = glm::vec3(request.fstop, request.focalLength, request.focalDistance);
         counts_["DepthOfField"]++;
     }
-    void shutter(const v3d::render::offline::rib::Shutter & request) override {
+    void shutter(const v3d::render::offline::rib::requests::Shutter & request) override {
         shutter_ = glm::vec2(request.open, request.close);
         counts_["Shutter"]++;
     }
@@ -142,7 +153,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         displacement_ = name;
         counts_["Displacement"]++;
     }
-    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         lights_.push_back(request.shader + "|" + request.handle + "|" +
             std::to_string(parameters.number("intensity", -1.0F)));
         counts_["LightSource"]++;
@@ -167,13 +178,13 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         colors_ = parameters.points("Cs");
         counts_["Polygon"]++;
     }
-    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         perPolygon_ = request.counts;
         indices_ = request.indices;
         points_ = parameters.points("P");
         counts_["PointsPolygons"]++;
     }
-    void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void sphere(const v3d::render::offline::rib::requests::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         colors_ = parameters.points("Cs");
         radius_ = request.radius;
         counts_["Sphere"]++;
@@ -231,16 +242,16 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
  **/
 class CurveHandler final : public v3d::render::offline::rib::Handler {
  public:
-    void basis(const v3d::render::offline::rib::Basis & request) override {
+    void basis(const v3d::render::offline::rib::requests::Basis & request) override {
         bases_.push_back(request);
     }
-    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void curves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         curves_.push_back(request);
         points_.push_back(parameters.floats("P").size() / 3);
         widths_.push_back(parameters.floats("constantwidth"));
     }
-    std::vector<v3d::render::offline::rib::Basis> bases_;
-    std::vector<v3d::render::offline::rib::Curves> curves_;
+    std::vector<v3d::render::offline::rib::requests::Basis> bases_;
+    std::vector<v3d::render::offline::rib::requests::Curves> curves_;
     std::vector<std::size_t> points_;
     std::vector<std::vector<float>> widths_;
 };
@@ -251,16 +262,16 @@ class CurveHandler final : public v3d::render::offline::rib::Handler {
  **/
 class CapableHandler final : public v3d::render::offline::rib::Handler {
  public:
-    void areaLightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         area_ = request.shader + "|" + request.handle;
     }
-    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)request;
         (void)parameters;
         lights_++;
     }
-    void makeTexture(const v3d::render::offline::rib::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         made_ = request.picture + "|" + request.texture + "|" + request.swrap + "|" + request.twrap + "|" + request.filter + "|" +
             std::to_string(static_cast<int>(request.swidth)) + "|" + std::to_string(static_cast<int>(request.twidth));
@@ -610,7 +621,7 @@ BOOST_AUTO_TEST_CASE(ribreader_basis_and_curves_test) {
         "Curves \"linear\" [3] \"periodic\" \"P\" [0 0 0 1 0 0 0 1 0]\n", &handler, &reader));
 
     BOOST_REQUIRE_EQUAL(handler.bases_.size(), 1U);
-    v3d::render::offline::rib::Basis::Matrix catmullRom{};
+    v3d::render::offline::rib::requests::Basis::Matrix catmullRom{};
     BOOST_REQUIRE(v3d::render::offline::rib::namedBasis("catmull-rom", &catmullRom));
     BOOST_CHECK((handler.bases_[0].u == catmullRom));
     BOOST_CHECK_EQUAL(handler.bases_[0].ustep, 1U);
@@ -649,13 +660,13 @@ BOOST_AUTO_TEST_CASE(ribreader_bad_basis_and_curves_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_basis_names_test) {
     for (const char* name : { "bezier", "b-spline", "catmull-rom", "hermite", "power" }) {
-        v3d::render::offline::rib::Basis::Matrix matrix{};
+        v3d::render::offline::rib::requests::Basis::Matrix matrix{};
         BOOST_REQUIRE(v3d::render::offline::rib::namedBasis(name, &matrix));
         BOOST_CHECK_EQUAL(v3d::render::offline::rib::basisName(matrix), name);
     }
-    v3d::render::offline::rib::Basis::Matrix matrix{};
+    v3d::render::offline::rib::requests::Basis::Matrix matrix{};
     BOOST_CHECK(v3d::render::offline::rib::namedBasis("bezier", &matrix));
-    BOOST_CHECK((matrix == v3d::render::offline::rib::Basis::BEZIER));
+    BOOST_CHECK((matrix == v3d::render::offline::rib::requests::Basis::BEZIER));
     matrix[0] = 7;
     BOOST_CHECK(v3d::render::offline::rib::basisName(matrix).empty());
 }

@@ -7,7 +7,8 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/film/FrameBuffer.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Display.h>
 
 #include <string>
 
@@ -26,7 +27,7 @@ class Display final {
      * format from the name's extension. An empty name or any other type writes nothing. The
      * mode is stored and not read.
      **/
-    void request(const v3d::render::offline::rib::Display & display);
+    void request(const v3d::render::offline::rib::requests::Display & display);
     const std::string & name() const;
 
     /**
@@ -35,7 +36,7 @@ class Display final {
      *
      * @return false, keeping the window in force, for a window with no area
      **/
-    bool crop(const v3d::render::offline::rib::CropWindow & window);
+    bool crop(const v3d::render::offline::rib::requests::CropWindow & window);
     /**
      * The pixels inside the crop window of a picture: columns x to y and rows z to w, each
      * range including its start and excluding its end. RI renders the columns from
@@ -62,7 +63,7 @@ class Display final {
     std::string name_;
     std::string type_;
     std::string mode_;
-    v3d::render::offline::rib::CropWindow crop_;
+    v3d::render::offline::rib::requests::CropWindow crop_;
 };
 
 };  // namespace v3d::moya::state

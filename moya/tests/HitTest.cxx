@@ -5,9 +5,11 @@
 
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Offset.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shear.h>
+#include <moya/libmoya/kernel/geometry/primitive/Triangle.h>
+#include <moya/libmoya/kernel/geometry/primitive/TriangleHit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Traversal.h>
-#include <moya/libmoya/kernel/geometry/Triangle.h>
 
 #include <array>
 #include <cmath>
@@ -71,10 +73,10 @@ std::vector<Triangle> octahedron(const glm::vec3 & centre, float radius) {
 
 /** Whether a ray meets any of the triangles. **/
 bool meetsAny(const geometry::Ray & ray, const std::vector<Triangle> & faces) {
-    const geometry::Shear shear = geometry::Shear::of(ray);
+    const geometry::primitive::Shear shear = geometry::primitive::Shear::of(ray);
     for (const Triangle & face : faces) {
-        geometry::TriangleHit hit;
-        if (geometry::intersectTriangle(shear, face[0], face[1], face[2], ray.start, ray.end, hit)) {
+        geometry::primitive::TriangleHit hit;
+        if (geometry::primitive::intersectTriangle(shear, face[0], face[1], face[2], ray.start, ray.end, hit)) {
             return true;
         }
     }
@@ -111,22 +113,22 @@ BOOST_AUTO_TEST_CASE(moya_hit_a_triangle_is_met_only_within_the_interval_test) {
     const glm::vec3 p1 { 1.0F, -1.0F, -5.0F };
     const glm::vec3 p2 { 0.0F, 1.0F, -5.0F };
     geometry::Ray ray;
-    geometry::TriangleHit hit;
+    geometry::primitive::TriangleHit hit;
 
     ray.end = 4.0F;
-    BOOST_TEST(!geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    BOOST_TEST(!geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
 
     ray.start = 6.0F;
     ray.end = 10.0F;
-    BOOST_TEST(!geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    BOOST_TEST(!geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
 
     ray.start = 0.0F;
-    BOOST_TEST(geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    BOOST_TEST(geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
     BOOST_TEST(hit.distance == 5.0F);
 
     // the end of the interval is open, so a triangle at the end is not met
     ray.end = 5.0F;
-    BOOST_TEST(!geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    BOOST_TEST(!geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
 }
 
 BOOST_AUTO_TEST_CASE(moya_hit_a_triangle_gives_the_weights_of_its_second_and_third_vertices_test) {
@@ -135,15 +137,15 @@ BOOST_AUTO_TEST_CASE(moya_hit_a_triangle_gives_the_weights_of_its_second_and_thi
     const glm::vec3 p2 { 0.0F, 4.0F, -2.0F };
     geometry::Ray ray;
     ray.origin = glm::vec3 { 1.0F, 2.0F, 0.0F };
-    geometry::TriangleHit hit;
-    BOOST_TEST(geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    geometry::primitive::TriangleHit hit;
+    BOOST_TEST(geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
     BOOST_TEST(hit.uv.x == 0.25F);
     BOOST_TEST(hit.uv.y == 0.5F);
 
     // either side is met, with the same weights
     ray.origin = glm::vec3 { 1.0F, 2.0F, -4.0F };
     ray.direction = glm::vec3 { 0.0F, 0.0F, 1.0F };
-    BOOST_TEST(geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
+    BOOST_TEST(geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit));
     BOOST_TEST(hit.uv.x == 0.25F);
     BOOST_TEST(hit.uv.y == 0.5F);
 }
@@ -173,8 +175,8 @@ BOOST_AUTO_TEST_CASE(moya_hit_a_ray_offset_from_its_hit_does_not_meet_the_surfac
                     geometry::Ray ray;
                     ray.origin = geometry::offsetStart(point, unit);
                     ray.direction = (unit * lift) + (along * std::cos(turn)) + (across * std::sin(turn));
-                    geometry::TriangleHit hit;
-                    if (geometry::intersectTriangle(geometry::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit)) {
+                    geometry::primitive::TriangleHit hit;
+                    if (geometry::primitive::intersectTriangle(geometry::primitive::Shear::of(ray), p0, p1, p2, ray.start, ray.end, hit)) {
                         ++again;
                     }
                 }

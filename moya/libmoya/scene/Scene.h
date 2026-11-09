@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <moya/libmoya/scene/Change.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -17,33 +21,6 @@
 #include <vector>
 
 namespace v3d::moya::scene {
-
-/**
- * A parameter's value over the shutter. With no times, its one value holds at every time.
- * Otherwise each value holds at the time beside it, the times rise strictly, and every value has
- * the same type and size.
- **/
-struct Samples {
-    std::vector<float> times;
-    std::vector<Value> values;
-
-    bool operator==(const Samples & other) const = default;
-};
-
-/** What happened to one object after a version. **/
-struct Change {
-    enum class What : std::uint8_t {
-        Created,
-        Modified,
-        Removed
-    };
-
-    Handle handle;
-    What what { What::Modified };
-
-    /** The parameters set or declared after the version, by name, for a modified object. **/
-    std::vector<std::string> parameters;
-};
 
 /**
  * moya's retained scene: objects of the schema's kinds, each reached by a handle and named.

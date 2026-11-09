@@ -22,7 +22,11 @@
 #include <boost/json.hpp>
 #include <quickjs.h>  // NOLINT(build/include_order)
 
+#include "Problem.h"
+#include "Refused.h"
+#include "Result.h"
 #include "Strip.h"
+#include "Stripped.h"
 
 namespace v3d::script {
 
@@ -171,12 +175,6 @@ JSValue call(JSContext* context, JSValueConst self, int count, JSValueConst* val
 }
 
 };  // namespace
-
-/**
- **/
-Refused::Refused(const std::string& message) :
-    std::runtime_error(message) {
-}
 
 /**
  **/

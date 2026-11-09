@@ -5,6 +5,8 @@
 
 #include "SvgDocuments.h"
 
+#include "SvgDocument.h"
+
 #include <api/font/internal/SvgReader.h>
 #include <thorvg.h>
 

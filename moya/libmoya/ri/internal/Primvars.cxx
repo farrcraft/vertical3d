@@ -8,8 +8,9 @@
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/type/Checked.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <cstddef>

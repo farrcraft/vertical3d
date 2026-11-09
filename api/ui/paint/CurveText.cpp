@@ -5,17 +5,18 @@
 
 #include "CurveText.h"
 
-#include <api/font/glyph/CurveStore.h>
+#include <api/font/glyph/curve/Store.h>
 #include <api/font/face/Face.h>
 #include <api/font/glyph/Store.h>
-#include <api/font/glyph/Paint.h>
+#include <api/font/glyph/colour/Paint.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapedGlyph.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Glyph.h>
+#include <api/font/text/style/Style.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/ui/paint/internal/EffectQuad.h>
+#include <api/ui/paint/internal/PlacedEffect.h>
 
 #include <array>
 #include <cmath>
@@ -161,7 +162,7 @@ void CurveText::draw(render::realtime::canvas::DepthOrder* order, float key, con
 
 /**
  **/
-const font::glyph::CurveStore& CurveText::store() const noexcept {
+const font::glyph::curve::Store& CurveText::store() const noexcept {
     return store_;
 }
 
@@ -177,11 +178,11 @@ bool CurveText::place(const font::text::Paragraph& paragraph) {
     placed_.clear();
     effects_.clear();
     placedPictures_.clear();
-    for (const font::text::Line& line : paragraph.lines()) {
-        for (const font::text::LineRun& run : line.runs) {
+    for (const font::text::Paragraph::Line& line : paragraph.lines()) {
+        for (const font::text::Paragraph::LineRun& run : line.runs) {
             glm::vec2 pen(run.x, line.baseline);
-            for (const font::text::ShapedGlyph& glyph : run.glyphs) {
-                const font::text::Style& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
+            for (const font::text::shaping::Glyph& glyph : run.glyphs) {
+                const font::text::style::Style& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
                 const glm::vec2 origin = pen + glyph.offset;
                 pen.x += glyph.advance;
                 if (!(run.size > 0.0F)) {
@@ -191,7 +192,7 @@ bool CurveText::place(const font::text::Paragraph& paragraph) {
                 if (run.face->coloured(glyph.index) && placeColour(run, glyph.index, styled, origin)) {
                     continue;
                 }
-                const font::glyph::StoredCurves& stored = store_.glyph(*run.face, glyph.index, run.coordinates);
+                const font::glyph::curve::Store::StoredCurves& stored = store_.glyph(*run.face, glyph.index, run.coordinates);
                 if (!stored.empty) {
                     placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = styled.contrast });
                 }
@@ -209,12 +210,12 @@ bool CurveText::place(const font::text::Paragraph& paragraph) {
 
 /**
  **/
-bool CurveText::placeColour(const font::text::LineRun& run, unsigned int index, const font::text::Style& styled, const glm::vec2& origin) {
-    const font::glyph::StoredColour& stored = store_.colour(*run.face, index, 0, run.coordinates);
+bool CurveText::placeColour(const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Style& styled, const glm::vec2& origin) {
+    const font::glyph::curve::Store::StoredColour& stored = store_.colour(*run.face, index, 0, run.coordinates);
     if (stored.pictures) {
-        const font::glyph::Key key{ .face = run.face.get(), .index = index, .size = run.size, .mode = font::glyph::Mode::Colour,
-            .foreground = font::glyph::packColour(glm::vec4(glm::vec3(styled.colour), 1.0F)), .coordinates = run.coordinates };
-        const std::optional<font::glyph::StoredGlyph> painted = pictures_.glyph(key, [](const font::glyph::Key& asked) { return font::glyph::paint(asked); });
+        const font::glyph::Store::Key key{ .face = run.face.get(), .index = index, .size = run.size, .mode = font::glyph::Mode::Colour,
+            .foreground = font::glyph::colour::packColour(glm::vec4(glm::vec3(styled.colour), 1.0F)), .coordinates = run.coordinates };
+        const std::optional<font::glyph::Store::StoredGlyph> painted = pictures_.glyph(key, [](const font::glyph::Store::Key& asked) { return font::glyph::colour::paint(asked); });
         if (!painted || painted->size.x == 0 || painted->size.y == 0) {
             return false;
         }
@@ -227,7 +228,7 @@ bool CurveText::placeColour(const font::text::LineRun& run, unsigned int index, 
         return false;
     }
     // a program draws in its own colours, so it is not text whose coverage is corrected
-    const font::glyph::StoredCurves program{ .bands = stored.program | font::glyph::CurveStore::COLOUR, .min = stored.min, .max = stored.max, .empty = false };
+    const font::glyph::curve::Store::StoredCurves program{ .bands = stored.program | font::glyph::curve::Store::COLOUR, .min = stored.min, .max = stored.max, .empty = false };
     placed_.push_back(Placed{ .stored = program, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = -1.0F });
     return true;
 }
@@ -259,7 +260,7 @@ std::array<glm::vec2, 2> CurveText::pictureUv(const PlacedPicture& picture) cons
 
 /**
  **/
-std::array<glm::vec2, 4> CurveText::emCorners(const font::glyph::StoredCurves& stored, float margin) {
+std::array<glm::vec2, 4> CurveText::emCorners(const font::glyph::curve::Store::StoredCurves& stored, float margin) {
     const glm::vec2 low = stored.min - glm::vec2(margin);
     const glm::vec2 high = stored.max + glm::vec2(margin);
     return { glm::vec2(low.x, high.y), glm::vec2(high.x, high.y), glm::vec2(high.x, low.y), glm::vec2(low.x, low.y) };

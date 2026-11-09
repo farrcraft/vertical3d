@@ -5,12 +5,14 @@
 
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/device/CpuDevice.h>
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/geometry/Flat.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>

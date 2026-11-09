@@ -5,15 +5,13 @@
 
 #pragma once
 
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/output/ExrMetadata.h>
+#include <moya/libmoya/output/ExrPart.h>
 
-#include <cstdint>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <glm/mat4x4.hpp>
 
 /**
  * The files the new core writes its pictures to.
@@ -22,59 +20,6 @@ namespace v3d::moya::output {
 
 /** The name the beauty goes by among a film's outputs, beside its channels' names. **/
 inline constexpr std::string_view kBeauty = "beauty";
-
-/** How each value of a part is stored: 16-bit or 32-bit floats. **/
-enum class Precision : std::uint8_t {
-    Half,
-    Float
-};
-
-/** OpenEXR's compressions, from none to the lossy DWA and HTJ2K ones. **/
-enum class Compression : std::uint8_t {
-    None,
-    Rle,
-    Zips,
-    Zip,
-    Piz,
-    Pxr24,
-    B44,
-    B44a,
-    Dwaa,
-    Dwab,
-    Htj2k256,
-    Htj2k32
-};
-
-/** One part of an EXR file: some of a film's outputs, stored one way. **/
-struct ExrPart {
-    /** The part's name. A file of several parts names each, and no two alike. **/
-    std::string name;
-
-    /** The outputs it holds, in order: kBeauty, or the name of one of the film's channels. **/
-    std::vector<std::string> outputs;
-
-    Precision precision { Precision::Half };
-    Compression compression { Compression::Zip };
-};
-
-/** What an EXR file's header says about its picture and how it was made. **/
-struct ExrMetadata {
-    /**
-     * The Color Interop Forum ID of the space the beauty is in, written as colorInteropID. The
-     * film holds ACEScg, lin_ap1_scene. An output converted into the working space names the
-     * working space's ID, which colour::Config::workingInteropId() gives. Empty writes none.
-     **/
-    std::string colourSpace { "lin_ap1_scene" };
-
-    /** World to camera space, written as OpenEXR's worldToCamera. **/
-    std::optional<glm::mat4> worldToCamera;
-
-    /** World to screen space, written as OpenEXR's worldToNDC. **/
-    std::optional<glm::mat4> worldToScreen;
-
-    /** How long the picture took to render, written as moya/renderTime. **/
-    std::optional<float> renderSeconds;
-};
 
 /**
  * Writes a snapshot of a film to an EXR file, one part for each part given, every part with the

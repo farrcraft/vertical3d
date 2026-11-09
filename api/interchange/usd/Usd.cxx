@@ -5,7 +5,7 @@
 
 #include "Usd.h"
 
-#include <api/interchange/Scene.h>
+#include <api/interchange/Imported.h>
 #include <api/interchange/usd/internal/Reader.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/stage.h>

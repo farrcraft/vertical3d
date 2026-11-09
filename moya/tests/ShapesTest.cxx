@@ -6,16 +6,20 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/CpuLibrary.h>
-#include <moya/libmoya/film/Film.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
-#include <moya/libmoya/kernel/geometry/Polynomial.h>
+#include <moya/libmoya/kernel/geometry/primitive/Polynomial.h>
+#include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
+#include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/view/Hits.h>
+#include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>
@@ -46,7 +50,7 @@ namespace kernel = v3d::moya::kernel;
 namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
 typedef v3d::moya::device::CpuDevice CpuDevice;
-typedef kernel::geometry::Shape Shape;
+typedef kernel::geometry::primitive::Shape Shape;
 
 /** A random number in [0, 1) from a seed it moves on, the same on every compiler. **/
 float next(std::uint32_t & seed) {
@@ -106,22 +110,22 @@ void shutter(scene::Scene & scene) {
 }
 
 /** Each of the seven quadrics, cut and swept short of a whole turn, so every limit is met. **/
-std::vector<kernel::geometry::Quadric> quadrics() {
+std::vector<kernel::geometry::primitive::Quadric> quadrics() {
     const float sweep = glm::radians(270.0F);
-    const kernel::geometry::Quadric sphere { .shape = Shape::Sphere, .radius = 1.5F, .zmin = -1.0F, .zmax = 1.2F, .thetamax = sweep };
-    const kernel::geometry::Quadric cone { .shape = Shape::Cone, .radius = 1.0F, .height = 2.0F, .thetamax = sweep };
-    const kernel::geometry::Quadric cylinder { .shape = Shape::Cylinder, .radius = 1.0F, .zmin = -1.0F, .zmax = 1.5F, .thetamax = sweep };
-    const kernel::geometry::Quadric hyperboloid { .shape = Shape::Hyperboloid, .point1 = { 1.0F, -1.0F, -1.0F }, .point2 = { 1.0F, 1.0F, 1.0F },
+    const kernel::geometry::primitive::Quadric sphere { .shape = Shape::Sphere, .radius = 1.5F, .zmin = -1.0F, .zmax = 1.2F, .thetamax = sweep };
+    const kernel::geometry::primitive::Quadric cone { .shape = Shape::Cone, .radius = 1.0F, .height = 2.0F, .thetamax = sweep };
+    const kernel::geometry::primitive::Quadric cylinder { .shape = Shape::Cylinder, .radius = 1.0F, .zmin = -1.0F, .zmax = 1.5F, .thetamax = sweep };
+    const kernel::geometry::primitive::Quadric hyperboloid { .shape = Shape::Hyperboloid, .point1 = { 1.0F, -1.0F, -1.0F }, .point2 = { 1.0F, 1.0F, 1.0F },
         .thetamax = sweep };
-    const kernel::geometry::Quadric paraboloid { .shape = Shape::Paraboloid, .radius = 1.0F, .zmin = 0.2F, .zmax = 1.5F, .thetamax = sweep };
-    const kernel::geometry::Quadric disk { .shape = Shape::Disk, .radius = 1.2F, .height = 0.3F, .thetamax = sweep };
-    const kernel::geometry::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.3F, .phimin = glm::radians(-90.0F),
+    const kernel::geometry::primitive::Quadric paraboloid { .shape = Shape::Paraboloid, .radius = 1.0F, .zmin = 0.2F, .zmax = 1.5F, .thetamax = sweep };
+    const kernel::geometry::primitive::Quadric disk { .shape = Shape::Disk, .radius = 1.2F, .height = 0.3F, .thetamax = sweep };
+    const kernel::geometry::primitive::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.3F, .phimin = glm::radians(-90.0F),
         .phimax = glm::radians(180.0F), .thetamax = sweep };
     return { sphere, cone, cylinder, hyperboloid, paraboloid, disk, torus };
 }
 
 /** How far a point lies from a quadric's surface of revolution, ignoring its limits. **/
-float offSurface(const kernel::geometry::Quadric & quadric, const glm::vec3 & point) {
+float offSurface(const kernel::geometry::primitive::Quadric & quadric, const glm::vec3 & point) {
     const float reach = std::sqrt((point.x * point.x) + (point.y * point.y));
     switch (quadric.shape) {
         case Shape::Sphere:
@@ -150,22 +154,22 @@ float offSurface(const kernel::geometry::Quadric & quadric, const glm::vec3 & po
 BOOST_AUTO_TEST_CASE(moya_shapes_a_quartics_roots_are_found_in_order_test) {
     const float quartic[5] = { 24.0F, -50.0F, 35.0F, -10.0F, 1.0F };
     float roots[4] {};
-    BOOST_TEST(kernel::geometry::rootsIn(quartic, 4, 0.0F, 5.0F, roots) == 4U);
+    BOOST_TEST(kernel::geometry::primitive::rootsIn(quartic, 4, 0.0F, 5.0F, roots) == 4U);
     for (std::uint32_t root = 0; root < 4; ++root) {
         BOOST_TEST(std::fabs(roots[root] - static_cast<float>(root + 1)) < 1.0e-5F, "root " << root);
     }
-    BOOST_TEST(kernel::geometry::rootsIn(quartic, 4, 1.5F, 3.5F, roots) == 2U);
+    BOOST_TEST(kernel::geometry::primitive::rootsIn(quartic, 4, 1.5F, 3.5F, roots) == 2U);
     BOOST_TEST(std::fabs(roots[0] - 2.0F) < 1.0e-5F);
     // x^2 + 1 has no real root
     const float none[3] = { 1.0F, 0.0F, 1.0F };
-    BOOST_TEST(kernel::geometry::rootsIn(none, 2, -10.0F, 10.0F, roots) == 0U);
+    BOOST_TEST(kernel::geometry::primitive::rootsIn(none, 2, -10.0F, 10.0F, roots) == 0U);
 }
 
 // rays from all around each quadric hit it only on its surface of revolution, within its sweep and
 // its limits, and a good share of them hit
 BOOST_AUTO_TEST_CASE(moya_shapes_each_quadrics_hits_lie_on_its_surface_and_within_its_sweep_test) {
     std::uint32_t seed = 13;
-    for (const kernel::geometry::Quadric & quadric : quadrics()) {
+    for (const kernel::geometry::primitive::Quadric & quadric : quadrics()) {
         std::size_t hits = 0;
         std::size_t off = 0;
         std::size_t outside = 0;
@@ -174,15 +178,15 @@ BOOST_AUTO_TEST_CASE(moya_shapes_each_quadrics_hits_lie_on_its_surface_and_withi
             ray.origin = glm::normalize(glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F) * 6.0F;
             const glm::vec3 target = (glm::vec3 { next(seed), next(seed), next(seed) } - 0.5F) * 3.0F;
             ray.direction = target - ray.origin;
-            kernel::geometry::ShapeHit hit;
-            if (!kernel::geometry::intersectQuadric(quadric, ray, 0.0F, 10.0F, hit)) {
+            kernel::geometry::primitive::ShapeHit hit;
+            if (!kernel::geometry::primitive::intersectQuadric(quadric, ray, 0.0F, 10.0F, hit)) {
                 continue;
             }
             ++hits;
             const glm::vec3 point = ray.at(hit.distance);
             off += std::fabs(offSurface(quadric, point)) > 1.0e-3F ? 1 : 0;
             glm::vec2 uv { 0.0F };
-            outside += kernel::geometry::quadricPosition(quadric, point, uv) && uv.x <= 1.0F + 1.0e-5F ? 0 : 1;
+            outside += kernel::geometry::primitive::quadricPosition(quadric, point, uv) && uv.x <= 1.0F + 1.0e-5F ? 0 : 1;
         }
         const auto shape = static_cast<int>(quadric.shape);
         BOOST_TEST(hits > 400U, "shape " << shape);
@@ -194,14 +198,14 @@ BOOST_AUTO_TEST_CASE(moya_shapes_each_quadrics_hits_lie_on_its_surface_and_withi
 // a ray down a torus's axis passes through its hole, and one down through its tube meets the
 // tube's top
 BOOST_AUTO_TEST_CASE(moya_shapes_a_ray_along_a_toruss_axis_misses_it_test) {
-    const kernel::geometry::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.25F };
+    const kernel::geometry::primitive::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.25F };
     kernel::geometry::Ray ray;
     ray.origin = glm::vec3 { 0.0F, 0.0F, 5.0F };
     ray.direction = glm::vec3 { 0.0F, 0.0F, -1.0F };
-    kernel::geometry::ShapeHit hit;
-    BOOST_TEST(!kernel::geometry::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
+    kernel::geometry::primitive::ShapeHit hit;
+    BOOST_TEST(!kernel::geometry::primitive::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
     ray.origin.x = 1.0F;
-    BOOST_TEST(kernel::geometry::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
+    BOOST_TEST(kernel::geometry::primitive::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
     BOOST_TEST(std::fabs(hit.distance - 4.75F) < 1.0e-4F);
 }
 
@@ -210,15 +214,15 @@ BOOST_AUTO_TEST_CASE(moya_shapes_a_ray_along_a_toruss_axis_misses_it_test) {
 // test that never answers fails the case rather than hanging the suite
 BOOST_AUTO_TEST_CASE(moya_shapes_a_torus_answers_for_any_tube_limit_test) {
     for (const float limit : { 1.0e10F, std::numeric_limits<float>::infinity() }) {
-        const kernel::geometry::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.25F, .phimin = limit, .phimax = limit };
+        const kernel::geometry::primitive::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.25F, .phimin = limit, .phimax = limit };
         std::promise<void> answer;
         const std::future<void> answered = answer.get_future();
         std::thread([torus, answer = std::move(answer)]() mutable {
             kernel::geometry::Ray ray;
             ray.origin = glm::vec3 { 1.0F, 0.0F, 5.0F };
             ray.direction = glm::vec3 { 0.0F, 0.0F, -1.0F };
-            kernel::geometry::ShapeHit hit;
-            static_cast<void>(kernel::geometry::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
+            kernel::geometry::primitive::ShapeHit hit;
+            static_cast<void>(kernel::geometry::primitive::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
             answer.set_value();
         }).detach();
         BOOST_TEST((answered.wait_for(std::chrono::seconds(10)) == std::future_status::ready), "limit " << limit);

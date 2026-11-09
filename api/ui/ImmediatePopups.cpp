@@ -5,6 +5,9 @@
 
 #include <api/ui/Immediate.h>
 #include <api/ui/immediate/Context.h>
+#include <api/ui/immediate/Id.h>
+#include <api/ui/immediate/Reaction.h>
+#include <api/ui/immediate/Retained.h>
 #include <api/ui/paint/Painter.h>
 
 #include <algorithm>

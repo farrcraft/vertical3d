@@ -4,6 +4,7 @@
  */
 
 #include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/lighting/Cascades.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>

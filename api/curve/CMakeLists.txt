@@ -1,7 +1,12 @@
 v3d_add_api_library(curve
 	"Basis.h" "Basis.cxx"
+	"Bezier.h"
+	"BezierPoint.h"
+	"CatmullRom.h"
 	"Curve.h" "Curve.cxx"
 	"Curves.h" "Curves.cxx"
+	"Nurbs.h"
+	"Poly.h"
 	"Segment.h"
 	"Spline.h" "Spline.cxx"
 	"internal/Neighbours.h"

@@ -8,6 +8,7 @@
 #include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Point.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/syntax/Shader.h>

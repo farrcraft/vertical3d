@@ -4,8 +4,15 @@
  */
 
 #include <api/animation/Curve.h>
-#include <api/curve/Curve.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Curves.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>

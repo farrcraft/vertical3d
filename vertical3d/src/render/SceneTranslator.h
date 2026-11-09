@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/camera/Profile.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 #include <vertical3d/src/scene/Evaluation.h>

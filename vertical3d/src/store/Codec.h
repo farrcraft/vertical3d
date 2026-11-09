@@ -15,6 +15,7 @@
 #include <string_view>
 #include <vector>
 
+#include "Buffer.h"
 #include "Bytes.h"
 
 #include <boost/json.hpp>
@@ -26,15 +27,6 @@ namespace v3d::editor::store {
  * A kind's blobs as a document reads them, by role.
  **/
 using Blobs = std::map<std::string, Blob>;
-
-/**
- * One blob a kind writes: its role, how many entries it holds, and its bytes.
- **/
-struct Buffer {
-    std::string role;
-    std::size_t count = 0;
-    std::vector<std::byte> data;
-};
 
 /**
  * How a scene document writes and reads one kind of item.

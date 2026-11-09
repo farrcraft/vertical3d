@@ -7,14 +7,15 @@
 
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
-#include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Placed.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Traversal.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
+#include <moya/libmoya/kernel/view/HitChannels.h>
 
 #include <cstdint>
 #include <limits>
@@ -24,15 +25,6 @@
 
 /** Pictures of the scene that light nothing, for looking at what a traversal finds. **/
 namespace v3d::moya::kernel::view {
-
-/** Where each of the hit view's channels starts in a pixel, as the film gives them. **/
-struct HitChannels {
-    std::uint32_t depth { 0 };
-    std::uint32_t normal { 0 };
-    std::uint32_t instance { 0 };
-    std::uint32_t face { 0 };
-    std::uint32_t coverage { 0 };
-};
 
 /**
  * What the hit view's kernel function reads: the film, the camera, a traversal, and the placed

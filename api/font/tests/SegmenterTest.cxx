@@ -29,7 +29,7 @@ struct Segmenting {
      **/
     std::vector<std::size_t> breaks(std::string_view text) const {
         std::vector<std::size_t> offsets;
-        for (const v3d::font::text::LineBreak& found : segmenter.lineBreaks(text)) {
+        for (const v3d::font::text::Segmenter::LineBreak& found : segmenter.lineBreaks(text)) {
             offsets.push_back(found.offset);
         }
         return offsets;
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(lines_break_at_unicode_opportunities) {
  * A line has to end after a newline, and may end anywhere else it breaks.
  **/
 BOOST_AUTO_TEST_CASE(a_newline_is_a_mandatory_break) {
-    const std::vector<v3d::font::text::LineBreak> found = segmenter.lineBreaks("one two\nthree");
+    const std::vector<v3d::font::text::Segmenter::LineBreak> found = segmenter.lineBreaks("one two\nthree");
     BOOST_REQUIRE_EQUAL(found.size(), 3U);
     BOOST_CHECK_EQUAL(found[0].offset, 4U);
     BOOST_CHECK(!found[0].mandatory);
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(thai_lines_break_between_dictionary_words) {
  * the string with no gap.
  **/
 BOOST_AUTO_TEST_CASE(words_are_told_from_what_separates_them) {
-    const std::vector<v3d::font::text::WordSegment> found = segmenter.words("Hi, you 42");
+    const std::vector<v3d::font::text::Segmenter::WordSegment> found = segmenter.words("Hi, you 42");
     BOOST_REQUIRE_EQUAL(found.size(), 6U);
     const std::vector<bool> expected{true, false, false, true, false, true};
     std::size_t previous = 0;

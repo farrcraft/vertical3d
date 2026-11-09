@@ -16,6 +16,7 @@
 #include "Chord.h"
 #include "Context.h"
 #include "Source.h"
+#include "Unclaimed.h"
 
 namespace v3d::event {
 /**

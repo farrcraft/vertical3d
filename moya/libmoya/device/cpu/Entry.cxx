@@ -14,14 +14,17 @@
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/device/cpu/internal/Boxes.h>
-#include <moya/libmoya/device/cpu/internal/Search.h>
+#include <moya/libmoya/device/cpu/internal/Nearest.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shear.h>
+#include <moya/libmoya/kernel/geometry/primitive/Triangle.h>
+#include <moya/libmoya/kernel/geometry/primitive/TriangleHit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
-#include <moya/libmoya/kernel/geometry/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
-#include <moya/libmoya/kernel/geometry/Triangle.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 
 #include <bit>
@@ -123,15 +126,15 @@ kernel::geometry::Ray into(const Traversal & traversal, const Instance & instanc
  * ray's time, and where: a triangle, a round or a flat point, or a quadric.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then the primitive
-bool meets(const Traversal & traversal, const kernel::geometry::Shear & shear, std::uint32_t geometry, std::uint32_t primitive,
-    const kernel::geometry::Ray & ray, float end, kernel::geometry::ShapeHit & hit) {
+bool meets(const Traversal & traversal, const kernel::geometry::primitive::Shear & shear, std::uint32_t geometry, std::uint32_t primitive,
+    const kernel::geometry::Ray & ray, float end, kernel::geometry::primitive::ShapeHit & hit) {
     const Geometry & held = traversal.geometries[geometry];
     const glm::vec3 * points = traversal.points.data;
     const float * times = traversal.times.data;
     switch (held.form) {
-        case kernel::geometry::Form::Triangles: {
-            kernel::geometry::TriangleHit triangle;
-            if (!kernel::geometry::intersectTriangle(shear, kernel::geometry::sampleAt(held.points, points, times, primitive * 3U, ray.time),
+        case kernel::geometry::primitive::Form::Triangles: {
+            kernel::geometry::primitive::TriangleHit triangle;
+            if (!kernel::geometry::primitive::intersectTriangle(shear, kernel::geometry::sampleAt(held.points, points, times, primitive * 3U, ray.time),
                     kernel::geometry::sampleAt(held.points, points, times, (primitive * 3U) + 1U, ray.time),
                     kernel::geometry::sampleAt(held.points, points, times, (primitive * 3U) + 2U, ray.time), ray.start, end, triangle)) {
                 return false;
@@ -140,15 +143,15 @@ bool meets(const Traversal & traversal, const kernel::geometry::Shear & shear, s
             hit.uv = triangle.uv;
             return true;
         }
-        case kernel::geometry::Form::RoundPoints:
-        case kernel::geometry::Form::FlatPoints: {
+        case kernel::geometry::primitive::Form::RoundPoints:
+        case kernel::geometry::primitive::Form::FlatPoints: {
             const glm::vec3 centre = kernel::geometry::sampleAt(held.points, points, times, primitive, ray.time);
             const float radius = 0.5F * kernel::geometry::sampleAt(held.widths, traversal.widths.data, times, primitive, ray.time);
-            return held.form == kernel::geometry::Form::RoundPoints ? kernel::geometry::intersectSphere(centre, radius, ray, ray.start, end, hit) :
-                                                                      kernel::geometry::intersectFacing(centre, radius, ray, ray.start, end, hit);
+            return held.form == kernel::geometry::primitive::Form::RoundPoints ? kernel::geometry::primitive::intersectSphere(centre, radius, ray, ray.start, end, hit) :
+                                                                      kernel::geometry::primitive::intersectFacing(centre, radius, ray, ray.start, end, hit);
         }
-        case kernel::geometry::Form::Quadric:
-            return kernel::geometry::intersectQuadric(kernel::geometry::sampledQuadric(held.quadric, traversal.quadrics.data, times, ray.time), ray,
+        case kernel::geometry::primitive::Form::Quadric:
+            return kernel::geometry::primitive::intersectQuadric(kernel::geometry::primitive::sampledQuadric(held.quadric, traversal.quadrics.data, times, ray.time), ray,
                 ray.start, end, hit);
         default:
             return false;
@@ -167,12 +170,12 @@ const Node & nodeAt(const Traversal & traversal, std::uint32_t index, bool movin
 void nearestFrom(internal::Nearest & search, const Instance & entered, const kernel::geometry::Ray & ray);
 
 /** Tests the primitives of a geometry's leaf, keeping the nearest hit before the closest yet. **/
-void nearestInGeometry(internal::Nearest & search, const kernel::geometry::Shear & shear, const kernel::geometry::Ray & ray,
+void nearestInGeometry(internal::Nearest & search, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
     std::uint32_t geometry, const Node & node, std::uint32_t slot) {
     const std::uint32_t leaf = node.child[slot] & ~kLeaf;
     for (std::uint32_t index = 0; index < node.count[slot]; ++index) {
         const std::uint32_t primitive = search.traversal.references[leaf + index];
-        kernel::geometry::ShapeHit hit;
+        kernel::geometry::primitive::ShapeHit hit;
         if (!meets(search.traversal, shear, geometry, primitive, ray, search.closest, hit)) {
             continue;
         }
@@ -208,7 +211,7 @@ void nearestInGroup(internal::Nearest & search, const kernel::geometry::Ray & ra
  **/
 void nearestFrom(internal::Nearest & search, const Instance & entered, const kernel::geometry::Ray & ray) {
     const internal::Reach reach = internal::Reach::of(ray);
-    const kernel::geometry::Shear shear = kernel::geometry::Shear::of(ray);
+    const kernel::geometry::primitive::Shear shear = kernel::geometry::primitive::Shear::of(ray);
     const bool moving = entered.moving != 0U;
     std::uint32_t stack[kStack];
     float stackEntry[kStack];
@@ -252,13 +255,13 @@ bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel
  * Whether anything in a leaf lies on a ray within its interval: a primitive of a geometry's leaf or
  * anything inside an instance of a group's leaf that the ray may enter.
  **/
-bool anyInLeaf(const Traversal & traversal, const Instance & entered, const kernel::geometry::Shear & shear, const kernel::geometry::Ray & ray,
+bool anyInLeaf(const Traversal & traversal, const Instance & entered, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
     std::uint32_t chain, const Node & node, std::uint32_t slot) {
     const std::uint32_t leaf = node.child[slot] & ~kLeaf;
     for (std::uint32_t index = 0; index < node.count[slot]; ++index) {
         const std::uint32_t reference = traversal.references[leaf + index];
         if (entered.geometry != kGroup) {
-            kernel::geometry::ShapeHit hit;
+            kernel::geometry::primitive::ShapeHit hit;
             if (meets(traversal, shear, entered.geometry, reference, ray, ray.end, hit)) {
                 return true;
             }
@@ -278,7 +281,7 @@ bool anyInLeaf(const Traversal & traversal, const Instance & entered, const kern
  **/
 bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel::geometry::Ray & ray, std::uint32_t chain) {
     const internal::Reach reach = internal::Reach::of(ray);
-    const kernel::geometry::Shear shear = kernel::geometry::Shear::of(ray);
+    const kernel::geometry::primitive::Shear shear = kernel::geometry::primitive::Shear::of(ray);
     const bool moving = entered.moving != 0U;
     std::uint32_t stack[kStack];
     std::uint32_t depth = 0;

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/font/internal/SvgDocument.h>
 #include <api/font/internal/SvgReader.h>
 #include <thorvg.h>
 

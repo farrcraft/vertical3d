@@ -20,6 +20,7 @@
 #include <api/render/offline/texture/Noise.h>
 #include <api/render/offline/texture/Texture.h>
 
+#include "Cone.h"
 #include "Instruction.h"
 #include "Machine.h"
 #include "Renderer.h"

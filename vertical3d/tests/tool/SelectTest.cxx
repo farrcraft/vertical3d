@@ -5,7 +5,8 @@
 
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
-#include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>

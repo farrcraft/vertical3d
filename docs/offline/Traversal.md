@@ -67,8 +67,8 @@ meets either side.
 ## Points and quadrics
 
 Points and RI's quadrics are intersected by moya's own kernel code, in
-`kernel/geometry/Shapes.h`, so every device runs the same tests. Each is tested in its own space.
-A `ShapeHit` gives the distance and the position on the surface.
+`kernel/geometry/primitive/Shapes.h`, so every device runs the same tests. Each is tested in its
+own space. A `ShapeHit` gives the distance and the position on the surface.
 
 - **A round point is a sphere** of half its width about its centre, and **a flat point a disk**
   of the same radius facing the ray, in the plane through its centre. `intersectSphere()` and

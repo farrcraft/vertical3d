@@ -16,13 +16,13 @@
 
 namespace v3d::font::glyph {
 
-Bitmap rasterize(const Key& key) {
+Store::Bitmap rasterize(const Store::Key& key) {
     if (key.face == nullptr || key.mode != Mode::Coverage) {
-        return Bitmap();
+        return Store::Bitmap();
     }
     font::internal::FaceHandle& handle = key.face->handle();
     if (!handle.vary(key.coordinates) || !handle.size(key.size)) {
-        return Bitmap();
+        return Store::Bitmap();
     }
     // the face is hinted at many times its horizontal resolution and scaled back, so hinting
     // moves it whole pixels only vertically. The step moves the scaled glyph, after hinting
@@ -39,7 +39,7 @@ Bitmap rasterize(const Key& key) {
     // the next font to load from the face sets its own size, but not always its own transform
     FT_Set_Transform(handle.face, &matrix, nullptr);
     if (error != 0) {
-        return Bitmap();
+        return Store::Bitmap();
     }
 
     return internal::slotBitmap(*handle.face->glyph);

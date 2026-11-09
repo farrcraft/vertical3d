@@ -5,6 +5,8 @@
 
 #include "Scanner.h"
 
+#include "Lexeme.h"
+
 #include <array>
 #include <cstddef>
 #include <string_view>
@@ -45,12 +47,6 @@ bool digit(char letter) noexcept {
 }
 
 };  // namespace
-
-/**
- **/
-bool Lexeme::is(std::string_view written) const noexcept {
-    return (kind == Token::Punctuator || kind == Token::Identifier) && text == written;
-}
 
 /**
  **/

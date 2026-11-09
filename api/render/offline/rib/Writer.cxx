@@ -6,6 +6,27 @@
 #include "Writer.h"
 
 #include <api/render/offline/film/Sampling.h>
+#include <api/render/offline/rib/requests/Basis.h>
+#include <api/render/offline/rib/requests/Clipping.h>
+#include <api/render/offline/rib/requests/Cone.h>
+#include <api/render/offline/rib/requests/CropWindow.h>
+#include <api/render/offline/rib/requests/Curves.h>
+#include <api/render/offline/rib/requests/Cylinder.h>
+#include <api/render/offline/rib/requests/Declare.h>
+#include <api/render/offline/rib/requests/DepthOfField.h>
+#include <api/render/offline/rib/requests/Disk.h>
+#include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/Format.h>
+#include <api/render/offline/rib/requests/Hyperboloid.h>
+#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
+#include <api/render/offline/rib/requests/Paraboloid.h>
+#include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/Shutter.h>
+#include <api/render/offline/rib/requests/Sphere.h>
+#include <api/render/offline/rib/requests/SubdivisionMesh.h>
+#include <api/render/offline/rib/requests/Torus.h>
 
 #include <array>
 #include <charconv>
@@ -23,7 +44,6 @@
 #include "Declarations.h"
 #include "Handler.h"
 #include "Parameters.h"
-#include "Requests.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -135,7 +155,7 @@ void Writer::version(float number) {
     start("version").number(number).end();
 }
 
-void Writer::declare(const Declare & request) {
+void Writer::declare(const requests::Declare & request) {
     // a declaration that does not parse declares nothing here, as it declares nothing in a reader
     (void)declarations_.declare(request);
     start("Declare").text(request.name).text(request.type).end();
@@ -149,7 +169,7 @@ void Writer::hider(const std::string & name, const ParameterList & parameters) {
     start("Hider").text(name).parameters(parameters).end();
 }
 
-void Writer::format(const Format & request) {
+void Writer::format(const requests::Format & request) {
     *stream_ << "Format " << request.width << ' ' << request.height;
     number(request.pixelAspect).end();
 }
@@ -158,11 +178,11 @@ void Writer::frameAspectRatio(float aspect) {
     start("FrameAspectRatio").number(aspect).end();
 }
 
-void Writer::screenWindow(const ScreenWindow & request) {
+void Writer::screenWindow(const requests::ScreenWindow & request) {
     start("ScreenWindow").number(request.left).number(request.right).number(request.bottom).number(request.top).end();
 }
 
-void Writer::cropWindow(const CropWindow & request) {
+void Writer::cropWindow(const requests::CropWindow & request) {
     start("CropWindow").number(request.xmin).number(request.xmax).number(request.ymin).number(request.ymax).end();
 }
 
@@ -170,11 +190,11 @@ void Writer::projection(const std::string & name, const ParameterList & paramete
     start("Projection").text(name).parameters(parameters).end();
 }
 
-void Writer::clipping(const Clipping & request) {
+void Writer::clipping(const requests::Clipping & request) {
     start("Clipping").number(request.hither).number(request.yon).end();
 }
 
-void Writer::depthOfField(const DepthOfField & request) {
+void Writer::depthOfField(const requests::DepthOfField & request) {
     start("DepthOfField");
     if (!std::isinf(request.fstop)) {
         number(request.fstop).number(request.focalLength).number(request.focalDistance);
@@ -182,7 +202,7 @@ void Writer::depthOfField(const DepthOfField & request) {
     end();
 }
 
-void Writer::shutter(const Shutter & request) {
+void Writer::shutter(const requests::Shutter & request) {
     start("Shutter").number(request.open).number(request.close).end();
 }
 
@@ -199,7 +219,7 @@ void Writer::pixelVariance(float variation) {
     start("PixelVariance").number(variation).end();
 }
 
-void Writer::display(const Display & request, const ParameterList & parameters) {
+void Writer::display(const requests::Display & request, const ParameterList & parameters) {
     start("Display").text(request.name).text(request.type).text(request.mode).parameters(parameters).end();
 }
 
@@ -279,7 +299,7 @@ void Writer::motionEnd() {
 }
 
 // a standard basis is written by its name, and any other as its sixteen numbers
-void Writer::basis(const Basis & request) {
+void Writer::basis(const requests::Basis & request) {
     start("Basis");
     for (const auto& [matrix, step] : { std::pair(request.u, request.ustep), std::pair(request.v, request.vstep) }) {
         const std::string name = basisName(matrix);
@@ -317,11 +337,11 @@ void Writer::displacement(const std::string & name, const ParameterList & parame
     start("Displacement").text(name).parameters(parameters).end();
 }
 
-void Writer::lightSource(const LightSource & request, const ParameterList & parameters) {
+void Writer::lightSource(const requests::LightSource & request, const ParameterList & parameters) {
     start("LightSource").text(request.shader).handle(request.handle).parameters(parameters).end();
 }
 
-void Writer::areaLightSource(const LightSource & request, const ParameterList & parameters) {
+void Writer::areaLightSource(const requests::LightSource & request, const ParameterList & parameters) {
     start("AreaLightSource").text(request.shader).handle(request.handle).parameters(parameters).end();
 }
 
@@ -331,7 +351,7 @@ void Writer::illuminate(const std::string & handle, bool on) {
     end();
 }
 
-void Writer::makeTexture(const MakeTexture & request, const ParameterList & parameters) {
+void Writer::makeTexture(const requests::MakeTexture & request, const ParameterList & parameters) {
     start("MakeTexture").text(request.picture).text(request.texture).text(request.swrap).text(request.twrap)
         .text(request.filter).number(request.swidth).number(request.twidth).parameters(parameters).end();
 }
@@ -350,16 +370,16 @@ void Writer::polygon(unsigned int vertices, const ParameterList & parameters) {
     start("Polygon").parameters(parameters).end();
 }
 
-void Writer::pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) {
+void Writer::pointsPolygons(const requests::PointsPolygons & request, const ParameterList & parameters) {
     start("PointsPolygons").counts(request.counts).counts(request.indices).parameters(parameters).end();
 }
 
-void Writer::sphere(const Sphere & request, const ParameterList & parameters) {
+void Writer::sphere(const requests::Sphere & request, const ParameterList & parameters) {
     start("Sphere").number(request.radius).number(request.zmin).number(request.zmax).number(request.thetamax)
         .parameters(parameters).end();
 }
 
-void Writer::curves(const Curves & request, const ParameterList & parameters) {
+void Writer::curves(const requests::Curves & request, const ParameterList & parameters) {
     start("Curves").text(request.cubic ? "cubic" : "linear").counts(request.vertices)
         .text(request.periodic ? "periodic" : "nonperiodic").parameters(parameters).end();
 }
@@ -370,16 +390,16 @@ void Writer::points(unsigned int count, const ParameterList & parameters) {
     start("Points").parameters(parameters).end();
 }
 
-void Writer::cone(const Cone & request, const ParameterList & parameters) {
+void Writer::cone(const requests::Cone & request, const ParameterList & parameters) {
     start("Cone").number(request.height).number(request.radius).number(request.thetamax).parameters(parameters).end();
 }
 
-void Writer::cylinder(const Cylinder & request, const ParameterList & parameters) {
+void Writer::cylinder(const requests::Cylinder & request, const ParameterList & parameters) {
     start("Cylinder").number(request.radius).number(request.zmin).number(request.zmax).number(request.thetamax)
         .parameters(parameters).end();
 }
 
-void Writer::hyperboloid(const Hyperboloid & request, const ParameterList & parameters) {
+void Writer::hyperboloid(const requests::Hyperboloid & request, const ParameterList & parameters) {
     start("Hyperboloid");
     for (const float value : request.point1) {
         number(value);
@@ -390,22 +410,22 @@ void Writer::hyperboloid(const Hyperboloid & request, const ParameterList & para
     number(request.thetamax).parameters(parameters).end();
 }
 
-void Writer::paraboloid(const Paraboloid & request, const ParameterList & parameters) {
+void Writer::paraboloid(const requests::Paraboloid & request, const ParameterList & parameters) {
     start("Paraboloid").number(request.rmax).number(request.zmin).number(request.zmax).number(request.thetamax)
         .parameters(parameters).end();
 }
 
-void Writer::disk(const Disk & request, const ParameterList & parameters) {
+void Writer::disk(const requests::Disk & request, const ParameterList & parameters) {
     start("Disk").number(request.height).number(request.radius).number(request.thetamax).parameters(parameters).end();
 }
 
-void Writer::torus(const Torus & request, const ParameterList & parameters) {
+void Writer::torus(const requests::Torus & request, const ParameterList & parameters) {
     start("Torus").number(request.majorRadius).number(request.minorRadius).number(request.phimin).number(request.phimax)
         .number(request.thetamax).parameters(parameters).end();
 }
 
 // the strings' array follows only when each tag gives three counts, as RIB after RI 3.2 does
-void Writer::subdivisionMesh(const SubdivisionMesh & request, const ParameterList & parameters) {
+void Writer::subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) {
     start("SubdivisionMesh").text(request.scheme).counts(request.counts).counts(request.indices).strings(request.tags)
         .counts(request.arguments).counts(request.integers).array(request.floats);
     if (!request.tags.empty() && request.arguments.size() == 3 * request.tags.size()) {

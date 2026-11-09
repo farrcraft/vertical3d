@@ -83,6 +83,10 @@ Background: [ADR-0048](../adr/project/0048-includes-name-headers-from-the-reposi
 - A typedef or an enum goes in the header of the class that gives it meaning.
 - When splitting leaves a family of headers that are only used together, such as an AST's node
   types or an app's ECS components, put them in a subdirectory of their own.
+- A header under `tests/` that fixtures share is exempt, as a test file is from the rules below.
+- `scripts/filelocal.ts` reports a header that defines a second class, struct or union at
+  namespace scope. An enum, a forward declaration and an explicit specialization, such as of
+  `std::hash`, are not counted.
 
 ### What a source file keeps to itself
 
@@ -201,7 +205,7 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
   reports a protected data member, and a public one in a class that also has private data.
 - **A record field that a designated initialiser may leave out has a default member
   initialiser.** Write `{}` when the type's default is the value wanted:
-  `std::vector<ColourStop> stops{};`. A field with no initialiser is one every initialiser has to
+  `std::vector<Stop> stops{};`. A field with no initialiser is one every initialiser has to
   name. Clang and GCC both report a designated initialiser that leaves such a field out, under
   `-Wextra`. MSVC does not, so the Clang build on Linux is where it fails. clang-tidy's
   `readability-redundant-member-init` would remove the `{}`, and is turned off for that reason.

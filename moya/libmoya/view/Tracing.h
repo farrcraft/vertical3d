@@ -6,14 +6,15 @@
 #pragma once
 
 #include <moya/libmoya/accel/Assembly.h>
+#include <moya/libmoya/accel/Root.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
-#include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/view/Traced.h>
 
 #include <cstdint>
 #include <vector>
@@ -66,12 +67,6 @@ class Tracing final {
     accel::Root worldRoot_;
     float open_ { 0.0F };
     float close_ { 0.0F };
-};
-
-/** Each ray's nearest hit, and whether anything lies on it. **/
-struct Traced {
-    std::vector<kernel::geometry::Hit> nearest;
-    std::vector<bool> any;
 };
 
 /**

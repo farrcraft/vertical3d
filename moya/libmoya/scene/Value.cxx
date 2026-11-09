@@ -5,6 +5,8 @@
 
 #include <moya/libmoya/scene/Value.h>
 
+#include <moya/libmoya/scene/Handle.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -54,10 +56,6 @@ std::size_t floatsOf(Type type) {
         case Type::Handle: return 0;
     }
     return 0;
-}
-
-bool Handle::valid() const noexcept {
-    return generation != 0;
 }
 
 Value::Value() : elements_(std::vector<std::int32_t>()) {

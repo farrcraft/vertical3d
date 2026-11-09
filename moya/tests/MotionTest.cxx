@@ -5,6 +5,7 @@
 
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Builder.h>
+#include <moya/libmoya/accel/Options.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
@@ -12,11 +13,16 @@
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>

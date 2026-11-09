@@ -13,10 +13,10 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/item/CurveParts.h>
-#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/item/Group.h>
 #include <vertical3d/src/scene/item/Light.h>
