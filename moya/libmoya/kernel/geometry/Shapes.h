@@ -239,22 +239,22 @@ MOYA_KERNEL inline bool sphereProfile(const Quadric & sphere, const glm::vec3 & 
     return within(latitude(point.z), latitude(sphere.zmin), latitude(sphere.zmax), v);
 }
 
-/** A torus's v at a point on it: its angle about the tube, between phimin and phimax. **/
+/**
+ * A torus's v at a point on it: its angle about the tube, between phimin and phimax. The angle is
+ * turned into the whole turn from the lower limit in one step, so any limits end the test. An
+ * infinite or NaN limit meets nothing.
+ **/
 MOYA_KERNEL inline bool torusProfile(const Quadric & torus, const glm::vec3 & point, float & v) {
     const float reach = std::sqrt((point.x * point.x) + (point.y * point.y));
-    float phi = std::atan2(point.z, reach - torus.radius);
+    const float phi = std::atan2(point.z, reach - torus.radius);
     const float lower = std::fmin(torus.phimin, torus.phimax);
     const float span = std::fabs(torus.phimax - torus.phimin);
-    while (phi < lower) {
-        phi += kWholeTurn;
-    }
-    while (phi >= lower + kWholeTurn) {
-        phi -= kWholeTurn;
-    }
-    if (phi > lower + span) {
+    float turned = std::fmod(phi - lower, kWholeTurn);
+    turned = turned < 0.0F ? turned + kWholeTurn : turned;
+    if (!(turned <= span)) {
         return false;
     }
-    v = span > 0.0F ? (phi - lower) / span : 0.0F;
+    v = span > 0.0F ? turned / span : 0.0F;
     return true;
 }
 

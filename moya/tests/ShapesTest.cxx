@@ -19,10 +19,15 @@
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <future>
+#include <limits>
 #include <string>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -198,6 +203,26 @@ BOOST_AUTO_TEST_CASE(moya_shapes_a_ray_along_a_toruss_axis_misses_it_test) {
     ray.origin.x = 1.0F;
     BOOST_TEST(kernel::geometry::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
     BOOST_TEST(std::fabs(hit.distance - 4.75F) < 1.0e-4F);
+}
+
+// a torus whose tube is limited at an angle too large to turn, or at infinity, still answers
+// whether a ray down through its tube meets it. The ray is traced on a thread of its own, so a
+// test that never answers fails the case rather than hanging the suite
+BOOST_AUTO_TEST_CASE(moya_shapes_a_torus_answers_for_any_tube_limit_test) {
+    for (const float limit : { 1.0e10F, std::numeric_limits<float>::infinity() }) {
+        const kernel::geometry::Quadric torus { .shape = Shape::Torus, .radius = 1.0F, .minorRadius = 0.25F, .phimin = limit, .phimax = limit };
+        std::promise<void> answer;
+        const std::future<void> answered = answer.get_future();
+        std::thread([torus, answer = std::move(answer)]() mutable {
+            kernel::geometry::Ray ray;
+            ray.origin = glm::vec3 { 1.0F, 0.0F, 5.0F };
+            ray.direction = glm::vec3 { 0.0F, 0.0F, -1.0F };
+            kernel::geometry::ShapeHit hit;
+            static_cast<void>(kernel::geometry::intersectQuadric(torus, ray, 0.0F, 100.0F, hit));
+            answer.set_value();
+        }).detach();
+        BOOST_TEST((answered.wait_for(std::chrono::seconds(10)) == std::future_status::ready), "limit " << limit);
+    }
 }
 
 // a flat point of width two is met from every direction within its radius of its centre, and
