@@ -48,7 +48,12 @@ export function missingDataNotices(data: ReadonlyArray<{ notice: string }>, file
     const present = new Set(files);
     return data
         .filter(({ notice }) => !present.has(notice))
-        .map(({ notice }) => ({ path: notice, line: null, rule: 'no-data-notice', message: 'a data table names this notice, and it is not in the tree' }));
+        .map(({ notice }) => ({
+            path: notice,
+            line: null,
+            rule: 'no-data-notice',
+            message: 'a data table names this notice, and it is not in the tree',
+        }));
 }
 
 /** One package vcpkg installed: its name, version and triplet. */
