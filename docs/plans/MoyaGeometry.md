@@ -817,7 +817,7 @@ mesh's alone. A removed prototype's instances are left out.
 it with its committed view. The 18 scenes that hold still and are not displaced are also
 rendered by the ray hider. At every pixel inside one surface, the hit view's depth is its depth
 plane's to a ten thousandth. The furthest apart any scene came was 7 millionths. Each case
-was run against broken code as well, one break at a time. A field of view an eleventh wider
+was run against broken code as well, one break at a time. A field of view a tenth wider
 failed both cases in the perspective scenes, a sphere a hundredth larger failed both in the
 spheres, and a depth a thousandth long failed both in every scene. Three things the list below
 did not settle:

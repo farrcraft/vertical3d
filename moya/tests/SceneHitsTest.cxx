@@ -188,8 +188,14 @@ std::vector<boost::filesystem::path> sceneFiles() {
     return out;
 }
 
-// every scene's hit view is its committed one: depths and normals to rounding, and what each ray
-// met exactly, except on an edge, where rounding can take a ray to either side
+/**
+ * Every scene's hit view is its committed one: depths and normals to rounding, and what each ray
+ * met exactly, except on an edge, where rounding can take a ray to either side.
+ *
+ * Covers the base: e8e902d8 added the hit view and moya --hits. Checked by widening the camera's
+ * field of view by a tenth, by making a sphere a hundredth larger, and by making every depth a
+ * thousandth longer, each of which fails this case.
+ **/
 BOOST_AUTO_TEST_CASE(moya_scenehits_every_scene_traces_as_committed_test) {
     v3d::moya::device::CpuDevice device;
     unsigned int scenes = 0;
@@ -222,10 +228,16 @@ BOOST_AUTO_TEST_CASE(moya_scenehits_every_scene_traces_as_committed_test) {
     BOOST_TEST(scenes == 22U);
 }
 
-// each scene that holds still and is not displaced lies where the ray hider finds it: at every
-// pixel inside one surface, the hit view's depth is the ray hider's depth plane. The ray hider
-// takes one sample at each pixel's centre, as the hit view does, unless the scene names its own
-// sampling, so a curved surface's depth is not averaged across a pixel
+/**
+ * Each scene that holds still and is not displaced lies where the ray hider finds it: at every
+ * pixel inside one surface, the hit view's depth is the ray hider's depth plane. The ray hider
+ * takes one sample at each pixel's centre, as the hit view does, unless the scene names its own
+ * sampling, so a curved surface's depth is not averaged across a pixel.
+ *
+ * Covers the base: e8e902d8 added the hit view and moya --hits. Checked by widening the camera's
+ * field of view by a tenth, by making a sphere a hundredth larger, and by making every depth a
+ * thousandth longer, each of which fails this case.
+ **/
 BOOST_AUTO_TEST_CASE(moya_scenehits_depth_matches_the_ray_hiders_test) {
     v3d::moya::device::CpuDevice device;
     unsigned int scenes = 0;
