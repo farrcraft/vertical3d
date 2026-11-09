@@ -190,9 +190,11 @@ void SceneClient::worldBegin() {
 }
 
 void SceneClient::worldEnd() {
-    // a light that lit every instance names none, and any other names those it lit
+    // a light that lit every instance keeps includeRoot, and any other names those it lit, which
+    // may be none
     for (const auto & [handle, light] : lights_) {
         if (light.lit.size() != instances_.size()) {
+            scene_.set(light.light, "includeRoot", scene::Value::integer(0));
             scene_.set(light.light, "instances", scene::Value::handles(light.lit));
         }
     }

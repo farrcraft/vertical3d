@@ -265,8 +265,9 @@ Kind material() {
 }
 
 /**
- * What every light holds: its placement, its colour and strength, and the instances it lights, or
- * all of them when it names none.
+ * What every light holds: its placement, its colour and strength, and what it lights. As in
+ * UsdLux's light linking, it lights every instance while includeRoot is 1, and otherwise only the
+ * instances it names, which may be none.
  **/
 std::vector<Declaration> light() {
     return {
@@ -275,6 +276,7 @@ std::vector<Declaration> light() {
         Declaration { .name = "intensity", .type = Type::Float, .fallback = Value::number(1.0F) },
         Declaration { .name = "exposure", .type = Type::Float, .fallback = Value::number(0.0F) },
         Declaration { .name = "normalize", .type = Type::Integer, .fallback = Value::integer(0) },
+        Declaration { .name = "includeRoot", .type = Type::Integer, .fallback = Value::integer(1) },
         Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
 }
 

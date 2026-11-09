@@ -80,8 +80,10 @@ then derived as RI derives it.
   built from the scene.
 - **The lights** are UsdLux's, with its parameters and defaults: `rectLight`, `diskLight`,
   `sphereLight`, `cylinderLight`, `meshLight`, `distantLight` and `domeLight`. Each holds a
-  `transform` over the shutter, `colour`, `intensity`, `exposure` and `normalize`, and the
-  `instances` it lights, all of them when it names none. A light with an area holds `coneAngle`
+  `transform` over the shutter, `colour`, `intensity`, `exposure` and `normalize`, and what it
+  lights. As in UsdLux's light linking, a light lights every instance while its `includeRoot` is
+  1, the fallback. When it is 0, the light lights only the `instances` it names, which may be
+  none. A light with an area holds `coneAngle`
   and `coneSoftness`. A rect light holds its `width`, `height` and `texture`, a disk or sphere
   light its `radius`, and a cylinder light its `radius` and `length`. A distant light holds its
   `angle` in degrees, and a dome light its `texture`. A mesh light takes its shape from the

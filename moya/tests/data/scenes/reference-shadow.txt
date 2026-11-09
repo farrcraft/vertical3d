@@ -13,6 +13,7 @@ distantLight "light 1"
     angle float = 0
     colour colour = (1, 1, 1)
     exposure float = 0
+    includeRoot integer = 1
     instances handle[0] =
     intensity float = 0.9
     normalize integer = 0
@@ -79,6 +80,7 @@ sphereLight "light 2"
     coneAngle float = 90
     coneSoftness float = 0
     exposure float = 0
+    includeRoot integer = 1
     instances handle[0] =
     intensity float = 1.2
     normalize integer = 0

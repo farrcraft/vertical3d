@@ -167,9 +167,25 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_names_the_instances_it_lit_test) {
     BOOST_TEST(read.heard("makes no light"));
     BOOST_TEST(!read.heard("not made"));
 
-    // a light on for every instance names none
+    BOOST_TEST((read.value("sphereLight", "light 1", "includeRoot") == scene::Value::integer(0)));
+    BOOST_TEST((read.value("distantLight", "light 2", "includeRoot") == scene::Value::integer(0)));
+
+    // a light on for every instance keeps includeRoot and names none
     const Read all(world("LightSource \"pointlight\" 1\nSphere 1 -1 1 360\nSphere 2 -2 2 360\n"));
+    BOOST_TEST((all.value("sphereLight", "light 1", "includeRoot") == scene::Value::integer(1)));
     BOOST_TEST((all.value("sphereLight", "light 1", "instances") == scene::Value::handles({})));
+}
+
+// a light turned off before any geometry, or declared in an attribute block that closes before
+// any, lights none of the instances rather than all of them
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_off_for_every_instance_lights_none_test) {
+    const Read off(world("LightSource \"pointlight\" 1\nIlluminate 1 0\nSphere 1 -1 1 360\n"));
+    BOOST_TEST((off.value("sphereLight", "light 1", "includeRoot") == scene::Value::integer(0)));
+    BOOST_TEST((off.value("sphereLight", "light 1", "instances") == scene::Value::handles({})));
+
+    const Read closed(world("AttributeBegin\nLightSource \"pointlight\" 1\nAttributeEnd\nSphere 1 -1 1 360\n"));
+    BOOST_TEST((closed.value("sphereLight", "light 1", "includeRoot") == scene::Value::integer(0)));
+    BOOST_TEST((closed.value("sphereLight", "light 1", "instances") == scene::Value::handles({})));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_points_from_from_to_to_test) {

@@ -147,7 +147,9 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   which has no `to`, looks down z from its `from`. Each holds its
   `intensity` and `lightcolor`. Another light shader is logged and makes no light, and
   `Illuminate` passes over its handle.
-- **A light names the instances made while it was on**, or none when it lit every instance.
+- **A light that lit every instance keeps `includeRoot`.** Any other sets `includeRoot` to 0 and
+  names the instances made while it was on, so a light that was off for every instance lights
+  none.
   `Illuminate` turns a light on and off in the attribute state, and `AttributeEnd` restores it.
 - **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
   that geometry's prototype as its shape, and its `intensity` and `lightcolor`.

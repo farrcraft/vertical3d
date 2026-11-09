@@ -13,6 +13,7 @@ distantLight "light 1"
     angle float = 0
     colour colour = (1, 1, 1)
     exposure float = 0
+    includeRoot integer = 1
     instances handle[0] =
     intensity float = 1
     normalize integer = 0
