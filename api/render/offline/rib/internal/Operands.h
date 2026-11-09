@@ -85,7 +85,8 @@ class Operands final {
      *
      * @param vertices how many vertices the primitive has, or 0 when the count is the
      *        length of "P" and is not known until the list has been read. With 0, an
-     *        unbracketed varying or vertex parameter has no known length and ends the parse.
+     *        unbracketed varying, vertex or facevarying parameter has no known length,
+     *        and ends the parse.
      **/
     bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
 

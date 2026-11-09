@@ -8,8 +8,8 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/Launch.h>
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -31,6 +31,27 @@ struct Counts {
 struct Hashes {
     v3d::moya::kernel::Array<std::uint32_t> hashes;
     std::uint32_t width;
+};
+
+/**
+ * A buffer one byte past the start of an aligned one, as a device that broke the alignment would
+ * give.
+ **/
+class Misaligned final : public v3d::moya::device::Buffer {
+ public:
+    explicit Misaligned(boost::shared_ptr<v3d::moya::device::Buffer> aligned) : aligned_(std::move(aligned)) {
+    }
+
+    std::size_t bytes() const override {
+        return aligned_->bytes() - 1;
+    }
+
+    void * address() const override {
+        return static_cast<std::byte *>(aligned_->address()) + 1;
+    }
+
+ private:
+    boost::shared_ptr<v3d::moya::device::Buffer> aligned_;
 };
 
 void count(const Counts & params, v3d::moya::kernel::Item item) {
@@ -134,6 +155,19 @@ BOOST_AUTO_TEST_CASE(moya_device_every_buffer_is_aligned_for_kernel_code_test) {
         }
     }
     BOOST_TEST(misaligned == 0U);
+}
+
+/**
+ * A view of a buffer whose address is not aligned for kernel code is refused, rather than handing
+ * kernel code a misaligned array.
+ *
+ * Covers the base: fcbca238 added the check to device::view(). Checked by removing its throw,
+ * which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_device_a_view_of_a_misaligned_buffer_is_refused_test) {
+    CpuDevice device;
+    const Misaligned buffer(device.allocate((sizeof(float) * 4) + 1));
+    BOOST_CHECK_THROW(v3d::moya::device::view<float>(buffer), std::invalid_argument);
 }
 
 };  // namespace

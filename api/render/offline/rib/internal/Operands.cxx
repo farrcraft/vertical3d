@@ -192,7 +192,7 @@ bool Operands::values(Lexer * lexer, const Declaration & declaration, unsigned i
     // what follows belongs to it
     const unsigned int elements = declaration.elements(vertices);
     if (elements == 0) {
-        return fail("parameter '" + name + "' is varying or vertex and carries no array, so its length is unknowable",
+        return fail("parameter '" + name + "' is varying, vertex or facevarying and carries no array, so its length is unknowable",
             lexer->peek());
     }
     const unsigned int wanted = elements * declaration.count();

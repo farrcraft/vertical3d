@@ -37,6 +37,7 @@
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <optional>
@@ -265,6 +266,8 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     Attributes current_;
     std::vector<Attributes> attributes_;
+    // how deep the attribute stack was at WorldBegin, which WorldEnd unwinds it to
+    std::size_t worldAttributes_ { 0 };
     std::vector<internal::Sampled> transformations_;
 
     bool world_ { false };

@@ -55,8 +55,8 @@ before its spectrum is found.
     uses.
 - **Costs**:
   - An RGB input in another space is converted into ACEScg before its spectrum is found. The
-    film holds ACEScg, and a picture in another working space is converted into it once, when
-    the picture is written or displayed.
+    film holds ACEScg, which is converted into another working space once, when the picture is
+    written or displayed.
   - A colour outside ACEScg's gamut gets the nearest spectrum the table holds, not its own. Some
     camera gamuts, such as ARRI Wide Gamut and S-Gamut3, reach beyond it.
   - A RIB scene's colours are read as ACEScg when they name no space, so a scene made for moya's

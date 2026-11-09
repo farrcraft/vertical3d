@@ -199,10 +199,17 @@ void SceneClient::worldBegin() {
     spaces_["camera"] = camera;
     current_.lights.clear();
     current_.material = boost::make_shared<scene::Handle>();
+    worldAttributes_ = attributes_.size();
     world_ = true;
 }
 
 void SceneClient::worldEnd() {
+    // a block the world opened ends with it, so no object of this world reaches the next
+    if (attributes_.size() > worldAttributes_) {
+        warnings_.once("open at WorldEnd", "an AttributeBegin or ObjectBegin left open at WorldEnd ends there");
+        current_ = attributes_[worldAttributes_];
+        attributes_.erase(attributes_.begin() + static_cast<std::ptrdiff_t>(worldAttributes_), attributes_.end());
+    }
     lights_.finish();
     world_ = false;
     scene_.commit();

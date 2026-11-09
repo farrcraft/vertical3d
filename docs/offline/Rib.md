@@ -84,7 +84,7 @@ the reader and the handler.
   holds depends on the basis's step, which the reader does not track.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
-  unbracketed varying or vertex parameter ends the parse instead of being guessed at.
+  unbracketed varying, vertex or facevarying parameter ends the parse instead of being guessed at.
 - **A light's or an object's handle may be a number or a string.** RIB 3.03 writes a number and
   later RIB writes a string.
 - **An object holds geometry alone.** `ObjectBegin` to `ObjectEnd` marks the geometry an
@@ -179,6 +179,9 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   is logged.
 - **A new world replaces the one before it.** `WorldBegin` removes every object the world before
   it made, and keeps the options, the camera and the outputs.
+- **A block the world opened ends with it.** An `AttributeBegin` or `ObjectBegin` still open at
+  `WorldEnd` is closed there, with a warning, so the next world's geometry names no object the
+  new world removed.
 - **The client's jobs are classes of their own**, in `moya/libmoya/ri/internal`. `Shapes`
   turns each primitive request into a scene kind and its parameters. `Deforming` takes a
   deforming primitive's later poses. `Lights` makes the lights and records what each lit.

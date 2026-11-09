@@ -75,7 +75,7 @@ class Read final {
         });
         v3d::render::offline::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(*stream, &client));
-        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by" }) {
+        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by", "left open" }) {
             if (heard.said(text)) {
                 heard_ += std::string(text) + "\n";
             }
@@ -91,6 +91,19 @@ class Read final {
 /** A world around some requests, with RI's camera. **/
 std::string world(const std::string & requests) {
     return "WorldBegin\n" + requests + "WorldEnd\n";
+}
+
+// an object or an attribute block left open at WorldEnd ends there, so the next world's geometry
+// names none of the objects the new world removed
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_block_left_open_ends_with_its_world_test) {
+    const Read object(std::string("WorldBegin\nObjectBegin 1\nWorldEnd\nWorldBegin\nSphere 1 -1 1 360\nWorldEnd\n"));
+    BOOST_TEST((object.value("instance", "Sphere 1", "group") == scene::Value::handle({})));
+    BOOST_TEST(object.heard("left open"));
+
+    const Read block(std::string("WorldBegin\nSphere 1 -1 1 360\nAttributeBegin\nWorldEnd\nWorldBegin\nAttributeEnd\nSphere 2 -2 2 360\nWorldEnd\n"));
+    // names start again in each world, so the second world's sphere is its first
+    BOOST_TEST(block.scene().contains(block.value("instance", "Sphere 1", "material").handleArray().front()));
+    BOOST_TEST(block.heard("left open"));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_primitive_is_a_prototype_and_an_instance_test) {

@@ -30,7 +30,7 @@ struct Run {
  **/
 Run moya(const std::string & arguments) {
     const boost::filesystem::path printed = boost::filesystem::temp_directory_path() / "v3d_moya_command_line.txt";
-    std::string command = std::string(V3D_MOYA_EXECUTABLE) + " " + arguments + " > \"" + printed.string() + "\" 2>&1";
+    std::string command = "\"" + std::string(V3D_MOYA_EXECUTABLE) + "\" " + arguments + " > \"" + printed.string() + "\" 2>&1";
 #ifdef _WIN32
     // cmd.exe drops the first and last quote of a command that starts with one
     command = "\"" + command + "\"";

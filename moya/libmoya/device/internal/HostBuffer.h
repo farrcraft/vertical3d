@@ -40,7 +40,8 @@ class HostBuffer final : public Buffer {
 
  private:
     std::size_t bytes_;
-    // kernel code writes through a buffer that host code holds as const
+    // address() hands kernel code a pointer it writes through, though host code holds the buffer
+    // as const
     std::byte * memory_;
 };
 

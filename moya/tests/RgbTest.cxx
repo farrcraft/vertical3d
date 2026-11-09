@@ -16,6 +16,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <limits>
 
 #include <boost/test/unit_test.hpp>
 
@@ -106,6 +107,28 @@ BOOST_AUTO_TEST_CASE(moya_rgb_a_grey_is_a_constant_spectrum_test) {
         for (const float lambda : { 360.0F, 550.0F, 830.0F }) {
             BOOST_TEST(sigmoid(lambda) == grey, boost::test_tools::tolerance(0.00001F));
         }
+    }
+}
+
+/**
+ * A sigmoid of an infinite argument is exactly zero or one, so black and white are exactly zero
+ * and one at every wavelength, with no tolerance.
+ *
+ * Covers the base: 49d103a4 added RgbSigmoid and its infinite argument. Checked by removing the
+ * infinite branch from RgbSigmoid's operator(), which gives NaN and fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_rgb_black_and_white_are_exact_test) {
+    const float infinity = std::numeric_limits<float>::infinity();
+    const spectrum::RgbSigmoid up { .c2 = infinity };
+    const spectrum::RgbSigmoid down { .c2 = -infinity };
+    const spectrum::RgbTable table = v3d::moya::colour::acescgTable();
+    const spectrum::RgbSigmoid black = table(glm::vec3(0.0F));
+    const spectrum::RgbSigmoid white = table(glm::vec3(1.0F));
+    for (const float lambda : { 360.0F, 550.0F, 830.0F }) {
+        BOOST_TEST(up(lambda) == 1.0F);
+        BOOST_TEST(down(lambda) == 0.0F);
+        BOOST_TEST(black(lambda) == 0.0F);
+        BOOST_TEST(white(lambda) == 1.0F);
     }
 }
 

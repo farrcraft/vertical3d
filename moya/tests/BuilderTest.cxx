@@ -222,10 +222,9 @@ BOOST_AUTO_TEST_CASE(moya_builder_a_budget_that_is_not_a_count_is_refused_test) 
     }
 }
 
-// nine boxes that move together along x split by time only while that pays. A path splits so at
-// most eight times, and its node is then halved in order, so each reference is held at most 256
-// times. The build runs on a thread of its own, so a build that never ends fails the case rather
-// than hanging the suite
+// nine boxes that move together along x keep one box at every range, so no split by time pays,
+// and they are halved in order, each held once. The build runs on a thread of its own, so a
+// build that never ends fails the case rather than hanging the suite
 BOOST_AUTO_TEST_CASE(moya_builder_primitives_moving_together_build_a_bounded_hierarchy_test) {
     std::promise<std::size_t> built;
     std::future<std::size_t> references = built.get_future();
@@ -244,7 +243,36 @@ BOOST_AUTO_TEST_CASE(moya_builder_primitives_moving_together_build_a_bounded_hie
         }
     }).detach();
     BOOST_TEST_REQUIRE((references.wait_for(std::chrono::seconds(30)) == std::future_status::ready));
-    BOOST_TEST(references.get() <= 9U * 256U);
+    BOOST_TEST(references.get() == 9U);
+}
+
+/**
+ * Nine boxes whose bounds shrink with the range split by time on every path, since each split
+ * pays, until a path has split eight times. Each is then held 256 times and no more. The build
+ * runs on a thread of its own, so a build that never ends fails the case rather than hanging the
+ * suite.
+ *
+ * Covers the base: 4773f4f3 added the limit of eight to the temporal builder. Checked by raising
+ * kHalvingsMost to 1000, which never ends the build and fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(moya_builder_splits_by_time_stop_after_eight_on_a_path_test) {
+    std::promise<std::size_t> built;
+    std::future<std::size_t> references = built.get_future();
+    std::thread([built = std::move(built)]() mutable {
+        try {
+            CpuDevice device;
+            const accel::Sweep sweep = [](std::uint32_t, float begin, float end) {
+                const float side = 100.0F * (end - begin);
+                const accel::Box box { .lower = { 0.0F, 0.0F, 0.0F }, .upper = { side, side, 1.0F } };
+                return accel::LinearBox { .start = box, .end = box };
+            };
+            built.set_value(accel::buildMoving(device, 9, sweep, 0.0F, 1.0F).references.size());
+        } catch (...) {
+            built.set_exception(std::current_exception());
+        }
+    }).detach();
+    BOOST_TEST_REQUIRE((references.wait_for(std::chrono::seconds(30)) == std::future_status::ready));
+    BOOST_TEST(references.get() == 9U * 256U);
 }
 
 /**

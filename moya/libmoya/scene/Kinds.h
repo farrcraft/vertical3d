@@ -39,8 +39,8 @@ namespace v3d::moya::scene {
  *   for its surface and for its displacement.
  * - **rectLight**, **diskLight**, **sphereLight**, **cylinderLight**, **meshLight**,
  *   **distantLight** and **domeLight**: UsdLux's lights, with UsdLux's parameters and defaults.
- *   Each names the instances it lights, all of them when it names none. A mesh light takes its
- *   shape from a geometry prototype.
+ *   Each lights every instance while its includeRoot is 1, and otherwise only the instances it
+ *   names, which may be none. A mesh light takes its shape from a geometry prototype.
  *
  * Every default is RI's where RI names one. A parameter whose RI default depends on another, as
  * the screen window depends on the frame's aspect, is empty or zero until a client sets it, and is
