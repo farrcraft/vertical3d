@@ -58,6 +58,9 @@ constexpr float kLightRadius = 0.5F;
 constexpr float kSunAngle = 0.53F;
 constexpr float kOpenCone = 90.0F;
 
+/** UsdLux's colour temperature until a client sets one, in kelvin. **/
+constexpr float kWhiteTemperature = 6500.0F;
+
 Kind camera() {
     return Kind { .name = "camera",
         .parameters = {
@@ -286,9 +289,10 @@ Kind material() {
 }
 
 /**
- * What every light holds: its placement, its colour and strength, and what it lights. As in
- * UsdLux's light linking, it lights every instance while includeRoot is 1, and otherwise only the
- * instances it names, which may be none.
+ * What every light holds: its placement, its colour and strength, its colour temperature in
+ * kelvin while enableColorTemperature is 1, and what it lights. As in UsdLux's light linking, it
+ * lights every instance while includeRoot is 1, and otherwise only the instances it names, which
+ * may be none.
  **/
 std::vector<Declaration> light() {
     return {
@@ -297,13 +301,16 @@ std::vector<Declaration> light() {
         Declaration { .name = "intensity", .type = Type::Float, .fallback = Value::number(1.0F) },
         Declaration { .name = "exposure", .type = Type::Float, .fallback = Value::number(0.0F) },
         Declaration { .name = "normalize", .type = Type::Integer, .fallback = Value::integer(0) },
+        Declaration { .name = "enableColorTemperature", .type = Type::Integer, .fallback = Value::integer(0) },
+        Declaration { .name = "colorTemperature", .type = Type::Float, .fallback = Value::number(kWhiteTemperature) },
         Declaration { .name = "includeRoot", .type = Type::Integer, .fallback = Value::integer(1) },
         Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
 }
 
-/** A light with an area, whose emission a cone may shape. **/
+/** A light with an area, which a cone may shape. Camera rays see it while camera is 1. **/
 std::vector<Declaration> areaLight(const std::vector<Declaration> & own) {
     std::vector<Declaration> parameters = light();
+    parameters.push_back(Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(0) });
     parameters.push_back(Declaration { .name = "coneAngle", .type = Type::Float, .fallback = Value::number(kOpenCone) });
     parameters.push_back(Declaration { .name = "coneSoftness", .type = Type::Float, .fallback = Value::number(0.0F) });
     parameters.insert(parameters.end(), own.begin(), own.end());

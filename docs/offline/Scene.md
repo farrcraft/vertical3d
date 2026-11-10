@@ -88,13 +88,15 @@ then derived as RI derives it.
 - **The lights** are UsdLux's, with its parameters and defaults: `rectLight`, `diskLight`,
   `sphereLight`, `cylinderLight`, `meshLight`, `distantLight` and `domeLight`. Each holds a
   `transform` over the shutter, `colour`, `intensity`, `exposure` and `normalize`, and what it
-  lights. As in UsdLux's light linking, a light lights every instance while its `includeRoot` is
-  1, the fallback. When it is 0, the light lights only the `instances` it names, which may be
-  none. A light with an area holds `coneAngle`
-  and `coneSoftness`. A rect light holds its `width`, `height` and `texture`, a disk or sphere
-  light its `radius`, and a cylinder light its `radius` and `length`. A distant light holds its
-  `angle` in degrees, and a dome light its `texture`. A mesh light takes its shape from the
-  geometry prototype its `geometry` names.
+  lights. Each also holds a colour temperature in kelvin, `colorTemperature`, which applies while
+  `enableColorTemperature` is 1. As in UsdLux's light linking, a light lights every instance
+  while its `includeRoot` is 1, the fallback. When it is 0, the light lights only the `instances`
+  it names, which may be none. A light with an area holds `coneAngle` and `coneSoftness`. It also
+  holds `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do
+  not. A rect light holds its `width`, `height` and `texture`, a disk or sphere light its
+  `radius`, and a cylinder light its `radius` and `length`. A distant light holds its `angle` in
+  degrees, and a dome light its `texture`. A mesh light takes its shape from the geometry
+  prototype its `geometry` names.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
 

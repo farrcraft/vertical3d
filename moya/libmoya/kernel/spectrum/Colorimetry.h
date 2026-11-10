@@ -37,6 +37,9 @@ inline constexpr float kNormal = 560.0F;
 /** The power illuminant A's definition raises a wavelength ratio to. **/
 inline constexpr float kPowerA = 5.0F;
 
+/** The second radiation constant, hc / k, in nanometre kelvins. **/
+inline constexpr float kRadiation = 1.438776877e7F;
+
 /** D65's colour in ACEScg: its XYZ, summed at 1 nm through the observer, over kYIntegral. **/
 MOYA_KERNEL_DATA inline constexpr float kD65Acescg[3] = { 96.6664799F, 99.1653577F, 106.707226F };
 
@@ -84,6 +87,18 @@ MOYA_KERNEL inline float illuminantA(float lambda) {
     const float ratio = std::pow(kNormal / lambda, kPowerA);
     const float normal = std::expm1(kRadiationA / (kTemperatureA * kNormal));
     return 100.0F * ratio * normal / std::expm1(kRadiationA / (kTemperatureA * lambda));
+}
+
+/**
+ * A Planckian radiator's relative power at a wavelength in nanometres and a temperature in
+ * kelvin, one at kNormal. Zero at a wavelength or temperature of zero or less.
+ **/
+MOYA_KERNEL inline float planck(float lambda, float temperature) {
+    if (!(lambda > 0.0F) || !(temperature > 0.0F)) {
+        return 0.0F;
+    }
+    const float ratio = std::pow(kNormal / lambda, kPowerA);
+    return ratio * std::expm1(kRadiation / (temperature * kNormal)) / std::expm1(kRadiation / (temperature * lambda));
 }
 
 /** D65 at the wavelengths a path carries, or its ACEScg colour in an RGB build. **/

@@ -8,6 +8,7 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
+#include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/surface/Material.h>
@@ -84,6 +85,9 @@ struct Prototypes {
     std::vector<Instance> instances;
     Group world;
 
+    /** Every rect, disk, sphere and cylinder light, in the order of their indices. **/
+    std::vector<ShapedLight> lights;
+
     /** The times the camera's shutter opens and closes. A time is held between them. **/
     float open { 0.0F };
     float close { 0.0F };
@@ -117,6 +121,13 @@ struct Prototypes {
  * too. Curves that give widths for neither each vertex nor each varying value take their constant
  * width, and are reported. An instance is visible to camera,
  * shadow and indirect rays as its parameters of those names say. The shutter is the camera's.
+ *
+ * Each rect, disk, sphere and cylinder light places its shape through an instance in the world,
+ * after every other, whose index in the scene is the light's. Its shape is UsdLux's, in the
+ * light's own space. A rect is its width along x and height along y, facing -z. A disk is its
+ * radius, facing -z. A sphere is its radius, and a cylinder its radius and length along x, with no
+ * caps. Each is visible to indirect rays, to camera rays only while its camera parameter is 1,
+ * and never to shadow rays.
  **/
 Prototypes gather(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger);
 

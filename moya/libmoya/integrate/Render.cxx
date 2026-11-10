@@ -22,6 +22,7 @@
 #include <moya/libmoya/kernel/integrate/Paths.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
+#include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -84,6 +85,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const geometry::Prototypes prototypes = geometry::gather(scene, logger);
     const view::Tracing tracing(device, prototypes, accel::assemble(device, prototypes));
     const geometry::Surfaces surfaces(device, prototypes, config);
+    const light::Lights lights(device, scene, prototypes, config);
 
     render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
     render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);
@@ -103,6 +105,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .sampler = sampler,
                 .traversal = tracing.hierarchy(),
                 .surfaces = surfaces.view(),
+                .lights = lights.view(),
                 .table = colour::acescgTable(),
                 .settings = settings,
                 .first = first,

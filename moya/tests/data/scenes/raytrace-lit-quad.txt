@@ -11,7 +11,9 @@ camera "camera"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 -1 1]
 distantLight "light 1"
     angle float = 0
+    colorTemperature float = 6500
     colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
     exposure float = 0
     includeRoot integer = 1
     instances handle[0] =

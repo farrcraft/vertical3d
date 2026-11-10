@@ -131,7 +131,7 @@ among the options before the record is drafted.
 | [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | done |
 | [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | done |
 | [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | done |
-| [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | open |
+| [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | done |
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | open |
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | open |
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | open |
@@ -493,6 +493,34 @@ covers, since a convex surface never meets itself. A depth limit of zero shows t
 and leaves the sphere black. A render on one thread and on eight gives the same bytes.
 
 ### Step 10 — Lights with a shape
+
+**Done.** `geometry::gather()` places each rect, disk, sphere and cylinder light's shape through
+an instance in the world, after every other, with the light's index in the scene. A disk, sphere
+or cylinder is a quadric, and a rect is two triangles. `light::Lights` holds what each emits, and a
+path that meets one gathers it and ends. `PathParams` gains the lights, so the CPU library's table
+is now version 6. Each case was run against broken code as well, one break at a time. Radiance
+not divided by the area failed both normalize cases, and a sphere's area 5% off failed the
+second. A cylinder left along z, or its keys left unturned, failed the cylinder's cases. A light
+seen by every camera ray failed the closed form and the visibility case, and a rect lit from
+behind failed the visibility case. A cone ignored, or its edge moved, failed the cone's cases. A
+radiator left at one at 560 nm failed the temperature's luminance at 1000 K, and a light's shape
+not built again failed the rebuild. Five things the list below did not settle:
+
+* **A light's shape is hidden from shadow rays**, as Arnold's and Cycles' are, so it casts no
+  shadow from another light. Step 11's shadow ray towards a light then needs no end short of the
+  shape.
+* **A colour temperature tints a radiator of a luminance of one by the colour.** UsdLux names a
+  colour for each temperature, white at 6500 K, which a spectral renderer has no use for. The
+  radiator is Planck's itself, so 6504 K is near D65 and not on it.
+* **A disk light emits from one face too**, the one its -z axis points to, as UsdLux says.
+* **A cone of 90 degrees with no softness shapes nothing**, which is UsdLux's fallback. Taken
+  literally, UsdLux's cone would cut a sphere light's back half at its fallback.
+* **A sphere's and a cylinder's area in the world are summed over their normals**, since an
+  ellipsoid's has no closed form. The sum is exact under a turn and a scale of the same size on
+  every axis.
+
+[Lights.md](../offline/Lights.md) states the rules, and [Scene.md](../offline/Scene.md) names the
+lights' new `camera`, `enableColorTemperature` and `colorTemperature`.
 
 * **Rect, disk, sphere and cylinder lights** as the record of step 2 decides, met by the paths a
   BSDF samples.

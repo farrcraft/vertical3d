@@ -214,6 +214,20 @@ struct Surfaces {
         return out;
     }
 
+    /**
+     * The transformation into the world, at a time, of an instance in the world by its index in
+     * the scene. False for an instance the surfaces do not hold.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the instance, then the time
+    MOYA_KERNEL bool placement(std::uint32_t id, float time, glm::mat4 & toWorld) const {
+        if (id >= byId.size || byId[id] == geometry::kNoPrimitive) {
+            return false;
+        }
+        const Instance & instance = instances[byId[id]];
+        toWorld = instance.keyCount > 1U ? geometry::transformAt(&keys[instance.keys], instance.keyCount, time) : instance.transform;
+        return true;
+    }
+
  private:
     /**
      * The transformation from the geometry a hit's chain places into the world at a time, the

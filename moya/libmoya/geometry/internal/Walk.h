@@ -85,6 +85,18 @@ class Walk final {
     /** Gathers an instance a group holds, and gives its index, or nothing when it is left out. **/
     std::optional<std::uint32_t> instance(const scene::Handle & handle, const scene::Handle & holder);
 
+    /**
+     * Places each light with a shape through an instance in the world, after every other, as
+     * gather() says.
+     **/
+    void lights();
+
+    /**
+     * The index among the geometries of a light's shape, in the light's own space, made once or
+     * placed from the cache.
+     **/
+    std::uint32_t lightShape(const scene::Handle & handle);
+
     /** The index of a group among the groups, gathered once. **/
     std::uint32_t group(const scene::Handle & handle);
 

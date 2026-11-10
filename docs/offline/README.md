@@ -210,6 +210,8 @@ changes a picture the hiders make.
 - **The integrator builds paths in stages** over a path state declared once, with depth limits
   and Russian roulette, and lights a scene by an environment. `moya --paths` renders a RIB
   file through it. [Integrator.md](Integrator.md)
+- **A light with a shape is an instance in the world's hierarchy**, which a path meets as it meets
+  geometry, and emits UsdLux's radiance. [Lights.md](Lights.md)
 - **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
   [Traversal.md](Traversal.md#speed)
 

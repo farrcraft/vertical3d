@@ -3,7 +3,8 @@
 This page is for anyone changing how moya's new core builds paths and gathers light. The kernel
 side is in `moya/libmoya/kernel/integrate/`, in the namespace `v3d::moya::kernel::integrate`. The
 host side is `integrate::render()`, in `moya/libmoya/integrate/`. [Surfaces.md](Surfaces.md)
-covers the shading point and the BSDF a path scatters by.
+covers the shading point and the BSDF a path scatters by, and [Lights.md](Lights.md) the lights a
+path meets.
 
 ## The path state
 
@@ -43,7 +44,9 @@ pixel in index order.
   weight, and its point on the lens, its time and its wavelengths. Its ray is the camera's.
 - **Intersect** traces the ray through the traversal the launch was built with.
 - **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers the
-  environment: the options' colour as an illuminant, times its throughput.
+  environment: the options' colour as an illuminant, times its throughput. A path whose ray meets
+  a light's shape gathers the radiance the light sends back along it, times its throughput, and
+  ends there.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
   the BSDF's value and the cosine to the shading normal, over the density. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
@@ -51,8 +54,9 @@ pixel in index order.
   indirect ray.
 - **Accumulate** adds the light the path gathered to its pixel, with the filter's weight.
 
-A path ends when it leaves the scene, at a depth limit, when the BSDF refuses a sample, or by
-Russian roulette.
+A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
+refuses a sample, or by Russian roulette. A path finds a light only by the direction its BSDF
+draws.
 
 ## Depth limits and Russian roulette
 
@@ -80,6 +84,7 @@ CPU, through the hierarchy, and gives the film's snapshot.
   point, since only those libraries define the CPU's traversal.
 - **Each pixel takes the samples the options name**, rounded up to a power of two, in passes of
   at most `kSamplesPerPass`. The options' pixel filter and frame are used.
+- **The scene's lights with a shape** are lit, through `light::Lights`.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
 - **`moya --paths`** reads a RIB file through the scene client and writes the picture as an EXR

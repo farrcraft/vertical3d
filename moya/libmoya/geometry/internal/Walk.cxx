@@ -13,12 +13,14 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
+#include <moya/libmoya/geometry/internal/LightShapes.h>
 #include <moya/libmoya/geometry/internal/Piece.h>
 #include <moya/libmoya/geometry/internal/Primvars.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
 #include <moya/libmoya/geometry/Segments.h>
+#include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/geometry/subdivision/Surface.h>
 #include <moya/libmoya/geometry/subdivision/Tessellation.h>
 #include <moya/libmoya/geometry/subdivision/Topology.h>
@@ -193,6 +195,7 @@ Prototypes Walk::take() {
     prototypes_.open = camera.open;
     prototypes_.close = camera.close;
     prototypes_.world = members(scene::Handle {});
+    lights();
     deepen(prototypes_.world, 0);
     cutSurfaces();
     if (cache_ != nullptr) {
@@ -282,6 +285,38 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
     const auto index = static_cast<std::uint32_t>(prototypes_.instances.size());
     prototypes_.instances.push_back(out);
     handles_.push_back(handle);
+    return index;
+}
+
+void Walk::lights() {
+    for (const scene::Handle & handle : shapedLights(scene_)) {
+        Instance out = lightInstance(scene_, handle);
+        out.prototype = lightShape(handle);
+        const auto index = static_cast<std::uint32_t>(prototypes_.instances.size());
+        prototypes_.instances.push_back(out);
+        handles_.push_back(handle);
+        prototypes_.world.instances.push_back(index);
+        prototypes_.lights.push_back(ShapedLight { .handle = handle, .instance = index });
+    }
+}
+
+std::uint32_t Walk::lightShape(const scene::Handle & handle) {
+    placed_.insert(handle.index);
+    if (cache_ != nullptr) {
+        const auto held = cache_->pieces_.find(handle.index);
+        if (held != cache_->pieces_.end()) {
+            const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+            prototypes_.geometries.push_back(place(held->second));
+            return index;
+        }
+    }
+    const Mark mark = marked();
+    const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
+    prototypes_.geometries.push_back(internal::lightShape(scene_, handle, prototypes_));
+    if (cache_ != nullptr) {
+        cache_->pieces_.insert_or_assign(handle.index, pieceOf(index, mark));
+        cache_->made_.insert(handle.index);
+    }
     return index;
 }
 

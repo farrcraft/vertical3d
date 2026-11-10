@@ -21,6 +21,8 @@
 #include <moya/libmoya/kernel/integrate/PathState.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
+#include <moya/libmoya/kernel/light/Light.h>
+#include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
@@ -42,7 +44,8 @@ namespace v3d::moya::kernel::integrate {
 
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
- * sampler, a traversal, the scene's surfaces, the RGB-to-spectrum table and the settings. A pass
+ * sampler, a traversal, the scene's surfaces and lights, the RGB-to-spectrum table and the
+ * settings. A pass
  * adds the samples from first, count of them, to each pixel.
  **/
 template <geometry::Traversal T>
@@ -53,6 +56,7 @@ struct Paths {
     sample::ZSobol sampler;
     T traversal;
     surface::Surfaces surfaces;
+    light::Lights lights;
     spectrum::RgbTable table;
     Settings settings;
     std::uint32_t first { 0 };
@@ -153,7 +157,8 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
 
 /**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
- * accumulate stages run back to back. A path that leaves the scene gathers the environment.
+ * accumulate stages run back to back. A path that leaves the scene gathers the environment, and
+ * one that meets a light's shape gathers what the light emits towards it and ends there.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
@@ -163,6 +168,12 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
         if (!hit.found()) {
             const spectrum::SampledSpectrum environment = spectrum::illuminant(paths.table, paths.settings.environment, MOYA_PATH(state, wavelengths));
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * environment;
+            return;
+        }
+        const light::Light * met = paths.lights.at(hit);
+        if (met != nullptr) {
+            MOYA_PATH(state, radiance) +=
+                MOYA_PATH(state, throughput) * light::Lights::emitted(*met, paths.surfaces, ray, hit.time, paths.table, MOYA_PATH(state, wavelengths));
             return;
         }
         const surface::ShadingPoint point = paths.surfaces.at(hit, ray);

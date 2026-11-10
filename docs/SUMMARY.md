@@ -120,6 +120,7 @@
     - [Geometry](offline/Geometry.md)
     - [Surfaces](offline/Surfaces.md)
     - [The integrator](offline/Integrator.md)
+    - [Lights](offline/Lights.md)
     - [Output](offline/Output.md)
     - [Colour management](offline/Colour.md)
 
