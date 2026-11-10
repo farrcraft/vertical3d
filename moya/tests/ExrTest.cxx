@@ -83,7 +83,7 @@ class Sandbox {
 film::Snapshot snapshot() {
     film::Snapshot out { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 7,
         .channels = { { .name = "depth", .components = 1 }, { .name = "albedo", .components = 3 } }, .offsets = { 3, 4 },
-        .values = {} };
+        .values = {}, .errors = {} };
     for (std::size_t i = 0; i < static_cast<std::size_t>(kWidth) * kHeight * 7; ++i) {
         out.values.push_back((std::sin(static_cast<float>(i) * 0.37F) * 40.0F) + 0.123456F);
     }
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(moya_exr_refuses_two_channels_of_one_name_in_a_part_test) {
     const std::string path = sandbox.file("clash.exr");
     film::Snapshot written { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 8,
         .channels = { { .name = "R", .components = 1 }, { .name = "albedo.R", .components = 1 }, { .name = "albedo", .components = 3 } },
-        .offsets = { 3, 4, 5 }, .values = {} };
+        .offsets = { 3, 4, 5 }, .values = {}, .errors = {} };
     written.values.assign(static_cast<std::size_t>(kWidth) * kHeight * 8, 0.5F);
 
     BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "beauty", "R" } } }, {}), std::invalid_argument);

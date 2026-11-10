@@ -23,9 +23,17 @@ namespace v3d::moya::kernel::film {
 inline constexpr std::uint32_t kBeautyComponents = 3;
 
 /**
+ * The floats between the channels and the weight that measure a pixel's noise. Each is a sum over
+ * the pixel's samples of the squared weight: times the squared luminance, times the luminance,
+ * and alone.
+ **/
+inline constexpr std::uint32_t kMomentFloats = 3;
+
+/**
  * A film's pixels in device memory, which kernel code adds samples to. Each pixel holds, in
- * order, the beauty's weighted sums, each channel's weighted sums, and the sum of its samples'
- * weights. The host divides the sums by the weight when it reads them.
+ * order, the beauty's weighted sums, each channel's weighted sums, the beauty's moments, and the
+ * sum of its samples' weights. The host divides the sums by the weight when it reads them, and
+ * gives the standard error of the beauty's luminance from the moments.
  *
  * Each pixel belongs to one work item, which adds the pixel's samples in index order, so its sums
  * are the same under any thread count.
@@ -45,16 +53,23 @@ struct Pixels {
     }
 
     /**
-     * Adds a camera sample's radiance, with its filter weight, to the beauty, and the weight to
-     * the pixel's sum of weights. The radiance is converted to ACEScg through the observer.
+     * Adds a camera sample's radiance, with its filter weight, to the beauty, its luminance to the
+     * beauty's moments, and the weight to the pixel's sum of weights. The radiance is converted to
+     * ACEScg through the observer.
      **/
     MOYA_KERNEL void add(Item pixel, float weight, const spectrum::SampledSpectrum & radiance,
         const spectrum::SampledWavelengths & wavelengths) const {
-        const glm::vec3 rgb = spectrum::acescgFromXyz(spectrum::toXyz(radiance, wavelengths));
+        const glm::vec3 xyz = spectrum::toXyz(radiance, wavelengths);
+        const glm::vec3 rgb = spectrum::acescgFromXyz(xyz);
         float * const out = at(pixel);
         for (std::uint32_t i = 0; i < kBeautyComponents; ++i) {
             out[i] += weight * rgb[static_cast<glm::length_t>(i)];
         }
+        const float squared = weight * weight;
+        float * const moments = out + (stride - 1U - kMomentFloats);
+        moments[0] += squared * xyz.y * xyz.y;
+        moments[1] += squared * xyz.y;
+        moments[2] += squared;
         out[stride - 1U] += weight;
     }
 

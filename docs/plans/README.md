@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaPathTracer](MoyaPathTracer.md) | Offline rendering | The rebuilt moya's path tracer: the integrator's stages over a path state, next event estimation and MIS, every UsdLux light sampled by solid angle, a dome light, a light tree, light linking, IES profiles, adaptive sampling, checkpoints and a statistical oracle |
 
 ## Completed plans
 

@@ -1,0 +1,616 @@
+# Moya Path Tracer — The Integrator and Its Lights
+
+Drafted 2026-11-09 against `92191de5`. This plan takes up section 4 of
+[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core lights the
+scene that sections 2 and 3 built. The integrator builds paths through it in stages over an
+explicit path state, fused on the CPU. Each bounce samples a light and the surface, and weighs the
+two by multiple importance sampling. Every UsdLux light the scene holds is sampled by solid angle
+where a method exists, a dome light through its image, and many lights through a light tree.
+Light linking and IES profiles shape what each light reaches. A render stops each pixel at a noise
+threshold, and a stopped render resumes where it left off. Surfaces are diffuse until section 5
+brings the BSDF library. The reyes hider and the ray hider keep rendering every RIB scene and
+every editor render, and no picture they make changes.
+
+The rebuild's decisions are ADR-0186 to ADR-0194, the foundation's ADR-0195 to ADR-0199, the
+scene's ADR-0200 to ADR-0203, and the geometry's ADR-0204 to ADR-0211, all accepted. This plan
+follows five of them:
+
+* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+  moya implements its own light sampling and light tree, and OpenEXR reads a light's image.
+* [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a path carries
+  four sampled wavelengths.
+* [ADR-0192](../adr/offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md):
+  the integrator is stages over an explicit path state, run back to back on the CPU.
+* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): samples
+  come from ZSobol, and each device gives one picture on every run.
+* [ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md): each stage
+  that traces takes its traversal as a type.
+
+The plan keeps the roadmap's order, with five changes:
+
+* **Five decisions the roadmap leaves open are steps of their own**, each before the step that
+  builds on it. They are what the path state holds and how it is laid out, how a ray meets a
+  light, how the light tree is built, how adaptive sampling measures noise, and what a checkpoint
+  holds. [Decisions](#decisions).
+* **A statistical comparison comes first.** A path-traced picture is noisy, so no step can compare
+  it byte for byte with an expected one. The film gains each pixel's second moment, and a test
+  helper compares a picture with an expected value, or two pictures with each other, within a
+  number of standard errors. It is the oracle every later step is held to, and section 10 compares
+  a GPU with the CPU through it. [Step 6](#step-6--the-statistical-comparison).
+* **Surfaces are diffuse until section 5.** The roadmap puts the BSDF library in section 5. This
+  plan builds the BSDF interface the integrator calls, with one diffuse lobe whose colour comes
+  from the surface node's `Cs` or a primvar. Section 5 puts the BSDF library behind the same
+  interface. [Step 8](#step-8--the-bsdf-interface-and-a-diffuse-lobe).
+* **The RIB client reads RenderMan's `Light` request.** RI's three standard lights and its area
+  lights reach only point, spot, distant and mesh lights. A RIB file that names `PxrRectLight`,
+  `PxrDomeLight` and their kin makes every UsdLux light, so `moya --paths` renders each from a
+  file. [Step 18](#step-18--renderman-lights-from-rib).
+* **Speed is measured with a baseline.** `moya_bench` gains a lit scene and reports samples a
+  second, beside its traversal figures, so a later change can be held to it.
+  [Step 21](#step-21--speed).
+
+## What the survey found
+
+The tree was read at `92191de5`.
+
+**The foundation and the geometry:**
+
+* **A hit holds no point, normal or differential** ([Traversal.md](../offline/Traversal.md#hits)).
+  It holds its distance, time, primitive, `uv` and chain of instances. The stage that shades it
+  computes the rest from the primitive.
+* **A traversal gives `nearest(ray)` and `any(ray)`**, and a ray carries its kind: camera, shadow
+  or indirect. An instance hidden from a kind is not hit.
+* **Camera rays exist.** `camera::fromScene()` follows RI's camera, and its `ray()` draws a point
+  on the lens and a time over the shutter. The hit view takes one ray through each pixel's
+  centre.
+* **The film places a camera sample by the pixel filter** and adds it to its own pixel alone,
+  in index order ([Film.md](../offline/Film.md)). It holds weighted sums and one sum of weights.
+  It holds no second moment.
+* **ZSobol gives a sample from its pixel, index and dimension**, with no state
+  ([Sampler.md](../offline/Sampler.md)). Nothing yet allocates dimensions to a path's draws.
+* **Spectra are four wavelengths drawn by luminance.** `illuminant()` gives a light's colour as a
+  spectrum, and a light of (1, 1, 1) shines with ACES white ([Spectra.md](../offline/Spectra.md)).
+* **No geometry holds primvars on the device.** `subdivision::Surface::at()` evaluates a primvar,
+  and `normals()` gives the limit surface's normals, but neither reaches a hit
+  ([Geometry.md](../offline/Geometry.md)).
+* **The CPU traversal traces 11 to 12.5 million rays a second** on a million triangles, several
+  times slower than Embree ([TODO.md](../TODO.md#offline-rendering)). A path tracer traces at
+  least two rays a bounce, so this sets its speed.
+
+**The scene:**
+
+* **Every UsdLux light is a kind** ([Scene.md](../offline/Scene.md#moyas-kinds)): rect, disk,
+  sphere, cylinder, mesh, distant and dome. Each holds a transformation over the shutter,
+  `colour`, `intensity`, `exposure` and `normalize`. A light with an area holds a cone angle and
+  softness. Light linking is UsdLux's `includeRoot` and a list of `instances`.
+* **No light has a colour temperature, a shadow link, an IES profile or a camera visibility.**
+  UsdLux names all four.
+* **A material is a network of nodes**, whose shaders the scene does not read. The RIB client
+  makes a node of language `ri` for `Surface`, with the attribute state's colour as `Cs`.
+* **No light reaches the gather.** `geometry::gather()` and `accel::Assembler` read geometry and
+  instances alone, so nothing a ray meets emits.
+
+**The RIB client:**
+
+* **RI's `pointlight`, `spotlight` and `distantlight` become UsdLux lights**, and
+  `AreaLightSource` makes a mesh light of each geometry after it. A point light is a sphere
+  light of radius zero. [Rib.md](../offline/Rib.md#the-scene-client)
+* **The RIB reader knows no `Light` request**, so a file names no rect, disk, cylinder or dome
+  light.
+
+**The tests:** moya's suite has 22 RIB scenes, each with a committed description and hit view.
+Their PNGs are the old hiders' pictures. Nothing tests a picture within a statistical tolerance.
+
+---
+
+## Decisions
+
+| ADR | Decides | Step |
+|---|---|---|
+| 0212 | What the path state holds, and how each device lays it out | [1](#step-1--the-record-the-path-state) |
+| 0213 | How a ray meets a light with a shape | [2](#step-2--the-record-meeting-a-light) |
+| 0214 | How the light tree is built, and what its leaves are | [3](#step-3--the-record-the-light-tree) |
+| 0215 | How adaptive sampling measures a pixel's noise | [4](#step-4--the-record-adaptive-sampling) |
+| 0216 | What a checkpoint holds, and how a render resumes | [5](#step-5--the-record-checkpoints) |
+
+Each record step researches how production renderers make the choice, and the owner chooses
+among the options before the record is drafted.
+
+---
+
+## The steps
+
+| | What | Where | ADR | State |
+|---|---|---|---|---|
+| [1](#step-1--the-record-the-path-state) | The record: the path state | `docs/adr` | **0212** | accepted |
+| [2](#step-2--the-record-meeting-a-light) | The record: meeting a light | `docs/adr` | **0213** | accepted |
+| [3](#step-3--the-record-the-light-tree) | The record: the light tree | `docs/adr` | **0214** | accepted |
+| [4](#step-4--the-record-adaptive-sampling) | The record: adaptive sampling | `docs/adr` | **0215** | accepted |
+| [5](#step-5--the-record-checkpoints) | The record: checkpoints | `docs/adr` | **0216** | accepted |
+| [6](#step-6--the-statistical-comparison) | The statistical comparison | `moya/libmoya/film`, `moya/tests` | — | done |
+| [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | open |
+| [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | open |
+| [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | open |
+| [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | open |
+| [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | open |
+| [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | open |
+| [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | open |
+| [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | open |
+| [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | open |
+| [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | open |
+| [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | open |
+| [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
+| [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | open |
+| [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | open |
+| [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | open |
+| [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | open |
+
+## What blocks what
+
+```
+6 Statistics ─────────────────────────────────────┐
+7 Shading point ──> 8 BSDF ──┐                    │
+1 ADR ───────────────────────┴──> 9 Integrator ───┴──> 10 Shaped lights ──> 11 NEE, MIS ──┬──> 12 Distant, points
+2 ADR ──────────────────────────────────────────────> 10, 13                              ├──> 13 Mesh lights
+                                                                                           ├──> 14 Dome light
+                                                                                           └──> 17 IES
+3 ADR ──> 15 Light tree (after 12, 13, 14) ──> 16 Linking
+4 ADR ──> 19 Adaptive (after 9)
+5 ADR ──> 20 Checkpoint (after 9, and after 19)
+14 ──> 18 RenderMan lights
+
+(15 to 20) ──> 21 Speed, 22 References ──> 23 Documents
+```
+
+Steps 1 to 8 depend on nothing but each other. Step 8 needs step 7's shading point, and step 9
+needs step 8 and the record of step 1. Step 6 needs only the film, and every step from 9 on is
+tested through it. Step 10 needs the integrator and the record of step 2, and step 11 needs a
+light to sample. Steps 12, 13, 14 and 17 each add to the light sampling of step 11, and can run
+beside each other. Step 15 needs every kind of light, and step 16 needs the tree. Step 18 needs
+the dome light. Step 19 needs the integrator and the record of step 4. Step 20 needs step 19,
+since a checkpoint holds which pixels have stopped. Each step updates its own section of the
+reference documents, and step 23 checks that they read as a whole.
+
+## How every step is verified
+
+* **The build and the gates.** Everything compiles at `/W4 /WX`, and cpplint, `/analyze`,
+  clang-tidy and every review gate stay clean. Kernel code passes `kernel.ts`.
+* **The suites.** The offline suite, moya's suites and the editor's suite pass. Each step with
+  code adds cases, and `failsfirst.ts` is run on the change to show that each new case fails
+  without it.
+* **The statistical oracle.** From step 9 on, a picture is compared with its expected value
+  through step 6's comparison. An expected value is a closed form where one exists, and an
+  estimate by another technique where none does.
+* **One picture on every run.** A render on one thread and on every thread gives the same bytes,
+  as ADR-0194 requires.
+* **Linux.** portable.yml's clang job builds `v3dlib_moya` and runs moya's suite under the
+  sanitizers, in the spectral and the RGB build.
+* **No old picture changes.** The old hiders read RIB as before, so every committed PNG in
+  `moya/tests/data/` stays as it is, and the editor's render window shows the same picture.
+
+---
+
+### Step 1 — The record: the path state
+
+**The question.** What a path carries between stages, and how each device lays it out. On the
+CPU the stages run back to back, so the state can live on one thread's stack. On a GPU each stage
+is a kernel over a queue of paths, so the state lives in device memory between kernels. Its
+layout there sets how fast a GPU reads it.
+
+**The options:**
+
+* **The state declared once, as a list of fields, and laid out by each device**, as Cycles'
+  integrator state is declared in one template. The CPU lays it out as one structure per path. A
+  GPU lays it out as one array per field.
+* **One structure per path on every device**, kept in an array on a GPU, and reached by a queue
+  of indices. The simplest, and a GPU reads whole structures where it needs one field.
+* **Arrays per field generated from a description**, as pbrt-v4's `soac` tool generates its
+  layouts. A tool in the build, and stage code that reads a field through generated accessors.
+
+The record also settles what the state holds: the ray, the throughput, the wavelengths, the
+depth of each kind of bounce, the last BSDF sample's density for MIS, and the sample's pixel and
+index. It also settles how a path's draws take ZSobol dimensions: a fixed number for each bounce,
+as Cycles allots them, or the next free dimension, as pbrt-v4 takes them.
+
+**Drafted** as
+[ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+the state declared once as a list of fields, laid out as a structure per path on the CPU and an
+array per field on a GPU, as Cycles' integrator state is. A shadow ray is a state of its own.
+Each bounce owns a fixed block of dimensions, as Cycles and pbrt-v4's wavefront integrator
+allot them.
+
+### Step 2 — The record: meeting a light
+
+**The question.** How a ray that a BSDF sampled finds the light it meets. MIS needs the light's
+emission and its density at that point. A rect, disk, sphere or cylinder light has a shape, but no
+geometry in the scene holds it. A mesh light's shape is a prototype that the hierarchy already
+holds.
+
+**The options:**
+
+* **A light's shape is a primitive of the hierarchy**, as pbrt-v4 attaches an area light to its
+  shape. A hit on it names the light. The traversal's visibility then hides a light from a kind of
+  ray, and a GPU back end intersects it as a custom primitive.
+* **Lights tested beside the traversal**, in a loop over the lights after each nearest hit. Each
+  light's shape is moya's code, and the hierarchy holds no light. Its cost grows with the number
+  of lights.
+* **A hierarchy of the lights' shapes alone**, traced beside the scene's, so a change to a light
+  rebuilds nothing else.
+
+The record also settles whether camera rays see a light's shape. UsdLux names no camera
+visibility for its lights, and renderers differ in their default.
+
+**Drafted** as
+[ADR-0213](../adr/offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md): each
+light with a shape is an instance of a light prototype in the world's hierarchy, as pbrt-v4 and
+Mitsuba 3 hold an area light's shape. A light's shape is hidden from camera rays unless the scene
+sets it, and a dome light is seen, as Arnold and RenderMan default them.
+
+### Step 3 — The record: the light tree
+
+**The question.** How the light tree is built and what it holds. Conty Estevez and Kulla's tree
+picks a light by a bound on its contribution at the shading point. Its nodes hold a box, a cone of
+emission directions and an energy. The roadmap names the method, and leaves open what a leaf is.
+
+**The options:**
+
+* **A leaf for each light, and one for each emitting triangle of a mesh light**, as Cycles'
+  light tree has since Blender 3.5. A mesh light of many triangles is sampled triangle by
+  triangle.
+* **A leaf for each light alone**, and a mesh light's triangles picked by area within it. A
+  smaller tree, which samples a large mesh light poorly.
+* **A tree for each emitting prototype, placed by its instances**, as the scene's hierarchy is.
+  An instanced mesh light costs one tree, and each pick walks into it through the instance.
+
+The record also settles four things. How distant and dome lights are picked beside the tree's
+lights. How a node bounds a light that moves over the shutter. How light linking is held in the
+tree. How a BSDF sample that meets a light finds the density the tree would have picked it with.
+pbrt-v4's `BVHLightSampler` and Cycles' tree are the references.
+
+**Drafted** as
+[ADR-0214](../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md): a
+top tree over the lights and the instances of mesh lights, and a subtree per emitting prototype,
+as Cycles' tree holds instances. A tree for each unique set of linked lights, as Cycles builds
+them. Distant and dome lights picked beside the tree as pbrt-v4 picks them, and one light a
+bounce.
+
+### Step 4 — The record: adaptive sampling
+
+**The question.** How moya decides that a pixel has enough samples. ADR-0194 requires the same
+picture on every run, so the decision has to depend on the samples alone, not on which thread
+finished first. ZSobol gives a pixel's samples as runs of a power of two.
+
+**The options:**
+
+* **An error from two half pictures**, as Cycles measures it: every other sample also lands in a
+  second film, and a pixel's error is how far its two halves differ. It costs a second film.
+* **The variance of a pixel's mean**, from its second moment, as RenderMan's `PixelVariance`
+  and Arnold's adaptive threshold measure it. Step 6 adds the moment. Its estimate is poor while
+  a pixel has few samples.
+* **Either, filtered over a pixel's neighbours** before it is compared with the threshold, so an
+  isolated pixel that converged by chance keeps sampling.
+
+The record also settles when a pixel's error is checked, and whether the threshold is in the
+working space or after a display transform.
+
+**Drafted** as
+[ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md): a
+second beauty takes the first half of each run of a pixel's samples, and the error is the
+difference of the two estimates, normalised as Cycles normalises it. A pixel is checked between
+passes and stops with its four neighbours, as Cycles spreads its check. The threshold is in the
+working space.
+
+### Step 5 — The record: checkpoints
+
+**The question.** What a stopped render writes so that it can resume, and what makes a resumed
+render the same as one that never stopped. A checkpoint has to hold each pixel's sums, its
+weight, its second moment, and whether adaptive sampling stopped it.
+
+**The options:**
+
+* **An EXR of the film's sums, unresolved**, with each pixel's weight and state as channels and
+  the pass count in the header, as RenderMan writes a checkpoint it can recover from. Any EXR
+  reader opens it.
+* **A file of moya's own**, holding the film's memory as it is. Smallest and fastest, and no
+  other tool reads it.
+* **No checkpoint**, and a render split into ranges of samples whose pictures are merged, as
+  Cycles' sample offset splits one. A merge needs the second moment and the weights as well.
+
+The record also settles how a checkpoint names the scene it belongs to, so that a resume against
+a changed scene is refused.
+
+**Drafted** as
+[ADR-0216](../adr/offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md): an OpenEXR
+file of its own holding the film's unresolved sums as floats, as Karma writes a checkpoint apart
+from its outputs. Its header holds the pass count and a hash of the scene's description and the
+film's channels, and a resume whose hash differs is refused.
+
+### Step 6 — The statistical comparison
+
+The oracle every later step is held to. It needs only the film.
+
+**Done.** `kernel::film::Pixels::add()` adds three moments beside each pixel's weight, and a
+snapshot's `error(x, y)` gives each pixel's standard error of its luminance from them.
+`film/Compare.h` gives `luminance()`, `mean()` over a region, `sigmas()` against a value or another
+estimate, and `furthest()` over a picture against an expected value or another picture. Four
+things the list below did not settle:
+
+* **The moments are three sums, not one.** A filter's weights differ in sign, so a weighted
+  mean's variance needs the squared weights times the squared luminance, times the luminance,
+  and alone. The error is scaled by the effective count over one less, so samples of equal
+  weight give the samples' variance over their count.
+* **A pixel of fewer than two samples' weight is not measured.** Its error is infinite, a
+  comparison counts it as unmeasured, and it lies no distance from anything.
+* **The error treats ZSobol's samples as independent**, so it overstates their error, and a
+  comparison errs towards passing. ADR-0215 measures adaptive sampling by two halves for that
+  reason.
+* **A NaN is furthest.** A pixel or an expected value that is not a number makes the comparison
+  NaN, which fails any bound.
+
+[Film.md](../offline/Film.md#a-pixels-noise) and
+[Testing.md](../contributing/Testing.md#moya-references) state the rules.
+
+* **The film holds each pixel's second moment**: a weighted sum of each sample's squared
+  luminance, in a channel of its own. A snapshot resolves it with the beauty.
+* **A pixel's standard error** follows from its mean, its second moment and its weight.
+* **A comparison of a picture with an expected value**, per pixel or over a region, passes when
+  the difference is within a number of standard errors. The number is set by the test, and a
+  failure names the worst pixel.
+* **A comparison of two pictures**, by the same rule over both errors. Section 10 compares a GPU's
+  picture with the CPU's through it, as ADR-0194 requires.
+
+**Tests:** a picture of known mean and variance passes against its mean. The same picture moved
+by four standard errors fails. Two pictures of one scene with different seeds pass against each
+other.
+
+### Step 7 — The shading point
+
+A hit holds no point, normal or position on the surface. The shade stage computes them once, for
+the nearest hit.
+
+* **A shading point** holds the hit's position, its geometric normal, its shading normal, a frame
+  around the shading normal, its `uv`, and the instance chain's transformation at the ray's time.
+* **The shading normal** of a mesh is its `N` primvar where it has one, interpolated as its class
+  says. A subdivision surface takes its limit surface's normals, and a quadric or a curve its
+  own.
+* **Primvars on the device.** Each geometry holds the primvars shading reads on the device: `N`
+  and `Cs` now. The layout holds any primvar of any class, so section 5 adds texture coordinates
+  without changing it.
+* **A ray leaves a smooth surface from a shifted point**, by Hanika's offset of the shadow
+  terminator, so a coarse mesh with smooth normals does not shade in facets at the shadow's
+  edge.
+
+**Tests:** a sphere's shading normal at every hit is its radius direction. A mesh with an `N`
+primvar shades with the interpolated normal, and one without with its face's. A face-varying `Cs`
+is read at its corner. A coarse sphere lit from the side shows no facets along the terminator.
+
+### Step 8 — The BSDF interface and a diffuse lobe
+
+The integrator calls a BSDF, and section 5 supplies the library. This step builds the interface
+and one lobe.
+
+* **The interface evaluates, samples and gives a density**, in the shading frame, each for the
+  path's four wavelengths. It is a tagged type with a `switch`, as kernel code has no virtual
+  call.
+* **A sample reports its kind**: diffuse, glossy, specular or transmission, so a depth limit can
+  be kept for each.
+* **A diffuse lobe** samples by the cosine of the angle from the normal. Its reflectance is the
+  surface node's `Cs`, or the geometry's `Cs` primvar, or a mid grey.
+* **The material's surface terminal chooses the lobe.** Any shader gives the diffuse lobe until
+  section 5. A material with no surface node is grey.
+
+**Tests:** the diffuse lobe's samples follow its density, by a chi-squared test over the
+hemisphere. The lobe conserves energy: its reflectance integrated over the hemisphere is its
+colour. A sample below the geometric surface is refused.
+
+### Step 9 — The integrator stages
+
+The first picture the new core lights. The scene's only light is a constant environment, which
+the white furnace test needs.
+
+* **The stages**, as ADR-0192 names them: generate, intersect, shade, scatter and accumulate,
+  over the path state step 1 decides. The CPU runs them back to back for one path at a time.
+  Sampling lights waits for step 11.
+* **Generate** draws the wavelengths, the pixel filter's offset, the lens and the time, from
+  ZSobol by the dimensions step 1 allots.
+* **A depth limit for each kind of bounce**, diffuse, glossy, specular and transmission, and one
+  for all of them, in the scene's `options`. Only diffuse bounces exist until section 5.
+* **Russian roulette** ends a path by its throughput after a least depth, and divides the
+  survivors' throughput by their chance of surviving.
+* **A constant environment**: a path that leaves the scene meets a radiance given in the
+  `options`, until step 14 brings the dome light.
+* **`moya --paths`** reads a RIB file through the scene client and renders it through the new
+  core, to the outputs the scene names. `moya` with no flag renders through the old hiders as
+  before.
+
+**Tests:** a white diffuse sphere inside a white environment is white at every pixel, within
+three standard errors. A grey sphere of albedo a in a white environment is a at every pixel it
+covers, since a convex surface never meets itself. A depth limit of zero shows the environment
+and leaves the sphere black. A render on one thread and on eight gives the same bytes.
+
+### Step 10 — Lights with a shape
+
+* **Rect, disk, sphere and cylinder lights** as the record of step 2 decides, met by the paths a
+  BSDF samples.
+* **A light's radiance is UsdLux's**: its intensity times two to its exposure, times its colour
+  as an illuminant spectrum. With `normalize`, the power is the same at any size.
+* **A colour temperature**, as UsdLux's `enableColorTemperature` and `colorTemperature`. The
+  scene's lights gain both. The spectrum is Planck's at that temperature, scaled to a luminance of
+  one.
+* **A cone of emission**, as UsdLux's `shaping:cone:angle` and `shaping:cone:softness`.
+* **A rect light emits from one face**, and its texture waits for step 14, which reads images.
+* **Camera visibility**, as the record of step 2 settles.
+
+**Tests:** a diffuse plane under a disk light reaches the closed form of the disk's irradiance, by
+BSDF sampling alone. A light with `normalize` at twice its size gives the same irradiance far
+away. A colour temperature of 6504 K is near D65. A light outside its cone lights nothing.
+
+### Step 11 — Next event estimation and MIS
+
+* **Each bounce samples a light**, and casts a shadow ray through `any()`. One light is picked
+  in proportion to its power until step 15.
+* **Each light samples by solid angle where a method exists.** A rect light by Ureña, Fajardo
+  and King's spherical rectangle. A sphere light by the cone it subtends. A disk light by Guillén
+  and others' spherical ellipse. A cylinder light by area, converted to solid angle.
+* **MIS by the power heuristic** weighs the light sample against the BSDF sample. A BSDF sample
+  that meets a light finds the light's density through step 2's hit.
+
+**Tests:** the disk light's plane of step 10 reaches the same closed form by light sampling
+alone, by BSDF sampling alone, and by MIS. MIS's standard error is the least of the three for a
+small light and for a large one. Each light's samples follow its density, by a chi-squared test.
+
+### Step 12 — Distant lights and points
+
+* **A distant light with an angle** samples the cone its angle gives. An angle of zero is a
+  single direction, which only light sampling reaches.
+* **A sphere light of radius zero** is a point, which only light sampling reaches, as RI's
+  `pointlight` maps to it. UsdLux's `treatAsPoint` makes any sphere light one.
+* **MIS gives a light no BSDF sample can reach** its whole weight.
+
+**Tests:** a diffuse plane of albedo ρ under a distant light of no angle and irradiance E reaches
+ρ E cos θ / π. A sphere light shrinking towards zero converges to the point. A distant
+light's angle softens a shadow's edge by the width the angle gives.
+
+### Step 13 — Mesh lights
+
+* **A mesh light emits from its prototype's triangles**, placed by the instances the scene's
+  hierarchy already holds, at the ray's time.
+* **A triangle samples by its spherical triangle**, by Arvo's method, and by area when it
+  subtends too small or too large an angle.
+* **A triangle is picked in proportion to its power** until step 15.
+* **Subdivision surfaces and moving meshes emit** from the triangles the gather made.
+
+**Tests:** a mesh light of two triangles in a square gives the irradiance of a rect light of that
+square. A mesh light instanced twice gives twice the light. A moving mesh light lights the
+places it passes.
+
+### Step 14 — The dome light
+
+* **OpenEXR reads a light's image**, beside its writer, into device memory whole. Section 5's
+  texture cache takes over, and a dome light then reads through it.
+* **A dome light** is the environment, in UsdLux's latitude and longitude layout and orientation.
+  Other layouts are reported and not lit. It replaces step 9's constant environment.
+* **An importance-sampled environment**: a piecewise-constant distribution over the image's
+  luminance and the solid angle of each texel. Karlík and others' MIS compensation takes the
+  average from it.
+* **A rect light's texture** reads through the same images, and is sampled by area.
+
+**Tests:** a dome light of one constant colour gives step 9's furnace. A dome light of one bright
+texel lights a plane as a distant light from that direction does. Light sampling, BSDF sampling
+and MIS reach the same picture of a varied image.
+
+### Step 15 — The light tree
+
+* **The tree** as the record of step 3 decides, after Conty Estevez and Kulla: each node a box, a
+  cone of directions and an energy, built by a surface area and orientation heuristic.
+* **A light is picked by walking the tree**, choosing a child by a bound on its contribution at
+  the shading point, with one random number.
+* **A BSDF sample that meets a light** finds the density the tree would have picked it with.
+* **The tree is a consumer of the scene**, rebuilt when a light changes, as the hierarchy is.
+* **The same tree on every run**, whatever the threads do.
+
+**Tests:** a scene of many small lights, of which one is near a surface, renders with a lower
+error through the tree than by power at the same sample count. The tree's picks follow the
+density it reports. Two builds on different thread counts are equal node for node.
+
+### Step 16 — Light linking and shadow linking
+
+* **Light linking** as the scene holds it: a light lights only the instances its `includeRoot`
+  and `instances` allow. The tree leaves out what a shading point's instance is not linked to, as
+  the record of step 3 decides.
+* **Shadow linking**, as UsdLux's `shadow:include` collection names it. The scene's lights gain
+  it. A shadow ray from a light passes through an instance the light's shadow link leaves out.
+
+**Tests:** a light linked to one of two spheres lights that sphere alone. A sphere left out of a
+light's shadow link casts no shadow from it, and still casts one from another light. A tree that
+ignores linking fails the first case.
+
+### Step 17 — IES profiles
+
+* **An IES file**, as UsdLux's `shaping:ies:file`, `shaping:ies:angleScale` and
+  `shaping:ies:normalize` name it. The scene's lights gain the three.
+* **moya parses LM-63 itself.** ADR-0187 names a reference library for each format that has one,
+  and IES has none. The step checks whether the record needs amending.
+* **A profile shapes the light's emission** by direction, and light sampling weighs it.
+
+**Tests:** an IES file of uniform candela leaves a light as it was. A profile that is dark below
+its horizon lights nothing below a sphere light. A malformed file is reported and the light is
+unshaped.
+
+### Step 18 — RenderMan lights from RIB
+
+* **The RIB reader reads `Light`**, as RenderMan's RIB names a light and its handle.
+* **The scene client maps RenderMan's lights to UsdLux's**: `PxrRectLight`, `PxrDiskLight`,
+  `PxrSphereLight`, `PxrCylinderLight`, `PxrDistantLight`, `PxrDomeLight` and `PxrMeshLight`,
+  with their intensity, exposure, colour, temperature, normalisation and texture.
+* **Another light shader is logged** and makes no light, as `LightSource` does.
+* **The old hiders ignore `Light`**, so no picture they make changes.
+
+**Tests:** each RenderMan light makes its UsdLux light with its parameters, in the scene's
+description. A `Light` inside an attribute block is turned off by `Illuminate`, as a
+`LightSource` is.
+
+### Step 19 — Adaptive sampling
+
+* **A pixel stops sampling** when its error, as the record of step 4 measures it, falls below a
+  threshold in the scene's `options`. The samples per pixel are the most it takes.
+* **Each pixel's error is checked between passes**, from the samples the passes added, so the
+  same pixels stop on every run.
+* **A least number of samples** comes before the first check.
+* **The film holds each pixel's sample count**, as a channel an output can write, and the half
+  beauty the record of step 4 measures against.
+
+**Tests:** a scene of a flat colour and a noisy region stops the flat colour's pixels first. A
+picture sampled adaptively is within its threshold of one sampled to the most. Two runs on
+different thread counts stop the same pixels.
+
+### Step 20 — Checkpoint and resume
+
+* **A render writes a checkpoint** as the record of step 5 decides, after each pass or at an
+  interval the command line gives.
+* **`moya --paths --resume`** reads a checkpoint and continues at the next pass.
+* **A checkpoint of another scene is refused**, by the scene's name the record settles.
+
+**Tests:** a render stopped after two passes and resumed to eight is the same, byte for byte, as
+one of eight passes. A resume against a changed scene is refused. A checkpoint of a render that
+adaptive sampling stopped keeps its stopped pixels.
+
+### Step 21 — Speed
+
+* **`moya_bench` gains a lit scene**: a diffuse room of a million triangles under a dome light
+  and a few shaped lights. It reports samples a second, and rays a second over the paths.
+* **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
+* **The share of time in traversal** is reported, so the open traversal item in
+  [TODO.md](../TODO.md#offline-rendering) can be weighed against the integrator.
+
+**Tests:** the benchmark's short pass times the lit scene.
+
+### Step 22 — The reference renders
+
+* **A set of scenes made for the path tracer**, as RIB files in `moya/tests/data`: the furnace, a
+  room under a dome, every light kind, linked lights and an IES profile. Step 18 lets each name
+  its lights in RIB.
+* **Each is rendered and committed** as an EXR, at a sample count that keeps the files small.
+* **The suite compares each render with its committed one** through step 6's comparison of two
+  pictures, so a change of rounding between compilers passes and a change of light fails.
+
+**Tests:** the committed renders. Each was compared with a broken light as well, to show that the
+comparison fails it.
+
+### Step 23 — The documents
+
+* **New reference pages**: `docs/offline/Integrator.md` for the stages, the path state, depth
+  limits, Russian roulette and adaptive sampling, and `docs/offline/Lights.md` for each light,
+  its units, its sampling, the tree and linking. The docs site's summary lists them.
+* **[Film.md](../offline/Film.md)** names the second moment, the sample count and checkpoints.
+* **[Scene.md](../offline/Scene.md)** names the lights' new parameters and the options' depth
+  limits and threshold.
+* **[Rib.md](../offline/Rib.md)** names `Light` and RenderMan's lights.
+* **[The offline README](../offline/README.md)**'s section on the new core says that it lights.
+* **[Testing.md](../contributing/Testing.md)** names the statistical comparison and the reference
+  renders.
+* **The moya manual's [CommandLine.md](../manual/moya/CommandLine.md)** names `--paths` and
+  `--resume`.
+* **Each record's `Documented in` line** names the reference page that states its rule.
+* **The roadmap's section 4** links here, and says so when this plan closes.

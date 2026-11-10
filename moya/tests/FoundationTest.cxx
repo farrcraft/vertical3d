@@ -165,7 +165,7 @@ std::string scratch(const std::string & name) {
 // one above one is 255 and a NaN is zero. The rest round to the nearest step
 BOOST_AUTO_TEST_CASE(moya_output_a_displayed_value_is_clamped_rounded_and_never_nan_test) {
     const film::Snapshot snapshot { .resolution = { 2, 1 }, .passes = 1, .stride = 4, .channels = { { .name = "depth", .components = 1 } },
-        .offsets = { 3 }, .values = { -1.0F, 2.0F, std::nanf(""), 9.0F, 0.5F, 0.25F, 1.0F, 9.0F } };
+        .offsets = { 3 }, .values = { -1.0F, 2.0F, std::nanf(""), 9.0F, 0.5F, 0.25F, 1.0F, 9.0F }, .errors = {} };
     const std::vector<std::uint8_t> bytes = output::displayed(snapshot, v3d::moya::colour::Config().input("ACEScg"));
     BOOST_TEST(bytes == std::vector<std::uint8_t>({ 0, 255, 0, 128, 64, 255 }), boost::test_tools::per_element());
 }

@@ -67,6 +67,15 @@ class Film final {
     Snapshot snapshot() const;
 
  private:
+    /** The floats each pixel holds on the device: the snapshot's, the moments and the weight. **/
+    std::uint32_t stored() const;
+
+    /**
+     * The standard error of a pixel's mean luminance, from its weight and its moments, or
+     * infinity when its samples weigh less than two of equal weight.
+     **/
+    static float standardError(float weight, const float * moments, float mean);
+
     device::Device & device_;
     glm::uvec2 resolution_;
     std::vector<Channel> channels_;

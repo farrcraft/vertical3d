@@ -35,6 +35,16 @@ struct Snapshot {
     /** Every pixel's floats, row by row from the top left. **/
     std::vector<float> values;
 
+    /**
+     * Every pixel's standard error of its beauty's luminance, row by row from the top left. It
+     * treats the samples as independent, so it overstates the error of stratified ones. It is
+     * infinite for a pixel whose samples weigh less than two of equal weight.
+     **/
+    std::vector<float> errors;
+
+    /** A pixel's standard error. **/
+    float error(std::uint32_t x, std::uint32_t y) const;
+
     /** A pixel's float at an offset: 0 to 2 for the beauty, or offset() for a channel. **/
     float at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const;
 

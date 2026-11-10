@@ -463,6 +463,14 @@ case traces a fixed set of rays through both, and each ray meets the same primit
 distance within a tolerance, since the two round apart.
 [Traversal.md](../offline/Traversal.md#the-brute-force-traversal) states how it places the scene.
 
+A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
+finds the pixel whose luminance lies furthest from an expected value, or from another picture,
+in standard errors. `film::mean()` gives a region's mean with its error, and `film::sigmas()`
+measures an estimate against a value or another estimate. A case chooses how many standard
+errors it allows. A picture of many pixels lies a few errors from its mean somewhere by chance,
+so a case over every pixel allows more than one over a region's mean.
+[Film.md](../offline/Film.md#a-pixels-noise) states how a pixel's error is estimated.
+
 Each `.rib` file also has what the new core makes of it committed in `moya/tests/data/scenes/`:
 
 - `<scene>.txt` is the scene's description, as `moya --scene` prints it. The suite reads every

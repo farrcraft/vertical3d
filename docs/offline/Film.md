@@ -41,7 +41,9 @@ reads.
 
 `film::Film` holds a picture's pixels in a device's memory. The device outlives the film.
 
-- **Each pixel holds the beauty and the channels.** The beauty is ACEScg's red, green and blue.
+- **Each pixel holds the beauty, the channels, the beauty's moments and a weight.** The moments
+  give the pixel's noise, as [the next section](#a-pixels-noise) describes. The beauty is
+  ACEScg's red, green and blue.
   The channels are those the film was made with, each a name and 1 to 4 floats, in the order
   given. `offset(name)` is where a channel's first float sits.
 - **Each pixel holds weighted sums, and one sum of weights.** `kernel::film::Pixels::add()` adds
@@ -55,6 +57,26 @@ reads.
   4 floats** throw `std::invalid_argument`. `offset()` of a name the film lacks throws
   `std::out_of_range`.
 
+## A pixel's noise
+
+Each pixel holds three sums beside its weight, which give the standard error of its beauty's
+luminance. Each is a sum over the pixel's samples of the squared weight: times the squared
+luminance, times the luminance, and alone.
+
+- **The error is a weighted mean's.** The variance is each squared weight times its squared
+  distance from the mean, summed, and divided by the squared sum of the weights. It is then
+  scaled by n / (n − 1), where n is the squared sum of the weights over the sum of their
+  squares. For samples of equal weight, that is the samples' variance over their count.
+- **A pixel whose samples weigh less than two of equal weight** has an infinite error, since one
+  sample shows no spread.
+- **The error treats the samples as independent.** ZSobol's samples are stratified, so their
+  mean converges faster than the error says, and a comparison through it errs towards passing.
+- **The sums are floats**, and the snapshot computes the error from them in doubles.
+
+`film/Compare.h` measures a snapshot against an expected value or against another snapshot, in
+standard errors. [Testing.md](../contributing/Testing.md#moya-references) describes how a test
+uses it.
+
 ## Passes and snapshots
 
 - **Samples are added in passes.** `pass(launch)` hands the function the film's
@@ -64,6 +86,6 @@ reads.
   end, so a snapshot holds every sample of the passes before it, and none of the next.
 - **A snapshot is resolved.** Each sum is divided by its pixel's weight, and a pixel no sample
   reached is zero. `passes` says how many passes it holds. `at(x, y, offset)` reads a float, at
-  0 to 2 for the beauty or at a channel's offset.
+  0 to 2 for the beauty or at a channel's offset. `error(x, y)` reads a pixel's standard error.
 - **A snapshot describes itself.** It holds the film's channels and their offsets, so
   `offset(name)` finds a channel without the film, and a writer needs only the snapshot.

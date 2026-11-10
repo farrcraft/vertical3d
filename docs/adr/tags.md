@@ -146,6 +146,7 @@ reported, so the table lists only tags in use.
 | [0161](project/0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default |
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 | [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
+| [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
 
 ### colour
 
@@ -216,6 +217,7 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0041](engine/0041-files-write-documents-atomically.md) | Files: write documents atomically |
 | [0073](engine/0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time |
+| [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
 
 ### frames
 
@@ -266,6 +268,8 @@ reported, so the table lists only tags in use.
 | [0064](rendering/0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder |
 | [0066](rendering/0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB |
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0213](offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md) | Offline: a light's shape is a primitive of the hierarchy |
+| [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
 
 ### lit
 
@@ -353,6 +357,11 @@ reported, so the table lists only tags in use.
 | [0209](offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md) | Offline: surfaces are tessellated when the hierarchy is built |
 | [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
 | [0211](offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md) | Offline: a round curve is swept by a sphere |
+| [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
+| [0213](offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md) | Offline: a light's shape is a primitive of the hierarchy |
+| [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
+| [0215](offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md) | Offline: a pixel's noise is the difference of two halves |
+| [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
 
 ### particles
 

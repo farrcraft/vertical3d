@@ -117,6 +117,8 @@ it built.
 
 ### 4. The path tracer
 
+[MoyaPathTracer](../plans/MoyaPathTracer.md) is its plan.
+
 - **The integrator stages**: generate, intersect, shade, sample lights, scatter and accumulate,
   over an explicit path state.
 - **NEE and MIS**, Russian roulette, and a depth limit per kind of bounce.

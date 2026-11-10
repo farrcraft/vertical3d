@@ -10,10 +10,14 @@
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
+#include <moya/libmoya/kernel/spectrum/Acescg.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -45,8 +49,8 @@ Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::ve
         stride_ += channel.components;
     }
 
-    // the weight follows the channels
-    const std::size_t floats = static_cast<std::size_t>(resolution.x) * resolution.y * (stride_ + 1U);
+    // the moments and the weight follow the channels
+    const std::size_t floats = static_cast<std::size_t>(resolution.x) * resolution.y * stored();
     const std::vector<float> zeros(floats, 0.0F);
     pixels_ = device_.allocate(floats * sizeof(float));
     device_.upload(*pixels_, zeros.data(), floats * sizeof(float));
@@ -67,16 +71,16 @@ std::uint32_t Film::offset(const std::string & name) const {
 
 void Film::pass(const std::function<void(const kernel::film::Pixels &)> & launch) {
     const std::scoped_lock lock(mutex_);
-    launch(kernel::film::Pixels { device::view<float>(*pixels_), resolution_.x, stride_ + 1U });
+    launch(kernel::film::Pixels { device::view<float>(*pixels_), resolution_.x, stored() });
     ++passes_;
 }
 
 Snapshot Film::snapshot() const {
     const std::size_t pixels = static_cast<std::size_t>(resolution_.x) * resolution_.y;
-    const std::uint32_t stored = stride_ + 1U;
+    const std::uint32_t stored = this->stored();
     std::vector<float> sums(pixels * stored);
     Snapshot out { .resolution = resolution_, .passes = 0, .stride = stride_, .channels = channels_, .offsets = offsets_,
-        .values = std::vector<float>(pixels * stride_) };
+        .values = std::vector<float>(pixels * stride_), .errors = std::vector<float>(pixels) };
     {
         const std::scoped_lock lock(mutex_);
         device_.download(*pixels_, sums.data(), sums.size() * sizeof(float));
@@ -84,13 +88,36 @@ Snapshot Film::snapshot() const {
     }
     for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
         const float * const from = &sums[pixel * stored];
-        const float weight = from[stride_];
+        const float weight = from[stored - 1U];
         float * const to = &out.values[pixel * stride_];
         for (std::uint32_t i = 0; i < stride_; ++i) {
             to[i] = weight != 0.0F ? from[i] / weight : 0.0F;
         }
+        const float * const moments = from + stride_;
+        out.errors[pixel] = standardError(weight, moments, kernel::spectrum::acescgToXyz(glm::vec3(to[0], to[1], to[2])).y);
     }
     return out;
+}
+
+std::uint32_t Film::stored() const {
+    return stride_ + kernel::film::kMomentFloats + 1U;
+}
+
+float Film::standardError(float weight, const float * moments, float mean) {
+    // the variance of a weighted mean of independent samples, scaled by n / (n - 1) for an
+    // effective count n of the squared sum of weights over the sum of squared weights
+    const double sum = weight;
+    const double squares = moments[2];
+    if (squares <= 0.0) {
+        return std::numeric_limits<float>::infinity();
+    }
+    const double count = (sum * sum) / squares;
+    if (count <= 1.0) {
+        return std::numeric_limits<float>::infinity();
+    }
+    const double m = mean;
+    const double spread = std::max(0.0, moments[0] - (2.0 * m * moments[1]) + (m * m * squares));
+    return static_cast<float>(std::sqrt((spread / (sum * sum)) * (count / (count - 1.0))));
 }
 
 };  // namespace v3d::moya::film

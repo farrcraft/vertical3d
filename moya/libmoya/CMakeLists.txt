@@ -68,6 +68,8 @@ add_library("v3dlib_moya"
 	"device/internal/HostBuffer.h"
 
 	"film/Channel.h"
+	"film/Compare.h" "film/Compare.cxx"
+	"film/Estimate.h"
 	"film/Snapshot.h" "film/Snapshot.cxx"
 	"film/Film.h" "film/Film.cxx"
 	"film/Filter.h" "film/Filter.cxx"
