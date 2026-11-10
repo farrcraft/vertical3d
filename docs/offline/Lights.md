@@ -42,8 +42,9 @@ parts worked out on the host. Its radiance is UsdLux's.
   shutter opens, so its power is the same at any size. A rect's and a disk's area are exact under
   any transformation. A sphere's and a cylinder's are summed over their normals, which is exact
   under a turn and a scale of the same size on every axis. A light of no area is not divided.
-- **A rect or disk light emits from one face**, the one its -z axis points to. A sphere or
-  cylinder light emits from all of it.
+- **A light emits from one face.** A rect or disk light emits from the face its -z axis points
+  to, and a sphere or cylinder light from its outer face. The inside of a cylinder light, seen
+  through its open end, is dark.
 - **A cone shapes what a light emits**, as UsdLux's shaping does. The angle off the light's -z
   axis is measured towards where the ray came from. Past `coneAngle` the light emits nothing, and
   from `coneAngle` times one less `coneSoftness` it falls to nothing along a smooth step. A cone of
@@ -55,7 +56,42 @@ ray's time. A light that moves over the shutter therefore emits from where it st
 
 ## Meeting a light
 
-`kernel::light::Lights::at()` gives the light whose shape a hit met, from the hit's outermost
-instance, or none for a hit on anything else. `Lights::emitted()` gives the radiance the light
-sends back along the ray. A path that meets a light gathers that radiance times its throughput,
-and ends there, since a light's shape does not scatter.
+`kernel::light::Lights::at()` gives the place among the lights of the light whose shape a hit
+met, from the hit's outermost instance, or none for a hit on anything else. `Lights::emitted()`
+gives the radiance the light sends back along the ray. A path that meets a light gathers its share
+of that radiance times its throughput, as [Integrator.md](Integrator.md#lights) says, and ends
+there, since a light's shape does not scatter.
+
+## Drawing a light
+
+`Lights::pick()` draws a light in proportion to its power, and `Lights::chance()` gives the chance
+it was drawn with. A light's power is its radiance's luminance, times its area in the world as it
+stands when the shutter opens, times pi. Its cone is left out. `cdf` holds the sum of the chances up
+to and including each light, and is empty when no light has any power.
+
+## Sampling a light
+
+`light::sample()`, in `kernel/light/Sampling.h`, draws a point on a light's shape from a shading
+point, with its density by solid angle. `light::density()` gives the density with which it draws a
+given point, and is zero for a point it never draws. The two always agree, since each decides the
+method from the same light, transformation and point.
+
+- **A rect light whose edges stay at right angles in the world** is sampled uniformly in the solid
+  angle it subtends, by Ureña, Fajardo and King's spherical rectangle.
+- **A disk light that stays round** is sampled uniformly in solid angle by Guillén and others'
+  spherical ellipse, through its radial map. The directions to the disk form an elliptic cone.
+  The cone's axis bisects the directions to the two points of the rim in the plane of the disk's
+  normal and the direction to its centre. Its semi-axes are the tangents of its half angles across
+  that plane and in it.
+- **The spherical ellipse's solid angle** comes from Legendre's elliptic integral of the third
+  kind, through Carlson's symmetric integrals R_F and R_J. A sample's azimuth inverts the solid
+  angle swept from the major axis by Newton's method, held within a bracket that halves when a
+  step leaves it. Its cosine to the axis is uniform between the cone's edge and one.
+- **A sphere light that stays round** is sampled uniformly in the cone it subtends from a point
+  outside it, as pbrt-v4 samples it. A narrow cone is sampled by its small-angle expansion.
+- **Anything else is sampled uniformly by its area**, and its density converted to solid angle.
+  That is a cylinder light, a point inside a sphere light, and a rect, disk or sphere that its
+  transformation shears or stretches. A rect or disk that subtends less than `kSmallestSolidAngle`
+  is sampled by area too, since its solid angle loses precision there.
+- **A rect or disk light draws nothing for a point behind its emitting face**, and its density
+  there is zero.

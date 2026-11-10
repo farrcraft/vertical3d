@@ -27,9 +27,9 @@
 namespace v3d::moya::kernel::light {
 
 /**
- * Every light with a shape, and which of them each instance in the world places. A hit on a
- * light's shape names its instance, and emitted() gives the radiance the light sends back along
- * the ray.
+ * Every light with a shape, which instance in the world places each, and the chance of each being
+ * drawn. A light is drawn in proportion to its power: cdf holds the sum of the chances up to and
+ * including each light, and is empty when no light has any power.
  **/
 struct Lights {
     Array<Light> lights;
@@ -37,39 +37,55 @@ struct Lights {
     /** Each light's place among the lights, by its instance's index in the scene, or none. **/
     Array<std::uint32_t> byId;
 
-    /** The light whose shape a hit met, or none for a hit on anything else. **/
-    MOYA_KERNEL const Light * at(const geometry::Hit & hit) const {
+    Array<float> cdf;
+
+    /** The place among the lights of the light whose shape a hit met, or kNoPrimitive. **/
+    MOYA_KERNEL std::uint32_t at(const geometry::Hit & hit) const {
         if (!hit.found() || hit.depth != 1U) {
-            return nullptr;
+            return geometry::kNoPrimitive;
         }
         const std::uint32_t id = hit.instances[0];
-        if (id >= byId.size || byId[id] == geometry::kNoPrimitive) {
-            return nullptr;
+        return id < byId.size ? byId[id] : geometry::kNoPrimitive;
+    }
+
+    /** The chance that pick() draws the light at a place. **/
+    MOYA_KERNEL float chance(std::uint32_t place) const {
+        if (place >= cdf.size) {
+            return 0.0F;
         }
-        return &lights[byId[id]];
+        return place == 0U ? cdf[0] : cdf[place] - cdf[place - 1U];
+    }
+
+    /** The place of a light drawn in proportion to its power, or none when no light has any. **/
+    MOYA_KERNEL std::uint32_t pick(float u) const {
+        if (cdf.size == 0U) {
+            return geometry::kNoPrimitive;
+        }
+        std::uint32_t low = 0;
+        std::uint32_t high = cdf.size - 1U;
+        while (low < high) {
+            const std::uint32_t middle = low + ((high - low) / 2U);
+            if (u < cdf[middle]) {
+                high = middle;
+            } else {
+                low = middle + 1U;
+            }
+        }
+        return low;
     }
 
     /**
-     * The radiance a light sends back along a ray that met its shape at a time. Its axis is
-     * turned into the world as a normal is, and the cone and a one-sided light's face are measured
-     * from it towards where the ray came from.
+     * The radiance the light at a place sends back along a ray that met its shape, as its shape
+     * stood at the hit's time.
      **/
-    MOYA_KERNEL static spectrum::SampledSpectrum emitted(const Light & light, const surface::Surfaces & surfaces, const geometry::Ray & ray, float time,
-        const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    MOYA_KERNEL spectrum::SampledSpectrum emitted(std::uint32_t place, const surface::Surfaces & surfaces, const geometry::Ray & ray,
+        const geometry::Hit & hit, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
+        const Light & light = lights[place];
         glm::mat4 toWorld { 1.0F };
-        if (!surfaces.placement(light.id, surfaces.held(time), toWorld)) {
+        if (!surfaces.placement(light.id, surfaces.held(hit.time), toWorld)) {
             return spectrum::SampledSpectrum(0.0F);
         }
-        const glm::vec3 axis = glm::normalize(glm::transpose(glm::inverse(glm::mat3(toWorld))) * light.axis);
-        const float cosine = glm::dot(-glm::normalize(ray.direction), axis);
-        if (light.oneSided != 0U && !(cosine > 0.0F)) {
-            return spectrum::SampledSpectrum(0.0F);
-        }
-        const float share = coneShare(light, cosine);
-        if (!(share > 0.0F)) {
-            return spectrum::SampledSpectrum(0.0F);
-        }
-        return spectrumOf(light, table, wavelengths) * (light.scale * share);
+        return radiance(light, toWorld, ray.at(hit.distance), -glm::normalize(ray.direction), table, wavelengths);
     }
 };
 

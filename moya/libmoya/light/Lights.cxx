@@ -15,6 +15,7 @@
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -33,6 +34,7 @@
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/trigonometric.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::light {
@@ -110,10 +112,44 @@ float heldTo(const scene::Scene & scene, const scene::Handle & handle, const cha
     return std::clamp(scene.value(handle, name).floatArray().front(), least, most);
 }
 
+/** The kernel's shape of a light of a kind. **/
+kernel::light::Shape shapeOf(const std::string & kind) {
+    if (kind == "diskLight") {
+        return kernel::light::Shape::Disk;
+    }
+    if (kind == "sphereLight") {
+        return kernel::light::Shape::Sphere;
+    }
+    return kind == "cylinderLight" ? kernel::light::Shape::Cylinder : kernel::light::Shape::Rect;
+}
+
+/**
+ * The sum of the shares of the total up to and including each of a list of powers, the last held
+ * to one. Empty when the powers add up to nothing.
+ **/
+std::vector<float> cumulative(const std::vector<float> & powers) {
+    double total = 0.0;
+    for (const float power : powers) {
+        total += power;
+    }
+    std::vector<float> out;
+    if (!(total > 0.0)) {
+        return out;
+    }
+    double sum = 0.0;
+    for (const float power : powers) {
+        sum += power;
+        out.push_back(static_cast<float>(sum / total));
+    }
+    out.back() = 1.0F;
+    return out;
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config) {
     std::vector<kernel::light::Light> lights;
+    std::vector<float> powers;
     std::uint32_t most = 0;
     for (const geometry::ShapedLight & shaped : prototypes.lights) {
         const scene::Handle & handle = shaped.handle;
@@ -128,8 +164,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         const std::vector<float> & floats = colour.floatArray();
         out.colour = config.input(colour.space()).apply(glm::vec3 { floats[0], floats[1], floats[2] });
         out.scale = number("intensity") * std::exp2(number("exposure"));
+        const float size = area(scene, handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
         if (scene.value(handle, "normalize").integerArray().front() != 0) {
-            const float size = area(scene, handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
             out.scale = size > 0.0F ? out.scale / size : out.scale;
         }
         if (scene.value(handle, "enableColorTemperature").integerArray().front() != 0) {
@@ -140,10 +176,17 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         }
         // a cylinder light's shape is a quadric about z, turned onto x, so the light's -z is its +x
         out.axis = kind == "cylinderLight" ? glm::vec3 { 1.0F, 0.0F, 0.0F } : glm::vec3 { 0.0F, 0.0F, -1.0F };
-        out.oneSided = kind == "rectLight" || kind == "diskLight" ? 1U : 0U;
+        out.shape = shapeOf(kind);
+        out.size = kind == "rectLight" ? glm::vec2 { number("width"), number("height") } : glm::vec2 { number("radius"), 0.0F };
+        if (kind == "cylinderLight") {
+            out.size.y = number("length");
+        }
         out.coneAngle = glm::radians(heldTo(scene, handle, "coneAngle", 0.0F, kWholeCone));
         out.coneSoftness = heldTo(scene, handle, "coneSoftness", 0.0F, 1.0F);
         lights.push_back(out);
+        // a face that emits a radiance L over an area A emits a power of L A pi
+        const float luminance = kernel::spectrum::acescgToXyz(out.colour).y;
+        powers.push_back(std::fmax(0.0F, out.scale * luminance * size * kPi));
         most = out.id + 1U > most ? out.id + 1U : most;
     }
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
@@ -152,10 +195,13 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     }
     lights_ = uploaded(device, lights);
     byId_ = uploaded(device, byId);
+    cdf_ = uploaded(device, cumulative(powers));
 }
 
 kernel::light::Lights Lights::view() const {
-    return kernel::light::Lights { .lights = device::view<kernel::light::Light>(*lights_), .byId = device::view<std::uint32_t>(*byId_) };
+    return kernel::light::Lights { .lights = device::view<kernel::light::Light>(*lights_),
+        .byId = device::view<std::uint32_t>(*byId_),
+        .cdf = device::view<float>(*cdf_) };
 }
 
 };  // namespace v3d::moya::light

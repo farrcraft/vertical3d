@@ -146,6 +146,7 @@ options "options"
     frame integer = 0
     frameAspect float = 0
     glossyDepth integer = 4
+    lightSampling string = "mis"
     maxDepth integer = 12
     pixelAspect float = 1
     resolution integer[2] = 64 48

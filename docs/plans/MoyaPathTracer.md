@@ -132,7 +132,7 @@ among the options before the record is drafted.
 | [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | done |
 | [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | done |
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | done |
-| [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | open |
+| [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | done |
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | open |
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | open |
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | open |
@@ -538,6 +538,45 @@ BSDF sampling alone. A light with `normalize` at twice its size gives the same i
 away. A colour temperature of 6504 K is near D65. A light outside its cone lights nothing.
 
 ### Step 11 — Next event estimation and MIS
+
+**Done.** `integrate::direct` draws a light sample at each shading point, and `metShare` weighs a
+BSDF sample that meets a light. `light::sample()` and `light::density()` in
+`kernel/light/Sampling.h` draw a point on each shape and give its density by solid angle. The
+options gain `lightSampling`, which is `mis`, `light` or `bsdf`, and the path state gains the
+shading point a BSDF sample left. `PathParams` gains the cdf of the lights' powers, so the CPU
+library's table is now version 7.
+
+Each case was run against broken code as well, one break at a time. Either MIS weight left at
+one failed the closed form and the MIS case. A shadow ray left out failed the shadow case. A light
+sample past either depth limit failed the depth case. Always the first light, or a chance of one,
+failed the case that compares light samples with BSDF samples over three shapes. A rectangle's
+azimuth offset of the wrong sign, an ellipse inverted with no Newton step, a sphere's narrow cone
+without its expansion, and an area density without its stretch each failed their shape's
+chi-squared case. Six things the list below did not settle:
+
+* **The spherical ellipse is exact.** Its solid angle comes from Legendre's third kind through
+  Carlson's R_F and R_J, and each sample inverts it by Newton's method within a bracket. The
+  paper's production form reads a table and drops samples outside the ellipse, which biases the
+  light. The cone's frame and solid angle were first checked against a sum over the disk, and the
+  sampler by a chi-squared test, outside the tree. The integral holds whichever semi-axis is the
+  longer, so the axes are not sorted.
+* **A shape its transformation shears or stretches is sampled by area.** A spherical rectangle
+  needs right angles, a spherical ellipse a round disk, and a cone a round sphere. A rect or disk
+  below a thousandth of a steradian is sampled by area too, since its solid angle loses precision
+  in a float there.
+* **Every light emits from one face.** A sphere or cylinder light emits from its outer face, so
+  light sampling never brings in light from a face a BSDF sample could not meet.
+* **A light's power for its pick leaves its cone out**: its radiance's luminance times its area
+  times pi.
+* **A light sample at a bounce a depth limit refuses is not drawn**, so MIS weighs two strategies
+  that reach the same paths.
+* **MIS's error is not the least of the three in every scene.** Under a small light it lies 1%
+  above light sampling alone, and under a large one 60% above BSDF sampling alone, as Veach's
+  bound allows. Its case holds it within twice the better strategy's error and below 0.6 of the
+  worse one's.
+
+[Lights.md](../offline/Lights.md) states how each light is drawn and sampled, and
+[Integrator.md](../offline/Integrator.md#lights) the strategies.
 
 * **Each bounce samples a light**, and casts a shadow ray through `any()`. One light is picked
   in proportion to its power until step 15.

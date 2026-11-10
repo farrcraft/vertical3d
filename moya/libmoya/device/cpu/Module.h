@@ -26,7 +26,7 @@ using TraceParams = kernel::geometry::TraceRays<Traversal>;
 using PathParams = kernel::integrate::Paths<Traversal>;
 
 /** The version of the table below. A library of another version is refused. **/
-inline constexpr std::uint32_t kModuleVersion = 6;
+inline constexpr std::uint32_t kModuleVersion = 7;
 
 /** The name of the function each library exports, which gives its table. **/
 inline constexpr const char * kModuleEntry = "moya_cpu_module";

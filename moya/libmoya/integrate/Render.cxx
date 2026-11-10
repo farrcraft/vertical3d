@@ -64,6 +64,14 @@ std::uint32_t count(const scene::Scene & scene, const std::string & name) {
     return static_cast<std::uint32_t>(std::max(option(scene, name).integerArray().front(), 0));
 }
 
+/** The strategy an option names: multiple importance sampling unless it names another. **/
+kernel::integrate::Strategy strategyNamed(const std::string & name) {
+    if (name == "light") {
+        return kernel::integrate::Strategy::Light;
+    }
+    return name == "bsdf" ? kernel::integrate::Strategy::Bsdf : kernel::integrate::Strategy::Mis;
+}
+
 };  // namespace
 
 kernel::integrate::Settings settingsOf(const scene::Scene & scene, const colour::Config & config) {
@@ -75,7 +83,8 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene, const colour:
         .specularDepth = count(scene, "specularDepth"),
         .transmissionDepth = count(scene, "transmissionDepth"),
         .rouletteDepth = count(scene, "rouletteDepth"),
-        .environment = config.input(environment.space()).apply(glm::vec3 { floats[0], floats[1], floats[2] }) };
+        .environment = config.input(environment.space()).apply(glm::vec3 { floats[0], floats[1], floats[2] }),
+        .strategy = strategyNamed(option(scene, "lightSampling").stringArray().front()) };
 }
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,

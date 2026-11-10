@@ -12,6 +12,7 @@
 #include <cstdint>
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 /**
  * The fields of a path's state, declared once as a type and a name each. Every device lays the
@@ -24,7 +25,8 @@
  * - radiance is the light it has gathered so far.
  * - wavelengths are the four it carries, and weight is its pixel filter's weight.
  * - bounces counts its bounces, and each kind's count is kept apart for its depth limit.
- * - density is the last BSDF sample's, which multiple importance sampling weighs a light by.
+ * - density is the last BSDF sample's, which multiple importance sampling weighs a light by, and
+ *   from is the shading point that sample was drawn at.
  **/
 #define MOYA_PATH_FIELDS(FIELD)                                \
     FIELD(glm::uvec2, pixel)                                   \
@@ -39,7 +41,7 @@
     FIELD(std::uint32_t, glossyBounces)                        \
     FIELD(std::uint32_t, specularBounces)                      \
     FIELD(std::uint32_t, transmissionBounces)                  \
-    FIELD(float, density)
+    FIELD(float, density)                                          FIELD(glm::vec3, from)
 
 namespace v3d::moya::kernel::integrate {
 

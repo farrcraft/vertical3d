@@ -106,6 +106,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    frame integer = 0\n"
         "    frameAspect float = 0\n"
         "    glossyDepth integer = 4\n"
+        "    lightSampling string = \"mis\"\n"
         "    maxDepth integer = 12\n"
         "    pixelAspect float = 1\n"
         "    resolution integer[2] = 320 240\n"

@@ -26,7 +26,10 @@ namespace v3d::moya::light {
  * the shutter opens, so its power is the same at any size. A light of no area is not divided.
  *
  * A rect or disk light emits from the face its -z axis points to, and a sphere or cylinder light
- * from all of it. A cone angle is held to [0, 180] degrees and a softness to [0, 1].
+ * from its outer face. Each light is drawn in proportion to its power: its radiance's luminance
+ * times its area in the world times pi, which leaves its cone out.
+ *
+ * A cone angle is held to [0, 180] degrees and a softness to [0, 1].
  *
  * It reads the device's memory, so the device outlives it.
  **/
@@ -44,6 +47,7 @@ class Lights final {
  private:
     boost::shared_ptr<device::Buffer> lights_;
     boost::shared_ptr<device::Buffer> byId_;
+    boost::shared_ptr<device::Buffer> cdf_;
 };
 
 };  // namespace v3d::moya::light

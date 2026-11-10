@@ -49,7 +49,9 @@ then derived as RI derives it.
   from, which is the render camera while it names none. `maxDepth`, `diffuseDepth`,
   `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth` limit a path's
   bounces, and `environment` is the colour a path that leaves the scene meets, as
-  [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says.
+  [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says. `lightSampling` is how a
+  path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
+  [Integrator.md](Integrator.md#lights) says.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the

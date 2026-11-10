@@ -19,7 +19,7 @@ A path's state is what one stage hands the next. Its fields are declared once, i
 
 The state holds the pixel and the sample, the ray traced next, the throughput and the light
 gathered so far. It also holds the wavelengths, the pixel filter's weight, the count of bounces
-in all and of each kind, and the last BSDF sample's density.
+in all and of each kind, the last BSDF sample's density, and the shading point it was drawn at.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -30,7 +30,8 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
 - **The camera's draws come first**: the pixel filter's offset, the point on the lens, the time
   and the wavelengths.
 - **Each bounce has a block of `kBounceDraws` dimensions**, and each draw has a fixed place in it:
-  the BSDF's direction, then Russian roulette. The rest of the block is kept for a light's draws.
+  the BSDF's direction, Russian roulette, the light a light sample draws, and the point on it. The
+  rest of the block is kept for draws to come.
 - **`bounceDimension(bounce, place)`** gives a draw's dimension. Any stage then draws its numbers
   from the pixel, the sample, the bounce and the place alone.
 
@@ -45,8 +46,9 @@ pixel in index order.
 - **Intersect** traces the ray through the traversal the launch was built with.
 - **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers the
   environment: the options' colour as an illuminant, times its throughput. A path whose ray meets
-  a light's shape gathers the radiance the light sends back along it, times its throughput, and
-  ends there.
+  a light's shape gathers its share of the radiance the light sends back along it, times its
+  throughput, and ends there. At a shading point, a path gathers a light sample, as
+  [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
   the BSDF's value and the cosine to the shading normal, over the density. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
@@ -55,8 +57,32 @@ pixel in index order.
 - **Accumulate** adds the light the path gathered to its pixel, with the filter's weight.
 
 A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
-refuses a sample, or by Russian roulette. A path finds a light only by the direction its BSDF
-draws.
+refuses a sample, or by Russian roulette.
+
+## Lights
+
+A path finds the lights with a shape in two ways: by a light sample at each shading point, and by
+the direction its BSDF draws meeting a light. The options' `lightSampling` chooses between them.
+
+- **A light sample** draws one light in proportion to its power, then a point on it, as
+  [Lights.md](Lights.md#sampling-a-light) says. A shadow ray from the shading point towards the
+  point says whether anything lies between. It stops short of the point by `kShadowShort` of its
+  length, and a light's shape never stops one. The sample gathers the BSDF's value times the
+  light's radiance and the cosine to the shading normal, over the chance of the light times the
+  point's density.
+- **`mis`**, the fallback, weighs the two by multiple importance sampling with the power
+  heuristic. A light sample is weighed by its density against the BSDF's density for its
+  direction. A BSDF sample that meets a light is weighed by its density against the chance of the
+  light times the light's density for the point it met, seen from the shading point it left.
+- **`light`** finds the lights by light samples alone, and a BSDF sample that meets a light
+  gathers nothing.
+- **`bsdf`** finds them by BSDF samples alone, and draws no light sample.
+- **A camera ray that meets a light gathers all of it**, whatever the strategy, since nothing
+  else samples the light for it.
+- **A bounce that a depth limit refuses draws no light sample.** A shading point at `maxDepth`
+  bounces, or at the diffuse limit, draws none, since the BSDF's sample there would end the path.
+- **The environment is found by BSDF samples alone**, and gathers all of its light, whatever
+  the strategy.
 
 ## Depth limits and Russian roulette
 

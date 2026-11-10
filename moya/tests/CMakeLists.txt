@@ -20,6 +20,7 @@ v3d_add_test(moya
 	"HitTest.cxx"
 	"HitViewTest.cxx"
 	"InstancesTest.cxx"
+	"LightSamplingTest.cxx"
 	"LightsTest.cxx"
 	"MotionTest.cxx"
 	"PathsTest.cxx"

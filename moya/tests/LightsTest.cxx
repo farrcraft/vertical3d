@@ -72,10 +72,10 @@ glm::mat4 flipped(const glm::mat4 & place) {
 /**
  * A scene of an orthographic camera at a distance back along -z, which looks along +z. It sees
  * the square of a half width about a centre in x and y, at kSide pixels square, with samples per
- * pixel and a black environment.
+ * pixel and a black environment. Gives the options.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the samples, then the view
-void viewed(scene::Scene & scene, std::uint32_t samples, float distance, const glm::vec2 & centre, float half) {
+scene::Handle viewed(scene::Scene & scene, std::uint32_t samples, float distance, const glm::vec2 & centre, float half) {
     const scene::Handle options = scene.create("options", "options");
     const scene::Handle camera = scene.create("camera", "camera");
     scene.set(options, "camera", scene::Value::handle(camera));
@@ -83,6 +83,7 @@ void viewed(scene::Scene & scene, std::uint32_t samples, float distance, const g
     scene.set(options, "samples", scene::Value::integer(static_cast<std::int32_t>(samples)));
     scene.set(camera, "screen", scene::Value::floats({ centre.x - half, centre.x + half, centre.y - half, centre.y + half }));
     scene.set(camera, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -distance)));
+    return options;
 }
 
 /** A white plane at z = 0 that faces the camera. **/
@@ -143,6 +144,20 @@ float diskAt(const glm::vec2 & at, float radius, float height) {
     return underDisk(glm::length(at), radius, height);
 }
 
+/**
+ * A white plane under a disk light of a radius at a height, lit by a strategy and viewed from
+ * five units back across half a unit, with samples per pixel.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, then the height
+film::Snapshot diskPicture(const char * strategy, float radius, float height, std::uint32_t samples) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = viewed(scene, samples, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+    scene.set(options, "lightSampling", scene::Value::string(strategy));
+    plane(scene);
+    diskAbove(scene, radius, height);
+    return rendered(scene);
+}
+
 /** A light camera rays see, at the origin, in a scene viewed from five units back. **/
 scene::Handle seen(scene::Scene & scene, const std::string & kind, const glm::mat4 & place) {
     viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 1.0F);
@@ -153,23 +168,98 @@ scene::Handle seen(scene::Scene & scene, const std::string & kind, const glm::ma
     return made;
 }
 
-// a white plane under a disk light reaches the closed form of the disk's irradiance, by paths
-// that sample the plane's BSDF and meet the light. The camera sees through the light
-BOOST_AUTO_TEST_CASE(moya_lights_a_disk_light_gives_its_closed_form_by_bsdf_sampling_test) {
+// a white plane under a disk light reaches the closed form of the disk's irradiance by each
+// strategy. Paths find the light by the plane's BSDF, by light samples alone, and by both. The
+// camera sees through the light
+BOOST_AUTO_TEST_CASE(moya_lights_a_disk_light_gives_its_closed_form_by_each_strategy_test) {
     const glm::vec2 centre { 0.0F };
-    scene::Scene scene(scene::kinds());
-    viewed(scene, 256, 5.0F, centre, 0.25F);
-    plane(scene);
-    diskAbove(scene, 2.0F, 1.0F);
-    const film::Snapshot snapshot = rendered(scene);
-    const film::Furthest furthest = film::furthest(snapshot, [&](const glm::uvec2 & pixel) {
-        const glm::vec2 at = centre - 0.25F + (glm::vec2 { static_cast<float>(pixel.x), static_cast<float>(pixel.y) } + 0.5F) * (0.5F / static_cast<float>(kSide));
-        return underDisk(glm::length(at), 2.0F, 1.0F);
-    });
-    BOOST_TEST(furthest.sigmas < 5.0F);
     const float expected = meanOver(centre, 0.25F, &diskAt, 2.0F, 1.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected * 1.05F) > 10.0F);
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot snapshot = diskPicture(strategy, 2.0F, 1.0F, 256);
+            const film::Furthest furthest = film::furthest(snapshot, [&](const glm::uvec2 & pixel) {
+                const glm::vec2 at =
+                    centre - 0.25F + (glm::vec2 { static_cast<float>(pixel.x), static_cast<float>(pixel.y) } + 0.5F) * (0.5F / static_cast<float>(kSide));
+                return underDisk(glm::length(at), 2.0F, 1.0F);
+            });
+            BOOST_TEST(furthest.sigmas < 5.0F);
+            BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+            BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected * 1.05F) > 10.0F);
+        }
+    }
+}
+
+// multiple importance sampling keeps a standard error near the better strategy's, and far below
+// the worse one's. Light samples find a small light best, and the BSDF a large one. It is not
+// below the better one in every scene, since the power heuristic splits each direction between
+// two samples
+BOOST_AUTO_TEST_CASE(moya_lights_mis_keeps_near_the_better_strategy_for_a_small_light_and_a_large_one_test) {
+    const auto error = [](const char * strategy, float radius) {
+        return film::mean(diskPicture(strategy, radius, 1.0F, 64), { 0, 0 }, { kSide, kSide }).error;
+    };
+    for (const float radius : { 0.2F, 8.0F }) {
+        BOOST_TEST_CONTEXT("radius " << radius) {
+            const float bsdf = error("bsdf", radius);
+            const float lit = error("light", radius);
+            const float both = error("mis", radius);
+            BOOST_TEST(both <= 2.0F * std::fmin(bsdf, lit));
+            BOOST_TEST(both <= 0.6F * std::fmax(bsdf, lit));
+        }
+    }
+}
+
+// a light sample is shadowed by what lies between: a plane under a disk light, with a disk wider
+// than the plane between them, is black by light samples alone. The camera sees through the disk
+BOOST_AUTO_TEST_CASE(moya_lights_a_light_sample_is_shadowed_by_what_lies_between_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+    plane(scene);
+    diskAbove(scene, 0.5F, 2.0F);
+    scene.set(options, "lightSampling", scene::Value::string("light"));
+    const scene::Handle cover = scene.create("disk", "cover");
+    scene.set(cover, "radius", scene::Value::number(200.0F));
+    scene.set(instanced(scene, "cover", cover, {}, moved(0.0F, 0.0F, -1.0F)), "camera", scene::Value::integer(0));
+    BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+}
+
+// a bounce a depth limit refuses samples no light: with no bounce allowed, or no diffuse one, the
+// plane under a disk light is black by every strategy
+BOOST_AUTO_TEST_CASE(moya_lights_a_depth_limit_stops_light_samples_test) {
+    for (const char * limit : { "maxDepth", "diffuseDepth" }) {
+        BOOST_TEST_CONTEXT(limit) {
+            scene::Scene scene(scene::kinds());
+            const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+            scene.set(options, limit, scene::Value::integer(0));
+            plane(scene);
+            diskAbove(scene, 2.0F, 1.0F);
+            BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+        }
+    }
+}
+
+// light samples alone and BSDF samples alone give the same picture of a plane lit by a rect, a
+// sphere and a cylinder light, each sampled its own way
+BOOST_AUTO_TEST_CASE(moya_lights_each_shape_gives_one_picture_by_light_samples_and_by_the_bsdf_test) {
+    const auto lit = [](const char * strategy) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = viewed(scene, 256, 5.0F, glm::vec2 { 0.0F }, 1.5F);
+        plane(scene);
+        scene.set(options, "lightSampling", scene::Value::string(strategy));
+        const scene::Handle rect = scene.create("rectLight", "rect");
+        scene.set(rect, "transform", scene::Value::matrix(glm::rotate(moved(-0.8F, 0.6F, -1.0F), glm::radians(160.0F), glm::vec3 { 1.0F, 0.2F, 0.0F })));
+        const scene::Handle sphere = scene.create("sphereLight", "sphere");
+        scene.set(sphere, "radius", scene::Value::number(0.3F));
+        scene.set(sphere, "transform", scene::Value::matrix(moved(0.8F, 0.6F, -0.8F)));
+        const scene::Handle cylinder = scene.create("cylinderLight", "cylinder");
+        scene.set(cylinder, "radius", scene::Value::number(0.15F));
+        scene.set(cylinder, "transform", scene::Value::matrix(moved(0.0F, -0.8F, -0.6F)));
+        return rendered(scene);
+    };
+    const film::Snapshot bsdf = lit("bsdf");
+    const film::Snapshot light = lit("light");
+    BOOST_TEST(film::sigmas(film::mean(bsdf, { 0, 0 }, { kSide, kSide }), film::mean(light, { 0, 0 }, { kSide, kSide })) < 3.0F);
+    BOOST_TEST(film::furthest(bsdf, light).sigmas < 5.0F);
+    BOOST_TEST(film::mean(light, { 0, 0 }, { kSide, kSide }).value > 0.0F);
 }
 
 // with normalize, a disk light's radiance is divided by its area, so one of twice the radius
@@ -187,7 +277,8 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_normalised_light_has_the_same_power_at_any_si
     const film::Estimate large = lit(1.0F);
     BOOST_TEST(film::sigmas(small, meanOver(glm::vec2 { 0.0F }, 0.25F, &diskAt, 0.5F, 8.0F) / (kPi * 0.25F)) < 3.0F);
     BOOST_TEST(film::sigmas(large, meanOver(glm::vec2 { 0.0F }, 0.25F, &diskAt, 1.0F, 8.0F) / kPi) < 3.0F);
-    BOOST_TEST(film::sigmas(small, large) < 3.0F);
+    // at eight units, the closed forms of the two lie 1.2% apart
+    BOOST_TEST(std::fabs((small.value / large.value) - 1.0F) < 0.02F);
 }
 
 // a light lights nothing outside its cone: a point on the plane far off the light's axis sees it
