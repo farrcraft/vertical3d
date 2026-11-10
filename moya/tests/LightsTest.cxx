@@ -558,9 +558,9 @@ scene::Handle square(scene::Scene & scene, const std::string & name, float half)
     return out;
 }
 
-/** A mesh light that makes a geometry emit. **/
-scene::Handle glowing(scene::Scene & scene, const scene::Handle & geometry) {
-    const scene::Handle light = scene.create("meshLight", "glow");
+/** A mesh light of a name that makes a geometry emit. **/
+scene::Handle glowing(scene::Scene & scene, const scene::Handle & geometry, const std::string & name = "glow") {
+    const scene::Handle light = scene.create("meshLight", name);
     scene.set(light, "geometry", scene::Value::handle(geometry));
     return light;
 }
@@ -715,30 +715,45 @@ BOOST_AUTO_TEST_CASE(moya_lights_camera_rays_see_a_mesh_light_only_when_set_test
     BOOST_TEST(seenAt(0).value == 0.0F);
 }
 
-// a mesh light emits from the side its triangles' winding faces: a square turned away from the
-// plane lights nothing, by any strategy. The camera looks through it
+// a mesh light emits from the side its triangles' winding faces: a square facing the plane lights
+// it, and one turned away lights nothing, by any strategy. The camera looks through it
 BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_emits_from_one_side_test) {
+    const auto lit = [](const char * strategy, bool away) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, strategy, 16, 0.25F);
+        const scene::Handle panel = square(scene, "panel", 0.5F);
+        const glm::mat4 place = moved(0.0F, 0.0F, -0.5F);
+        scene.set(instanced(scene, "panel", panel, {}, away ? flipped(place) : place), "camera", scene::Value::integer(0));
+        glowing(scene, panel);
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value;
+    };
     for (const char * strategy : { "bsdf", "light", "mis" }) {
         BOOST_TEST_CONTEXT(strategy) {
-            scene::Scene scene(scene::kinds());
-            litPlane(scene, strategy, 16, 0.25F);
-            const scene::Handle panel = square(scene, "panel", 0.5F);
-            scene.set(instanced(scene, "panel", panel, {}, flipped(moved(0.0F, 0.0F, -0.5F))), "camera", scene::Value::integer(0));
-            glowing(scene, panel);
-            BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+            BOOST_TEST(lit(strategy, false) > 0.1F);
+            BOOST_TEST(lit(strategy, true) == 0.0F);
         }
     }
 }
 
-// a mesh light of a geometry with no triangles emits nothing: a sphere a mesh light names lights
-// nothing below it
+// a mesh light of a geometry with no triangles emits nothing: a sphere a mesh light names adds
+// nothing to the light of a square another mesh light makes emit
 BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_of_no_triangles_emits_nothing_test) {
-    scene::Scene scene(scene::kinds());
-    litPlane(scene, "mis", 16, 0.25F);
-    const scene::Handle ball = scene.create("sphere", "ball");
-    instanced(scene, "ball", ball, {}, moved(0.0F, 0.0F, -2.0F));
-    glowing(scene, ball);
-    BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+    const auto lit = [](bool ball) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, "light", 16, 0.25F);
+        const scene::Handle panel = square(scene, "panel", 0.5F);
+        scene.set(instanced(scene, "panel", panel, {}, moved(0.0F, 0.0F, -0.5F)), "camera", scene::Value::integer(0));
+        glowing(scene, panel);
+        if (ball) {
+            const scene::Handle sphere = scene.create("sphere", "ball");
+            instanced(scene, "ball", sphere, {}, moved(3.0F, 0.0F, -2.0F));
+            glowing(scene, sphere, "glow ball");
+        }
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    const film::Estimate alone = lit(false);
+    BOOST_TEST(alone.value > 0.1F);
+    BOOST_TEST(film::sigmas(lit(true), alone) < 3.0F);
 }
 
 // each light with a shape is an instance in the world, after every other, with the light's index
