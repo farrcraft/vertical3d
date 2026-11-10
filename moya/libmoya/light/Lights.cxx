@@ -5,6 +5,8 @@
 
 #include <moya/libmoya/light/Lights.h>
 
+#include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
@@ -19,11 +21,17 @@
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/light/Bounds.h>
+#include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/light/internal/Gathered.h>
+#include <moya/libmoya/light/internal/Subtree.h>
 #include <moya/libmoya/light/internal/Textures.h>
+#include <moya/libmoya/light/internal/Tree.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -44,6 +52,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <glm/geometric.hpp>
+#include <glm/matrix.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
@@ -127,6 +136,72 @@ float area(const scene::Scene & scene, const scene::Handle & handle, const std::
         sum += stretch(cofactor, glm::vec3 { std::cos(phi), std::sin(phi), 0.0F });
     }
     return radius * size("length") * sum * turn;
+}
+
+/** A light's box in its prototype's space: its shape's, or a point at its origin. **/
+accel::Box localBox(const kernel::light::Light & light) {
+    const glm::vec2 size = light.size;
+    glm::vec3 half { 0.0F };
+    switch (light.shape) {
+        case kernel::light::Shape::Rect:
+            half = glm::vec3 { 0.5F * size.x, 0.5F * size.y, 0.0F };
+            break;
+        case kernel::light::Shape::Disk:
+            half = glm::vec3 { size.x, size.x, 0.0F };
+            break;
+        case kernel::light::Shape::Sphere:
+            half = glm::vec3 { size.x };
+            break;
+        case kernel::light::Shape::Cylinder:
+            half = glm::vec3 { size.x, size.x, 0.5F * size.y };
+            break;
+        case kernel::light::Shape::Point:
+        case kernel::light::Shape::Distant:
+        case kernel::light::Shape::Mesh:
+        case kernel::light::Shape::Dome:
+            break;
+    }
+    return accel::Box { .lower = -half, .upper = half };
+}
+
+/** A box where an instance places it, over the shutter from open to close. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the shutter's open, then its close
+accel::Box placedBox(const accel::Box & box, const geometry::Instance & placed, float open, float close) {
+    return placed.moves() ? accel::sweepBox(box, placed.keys, open, close).swept() : accel::moveBox(box, placed.transform);
+}
+
+/** Whether an instance turns, scales or shears what it places over the shutter. **/
+bool turns(const geometry::Instance & placed) {
+    return std::ranges::any_of(placed.keys, [&](const kernel::geometry::Key & key) {
+        return key.rotation != placed.keys.front().rotation || key.scale != placed.keys.front().scale;
+    });
+}
+
+/**
+ * A light's bounds in the light tree, where an instance places it over the shutter, with its
+ * power. A rect or disk light emits within a quarter turn of its axis, or within its cone where
+ * that is narrower. A sphere, a cylinder or a point emits along every direction, or within its
+ * cone, the cone's softness its falloff. A light that turns over the shutter is bounded by every
+ * direction.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the power, then the shutter
+kernel::light::Bounds boundsOf(const kernel::light::Light & light, const geometry::Instance & placed, float power, float open, float close) {
+    const accel::Box box = placedBox(localBox(light), placed, open, close);
+    kernel::light::Bounds out = internal::everyDirection(box.lower, box.upper);
+    out.power = power;
+    if (turns(placed)) {
+        return out;
+    }
+    out.axis = kernel::light::axisOf(light, placed.transform);
+    const bool coned = light.coneAngle < kernel::light::kQuarterTurn || light.coneSoftness > 0.0F;
+    if (light.shape == kernel::light::Shape::Rect || light.shape == kernel::light::Shape::Disk) {
+        out.cosSpread = 1.0F;
+        out.cosFalloff = std::cos(coned ? std::fmin(light.coneAngle, kernel::light::kQuarterTurn) : kernel::light::kQuarterTurn);
+    } else if (coned) {
+        out.cosSpread = std::cos(light.coneAngle * (1.0F - light.coneSoftness));
+        out.cosFalloff = std::cos(light.coneAngle * light.coneSoftness);
+    }
+    return out;
 }
 
 /** A float parameter held between a least and a most. **/
@@ -375,15 +450,13 @@ void chains(const geometry::Prototypes & prototypes, const std::vector<std::uint
 }
 
 /**
- * The area in the world of each triangle of a geometry, where a chain of instances places it when
- * the shutter opens.
+ * Each triangle of a geometry where a transformation places it when the shutter opens: a vector
+ * along the normal of the side it emits from, as long as its area.
  **/
-std::vector<float> triangleAreas(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & chain, const geometry::Geometry & shape) {
-    glm::mat4 toWorld { 1.0F };
-    for (const std::uint32_t member : chain) {
-        toWorld = toWorld * geometry::transformAt(prototypes.instances[member], prototypes.open);
-    }
-    std::vector<float> out;
+std::vector<glm::vec3> emittingAreas(const geometry::Prototypes & prototypes, const glm::mat4 & toWorld, const geometry::Geometry & shape) {
+    // a transformation that mirrors turns the corners' winding against the normal
+    const float side = glm::determinant(glm::mat3(toWorld)) < 0.0F ? -0.5F : 0.5F;
+    std::vector<glm::vec3> out;
     for (std::uint32_t triangle = 0; triangle < shape.count; ++triangle) {
         glm::vec3 corners[3];
         for (std::uint32_t corner = 0; corner < 3U; ++corner) {
@@ -391,26 +464,168 @@ std::vector<float> triangleAreas(const geometry::Prototypes & prototypes, const 
                 kernel::geometry::sampleAt(shape.points, prototypes.points.data(), prototypes.times.data(), (triangle * 3U) + corner, prototypes.open);
             corners[corner] = glm::vec3(toWorld * glm::vec4(local, 1.0F));
         }
-        out.push_back(0.5F * glm::length(glm::cross(corners[1] - corners[0], corners[2] - corners[0])));
+        out.push_back(side * glm::cross(corners[1] - corners[0], corners[2] - corners[0]));
     }
     return out;
 }
 
 /**
- * The scene's mesh lights, each a light for every chain of instances that places its geometry,
- * appended to the lights with their powers. Each triangle's chance is appended to triangles, and
- * the first light each instance in the world places to meshes. A light whose geometry has no
- * triangles emits nothing, and is reported.
+ * The cone of the directions triangles face, each given by emittingAreas(), about the axis of
+ * their sum. Left as it was when they sum to nothing.
  **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what is read, then what is appended to
+void spreadOf(const std::vector<glm::vec3> & areas, kernel::light::Bounds & bounds) {
+    glm::vec3 sum { 0.0F };
+    for (const glm::vec3 & area : areas) {
+        sum += area;
+    }
+    if (!(glm::dot(sum, sum) > 0.0F)) {
+        return;
+    }
+    bounds.axis = glm::normalize(sum);
+    bounds.cosSpread = 1.0F;
+    for (const glm::vec3 & area : areas) {
+        if (glm::dot(area, area) > 0.0F) {
+            bounds.cosSpread = std::fmin(bounds.cosSpread, glm::dot(bounds.axis, glm::normalize(area)));
+        }
+    }
+}
+
+/**
+ * A subtree over the triangles of a geometry, in its own space, appended to what is gathered. Each
+ * triangle's power is its area when the shutter opens, and its box holds it over the shutter. One
+ * whose points move is bounded by every direction.
+ **/
+internal::Subtree subtreeOf(const geometry::Prototypes & prototypes, const geometry::Geometry & shape, internal::Gathered & out) {
+    const accel::Sweep sweep = accel::triangleSweep(shape.points, prototypes.points, prototypes.times);
+    const std::vector<glm::vec3> areas = emittingAreas(prototypes, glm::mat4(1.0F), shape);
+    const bool still = shape.points.samples < 2U;
+    std::vector<internal::Leaf> leaves;
+    for (std::uint32_t triangle = 0; triangle < shape.count; ++triangle) {
+        accel::Box box;
+        if (still) {
+            for (std::uint32_t corner = 0; corner < 3U; ++corner) {
+                box.grow(kernel::geometry::sampleAt(shape.points, prototypes.points.data(), prototypes.times.data(), (triangle * 3U) + corner, prototypes.open));
+            }
+        } else {
+            box = sweep(triangle, prototypes.open, prototypes.close).swept();
+        }
+        internal::Leaf leaf { .bounds = internal::everyDirection(box.lower, box.upper), .held = triangle };
+        leaf.bounds.power = glm::length(areas[triangle]);
+        if (still && leaf.bounds.power > 0.0F) {
+            leaf.bounds.axis = glm::normalize(areas[triangle]);
+            leaf.bounds.cosSpread = 1.0F;
+        }
+        leaves.push_back(leaf);
+    }
+    internal::Subtree made;
+    made.leaves = static_cast<std::uint32_t>(out.triangleLeaves.size());
+    out.triangleLeaves.resize(out.triangleLeaves.size() + shape.count, kernel::geometry::kNoPrimitive);
+    made.root = internal::build(leaves, out.nodes, out.triangleLeaves, made.leaves);
+    if (made.root != kernel::geometry::kNoPrimitive) {
+        made.bounds = out.nodes[made.root].bounds;
+    }
+    return made;
+}
+
+/**
+ * A mesh light's bounds in the top tree, with its power: its subtree's box where its chain places
+ * it over the shutter, and the directions its triangles face in the world, each given by
+ * emittingAreas(). A chain that turns, or points that move, are bounded by every direction.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain, then the triangles
+kernel::light::Bounds meshBounds(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & chain, const geometry::Geometry & shape,
+    const internal::Subtree & subtree, const std::vector<glm::vec3> & areas, float power) {  // NOLINT(bugprone-easily-swappable-parameters)
+    accel::Box box { .lower = subtree.bounds.lower, .upper = subtree.bounds.upper };
+    bool moves = shape.points.samples > 1U;
+    for (auto level = chain.rbegin(); level != chain.rend(); ++level) {
+        const geometry::Instance & instance = prototypes.instances[*level];
+        box = placedBox(box, instance, prototypes.open, prototypes.close);
+        moves = moves || turns(instance);
+    }
+    kernel::light::Bounds out = internal::everyDirection(box.lower, box.upper);
+    out.power = power;
+    if (!moves) {
+        spreadOf(areas, out);
+    }
+    return out;
+}
+
+/**
+ * The mesh light that a mesh light's handle makes where a chain of instances places a geometry of
+ * triangles, appended to what is gathered with its power. It leads into the geometry's subtree,
+ * which the first light that places the geometry builds. A chain that places triangles of no area
+ * adds nothing.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what is read, then what is built
+void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config, const scene::Handle & handle,
+    const std::vector<std::uint32_t> & placed, std::uint32_t at, std::map<std::uint32_t, internal::Subtree> & subtrees, internal::Gathered & out) {
+    const geometry::Geometry & shape = prototypes.geometries[at];
+    glm::mat4 toWorld { 1.0F };
+    for (const std::uint32_t member : placed) {
+        toWorld = toWorld * geometry::transformAt(prototypes.instances[member], prototypes.open);
+    }
+    const std::vector<glm::vec3> areas = emittingAreas(prototypes, toWorld, shape);
+    std::vector<float> lengths;
+    float size = 0.0F;
+    for (const glm::vec3 & area : areas) {
+        lengths.push_back(glm::length(area));
+        size += lengths.back();
+    }
+    const std::vector<float> sums = cumulative(lengths);
+    if (sums.empty()) {
+        return;
+    }
+    auto subtree = subtrees.find(at);
+    if (subtree == subtrees.end()) {
+        subtree = subtrees.emplace(at, subtreeOf(prototypes, shape, out)).first;
+    }
+    kernel::light::Light made = emitter(scene, handle, config);
+    made.id = kernel::geometry::kNoPrimitive;
+    made.shape = kernel::light::Shape::Mesh;
+    made.depth = static_cast<std::uint32_t>(placed.size());
+    for (std::size_t level = 0; level < placed.size(); ++level) {
+        made.chain[level] = prototypes.instances[placed[level]].id;
+    }
+    made.geometry = at;
+    made.triangles = static_cast<std::uint32_t>(out.triangles.size());
+    made.count = shape.count;
+    made.tree = subtree->second.root;
+    made.leaves = subtree->second.leaves;
+    made.camera = scene.value(handle, "camera").integerArray().front() != 0;
+    if (normalised(scene, handle)) {
+        made.scale /= size;
+    }
+    out.triangles.insert(out.triangles.end(), sums.begin(), sums.end());
+    if (out.meshes.size() <= made.chain[0]) {
+        out.meshes.resize(made.chain[0] + 1U, kernel::geometry::kNoPrimitive);
+    }
+    if (out.meshes[made.chain[0]] == kernel::geometry::kNoPrimitive) {
+        out.meshes[made.chain[0]] = static_cast<std::uint32_t>(out.lights.size());
+    }
+    const float power = std::fmax(0.0F, powerOf(made, size, 0.0F) * kernel::spectrum::acescgToXyz(made.colour).y);
+    if (made.tree != kernel::geometry::kNoPrimitive) {
+        out.top.push_back(internal::Leaf { .bounds = meshBounds(prototypes, placed, shape, subtree->second, areas, power),
+            .held = static_cast<std::uint32_t>(out.lights.size()) });
+    }
+    out.lights.push_back(made);
+    out.powers.push_back(power);
+}
+
+/**
+ * The scene's mesh lights, each a light for every chain of instances that places its geometry,
+ * appended to what is gathered with their powers. Each triangle's chance is appended to the
+ * triangles, and the first light each instance in the world places to the meshes. Each geometry
+ * that emits has one subtree, which each light that places it leads into from the top tree. A
+ * light whose geometry has no triangles emits nothing, and is reported.
+ **/
 void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
-    const boost::shared_ptr<log::Logger> & logger, std::vector<kernel::light::Light> & lights, std::vector<float> & powers,  // NOLINT(bugprone-easily-swappable-parameters)
-    std::vector<float> & triangles, std::vector<std::uint32_t> & meshes) {  // NOLINT(bugprone-easily-swappable-parameters)
+    const boost::shared_ptr<log::Logger> & logger, internal::Gathered & out) {
     const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
     if (named.empty()) {
         return;
     }
     std::set<std::uint32_t> reported;
+    std::map<std::uint32_t, internal::Subtree> subtrees;
     std::vector<std::uint32_t> chain;
     chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
         const geometry::Geometry & shape = prototypes.geometries[at];
@@ -425,38 +640,7 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
             }
             return;
         }
-        const std::vector<float> areas = triangleAreas(prototypes, placed, shape);
-        const std::vector<float> sums = cumulative(areas);
-        if (sums.empty()) {
-            return;
-        }
-        float size = 0.0F;
-        for (const float area : areas) {
-            size += area;
-        }
-        kernel::light::Light out = emitter(scene, handle, config);
-        out.id = kernel::geometry::kNoPrimitive;
-        out.shape = kernel::light::Shape::Mesh;
-        out.depth = static_cast<std::uint32_t>(placed.size());
-        for (std::size_t level = 0; level < placed.size(); ++level) {
-            out.chain[level] = prototypes.instances[placed[level]].id;
-        }
-        out.geometry = at;
-        out.triangles = static_cast<std::uint32_t>(triangles.size());
-        out.count = shape.count;
-        out.camera = scene.value(handle, "camera").integerArray().front() != 0;
-        if (normalised(scene, handle)) {
-            out.scale /= size;
-        }
-        triangles.insert(triangles.end(), sums.begin(), sums.end());
-        if (meshes.size() <= out.chain[0]) {
-            meshes.resize(out.chain[0] + 1U, kernel::geometry::kNoPrimitive);
-        }
-        if (meshes[out.chain[0]] == kernel::geometry::kNoPrimitive) {
-            meshes[out.chain[0]] = static_cast<std::uint32_t>(lights.size());
-        }
-        lights.push_back(out);
-        powers.push_back(std::fmax(0.0F, powerOf(out, size, 0.0F) * kernel::spectrum::acescgToXyz(out.colour).y));
+        appendMesh(scene, prototypes, config, handle, placed, at, subtrees, out);
     });
 }
 
@@ -464,21 +648,27 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
     float reach, const boost::shared_ptr<log::Logger> & logger) {
-    std::vector<kernel::light::Light> lights;
+    internal::Gathered all;
+    std::vector<kernel::light::Light> & lights = all.lights;
     std::vector<kernel::geometry::Key> keys;
-    std::vector<float> powers;
     std::vector<std::uint32_t> distant;
-    std::vector<float> triangles;
-    std::vector<std::uint32_t> meshes;
     std::vector<std::uint32_t> domes;
+    std::vector<std::uint32_t> infinite;
     internal::Textures textures(config, logger);
     const auto add = [&](kernel::light::Light light, const geometry::Instance & placed, float size) {
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
         light.keyCount = static_cast<std::uint32_t>(placed.keys.size());
         keys.insert(keys.end(), placed.keys.begin(), placed.keys.end());
+        const float power = std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y);
+        const auto place = static_cast<std::uint32_t>(lights.size());
+        if (light.shape == kernel::light::Shape::Distant || light.shape == kernel::light::Shape::Dome) {
+            infinite.push_back(place);
+        } else {
+            all.top.push_back(internal::Leaf { .bounds = boundsOf(light, placed, power, prototypes.open, prototypes.close), .held = place });
+        }
         lights.push_back(light);
-        powers.push_back(std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y));
+        all.powers.push_back(power);
     };
     std::uint32_t most = 0;
     for (const geometry::ShapedLight & shaped : prototypes.lights) {
@@ -523,7 +713,9 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         domes.push_back(static_cast<std::uint32_t>(lights.size()));
         add(sky, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
     }
-    meshLights(scene, prototypes, config, logger, lights, powers, triangles, meshes);
+    meshLights(scene, prototypes, config, logger, all);
+    std::vector<std::uint32_t> leaves(lights.size(), kernel::geometry::kNoPrimitive);
+    root_ = internal::build(all.top, all.nodes, leaves, 0);
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
     for (std::size_t i = 0; i < lights.size(); ++i) {
         if (lights[i].id != kernel::geometry::kNoPrimitive) {
@@ -534,13 +726,17 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     keys_ = uploaded(device, keys);
     distant_ = uploaded(device, distant);
     byId_ = uploaded(device, byId);
-    cdf_ = uploaded(device, cumulative(powers));
-    triangles_ = uploaded(device, triangles);
-    meshes_ = uploaded(device, meshes);
+    cdf_ = uploaded(device, cumulative(all.powers));
+    triangles_ = uploaded(device, all.triangles);
+    meshes_ = uploaded(device, all.meshes);
     images_ = uploaded(device, textures.images());
     texels_ = uploaded(device, textures.texels());
     sums_ = uploaded(device, textures.sums());
     domes_ = uploaded(device, domes);
+    nodes_ = uploaded(device, all.nodes);
+    leaves_ = uploaded(device, leaves);
+    triangleLeaves_ = uploaded(device, all.triangleLeaves);
+    infinite_ = uploaded(device, infinite);
 }
 
 kernel::light::Lights Lights::view() const {
@@ -554,7 +750,12 @@ kernel::light::Lights Lights::view() const {
         .images = device::view<kernel::light::Image>(*images_),
         .texels = device::view<glm::vec3>(*texels_),
         .sums = device::view<float>(*sums_),
-        .domes = device::view<std::uint32_t>(*domes_) };
+        .domes = device::view<std::uint32_t>(*domes_),
+        .nodes = device::view<kernel::light::TreeNode>(*nodes_),
+        .root = root_,
+        .leaves = device::view<std::uint32_t>(*leaves_),
+        .triangleLeaves = device::view<std::uint32_t>(*triangleLeaves_),
+        .infinite = device::view<std::uint32_t>(*infinite_) };
 }
 
 };  // namespace v3d::moya::light

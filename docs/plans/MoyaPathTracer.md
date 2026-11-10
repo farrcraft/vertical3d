@@ -136,7 +136,7 @@ among the options before the record is drafted.
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | done |
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | done |
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | done |
-| [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | open |
+| [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | done |
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | open |
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | open |
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
@@ -748,6 +748,40 @@ texel lights a plane as a distant light from that direction does. Light sampling
 and MIS reach the same picture of a varied image.
 
 ### Step 15 — The light tree
+
+**Done.** `kernel/light/Tree.h` holds the tree's nodes, the importance of a node at a shading
+point, and the walks down and up. `light::internal::build()` builds a tree on the host by the
+surface area and orientation heuristic. `light::Lights` builds a top tree over every light with a
+place, and a subtree over the triangles of each geometry a mesh light makes emit, which every
+light placing that geometry shares. `Lights::pickByTree()` draws a light and a triangle with one
+random number, and `Lights::chanceByTree()` gives the chance. The path state gains the shading
+normal, which a BSDF sample that meets a light is weighed by. `PathParams` gains the tree, so the
+CPU library's table is now version 11. Five things the list below did not settle:
+
+* **The options' `lightPicking` keeps drawing by power**, beside `tree`, the fallback, as pbrt-v4
+  keeps its power light sampler. The tests compare the two.
+* **What moves is bounded by every direction**: a light whose rotation or scale changes over the
+  shutter, a mesh light whose chain turns, and a geometry whose points move. Their boxes are
+  swept over the shutter, as the hierarchy sweeps them.
+* **A node's distance is held to its box's half diagonal**, not to pbrt-v4's half the diagonal's
+  length, which mixes a length with a length squared.
+* **A rect or disk light's cone narrows its falloff**, and a sphere's, a cylinder's or a point's
+  sets its spread, its softness the falloff past it.
+* **The tree is built on one thread**, so it depends on the scene alone. Each render builds it
+  again with the lights.
+
+[Lights.md](../offline/Lights.md#the-light-tree) states the rules.
+
+Each case was run against broken code as well, one break at a time. The walk up taking the left
+child's chance for both children failed the chance the tree reports and the picture by power. A
+rect light that emits along its axis alone failed the picture by power. It did so once that case
+drew by light samples alone as well as by both, since BSDF samples find a light the tree leaves
+out. A
+mirrored chain's triangles facing the other way failed it too. A BSDF sample weighed without the
+shading normal failed it by both. A node's importance without its distance failed the error under
+many small lights. The tree's share left out of the count failed the case of distant and dome
+lights alone, which the first build of the cases did not hold. Nothing in the build reads the
+device's threads, so the case of two thread counts has no break to fail it.
 
 * **The tree** as the record of step 3 decides, after Conty Estevez and Kulla: each node a box, a
   cone of directions and an energy, built by a surface area and orientation heuristic.

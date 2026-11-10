@@ -66,7 +66,9 @@ enum class Shape : std::uint8_t {
  * - A mesh light is one place of its geometry: chain holds the instances that place it, by their
  *   indices in the scene, outermost first, and depth how many. geometry is its place among the
  *   surfaces' geometries. Its triangles' chances of being drawn are held from triangles among the
- *   lights' triangle chances, one for each of its count triangles. camera is whether camera rays
+ *   lights' triangle chances, one for each of its count triangles. The light tree draws them
+ *   through its geometry's subtree, whose root is tree among the lights' nodes. The leaf of each
+ *   triangle is held from leaves among the lights' triangle leaves. camera is whether camera rays
  *   see what it emits. Its transform, axis and cone are not read.
  * - image is the place among the lights' images of the image a rect light's texture or a dome
  *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
@@ -92,6 +94,8 @@ struct Light {
     std::uint32_t geometry { 0 };
     std::uint32_t triangles { 0 };
     std::uint32_t count { 0 };
+    std::uint32_t tree { geometry::kNoPrimitive };
+    std::uint32_t leaves { 0 };
     bool camera { false };
     std::uint32_t image { geometry::kNoPrimitive };
 };

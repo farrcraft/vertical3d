@@ -108,6 +108,7 @@ options "options"
     frame integer = 0
     frameAspect float = 0
     glossyDepth integer = 4
+    lightPicking string = "tree"
     lightSampling string = "mis"
     maxDepth integer = 12
     pixelAspect float = 1

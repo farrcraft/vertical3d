@@ -142,15 +142,53 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
 }
 
 /**
- * A point drawn on the light at a place from a point, at a time within the shutter. A mesh light
- * draws a triangle in proportion to its area first, and its density holds the triangle's chance.
- * A dome light is drawn by its image's compensated way under multiple importance sampling, and by
- * its other way under light samples alone, where nothing else finds what compensation leaves out.
+ * The light a light sample draws at a shading point, at a time within the shutter. The light tree
+ * draws it, or its power does, with a mesh light's triangle then drawn in proportion to its area.
+ * Its chance holds the triangle's.
  **/
 template <geometry::Traversal T>
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
-MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t place, const glm::vec3 & from, float time, const glm::vec2 & u,
-    float triangle) {  // NOLINT(bugprone-easily-swappable-parameters)
+MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::ShadingPoint & point, float time, const PathState & state) {
+    const glm::uvec2 pixel = MOYA_PATH(state, pixel);
+    const std::uint32_t sample = MOYA_PATH(state, sample);
+    const std::uint32_t bounce = MOYA_PATH(state, bounces);
+    const float u = paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightPick));
+    if (paths.settings.picking == Picking::Tree) {
+        return paths.lights.pickByTree(paths.surfaces, point.position, point.shading, time, u);
+    }
+    light::Picked out { .place = paths.lights.pick(u) };
+    out.chance = paths.lights.chance(out.place);
+    if (out.chance > 0.0F && paths.lights.lights[out.place].shape == light::Shape::Mesh) {
+        out.primitive = paths.lights.pickTriangle(out.place, paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightTriangle)));
+        out.chance *= paths.lights.triangleChance(out.place, out.primitive);
+    }
+    return out;
+}
+
+/**
+ * The chance that pickLight() draws the light at a place, and the triangle given of a mesh light,
+ * at a shading point with a normal, at a time within the shutter.
+ **/
+template <geometry::Traversal T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
+MOYA_KERNEL float pickChance(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & normal,
+    float time) {  // NOLINT(bugprone-easily-swappable-parameters)
+    if (paths.settings.picking == Picking::Tree) {
+        return paths.lights.chanceByTree(paths.surfaces, place, primitive, from, normal, time);
+    }
+    const float chance = paths.lights.chance(place);
+    return paths.lights.lights[place].shape == light::Shape::Mesh ? chance * paths.lights.triangleChance(place, primitive) : chance;
+}
+
+/**
+ * A point drawn on the light at a place from a point, at a time within the shutter. A mesh light's
+ * point is drawn on the triangle given. A dome light is drawn by its image's compensated way under
+ * multiple importance sampling, and by its other way under light samples alone, where nothing else
+ * finds what compensation leaves out.
+ **/
+template <geometry::Traversal T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
+MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, float time,
+    const glm::vec2 & u) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & chosen = paths.lights.lights[place];
     if (chosen.shape == light::Shape::Dome) {
         return light::domeSample(paths.lights, place, paths.lights.placement(place, time), from, u, paths.settings.strategy == Strategy::Mis);
@@ -158,21 +196,18 @@ MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t p
     if (chosen.shape != light::Shape::Mesh) {
         return light::sample(chosen, paths.lights.placement(place, time), from, u);
     }
-    const std::uint32_t primitive = paths.lights.pickTriangle(place, triangle);
     glm::vec3 corners[3];
     glm::vec3 normal { 0.0F };
     if (primitive == geometry::kNoPrimitive || !paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return light::LightSample {};
     }
-    light::LightSample out = light::triangleSample(corners, normal, from, u);
-    out.density *= paths.lights.triangleChance(place, primitive);
-    return out;
+    return light::triangleSample(corners, normal, from, u);
 }
 
 /**
  * The density with which drawLight() draws a point of the light at a place from a point, at a
  * time within the shutter, under multiple importance sampling. A mesh light's point lies on one of
- * its triangles, which a hit names.
+ * its triangles, which a hit names, and its density is on that triangle.
  **/
 template <geometry::Traversal T>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the triangle
@@ -190,7 +225,7 @@ MOYA_KERNEL float lightDensity(const Paths<T> & paths, std::uint32_t place, std:
     if (!paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return 0.0F;
     }
-    return paths.lights.triangleChance(place, primitive) * light::triangleDensity(corners, normal, from, met);
+    return light::triangleDensity(corners, normal, from, met);
 }
 
 /** What the light at a place sends to a point from a point drawn on it, at a time. **/
@@ -211,9 +246,9 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::
 
 /**
  * Next event estimation at a shading point: the light a light sample brings in, weighed against
- * the BSDF's sample by the power heuristic. A light is drawn in proportion to its power, then a
- * point on it, and a shadow ray towards the point says whether anything lies between. A bounce
- * that a depth limit refuses samples no light, since the BSDF's sample there ends the path.
+ * the BSDF's sample by the power heuristic. A light is drawn by pickLight(), then a point on it,
+ * and a shadow ray towards the point says whether anything lies between. A bounce that a depth
+ * limit refuses samples no light, since the BSDF's sample there ends the path.
  *
  * A light that lies at one point or along one direction takes the whole weight, since no BSDF
  * sample meets it, and is sampled whatever the strategy. While the BSDF alone finds the lights,
@@ -229,20 +264,21 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
-    const std::uint32_t place = paths.lights.pick(paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightPick)));
-    const float chance = paths.lights.chance(place);
+    const float time = MOYA_PATH(state, ray).time;
+    const float held = paths.surfaces.held(time);
+    const light::Picked picked = pickLight(paths, point, held, state);
+    const float chance = picked.chance;
     if (!(chance > 0.0F)) {
         return none;
     }
+    const std::uint32_t place = picked.place;
     const light::Light & chosen = paths.lights.lights[place];
     const bool delta = light::delta(chosen);
     if (paths.settings.strategy == Strategy::Bsdf && !delta) {
         return none;
     }
-    const float time = MOYA_PATH(state, ray).time;
-    const float held = paths.surfaces.held(time);
-    const light::LightSample drawn = drawLight(paths, place, point.position, held, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)),
-        paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightTriangle)));
+    const light::LightSample drawn =
+        drawLight(paths, place, picked.primitive, point.position, held, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)));
     if (!drawn.found()) {
         return none;
     }
@@ -293,6 +329,7 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
     MOYA_PATH(state, throughput) *= drawn.value * (std::fabs(glm::dot(drawn.incoming, point.shading)) / drawn.density);
     MOYA_PATH(state, density) = drawn.density;
     MOYA_PATH(state, from) = point.position;
+    MOYA_PATH(state, normal) = point.shading;
     MOYA_PATH(state, bounces) = bounce + 1U;
     if (bounce + 1U >= paths.settings.rouletteDepth) {
         const float survival = std::fmin(1.0F, MOYA_PATH(state, throughput).maximum());
@@ -326,7 +363,8 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
     if (paths.settings.strategy == Strategy::Light) {
         return 0.0F;
     }
-    const float density = paths.lights.chance(place) * lightDensity(paths, place, primitive, MOYA_PATH(state, from), met, time);
+    const glm::vec3 & from = MOYA_PATH(state, from);
+    const float density = pickChance(paths, place, primitive, from, MOYA_PATH(state, normal), time) * lightDensity(paths, place, primitive, from, met, time);
     return powerHeuristic(MOYA_PATH(state, density), density);
 }
 

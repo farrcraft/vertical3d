@@ -50,7 +50,8 @@ then derived as RI derives it.
   `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth` limit a path's
   bounces, as [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says.
   `lightSampling` is how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
-  [Integrator.md](Integrator.md#lights) says.
+  [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its
+  light: `tree`, the fallback, or `power`, as [Lights.md](Lights.md#drawing-a-light) says.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the

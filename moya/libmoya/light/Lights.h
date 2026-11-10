@@ -12,6 +12,8 @@
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::log {
@@ -54,6 +56,11 @@ namespace v3d::moya::light {
  * mesh light has its radiance's luminance times its area times pi, and its triangle is then drawn
  * in proportion to its area.
  *
+ * The light tree is built over the lights with a place, with a subtree over the triangles of each
+ * geometry a mesh light makes emit. Each light is bounded over the shutter by its power, its box
+ * and the directions it emits along. It depends on the scene alone, so every run builds the same
+ * tree.
+ *
  * A cone angle is held to [0, 180] degrees and a softness to [0, 1].
  *
  * It reads the device's memory, so the device outlives it.
@@ -85,6 +92,11 @@ class Lights final {
     boost::shared_ptr<device::Buffer> texels_;
     boost::shared_ptr<device::Buffer> sums_;
     boost::shared_ptr<device::Buffer> domes_;
+    boost::shared_ptr<device::Buffer> nodes_;
+    std::uint32_t root_ { 0 };
+    boost::shared_ptr<device::Buffer> leaves_;
+    boost::shared_ptr<device::Buffer> triangleLeaves_;
+    boost::shared_ptr<device::Buffer> infinite_;
 };
 
 };  // namespace v3d::moya::light

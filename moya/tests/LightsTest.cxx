@@ -12,13 +12,20 @@
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Dome.h>
 #include <moya/libmoya/kernel/light/Emission.h>
+#include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/light/Picked.h>
+#include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -36,7 +43,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/filesystem/operations.hpp>
@@ -80,6 +90,21 @@ constexpr std::uint32_t kDomeWidth = 64;
 constexpr std::uint32_t kDomeHeight = 32;
 constexpr std::uint32_t kLitColumn = 6;
 constexpr std::uint32_t kLitRow = 12;
+
+/** A scene's lights, built on a device of some threads, with the surfaces that place them. **/
+struct Built {
+    colour::Config config;
+    CpuDevice device;
+    geometry::Prototypes prototypes;
+    geometry::Surfaces surfaces;
+    light::Lights lights;
+
+    Built(const scene::Scene & scene, unsigned int threads)
+        : device(threads),
+          prototypes(geometry::gather(scene, {})),
+          surfaces(device, prototypes, config),
+          lights(device, scene, prototypes, config, 10.0F, {}) {}
+};
 
 /** A half turn about x, which turns -z onto +z. **/
 glm::mat4 flipped(const glm::mat4 & place) {
@@ -1030,6 +1055,215 @@ BOOST_AUTO_TEST_CASE(moya_lights_changing_a_light_rebuilds_its_shape_test) {
     assembler.update(scene);
     BOOST_TEST((assembler.builtGeometries() == std::vector<std::uint32_t> { disk.index }));
     BOOST_TEST((assembler.builtGroups() == std::vector<std::uint32_t> { geometry::Group::kWorld }));
+}
+
+/**
+ * A white plane under a light of every kind, viewed across a half width of 1.5, with samples per
+ * pixel. A path finds the lights by a strategy, and a light sample draws one by a way of picking.
+ * The shutter opens at 0 and closes at 1.
+ *
+ * The lights are a tilted rect light, a disk, a sphere and a cylinder light, a point, and a spot
+ * with a soft cone. A rect light turns over the shutter, and a group places a square mesh light
+ * twice, once mirrored. While afar holds, a distant light with an angle and a dome light join
+ * them.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the strategy, then the picking
+void everyKind(scene::Scene & scene, const char * strategy, const char * picking, std::uint32_t samples, bool afar) {
+    const scene::Handle options = litPlane(scene, strategy, samples, 1.5F);
+    scene.commit();
+    scene.apply();
+    scene.set(scene.value(options, "camera").handleArray().front(), "shutter", scene::Value::floats({ 0.0F, 1.0F }));
+    scene.set(options, "lightPicking", scene::Value::string(picking));
+    const scene::Handle rect = scene.create("rectLight", "rect");
+    scene.set(rect, "transform", scene::Value::matrix(glm::rotate(moved(-0.8F, 0.6F, -1.0F), glm::radians(160.0F), glm::vec3 { 1.0F, 0.2F, 0.0F })));
+    diskAbove(scene, 0.3F, 1.2F);
+    const scene::Handle sphere = scene.create("sphereLight", "sphere");
+    scene.set(sphere, "radius", scene::Value::number(0.2F));
+    scene.set(sphere, "transform", scene::Value::matrix(moved(0.8F, 0.6F, -0.8F)));
+    const scene::Handle cylinder = scene.create("cylinderLight", "cylinder");
+    scene.set(cylinder, "radius", scene::Value::number(0.1F));
+    scene.set(cylinder, "transform", scene::Value::matrix(moved(0.0F, -0.8F, -0.6F)));
+    scene.set(bulb(scene, 0.0F, 0.7F), "transform", scene::Value::matrix(moved(-0.6F, -0.6F, -0.7F)));
+    const scene::Handle spot = scene.create("sphereLight", "spot");
+    scene.set(spot, "radius", scene::Value::number(0.0F));
+    scene.set(spot, "normalize", scene::Value::integer(1));
+    scene.set(spot, "intensity", scene::Value::number(4.0F));
+    scene.set(spot, "coneAngle", scene::Value::number(25.0F));
+    scene.set(spot, "coneSoftness", scene::Value::number(0.4F));
+    scene.set(spot, "transform", scene::Value::matrix(flipped(moved(0.6F, -0.5F, -1.0F))));
+    const scene::Handle turning = scene.create("rectLight", "turning");
+    const glm::mat4 from = flipped(moved(-1.0F, -1.0F, -0.8F));
+    scene.set(turning, "transform", { 0.0F, 1.0F }, { scene::Value::matrix(from), scene::Value::matrix(glm::rotate(from, glm::radians(40.0F), glm::vec3 { 1.0F, 0.0F, 0.0F })) });
+    const scene::Handle group = scene.create("group", "pair");
+    const scene::Handle panel = square(scene, "panel", 0.2F);
+    scene.set(instanced(scene, "panel", panel, group, moved(0.0F, 0.0F, -0.5F)), "camera", scene::Value::integer(0));
+    glowing(scene, panel);
+    instanced(scene, "right", group, {}, moved(0.9F, 0.9F, 0.0F));
+    instanced(scene, "left", group, {}, glm::scale(moved(-0.9F, 0.9F, 0.0F), glm::vec3 { -1.0F, 1.0F, 1.0F }));
+    if (!afar) {
+        return;
+    }
+    const scene::Handle sun = scene.create("distantLight", "sun");
+    scene.set(sun, "angle", scene::Value::number(10.0F));
+    scene.set(sun, "intensity", scene::Value::number(0.5F));
+    scene.set(sun, "transform", scene::Value::matrix(glm::rotate(flipped(glm::mat4(1.0F)), glm::radians(20.0F), glm::vec3 { 0.0F, 1.0F, 0.0F })));
+    scene.set(sky(scene, ""), "intensity", scene::Value::number(0.1F));
+}
+
+// the light tree gives the picture that drawing each light in proportion to its power gives, for
+// a light of every kind with a place, by light samples alone and by both. Light samples alone show
+// that no bound it holds leaves out a light that reaches a shading point, since BSDF samples would
+// find such a light under multiple importance sampling. Both show that a BSDF sample that meets a
+// light weighs it by the chance the tree draws it with. The distant and dome lights are left out,
+// since their power over the world's reach leaves drawing by power too few draws of the others to
+// compare with
+BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_gives_the_picture_drawing_by_power_gives_test) {
+    const auto lit = [](const char * strategy, const char * picking) {
+        scene::Scene scene(scene::kinds());
+        everyKind(scene, strategy, picking, 256, false);
+        return rendered(scene);
+    };
+    for (const char * strategy : { "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot tree = lit(strategy, "tree");
+            const film::Snapshot power = lit(strategy, "power");
+            BOOST_TEST(film::sigmas(film::mean(tree, { 0, 0 }, { kSide, kSide }), film::mean(power, { 0, 0 }, { kSide, kSide })) < 3.0F);
+            BOOST_TEST(film::furthest(tree, power).sigmas < 5.0F);
+        }
+    }
+}
+
+// with no light that has a place there is no tree, and the distant and dome lights are each drawn
+// with an even share of the random numbers, and never nothing
+BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_lights_afar_alone_by_their_shares_test) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 1, 1.5F);
+    const scene::Handle sun = scene.create("distantLight", "sun");
+    scene.set(sun, "angle", scene::Value::number(10.0F));
+    sky(scene, "");
+    scene.commit();
+    scene.apply();
+    const Built built(scene, 0);
+    const kernel::light::Lights lights = built.lights.view();
+    const kernel::surface::Surfaces surfaces = built.surfaces.view();
+    BOOST_TEST_REQUIRE(lights.root == kernel::geometry::kNoPrimitive);
+    BOOST_TEST_REQUIRE(lights.infinite.size == 2U);
+    constexpr std::uint32_t kDraws = 1024;
+    std::map<std::uint32_t, std::uint32_t> counts;
+    for (std::uint32_t draw = 0; draw < kDraws; ++draw) {
+        const float u = (static_cast<float>(draw) + 0.5F) / static_cast<float>(kDraws);
+        const kernel::light::Picked picked = lights.pickByTree(surfaces, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F, u);
+        BOOST_TEST_REQUIRE(picked.place != kernel::geometry::kNoPrimitive);
+        BOOST_TEST(picked.chance == 0.5F);
+        ++counts[picked.place];
+    }
+    for (std::uint32_t i = 0; i < lights.infinite.size; ++i) {
+        const std::uint32_t place = lights.infinite[i];
+        BOOST_TEST(counts[place] == kDraws / 2U);
+        BOOST_TEST(lights.chanceByTree(surfaces, place, kernel::geometry::kNoPrimitive, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F) == 0.5F);
+    }
+}
+
+// the light tree draws each light, and each triangle of a mesh light, with the chance it reports
+// for it. Evenly spread random numbers draw each as often as its chance says, to within one at
+// each end of its share of them, and draw nothing as often as the chances fall short of one
+BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_by_the_chance_it_reports_test) {
+    scene::Scene scene(scene::kinds());
+    everyKind(scene, "mis", "tree", 1, true);
+    scene.commit();
+    scene.apply();
+    const Built built(scene, 0);
+    const kernel::light::Lights lights = built.lights.view();
+    const kernel::surface::Surfaces surfaces = built.surfaces.view();
+    BOOST_TEST_REQUIRE(lights.root != kernel::geometry::kNoPrimitive);
+    constexpr std::uint32_t kDraws = 1U << 16U;
+    const std::vector<std::pair<glm::vec3, glm::vec3>> shading { { glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F } },
+        { glm::vec3 { 1.2F, -0.4F, 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F } }, { glm::vec3 { 0.1F, 0.2F, -0.6F }, glm::vec3 { 0.6F, 0.0F, -0.8F } },
+        { glm::vec3 { -0.5F, 0.5F, -0.3F }, glm::vec3 { 0.0F } } };
+    for (const auto & [point, normal] : shading) {
+        BOOST_TEST_CONTEXT("at " << point.x << " " << point.y << " " << point.z) {
+            std::map<std::pair<std::uint32_t, std::uint32_t>, std::uint32_t> counts;
+            std::uint32_t none = 0;
+            float furthest = 0.0F;
+            for (std::uint32_t draw = 0; draw < kDraws; ++draw) {
+                const float u = (static_cast<float>(draw) + 0.5F) / static_cast<float>(kDraws);
+                const kernel::light::Picked picked = lights.pickByTree(surfaces, point, normal, 0.5F, u);
+                if (picked.place == kernel::geometry::kNoPrimitive) {
+                    ++none;
+                    continue;
+                }
+                ++counts[{ picked.place, picked.primitive }];
+                const float reported = lights.chanceByTree(surfaces, picked.place, picked.primitive, point, normal, 0.5F);
+                furthest = std::fmax(furthest, std::fabs(picked.chance - reported) / reported);
+            }
+            BOOST_TEST(furthest < 1.0e-5F);
+            double sum = 0.0;
+            for (std::uint32_t place = 0; place < lights.lights.size; ++place) {
+                const kernel::light::Light & light = lights.lights[place];
+                const bool mesh = light.shape == kernel::light::Shape::Mesh;
+                for (std::uint32_t triangle = 0; triangle < (mesh ? light.count : 1U); ++triangle) {
+                    const std::uint32_t primitive = mesh ? triangle : kernel::geometry::kNoPrimitive;
+                    const double chance = lights.chanceByTree(surfaces, place, primitive, point, normal, 0.5F);
+                    sum += chance;
+                    const auto drawn = counts.find({ place, primitive });
+                    const double times = drawn == counts.end() ? 0.0 : drawn->second;
+                    BOOST_TEST(std::fabs(times - (chance * kDraws)) <= 2.0, "light " << place << " triangle " << triangle);
+                }
+            }
+            BOOST_TEST(sum > 0.5);
+            BOOST_TEST(std::fabs(none - ((1.0 - sum) * kDraws)) <= 2.0);
+        }
+    }
+}
+
+// the light tree is the same node for node, whatever threads the device runs
+BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_is_the_same_on_any_count_of_threads_test) {
+    scene::Scene scene(scene::kinds());
+    everyKind(scene, "mis", "tree", 1, true);
+    scene.commit();
+    scene.apply();
+    const Built one(scene, 1);
+    const Built many(scene, 8);
+    const kernel::light::Lights left = one.lights.view();
+    const kernel::light::Lights right = many.lights.view();
+    BOOST_TEST(left.root == right.root);
+    BOOST_TEST(left.nodes.size > 1U);
+    BOOST_TEST_REQUIRE(left.nodes.size == right.nodes.size);
+    BOOST_TEST(std::memcmp(left.nodes.data, right.nodes.data, left.nodes.size * sizeof(kernel::light::TreeNode)) == 0);
+    BOOST_TEST_REQUIRE(left.leaves.size == right.leaves.size);
+    BOOST_TEST(std::equal(left.leaves.data, left.leaves.data + left.leaves.size, right.leaves.data));
+    BOOST_TEST_REQUIRE(left.triangleLeaves.size == right.triangleLeaves.size);
+    BOOST_TEST(std::equal(left.triangleLeaves.data, left.triangleLeaves.data + left.triangleLeaves.size, right.triangleLeaves.data));
+}
+
+// a plane under a grid of small sphere lights, one of which hangs just above it, has a lower
+// error through the light tree than by drawing in proportion to power at the same samples. By
+// power the near light takes one draw in sixty-five, wherever the shading point lies
+BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_lowers_the_error_under_many_small_lights_test) {
+    const auto error = [](const char * picking) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = litPlane(scene, "mis", 16, 0.5F);
+        scene.set(options, "lightPicking", scene::Value::string(picking));
+        for (int y = 0; y < 8; ++y) {
+            for (int x = 0; x < 8; ++x) {
+                const scene::Handle far = scene.create("sphereLight", "far" + std::to_string((y * 8) + x));
+                scene.set(far, "radius", scene::Value::number(0.02F));
+                scene.set(far, "transform", scene::Value::matrix(moved(static_cast<float>(x) - 3.5F, static_cast<float>(y) - 3.5F, -3.0F)));
+            }
+        }
+        const scene::Handle near = scene.create("sphereLight", "near");
+        scene.set(near, "radius", scene::Value::number(0.02F));
+        scene.set(near, "transform", scene::Value::matrix(moved(0.1F, 0.1F, -0.2F)));
+        const film::Snapshot snapshot = rendered(scene);
+        double sum = 0.0;
+        for (std::uint32_t y = 0; y < kSide; ++y) {
+            for (std::uint32_t x = 0; x < kSide; ++x) {
+                sum += film::luminance(snapshot, x, y).error;
+            }
+        }
+        return sum / (kSide * kSide);
+    };
+    BOOST_TEST(error("tree") < 0.5 * error("power"));
 }
 
 };  // namespace

@@ -103,7 +103,8 @@ Kind options() {
             Declaration { .name = "specularDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
-            Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } } } };
+            Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } },
+            Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } } } };
 }
 
 Kind channel() {

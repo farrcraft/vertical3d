@@ -91,7 +91,8 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
         .specularDepth = count(scene, "specularDepth"),
         .transmissionDepth = count(scene, "transmissionDepth"),
         .rouletteDepth = count(scene, "rouletteDepth"),
-        .strategy = strategyNamed(option(scene, "lightSampling").stringArray().front()) };
+        .strategy = strategyNamed(option(scene, "lightSampling").stringArray().front()),
+        .picking = option(scene, "lightPicking").stringArray().front() == "power" ? kernel::integrate::Picking::Power : kernel::integrate::Picking::Tree };
 }
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,

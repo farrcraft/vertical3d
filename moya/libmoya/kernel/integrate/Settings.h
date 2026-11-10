@@ -25,9 +25,19 @@ enum class Strategy : std::uint8_t {
 };
 
 /**
+ * How a light sample draws its light: by the light tree, by what each light may bring to the
+ * shading point, or in proportion to each light's power alone.
+ **/
+enum class Picking : std::uint8_t {
+    Tree,
+    Power
+};
+
+/**
  * What the scene's options set for the integrator. A path ends after maxDepth bounces in all, or
  * when a bounce of one kind would take that kind past its own limit. From rouletteDepth bounces
- * on, Russian roulette may end it. The strategy says how it finds the lights.
+ * on, Russian roulette may end it. The strategy says how it finds the lights, and picking how a
+ * light sample draws one.
  **/
 struct Settings {
     std::uint32_t maxDepth { kMaxDepth };
@@ -37,6 +47,7 @@ struct Settings {
     std::uint32_t transmissionDepth { kMaxDepth };
     std::uint32_t rouletteDepth { kRouletteDepth };
     Strategy strategy { Strategy::Mis };
+    Picking picking { Picking::Tree };
 };
 
 };  // namespace v3d::moya::kernel::integrate

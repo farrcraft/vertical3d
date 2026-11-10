@@ -187,8 +187,13 @@ light's shape does not scatter.
 
 ## Drawing a light
 
+A light sample draws one light. The options' `lightPicking` chooses how: by `tree`, the
+fallback, which draws by what each light may bring to the shading point, or by `power`, which
+draws in proportion to each light's power alone. Both use the powers below. Each light's cone is
+left out of its power.
+
 `Lights::pick()` draws a light in proportion to its power, and `Lights::chance()` gives the chance
-it was drawn with. Each light's cone is left out of its power.
+it was drawn with.
 
 - **A light with a shape** has its radiance's luminance, times its area in the world as it stands
   when the shutter opens, times pi.
@@ -204,6 +209,61 @@ it was drawn with. Each light's cone is left out of its power.
 
 `cdf` holds the sum of the chances up to and including each light, and is empty when no light has
 any power.
+
+## The light tree
+
+`Lights::pickByTree()` draws a light by a tree over the lights, after Conty Estevez and Kulla, with
+one random number. `Lights::chanceByTree()` gives the chance it draws a light with, and a
+triangle of a mesh light, at a shading point. `light::internal::build()` builds each tree on the
+host, in `kernel/light/Tree.h`'s nodes.
+
+- **The top tree holds every light with a place**: those with a shape, the points and the mesh
+  lights. A leaf holds one light.
+- **Each geometry a mesh light makes emit has a subtree** over its triangles, in the geometry's
+  own space. Every mesh light that places the geometry leads into the same subtree from its leaf.
+  The walk takes the shading point and its normal into the geometry's space through the light's
+  chain, at the time of the path.
+- **Distant and dome lights are drawn beside the tree.** Each, and the tree as a whole, has the
+  same chance: one over their count. A scene of no light with a place has no tree, and draws
+  among the distant and dome lights alone.
+- **A node bounds its lights.** It holds a box that holds them over the shutter, and a cone of
+  the directions their faces point along. It holds the angle past that cone they emit to, and
+  the sum of their powers. A
+  triangle's power is its area in its geometry's space when the shutter opens.
+- **A light's cone of directions** is the axis it emits along, turned into the world as a normal
+  is. A rect or a disk emits within a quarter turn of it, or within its cone where that is
+  narrower. A sphere, a cylinder or a point emits along every direction, or within its cone,
+  whose softness is the angle past it. A triangle emits within a quarter turn of its normal. A
+  mesh light's leaf in the top tree holds its triangles' normals in the world.
+- **What moves is bounded by every direction**: a light whose rotation or scale changes over the
+  shutter, a mesh light whose chain turns, and a geometry whose points move. Their boxes hold
+  them at every time.
+- **A walk draws each child by its importance at the shading point.** The importance is the
+  node's power over the distance squared to its box's centre, times a cosine. That cosine's
+  angle is the least between its cone and the direction to the point, less the angle its box
+  subtends. It is
+  zero where that angle reaches the angle past the cone, as no light of the node emits to the
+  point. It is also times the cosine of the least angle between the shading normal, either way,
+  and a direction to the box. The distance is held to the box's half diagonal.
+- **The random number is rescaled at each step**, within the share of it the branch taken holds,
+  so a walk into a subtree draws its triangle by what is left of it.
+- **A BSDF sample that meets a light** finds the chance the tree would have drawn it with. It
+  walks from the light's leaf up to the root, and computes each step's chance as the walk down
+  computes it. A mesh light's leaf of its triangle comes from the hit.
+- **A node splits its lights by the surface area and orientation heuristic.** Twelve planes
+  cross the box of the lights' centres on each axis, and it splits at the one whose two sides
+  cost least. A side costs its power, times the solid angle its cone reaches, times its box's
+  area. A split along an axis much shorter than the node's longest costs more. Where no plane parts
+  the centres, the lights are split in half in their order.
+- **A light of no power has no leaf**, and is never drawn.
+- **The tree is built from the scene alone**, on one thread, so every run builds the same tree.
+  Each render builds it again, with the lights.
+
+`nodes` holds every tree, and `root` is the top tree's root. `leaves` holds each light's leaf by
+its place, and `triangleLeaves` each triangle's, from the mesh light's `leaves`. `infinite`
+holds the distant and dome lights.
+
+Background: [ADR-0214](../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md)
 
 ## Sampling a light
 

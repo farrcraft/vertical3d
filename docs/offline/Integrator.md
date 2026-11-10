@@ -18,8 +18,9 @@ A path's state is what one stage hands the next. Its fields are declared once, i
 - **A field is added to the list**, and every layout gains it.
 
 The state holds the pixel and the sample, the ray traced next, the throughput and the light
-gathered so far. It also holds the wavelengths, the pixel filter's weight, the count of bounces
-in all and of each kind, the last BSDF sample's density, and the shading point it was drawn at.
+gathered so far. It also holds the wavelengths, the pixel filter's weight, and the count of
+bounces in all and of each kind. Last, it holds the last BSDF sample's density, and the shading
+point it was drawn at with its shading normal.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -68,13 +69,15 @@ light where a ray hits its geometry from the side it emits from. A distant light
 met where a ray that leaves the scene lies inside its cone. The options'
 `lightSampling` chooses between the two ways.
 
-- **A light sample** draws one light in proportion to its power, then a point on it, as
-  [Lights.md](Lights.md#sampling-a-light) says. A shadow ray from the shading point towards the
-  point says whether anything lies between. It stops short of the point by `kShadowShort` of its
-  length, and a light's shape never stops one. A shadow ray towards a distant light runs on past
-  everything in the scene. The sample gathers the BSDF's value times what the light sends to the
-  shading point and the cosine to the shading normal, over the chance of the light times the
-  point's density.
+- **A light sample** draws one light, by the light tree or in proportion to its power as the
+  options' `lightPicking` says, then a point on it, as [Lights.md](Lights.md#drawing-a-light)
+  and [Lights.md](Lights.md#sampling-a-light) say. The tree draws by the shading point and its
+  shading normal, which the path keeps for a BSDF sample that meets a light. A shadow ray from
+  the shading point towards the point says whether anything lies between. It stops short of the
+  point by `kShadowShort` of its length, and a light's shape never stops one. A shadow ray
+  towards a distant light runs on past everything in the scene. The sample gathers the BSDF's
+  value times what the light sends to the shading point and the cosine to the shading normal,
+  over the chance of the light times the point's density.
 - **A point and a distant light of no angle are found by light samples alone**, since no
   direction a BSDF draws meets them. A light sample of either takes its whole weight whatever the
   strategy, and is drawn under `bsdf` too.

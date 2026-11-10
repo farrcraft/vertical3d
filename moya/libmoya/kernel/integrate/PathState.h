@@ -26,7 +26,7 @@
  * - wavelengths are the four it carries, and weight is its pixel filter's weight.
  * - bounces counts its bounces, and each kind's count is kept apart for its depth limit.
  * - density is the last BSDF sample's, which multiple importance sampling weighs a light by, and
- *   from is the shading point that sample was drawn at.
+ *   from and normal are the shading point that sample was drawn at and its shading normal.
  **/
 #define MOYA_PATH_FIELDS(FIELD)                                \
     FIELD(glm::uvec2, pixel)                                   \
@@ -42,7 +42,8 @@
     FIELD(std::uint32_t, specularBounces)                      \
     FIELD(std::uint32_t, transmissionBounces)                  \
     FIELD(float, density)                                      \
-    FIELD(glm::vec3, from)
+    FIELD(glm::vec3, from)                                     \
+    FIELD(glm::vec3, normal)
 
 namespace v3d::moya::kernel::integrate {
 
