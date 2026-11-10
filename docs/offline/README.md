@@ -196,6 +196,16 @@ changes a picture the hiders make.
   [Traversal.md](Traversal.md#motion)
 - **Meshes become triangles** by ear clipping, each keeping its face.
   [Geometry.md](Geometry.md)
+- **Subdivision surfaces** are refined by OpenSubdiv, cut from their limit surface to an edge
+  length in pixels with no cracks, and displaced within a bound.
+  [Geometry.md](Geometry.md#tessellation-and-displacement)
+- **Curves, points and RI's quadrics** are intersected by moya's own code: a round curve as the
+  surface a sphere sweeps, a flat one as a ribbon that faces the ray.
+  [Traversal.md](Traversal.md#curves)
+- **A change to the scene rebuilds only the hierarchies it touched.** `accel::Assembler` keeps
+  each geometry's hierarchy until its geometry changes. [Traversal.md](Traversal.md#rebuilding-what-changed)
+- **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
+  [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through

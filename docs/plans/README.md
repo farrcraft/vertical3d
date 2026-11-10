@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [MoyaGeometry](MoyaGeometry.md) | Offline rendering | The rebuilt moya's ray traversal: a wide hierarchy over every primitive the scene names, with motion and nested instances, SIMD on the CPU, OpenSubdiv, tessellation and displacement, and a hit view |
 
 ## Completed plans
 
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaGeometry](completed/MoyaGeometry.md) | Offline rendering | 2026-11-09 | The rebuilt moya's ray traversal: a wide hierarchy over every primitive the scene names, with motion and nested instances, SIMD on the CPU, OpenSubdiv, tessellation and displacement, rebuilding what changed, a hit view and a benchmark |
 | [MoyaScene](completed/MoyaScene.md) | Offline rendering, editor | 2026-11-07 | The rebuilt moya's retained scene: objects of declared kinds by handle, with samples over the shutter and versioned commits, read from RIB by a client and kept in step with the editor's |
 | [MoyaFoundation](completed/MoyaFoundation.md) | Offline rendering, build | 2026-11-07 | The rebuilt moya's foundation: kernel code on a CPU device over oneTBB, sampled spectra and a fitted RGB-to-spectrum table, a ZSobol sampler, a film of AOVs that filters by importance sampling, EXR and 8-bit output, and colour management through OpenColorIO |
 | [Releases](completed/Releases.md) | Engine, apps, build, CI, documents | 2026-11-06 | Vertical3D 0.1.0: apps that run from an install with a version in each, install rules, a changelog and a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |

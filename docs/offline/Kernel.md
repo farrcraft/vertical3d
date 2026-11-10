@@ -36,6 +36,17 @@ SIMD traversal are moya's own types.
 Background: [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md),
 [ADR-0197](../adr/offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md)
 
+## Reaching a traversal
+
+Kernel code names no device's traversal. A stage that traces rays takes its traversal as a
+template parameter, and a device instantiates the stage with its own: the CPU's is
+`device::cpu::Traversal`, and `kernel::geometry::BruteForce` is the oracle every traversal is
+checked against. A traversal gives `nearest(ray)` and `any(ray)`, which the concept `Traversal`
+names. [Traversal.md](Traversal.md#the-traversal-a-stage-takes) states the rules, and
+[Devices.md](Devices.md#the-cpus-instruction-sets) the CPU's builds for each instruction set.
+
+Background: [ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md)
+
 ## The kernel target
 
 `v3dlib_moya_kernel` is a static library built from `moya/libmoya/kernel/CMakeLists.txt`.

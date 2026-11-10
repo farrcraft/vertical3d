@@ -96,10 +96,9 @@ describes the scene it built.
 
 ### 3. Geometry and ray traversal
 
-In progress. [MoyaGeometry](../plans/MoyaGeometry.md) is its plan, and
-[Traversal.md](../offline/Traversal.md) describes what it has built.
-
-Done:
+Done. [MoyaGeometry](../plans/completed/MoyaGeometry.md) was its plan, and
+[Traversal.md](../offline/Traversal.md) and [Geometry.md](../offline/Geometry.md) describe what
+it built.
 
 - **The BVH.** Eight children per node. Built by binned surface area with spatial splits. Motion
   over several segments, and nested instances.
@@ -109,13 +108,12 @@ Done:
 - **Points**, and the RI quadrics.
 - **Transformation and deformation motion**: instances and geometry given at several times
   inside a motion block.
-
-Open:
-
 - **Curves**, round and flat, in every RI basis.
-- **Subdivision surfaces** through OpenSubdiv, with creases and corners.
-- **Tessellation** to an edge length in pixels, and displacement of the tessellated surface
-  within a displacement bound.
+- **Subdivision surfaces** through OpenSubdiv, with creases, corners and holes.
+- **Tessellation** to an edge length in pixels with no cracks, and displacement of the
+  tessellated surface within a displacement bound.
+- **Rebuilding what changed**: a change to the scene builds only the hierarchies it touched.
+- **A hit view** of each test scene, and a benchmark against a committed baseline.
 
 ### 4. The path tracer
 

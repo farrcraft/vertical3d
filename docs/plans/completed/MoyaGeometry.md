@@ -1,7 +1,7 @@
 # Moya Geometry — The Hierarchy, Intersection and Tessellation
 
 Drafted 2026-11-08 against `25ff996c`. This plan takes up section 3 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core traces rays
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core traces rays
 through the scene that section 2 built. A wide bounding volume hierarchy holds every geometry
 the scene names, at every time of its motion and through nested instances, and the CPU
 traverses it with SIMD. Triangles are intersected watertight, and curves, points and the
@@ -15,17 +15,17 @@ changes.
 The rebuild's decisions are ADR-0186 to ADR-0194, the foundation's ADR-0195 to ADR-0199, and the
 scene's ADR-0200 to ADR-0203, all accepted. This plan follows five of them:
 
-* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
   moya implements its own acceleration structures and tessellation, and OpenSubdiv evaluates
   subdivision surfaces.
-* [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md): one kernel
+* [ADR-0191](../../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md): one kernel
   source for every device, with ray traversal in the device layer.
-* [ADR-0193](../adr/offline/0193-offline-moya-owns-its-ray-acceleration-structure.md): moya's
+* [ADR-0193](../../adr/offline/0193-offline-moya-owns-its-ray-acceleration-structure.md): moya's
   own wide BVH, with motion over several segments and nested instances, and every primitive but
   the triangle intersected by moya's code on every device.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): one
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): one
   picture per device on every run.
-* [ADR-0201](../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md): each
+* [ADR-0201](../../adr/offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md): each
   object keeps its own sample times, and a transformation is interpolated by decomposition.
 
 The plan keeps the roadmap's order, with five changes:
@@ -59,7 +59,7 @@ The tree was read at `25ff996c`. Line numbers are from that commit.
 * **A device holds memory and nothing else** (`moya/libmoya/device/Device.h:28`). ADR-0191 puts
   ray traversal in the device layer, and no interface for it exists yet.
 * **Kernel code includes only kernel headers, glm and seven standard headers**
-  ([Kernel.md](../offline/Kernel.md#the-rules)). No SIMD intrinsics header is among them, and the
+  ([Kernel.md](../../offline/Kernel.md#the-rules)). No SIMD intrinsics header is among them, and the
   page says that the lanes of a SIMD traversal are moya's own types.
 * **Nothing in the tree's CMake sets an instruction set.** No target names `/arch:AVX2` or
   `-mavx2`, so the CPU code is compiled for the compiler's default, SSE2 on x64.
@@ -67,16 +67,16 @@ The tree was read at `25ff996c`. Line numbers are from that commit.
   (`moya/libmoya/kernel/CMakeLists.txt`), and its contraction rule is PUBLIC. A traversal that
   inlines a kernel intersection routine rounds as the kernel does.
 * **The CPU device runs tiles on oneTBB** behind `device/internal/Arena.h`, linked PRIVATE.
-  [Devices.md](../offline/Devices.md#the-cpu-device).
+  [Devices.md](../../offline/Devices.md#the-cpu-device).
 
 **The scene:**
 
 * **Every geometry this plan intersects is already a kind**
-  ([Scene.md](../offline/Scene.md#moyas-kinds)): `mesh`, `subdivision`, `curves` in RI's bases
+  ([Scene.md](../../offline/Scene.md#moyas-kinds)): `mesh`, `subdivision`, `curves` in RI's bases
   with linear or cubic type and a flat or round profile, `points`, the seven quadrics, `group`
   and `instance`. An instance carries visibility to camera, shadow and indirect rays.
 * **Each object keeps its own times over the shutter**, and points keep one count at every time
-  ([Scene.md](../offline/Scene.md#samples-over-the-shutter)).
+  ([Scene.md](../../offline/Scene.md#samples-over-the-shutter)).
 * **A nested instance has no single world transformation**, and a group that holds itself is
   stopped by whatever is built from the scene, not by the scene.
 * **A consumer asks for changes since its own version** (`moya/libmoya/scene/Scene.h:148`),
@@ -123,12 +123,12 @@ among the options before the record is drafted.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--the-record-how-kernel-code-reaches-traversal) | The record: how kernel code reaches traversal | `docs/adr` | **0204** | drafted |
-| [2](#step-2--the-record-the-hierarchys-nodes) | The record: the hierarchy's nodes | `docs/adr` | **0205** | drafted |
-| [3](#step-3--the-record-the-cpus-instruction-set) | The record: the CPU's instruction set | `docs/adr` | **0206** | drafted |
-| [4](#step-4--the-record-motion-in-the-hierarchy) | The record: motion in the hierarchy | `docs/adr` | **0207** | drafted |
-| [5](#step-5--the-record-curves) | The record: curves | `docs/adr` | **0208** | drafted |
-| [6](#step-6--the-record-tessellation) | The record: tessellation | `docs/adr` | **0209** | drafted |
+| [1](#step-1--the-record-how-kernel-code-reaches-traversal) | The record: how kernel code reaches traversal | `docs/adr` | **0204** | accepted |
+| [2](#step-2--the-record-the-hierarchys-nodes) | The record: the hierarchy's nodes | `docs/adr` | **0205** | accepted |
+| [3](#step-3--the-record-the-cpus-instruction-set) | The record: the CPU's instruction set | `docs/adr` | **0206** | accepted, amended by 0210 |
+| [4](#step-4--the-record-motion-in-the-hierarchy) | The record: motion in the hierarchy | `docs/adr` | **0207** | accepted |
+| [5](#step-5--the-record-curves) | The record: curves | `docs/adr` | **0208** | accepted, amended by 0211 |
+| [6](#step-6--the-record-tessellation) | The record: tessellation | `docs/adr` | **0209** | accepted |
 | [7](#step-7--rays-hits-and-triangles) | Rays, hits and watertight triangles | `moya/libmoya/kernel` | 0204 | done |
 | [8](#step-8--the-hit-view-and-the-brute-force-oracle) | The hit view and the brute-force oracle | `moya/libmoya`, `moya` | 0204 | done |
 | [9](#step-9--meshes-into-triangles) | Meshes into triangles | `moya/libmoya/geometry` | — | done |
@@ -143,7 +143,7 @@ among the options before the record is drafted.
 | [18](#step-18--rebuilding-what-changed) | Rebuilding what changed | `moya/libmoya/accel` | — | done |
 | [19](#step-19--speed) | Speed: the benchmark and its baseline | `moya/bench` | — | done |
 | [20](#step-20--the-rib-scenes-through-the-hit-view) | The RIB scenes through the hit view | `moya/tests` | — | done |
-| [21](#step-21--the-documents) | The reference pages for geometry and traversal | `docs` | — | open |
+| [21](#step-21--the-documents) | The reference pages for geometry and traversal | `docs` | — | done |
 
 ## What blocks what
 
@@ -211,7 +211,7 @@ that placed it, the parametric position on the primitive, and what section 5 nee
 footprints. A hit that holds less is recomputed by the shade stage from the primitive.
 
 **Drafted** as
-[ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md): each stage
+[ADR-0204](../../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md): each stage
 that traces takes the traversal as a template parameter, as Mitsuba 3 does, so the reference and
 every instruction set run in one binary. A hit holds its distance, primitive, position on it, time
 and chain of instances, as HIP RT, OptiX and Embree return them. The shade stage computes the
@@ -234,7 +234,7 @@ primitive and what a GPU back end can reuse.
   the compressed wide BVH and Embree's quantized nodes are.
 
 **Drafted** as
-[ADR-0205](../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md): eight
+[ADR-0205](../../adr/offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md): eight
 children per node, each box at full precision, built binary and collapsed. Embree's default
 layout is at full precision, and the traversal is held to its speed.
 
@@ -257,7 +257,7 @@ The record also settles the oldest instruction set moya runs on, and whether a t
 without SIMD remains for checking the others.
 
 **Drafted** as
-[ADR-0206](../adr/offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md): the fused
+[ADR-0206](../../adr/offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md): the fused
 CPU path compiled for SSE4.2, AVX2 and AVX-512, chosen when the device is made, with an option
 that names a lower one for tests. Embree, Cycles and OIDN choose at start-up. The brute-force
 traversal is the reference, so there is no scalar traversal.
@@ -283,7 +283,7 @@ not bound the middle. pbrt bounds it exactly from the motion's derivatives, and 
 margin.
 
 **Drafted** as
-[ADR-0207](../adr/offline/0207-offline-the-hierarchy-splits-motion-by-time.md): boxes at the two
+[ADR-0207](../../adr/offline/0207-offline-the-hierarchy-splits-motion-by-time.md): boxes at the two
 ends of each node's time range, with time splits where they cost less than spatial ones, as
 Embree's builder for several segments does. A rotating instance is bounded exactly, as pbrt and
 Embree bound it.
@@ -307,7 +307,7 @@ and a GPU agree. RI's curves come in five bases, linear or cubic.
 Flat curves face the ray in every option, as RI's flat curves face the camera.
 
 **Drafted** as
-[ADR-0208](../adr/offline/0208-offline-curves-are-swept-and-converted-to-bezier.md): round curves
+[ADR-0208](../../adr/offline/0208-offline-curves-are-swept-and-converted-to-bezier.md): round curves
 subdivided to a fixed depth and refined by Newton's method, as Embree does and Cycles runs on
 GPUs. Flat curves face the ray. Every cubic basis converts exactly to Bézier when the scene is
 built.
@@ -331,7 +331,7 @@ The record also settles what OpenSubdiv is asked for: the limit surface evaluate
 tessellator's points, or a uniform refinement cut further by moya.
 
 **Drafted** as
-[ADR-0209](../adr/offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md):
+[ADR-0209](../../adr/offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md):
 everything tessellated on the CPU when the hierarchy is built, measured from a dicing camera that
 is the render camera unless the scene names another. A shared edge is cut alike on both sides,
 and OpenSubdiv evaluates the limit surface, as Cycles does.
@@ -350,7 +350,7 @@ three scales tried. Two things the list below did not settle:
 * **The interval is open at its end**, so a shadow ray to a point on a light does not meet the
   light, and a distance that is not a number is no hit.
 
-[Traversal.md](../offline/Traversal.md) states the rules.
+[Traversal.md](../../offline/Traversal.md) states the rules.
 
 * **`moya/libmoya/kernel/geometry/`**, in `v3d::moya::kernel::geometry`. A ray with an origin, a
   direction, an interval and a time. A hit as step 1 decides.
@@ -386,8 +386,8 @@ first. Four things the list below did not settle:
 * **An instance whose group was removed is placed by nothing**, rather than falling into the
   world.
 
-[Traversal.md](../offline/Traversal.md) states the rules, and the moya manual's
-[CommandLine.md](../manual/moya/CommandLine.md) names `--hits`.
+[Traversal.md](../../offline/Traversal.md) states the rules, and the moya manual's
+[CommandLine.md](../../manual/moya/CommandLine.md) names `--hits`.
 
 * **Camera rays** from the scene's `camera`: perspective and orthographic, the screen window, a
   time drawn over the shutter and a point drawn on the lens, from the ZSobol sampler. Section 4's
@@ -414,7 +414,7 @@ removed, the concave case failed. Two things the list below did not settle:
   a sliver along a straight edge.
 * **A face whose edges cross is cut as a fan** once no ear can be found.
 
-[Geometry.md](../offline/Geometry.md) states the rules.
+[Geometry.md](../../offline/Geometry.md) states the rules.
 
 * **`moya/libmoya/geometry/`**, in `v3d::moya::geometry`: host code that turns the scene's
   geometry into what the hierarchy holds.
@@ -445,7 +445,7 @@ splits lower the cost by about two fifths. Three things the list below did not s
   primitive whole on one side when that costs less. The budget bounds what the extra references
   cost.
 
-[Traversal.md](../offline/Traversal.md#the-hierarchy) states the rules.
+[Traversal.md](../../offline/Traversal.md#the-hierarchy) states the rules.
 
 * **`moya/libmoya/accel/`**, in `v3d::moya::accel`: host code that builds a hierarchy into
   device memory.
@@ -473,7 +473,7 @@ as well: with the box test blind to a direction's sign, every scene disagreed wi
 both instruction sets this machine runs. Three things the list below did not settle:
 
 * **Each instruction set is a library, by
-  [ADR-0210](../adr/offline/0210-offline-each-cpu-instruction-set-is-a-library.md).** ADR-0206's
+  [ADR-0210](../../adr/offline/0210-offline-each-cpu-instruction-set-is-a-library.md).** ADR-0206's
   sources compiled for each instruction set in one binary would share glm's and the kernel's
   inline functions, and the linker could keep an AVX2 copy for the SSE4.2 path. The owner chose a
   library per instruction set over an inline namespace per source or a traversal of intrinsics
@@ -485,8 +485,8 @@ both instruction sets this machine runs. Three things the list below did not set
   A copy after the executable links missed a library that changed alone, and the first check
   against broken code passed for that reason.
 
-[Devices.md](../offline/Devices.md#the-cpus-instruction-sets) and
-[Traversal.md](../offline/Traversal.md#the-cpus-traversal) state the rules.
+[Devices.md](../../offline/Devices.md#the-cpus-instruction-sets) and
+[Traversal.md](../../offline/Traversal.md#the-cpus-traversal) state the rules.
 
 * **The CPU device's traversal** behind step 1's interface, testing a node's children at once, at
   each instruction set step 3 chooses.
@@ -522,7 +522,7 @@ visibility case and the random scene failed. Four things the list below did not 
   the world and the hierarchy's rays into each instance. One ray of 3000 grazing a triangle
   differed in its distance by a ten-thousandth, with the same primitive and chain.
 
-[Traversal.md](../offline/Traversal.md#a-hierarchy-per-prototype) states the rules.
+[Traversal.md](../../offline/Traversal.md#a-hierarchy-per-prototype) states the rules.
 
 * **A hierarchy per prototype**, and one over the instances, each holding its prototype's
   hierarchy and its transformation. A ray is moved into the prototype's space as it enters.
@@ -565,7 +565,7 @@ shutter failed. Five things the list below did not settle:
 * **The moving builder runs on the device's threads** as the still one does, and depends only on
   the primitives.
 
-[Traversal.md](../offline/Traversal.md#motion) states the rules.
+[Traversal.md](../../offline/Traversal.md#motion) states the rules.
 
 * **Transformation motion**: an instance's transformation at the ray's time, interpolated by
   decomposition, and bounded as step 4 decides.
@@ -601,7 +601,7 @@ width, the random scene failed. Four things the list below did not settle:
 * **A point has no position on its surface**, so its `uv` is zero, and its face in the hit view
   is its index. A quadric's position is RI's parameters.
 
-[Traversal.md](../offline/Traversal.md#points-and-quadrics) states the rules.
+[Traversal.md](../../offline/Traversal.md#points-and-quadrics) states the rules.
 
 * **The quadrics**: the sphere, cone, cylinder, hyperboloid, paraboloid, disk and torus,
   intersected in their own space with RI's sweep and height limits. The torus is a quartic,
@@ -635,7 +635,7 @@ failed the joint. Five things the list below did not settle:
   thinner than a pixel, and the thin curve's test spreads rays across it instead. A curve a
   tenth as wide as their spread is met by a tenth of them, at every traversal.
 * **A round curve is swept by a sphere, by
-  [ADR-0211](../adr/offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md)**, where ADR-0208
+  [ADR-0211](../../adr/offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md)**, where ADR-0208
   said a circle. A linear segment is then two spheres and the cone that touches both, in closed
   form, and a cubic segment's ends are the spheres there.
 * **A flat curve is met where the round one is.** Its hit is at the depth of the point the ray
@@ -648,8 +648,8 @@ failed the joint. Five things the list below did not settle:
   A guess at the point nearest the chord led Newton's method to a farther surface for a ray
   running along the curve.
 
-[Traversal.md](../offline/Traversal.md#curves) and
-[Geometry.md](../offline/Geometry.md#curves-into-segments) state the rules.
+[Traversal.md](../../offline/Traversal.md#curves) and
+[Geometry.md](../../offline/Geometry.md#curves-into-segments) state the rules.
 
 * **Round and flat curves** as step 5 decides, in each of RI's five bases, linear or cubic,
   with a width at each vertex or one for the curve.
@@ -691,12 +691,12 @@ the list below did not settle:
   kind of geometry is now traced, so the hit view's case of a prototype that is not traced is
   gone. Its scene is the subdivision suite's case of a surface of no faces.
 
-[Geometry.md](../offline/Geometry.md#subdivision-surfaces) states the rules, and
-[Dependencies.md](../contributing/Dependencies.md) records OpenSubdiv.
+[Geometry.md](../../offline/Geometry.md#subdivision-surfaces) states the rules, and
+[Dependencies.md](../../contributing/Dependencies.md) records OpenSubdiv.
 
 * **OpenSubdiv as a dependency**: a `moya` feature dependency in `vcpkg.json` with no OpenGL,
   linked PRIVATE to libmoya, and built on Linux in CI.
-  [Dependencies.md](../contributing/Dependencies.md) records it.
+  [Dependencies.md](../../contributing/Dependencies.md) records it.
 * **The scene's `subdivision`**: Catmull-Clark, Loop and bilinear schemes, creases, corners,
   holes and boundary interpolation, as RI names them, through OpenSubdiv's topology refiner.
 * **Primvars across the surface**, face-varying ones included, through OpenSubdiv.
@@ -742,8 +742,8 @@ did not settle:
   is a place that the face's patch faces meet at. `cut(rate)` follows the same rule, so a prism's
   triangles cut at a rate of 3 cut their edges into 4.
 
-[Geometry.md](../offline/Geometry.md#tessellation-and-displacement) states the rules, and
-[Scene.md](../offline/Scene.md) names the new parameters.
+[Geometry.md](../../offline/Geometry.md#tessellation-and-displacement) states the rules, and
+[Scene.md](../../offline/Scene.md) names the new parameters.
 
 * **An edge length in pixels**, measured from the camera as step 6 decides, and set in the
   scene's `options`.
@@ -787,7 +787,7 @@ below did not settle:
   what it was measured from, and is cut again when its dicing camera, its edge length or its
   nearest placement moved.
 
-[Traversal.md](../offline/Traversal.md#rebuilding-what-changed) states the rules.
+[Traversal.md](../../offline/Traversal.md#rebuilding-what-changed) states the rules.
 
 * **The hierarchy is a consumer of the scene.** It keeps the version it was built from, and asks
   for the changes since.
@@ -808,7 +808,7 @@ million incoherent rays a second. `moya/bench/Baseline.md` holds a Release run o
 5800X. The suite runs `--quick` at SSE4.2 and checks every scene is timed, and that an
 instruction set the processor cannot run is refused. `view::Tracing` can be made from an assembly
 without placing the triangles, and `view::trace()` takes a tracing already on the device, so the
-benchmark times only the traversal and the copies. [Traversal.md](../offline/Traversal.md#speed)
+benchmark times only the traversal and the copies. [Traversal.md](../../offline/Traversal.md#speed)
 records the comparison with Embree. Each case was run against broken code as well, one break at
 a time. A scene left out, or rays never traced, failed the short pass, and an unknown
 instruction set timed as SSE4.2 failed the refusal. Three things the list below did not settle:
@@ -857,7 +857,7 @@ did not settle:
   else, rounding between compilers, or the old renderer's samples, can take the pixel to either
   side.
 
-[Testing.md](../contributing/Testing.md#moya-references) states the rules.
+[Testing.md](../../contributing/Testing.md#moya-references) states the rules.
 
 * **Every one of the 22 scenes in `moya/tests/data`** renders through `moya --hits`, and its hit
   view is committed beside the scene's description.
@@ -870,15 +870,67 @@ compilers. The depth comparison of each still scene.
 
 ### Step 21 — The documents
 
+**Done.** Each step wrote its own section of the reference pages, and this step read them as a
+whole. [Kernel.md](../../offline/Kernel.md) gained how kernel code reaches a traversal, the
+offline README's section on the new core names subdivision, tessellation, curves, rebuilding and
+the benchmark, and [Testing.md](../../contributing/Testing.md) names the oracle. ADR-0193 is
+documented in `Traversal.md` and ADR-0209 in `Geometry.md`, and the roadmap's section 3 is done.
+
 * **New reference pages**: `docs/offline/Geometry.md` for the primitives, tessellation and
   displacement, and `docs/offline/Traversal.md` for the hierarchy, the traversal interface,
   instances and motion. The docs site's summary lists them.
-* **[Kernel.md](../offline/Kernel.md)** and **[Devices.md](../offline/Devices.md)** name the
+* **[Kernel.md](../../offline/Kernel.md)** and **[Devices.md](../../offline/Devices.md)** name the
   traversal interface and the CPU's instruction sets.
-* **[Scene.md](../offline/Scene.md)** names the points' profile and the options' edge length.
-* **[The offline README](../offline/README.md)**'s section on the new core names the hierarchy,
+* **[Scene.md](../../offline/Scene.md)** names the points' profile and the options' edge length.
+* **[The offline README](../../offline/README.md)**'s section on the new core names the hierarchy,
   the hit view and `moya --hits`.
-* **[Testing.md](../contributing/Testing.md)** names the oracle, the hit views and the benchmark.
+* **[Testing.md](../../contributing/Testing.md)** names the oracle, the hit views and the benchmark.
 * **Each record's `Documented in` line** names the reference page that states its rule, and
   ADR-0193's names `Traversal.md` in place of the roadmap.
 * **The roadmap's section 3** links here, and says so when this plan closes.
+
+## Outcome
+
+Closed 2026-11-09. moya's new core traces rays through every geometry its scene names. A wide
+hierarchy holds each prototype, with motion over several segments and nested instances, and the
+CPU traverses it with SIMD at SSE4.2, AVX2 or AVX-512. Triangles are met watertight, and curves,
+points and RI's quadrics by moya's own code. Subdivision surfaces go through OpenSubdiv, are cut
+to an edge length in pixels with no cracks, and are displaced within a bound. A change to the
+scene rebuilds only the hierarchies it touched. Every one of the 22 test scenes has a committed
+hit view, and its depth is the ray hider's. No picture the reyes and ray hiders make changed.
+
+**Delivered:**
+
+- How kernel code reaches a traversal (ADR-0204), the hierarchy's nodes (ADR-0205), the CPU's
+  instruction sets (ADR-0206, amended by ADR-0210), motion in the hierarchy (ADR-0207), curves
+  (ADR-0208, amended by ADR-0211) and tessellation (ADR-0209).
+- Rays, hits and watertight triangles, the hit view, `moya --hits`, and the brute-force oracle.
+- Meshes into triangles, and the builder by binned surface area with spatial splits.
+- The CPU's traversal, one library for each instruction set, with nested instances and motion.
+- Points, RI's quadrics, curves round and flat, and subdivision surfaces through OpenSubdiv.
+- Tessellation to an edge length in pixels from a dicing camera, and displacement.
+- `accel::Assembler` and `geometry::Cache`, which rebuild only what a change touched.
+- `moya_bench`, its baseline, and a comparison with Embree's published figures.
+- `Geometry.md` and `Traversal.md`, and the kernel, device, scene, testing and offline pages
+  brought up to date.
+
+**Different from the plan:**
+
+- Each instruction set is a library of its own (ADR-0210), and a round curve is the surface a
+  sphere sweeps (ADR-0211).
+- The hierarchy bounds displaced triangles themselves, so its boxes are not grown by the
+  displacement bound. The bound holds the height, and picks a surface's nearest placement.
+- The height is a float primvar named `displacement` until materials connect a displacement
+  terminal. A polygon mesh is not tessellated.
+- The subdivision surface, its tessellation and its dicing live in `geometry/subdivision`, so
+  `geometry/` keeps within its count of headers.
+- The old depth plane holds RI's screen depth, so the hit views' depth is checked against it
+  through the camera's clipping planes, one sample at each pixel's centre.
+
+**Left open:**
+
+- The CPU traversal is several times slower than Embree's published figures, and its build with
+  spatial splits five to seven times slower. ADR-0193's cost is not met. Profiling it is in
+  [TODO.md](../../../TODO.md#offline-rendering).
+- The committed hit views and descriptions have been compared only on Windows. portable.yml
+  compares them on Linux, under Clang and GCC, on the pull request that carries this plan.

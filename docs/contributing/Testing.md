@@ -457,6 +457,12 @@ differences between compilers. It reports the worst pixel and by how much. A fai
 case with no reference yet, writes what it rendered to `data_out/` beside the executable. Copy that
 file over the reference to change it on purpose.
 
+Every traversal the new core has is checked against the brute-force traversal, the oracle. It
+tests each ray against every placed primitive, so its nearest hit is right by construction. A
+case traces a fixed set of rays through both, and each ray meets the same primitive at a
+distance within a tolerance, since the two round apart.
+[Traversal.md](../offline/Traversal.md#the-brute-force-traversal) states how it places the scene.
+
 Each `.rib` file also has what the new core makes of it committed in `moya/tests/data/scenes/`:
 
 - `<scene>.txt` is the scene's description, as `moya --scene` prints it. The suite reads every

@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-06
 **Tags**: offline
-**Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
+**Documented in**: [offline/Traversal.md](../../offline/Traversal.md)
 
 ## Context
 

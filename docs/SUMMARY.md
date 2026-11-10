@@ -338,7 +338,6 @@
     - [ADR-0183: Releases: the Flatpak ships only as a release bundle](adr/project/0183-releases-the-flatpak-ships-only-as-a-release-bundle.md)
     - [ADR-0184: Tooling: TypeScript is linted by oxlint and formatted by oxfmt](adr/project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md)
 - [Plans](plans/README.md)
-  - [Moya Geometry](plans/MoyaGeometry.md)
 - [Roadmaps](roadmap/README.md)
   - [Editor Scripting](roadmap/EditorScripting.md)
   - [Moya Rebuild](roadmap/MoyaRebuild.md)
