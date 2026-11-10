@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cstdint>
@@ -21,7 +22,8 @@ inline constexpr float kQuarterTurn = 1.57079632679489661923F;
 
 /**
  * The shape a light emits from. A point and a distant light have none that a ray can meet: a
- * point is a sphere light of no size, and a distant light lies beyond the scene.
+ * point is a sphere light of no size, and a distant light lies beyond the scene. A mesh light
+ * emits from the triangles of a geometry where a chain of instances places it.
  **/
 enum class Shape : std::uint8_t {
     Rect,
@@ -29,7 +31,8 @@ enum class Shape : std::uint8_t {
     Sphere,
     Cylinder,
     Point,
-    Distant
+    Distant,
+    Mesh
 };
 
 /**
@@ -58,6 +61,11 @@ enum class Shape : std::uint8_t {
  * - coneAngle and coneSoftness shape what it emits, as UsdLux's shaping does: nothing past the
  *   angle off its axis, and a smooth fall to it from the angle times one less the softness. The
  *   angle is in radians.
+ * - A mesh light is one place of its geometry: chain holds the instances that place it, by their
+ *   indices in the scene, outermost first, and depth how many. geometry is its place among the
+ *   surfaces' geometries. Its triangles' chances of being drawn are held from triangles among the
+ *   lights' triangle chances, one for each of its count triangles. camera is whether camera rays
+ *   see what it emits. Its transform, axis and cone are not read.
  **/
 struct Light {
     std::uint32_t id { 0 };
@@ -74,11 +82,17 @@ struct Light {
     glm::vec3 axis { 0.0F, 0.0F, -1.0F };
     float coneAngle { kQuarterTurn };
     float coneSoftness { 0.0F };
+    std::uint32_t chain[geometry::kInstanceDepth] {};
+    std::uint32_t depth { 0 };
+    std::uint32_t geometry { 0 };
+    std::uint32_t triangles { 0 };
+    std::uint32_t count { 0 };
+    bool camera { false };
 };
 
-/** Whether a light has a shape a ray can meet. **/
+/** Whether a light has a shape of its own: a rect, disk, sphere or cylinder. **/
 MOYA_KERNEL inline bool shaped(const Light & light) {
-    return light.shape != Shape::Point && light.shape != Shape::Distant;
+    return light.shape != Shape::Point && light.shape != Shape::Distant && light.shape != Shape::Mesh;
 }
 
 /**

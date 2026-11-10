@@ -86,6 +86,7 @@ MOYA_KERNEL inline glm::vec3 emittingNormal(const Light & light, const glm::vec3
         case Shape::Disk:
         case Shape::Point:
         case Shape::Distant:
+        case Shape::Mesh:
             break;
         case Shape::Sphere:
             return local;
@@ -114,6 +115,11 @@ MOYA_KERNEL inline spectrum::SampledSpectrum radiance(const Light & light, const
         return spectrum::SampledSpectrum(0.0F);
     }
     return spectrumOf(light, table, wavelengths) * (light.scale * share);
+}
+
+/** The radiance a mesh light sends from the side its triangles emit from. No cone shapes it. **/
+MOYA_KERNEL inline spectrum::SampledSpectrum glow(const Light & light, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    return spectrumOf(light, table, wavelengths) * light.scale;
 }
 
 /** The unit direction a light's axis points along in the world, turned as a normal is. **/
@@ -168,6 +174,7 @@ MOYA_KERNEL inline spectrum::SampledSpectrum arriving(const Light & light, const
         case Shape::Disk:
         case Shape::Sphere:
         case Shape::Cylinder:
+        case Shape::Mesh:
             break;
     }
     return radiance(light, toWorld, drawn, -incoming, table, wavelengths);

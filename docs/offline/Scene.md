@@ -98,8 +98,9 @@ then derived as RI derives it.
   not. A rect light holds its `width`, `height` and `texture`, a disk or sphere light its
   `radius`, and a cylinder light its `radius` and `length`. A sphere light also holds
   `treatAsPoint`, which is 1 for a light that is a point. A distant light holds its `angle` in
-  degrees, and a dome light its `texture`. A mesh light takes its shape from the geometry
-  prototype its `geometry` names.
+  degrees, and a dome light its `texture`. A mesh light makes the geometry prototype its
+  `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights)
+  says.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
 

@@ -27,12 +27,13 @@ inline constexpr std::uint32_t kCameraDraws = 4;
 
 /**
  * A bounce's draws: the BSDF's direction, whether Russian roulette ends the path, the light it
- * samples and the point on that light.
+ * samples, the point on that light, and the triangle of a mesh light.
  **/
 inline constexpr std::uint32_t kScatter = 0;
 inline constexpr std::uint32_t kRoulette = 1;
 inline constexpr std::uint32_t kLightPick = 2;
 inline constexpr std::uint32_t kLightPoint = 3;
+inline constexpr std::uint32_t kLightTriangle = 4;
 
 /** The places each bounce's block holds, with room for more draws. **/
 inline constexpr std::uint32_t kBounceDraws = 6;

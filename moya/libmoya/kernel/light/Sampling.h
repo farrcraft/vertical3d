@@ -87,6 +87,7 @@ MOYA_KERNEL inline float localArea(const Light & light) {
             return kTurn * first * light.size.y;
         case Shape::Point:
         case Shape::Distant:
+        case Shape::Mesh:
             break;
     }
     return 0.0F;
@@ -112,6 +113,7 @@ MOYA_KERNEL inline glm::vec3 areaPoint(const Light & light, const glm::vec2 & u)
             return glm::vec3 { first * std::cos(angle), first * std::sin(angle), (u.x - 0.5F) * light.size.y };
         case Shape::Point:
         case Shape::Distant:
+        case Shape::Mesh:
             break;
     }
     return glm::vec3 { 0.0F };
@@ -142,6 +144,7 @@ MOYA_KERNEL inline Method methodOf(const Light & light, const glm::mat4 & toWorl
         case Shape::Cylinder:
         case Shape::Point:
         case Shape::Distant:
+        case Shape::Mesh:
             break;
     }
     return Method::Area;

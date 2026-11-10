@@ -29,9 +29,9 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
 
 - **The camera's draws come first**: the pixel filter's offset, the point on the lens, the time
   and the wavelengths.
-- **Each bounce has a block of `kBounceDraws` dimensions**, and each draw has a fixed place in it:
-  the BSDF's direction, Russian roulette, the light a light sample draws, and the point on it. The
-  rest of the block is kept for draws to come.
+- **Each bounce has a block of `kBounceDraws` dimensions**, and each draw has a fixed place in it.
+  The draws are the BSDF's direction, Russian roulette, the light a light sample draws, the point
+  on it, and a mesh light's triangle. The rest of the block is kept for draws to come.
 - **`bounceDimension(bounce, place)`** gives a draw's dimension. Any stage then draws its numbers
   from the pixel, the sample, the bounce and the place alone.
 
@@ -48,8 +48,9 @@ pixel in index order.
   environment, the options' colour as an illuminant, and the distant lights it meets, as
   [Lights](#lights) says, times its throughput. A path whose ray meets
   a light's shape gathers its share of the radiance the light sends back along it, times its
-  throughput, and ends there. At a shading point, a path gathers a light sample, as
-  [Lights](#lights) says.
+  throughput, and ends there. A path whose ray meets a geometry a mesh light makes emit gathers its
+  share of what the light emits, and goes on to scatter there. At a shading point, a path gathers
+  a light sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
   the BSDF's value and the cosine to the shading normal, over the density. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
@@ -63,8 +64,9 @@ refuses a sample, or by Russian roulette.
 ## Lights
 
 A path finds a light in two ways: by a light sample at each shading point, and by the direction its
-BSDF draws meeting the light. A light with a shape is met where a ray hits its shape, and a distant
-light with an angle where a ray that leaves the scene lies inside its cone. The options'
+BSDF draws meeting the light. A light with a shape is met where a ray hits its shape, and a mesh
+light where a ray hits its geometry from the side it emits from. A distant light with an angle is
+met where a ray that leaves the scene lies inside its cone. The options'
 `lightSampling` chooses between the two ways.
 
 - **A light sample** draws one light in proportion to its power, then a point on it, as
@@ -86,7 +88,11 @@ light with an angle where a ray that leaves the scene lies inside its cone. The 
 - **`bsdf`** finds them by BSDF samples alone. A light sample gathers nothing but the light of a
   point or a distant light of no angle.
 - **A camera ray that meets a light's shape gathers all of it**, whatever the strategy, since
-  nothing else samples the light for it. A camera ray sees no distant light.
+  nothing else samples the light for it. A camera ray sees no distant light, and sees what a mesh
+  light emits only while its `camera` is 1.
+- **A mesh light's triangle is part of its density.** A light sample of a mesh light, and a BSDF
+  sample that meets one, are weighed by the chance of the light, times the chance of the
+  triangle, times the point's density on the triangle.
 - **A bounce that a depth limit refuses draws no light sample.** A shading point at `maxDepth`
   bounces, or at the diffuse limit, draws none, since the BSDF's sample there would end the path.
 - **The environment is found by BSDF samples alone**, and gathers all of its light, whatever

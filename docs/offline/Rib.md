@@ -174,7 +174,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   none.
   `Illuminate` turns a light on and off in the attribute state, and `AttributeEnd` restores it.
 - **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
-  that geometry's prototype as its shape, and its `intensity` and `lightcolor`.
+  its `intensity` and `lightcolor`. The mesh light names the geometry's prototype, so the
+  instance that places it emits.
 - **`CoordinateSystem` names the current transformation**, and `CoordSysTransform` makes a named
   one current. `"world"` is the identity, and `"camera"` is the camera's own space. Another name
   is logged.

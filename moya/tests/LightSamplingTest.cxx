@@ -7,6 +7,7 @@
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/LightSample.h>
 #include <moya/libmoya/kernel/light/Sampling.h>
+#include <moya/libmoya/kernel/light/SphericalTriangle.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 
 #include <cmath>
@@ -78,6 +79,7 @@ glm::vec2 parametersOf(const light::Light & shape, const glm::vec3 & local) {
             return glm::vec2 { (local.z / shape.size.y) + 0.5F, turn };
         case light::Shape::Point:
         case light::Shape::Distant:
+        case light::Shape::Mesh:
             break;
     }
     return glm::vec2 { 0.0F };
@@ -313,6 +315,78 @@ BOOST_AUTO_TEST_CASE(moya_lightsampling_a_point_and_a_parallel_light_are_drawn_w
     // it shines along its -z, so it is met looking up its +z
     BOOST_TEST(glm::distance(along.incoming, glm::normalize(glm::vec3(place[2]))) < 1.0e-6F);
     BOOST_TEST(light::density(parallel, place, from, from + along.incoming) == 0.0F);
+}
+
+/**
+ * Draws points of a triangle from a point and bins them by their parameters: one less the first
+ * corner's weight, and the third's share of what the other two hold. Each bin's expected share is
+ * light::triangleDensity() over it, times the cosine over the distance squared, summed over the
+ * bin's area, which is twice the triangle's area times the first parameter.
+ **/
+Fit fittedTriangle(const glm::vec3 (&corners)[3], const glm::vec3 & from) {
+    const glm::vec3 normal = glm::normalize(glm::cross(corners[1] - corners[0], corners[2] - corners[0]));
+    const double twice = glm::length(glm::cross(corners[1] - corners[0], corners[2] - corners[0]));
+    const double cell = 1.0 / static_cast<double>(kBins * kBins * kSteps * kSteps);
+    std::vector<double> expected(kBins * kBins, 0.0);
+    for (std::size_t row = 0; row < kBins * kSteps; ++row) {
+        for (std::size_t column = 0; column < kBins * kSteps; ++column) {
+            const float out = (static_cast<float>(column) + 0.5F) / static_cast<float>(kBins * kSteps);
+            const float across = (static_cast<float>(row) + 0.5F) / static_cast<float>(kBins * kSteps);
+            const glm::vec3 point = corners[0] + (((corners[1] - corners[0]) * (1.0F - across)) + ((corners[2] - corners[0]) * across)) * out;
+            const glm::vec3 toPoint = point - from;
+            const float squared = glm::dot(toPoint, toPoint);
+            const float cosine = std::fabs(glm::dot(normal, toPoint)) / std::sqrt(squared);
+            const double share = static_cast<double>(light::triangleDensity(corners, normal, from, point)) * cosine / squared * twice * out * cell;
+            expected[((row / kSteps) * kBins) + (column / kSteps)] += share;
+        }
+    }
+    std::vector<double> observed(kBins * kBins, 0.0);
+    Fit out;
+    std::uint32_t seed = 7;
+    for (std::size_t draw = 0; draw < kDraws; ++draw) {
+        const light::LightSample drawn = light::triangleSample(corners, normal, from, glm::vec2 { next(seed), next(seed) });
+        // the point's weights, from its place against two of the triangle's edges
+        const glm::vec3 first = corners[1] - corners[0];
+        const glm::vec3 second = corners[2] - corners[0];
+        const glm::vec3 at = drawn.point - corners[0];
+        const float d11 = glm::dot(first, first);
+        const float d12 = glm::dot(first, second);
+        const float d22 = glm::dot(second, second);
+        const float determinant = (d11 * d22) - (d12 * d12);
+        const float w1 = ((d22 * glm::dot(at, first)) - (d12 * glm::dot(at, second))) / determinant;
+        const float w2 = ((d11 * glm::dot(at, second)) - (d12 * glm::dot(at, first))) / determinant;
+        const std::size_t bin = binOf(glm::vec2 { w1 + w2, w2 / (w1 + w2) });
+        if (!drawn.found() || bin >= observed.size()) {
+            out.outside++;
+            continue;
+        }
+        observed[bin] += 1.0;
+    }
+    for (std::size_t bin = 0; bin < expected.size(); ++bin) {
+        out.total += expected[bin];
+        const double count = expected[bin] * static_cast<double>(kDraws);
+        if (count >= 5.0) {
+            out.chiSquared += (observed[bin] - count) * (observed[bin] - count) / count;
+            out.bins++;
+        }
+    }
+    return out;
+}
+
+// a triangle of a mesh light is sampled in the solid angle it subtends, near and at a slant, and
+// by its area where it subtends too little. It draws nothing for a point behind it
+BOOST_AUTO_TEST_CASE(moya_lightsampling_a_mesh_lights_triangle_samples_follow_their_density_test) {
+    const glm::vec3 corners[3] = { glm::vec3 { 0.0F, 0.0F, 0.0F }, glm::vec3 { 1.0F, 0.0F, 0.0F }, glm::vec3 { 0.2F, 0.9F, 0.0F } };
+    const glm::vec3 near { 0.3F, 0.3F, 0.4F };
+    BOOST_TEST(light::bySolidAngle(light::triangleAngle(corners, near)));
+    holds(fittedTriangle(corners, near), "near");
+    holds(fittedTriangle(corners, glm::vec3 { 2.0F, 1.5F, 0.3F }), "slanted");
+    const glm::vec3 far { 0.4F, 0.3F, 40.0F };
+    BOOST_TEST(!light::bySolidAngle(light::triangleAngle(corners, far)));
+    holds(fittedTriangle(corners, far), "far");
+    const glm::vec3 normal { 0.0F, 0.0F, 1.0F };
+    BOOST_TEST(!light::triangleSample(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec2 { 0.3F, 0.6F }).found());
+    BOOST_TEST(light::triangleDensity(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec3 { 0.3F, 0.3F, 0.0F }) == 0.0F);
 }
 
 // a rect or a disk draws nothing for a point behind it, and its density there is zero

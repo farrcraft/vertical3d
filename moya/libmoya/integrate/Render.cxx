@@ -105,7 +105,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const accel::Assembly assembly = accel::assemble(device, prototypes);
     const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);
-    const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds));
+    const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds), logger);
 
     render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
     render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);

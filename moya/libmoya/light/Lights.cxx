@@ -8,6 +8,8 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <api/log/Logger.h>
+#include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
@@ -15,6 +17,8 @@
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Key.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
@@ -29,6 +33,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -36,9 +43,11 @@
 
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::light {
 
@@ -260,6 +269,7 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
         case kernel::light::Shape::Disk:
         case kernel::light::Shape::Sphere:
         case kernel::light::Shape::Cylinder:
+        case kernel::light::Shape::Mesh:
             break;
     }
     return light.scale * size * kPi;
@@ -287,14 +297,142 @@ std::vector<float> cumulative(const std::vector<float> & powers) {
     return out;
 }
 
+/**
+ * The mesh light that makes each geometry of the scene emit, by the geometry's index in the
+ * scene: the first, in the order of their indices, of those that name it.
+ **/
+std::map<std::uint32_t, scene::Handle> emitters(const scene::Scene & scene) {
+    std::vector<scene::Handle> meshLights = scene.objects("meshLight");
+    std::sort(meshLights.begin(), meshLights.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
+    std::map<std::uint32_t, scene::Handle> out;
+    for (const scene::Handle & handle : meshLights) {
+        const std::vector<scene::Handle> & named = scene.value(handle, "geometry").handleArray();
+        if (!named.empty() && scene.contains(named.front())) {
+            out.emplace(named.front().index, handle);
+        }
+    }
+    return out;
+}
+
+/**
+ * Calls found with every chain of instances from a group's members that places a geometry, by
+ * the instances' places among the prototypes', outermost first, and the geometry's place among
+ * the prototypes'. A chain deeper than kernel::geometry::kInstanceDepth places nothing, as a
+ * traversal leaves it out.
+ **/
+void chains(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & members, std::vector<std::uint32_t> & chain,
+    const std::function<void(const std::vector<std::uint32_t> &, std::uint32_t)> & found) {
+    if (chain.size() == kernel::geometry::kInstanceDepth) {
+        return;
+    }
+    for (const std::uint32_t member : members) {
+        const geometry::Instance & instance = prototypes.instances[member];
+        chain.push_back(member);
+        if (instance.kind == geometry::Prototype::Group) {
+            chains(prototypes, prototypes.groups[instance.prototype].instances, chain, found);
+        } else {
+            found(chain, instance.prototype);
+        }
+        chain.pop_back();
+    }
+}
+
+/**
+ * The area in the world of each triangle of a geometry, where a chain of instances places it when
+ * the shutter opens.
+ **/
+std::vector<float> triangleAreas(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & chain, const geometry::Geometry & shape) {
+    glm::mat4 toWorld { 1.0F };
+    for (const std::uint32_t member : chain) {
+        toWorld = toWorld * geometry::transformAt(prototypes.instances[member], prototypes.open);
+    }
+    std::vector<float> out;
+    for (std::uint32_t triangle = 0; triangle < shape.count; ++triangle) {
+        glm::vec3 corners[3];
+        for (std::uint32_t corner = 0; corner < 3U; ++corner) {
+            const glm::vec3 local =
+                kernel::geometry::sampleAt(shape.points, prototypes.points.data(), prototypes.times.data(), (triangle * 3U) + corner, prototypes.open);
+            corners[corner] = glm::vec3(toWorld * glm::vec4(local, 1.0F));
+        }
+        out.push_back(0.5F * glm::length(glm::cross(corners[1] - corners[0], corners[2] - corners[0])));
+    }
+    return out;
+}
+
+/**
+ * The scene's mesh lights, each a light for every chain of instances that places its geometry,
+ * appended to the lights with their powers. Each triangle's chance is appended to triangles, and
+ * the first light each instance in the world places to meshes. A light whose geometry has no
+ * triangles emits nothing, and is reported.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what is read, then what is appended to
+void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
+    const boost::shared_ptr<log::Logger> & logger, std::vector<kernel::light::Light> & lights, std::vector<float> & powers,  // NOLINT(bugprone-easily-swappable-parameters)
+    std::vector<float> & triangles, std::vector<std::uint32_t> & meshes) {  // NOLINT(bugprone-easily-swappable-parameters)
+    const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
+    if (named.empty()) {
+        return;
+    }
+    std::set<std::uint32_t> reported;
+    std::vector<std::uint32_t> chain;
+    chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
+        const geometry::Geometry & shape = prototypes.geometries[at];
+        const auto naming = named.find(shape.id);
+        if (naming == named.end()) {
+            return;
+        }
+        const scene::Handle & handle = naming->second;
+        if (shape.form != kernel::geometry::primitive::Form::Triangles) {
+            if (reported.insert(handle.index).second && logger) {
+                logger->get()->warn("the mesh light {} names a geometry of no triangles, so it emits nothing", scene.name(handle));
+            }
+            return;
+        }
+        const std::vector<float> areas = triangleAreas(prototypes, placed, shape);
+        const std::vector<float> sums = cumulative(areas);
+        if (sums.empty()) {
+            return;
+        }
+        float size = 0.0F;
+        for (const float area : areas) {
+            size += area;
+        }
+        kernel::light::Light out = emitter(scene, handle, config);
+        out.id = kernel::geometry::kNoPrimitive;
+        out.shape = kernel::light::Shape::Mesh;
+        out.depth = static_cast<std::uint32_t>(placed.size());
+        for (std::size_t level = 0; level < placed.size(); ++level) {
+            out.chain[level] = prototypes.instances[placed[level]].id;
+        }
+        out.geometry = at;
+        out.triangles = static_cast<std::uint32_t>(triangles.size());
+        out.count = shape.count;
+        out.camera = scene.value(handle, "camera").integerArray().front() != 0;
+        if (normalised(scene, handle)) {
+            out.scale /= size;
+        }
+        triangles.insert(triangles.end(), sums.begin(), sums.end());
+        if (meshes.size() <= out.chain[0]) {
+            meshes.resize(out.chain[0] + 1U, kernel::geometry::kNoPrimitive);
+        }
+        if (meshes[out.chain[0]] == kernel::geometry::kNoPrimitive) {
+            meshes[out.chain[0]] = static_cast<std::uint32_t>(lights.size());
+        }
+        lights.push_back(out);
+        powers.push_back(std::fmax(0.0F, powerOf(out, size, 0.0F) * kernel::spectrum::acescgToXyz(out.colour).y));
+    });
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
-    float reach) {
+    float reach, const boost::shared_ptr<log::Logger> & logger) {
     std::vector<kernel::light::Light> lights;
     std::vector<kernel::geometry::Key> keys;
     std::vector<float> powers;
     std::vector<std::uint32_t> distant;
+    std::vector<float> triangles;
+    std::vector<std::uint32_t> meshes;
     const auto add = [&](kernel::light::Light light, const geometry::Instance & placed, float size) {
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
@@ -331,6 +469,7 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         }
         add(sun, placed, 0.0F);
     }
+    meshLights(scene, prototypes, config, logger, lights, powers, triangles, meshes);
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
     for (std::size_t i = 0; i < lights.size(); ++i) {
         if (lights[i].id != kernel::geometry::kNoPrimitive) {
@@ -342,6 +481,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     distant_ = uploaded(device, distant);
     byId_ = uploaded(device, byId);
     cdf_ = uploaded(device, cumulative(powers));
+    triangles_ = uploaded(device, triangles);
+    meshes_ = uploaded(device, meshes);
 }
 
 kernel::light::Lights Lights::view() const {
@@ -349,7 +490,9 @@ kernel::light::Lights Lights::view() const {
         .keys = device::view<kernel::geometry::Key>(*keys_),
         .distant = device::view<std::uint32_t>(*distant_),
         .byId = device::view<std::uint32_t>(*byId_),
-        .cdf = device::view<float>(*cdf_) };
+        .cdf = device::view<float>(*cdf_),
+        .triangles = device::view<float>(*triangles_),
+        .meshes = device::view<std::uint32_t>(*meshes_) };
 }
 
 };  // namespace v3d::moya::light

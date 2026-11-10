@@ -229,18 +229,20 @@ struct Surfaces {
         return true;
     }
 
- private:
     /**
-     * The transformation from the geometry a hit's chain places into the world at a time, the
-     * geometry, and the chain's material. False for a chain the surfaces do not hold.
+     * The transformation from the geometry a chain of instances places into the world at a time,
+     * the geometry, and the chain's material. The chain names its instances by their indices in
+     * the scene, outermost first. False for a chain the surfaces do not hold.
      **/
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then its material
-    MOYA_KERNEL bool placing(const geometry::Hit & hit, float time, glm::mat4 & toWorld, std::uint32_t & placed, std::uint32_t & material) const {
-        if (!hit.found() || hit.depth == 0U || hit.depth > geometry::kInstanceDepth) {
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain, then the time
+    MOYA_KERNEL bool chainAt(const std::uint32_t * chain, std::uint32_t depth, float time, glm::mat4 & toWorld, std::uint32_t & placed,
+        std::uint32_t & material) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        if (depth == 0U || depth > geometry::kInstanceDepth) {
             return false;
         }
-        for (std::uint32_t level = 0; level < hit.depth; ++level) {
-            const std::uint32_t id = hit.instances[level];
+        toWorld = glm::mat4(1.0F);
+        for (std::uint32_t level = 0; level < depth; ++level) {
+            const std::uint32_t id = chain[level];
             if (id >= byId.size || byId[id] == geometry::kNoPrimitive) {
                 return false;
             }
@@ -253,6 +255,25 @@ struct Surfaces {
             }
         }
         return placed != kGroup && placed < geometries.size;
+    }
+
+    /** A triangle's corners at a time, in its geometry's own space. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then the triangle
+    MOYA_KERNEL void corners(std::uint32_t placed, std::uint32_t primitive, float time, glm::vec3 (&out)[3]) const {
+        const Geometry & shape = geometries[placed];
+        for (std::uint32_t corner = 0; corner < 3U; ++corner) {
+            out[corner] = geometry::sampleAt(shape.points, points.data, times.data, (primitive * 3U) + corner, time);
+        }
+    }
+
+ private:
+    /**
+     * The transformation from the geometry a hit's chain places into the world at a time, the
+     * geometry, and the chain's material. False for a chain the surfaces do not hold.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then its material
+    MOYA_KERNEL bool placing(const geometry::Hit & hit, float time, glm::mat4 & toWorld, std::uint32_t & placed, std::uint32_t & material) const {
+        return hit.found() && chainAt(hit.instances, hit.depth, time, toWorld, placed, material);
     }
 
     /**

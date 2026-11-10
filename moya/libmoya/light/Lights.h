@@ -14,6 +14,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+namespace v3d::log {
+class Logger;
+};  // namespace v3d::log
+
 /** The scene's lights, made ready for the integrator. Host code. **/
 namespace v3d::moya::light {
 
@@ -32,6 +36,12 @@ namespace v3d::moya::light {
  *   intensity of the sphere it stands for: its radiance times pi times its radius squared. With
  *   normalize, that is a quarter of its emission. One of no radius without normalize emits
  *   nothing.
+ * - **A mesh light** emits a radiance from the triangles of the geometry it names, wherever a
+ *   chain of instances from the world places that geometry, from the side each triangle's winding
+ *   faces. Each chain is a light of its own. With normalize, its radiance is divided by the area in
+ *   the world of the triangles that chain places, as they stand when the shutter opens. Its
+ *   transform and its cone are not read. A geometry that more than one mesh light names emits by
+ *   the first, in the order of their indices, and one of no triangles emits nothing.
  * - **A distant light** shines along its -z axis. Of no angle, its emission is the irradiance of
  *   a plane that faces it. With an angle, its emission is a radiance over the cone of that
  *   diameter, held to [0, 360] degrees. With normalize, the radiance is divided by pi sin^2 of the
@@ -40,7 +50,9 @@ namespace v3d::moya::light {
  *
  * Each light is drawn in proportion to its power, which leaves its cone out. A light with a shape
  * has its radiance's luminance times its area times pi, and a point its intensity's times four
- * pi. A distant light has its irradiance's luminance times the area of a disk of the reach.
+ * pi. A distant light has its irradiance's luminance times the area of a disk of the reach. A
+ * mesh light has its radiance's luminance times its area times pi, and its triangle is then drawn
+ * in proportion to its area.
  *
  * A cone angle is held to [0, 180] degrees and a softness to [0, 1].
  *
@@ -50,12 +62,13 @@ class Lights final {
  public:
     /**
      * reach is the radius of a sphere that bounds the world, which a distant light's power is
-     * measured over.
+     * measured over. The logger, which may be null, reports a mesh light that emits nothing.
      *
      * @throws std::runtime_error, from OpenColorIO, when a light's colour names a space the
      *         configuration cannot convert into ACEScg
      **/
-    Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config, float reach);
+    Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config, float reach,
+        const boost::shared_ptr<log::Logger> & logger);
 
     /** The lights, as kernel code reads them. **/
     kernel::light::Lights view() const;
@@ -66,6 +79,8 @@ class Lights final {
     boost::shared_ptr<device::Buffer> distant_;
     boost::shared_ptr<device::Buffer> byId_;
     boost::shared_ptr<device::Buffer> cdf_;
+    boost::shared_ptr<device::Buffer> triangles_;
+    boost::shared_ptr<device::Buffer> meshes_;
 };
 
 };  // namespace v3d::moya::light

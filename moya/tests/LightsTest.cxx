@@ -532,6 +532,215 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_point_outside_its_cone_lights_nothing_test) {
     BOOST_TEST(lit(90.0F).value > 0.0F);
 }
 
+/** A geometry made black, so that it reflects nothing. **/
+void black(scene::Scene & scene, const scene::Handle & geometry) {
+    scene.declare(geometry, scene::Declaration { .name = "Cs",
+        .type = scene::Type::Colour,
+        .count = scene::Declaration::kAny,
+        .fallback = scene::Value::colours({}),
+        .interpolation = scene::Interpolation::Constant });
+    scene.set(geometry, "Cs", scene::Value::colours({ glm::vec3 { 0.0F } }));
+}
+
+/**
+ * A black square mesh of a half side about the origin in z = 0, which a mesh light makes emit. It
+ * is three triangles wound to face +z, fanned from a point on its top edge. They hold a half, two
+ * fifths and a tenth of its area, so a triangle drawn by anything but its area is drawn wrongly.
+ **/
+scene::Handle square(scene::Scene & scene, const std::string & name, float half) {
+    const glm::vec3 lowLeft { -half, -half, 0.0F };
+    const glm::vec3 lowRight { half, -half, 0.0F };
+    const glm::vec3 highRight { half, half, 0.0F };
+    const glm::vec3 highLeft { -half, half, 0.0F };
+    const glm::vec3 fanned { -0.6F * half, half, 0.0F };
+    const scene::Handle out = mesh(scene, name, { lowLeft, lowRight, fanned, lowRight, highRight, fanned, lowLeft, fanned, highLeft });
+    black(scene, out);
+    return out;
+}
+
+/** A mesh light that makes a geometry emit. **/
+scene::Handle glowing(scene::Scene & scene, const scene::Handle & geometry) {
+    const scene::Handle light = scene.create("meshLight", "glow");
+    scene.set(light, "geometry", scene::Value::handle(geometry));
+    return light;
+}
+
+/**
+ * A white plane under a black square of a half side at a height, which a mesh light makes emit.
+ * The camera looks through the square, as it looks through a rect light.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the half side, then the height
+film::Snapshot underSquare(const char * strategy, float half, float height) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, strategy, 256, 0.25F);
+    const scene::Handle panel = square(scene, "panel", half);
+    scene.set(instanced(scene, "panel", panel, {}, moved(0.0F, 0.0F, -height)), "camera", scene::Value::integer(0));
+    glowing(scene, panel);
+    return rendered(scene);
+}
+
+/** A white plane under a rect light of a side at a height, facing it. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the height
+film::Snapshot underRect(float side, float height) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 256, 0.25F);
+    const scene::Handle rect = scene.create("rectLight", "rect");
+    scene.set(rect, "width", scene::Value::number(side));
+    scene.set(rect, "height", scene::Value::number(side));
+    scene.set(rect, "transform", scene::Value::matrix(flipped(moved(0.0F, 0.0F, -height))));
+    return rendered(scene);
+}
+
+// a mesh light of two triangles in a square gives the picture of a rect light of that square, by
+// light samples alone, by BSDF samples alone and by both
+BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_square_gives_a_rect_lights_picture_test) {
+    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot glowed = underSquare(strategy, 0.5F, 0.5F);
+            BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+            BOOST_TEST(film::furthest(glowed, rect).sigmas < 5.0F);
+        }
+    }
+    BOOST_TEST(expected.value > 0.1F);
+}
+
+// a mesh light emits wherever a chain of instances places its geometry. A square in a group, above
+// the plane by its own instance, that two instances place either side of the middle lights it
+// twice as much as one of them does, by light samples alone
+BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_instanced_twice_gives_twice_the_light_test) {
+    const auto lit = [](bool both) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, "light", 128, 0.25F);
+        const scene::Handle group = scene.create("group", "pair");
+        const scene::Handle panel = square(scene, "panel", 0.25F);
+        instanced(scene, "panel", panel, group, moved(0.0F, 0.0F, -0.5F));
+        glowing(scene, panel);
+        instanced(scene, "right", group, {}, moved(0.6F, 0.0F, 0.0F));
+        if (both) {
+            instanced(scene, "left", group, {}, moved(-0.6F, 0.0F, 0.0F));
+        }
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    const film::Estimate one = lit(false);
+    const film::Estimate two = lit(true);
+    BOOST_TEST(one.value > 0.0F);
+    BOOST_TEST(film::sigmas(two, film::Estimate { .value = 2.0F * one.value, .error = 2.0F * one.error }) < 3.0F);
+}
+
+// with normalize, a mesh light's radiance is divided by its area in the world. A square scaled to
+// twice its side gives the picture of a normalised rect light of that size
+BOOST_AUTO_TEST_CASE(moya_lights_a_normalised_mesh_light_is_divided_by_its_area_in_the_world_test) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 256, 0.25F);
+    const scene::Handle panel = square(scene, "panel", 0.5F);
+    scene.set(instanced(scene, "panel", panel, {}, glm::scale(moved(0.0F, 0.0F, -0.5F), glm::vec3 { 2.0F })), "camera", scene::Value::integer(0));
+    scene.set(glowing(scene, panel), "normalize", scene::Value::integer(1));
+    const film::Snapshot glowed = rendered(scene);
+
+    scene::Scene other(scene::kinds());
+    litPlane(other, "mis", 256, 0.25F);
+    const scene::Handle rect = other.create("rectLight", "rect");
+    other.set(rect, "width", scene::Value::number(2.0F));
+    other.set(rect, "height", scene::Value::number(2.0F));
+    other.set(rect, "normalize", scene::Value::integer(1));
+    other.set(rect, "transform", scene::Value::matrix(flipped(moved(0.0F, 0.0F, -0.5F))));
+    const film::Estimate expected = film::mean(rendered(other), { 0, 0 }, { kSide, kSide });
+    BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+    BOOST_TEST(expected.value > 0.02F);
+}
+
+// a moving mesh light lights the places it passes. A square that crosses the plane over the
+// shutter lights the far end of its path, which it lights little from where it starts. Light
+// samples and BSDF samples give the same light over the picture and along the path
+BOOST_AUTO_TEST_CASE(moya_lights_a_moving_mesh_light_lights_the_places_it_passes_test) {
+    const auto lit = [](const char * strategy, bool moves) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = viewed(scene, 256, 5.0F, glm::vec2 { 0.0F }, 1.5F);
+        scene.commit();
+        scene.apply();
+        scene.set(scene.value(options, "camera").handleArray().front(), "shutter", scene::Value::floats({ 0.0F, 1.0F }));
+        scene.set(options, "lightSampling", scene::Value::string(strategy));
+        plane(scene);
+        const scene::Handle panel = square(scene, "panel", 0.25F);
+        const glm::mat4 start = moved(-1.0F, 0.0F, -0.3F);
+        scene.set(instanced(scene, "panel", panel, {}, { 0.0F, 1.0F }, { start, moves ? moved(1.0F, 0.0F, -0.3F) : start }), "camera",
+            scene::Value::integer(0));
+        glowing(scene, panel);
+        return rendered(scene);
+    };
+    const film::Snapshot light = lit("light", true);
+    const film::Snapshot bsdf = lit("bsdf", true);
+    BOOST_TEST(film::sigmas(film::mean(light, { 0, 0 }, { kSide, kSide }), film::mean(bsdf, { 0, 0 }, { kSide, kSide })) < 3.0F);
+    // along the path alone, since BSDF samples rarely find the light from a pixel far from it
+    BOOST_TEST(film::sigmas(film::mean(light, { 0, 12 }, { kSide, 20 }), film::mean(bsdf, { 0, 12 }, { kSide, 20 })) < 3.0F);
+    // the far end of the path is the right sixth of the picture
+    const float passed = film::mean(light, { 26, 0 }, { kSide, kSide }).value;
+    BOOST_TEST(passed > 3.0F * film::mean(lit("light", false), { 26, 0 }, { kSide, kSide }).value);
+}
+
+// a subdivision surface emits from the triangles the gather cuts it into. A bilinear quad is the
+// flat square of its corners, so it gives the picture of a rect light of that square. The camera
+// looks through each
+BOOST_AUTO_TEST_CASE(moya_lights_a_subdivision_surface_mesh_light_emits_from_its_triangles_test) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 256, 0.25F);
+    const scene::Handle cage = scene.create("subdivision", "cage");
+    scene.set(cage, "scheme", scene::Value::string("bilinear"));
+    scene.set(cage, "P",
+        scene::Value::points({ glm::vec3 { -0.5F, -0.5F, 0.0F }, glm::vec3 { 0.5F, -0.5F, 0.0F }, glm::vec3 { 0.5F, 0.5F, 0.0F }, glm::vec3 { -0.5F, 0.5F, 0.0F } }));
+    scene.set(cage, "vertices", scene::Value::integers({ 4 }));
+    scene.set(cage, "indices", scene::Value::integers({ 0, 1, 2, 3 }));
+    black(scene, cage);
+    scene.set(instanced(scene, "cage", cage, {}, moved(0.0F, 0.0F, -0.5F)), "camera", scene::Value::integer(0));
+    glowing(scene, cage);
+    const film::Snapshot glowed = rendered(scene);
+    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), film::mean(rect, { 0, 0 }, { kSide, kSide })) < 3.0F);
+}
+
+// camera rays see what a mesh light emits only while its camera is 1. The square faces the camera,
+// which sees its radiance of one there, and its black surface otherwise
+BOOST_AUTO_TEST_CASE(moya_lights_camera_rays_see_a_mesh_light_only_when_set_test) {
+    const auto seenAt = [](std::int32_t camera) {
+        scene::Scene scene(scene::kinds());
+        viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+        const scene::Handle panel = square(scene, "panel", 1.0F);
+        instanced(scene, "panel", panel, {}, flipped(glm::mat4(1.0F)));
+        scene.set(glowing(scene, panel), "camera", scene::Value::integer(camera));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    BOOST_TEST(film::sigmas(seenAt(1), 1.0F) < 3.0F);
+    BOOST_TEST(seenAt(0).value == 0.0F);
+}
+
+// a mesh light emits from the side its triangles' winding faces: a square turned away from the
+// plane lights nothing, by any strategy. The camera looks through it
+BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_emits_from_one_side_test) {
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            scene::Scene scene(scene::kinds());
+            litPlane(scene, strategy, 16, 0.25F);
+            const scene::Handle panel = square(scene, "panel", 0.5F);
+            scene.set(instanced(scene, "panel", panel, {}, flipped(moved(0.0F, 0.0F, -0.5F))), "camera", scene::Value::integer(0));
+            glowing(scene, panel);
+            BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+        }
+    }
+}
+
+// a mesh light of a geometry with no triangles emits nothing: a sphere a mesh light names lights
+// nothing below it
+BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_of_no_triangles_emits_nothing_test) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 16, 0.25F);
+    const scene::Handle ball = scene.create("sphere", "ball");
+    instanced(scene, "ball", ball, {}, moved(0.0F, 0.0F, -2.0F));
+    glowing(scene, ball);
+    BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+}
+
 // each light with a shape is an instance in the world, after every other, with the light's index
 // in the scene. It is visible to indirect rays, to camera rays when set, and never to shadow rays.
 // A distant light and a point have no shape

@@ -4,8 +4,9 @@ This page is for anyone changing how moya's new core places lights and what they
 kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
 host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
 shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point
-and a distant light have none. [Scene.md](Scene.md) lists each light's parameters, and
-[Integrator.md](Integrator.md) covers the paths that meet them.
+and a distant light have none. A mesh light makes a geometry of the scene emit.
+[Scene.md](Scene.md) lists each light's parameters, and [Integrator.md](Integrator.md) covers the
+paths that meet them.
 
 ## A light's shape
 
@@ -97,6 +98,37 @@ half turn. It has no cone of emission.
 - **`kernel::light::Lights::distant`** names the distant lights with an angle, which a ray that
   leaves the scene meets, as [Integrator.md](Integrator.md#lights) says.
 
+## Mesh lights
+
+A mesh light makes the geometry its `geometry` names emit, wherever the scene places it.
+`light::Lights` makes a `kernel::light::Light` of shape `Mesh` for each chain of instances from
+the world that places the geometry.
+
+- **Each chain is a light of its own.** It holds the chain's instances, outermost first, and the
+  geometry's place among the surfaces'. A geometry placed by two instances emits twice as much
+  light as one.
+- **The geometry emits from its triangles**: a mesh's, or those the gather cuts a subdivision
+  surface into. A geometry with no triangles, such as a quadric, emits nothing, and the logger
+  reports it once for each light.
+- **A triangle emits from the side its winding faces**, turned into the world as a normal is, the
+  side a shading point's geometric normal faces.
+- **Its radiance is UsdLux's**, from its `intensity`, `exposure`, `colour` and colour
+  temperature. With `normalize`, it is divided by the area in the world of the triangles the
+  chain places, as they stand when the shutter opens.
+- **Its `transform`, `coneAngle` and `coneSoftness` are not read**, since the instances place
+  the geometry and no cone shapes it.
+- **Camera rays see what it emits only while its `camera` is 1.** The geometry is still seen as a
+  surface, by its material.
+- **A geometry that more than one mesh light names** emits by the first, in the order of their
+  indices.
+- **A geometry that moves emits from where it stands at the ray's time.** Its chain's
+  transformation and its points are both read then.
+
+`kernel::light::Lights::emitting()` gives the mesh light whose geometry a hit's chain places, from
+`meshes`, which holds the first mesh light each instance in the world places.
+`Lights::triangleAt()` gives a triangle in the world at a time, with the unit normal of the side
+it emits from.
+
 ## Meeting a light
 
 `kernel::light::Lights::at()` gives the place among the lights of the light whose shape a hit
@@ -115,6 +147,10 @@ it was drawn with. Each light's cone is left out of its power.
 - **A light with a shape** has its radiance's luminance, times its area in the world as it stands
   when the shutter opens, times pi.
 - **A point** has its radiant intensity's luminance times four pi.
+- **A mesh light** has its radiance's luminance, times the area in the world of the triangles its
+  chain places, times pi. `Lights::pickTriangle()` then draws one of its triangles in
+  proportion to its area in the world when the shutter opens, and `Lights::triangleChance()`
+  gives the chance. `triangles` holds each mesh light's sums of chances from its own first.
 - **A distant light** has the luminance of the irradiance it gives a plane that faces it, times
   the area of a disk of the world's reach. The reach is the radius of a sphere about the box that
   bounds the world over the shutter. `integrate::render()` gives `light::Lights` the reach.
@@ -158,3 +194,8 @@ sends to the shading point from the point drawn.
   is sampled by area too, since its solid angle loses precision there.
 - **A rect or disk light draws nothing for a point behind its emitting face**, and its density
   there is zero.
+- **A mesh light's triangle is sampled uniformly in the solid angle it subtends**, by Arvo's
+  method as pbrt-v4 gives it, in `kernel/light/SphericalTriangle.h`. Its solid angle is Van
+  Oosterom and Strackee's. Below `kLeastTriangleAngle` its solid angle loses precision, and above
+  `kMostTriangleAngle` the method does, so it is sampled uniformly by area there. A triangle draws
+  nothing for a point behind it.

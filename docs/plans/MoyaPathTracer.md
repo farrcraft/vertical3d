@@ -134,7 +134,7 @@ among the options before the record is drafted.
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | done |
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | done |
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | done |
-| [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | open |
+| [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | done |
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | open |
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | open |
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | open |
@@ -645,6 +645,43 @@ way failed five cases, and a point that kept its shape failed the gather's case.
 light's angle softens a shadow's edge by the width the angle gives.
 
 ### Step 13 — Mesh lights
+
+**Done.** `light::Lights` makes a light of each chain of instances from the world that places a
+geometry a mesh light names, and draws its triangles in proportion to their area in the world.
+`light::triangleSample()`, in `kernel/light/SphericalTriangle.h`, samples a triangle by Arvo's
+method as pbrt-v4 gives it, within pbrt-v4's bounds on its solid angle, and by area outside them.
+A path that meets an emitting geometry gathers its share of the light and scatters on.
+`Surfaces::chainAt()` and `Surfaces::corners()` give a chain's transformation and a triangle's
+corners at a time. `PathParams` gains the triangles' chances and the mesh lights by instance, so the
+CPU library's table is now version 9. Five things the list below did not settle:
+
+* **The geometry emits, wherever it is placed.** The scene's `meshLight` names a geometry, and
+  RIB's `AreaLightSource` also places it through an ordinary instance. Each chain of instances
+  that places it is a light of its own, as the record of step 3 holds them. The mesh light's
+  `transform` and cone are not read.
+* **A triangle emits from the side its winding faces**, the side a shading point's geometric
+  normal faces, as every other light emits from one face.
+* **With `normalize`, the radiance is divided by the chain's area in the world**, as UsdLux
+  divides a mesh light by its surface area in the world, when the shutter opens.
+* **Camera rays see the emission only while the light's `camera` is 1.** The geometry itself is
+  always seen, by its material, since it is a surface of the scene.
+* **A geometry with no triangles emits nothing**, and the logger reports it. A quadric, curves
+  and points have no triangles to sample.
+
+[Lights.md](../offline/Lights.md#mesh-lights) states the rules, and
+[Integrator.md](../offline/Integrator.md#lights) how a path meets a mesh light.
+
+Each case was run against broken code as well, one break at a time. A light sample or an MIS
+weight that left out the triangle's chance failed the rect light's picture and four other cases.
+Triangles drawn evenly, not by area, failed the rect light's picture, the instanced pair and the
+normalised square, once the square was cut into triangles of unequal area. Emission seen from
+behind failed the one-sided case, and a triangle sampled from behind the triangle's chi-squared
+case. Camera rays that always saw the emission failed the camera case. A chain placed by its
+outermost instance alone failed the instanced pair, by light samples alone, since under MIS the
+BSDF still finds the light without bias. A mesh light placed only where it stood at the shutter's
+opening failed the moving light. Normalising by the area in the geometry's own space failed the
+normalised square. Arvo's second draw warped failed the chi-squared case and three pictures. No
+emission gathered at a hit failed six cases.
 
 * **A mesh light emits from its prototype's triangles**, placed by the instances the scene's
   hierarchy already holds, at the ray's time.
