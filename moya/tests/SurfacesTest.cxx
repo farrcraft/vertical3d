@@ -6,6 +6,7 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/geometry/Cache.h>
+#include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/geometry/World.h>
@@ -29,6 +30,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -126,6 +128,7 @@ scene::Handle octahedron(scene::Scene & scene, bool normals) {
 }
 
 /** Rays from far around the origin towards points near it, at a time. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count, then the reach
 std::vector<kernel::geometry::Ray> inwards(std::size_t count, float reach, std::uint32_t & seed, float time = 0.0F) {
     std::vector<kernel::geometry::Ray> out;
     for (std::size_t i = 0; i < count; ++i) {
@@ -135,8 +138,6 @@ std::vector<kernel::geometry::Ray> inwards(std::size_t count, float reach, std::
     }
     return out;
 }
-
-};  // namespace
 
 // a shading point lies where the ray met the surface, with the normal and face the placed scene
 // gives the same hit. The scene holds meshes that bend, quadrics and points, through moving and
@@ -459,5 +460,7 @@ BOOST_AUTO_TEST_CASE(moya_surfaces_a_hit_of_nothing_is_no_shading_point_test) {
     stranger.instances[0] = 999;
     BOOST_TEST(!held.at(stranger, ray).found());
 }
+
+};  // namespace
 
 };  // namespace v3d::moya::tracing

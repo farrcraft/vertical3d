@@ -115,8 +115,8 @@ float Film::standardError(float weight, const float * moments, float mean) {
     if (count <= 1.0) {
         return std::numeric_limits<float>::infinity();
     }
-    const double m = mean;
-    const double spread = std::max(0.0, moments[0] - (2.0 * m * moments[1]) + (m * m * squares));
+    const double centre = mean;
+    const double spread = std::max(0.0, moments[0] - (2.0 * centre * moments[1]) + (centre * centre * squares));
     return static_cast<float>(std::sqrt((spread / (sum * sum)) * (count / (count - 1.0))));
 }
 

@@ -41,11 +41,14 @@ typedef v3d::moya::device::CpuDevice CpuDevice;
 /** The side of each picture, in pixels. **/
 constexpr std::uint32_t kSide = 32;
 
-/** The pixels well inside the sphere's picture, and those well outside it in a corner. **/
-const glm::uvec2 kInsideFrom { 12, 12 };
-const glm::uvec2 kInsideTo { 20, 20 };
-const glm::uvec2 kOutsideFrom { 0, 0 };
-const glm::uvec2 kOutsideTo { 4, 4 };
+/**
+ * The square of pixels well inside the sphere's picture, and the one well outside it in a corner:
+ * the first pixel along each axis, and the one past the last.
+ **/
+constexpr std::uint32_t kInsideFrom = 12;
+constexpr std::uint32_t kInsideTo = 20;
+constexpr std::uint32_t kOutsideFrom = 0;
+constexpr std::uint32_t kOutsideTo = 4;
 
 /**
  * A scene of a camera five units back along -z looking at the origin, at kSide pixels square and
@@ -76,6 +79,7 @@ scene::Handle ball(scene::Scene & scene, const std::string & name, float grey, c
 }
 
 /** A scene of one sphere of a grey in the white environment, with a depth limit. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the grey, the depth, then the samples
 film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples = 64) {
     scene::Scene scene(scene::kinds());
     const scene::Handle options = framed(scene, samples);
@@ -91,6 +95,7 @@ film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples =
  * A grey sphere resting on a grey plane under the white environment, so light bounces between
  * them, with Russian roulette from a depth.
  **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the depth, then the threads
 film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0) {
     scene::Scene scene(scene::kinds());
     const scene::Handle options = framed(scene, 256);
@@ -113,8 +118,6 @@ film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0) {
     return integrate::render(device, scene, {}, colour::Config());
 }
 
-};  // namespace
-
 // a white sphere in a white environment is white wherever it is seen: every path reaches the
 // environment carrying all of its light
 BOOST_AUTO_TEST_CASE(moya_paths_a_white_sphere_in_a_white_furnace_is_white_test) {
@@ -123,23 +126,23 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_white_sphere_in_a_white_furnace_is_white_test)
     BOOST_TEST(furthest.sigmas < 5.0F);
     BOOST_TEST(furthest.unmeasured == 0U);
     BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), 1.0F) < 3.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, kInsideFrom, kInsideTo), 1.0F) < 3.0F);
+    BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 1.0F) < 3.0F);
 }
 
 // a convex grey sphere never meets itself, so it shows its albedo times the environment
 BOOST_AUTO_TEST_CASE(moya_paths_a_grey_sphere_shows_its_albedo_test) {
     const film::Snapshot snapshot = sphereIn(0.5F, 12);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, kInsideFrom, kInsideTo), 0.5F) < 3.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, kOutsideFrom, kOutsideTo), 1.0F) < 3.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, kInsideFrom, kInsideTo), 0.6F) > 10.0F);
+    BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 0.5F) < 3.0F);
+    BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kOutsideFrom), glm::uvec2(kOutsideTo)), 1.0F) < 3.0F);
+    BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 0.6F) > 10.0F);
 }
 
 // with no bounce allowed, a camera ray that meets the sphere gathers nothing, and one that misses
 // it still meets the environment. A diffuse limit of zero ends the same paths
 BOOST_AUTO_TEST_CASE(moya_paths_a_depth_limit_of_zero_shows_the_environment_alone_test) {
     const film::Snapshot snapshot = sphereIn(1.0F, 0);
-    BOOST_TEST(film::mean(snapshot, kInsideFrom, kInsideTo).value == 0.0F);
-    BOOST_TEST(film::sigmas(film::mean(snapshot, kOutsideFrom, kOutsideTo), 1.0F) < 3.0F);
+    BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 0.0F);
+    BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kOutsideFrom), glm::uvec2(kOutsideTo)), 1.0F) < 3.0F);
 
     scene::Scene scene(scene::kinds());
     const scene::Handle options = framed(scene, 16);
@@ -148,7 +151,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_depth_limit_of_zero_shows_the_environment_alon
     scene.commit();
     scene.apply();
     CpuDevice device;
-    BOOST_TEST(film::mean(integrate::render(device, scene, {}, colour::Config()), kInsideFrom, kInsideTo).value == 0.0F);
+    BOOST_TEST(film::mean(integrate::render(device, scene, {}, colour::Config()), glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 0.0F);
 }
 
 // Russian roulette ends paths early and weighs the survivors up, so a picture with it from the
@@ -161,7 +164,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_russian_roulette_keeps_the_mean_test) {
     BOOST_TEST(film::sigmas(earlyMean, lateMean) < 3.0F);
     BOOST_TEST(film::furthest(early, late).sigmas < 5.0F);
     // the floor under the sphere is shadowed by it, so the picture is no flat grey
-    BOOST_TEST(film::mean(late, { 12, 26 }, { 20, 30 }).value < film::mean(late, kOutsideFrom, kOutsideTo).value);
+    BOOST_TEST(film::mean(late, { 12, 26 }, { 20, 30 }).value < film::mean(late, glm::uvec2(kOutsideFrom), glm::uvec2(kOutsideTo)).value);
 }
 
 BOOST_AUTO_TEST_CASE(moya_paths_a_picture_is_the_same_on_one_thread_and_on_every_thread_test) {
@@ -194,12 +197,14 @@ BOOST_AUTO_TEST_CASE(moya_paths_the_settings_are_the_options_test) {
     BOOST_TEST(settings.rouletteDepth == 2U);
     BOOST_TEST(glm::distance(settings.environment, config.input("Linear Rec.709 (sRGB)").apply({ 0.8F, 0.3F, 0.1F })) <= 1.0e-6F);
 
-    scene::Scene empty(scene::kinds());
+    const scene::Scene empty(scene::kinds());
     const v3d::moya::kernel::integrate::Settings fallback = integrate::settingsOf(empty, config);
     BOOST_TEST(fallback.maxDepth == 12U);
     BOOST_TEST(fallback.diffuseDepth == 4U);
     BOOST_TEST(fallback.rouletteDepth == 3U);
     BOOST_TEST(glm::distance(fallback.environment, glm::vec3 { 0.0F }) == 0.0F);
 }
+
+};  // namespace
 
 };  // namespace v3d::moya::tracing

@@ -29,11 +29,11 @@ struct Frame {
      **/
     MOYA_KERNEL static Frame around(const glm::vec3 & normal) {
         const float sign = std::copysign(1.0F, normal.z);
-        const float a = -1.0F / (sign + normal.z);
-        const float b = normal.x * normal.y * a;
+        const float inverse = -1.0F / (sign + normal.z);
+        const float skew = normal.x * normal.y * inverse;
         Frame out;
-        out.tangent = glm::vec3 { 1.0F + (sign * normal.x * normal.x * a), sign * b, -sign * normal.x };
-        out.bitangent = glm::vec3 { b, sign + (normal.y * normal.y * a), -normal.y };
+        out.tangent = glm::vec3 { 1.0F + (sign * normal.x * normal.x * inverse), sign * skew, -sign * normal.x };
+        out.bitangent = glm::vec3 { skew, sign + (normal.y * normal.y * inverse), -normal.y };
         out.normal = normal;
         return out;
     }

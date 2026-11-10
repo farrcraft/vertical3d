@@ -99,8 +99,6 @@ float theoreticalError() {
     return unitLuminance() * std::sqrt((4.0F / 12.0F) / static_cast<float>(kSamples));
 }
 
-};  // namespace
-
 // a pixel of equal weights has the error of a mean: the samples' variance over their count
 BOOST_AUTO_TEST_CASE(moya_compare_a_pixels_error_is_the_standard_error_of_its_mean_test) {
     const film::Snapshot snapshot = uniformPicture(3);
@@ -214,3 +212,5 @@ BOOST_AUTO_TEST_CASE(moya_compare_refuses_what_it_cannot_compare_test) {
     const film::Film other(device, { kSide, kSide + 1 }, {});
     BOOST_CHECK_THROW(film::furthest(snapshot, other.snapshot()), std::invalid_argument);
 }
+
+};  // namespace

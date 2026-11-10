@@ -19,8 +19,8 @@
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
-#include <moya/libmoya/kernel/integrate/Paths.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
+#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/scene/Declaration.h>

@@ -10,6 +10,7 @@
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/geometry/World.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/light/Light.h>

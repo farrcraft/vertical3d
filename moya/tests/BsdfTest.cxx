@@ -15,6 +15,7 @@
 #include <moya/libmoya/kernel/bsdf/Sample.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
+#include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
@@ -111,16 +112,14 @@ kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, cons
 }
 
 /** Whether two spectra are equal at each wavelength, within a tolerance. **/
-bool near(const kernel::spectrum::SampledSpectrum & a, const kernel::spectrum::SampledSpectrum & b) {
+bool near(const kernel::spectrum::SampledSpectrum & left, const kernel::spectrum::SampledSpectrum & right) {
     for (int i = 0; i < kernel::spectrum::kSamples; ++i) {
-        if (std::fabs(a[i] - b[i]) > 1.0e-5F) {
+        if (std::fabs(left[i] - right[i]) > 1.0e-5F) {
             return false;
         }
     }
     return true;
 }
-
-};  // namespace
 
 // directions drawn from the diffuse lobe fall into bins of the hemisphere as its density says:
 // a share of the cosine's square between a bin's bounds, evenly around the normal
@@ -250,7 +249,12 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_surfaces_colour_comes_from_its_primvar_then_its
         }
         scene.commit();
         scene.apply();
-        const glm::vec3 expected = given == 2 ? primvar : (given == 1 ? node : glm::vec3 { 0.5F });
+        glm::vec3 expected { 0.5F };
+        if (given == 2) {
+            expected = primvar;
+        } else if (given == 1) {
+            expected = node;
+        }
         BOOST_TEST_CONTEXT("given " << given) {
             BOOST_TEST(near(reflectanceOf(scene, wavelengths), kernel::spectrum::reflectance(table, expected, wavelengths)));
         }
@@ -280,5 +284,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_group_member_takes_the_material_that_places_it_
         }
     }
 }
+
+};  // namespace
 
 };  // namespace v3d::moya::tracing

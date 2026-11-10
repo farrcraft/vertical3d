@@ -60,9 +60,9 @@ constexpr float kPi = 3.14159265358979323846F;
 /** The side of each picture, in pixels. **/
 constexpr std::uint32_t kSide = 32;
 
-/** The pixels of the middle of a picture. **/
-const glm::uvec2 kMiddleFrom { 14, 14 };
-const glm::uvec2 kMiddleTo { 18, 18 };
+/** The first pixel of the middle of a picture along each axis, and the one past its last. **/
+constexpr std::uint32_t kMiddleFrom = 14;
+constexpr std::uint32_t kMiddleTo = 18;
 
 /** A half turn about x, which turns -z onto +z. **/
 glm::mat4 flipped(const glm::mat4 & place) {
@@ -100,6 +100,7 @@ void plane(scene::Scene & scene) {
 }
 
 /** A disk light of a radius at a height above the plane, facing it. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, then the height
 scene::Handle diskAbove(scene::Scene & scene, float radius, float height) {
     const scene::Handle disk = scene.create("diskLight", "key");
     scene.set(disk, "radius", scene::Value::number(radius));
@@ -118,6 +119,7 @@ film::Snapshot rendered(scene::Scene & scene) {
  * The radiance a white diffuse plane sends back from a point a distance off a disk light's axis:
  * its irradiance over pi. The light has a radiance of one, and faces the plane from a height.
  **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the distance, the radius, then the height
 float underDisk(float off, float radius, float height) {
     const float h2 = height * height;
     const float d2 = off * off;
@@ -150,8 +152,6 @@ scene::Handle seen(scene::Scene & scene, const std::string & kind, const glm::ma
     scene.set(made, "transform", scene::Value::matrix(place));
     return made;
 }
-
-};  // namespace
 
 // a white plane under a disk light reaches the closed form of the disk's irradiance, by paths
 // that sample the plane's BSDF and meet the light. The camera sees through the light
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_light_with_a_colour_temperature_keeps_its_lum
     scene.set(sphere, "normalize", scene::Value::integer(0));
     scene.set(sphere, "enableColorTemperature", scene::Value::integer(1));
     scene.set(sphere, "colorTemperature", scene::Value::number(1000.0F));
-    BOOST_TEST(film::sigmas(film::mean(rendered(scene), kMiddleFrom, kMiddleTo), 1.0F) < 3.0F);
+    BOOST_TEST(film::sigmas(film::mean(rendered(scene), { kMiddleFrom, kMiddleFrom }, { kMiddleTo, kMiddleTo }), 1.0F) < 3.0F);
 }
 
 // camera rays see a light's shape only when the scene sets its camera visibility, and a rect
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_camera_rays_see_a_light_only_when_set_test) {
         const scene::Handle made = seen(scene, "rectLight", place);
         scene.set(made, "camera", scene::Value::integer(camera ? 1 : 0));
         scene.set(made, "normalize", scene::Value::integer(0));
-        return film::mean(rendered(scene), kMiddleFrom, kMiddleTo);
+        return film::mean(rendered(scene), { kMiddleFrom, kMiddleFrom }, { kMiddleTo, kMiddleTo });
     };
     BOOST_TEST(film::sigmas(rect(true, glm::mat4(1.0F)), 1.0F) < 3.0F);
     BOOST_TEST(rect(false, glm::mat4(1.0F)).value == 0.0F);
@@ -263,16 +263,16 @@ BOOST_AUTO_TEST_CASE(moya_lights_each_shape_is_normalised_by_its_area_in_the_wor
     {
         scene::Scene scene(scene::kinds());
         seen(scene, "rectLight", glm::scale(glm::mat4(1.0F), glm::vec3 { 2.0F, 3.0F, 1.0F }));
-        BOOST_TEST(film::sigmas(film::mean(rendered(scene), kMiddleFrom, kMiddleTo), 1.0F / 6.0F) < 3.0F);
+        BOOST_TEST(film::sigmas(film::mean(rendered(scene), { kMiddleFrom, kMiddleFrom }, { kMiddleTo, kMiddleTo }), 1.0F / 6.0F) < 3.0F);
     }
     {
         // a prolate spheroid of semi-axes a = 0.5 and c = 1 has an area of
         // 2 pi a^2 (1 + c asin(e) / (a e))
         scene::Scene scene(scene::kinds());
         seen(scene, "sphereLight", glm::scale(glm::mat4(1.0F), glm::vec3 { 1.0F, 1.0F, 2.0F }));
-        const float e = std::sqrt(1.0F - 0.25F);
-        const float area = 2.0F * kPi * 0.25F * (1.0F + (std::asin(e) / (0.5F * e)));
-        BOOST_TEST(film::sigmas(film::mean(rendered(scene), kMiddleFrom, kMiddleTo), 1.0F / area) < 3.0F);
+        const float eccentricity = std::sqrt(1.0F - 0.25F);
+        const float area = 2.0F * kPi * 0.25F * (1.0F + (std::asin(eccentricity) / (0.5F * eccentricity)));
+        BOOST_TEST(film::sigmas(film::mean(rendered(scene), { kMiddleFrom, kMiddleFrom }, { kMiddleTo, kMiddleTo }), 1.0F / area) < 3.0F);
     }
     {
         scene::Scene scene(scene::kinds());
@@ -351,5 +351,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_changing_a_light_rebuilds_its_shape_test) {
     BOOST_TEST((assembler.builtGeometries() == std::vector<std::uint32_t> { disk.index }));
     BOOST_TEST((assembler.builtGroups() == std::vector<std::uint32_t> { geometry::Group::kWorld }));
 }
+
+};  // namespace
 
 };  // namespace v3d::moya::tracing

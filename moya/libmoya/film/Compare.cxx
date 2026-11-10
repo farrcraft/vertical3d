@@ -80,9 +80,9 @@ float sigmas(const Estimate & estimate, float expected) {
     return measure(estimate.value - expected, estimate.error, expected);
 }
 
-float sigmas(const Estimate & a, const Estimate & b) {
-    const float error = std::sqrt((a.error * a.error) + (b.error * b.error));
-    return measure(a.value - b.value, error, std::max(std::abs(a.value), std::abs(b.value)));
+float sigmas(const Estimate & left, const Estimate & right) {
+    const float error = std::sqrt((left.error * left.error) + (right.error * right.error));
+    return measure(left.value - right.value, error, std::max(std::abs(left.value), std::abs(right.value)));
 }
 
 Furthest furthest(const Snapshot & snapshot, const std::function<float(const glm::uvec2 &)> & expected) {
@@ -96,15 +96,15 @@ Furthest furthest(const Snapshot & snapshot, const std::function<float(const glm
     return out;
 }
 
-Furthest furthest(const Snapshot & a, const Snapshot & b) {
-    if (a.resolution != b.resolution) {
+Furthest furthest(const Snapshot & left, const Snapshot & right) {
+    if (left.resolution != right.resolution) {
         throw std::invalid_argument("two snapshots of different resolutions");
     }
     Furthest out;
-    for (std::uint32_t y = 0; y < a.resolution.y; ++y) {
-        for (std::uint32_t x = 0; x < a.resolution.x; ++x) {
-            const Estimate first = luminance(a, x, y);
-            const Estimate second = luminance(b, x, y);
+    for (std::uint32_t y = 0; y < left.resolution.y; ++y) {
+        for (std::uint32_t x = 0; x < left.resolution.x; ++x) {
+            const Estimate first = luminance(left, x, y);
+            const Estimate second = luminance(right, x, y);
             record(out, { x, y }, sigmas(first, second), !std::isinf(first.error) && !std::isinf(second.error));
         }
     }

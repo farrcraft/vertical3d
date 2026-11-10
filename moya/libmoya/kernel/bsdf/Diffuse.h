@@ -35,7 +35,7 @@ struct Diffuse {
     }
 
     /** The density sample() draws incoming with: its cosine over pi, on outgoing's side. **/
-    MOYA_KERNEL float density(const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
+    MOYA_KERNEL static float density(const glm::vec3 & outgoing, const glm::vec3 & incoming) {
         return outgoing.z * incoming.z > 0.0F ? std::fabs(incoming.z) * kInversePi : 0.0F;
     }
 
@@ -44,7 +44,7 @@ struct Diffuse {
      * numbers. The unit square is mapped onto the disk by Shirley and Chiu's concentric mapping,
      * and lifted onto the hemisphere.
      **/
-    MOYA_KERNEL glm::vec3 sample(const glm::vec3 & outgoing, const glm::vec2 & u) const {
+    MOYA_KERNEL static glm::vec3 sample(const glm::vec3 & outgoing, const glm::vec2 & u) {
         const glm::vec2 disk = concentric(u);
         const float lift = std::sqrt(std::fmax(0.0F, 1.0F - (disk.x * disk.x) - (disk.y * disk.y)));
         return glm::vec3 { disk.x, disk.y, outgoing.z < 0.0F ? -lift : lift };

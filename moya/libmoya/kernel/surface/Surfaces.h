@@ -91,6 +91,7 @@ struct Surfaces {
     }
 
     /** A geometry's primvar of a name, or none. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then the name
     MOYA_KERNEL const Primvar * primvar(std::uint32_t placed, std::uint32_t name) const {
         const Geometry & shape = geometries[placed];
         for (std::uint32_t i = 0; i < shape.primvarCount; ++i) {
@@ -113,20 +114,20 @@ struct Surfaces {
         }
         if (source.perPrimitive == 0U || source.perPrimitive == 1U) {
             const std::uint32_t from = source.first + (source.perPrimitive * primitive * components);
-            for (std::uint32_t c = 0; c < components; ++c) {
-                out[c] = values[from + c];
+            for (std::uint32_t component = 0; component < components; ++component) {
+                out[component] = values[from + component];
             }
             return true;
         }
         if (source.perPrimitive != 3U) {
             return false;
         }
-        for (std::uint32_t c = 0; c < components; ++c) {
+        for (std::uint32_t component = 0; component < components; ++component) {
             float sum = 0.0F;
             for (std::uint32_t corner = 0; corner < 3U; ++corner) {
-                sum += weights[static_cast<glm::length_t>(corner)] * values[source.first + ((((primitive * 3U) + corner) * components) + c)];
+                sum += weights[static_cast<glm::length_t>(corner)] * values[source.first + ((((primitive * 3U) + corner) * components) + component)];
             }
-            out[c] = sum;
+            out[component] = sum;
         }
         return true;
     }
@@ -233,6 +234,7 @@ struct Surfaces {
      * The transformation from the geometry a hit's chain places into the world at a time, the
      * geometry, and the chain's material. False for a chain the surfaces do not hold.
      **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then its material
     MOYA_KERNEL bool placing(const geometry::Hit & hit, float time, glm::mat4 & toWorld, std::uint32_t & placed, std::uint32_t & material) const {
         if (!hit.found() || hit.depth == 0U || hit.depth > geometry::kInstanceDepth) {
             return false;
@@ -263,7 +265,7 @@ struct Surfaces {
      **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the triangle, then what it gives
     MOYA_KERNEL void triangle(const Geometry & shape, std::uint32_t placed, const geometry::Hit & hit, float time, ShadingPoint & out, glm::vec3 & point,
-        glm::vec3 & leave, glm::vec3 & geometric, glm::vec3 & shading) const {
+        glm::vec3 & leave, glm::vec3 & geometric, glm::vec3 & shading) const {  // NOLINT(bugprone-easily-swappable-parameters)
         glm::vec3 corners[3];
         for (std::uint32_t corner = 0; corner < 3U; ++corner) {
             corners[corner] = geometry::sampleAt(shape.points, points.data, times.data, (hit.primitive * 3U) + corner, time);
@@ -286,18 +288,18 @@ struct Surfaces {
         glm::vec3 offset { 0.0F };
         for (std::uint32_t corner = 0; corner < 3U; ++corner) {
             const std::uint32_t at = normal->first + (((hit.primitive * 3U) + corner) * 3U);
-            glm::vec3 n { values[at], values[at + 1U], values[at + 2U] };
+            glm::vec3 cornerNormal { values[at], values[at + 1U], values[at + 2U] };
             const float weight = out.weights[static_cast<glm::length_t>(corner)];
-            shading += n * weight;
-            if (glm::dot(n, n) == 0.0F) {
+            shading += cornerNormal * weight;
+            if (glm::dot(cornerNormal, cornerNormal) == 0.0F) {
                 continue;
             }
-            n = glm::normalize(n);
-            if (glm::dot(n, geometric) < 0.0F) {
-                n = -n;
+            cornerNormal = glm::normalize(cornerNormal);
+            if (glm::dot(cornerNormal, geometric) < 0.0F) {
+                cornerNormal = -cornerNormal;
             }
-            const float below = glm::dot(point - corners[corner], n);
-            offset -= n * (weight * (below < 0.0F ? below : 0.0F));
+            const float below = glm::dot(point - corners[corner], cornerNormal);
+            offset -= cornerNormal * (weight * (below < 0.0F ? below : 0.0F));
         }
         leave = point + offset;
     }

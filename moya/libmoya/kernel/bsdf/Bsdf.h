@@ -58,7 +58,7 @@ struct Bsdf {
         }
         switch (model) {
             case Model::Diffuse:
-                return diffuse.density(frame.toLocal(outgoing), frame.toLocal(incoming));
+                return Diffuse::density(frame.toLocal(outgoing), frame.toLocal(incoming));
         }
         return 0.0F;
     }
@@ -69,12 +69,12 @@ struct Bsdf {
         const glm::vec3 local = frame.toLocal(outgoing);
         switch (model) {
             case Model::Diffuse: {
-                const glm::vec3 drawn = diffuse.sample(local, u);
+                const glm::vec3 drawn = Diffuse::sample(local, u);
                 out.incoming = frame.toWorld(drawn);
                 out.lobe = Lobe::Diffuse;
                 if (sameSide(outgoing, out.incoming)) {
                     out.value = diffuse.evaluate(local, drawn);
-                    out.density = diffuse.density(local, drawn);
+                    out.density = Diffuse::density(local, drawn);
                 }
                 break;
             }

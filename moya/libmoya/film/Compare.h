@@ -34,7 +34,7 @@ Estimate mean(const Snapshot & snapshot, const glm::uvec2 & from, const glm::uve
 float sigmas(const Estimate & estimate, float expected);
 
 /** How many standard errors two estimates lie apart, by their errors combined. **/
-float sigmas(const Estimate & a, const Estimate & b);
+float sigmas(const Estimate & left, const Estimate & right);
 
 /** The pixel of a comparison furthest from what it was compared with. **/
 struct Furthest {
@@ -55,6 +55,6 @@ Furthest furthest(const Snapshot & snapshot, const std::function<float(const glm
  *
  * @throws std::invalid_argument when their resolutions differ
  **/
-Furthest furthest(const Snapshot & a, const Snapshot & b);
+Furthest furthest(const Snapshot & left, const Snapshot & right);
 
 };  // namespace v3d::moya::film
