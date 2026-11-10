@@ -6,6 +6,7 @@ v3d_add_test(moya
 	"FoundationTest.cxx"
 	"AssemblerTest.cxx"
 	"BenchTest.cxx"
+	"BsdfTest.cxx"
 	"BucketsTest.cxx"
 	"BuilderTest.cxx"
 	"ColourTest.cxx"

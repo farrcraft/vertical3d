@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 
 #include <cstdint>
 #include <vector>
@@ -42,6 +43,9 @@ struct Instance {
     std::vector<kernel::geometry::Key> keys;
 
     std::uint32_t visibility { 0 };
+
+    /** Its material among the prototypes' materials, or kernel::surface::kNoMaterial. **/
+    std::uint32_t material { kernel::surface::kNoMaterial };
 
     /** Whether the instance's transformation moves over the shutter. **/
     bool moves() const {

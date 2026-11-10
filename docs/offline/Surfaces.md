@@ -85,3 +85,35 @@ holds it.
 
 `Surfaces::read(point, name, out, components)` reads a primvar at a shading point, interpolated by
 its corners' weights. It is false for a geometry without that primvar.
+
+## Materials
+
+The gather reads the material each instance names, once per material. A `kernel::surface::Material`
+holds the colour its surface node's `Cs` input gives, converted into ACEScg from the space the
+value names, and whether it gives one. A shading point names the material of the innermost
+instance of its chain that names one, so an instance in a group with no material takes the
+material of an instance that places the group. The material program replaces this.
+
+## The BSDF
+
+A `kernel::bsdf::Bsdf` is how a shading point scatters light. Its directions are in world space and
+point away from the surface: outgoing towards where light goes, and incoming towards where it
+comes from.
+
+- **It evaluates, gives a density and samples**, each at a path's four wavelengths. A sample
+  holds the incoming direction, the value, the density it was drawn with, and its `Lobe`:
+  diffuse, glossy, specular or transmission. A density of zero is no sample.
+- **It is a tagged type.** Kernel code has no virtual call, so it switches over its `Model`.
+- **Its model works in the frame around the shading normal.**
+- **A reflection that would cross the geometric surface is refused.** A direction on the other
+  side of the geometric surface from outgoing has no value, no density and no sample, whatever
+  the shading normal says.
+- **The diffuse model is Lambert's**: its reflectance over pi, on whichever side light leaves
+  towards. It samples by the cosine, through Shirley and Chiu's concentric mapping of the square
+  onto the disk.
+
+`bsdf::atSurface(surfaces, point, table, wavelengths)` gives the BSDF at a shading point. Every
+surface is diffuse. Its colour is the geometry's `Cs` primvar, which overrides its material's as
+RI's does, or its material's colour, or a mid grey. The colour becomes a reflectance through the
+RGB-to-spectrum table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. The BSDF library
+replaces the diffuse model.

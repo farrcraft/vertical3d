@@ -10,6 +10,7 @@
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -70,6 +71,13 @@ struct Prototypes {
     std::vector<kernel::surface::Primvar> primvars;
     std::vector<float> primvarValues;
     std::vector<std::string> primvarSpaces;
+
+    /**
+     * Every material an instance names, each held once, with its surface node's colour in the
+     * space materialSpaces names for it.
+     **/
+    std::vector<kernel::surface::Material> materials;
+    std::vector<std::string> materialSpaces;
 
     std::vector<Geometry> geometries;
     std::vector<Group> groups;

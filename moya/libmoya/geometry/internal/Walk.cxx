@@ -28,6 +28,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -257,6 +258,10 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
             out.visibility |= bit;
         }
     }
+    const scene::Handle named = scene_.value(handle, "material").handleArray().front();
+    if (named.valid() && scene_.contains(named)) {
+        out.material = material(named);
+    }
     const std::string & kind = scene_.schema().kind(prototype.kind).name;
     if (kind == "group") {
         // the world is held by nothing, so only a group's member can close a loop
@@ -277,6 +282,35 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
     const auto index = static_cast<std::uint32_t>(prototypes_.instances.size());
     prototypes_.instances.push_back(out);
     handles_.push_back(handle);
+    return index;
+}
+
+std::uint32_t Walk::material(const scene::Handle & handle) {
+    const auto found = materialIndex_.find(handle.index);
+    if (found != materialIndex_.end()) {
+        return found->second;
+    }
+    kernel::surface::Material out;
+    std::string space;
+    const scene::Handle surface = scene_.value(handle, "surface").handleArray().front();
+    if (surface.valid() && scene_.contains(surface)) {
+        for (const scene::Declaration & declaration : scene_.primvars(surface)) {
+            if (declaration.name != "Cs" || scene::floatsOf(declaration.type) != 3U) {
+                continue;
+            }
+            const scene::Value & value = scene_.value(surface, "Cs");
+            const std::vector<float> & floats = value.floatArray();
+            if (floats.size() >= 3U) {
+                out.colour = glm::vec3 { floats[0], floats[1], floats[2] };
+                out.coloured = 1;
+                space = value.space();
+            }
+        }
+    }
+    const auto index = static_cast<std::uint32_t>(prototypes_.materials.size());
+    prototypes_.materials.push_back(out);
+    prototypes_.materialSpaces.push_back(space);
+    materialIndex_.emplace(handle.index, index);
     return index;
 }
 

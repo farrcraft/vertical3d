@@ -88,6 +88,9 @@ class Walk final {
     /** The index of a group among the groups, gathered once. **/
     std::uint32_t group(const scene::Handle & handle);
 
+    /** The index of a material among the prototypes', gathered once from its surface node. **/
+    std::uint32_t material(const scene::Handle & handle);
+
     /**
      * The index of a geometry among the geometries, gathered once or placed from the cache, or
      * nothing when it is left out.
@@ -174,6 +177,7 @@ class Walk final {
     std::map<std::uint32_t, std::vector<scene::Handle>> groups_;
     std::map<std::uint32_t, std::uint32_t> groupIndex_;
     std::map<std::uint32_t, std::uint32_t> geometryIndex_;
+    std::map<std::uint32_t, std::uint32_t> materialIndex_;
     std::map<std::uint32_t, std::set<std::uint32_t>> held_;
     std::set<std::pair<std::uint32_t, std::uint32_t>> deepened_;
     std::set<std::string> reported_;

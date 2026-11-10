@@ -17,6 +17,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/surface/Geometry.h>
 #include <moya/libmoya/kernel/surface/Instance.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
 
@@ -93,7 +94,8 @@ Surfaces::Surfaces(device::Device & device, const Prototypes & prototypes, const
         instances.push_back(kernel::surface::Instance { .transform = instance.transform,
             .keys = static_cast<std::uint32_t>(keys.size()),
             .keyCount = static_cast<std::uint32_t>(instance.keys.size()),
-            .geometry = instance.kind == Prototype::Geometry ? instance.prototype : kernel::surface::kGroup });
+            .geometry = instance.kind == Prototype::Geometry ? instance.prototype : kernel::surface::kGroup,
+            .material = instance.material });
         keys.insert(keys.end(), instance.keys.begin(), instance.keys.end());
         most = instance.id + 1U > most ? instance.id + 1U : most;
     }
@@ -112,6 +114,13 @@ Surfaces::Surfaces(device::Device & device, const Prototypes & prototypes, const
     keys_ = uploaded(device, keys);
     instances_ = uploaded(device, instances);
     byId_ = uploaded(device, byId);
+    std::vector<kernel::surface::Material> materials = prototypes.materials;
+    for (std::size_t i = 0; i < materials.size(); ++i) {
+        if (materials[i].coloured != 0U) {
+            materials[i].colour = config.input(prototypes.materialSpaces[i]).apply(materials[i].colour);
+        }
+    }
+    materials_ = uploaded(device, materials);
     primvars_ = uploaded(device, prototypes.primvars);
     values_ = uploaded(device, convertedValues(prototypes, config));
 }
@@ -129,6 +138,7 @@ kernel::surface::Surfaces Surfaces::view() const {
         .instances = device::view<kernel::surface::Instance>(*instances_),
         .byId = device::view<std::uint32_t>(*byId_),
         .primvars = device::view<kernel::surface::Primvar>(*primvars_),
+        .materials = device::view<kernel::surface::Material>(*materials_),
         .values = device::view<float>(*values_),
         .open = open_,
         .close = close_ };

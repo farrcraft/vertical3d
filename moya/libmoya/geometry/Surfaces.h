@@ -18,7 +18,7 @@ namespace v3d::moya::geometry {
 /**
  * A scene's prototypes in a device's memory as shading reads them: every geometry in its own space
  * at each sample, the instances that place them with their keys, and the primvars shading reads.
- * A colour primvar is converted into ACEScg from the space it names.
+ * A colour primvar, and a material's colour, is converted into ACEScg from the space it names.
  *
  * It is held apart from any device's traversal, so a hit from any traversal of the same
  * prototypes is shaded alike. It reads the device's memory, so the device outlives it.
@@ -47,6 +47,7 @@ class Surfaces final {
     boost::shared_ptr<device::Buffer> instances_;
     boost::shared_ptr<device::Buffer> byId_;
     boost::shared_ptr<device::Buffer> primvars_;
+    boost::shared_ptr<device::Buffer> materials_;
     boost::shared_ptr<device::Buffer> values_;
     float open_ { 0.0F };
     float close_ { 0.0F };

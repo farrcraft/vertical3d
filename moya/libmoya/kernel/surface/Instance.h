@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/surface/Material.h>
+
 #include <cstdint>
 #include <limits>
 
@@ -28,6 +30,9 @@ struct Instance {
     std::uint32_t keyCount { 0 };
 
     std::uint32_t geometry { kGroup };
+
+    /** Its material among the surfaces', or kNoMaterial. **/
+    std::uint32_t material { kNoMaterial };
 };
 
 };  // namespace v3d::moya::kernel::surface

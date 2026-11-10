@@ -8,6 +8,11 @@
 // rules of whatever includes it.
 
 #include <moya/libmoya/kernel/Array.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/AtSurface.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Bsdf.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Diffuse.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Lobe.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Sample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/camera/Camera.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/FilterSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/PixelFilter.h>  // IWYU pragma: keep
@@ -55,6 +60,7 @@
 #include <moya/libmoya/kernel/surface/Frame.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Geometry.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Instance.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/surface/Material.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Primvar.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Surfaces.h>  // IWYU pragma: keep

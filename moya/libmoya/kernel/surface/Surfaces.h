@@ -17,6 +17,7 @@
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/Geometry.h>
 #include <moya/libmoya/kernel/surface/Instance.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 
@@ -70,6 +71,9 @@ struct Surfaces {
     Array<std::uint32_t> byId;
 
     Array<Primvar> primvars;
+
+    /** Every material an instance names. **/
+    Array<Material> materials;
 
     /** Every primvar's values. **/
     Array<float> values;
@@ -146,9 +150,11 @@ struct Surfaces {
         std::uint32_t placed = kGroup;
         glm::mat4 toWorld { 1.0F };
         const float time = held(hit.time);
-        if (!placing(hit, time, toWorld, placed)) {
+        std::uint32_t material = kNoMaterial;
+        if (!placing(hit, time, toWorld, placed, material)) {
             return out;
         }
+        out.material = material < materials.size ? material : kNoMaterial;
         const Geometry & shape = geometries[placed];
         const glm::mat4 toLocal = glm::inverse(toWorld);
         geometry::Ray local = ray;
@@ -210,10 +216,10 @@ struct Surfaces {
 
  private:
     /**
-     * The transformation from the geometry a hit's chain places into the world at a time, and the
-     * geometry. False for a chain the surfaces do not hold.
+     * The transformation from the geometry a hit's chain places into the world at a time, the
+     * geometry, and the chain's material. False for a chain the surfaces do not hold.
      **/
-    MOYA_KERNEL bool placing(const geometry::Hit & hit, float time, glm::mat4 & toWorld, std::uint32_t & placed) const {
+    MOYA_KERNEL bool placing(const geometry::Hit & hit, float time, glm::mat4 & toWorld, std::uint32_t & placed, std::uint32_t & material) const {
         if (!hit.found() || hit.depth == 0U || hit.depth > geometry::kInstanceDepth) {
             return false;
         }
@@ -225,6 +231,10 @@ struct Surfaces {
             const Instance & instance = instances[byId[id]];
             toWorld = toWorld * (instance.keyCount > 1U ? geometry::transformAt(&keys[instance.keys], instance.keyCount, time) : instance.transform);
             placed = instance.geometry;
+            // the chain runs outermost first, so the innermost instance that names a material wins
+            if (instance.material != kNoMaterial) {
+                material = instance.material;
+            }
         }
         return placed != kGroup && placed < geometries.size;
     }

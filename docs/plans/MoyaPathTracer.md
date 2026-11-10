@@ -129,7 +129,7 @@ among the options before the record is drafted.
 | [5](#step-5--the-record-checkpoints) | The record: checkpoints | `docs/adr` | **0216** | accepted |
 | [6](#step-6--the-statistical-comparison) | The statistical comparison | `moya/libmoya/film`, `moya/tests` | — | done |
 | [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | done |
-| [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | open |
+| [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | done |
 | [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | open |
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | open |
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | open |
@@ -412,6 +412,23 @@ is read at its corner. A coarse sphere lit from the side shows no facets along t
 
 The integrator calls a BSDF, and section 5 supplies the library. This step builds the interface
 and one lobe.
+
+**Done.** `kernel::bsdf::Bsdf` evaluates, gives a density and samples in world space, through a
+`Model` it switches over. Its diffuse model is Lambert's, sampled by the cosine through the
+concentric mapping. `bsdf::atSurface()` builds one at a shading point. The gather reads each
+instance's material, and a shading point names its chain's. Three things the list below did not
+settle:
+
+* **The primvar comes before the surface node.** The list put the node's `Cs` first. RI's `Cs`
+  on a primitive overrides the attribute colour, which the RIB client gives the surface node, so
+  the primvar wins.
+* **Materials reach the device.** A material holds its surface node's `Cs` in ACEScg. A shading
+  point names the material of the innermost instance of its chain that names one, so a group's
+  member takes the material of the instance that places the group.
+* **The diffuse lobe reflects on either side** that light leaves towards, as pbrt's does. A
+  reflection that would cross the geometric surface is refused on every model.
+
+[Surfaces.md](../offline/Surfaces.md#the-bsdf) states the rules.
 
 * **The interface evaluates, samples and gives a density**, in the shading frame, each for the
   path's four wavelengths. It is a tagged type with a `switch`, as kernel code has no virtual

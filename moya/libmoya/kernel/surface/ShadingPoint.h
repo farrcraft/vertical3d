@@ -8,6 +8,7 @@
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 
 #include <cstdint>
 
@@ -53,6 +54,12 @@ struct ShadingPoint {
     std::uint32_t geometry { geometry::kNoPrimitive };
     std::uint32_t primitive { geometry::kNoPrimitive };
     std::uint32_t face { geometry::kNoPrimitive };
+
+    /**
+     * The material of the innermost instance of the chain that names one, or kNoMaterial. An
+     * instance in a group with no material takes the material of an instance that places the group.
+     **/
+    std::uint32_t material { kNoMaterial };
 
     /** Whether the ray met the side the geometric normal faces. **/
     bool front { true };
