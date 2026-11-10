@@ -133,7 +133,7 @@ among the options before the record is drafted.
 | [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | done |
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | done |
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | done |
-| [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | open |
+| [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | done |
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | open |
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | open |
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | open |
@@ -591,6 +591,48 @@ alone, by BSDF sampling alone, and by MIS. MIS's standard error is the least of 
 small light and for a large one. Each light's samples follow its density, by a chi-squared test.
 
 ### Step 12 — Distant lights and points
+
+**Done.** `light::Lights` builds points and distant lights beside the lights with a shape, and
+every light holds its own placement over the shutter. `light::sample()` draws a point where it
+stands, a distant light of no angle along its direction, and one with an angle uniformly in its
+cone. A light sample of either kind of delta light takes its whole weight, and a ray that leaves
+the scene meets the distant lights with an angle. `PathParams` gains the lights' keys and their
+distant lights, so the CPU library's table is now version 8. Six things the list below did not
+settle:
+
+* **A point is the sphere it stands for.** UsdLux leaves a point's units open, and calls
+  `treatAsPoint` a hint. A point's radiant intensity is the sphere's, its radiance times pi r^2,
+  or a quarter of its emission with `normalize`. A renderer that ignores the hint then gives the
+  same brightness, and a shrinking normalised sphere converges to its point. Karma reads the
+  intensity as candela instead, a factor of four from a small normalised sphere.
+* **RI's `pointlight` and `spotlight` are normalised points at four times RI's intensity**, so
+  their radiant intensity is RI's. A point of no radius without `normalize` emits nothing. The
+  editor's translator makes its points the same way, and five committed scene descriptions gain
+  the new values.
+* **A distant light's size is UsdLux's**: pi sin^2 of its half angle, or pi (2 - sin^2) past a
+  quarter turn. With `normalize`, its emission is the irradiance of a plane that faces it at any
+  angle. Of no angle, its emission is that irradiance with `normalize` or without. Its intensity
+  falls back to 1, as every light's does, not to OpenUSD's newer 50000.
+* **A distant light's power is measured over the world's reach**: its irradiance times the area
+  of a disk of the radius of a sphere about the world's bounds, as pbrt-v4 measures it.
+* **A delta light is sampled whatever the strategy**, `bsdf` included, since nothing else finds
+  it. Camera rays see no distant light.
+* **A cone keeps its precision however narrow.** One less the cosine of the half angle is twice
+  the sine squared of its half. A sample's sine comes from one less its cosine. A cone of the
+  sun's half degree is then sampled as exactly as a wide one.
+
+[Lights.md](../offline/Lights.md#points) states the rules, and
+[Integrator.md](../offline/Integrator.md#lights) how a path finds each light.
+
+Each case was run against broken code as well, one break at a time. A delta light weighed by MIS
+failed both closed forms, the soft shadow and the shrinking sphere. A delta light left unsampled
+under `bsdf` failed both closed forms. A normalised point not quartered failed the point's closed
+form and its limit, and one not scaled by its sphere's area failed the limit. A shadow ray towards
+a distant light stopped short failed the soft shadow. A distant light's size taken from its whole
+angle, or a ray leaving the scene that met no distant light, failed the cone's closed form and the
+soft shadow. A cone's sine taken from its cosine, or its density off by 5%, failed the cone's
+chi-squared case. A point's cone ignored failed the cone case, a distant light shining the wrong
+way failed five cases, and a point that kept its shape failed the gather's case.
 
 * **A distant light with an angle** samples the cone its angle gives. An angle of zero is a
   single direction, which only light sampling reaches.

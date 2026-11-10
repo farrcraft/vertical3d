@@ -30,8 +30,10 @@ namespace v3d::moya::ri::internal {
  * The lights a world makes from RI's light shaders, and the instances each one lights.
  *
  * `pointlight`, `distantlight` and `spotlight` become a sphere light of radius zero, a distant
- * light and a sphere light shaped by a cone. Each points down its `to` from its `from`. Another
- * light shader is logged and makes no light. An area light makes a mesh light of a geometry.
+ * light and a sphere light of radius zero shaped by a cone. Each points down its `to` from its
+ * `from`. A sphere light of radius zero is normalised, with four times RI's intensity, so its
+ * radiant intensity is RI's. Another light shader is logged and makes no light. An area light
+ * makes a mesh light of a geometry.
  **/
 class Lights final {
  public:

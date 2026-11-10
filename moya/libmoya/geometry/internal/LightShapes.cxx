@@ -9,6 +9,7 @@
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
@@ -57,8 +58,11 @@ kernel::geometry::Sampled still(std::size_t first, std::size_t count) {
 std::vector<scene::Handle> shapedLights(const scene::Scene & scene) {
     std::vector<scene::Handle> out;
     for (const char * kind : { "rectLight", "diskLight", "sphereLight", "cylinderLight" }) {
-        const std::vector<scene::Handle> found = scene.objects(kind);
-        out.insert(out.end(), found.begin(), found.end());
+        for (const scene::Handle & handle : scene.objects(kind)) {
+            if (shaped(scene, handle)) {
+                out.push_back(handle);
+            }
+        }
     }
     std::sort(out.begin(), out.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
     return out;

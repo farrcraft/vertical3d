@@ -7,6 +7,8 @@
 
 #include <api/render/offline/film/Sampling.h>
 #include <moya/libmoya/accel/Assembly.h>
+#include <moya/libmoya/accel/Box.h>
+#include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
@@ -38,6 +40,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -72,6 +75,13 @@ kernel::integrate::Strategy strategyNamed(const std::string & name) {
     return name == "bsdf" ? kernel::integrate::Strategy::Bsdf : kernel::integrate::Strategy::Mis;
 }
 
+/** The radius of a sphere about the box that bounds the world over the shutter, or zero. **/
+float reach(const accel::LinearBox & bounds) {
+    accel::Box all = bounds.start;
+    all.grow(bounds.end);
+    return all.empty() ? 0.0F : 0.5F * glm::length(all.upper - all.lower);
+}
+
 };  // namespace
 
 kernel::integrate::Settings settingsOf(const scene::Scene & scene, const colour::Config & config) {
@@ -92,9 +102,10 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const kernel::camera::Camera camera = camera::fromScene(scene);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     const geometry::Prototypes prototypes = geometry::gather(scene, logger);
-    const view::Tracing tracing(device, prototypes, accel::assemble(device, prototypes));
+    const accel::Assembly assembly = accel::assemble(device, prototypes);
+    const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);
-    const light::Lights lights(device, scene, prototypes, config);
+    const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds));
 
     render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
     render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);

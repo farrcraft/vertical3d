@@ -15,7 +15,7 @@
 
 namespace v3d::moya::geometry::internal {
 
-/** Every rect, disk, sphere and cylinder light of a scene, in the order of their indices. **/
+/** Every light of a scene with a shape, as shaped() says, in the order of their indices. **/
 std::vector<scene::Handle> shapedLights(const scene::Scene & scene);
 
 /**

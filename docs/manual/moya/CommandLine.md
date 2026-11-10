@@ -32,7 +32,7 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--silent` | Print no progress line |
 | `--scene` | Read the scene into moya's new core and print what it holds, in place of rendering. It prints after each frame the file describes |
 | `--hits` | Read the scene into moya's new core and write what its rays hit, in place of rendering, to the `--output` file or to `hits.exr`. The `--output` file has to end in `.exr`. The EXR holds each pixel's `depth`, its surface's `normal`, its `instance`, its `face` and its `coverage`. It is written after each frame, so a file of several frames leaves the last |
-| `--paths` | Read the scene into moya's new core and render it with its path tracer, in place of rendering with the hiders, to the `--output` file or to `paths.exr`. The `--output` file has to end in `.exr`. The EXR holds the beauty in ACEScg, as floats. It is written after each frame, so a file of several frames leaves the last. Every surface is diffuse, and lit by the options' environment alone |
+| `--paths` | Read the scene into moya's new core and render it with its path tracer, in place of rendering with the hiders, to the `--output` file or to `paths.exr`. The `--output` file has to end in `.exr`. The EXR holds the beauty in ACEScg, as floats. It is written after each frame, so a file of several frames leaves the last. Every surface is diffuse, and lit by the scene's lights and the options' environment |
 | `--help` | Print the options and exit |
 | `--version` | Print the version and Pixar's RenderMan copyright notice, and exit |
 

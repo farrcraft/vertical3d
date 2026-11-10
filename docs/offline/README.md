@@ -208,10 +208,11 @@ changes a picture the hiders make.
   traversal: its position, normals and frame at the hit's time, with the primvars shading reads.
   [Surfaces.md](Surfaces.md)
 - **The integrator builds paths in stages** over a path state declared once, with depth limits
-  and Russian roulette, and lights a scene by an environment. `moya --paths` renders a RIB
-  file through it. [Integrator.md](Integrator.md)
+  and Russian roulette. Each bounce samples a light and the BSDF, and weighs the two by multiple
+  importance sampling. `moya --paths` renders a RIB file through it. [Integrator.md](Integrator.md)
 - **A light with a shape is an instance in the world's hierarchy**, which a path meets as it meets
-  geometry, and emits UsdLux's radiance. [Lights.md](Lights.md)
+  geometry, and emits UsdLux's radiance. A point and a distant light have no shape.
+  [Lights.md](Lights.md)
 - **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
   [Traversal.md](Traversal.md#speed)
 

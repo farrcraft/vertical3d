@@ -165,9 +165,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   at its `from`. `distantlight` is a distant light. `spotlight` is a sphere light of radius zero
   whose cone angle is its `coneangle` in degrees, and whose softness is its `conedeltaangle` over
   its `coneangle`. Each points its `-z` from its `from` towards its `to`, and a point light,
-  which has no `to`, looks down z from its `from`. Each holds its
-  `intensity` and `lightcolor`. Another light shader is logged and makes no light, and
-  `Illuminate` passes over its handle.
+  which has no `to`, looks down z from its `from`. Each holds its `lightcolor`. A distant
+  light holds its `intensity`. A point or spot light is normalised, with four times its
+  `intensity`, so that its radiant intensity is RI's, as [Lights.md](Lights.md#points) says.
+  Another light shader is logged and makes no light, and `Illuminate` passes over its handle.
 - **A light that lit every instance keeps `includeRoot`.** Any other sets `includeRoot` to 0 and
   names the instances made while it was on, so a light that was off for every instance lights
   none.

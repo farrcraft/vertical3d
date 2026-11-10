@@ -33,6 +33,19 @@ namespace {
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
+/** A normalised point's radiant intensity is its emission over this. **/
+constexpr float kPointShare = 4.0F;
+
+/**
+ * Makes a sphere light a point whose radiant intensity is RI's intensity, so that it lights a
+ * surface with its intensity over the distance squared, as RI's lights do.
+ **/
+void asPoint(scene::Scene * scene, const scene::Handle & made, const ParameterList & parameters) {
+    scene->set(made, "radius", scene::Value::number(0.0F));
+    scene->set(made, "normalize", scene::Value::integer(1));
+    scene->set(made, "intensity", scene::Value::number(kPointShare * parameters.number("intensity", 1.0F)));
+}
+
 };  // namespace
 
 Lights::Lights(scene::Scene * scene, Objects * objects, Warnings * warnings, const boost::shared_ptr<v3d::log::Logger> & logger) :
@@ -71,13 +84,13 @@ bool Lights::source(const v3d::render::offline::rib::requests::LightSource & req
         // a point light has no direction, so it looks down z from where it is
         const glm::vec3 from = pointOf(parameters, "from", glm::vec3(0.0F));
         made = light("sphereLight", objects_->unique("sphereLight", name), parameters, from + glm::vec3(0.0F, 0.0F, 1.0F), transformation);
-        scene_->set(made, "radius", scene::Value::number(0.0F));
+        asPoint(scene_, made, parameters);
     } else if (request.shader == "distantlight") {
         made = light("distantLight", objects_->unique("distantLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F), transformation);
         scene_->set(made, "angle", scene::Value::number(0.0F));
     } else if (request.shader == "spotlight") {
         made = light("sphereLight", objects_->unique("sphereLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F), transformation);
-        scene_->set(made, "radius", scene::Value::number(0.0F));
+        asPoint(scene_, made, parameters);
         const float cone = parameters.number("coneangle", kConeAngle);
         const float delta = parameters.number("conedeltaangle", kConeDelta);
         scene_->set(made, "coneAngle", scene::Value::number(glm::degrees(cone)));

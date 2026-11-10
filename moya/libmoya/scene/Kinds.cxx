@@ -345,7 +345,9 @@ std::vector<Kind> lights() {
     return {
         Kind { .name = "rectLight", .parameters = areaLight({ size("width", 1.0F), size("height", 1.0F), texture() }) },
         Kind { .name = "diskLight", .parameters = areaLight({ size("radius", kLightRadius) }) },
-        Kind { .name = "sphereLight", .parameters = areaLight({ size("radius", kLightRadius) }) },
+        Kind { .name = "sphereLight",
+            .parameters = areaLight({ size("radius", kLightRadius),
+                Declaration { .name = "treatAsPoint", .type = Type::Integer, .fallback = Value::integer(0) } }) },
         Kind { .name = "cylinderLight", .parameters = areaLight({ size("radius", kLightRadius), size("length", 1.0F) }) },
         Kind { .name = "meshLight",
             .parameters = areaLight({ Declaration { .name = "geometry", .type = Type::Handle, .fallback = Value::handle({}), .targets = shapes() } }) },

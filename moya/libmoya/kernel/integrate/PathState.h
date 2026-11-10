@@ -41,7 +41,8 @@
     FIELD(std::uint32_t, glossyBounces)                        \
     FIELD(std::uint32_t, specularBounces)                      \
     FIELD(std::uint32_t, transmissionBounces)                  \
-    FIELD(float, density)                                          FIELD(glm::vec3, from)
+    FIELD(float, density)                                      \
+    FIELD(glm::vec3, from)
 
 namespace v3d::moya::kernel::integrate {
 

@@ -56,6 +56,9 @@ namespace {
 
 namespace moya = v3d::moya::scene;
 
+/** A normalised point's radiant intensity is its emission over this. **/
+constexpr float kPointShare = 4.0F;
+
 };  // namespace
 
 SceneTranslator::Walk::Walk(SceneTranslator* translator) : translator_(translator) {
@@ -165,12 +168,15 @@ void SceneTranslator::Walk::visit(const boost::shared_ptr<scene::item::Light>& l
     const moya::Handle made = translator_->object(kind, light->name());
     translator_->put(made, "transform", moya::Value::matrix(moya::aimed(from, to)));
     translator_->put(made, "colour", moya::Value::colour(emission.colour));
-    translator_->put(made, "intensity", moya::Value::number(emission.intensity));
     if (emission.type == scene::item::Light::Type::Distant) {
+        translator_->put(made, "intensity", moya::Value::number(emission.intensity));
         translator_->put(made, "angle", moya::Value::number(0.0F));
         return;
     }
+    // a normalised point's radiant intensity is a quarter of its emission, so it falls off as RI's
     translator_->put(made, "radius", moya::Value::number(0.0F));
+    translator_->put(made, "normalize", moya::Value::integer(1));
+    translator_->put(made, "intensity", moya::Value::number(kPointShare * emission.intensity));
     // a point light shares a spot light's kind, so a light that stops being a spot loses its cone
     if (emission.type == scene::item::Light::Type::Spot) {
         translator_->put(made, "coneAngle", moya::Value::number(glm::degrees(emission.cone)));

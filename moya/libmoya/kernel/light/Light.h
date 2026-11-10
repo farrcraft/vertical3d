@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/Qualifiers.h>
+
 #include <cstdint>
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -16,29 +19,42 @@ namespace v3d::moya::kernel::light {
 /** A quarter turn, in radians: a cone this wide or wider, with no softness, shapes nothing. **/
 inline constexpr float kQuarterTurn = 1.57079632679489661923F;
 
-/** The shape a light emits from. **/
+/**
+ * The shape a light emits from. A point and a distant light have none that a ray can meet: a
+ * point is a sphere light of no size, and a distant light lies beyond the scene.
+ **/
 enum class Shape : std::uint8_t {
     Rect,
     Disk,
     Sphere,
-    Cylinder
+    Cylinder,
+    Point,
+    Distant
 };
 
 /**
- * A light with a shape, which an instance in the world places. Its radiance is scale times its
- * spectrum. With no temperature, the spectrum is its ACEScg colour as an illuminant. With one, it
- * is its colour as an unbounded spectrum times a Planckian radiator of a luminance of one.
+ * A light of the scene. With no temperature, its spectrum is its ACEScg colour as an illuminant.
+ * With one, it is its colour as an unbounded spectrum times a Planckian radiator of a luminance of
+ * one.
  *
- * - id is its instance's index in the scene, which a hit names.
- * - scale is its intensity times two to its exposure, over its area when it is normalised.
+ * - id is the index in the scene of the instance that places its shape, which a hit names, or
+ *   kNoPrimitive for a light with no shape.
+ * - transform takes its prototype's space into the world, and holds at every time while keyCount
+ *   is below two. Otherwise its transformation at each of keyCount samples is held from keys
+ *   among the lights' keys. A shaped light's is its instance's.
+ * - scale is what its spectrum is multiplied by. A light with a shape emits a radiance: its
+ *   intensity times two to its exposure, over its area when it is normalised. A point emits a
+ *   radiant intensity, and a distant light of no angle an irradiance. A distant light with an
+ *   angle emits a radiance.
  * - temperature is in kelvin, or zero when it has none. planckScale is what a Planckian
  *   radiator at that temperature, one at 560 nm, is multiplied by to give a luminance of one, and
  *   planckColour is that radiator's ACEScg colour, which an RGB build uses.
  * - shape and size are its shape in its prototype's space: a rect's width and height, a disk's
- *   or a sphere's radius, or a cylinder's radius and length along z. A light emits from one face:
- *   a rect's or a disk's -z face, or a sphere's or a cylinder's outer face.
+ *   or a sphere's radius, or a cylinder's radius and length along z. A distant light's size is
+ *   the half angle of its cone, in radians. A light with a shape emits from one face: a rect's or
+ *   a disk's -z face, or a sphere's or a cylinder's outer face.
  * - axis is the direction it emits along, in its prototype's space, which its cone is measured
- *   from.
+ *   from. A distant light shines along it.
  * - coneAngle and coneSoftness shape what it emits, as UsdLux's shaping does: nothing past the
  *   angle off its axis, and a smooth fall to it from the angle times one less the softness. The
  *   angle is in radians.
@@ -47,6 +63,9 @@ struct Light {
     std::uint32_t id { 0 };
     Shape shape { Shape::Rect };
     glm::vec2 size { 1.0F };
+    glm::mat4 transform { 1.0F };
+    std::uint32_t keys { 0 };
+    std::uint32_t keyCount { 0 };
     glm::vec3 colour { 1.0F };
     float scale { 1.0F };
     float temperature { 0.0F };
@@ -56,5 +75,18 @@ struct Light {
     float coneAngle { kQuarterTurn };
     float coneSoftness { 0.0F };
 };
+
+/** Whether a light has a shape a ray can meet. **/
+MOYA_KERNEL inline bool shaped(const Light & light) {
+    return light.shape != Shape::Point && light.shape != Shape::Distant;
+}
+
+/**
+ * Whether a light lies at a single point or along a single direction: a point, or a distant
+ * light of no angle. Only a light sample finds it, since no direction a BSDF draws meets it.
+ **/
+MOYA_KERNEL inline bool delta(const Light & light) {
+    return light.shape == Shape::Point || (light.shape == Shape::Distant && !(light.size.x > 0.0F));
+}
 
 };  // namespace v3d::moya::kernel::light

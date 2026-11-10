@@ -77,12 +77,15 @@ MOYA_KERNEL inline spectrum::SampledSpectrum spectrumOf(const Light & light, con
 
 /**
  * The normal of the face a light emits from, at a point of its shape in its prototype's space:
- * -z for a rect or a disk, and outwards for a sphere or a cylinder. It is not of unit length.
+ * -z for a rect or a disk, and outwards for a sphere or a cylinder. It is not of unit length. A
+ * light with no shape has none, and gives -z.
  **/
 MOYA_KERNEL inline glm::vec3 emittingNormal(const Light & light, const glm::vec3 & local) {
     switch (light.shape) {
         case Shape::Rect:
         case Shape::Disk:
+        case Shape::Point:
+        case Shape::Distant:
             break;
         case Shape::Sphere:
             return local;
@@ -111,6 +114,63 @@ MOYA_KERNEL inline spectrum::SampledSpectrum radiance(const Light & light, const
         return spectrum::SampledSpectrum(0.0F);
     }
     return spectrumOf(light, table, wavelengths) * (light.scale * share);
+}
+
+/** The unit direction a light's axis points along in the world, turned as a normal is. **/
+MOYA_KERNEL inline glm::vec3 axisOf(const Light & light, const glm::mat4 & toWorld) {
+    return glm::normalize(glm::transpose(glm::inverse(glm::mat3(toWorld))) * light.axis);
+}
+
+/** One less the cosine of a distant light's half angle, as twice the sine squared of its half. **/
+MOYA_KERNEL inline float distantRise(const Light & light) {
+    const float sine = std::sin(0.5F * light.size.x);
+    return 2.0F * sine * sine;
+}
+
+/**
+ * What a distant light with an angle sends along a unit direction towards it: its radiance
+ * inside its cone, and nothing outside it or for a light of no angle.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the transformation, then the direction
+MOYA_KERNEL inline spectrum::SampledSpectrum fromAfar(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & towards,
+    const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    if (light.shape != Shape::Distant || !(light.size.x > 0.0F) || !(glm::dot(-axisOf(light, toWorld), towards) >= 1.0F - distantRise(light))) {
+        return spectrum::SampledSpectrum(0.0F);
+    }
+    return spectrumOf(light, table, wavelengths) * light.scale;
+}
+
+/**
+ * What a light sends to a point from a point drawn on it, along the unit direction to it. A
+ * light with a shape sends its radiance. A point sends its radiant intensity, shaped by its cone,
+ * over the distance squared, and a distant light of no angle its irradiance. A distant light with
+ * an angle sends its radiance inside its cone.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point it reaches, then the point drawn
+MOYA_KERNEL inline spectrum::SampledSpectrum arriving(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from, const glm::vec3 & drawn,
+    const glm::vec3 & incoming, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    switch (light.shape) {
+        case Shape::Point: {
+            const glm::vec3 between = drawn - from;
+            const float squared = glm::dot(between, between);
+            const float share = coneShare(light, glm::dot(axisOf(light, toWorld), -incoming));
+            if (!(squared > 0.0F) || !(share > 0.0F)) {
+                return spectrum::SampledSpectrum(0.0F);
+            }
+            return spectrumOf(light, table, wavelengths) * (light.scale * share / squared);
+        }
+        case Shape::Distant:
+            if (!(light.size.x > 0.0F)) {
+                return spectrumOf(light, table, wavelengths) * light.scale;
+            }
+            return fromAfar(light, toWorld, incoming, table, wavelengths);
+        case Shape::Rect:
+        case Shape::Disk:
+        case Shape::Sphere:
+        case Shape::Cylinder:
+            break;
+    }
+    return radiance(light, toWorld, drawn, -incoming, table, wavelengths);
 }
 
 };  // namespace v3d::moya::kernel::light

@@ -7,6 +7,8 @@
 
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Light.h>
@@ -14,7 +16,6 @@
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
-#include <moya/libmoya/kernel/surface/Surfaces.h>
 
 #include <cstdint>
 
@@ -27,12 +28,18 @@
 namespace v3d::moya::kernel::light {
 
 /**
- * Every light with a shape, which instance in the world places each, and the chance of each being
- * drawn. A light is drawn in proportion to its power: cdf holds the sum of the chances up to and
- * including each light, and is empty when no light has any power.
+ * Every light, which instance in the world places each light's shape, and the chance of each
+ * being drawn. A light is drawn in proportion to its power: cdf holds the sum of the chances up
+ * to and including each light, and is empty when no light has any power.
  **/
 struct Lights {
     Array<Light> lights;
+
+    /** The transformation of each light that moves, at each of its samples. **/
+    Array<geometry::Key> keys;
+
+    /** The places of the distant lights with an angle, which a ray that leaves the scene meets. **/
+    Array<std::uint32_t> distant;
 
     /** Each light's place among the lights, by its instance's index in the scene, or none. **/
     Array<std::uint32_t> byId;
@@ -46,6 +53,13 @@ struct Lights {
         }
         const std::uint32_t id = hit.instances[0];
         return id < byId.size ? byId[id] : geometry::kNoPrimitive;
+    }
+
+    /** The transformation into the world of the light at a place, at a time within the shutter. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL glm::mat4 placement(std::uint32_t place, float time) const {
+        const Light & light = lights[place];
+        return light.keyCount > 1U ? geometry::transformAt(&keys[light.keys], light.keyCount, time) : light.transform;
     }
 
     /** The chance that pick() draws the light at a place. **/
@@ -76,16 +90,12 @@ struct Lights {
 
     /**
      * The radiance the light at a place sends back along a ray that met its shape, as its shape
-     * stood at the hit's time.
+     * stood at a time within the shutter.
      **/
-    MOYA_KERNEL spectrum::SampledSpectrum emitted(std::uint32_t place, const surface::Surfaces & surfaces, const geometry::Ray & ray,
-        const geometry::Hit & hit, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
-        const Light & light = lights[place];
-        glm::mat4 toWorld { 1.0F };
-        if (!surfaces.placement(light.id, surfaces.held(hit.time), toWorld)) {
-            return spectrum::SampledSpectrum(0.0F);
-        }
-        return radiance(light, toWorld, ray.at(hit.distance), -glm::normalize(ray.direction), table, wavelengths);
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL spectrum::SampledSpectrum emitted(std::uint32_t place, float time, const geometry::Ray & ray, const geometry::Hit & hit,
+        const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
+        return radiance(lights[place], placement(place, time), ray.at(hit.distance), -glm::normalize(ray.direction), table, wavelengths);
     }
 };
 

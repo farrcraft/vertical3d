@@ -144,13 +144,17 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
  * the BSDF's sample by the power heuristic. A light is drawn in proportion to its power, then a
  * point on it, and a shadow ray towards the point says whether anything lies between. A bounce
  * that a depth limit refuses samples no light, since the BSDF's sample there ends the path.
+ *
+ * A light that lies at one point or along one direction takes the whole weight, since no BSDF
+ * sample meets it, and is sampled whatever the strategy. While the BSDF alone finds the lights,
+ * a light sample of any other light gathers nothing.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
     const glm::vec3 & outgoing, const PathState & state) {
     const spectrum::SampledSpectrum none(0.0F);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
-    if (paths.settings.strategy == Strategy::Bsdf || bounce >= paths.settings.maxDepth || MOYA_PATH(state, diffuseBounces) >= paths.settings.diffuseDepth) {
+    if (bounce >= paths.settings.maxDepth || MOYA_PATH(state, diffuseBounces) >= paths.settings.diffuseDepth) {
         return none;
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
@@ -161,11 +165,12 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
         return none;
     }
     const light::Light & chosen = paths.lights.lights[place];
-    const float time = MOYA_PATH(state, ray).time;
-    glm::mat4 toWorld { 1.0F };
-    if (!paths.surfaces.placement(chosen.id, paths.surfaces.held(time), toWorld)) {
+    const bool delta = light::delta(chosen);
+    if (paths.settings.strategy == Strategy::Bsdf && !delta) {
         return none;
     }
+    const float time = MOYA_PATH(state, ray).time;
+    const glm::mat4 toWorld = paths.lights.placement(place, paths.surfaces.held(time));
     const light::LightSample drawn = light::sample(chosen, toWorld, point.position, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)));
     if (!drawn.found()) {
         return none;
@@ -174,18 +179,23 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
     if (value.black()) {
         return none;
     }
-    const spectrum::SampledSpectrum emitted = light::radiance(chosen, toWorld, drawn.point, -drawn.incoming, paths.table, MOYA_PATH(state, wavelengths));
+    const spectrum::SampledSpectrum emitted =
+        light::arriving(chosen, toWorld, point.position, drawn.point, drawn.incoming, paths.table, MOYA_PATH(state, wavelengths));
     if (emitted.black()) {
         return none;
     }
+    // a shadow ray towards a distant light runs on past everything in the scene
     geometry::Ray shadow = leavingRay(point, drawn.incoming, time, geometry::kShadowRay);
-    shadow.direction = drawn.point - shadow.origin;
-    shadow.end = 1.0F - kShadowShort;
+    if (chosen.shape != light::Shape::Distant) {
+        shadow.direction = drawn.point - shadow.origin;
+        shadow.end = 1.0F - kShadowShort;
+    }
     if (paths.traversal.any(shadow)) {
         return none;
     }
     const float density = chance * drawn.density;
-    const float weight = paths.settings.strategy == Strategy::Mis ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
+    const bool weighed = paths.settings.strategy == Strategy::Mis && !delta;
+    const float weight = weighed ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
     return value * emitted * (std::fabs(glm::dot(drawn.incoming, point.shading)) * weight / density);
 }
 
@@ -226,34 +236,60 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
 }
 
 /**
- * The share of a light that a ray met carries back. A camera ray's carries all of it, since
- * nothing else samples the light for it. A bounce's carries the power heuristic's weight of the
- * BSDF's sample against the light's: all of it when the BSDF alone finds lights, and none when
- * light samples alone do.
+ * The share of a light that a ray met carries back, at a point of the light's shape or a point
+ * along the ray to a distant light. A camera ray's carries all of it, since nothing else samples
+ * the light for it. A bounce's carries the power heuristic's weight of the BSDF's sample against
+ * the light's: all of it when the BSDF alone finds lights, and none when light samples alone do.
  **/
 template <geometry::Traversal T>
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the light, then the ray
-MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, const geometry::Ray & ray, const geometry::Hit & hit, const PathState & state) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the light, then the time
+MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, float time, const glm::vec3 & met, const PathState & state) {
     if (MOYA_PATH(state, bounces) == 0U || paths.settings.strategy == Strategy::Bsdf) {
         return 1.0F;
     }
     if (paths.settings.strategy == Strategy::Light) {
         return 0.0F;
     }
-    const light::Light & met = paths.lights.lights[place];
-    glm::mat4 toWorld { 1.0F };
-    if (!paths.surfaces.placement(met.id, paths.surfaces.held(ray.time), toWorld)) {
-        return 1.0F;
-    }
-    const float density = paths.lights.chance(place) * light::density(met, toWorld, MOYA_PATH(state, from), ray.at(hit.distance));
+    const glm::mat4 toWorld = paths.lights.placement(place, time);
+    const float density = paths.lights.chance(place) * light::density(paths.lights.lights[place], toWorld, MOYA_PATH(state, from), met);
     return powerHeuristic(MOYA_PATH(state, density), density);
+}
+
+/**
+ * What a ray that leaves the scene meets: the environment, gathered whole, and each distant light
+ * with an angle whose cone holds the ray, gathered by its share. A camera ray sees no distant
+ * light.
+ **/
+template <geometry::Traversal T>
+MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geometry::Ray & ray, const PathState & state) {
+    const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
+    spectrum::SampledSpectrum out = spectrum::illuminant(paths.table, paths.settings.environment, wavelengths);
+    if (MOYA_PATH(state, bounces) == 0U) {
+        return out;
+    }
+    const float time = paths.surfaces.held(ray.time);
+    const glm::vec3 towards = glm::normalize(ray.direction);
+    for (std::uint32_t i = 0; i < paths.lights.distant.size; ++i) {
+        const std::uint32_t place = paths.lights.distant[i];
+        const spectrum::SampledSpectrum emitted =
+            light::fromAfar(paths.lights.lights[place], paths.lights.placement(place, time), towards, paths.table, wavelengths);
+        if (emitted.black()) {
+            continue;
+        }
+        const float share = metShare(paths, place, time, MOYA_PATH(state, from) + towards, state);
+        if (share > 0.0F) {
+            out += emitted * share;
+        }
+    }
+    return out;
 }
 
 /**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
  * accumulate stages run back to back. At each shading point a path gathers a light sample before
- * it scatters. A path that leaves the scene gathers the environment, and one that meets a light's
- * shape gathers its share of what the light emits towards it, and ends there.
+ * it scatters. A path that leaves the scene gathers the environment and the distant lights it
+ * meets, and one that meets a light's shape gathers its share of what the light emits towards it,
+ * and ends there.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
@@ -261,16 +297,16 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
         const geometry::Ray & ray = MOYA_PATH(state, ray);
         const geometry::Hit hit = paths.traversal.nearest(ray);
         if (!hit.found()) {
-            const spectrum::SampledSpectrum environment = spectrum::illuminant(paths.table, paths.settings.environment, MOYA_PATH(state, wavelengths));
-            MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * environment;
+            MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
         }
         const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
-            const float share = metShare(paths, met, ray, hit, state);
+            const float time = paths.surfaces.held(hit.time);
+            const float share = metShare(paths, met, time, ray.at(hit.distance), state);
             if (share > 0.0F) {
                 MOYA_PATH(state, radiance) +=
-                    MOYA_PATH(state, throughput) * paths.lights.emitted(met, paths.surfaces, ray, hit, paths.table, MOYA_PATH(state, wavelengths)) * share;
+                    MOYA_PATH(state, throughput) * paths.lights.emitted(met, time, ray, hit, paths.table, MOYA_PATH(state, wavelengths)) * share;
             }
             return;
         }

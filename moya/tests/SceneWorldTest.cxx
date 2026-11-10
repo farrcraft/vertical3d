@@ -177,7 +177,9 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_names_the_instances_it_lit_test) {
     BOOST_TEST((read.value("distantLight", "light 2", "instances") ==
         scene::Value::handles({ read.handle("instance", "Sphere 2"), read.handle("instance", "Sphere 3") })));
     BOOST_TEST((read.value("sphereLight", "light 1", "radius") == scene::Value::number(0.0F)));
-    BOOST_TEST((read.value("sphereLight", "light 1", "intensity") == scene::Value::number(3.0F)));
+    // a point is normalised at four times RI's intensity, so its radiant intensity is RI's
+    BOOST_TEST((read.value("sphereLight", "light 1", "intensity") == scene::Value::number(12.0F)));
+    BOOST_TEST((read.value("sphereLight", "light 1", "normalize") == scene::Value::integer(1)));
     BOOST_TEST((read.value("sphereLight", "light 1", "transform").matrixAt(0)[3] == glm::vec4(0.0F, 2.0F, 0.0F, 1.0F)));
     BOOST_TEST(read.heard("makes no light"));
     BOOST_TEST(!read.heard("not made"));

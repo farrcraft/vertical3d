@@ -84,10 +84,12 @@ namespace v3d::moya::ri {
  * one attribute state share it. Its colour and opacity are the surface node's `Cs` and `Os`.
  *
  * **Lights.** RI's `pointlight`, `distantlight` and `spotlight` become a sphere light of radius
- * zero, a distant light and a sphere light shaped by a cone. Each points down its `to` from its
- * `from`. A light that lit every instance keeps `includeRoot`. Any other clears it and names the
- * instances made while it was on, which may be none. Another light shader is logged and makes no
- * light. `AreaLightSource` makes a mesh light of each geometry after it in its attribute block.
+ * zero, a distant light and a sphere light of radius zero shaped by a cone. Each points down its
+ * `to` from its `from`. A sphere light of radius zero is normalised, with four times RI's
+ * intensity, so its radiant intensity is RI's. A light that lit every instance keeps
+ * `includeRoot`. Any other clears it and names the instances made while it was on, which may be
+ * none. Another light shader is logged and makes no light. `AreaLightSource` makes a mesh light
+ * of each geometry after it in its attribute block.
  *
  * **Names.** An object takes its name from RI's `Attribute "identifier" "name"`, or from its
  * request and its place in the file. A name a kind already holds gets a number after it. A

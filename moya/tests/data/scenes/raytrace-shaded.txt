@@ -97,7 +97,8 @@ sphereLight "light 2"
     exposure float = 0
     includeRoot integer = 1
     instances handle[0] =
-    intensity float = 1.2
-    normalize integer = 0
+    intensity float = 4.8
+    normalize integer = 1
     radius float = 0
     transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 -0.6 0.5 1.2 1]
+    treatAsPoint integer = 0

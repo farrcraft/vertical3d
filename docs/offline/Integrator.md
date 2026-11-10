@@ -45,7 +45,8 @@ pixel in index order.
   weight, and its point on the lens, its time and its wavelengths. Its ray is the camera's.
 - **Intersect** traces the ray through the traversal the launch was built with.
 - **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers the
-  environment: the options' colour as an illuminant, times its throughput. A path whose ray meets
+  environment, the options' colour as an illuminant, and the distant lights it meets, as
+  [Lights](#lights) says, times its throughput. A path whose ray meets
   a light's shape gathers its share of the radiance the light sends back along it, times its
   throughput, and ends there. At a shading point, a path gathers a light sample, as
   [Lights](#lights) says.
@@ -61,24 +62,31 @@ refuses a sample, or by Russian roulette.
 
 ## Lights
 
-A path finds the lights with a shape in two ways: by a light sample at each shading point, and by
-the direction its BSDF draws meeting a light. The options' `lightSampling` chooses between them.
+A path finds a light in two ways: by a light sample at each shading point, and by the direction its
+BSDF draws meeting the light. A light with a shape is met where a ray hits its shape, and a distant
+light with an angle where a ray that leaves the scene lies inside its cone. The options'
+`lightSampling` chooses between the two ways.
 
 - **A light sample** draws one light in proportion to its power, then a point on it, as
   [Lights.md](Lights.md#sampling-a-light) says. A shadow ray from the shading point towards the
   point says whether anything lies between. It stops short of the point by `kShadowShort` of its
-  length, and a light's shape never stops one. The sample gathers the BSDF's value times the
-  light's radiance and the cosine to the shading normal, over the chance of the light times the
+  length, and a light's shape never stops one. A shadow ray towards a distant light runs on past
+  everything in the scene. The sample gathers the BSDF's value times what the light sends to the
+  shading point and the cosine to the shading normal, over the chance of the light times the
   point's density.
+- **A point and a distant light of no angle are found by light samples alone**, since no
+  direction a BSDF draws meets them. A light sample of either takes its whole weight whatever the
+  strategy, and is drawn under `bsdf` too.
 - **`mis`**, the fallback, weighs the two by multiple importance sampling with the power
   heuristic. A light sample is weighed by its density against the BSDF's density for its
   direction. A BSDF sample that meets a light is weighed by its density against the chance of the
   light times the light's density for the point it met, seen from the shading point it left.
 - **`light`** finds the lights by light samples alone, and a BSDF sample that meets a light
   gathers nothing.
-- **`bsdf`** finds them by BSDF samples alone, and draws no light sample.
-- **A camera ray that meets a light gathers all of it**, whatever the strategy, since nothing
-  else samples the light for it.
+- **`bsdf`** finds them by BSDF samples alone. A light sample gathers nothing but the light of a
+  point or a distant light of no angle.
+- **A camera ray that meets a light's shape gathers all of it**, whatever the strategy, since
+  nothing else samples the light for it. A camera ray sees no distant light.
 - **A bounce that a depth limit refuses draws no light sample.** A shading point at `maxDepth`
   bounces, or at the diffuse limit, draws none, since the BSDF's sample there would end the path.
 - **The environment is found by BSDF samples alone**, and gathers all of its light, whatever
@@ -110,7 +118,8 @@ CPU, through the hierarchy, and gives the film's snapshot.
   point, since only those libraries define the CPU's traversal.
 - **Each pixel takes the samples the options name**, rounded up to a power of two, in passes of
   at most `kSamplesPerPass`. The options' pixel filter and frame are used.
-- **The scene's lights with a shape** are lit, through `light::Lights`.
+- **The scene's lights** are lit, through `light::Lights`, with the world's reach from the box
+  that bounds its hierarchy.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
 - **`moya --paths`** reads a RIB file through the scene client and writes the picture as an EXR

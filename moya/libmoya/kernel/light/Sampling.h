@@ -27,6 +27,9 @@
 namespace v3d::moya::kernel::light {
 
 /*
+ * A point is drawn where it stands, and a distant light of no angle along its direction, each
+ * with a density of one. A distant light with an angle is drawn uniformly in its cone.
+ *
  * Each light is sampled from a point by the solid angle it subtends where a method exists for
  * its shape as it stands in the world, and by area otherwise. A rect whose edges stay at right
  * angles is a spherical rectangle, a disk that stays round is a spherical ellipse, and a sphere
@@ -82,6 +85,9 @@ MOYA_KERNEL inline float localArea(const Light & light) {
             return 2.0F * kTurn * first * first;
         case Shape::Cylinder:
             return kTurn * first * light.size.y;
+        case Shape::Point:
+        case Shape::Distant:
+            break;
     }
     return 0.0F;
 }
@@ -104,6 +110,9 @@ MOYA_KERNEL inline glm::vec3 areaPoint(const Light & light, const glm::vec2 & u)
         }
         case Shape::Cylinder:
             return glm::vec3 { first * std::cos(angle), first * std::sin(angle), (u.x - 0.5F) * light.size.y };
+        case Shape::Point:
+        case Shape::Distant:
+            break;
     }
     return glm::vec3 { 0.0F };
 }
@@ -131,6 +140,8 @@ MOYA_KERNEL inline Method methodOf(const Light & light, const glm::mat4 & toWorl
             return round && glm::length(from - glm::vec3(toWorld[3])) > light.size.x * length ? Method::Cone : Method::Area;
         }
         case Shape::Cylinder:
+        case Shape::Point:
+        case Shape::Distant:
             break;
     }
     return Method::Area;
@@ -189,6 +200,39 @@ MOYA_KERNEL inline LightSample coneSample(const Light & light, const glm::mat4 &
 }
 
 /**
+ * A light with no shape, drawn from a point: a point where it stands, or a distant light along
+ * its direction. A distant light with an angle is drawn uniformly in its cone.
+ **/
+MOYA_KERNEL inline LightSample unshapedSample(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from, const glm::vec2 & u) {
+    LightSample out;
+    if (light.shape == Shape::Point) {
+        out.point = glm::vec3(toWorld[3]);
+        const glm::vec3 toPoint = out.point - from;
+        const float squared = glm::dot(toPoint, toPoint);
+        if (squared > 0.0F) {
+            out.incoming = toPoint / std::sqrt(squared);
+            out.density = 1.0F;
+        }
+        return out;
+    }
+    const glm::vec3 towards = -axisOf(light, toWorld);
+    out.incoming = towards;
+    out.density = 1.0F;
+    if (light.size.x > 0.0F) {
+        const float rise = distantRise(light);
+        // the sine squared as d (2 - d), from one less the cosine, keeps a narrow cone precise
+        const float drop = u.x * rise;
+        const float cosine = 1.0F - drop;
+        const float sine = std::sqrt(std::fmax(0.0F, drop * (2.0F - drop)));
+        const float phi = kTurn * u.y;
+        out.incoming = glm::normalize(surface::Frame::around(towards).toWorld(glm::vec3 { sine * std::cos(phi), sine * std::sin(phi), cosine }));
+        out.density = 1.0F / (kTurn * rise);
+    }
+    out.point = from + out.incoming;
+    return out;
+}
+
+/**
  * The density by solid angle, seen from a point, of a point of a light's shape drawn uniformly
  * by area: its distance squared over the area in the world and the cosine there.
  **/
@@ -230,6 +274,9 @@ MOYA_KERNEL inline LightSample areaSample(const Light & light, const glm::mat4 &
  * methods above say. A rect or disk light draws nothing for a point behind its emitting face.
  **/
 MOYA_KERNEL inline LightSample sample(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from, const glm::vec2 & u) {
+    if (!shaped(light)) {
+        return unshapedSample(light, toWorld, from, u);
+    }
     if (!facing(light, toWorld, from)) {
         return LightSample {};
     }
@@ -268,9 +315,18 @@ MOYA_KERNEL inline LightSample sample(const Light & light, const glm::mat4 & toW
 
 /**
  * The density by solid angle with which sample() draws a point of a light's shape from a point:
- * zero for a point sample() never draws, such as one on the far side of a sphere.
+ * zero for a point sample() never draws, such as one on the far side of a sphere. A distant
+ * light's point is any along the direction it is met from. A light that lies at one point or
+ * along one direction has none, since no direction a BSDF draws meets it.
  **/
 MOYA_KERNEL inline float density(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from, const glm::vec3 & point) {
+    if (delta(light)) {
+        return 0.0F;
+    }
+    if (light.shape == Shape::Distant) {
+        const float rise = distantRise(light);
+        return glm::dot(-axisOf(light, toWorld), glm::normalize(point - from)) >= 1.0F - rise ? 1.0F / (kTurn * rise) : 0.0F;
+    }
     if (!facing(light, toWorld, from)) {
         return 0.0F;
     }

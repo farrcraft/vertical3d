@@ -3,13 +3,15 @@
 This page is for anyone changing how moya's new core places lights and what they emit. The
 kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
 host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
-shape is in `geometry::gather()`. [Scene.md](Scene.md) lists each light's parameters, and
+shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point
+and a distant light have none. [Scene.md](Scene.md) lists each light's parameters, and
 [Integrator.md](Integrator.md) covers the paths that meet them.
 
 ## A light's shape
 
 A rect, disk, sphere or cylinder light has a shape that no geometry in the scene holds. Its shape
 is a prototype of the world's hierarchy, so the one traversal that finds geometry finds lights too.
+`geometry::shaped()` says which lights have one.
 
 - **Each light places its shape through an instance in the world**, after every other instance.
   The instance's index in the scene is the light's own, so a hit on the shape names the light.
@@ -23,13 +25,16 @@ is a prototype of the world's hierarchy, so the one traversal that finds geometr
   a light builds its shape's hierarchy and the world's again, and no other.
 - **A light's instance is visible to indirect rays.** Camera rays see it only while the light's
   `camera` parameter is 1, and shadow rays never meet it.
+- **A sphere light of no radius, or one whose `treatAsPoint` is 1, places no shape.** It is a
+  point, as [Points](#points) says.
 
 Background: [ADR-0213](../adr/offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md)
 
 ## What a light emits
 
-`light::Lights` holds each light with a shape as a `kernel::light::Light`, with its radiance's
-parts worked out on the host. Its radiance is UsdLux's.
+`light::Lights` holds each light as a `kernel::light::Light`, with its emission's parts worked
+out on the host: the lights with a shape first, then the points and the distant lights in the
+order of their indices. A light with a shape emits a radiance, as UsdLux's does.
 
 - **The scale** is the light's `intensity` times two to its `exposure`.
 - **The spectrum** is its `colour` as an illuminant, converted into ACEScg from the space the
@@ -51,34 +56,92 @@ parts worked out on the host. Its radiance is UsdLux's.
   90 degrees or more with no softness shapes nothing, which is the fallback. The angle is held to
   [0, 180] degrees and the softness to [0, 1].
 
-The light's axis is turned into the world as a normal is, by its instance's transformation at the
-ray's time. A light that moves over the shutter therefore emits from where it stands then.
+The light's axis is turned into the world as a normal is, by its transformation at the ray's
+time. A light that moves over the shutter therefore emits from where it stands then.
+
+- **Each light holds its own placement.** A light with a shape takes its instance's
+  transformation and keys, and a light with none its `transform`.
+  `kernel::light::Lights::placement()` gives a light's transformation at a time.
+
+## Points
+
+A sphere light of no radius, or one whose `treatAsPoint` is 1, is a point at its origin. UsdLux
+calls `treatAsPoint` a hint, so a point emits as the sphere it stands for, and only its shadows
+change.
+
+- **A point's radiant intensity is the sphere's**: its radiance times pi times the radius
+  squared, which is its radiance times its area in the world over four. With `normalize`, the
+  radiance is divided by the area first, so the intensity is a quarter of the light's emission
+  at any radius. A shrinking sphere light that is normalised therefore converges to its point.
+- **A point of no radius without `normalize` emits nothing**, since the sphere it stands for has
+  no area.
+- **A point lights a surface by its intensity, shaped by its cone, over the distance squared.**
+  Its cone is measured from its -z axis, as a shaped light's is.
+- **RI's `pointlight` and `spotlight` are normalised points** of four times RI's `intensity`,
+  so their radiant intensity is RI's, as [Rib.md](Rib.md#the-scene-client) says.
+
+## Distant lights
+
+A distant light shines along its -z axis from beyond the scene. Its `angle` is the diameter of
+the cone of directions it comes from, held to [0, 360] degrees, and its half angle is held to a
+half turn. It has no cone of emission.
+
+- **A distant light of no angle** shines along one direction. Its emission is the irradiance it
+  gives a plane that faces it, with `normalize` or without.
+- **A distant light with an angle** emits a radiance over its cone. With `normalize`, the
+  radiance is divided by pi sin^2 of the half angle, or pi (2 - sin^2) past a quarter turn, as
+  UsdLux measures a distant light's size. Its emission is then the irradiance of a plane that
+  faces it, at any angle.
+- **Camera rays see no distant light**, and a distant light casts its shadows through every
+  shadow ray, which runs on past everything in the scene.
+- **`kernel::light::Lights::distant`** names the distant lights with an angle, which a ray that
+  leaves the scene meets, as [Integrator.md](Integrator.md#lights) says.
 
 ## Meeting a light
 
 `kernel::light::Lights::at()` gives the place among the lights of the light whose shape a hit
 met, from the hit's outermost instance, or none for a hit on anything else. `Lights::emitted()`
-gives the radiance the light sends back along the ray. A path that meets a light gathers its share
-of that radiance times its throughput, as [Integrator.md](Integrator.md#lights) says, and ends
-there, since a light's shape does not scatter.
+gives the radiance the light sends back along the ray. `light::fromAfar()` gives what a distant
+light with an angle sends along a direction inside its cone, and nothing outside it. A path that
+meets a light gathers its share of that radiance times its throughput, as
+[Integrator.md](Integrator.md#lights) says. A path that meets a light's shape ends there, since a
+light's shape does not scatter.
 
 ## Drawing a light
 
 `Lights::pick()` draws a light in proportion to its power, and `Lights::chance()` gives the chance
-it was drawn with. A light's power is its radiance's luminance, times its area in the world as it
-stands when the shutter opens, times pi. Its cone is left out. `cdf` holds the sum of the chances up
-to and including each light, and is empty when no light has any power.
+it was drawn with. Each light's cone is left out of its power.
+
+- **A light with a shape** has its radiance's luminance, times its area in the world as it stands
+  when the shutter opens, times pi.
+- **A point** has its radiant intensity's luminance times four pi.
+- **A distant light** has the luminance of the irradiance it gives a plane that faces it, times
+  the area of a disk of the world's reach. The reach is the radius of a sphere about the box that
+  bounds the world over the shutter. `integrate::render()` gives `light::Lights` the reach.
+
+`cdf` holds the sum of the chances up to and including each light, and is empty when no light has
+any power.
 
 ## Sampling a light
 
 `light::sample()`, in `kernel/light/Sampling.h`, draws a point on a light's shape from a shading
 point, with its density by solid angle. `light::density()` gives the density with which it draws a
 given point, and is zero for a point it never draws. The two always agree, since each decides the
-method from the same light, transformation and point.
+method from the same light, transformation and point. `light::arriving()` gives what the light
+sends to the shading point from the point drawn.
+
+- **A point is drawn where it stands**, and a distant light of no angle along its direction, each
+  with a density of one. Neither has a density for a direction a BSDF draws, since no such
+  direction meets it, so `density()` is zero for both.
+- **A distant light with an angle is drawn uniformly in its cone.** Its cosine to the light's
+  direction is uniform from the cone's edge to one, and its sine is found from one less the
+  cosine, so a cone as narrow as the sun's keeps its precision. One less the cosine of the half
+  angle is twice the sine squared of its half, for the same reason. A distant light's point lies
+  a unit along the direction drawn.
 
 - **A rect light whose edges stay at right angles in the world** is sampled uniformly in the solid
-  angle it subtends, by Ureña, Fajardo and King's spherical rectangle.
-- **A disk light that stays round** is sampled uniformly in solid angle by Guillén and others'
+  angle it subtends, by Ureï¿½a, Fajardo and King's spherical rectangle.
+- **A disk light that stays round** is sampled uniformly in solid angle by Guillï¿½n and others'
   spherical ellipse, through its radial map. The directions to the disk form an elliptic cone.
   The cone's axis bisects the directions to the two points of the rim in the plane of the disk's
   normal and the direction to its centre. Its semi-axes are the tangents of its half angles across

@@ -96,7 +96,8 @@ then derived as RI derives it.
   it names, which may be none. A light with an area holds `coneAngle` and `coneSoftness`. It also
   holds `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do
   not. A rect light holds its `width`, `height` and `texture`, a disk or sphere light its
-  `radius`, and a cylinder light its `radius` and `length`. A distant light holds its `angle` in
+  `radius`, and a cylinder light its `radius` and `length`. A sphere light also holds
+  `treatAsPoint`, which is 1 for a light that is a point. A distant light holds its `angle` in
   degrees, and a dome light its `texture`. A mesh light takes its shape from the geometry
   prototype its `geometry` names.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming

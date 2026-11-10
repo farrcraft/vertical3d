@@ -379,19 +379,176 @@ BOOST_AUTO_TEST_CASE(moya_lights_each_shape_is_normalised_by_its_area_in_the_wor
     }
 }
 
+/** A white plane, viewed from five units back across a half width, lit by a strategy. **/
+scene::Handle litPlane(scene::Scene & scene, const char * strategy, std::uint32_t samples, float half) {
+    const scene::Handle options = viewed(scene, samples, 5.0F, glm::vec2 { 0.0F }, half);
+    scene.set(options, "lightSampling", scene::Value::string(strategy));
+    plane(scene);
+    return options;
+}
+
+/**
+ * The radiance a white diffuse plane sends back from a point a distance off the foot of a point of
+ * a radiant intensity of one at a height: its irradiance over pi.
+ **/
+float underPoint(const glm::vec2 & at, float /*radius*/, float height) {
+    const float squared = (height * height) + glm::dot(at, at);
+    return height / (squared * std::sqrt(squared) * kPi);
+}
+
+/** A sphere light at a height above the plane, normalised to a radiant intensity of one. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, then the height
+scene::Handle bulb(scene::Scene & scene, float radius, float height) {
+    const scene::Handle sphere = scene.create("sphereLight", "bulb");
+    scene.set(sphere, "radius", scene::Value::number(radius));
+    scene.set(sphere, "normalize", scene::Value::integer(1));
+    scene.set(sphere, "intensity", scene::Value::number(4.0F));
+    scene.set(sphere, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -height)));
+    return sphere;
+}
+
+// a white plane under a distant light of no angle and an irradiance of one, at sixty degrees,
+// sends back half of one over pi. Only a light sample finds it, so it takes the whole weight, and
+// is found whatever the strategy
+BOOST_AUTO_TEST_CASE(moya_lights_a_distant_light_of_no_angle_gives_its_closed_form_test) {
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            scene::Scene scene(scene::kinds());
+            litPlane(scene, strategy, 16, 0.25F);
+            const scene::Handle sun = scene.create("distantLight", "sun");
+            scene.set(sun, "angle", scene::Value::number(0.0F));
+            scene.set(sun, "transform", scene::Value::matrix(glm::rotate(flipped(glm::mat4(1.0F)), glm::radians(60.0F), glm::vec3 { 1.0F, 0.0F, 0.0F })));
+            const film::Estimate lit = film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+            BOOST_TEST(std::fabs(lit.value - (0.5F / kPi)) < 2.0e-3F);
+            BOOST_TEST(film::sigmas(lit, 0.5F / kPi) < 3.0F);
+        }
+    }
+}
+
+// a white plane under a distant light with an angle, normalised, sends back one over pi, by light
+// samples alone, by BSDF samples alone and by both. With normalize left out, its radiance is its
+// intensity, and the plane sends back sin^2 of its half angle
+BOOST_AUTO_TEST_CASE(moya_lights_a_distant_light_with_an_angle_gives_its_closed_form_by_each_strategy_test) {
+    const auto lit = [](const char * strategy, std::int32_t normalize) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, strategy, 256, 0.25F);
+        const scene::Handle sun = scene.create("distantLight", "sun");
+        scene.set(sun, "angle", scene::Value::number(60.0F));
+        scene.set(sun, "normalize", scene::Value::integer(normalize));
+        scene.set(sun, "transform", scene::Value::matrix(flipped(glm::mat4(1.0F))));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Estimate normalised = lit(strategy, 1);
+            BOOST_TEST(film::sigmas(normalised, 1.0F / kPi) < 3.0F);
+            BOOST_TEST(film::sigmas(normalised, 1.05F / kPi) > 3.0F);
+        }
+    }
+    BOOST_TEST(film::sigmas(lit("mis", 0), 0.25F) < 3.0F);
+}
+
+// a distant light's angle softens a shadow's edge over the width the angle gives. A cover one unit
+// above the plane ends at x = 0. Under a light of no angle, the plane is black on one side of the
+// edge and lit whole on the other. Under one of twenty degrees, the shadow's edge spreads over
+// tan(10) of a unit on each side, and is lit there by a share. A path makes one diffuse bounce, so
+// the light the plane sends up to the cover's underside does not come back down into the shadow
+BOOST_AUTO_TEST_CASE(moya_lights_a_distant_lights_angle_softens_a_shadow_test) {
+    const auto lit = [](float angle) {
+        scene::Scene scene(scene::kinds());
+        scene.set(litPlane(scene, "mis", 64, 0.5F), "diffuseDepth", scene::Value::integer(1));
+        const scene::Handle sun = scene.create("distantLight", "sun");
+        scene.set(sun, "angle", scene::Value::number(angle));
+        scene.set(sun, "normalize", scene::Value::integer(1));
+        scene.set(sun, "transform", scene::Value::matrix(flipped(glm::mat4(1.0F))));
+        const scene::Handle cover = scene.create("disk", "cover");
+        scene.set(cover, "radius", scene::Value::number(100.0F));
+        scene.set(instanced(scene, "cover", cover, {}, moved(-100.0F, 0.0F, -1.0F)), "camera", scene::Value::integer(0));
+        return rendered(scene);
+    };
+    // each pixel is a 32nd of a unit wide, so the edge lies between columns 15 and 16, and the
+    // softened one spreads from column 10 to 21. The pixel filter reaches a pixel past each
+    const film::Snapshot sharp = lit(0.0F);
+    const film::Snapshot soft = lit(20.0F);
+    BOOST_TEST(film::mean(sharp, { 12, 0 }, { 14, kSide }).value == 0.0F);
+    BOOST_TEST(film::sigmas(film::mean(sharp, { 18, 0 }, { 20, kSide }), 1.0F / kPi) < 3.0F);
+    BOOST_TEST(film::mean(soft, { 0, 0 }, { 8, kSide }).value == 0.0F);
+    BOOST_TEST(film::sigmas(film::mean(soft, { 24, 0 }, { kSide, kSide }), 1.0F / kPi) < 3.0F);
+    BOOST_TEST(film::mean(soft, { 12, 0 }, { 14, kSide }).value > 0.05F / kPi);
+    BOOST_TEST(film::mean(soft, { 18, 0 }, { 20, kSide }).value < 0.95F / kPi);
+}
+
+// a white plane under a point of a radiant intensity of one reaches the closed form of a point's
+// irradiance, whatever the strategy, since only a light sample finds it
+BOOST_AUTO_TEST_CASE(moya_lights_a_point_gives_its_closed_form_test) {
+    const float expected = meanOver(glm::vec2 { 0.0F }, 0.5F, &underPoint, 0.0F, 1.0F);
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            scene::Scene scene(scene::kinds());
+            litPlane(scene, strategy, 16, 0.5F);
+            bulb(scene, 0.0F, 1.0F);
+            const film::Snapshot snapshot = rendered(scene);
+            BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+            BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected * 1.05F) > 10.0F);
+        }
+    }
+}
+
+// a point is the sphere it stands for. A small normalised sphere light gives the point's picture,
+// and so does a sphere treated as a point. Without normalize, a point's intensity is its
+// radiance times pi times its radius squared, so one of no radius emits nothing
+BOOST_AUTO_TEST_CASE(moya_lights_a_point_is_the_limit_of_a_shrinking_sphere_test) {
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, then the two switches
+    const auto lit = [](float radius, std::int32_t point, std::int32_t normalize) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, "mis", 64, 0.5F);
+        const scene::Handle sphere = bulb(scene, radius, 1.0F);
+        scene.set(sphere, "treatAsPoint", scene::Value::integer(point));
+        scene.set(sphere, "normalize", scene::Value::integer(normalize));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    const float expected = meanOver(glm::vec2 { 0.0F }, 0.5F, &underPoint, 0.0F, 1.0F);
+    const film::Estimate small = lit(0.02F, 0, 1);
+    BOOST_TEST(film::sigmas(small, expected) < 3.0F);
+    BOOST_TEST(film::sigmas(small, lit(0.0F, 0, 1)) < 3.0F);
+    BOOST_TEST(film::sigmas(lit(0.5F, 1, 1), expected) < 3.0F);
+    BOOST_TEST(film::sigmas(lit(0.5F, 1, 0), expected * 4.0F * kPi * 0.25F) < 3.0F);
+    BOOST_TEST(lit(0.0F, 0, 0).value == 0.0F);
+}
+
+// a point's cone shapes it as a shaped light's does: a point on the plane far off its axis sees it
+// past a cone of ten degrees
+BOOST_AUTO_TEST_CASE(moya_lights_a_point_outside_its_cone_lights_nothing_test) {
+    const auto lit = [](float cone) {
+        scene::Scene scene(scene::kinds());
+        viewed(scene, 16, 5.0F, glm::vec2 { 2.5F, 0.0F }, 0.25F);
+        plane(scene);
+        const scene::Handle spot = bulb(scene, 0.0F, 1.0F);
+        scene.set(spot, "transform", scene::Value::matrix(flipped(moved(0.0F, 0.0F, -1.0F))));
+        scene.set(spot, "coneAngle", scene::Value::number(cone));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    BOOST_TEST(lit(10.0F).value == 0.0F);
+    BOOST_TEST(lit(90.0F).value > 0.0F);
+}
+
 // each light with a shape is an instance in the world, after every other, with the light's index
-// in the scene. It is visible to indirect rays, to camera rays when set, and never to shadow rays
+// in the scene. It is visible to indirect rays, to camera rays when set, and never to shadow rays.
+// A distant light and a point have no shape
 BOOST_AUTO_TEST_CASE(moya_lights_each_shaped_light_is_an_instance_in_the_world_test) {
     scene::Scene scene(scene::kinds());
     const scene::Handle sphere = scene.create("sphereLight", "a");
     const scene::Handle cylinder = scene.create("cylinderLight", "b");
     scene.set(cylinder, "camera", scene::Value::integer(1));
     scene.create("distantLight", "sun");
+    scene.set(scene.create("sphereLight", "point"), "radius", scene::Value::number(0.0F));
+    scene.set(scene.create("sphereLight", "treated"), "treatAsPoint", scene::Value::integer(1));
     const scene::Handle ball = scene.create("sphere", "ball");
     instanced(scene, "ball", ball, {}, glm::mat4(1.0F));
     scene.commit();
     scene.apply();
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
+    // a distant light and the sphere lights of no size place no shape
     BOOST_TEST_REQUIRE(prototypes.lights.size() == 2U);
     BOOST_TEST((prototypes.lights[0].handle == sphere));
     BOOST_TEST((prototypes.lights[1].handle == cylinder));

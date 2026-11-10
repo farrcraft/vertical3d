@@ -7,6 +7,7 @@
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/LightSample.h>
 #include <moya/libmoya/kernel/light/Sampling.h>
+#include <moya/libmoya/kernel/surface/Frame.h>
 
 #include <cmath>
 #include <cstddef>
@@ -32,6 +33,7 @@ namespace v3d::moya::tracing {
 namespace {
 
 namespace light = v3d::moya::kernel::light;
+namespace surface = v3d::moya::kernel::surface;
 
 constexpr float kTurn = 6.28318530717958647692F;
 
@@ -74,6 +76,9 @@ glm::vec2 parametersOf(const light::Light & shape, const glm::vec3 & local) {
             return glm::vec2 { 0.5F * (1.0F - (local.z / shape.size.x)), turn };
         case light::Shape::Cylinder:
             return glm::vec2 { (local.z / shape.size.y) + 0.5F, turn };
+        case light::Shape::Point:
+        case light::Shape::Distant:
+            break;
     }
     return glm::vec2 { 0.0F };
 }
@@ -223,6 +228,91 @@ BOOST_AUTO_TEST_CASE(moya_lightsampling_a_cylinder_light_samples_follow_their_de
     const light::Light cylinder = shaped(light::Shape::Cylinder, glm::vec2 { 0.5F, 2.0F });
     const glm::mat4 place = slanted();
     holds(fitted(cylinder, place, placed(place, { 1.5F, 0.5F, 0.3F })), "beside");
+}
+
+/**
+ * Draws directions to a distant light with an angle and bins them by their cosine to the light's
+ * direction across its cone, and by their azimuth. Each bin's expected share is light::density()
+ * over it, summed over its solid angle.
+ **/
+Fit fittedCone(const light::Light & distant, const glm::mat4 & toWorld) {
+    const glm::vec3 from { 0.0F };
+    const glm::vec3 towards = -light::axisOf(distant, toWorld);
+    const surface::Frame frame = surface::Frame::around(towards);
+    const float rise = light::distantRise(distant);
+    const auto direction = [&](const glm::vec2 & u) {
+        const float drop = u.x * rise;
+        const float cosine = 1.0F - drop;
+        const float sine = std::sqrt(std::fmax(0.0F, drop * (2.0F - drop)));
+        return frame.toWorld(glm::vec3 { sine * std::cos(kTurn * u.y), sine * std::sin(kTurn * u.y), cosine });
+    };
+    std::vector<double> expected(kBins * kBins, 0.0);
+    const double cell = static_cast<double>(rise) * kTurn / static_cast<double>(kBins * kBins * kSteps * kSteps);
+    for (std::size_t row = 0; row < kBins * kSteps; ++row) {
+        for (std::size_t column = 0; column < kBins * kSteps; ++column) {
+            const glm::vec2 u { (static_cast<float>(column) + 0.5F) / static_cast<float>(kBins * kSteps),
+                (static_cast<float>(row) + 0.5F) / static_cast<float>(kBins * kSteps) };
+            const double share = static_cast<double>(light::density(distant, toWorld, from, from + direction(u))) * cell;
+            expected[((row / kSteps) * kBins) + (column / kSteps)] += share;
+        }
+    }
+    std::vector<double> observed(kBins * kBins, 0.0);
+    Fit out;
+    std::uint32_t seed = 7;
+    for (std::size_t draw = 0; draw < kDraws; ++draw) {
+        const light::LightSample drawn = light::sample(distant, toWorld, from, glm::vec2 { next(seed), next(seed) });
+        const glm::vec3 local = frame.toLocal(drawn.incoming);
+        const float around = std::atan2(local.y, local.x);
+        // one less the cosine as the sine squared over one plus the cosine, which stays precise
+        const float drop = ((local.x * local.x) + (local.y * local.y)) / (1.0F + local.z);
+        const std::size_t bin = binOf(glm::vec2 { drop / rise, (around < 0.0F ? around + kTurn : around) / kTurn });
+        if (!drawn.found() || bin >= observed.size() || !(glm::distance(drawn.point, from + drawn.incoming) < 1.0e-5F)) {
+            out.outside++;
+            continue;
+        }
+        observed[bin] += 1.0;
+    }
+    for (std::size_t bin = 0; bin < expected.size(); ++bin) {
+        out.total += expected[bin];
+        const double count = expected[bin] * static_cast<double>(kDraws);
+        if (count >= 5.0) {
+            out.chiSquared += (observed[bin] - count) * (observed[bin] - count) / count;
+            out.bins++;
+        }
+    }
+    return out;
+}
+
+// a distant light with an angle is sampled uniformly in its cone, whether as wide as the sun or
+// wider than a quarter turn, and its density is zero outside it
+BOOST_AUTO_TEST_CASE(moya_lightsampling_a_distant_light_samples_follow_their_density_test) {
+    const glm::mat4 place = slanted();
+    for (const float degrees : { 0.53F, 20.0F, 200.0F }) {
+        const light::Light distant = shaped(light::Shape::Distant, glm::vec2 { 0.5F * glm::radians(degrees), 0.0F });
+        holds(fittedCone(distant, place), "angle " + std::to_string(degrees));
+    }
+    const light::Light narrow = shaped(light::Shape::Distant, glm::vec2 { glm::radians(10.0F), 0.0F });
+    const glm::vec3 towards = -light::axisOf(narrow, place);
+    BOOST_TEST(light::density(narrow, place, glm::vec3 { 0.0F }, towards) > 0.0F);
+    BOOST_TEST(light::density(narrow, place, glm::vec3 { 0.0F }, surface::Frame::around(towards).toWorld(glm::vec3 { 0.2F, 0.0F, 0.98F })) == 0.0F);
+}
+
+// a point is drawn where it stands, and a distant light of no angle along its direction, each with
+// a density of one. No direction a BSDF draws meets either, so neither has a density for one
+BOOST_AUTO_TEST_CASE(moya_lightsampling_a_point_and_a_parallel_light_are_drawn_whole_test) {
+    const glm::mat4 place = slanted();
+    const glm::vec3 from { 2.0F, 1.0F, -1.0F };
+    const light::LightSample point = light::sample(shaped(light::Shape::Point, glm::vec2 { 0.0F }), place, from, glm::vec2 { 0.3F, 0.6F });
+    BOOST_TEST(point.density == 1.0F);
+    BOOST_TEST(glm::distance(point.point, glm::vec3(place[3])) < 1.0e-6F);
+    BOOST_TEST(glm::distance(point.incoming, glm::normalize(glm::vec3(place[3]) - from)) < 1.0e-6F);
+    BOOST_TEST(light::density(shaped(light::Shape::Point, glm::vec2 { 0.0F }), place, from, point.point) == 0.0F);
+    const light::Light parallel = shaped(light::Shape::Distant, glm::vec2 { 0.0F });
+    const light::LightSample along = light::sample(parallel, place, from, glm::vec2 { 0.3F, 0.6F });
+    BOOST_TEST(along.density == 1.0F);
+    // it shines along its -z, so it is met looking up its +z
+    BOOST_TEST(glm::distance(along.incoming, glm::normalize(glm::vec3(place[2]))) < 1.0e-6F);
+    BOOST_TEST(light::density(parallel, place, from, from + along.incoming) == 0.0F);
 }
 
 // a rect or a disk draws nothing for a point behind it, and its density there is zero
