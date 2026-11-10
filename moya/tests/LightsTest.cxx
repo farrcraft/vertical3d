@@ -222,19 +222,21 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_light_sample_is_shadowed_by_what_lies_between
     BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
 }
 
-// a bounce a depth limit refuses samples no light: with no bounce allowed, or no diffuse one, the
-// plane under a disk light is black by every strategy
+// a bounce a depth limit refuses samples no light. By light samples alone, the plane under a disk
+// light is lit, and black with no bounce allowed, or no diffuse one
 BOOST_AUTO_TEST_CASE(moya_lights_a_depth_limit_stops_light_samples_test) {
-    for (const char * limit : { "maxDepth", "diffuseDepth" }) {
-        BOOST_TEST_CONTEXT(limit) {
-            scene::Scene scene(scene::kinds());
-            const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
-            scene.set(options, limit, scene::Value::integer(0));
-            plane(scene);
-            diskAbove(scene, 2.0F, 1.0F);
-            BOOST_TEST(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value == 0.0F);
-        }
-    }
+    const auto lit = [](const char * limit, std::int32_t depth) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+        scene.set(options, "lightSampling", scene::Value::string("light"));
+        scene.set(options, limit, scene::Value::integer(depth));
+        plane(scene);
+        diskAbove(scene, 2.0F, 1.0F);
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value;
+    };
+    BOOST_TEST(lit("maxDepth", 12) > 0.5F);
+    BOOST_TEST(lit("maxDepth", 0) == 0.0F);
+    BOOST_TEST(lit("diffuseDepth", 0) == 0.0F);
 }
 
 // light samples alone and BSDF samples alone give the same picture of a plane lit by a rect, a
