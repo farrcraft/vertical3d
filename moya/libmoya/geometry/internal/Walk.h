@@ -8,17 +8,20 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/internal/Piece.h>
+#include <moya/libmoya/geometry/internal/Primvars.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/subdivision/Surface.h>
 #include <moya/libmoya/geometry/subdivision/Tessellation.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <optional>
 #include <set>
@@ -62,6 +65,8 @@ class Walk final {
         std::size_t ends { 0 };
         std::size_t times { 0 };
         std::size_t faces { 0 };
+        std::size_t primvars { 0 };
+        std::size_t primvarValues { 0 };
         std::size_t reports { 0 };
     };
 
@@ -139,6 +144,18 @@ class Walk final {
      * segments.
      **/
     std::optional<std::uint32_t> curves(const scene::Handle & handle);
+
+    /**
+     * Appends the primvars shading reads of a geometry's object, `N` and `Cs`, each spread over
+     * the geometry's primitives by a function of its interpolation, its values and its floats per
+     * value. A primvar the function refuses, or one of another width than three, is reported and
+     * left out.
+     **/
+    void addPrimvars(const scene::Handle & handle, Geometry & geometry,
+        const std::function<Spread(scene::Interpolation, const std::vector<float> &, std::size_t)> & spread);
+
+    /** Appends one primvar of a geometry, already spread. **/
+    void addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::string & space);
 
     /**
      * Where values are held from first, count for each of a list of samples' times, which the

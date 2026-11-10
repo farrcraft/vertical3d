@@ -8,6 +8,7 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/subdivision/Surface.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/surface/Primvar.h>
 
 #include <cstdint>
 #include <optional>
@@ -34,6 +35,11 @@ struct Piece {
     std::vector<std::uint32_t> ends;
     std::vector<float> times;
     std::vector<std::uint32_t> faces;
+
+    /** Its primvars, each counting its values from the start of the piece's own. **/
+    std::vector<kernel::surface::Primvar> primvars;
+    std::vector<float> primvarValues;
+    std::vector<std::string> primvarSpaces;
 
     /** What was reported while it was made, reported again where it is placed again. **/
     std::vector<std::string> reports;

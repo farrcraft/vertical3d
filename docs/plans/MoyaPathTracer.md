@@ -128,7 +128,7 @@ among the options before the record is drafted.
 | [4](#step-4--the-record-adaptive-sampling) | The record: adaptive sampling | `docs/adr` | **0215** | accepted |
 | [5](#step-5--the-record-checkpoints) | The record: checkpoints | `docs/adr` | **0216** | accepted |
 | [6](#step-6--the-statistical-comparison) | The statistical comparison | `moya/libmoya/film`, `moya/tests` | — | done |
-| [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | open |
+| [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | done |
 | [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | open |
 | [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | open |
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | open |
@@ -368,6 +368,29 @@ other.
 
 A hit holds no point, normal or position on the surface. The shade stage computes them once, for
 the nearest hit.
+
+**Done.** `kernel::surface::Surfaces::at()` turns a hit into a `ShadingPoint` as its surface stood
+at the hit's time. It composes the chain of instances at that time, and gives the position, the
+geometric and shading normals, the frame, the corners' weights and the face. `geometry::Surfaces`
+holds a scene's prototypes on a device for it, with the primvars `N` and `Cs`. Since nothing
+lights a scene yet, the terminator is tested by where the leaving point lies, not by a picture.
+Four things the list below did not settle:
+
+* **The surfaces are held apart from any traversal.** The CPU traversal's arrays are device code
+  that kernel code cannot include, and a GPU's are inside HIP RT or OptiX. Shading reads its own
+  copy of each geometry and instance, as Cycles keeps its objects and meshes apart from Embree
+  and OptiX.
+* **A primvar is spread over its primitives when it is gathered**: one value for the geometry, one
+  per primitive, or three per triangle at its corners. A triangle's points are held that way
+  already. Each primvar is read at its first sample.
+* **A colour primvar is converted into ACEScg** from the space its value names, when the surfaces
+  are made, through the colour configuration.
+* **The leaving point lies on Phong's surface, not on the sphere a mesh's normals suggest.**
+  Hanika's offset moves the point out of each corner's tangent plane, which reaches Phong's
+  surface through the corners and their normals. An octahedron's bulges past its sphere at the
+  middle of each edge, to a length of 1.0607.
+
+[Surfaces.md](../offline/Surfaces.md) states the rules.
 
 * **A shading point** holds the hit's position, its geometric normal, its shading normal, a frame
   around the shading normal, its `uv`, and the instance chain's transformation at the ray's time.

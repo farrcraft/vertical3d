@@ -54,6 +54,7 @@ v3d_add_test(moya
 	"ShapesTest.cxx"
 	"SpectrumTest.cxx"
 	"SubdivisionTest.cxx"
+	"SurfacesTest.cxx"
 	"VertexTest.cxx"
 	"ZSobolTest.cxx")
 

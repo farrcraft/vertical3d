@@ -14,6 +14,7 @@
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/internal/Piece.h>
+#include <moya/libmoya/geometry/internal/Primvars.h>
 #include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Quadrics.h>
@@ -27,6 +28,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -38,6 +40,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
 #include <optional>
@@ -346,6 +349,8 @@ Walk::Mark Walk::marked() const {
         .ends = prototypes_.ends.size(),
         .times = prototypes_.times.size(),
         .faces = prototypes_.faces.size(),
+        .primvars = prototypes_.primvars.size(),
+        .primvarValues = prototypes_.primvarValues.size(),
         .reports = prototypes_.reports.size() };
 }
 
@@ -362,6 +367,9 @@ Geometry Walk::shifted(Geometry geometry, const Mark & from, const Mark & to) {
             move(sampled.times, from.times, to.times);
         }
     };
+    if (geometry.primvarCount > 0) {
+        move(geometry.primvars, from.primvars, to.primvars);
+    }
     using Form = kernel::geometry::primitive::Form;
     switch (geometry.form) {
         case Form::Triangles:
@@ -401,6 +409,12 @@ Piece Walk::pieceOf(std::uint32_t index, const Mark & mark) const {
     out.ends = since(prototypes_.ends, mark.ends);
     out.times = since(prototypes_.times, mark.times);
     out.faces = since(prototypes_.faces, mark.faces);
+    out.primvars = since(prototypes_.primvars, mark.primvars);
+    for (kernel::surface::Primvar & primvar : out.primvars) {
+        primvar.first -= static_cast<std::uint32_t>(mark.primvarValues);
+    }
+    out.primvarValues = since(prototypes_.primvarValues, mark.primvarValues);
+    out.primvarSpaces = since(prototypes_.primvarSpaces, mark.primvars);
     out.reports = since(prototypes_.reports, mark.reports);
     out.made = true;
     return out;
@@ -418,6 +432,12 @@ Geometry Walk::place(const Piece & piece) {
     append(prototypes_.ends, piece.ends);
     append(prototypes_.times, piece.times);
     append(prototypes_.faces, piece.faces);
+    for (kernel::surface::Primvar primvar : piece.primvars) {
+        primvar.first += static_cast<std::uint32_t>(at.primvarValues);
+        prototypes_.primvars.push_back(primvar);
+    }
+    append(prototypes_.primvarValues, piece.primvarValues);
+    append(prototypes_.primvarSpaces, piece.primvarSpaces);
     for (const std::string & message : piece.reports) {
         report(message);
     }
@@ -455,6 +475,10 @@ std::optional<std::uint32_t> Walk::mesh(const scene::Handle & handle) {
         }
     }
     prototypes_.faces.insert(prototypes_.faces.end(), triangles.faces.begin(), triangles.faces.end());
+    const std::size_t faceCount = scene_.value(handle, "vertices").integerArray().size();
+    addPrimvars(handle, mesh, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
+        return spreadOverMesh(interpolation, values, width, triangles, indices, points.size(), faceCount);
+    });
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(mesh);
     geometryIndex_.emplace(handle.index, index);
@@ -489,6 +513,9 @@ std::uint32_t Walk::cloud(const scene::Handle & handle) {
         cloud.widths = sampled(prototypes_.widths.size(), count, {});
         prototypes_.widths.insert(prototypes_.widths.end(), count, scene_.value(handle, "constantWidth").floatArray().front());
     }
+    addPrimvars(handle, cloud, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
+        return spreadOverPoints(interpolation, values, width, count);
+    });
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(cloud);
     geometryIndex_.emplace(handle.index, index);
@@ -512,6 +539,7 @@ std::uint32_t Walk::quadric(const scene::Handle & handle) {
     for (const float time : at) {
         prototypes_.quadrics.push_back(quadricAt(scene_, handle, time));
     }
+    addPrimvars(handle, shape, &spreadOverQuadric);
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(shape);
     geometryIndex_.emplace(handle.index, index);
@@ -581,6 +609,20 @@ void Walk::cutSurfaces() {
             }
         }
         prototypes_.faces.insert(prototypes_.faces.end(), tessellation.faces.begin(), tessellation.faces.end());
+        // an undisplaced surface shades with its limit normals, a displaced one with its own
+        if (raised.empty()) {
+            const std::vector<float> normals = uncut.surface.normals(floatsOf(samples.values.front()), tessellation);
+            Spread spread { .perPrimitive = 3, .values = {} };
+            spread.values.reserve(tessellation.corners.size() * 3U);
+            for (const std::uint32_t corner : tessellation.corners) {
+                const auto from = normals.begin() + static_cast<std::ptrdiff_t>(static_cast<std::size_t>(corner) * 3U);
+                spread.values.insert(spread.values.end(), from, from + 3);
+            }
+            addPrimvar(mesh, kernel::surface::kNormal, 3, spread, "");
+        }
+        addPrimvars(uncut.handle, mesh, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
+            return spreadOverSurface(interpolation, values, width, uncut.surface, tessellation);
+        });
         if (cache_ != nullptr) {
             Piece piece = pieceOf(uncut.index, mark);
             piece.surface = uncut.surface;
@@ -738,6 +780,9 @@ std::optional<std::uint32_t> Walk::curves(const scene::Handle & handle) {
     prototypes_.faces.insert(prototypes_.faces.end(), cut.front().curves.begin(), cut.front().curves.end());
     shape.ends = static_cast<std::uint32_t>(prototypes_.ends.size());
     prototypes_.ends.insert(prototypes_.ends.end(), cut.front().ends.begin(), cut.front().ends.end());
+    addPrimvars(handle, shape, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
+        return spreadOverCurves(interpolation, values, width, cut.front().curves, vertices.size());
+    });
     const auto index = static_cast<std::uint32_t>(prototypes_.geometries.size());
     prototypes_.geometries.push_back(shape);
     geometryIndex_.emplace(handle.index, index);
@@ -754,6 +799,56 @@ kernel::geometry::Sampled Walk::sampled(std::size_t first, std::size_t count, co
         prototypes_.times.insert(prototypes_.times.end(), times.begin(), times.end());
     }
     return out;
+}
+
+void Walk::addPrimvars(const scene::Handle & handle, Geometry & geometry,
+    const std::function<Spread(scene::Interpolation, const std::vector<float> &, std::size_t)> & spread) {
+    struct Wanted {
+        const char * name;
+        std::uint32_t number;
+    };
+    constexpr Wanted kWanted[] = { { .name = "N", .number = kernel::surface::kNormal }, { .name = "Cs", .number = kernel::surface::kColour } };
+    for (const Wanted & wanted : kWanted) {
+        // a primvar the geometry already holds, such as a subdivision surface's limit normal, stays
+        bool holds = false;
+        for (std::uint32_t i = 0; i < geometry.primvarCount; ++i) {
+            holds = holds || prototypes_.primvars[geometry.primvars + i].name == wanted.number;
+        }
+        if (holds) {
+            continue;
+        }
+        for (const scene::Declaration & declaration : scene_.primvars(handle)) {
+            if (declaration.name != wanted.name) {
+                continue;
+            }
+            const std::string what = "primvar " + declaration.name + " of " + scene_.name(handle);
+            if (scene::floatsOf(declaration.type) != 3U) {
+                report(what + " is not of three floats, so it is left out");
+                break;
+            }
+            const scene::Value & value = scene_.value(handle, declaration.name);
+            try {
+                addPrimvar(geometry, wanted.number, 3, spread(declaration.interpolation, value.floatArray(), 3), value.space());
+            } catch (const std::invalid_argument & refused) {
+                report(what + " is left out, because " + refused.what());
+            }
+            break;
+        }
+    }
+}
+
+void Walk::addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::string & space) {
+    // a geometry's primvars are added together, so they are one run
+    if (geometry.primvarCount == 0) {
+        geometry.primvars = static_cast<std::uint32_t>(prototypes_.primvars.size());
+    }
+    prototypes_.primvars.push_back(kernel::surface::Primvar { .name = name,
+        .components = components,
+        .first = static_cast<std::uint32_t>(prototypes_.primvarValues.size()),
+        .perPrimitive = spread.perPrimitive });
+    prototypes_.primvarValues.insert(prototypes_.primvarValues.end(), spread.values.begin(), spread.values.end());
+    prototypes_.primvarSpaces.push_back(space);
+    ++geometry.primvarCount;
 }
 
 const std::set<std::uint32_t> & Walk::held(std::uint32_t group) {

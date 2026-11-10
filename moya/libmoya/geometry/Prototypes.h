@@ -10,6 +10,7 @@
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
@@ -60,6 +61,15 @@ struct Prototypes {
 
     /** The face of its mesh each triangle was cut from, and the curve each segment was. **/
     std::vector<std::uint32_t> faces;
+
+    /**
+     * Every geometry's primvars that shading reads, as their first sample holds them, spread over
+     * its primitives. A colour's values are as the scene gives them, in the space that
+     * primvarSpaces names for it, which is empty for the working space and for any other type.
+     **/
+    std::vector<kernel::surface::Primvar> primvars;
+    std::vector<float> primvarValues;
+    std::vector<std::string> primvarSpaces;
 
     std::vector<Geometry> geometries;
     std::vector<Group> groups;

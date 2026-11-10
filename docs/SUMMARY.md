@@ -118,6 +118,7 @@
     - [The scene](offline/Scene.md)
     - [Traversal](offline/Traversal.md)
     - [Geometry](offline/Geometry.md)
+    - [Surfaces](offline/Surfaces.md)
     - [Output](offline/Output.md)
     - [Colour management](offline/Colour.md)
 

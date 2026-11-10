@@ -204,6 +204,9 @@ changes a picture the hiders make.
   [Traversal.md](Traversal.md#curves)
 - **A change to the scene rebuilds only the hierarchies it touched.** `accel::Assembler` keeps
   each geometry's hierarchy until its geometry changes. [Traversal.md](Traversal.md#rebuilding-what-changed)
+- **A hit becomes a shading point** through the scene's surfaces, which are held apart from any
+  traversal: its position, normals and frame at the hit's time, with the primvars shading reads.
+  [Surfaces.md](Surfaces.md)
 - **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
   [Traversal.md](Traversal.md#speed)
 

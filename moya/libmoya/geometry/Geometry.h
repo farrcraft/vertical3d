@@ -39,6 +39,10 @@ struct Geometry {
     kernel::geometry::Sampled controls;
     std::uint32_t ends { 0 };
 
+    /** The first of its primvars among the prototypes', and how many it has. **/
+    std::uint32_t primvars { 0 };
+    std::uint32_t primvarCount { 0 };
+
     /** Whether the geometry moves over the shutter. **/
     bool moves() const {
         return points.samples > 1 || widths.samples > 1 || quadric.samples > 1 || controls.samples > 1;
