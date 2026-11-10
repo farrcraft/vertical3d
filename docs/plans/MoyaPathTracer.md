@@ -130,7 +130,7 @@ among the options before the record is drafted.
 | [6](#step-6--the-statistical-comparison) | The statistical comparison | `moya/libmoya/film`, `moya/tests` | — | done |
 | [7](#step-7--the-shading-point) | The shading point and primvars on the device | `moya/libmoya/kernel`, `geometry` | — | done |
 | [8](#step-8--the-bsdf-interface-and-a-diffuse-lobe) | The BSDF interface and a diffuse lobe | `moya/libmoya/kernel` | — | done |
-| [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | open |
+| [9](#step-9--the-integrator-stages) | The integrator's stages, and `moya --paths` | `moya/libmoya/kernel`, `moya` | 0212 | done |
 | [10](#step-10--lights-with-a-shape) | Rect, disk, sphere and cylinder lights | `moya/libmoya`, `scene` | 0213 | open |
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | open |
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | open |
@@ -448,6 +448,29 @@ colour. A sample below the geometric surface is refused.
 
 The first picture the new core lights. The scene's only light is a constant environment, which
 the white furnace test needs.
+
+**Done.** `kernel::integrate::paths` runs the generate, intersect, shade, scatter and accumulate
+stages back to back over a `PathState`, whose fields `MOYA_PATH_FIELDS` declares once.
+`integrate::render()` renders a scene on the CPU in passes, and `moya --paths` writes the picture.
+Each case was run against broken code as well, one break at a time. Throughput not divided by the
+density failed the furnace, the grey sphere and the roulette case. Survivors not weighed up failed
+the roulette case. A limit off by one, in all or of a kind, failed the depth limit. A ray left
+unoffset failed the furnace and the grey sphere. Four things the list below did not settle:
+
+* **The state's list is an X-macro**, as Cycles' integrator state is. `MOYA_PATH(state, field)`
+  reaches a field, and the CPU's layout defines it as a member. A GPU's layout defines it as an
+  index into the field's array.
+* **The integrator runs through the CPU's library.** Only the libraries for each instruction set
+  define the CPU's traversal, so `paths` is an entry point of their table, whose version is now
+  5.
+* **The depth limits are Cycles'**: twelve bounces in all, four diffuse and four glossy, twelve
+  specular and twelve transmission, and Russian roulette from the third bounce.
+* **`moya --paths` writes one EXR of the beauty**, to `--output` or `paths.exr`, as `--hits`
+  writes its view. Writing the outputs the scene names, with their channels, waits for the AOVs
+  of section 6, which fill those channels.
+
+[Integrator.md](../offline/Integrator.md) states the rules, and the moya manual's
+[CommandLine.md](../manual/moya/CommandLine.md) names `--paths`.
 
 * **The stages**, as ADR-0192 names them: generate, intersect, shade, scatter and accumulate,
   over the path state step 1 decides. The CPU runs them back to back for one path at a time.

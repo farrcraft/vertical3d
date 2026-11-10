@@ -53,11 +53,11 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_scene_with_hits_test) {
     BOOST_TEST(run.printed.find("--scene and --hits cannot be given together") != std::string::npos, run.printed);
 }
 
-// a size, a grid or a bucket is refused with --scene or --hits, which take the scene's own Format,
-// rather than ignored
+// a size, a grid or a bucket is refused with --scene, --hits or --paths, which take the scene's own
+// Format, rather than ignored
 BOOST_AUTO_TEST_CASE(moya_command_line_refuses_render_options_with_scene_or_hits_test) {
     const std::vector<std::string> options { "--width 64", "--height 64", "--grid 8", "--bucket 16" };
-    for (const std::string mode : { "--scene", "--hits" }) {
+    for (const std::string mode : { "--scene", "--hits", "--paths" }) {
         for (const std::string & option : options) {
             std::string arguments = kScene;
             arguments.append(" ").append(mode).append(" ").append(option);
@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_render_options_with_scene_or_hits
     }
 }
 
-// --scene prints and writes no file, so an --output is refused. --hits writes an EXR file, so an
-// output of another kind is refused
+// --scene prints and writes no file, so an --output is refused. --hits and --paths write an EXR
+// file, so an output of another kind is refused
 BOOST_AUTO_TEST_CASE(moya_command_line_refuses_an_output_the_mode_cannot_write_test) {
     const Run scene = moya(std::string(kScene) + " --scene --output picture.exr");
     BOOST_TEST(!scene.succeeded);
@@ -79,6 +79,30 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_an_output_the_mode_cannot_write_t
     const Run hits = moya(std::string(kScene) + " --hits --output hits.png");
     BOOST_TEST(!hits.succeeded);
     BOOST_TEST(hits.printed.find("--output has to name an .exr file with --hits") != std::string::npos, hits.printed);
+
+    const Run paths = moya(std::string(kScene) + " --paths --output paths.png");
+    BOOST_TEST(!paths.succeeded);
+    BOOST_TEST(paths.printed.find("--output has to name an .exr file with --paths") != std::string::npos, paths.printed);
+}
+
+// --paths replaces the render as --scene and --hits do, so it is refused with either
+BOOST_AUTO_TEST_CASE(moya_command_line_refuses_paths_with_another_mode_test) {
+    for (const std::string mode : { "--scene", "--hits" }) {
+        const Run run = moya(std::string(kScene) + " " + mode + " --paths");
+        BOOST_TEST(!run.succeeded, mode);
+        BOOST_TEST(run.printed.find(mode + " and --paths cannot be given together") != std::string::npos, mode << ": " << run.printed);
+    }
+}
+
+// --paths renders the scene through the new core's path tracer, and writes the picture as EXR
+BOOST_AUTO_TEST_CASE(moya_command_line_paths_writes_the_picture_test) {
+    const boost::filesystem::path written = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_paths.exr";
+    boost::system::error_code ignored;
+    boost::filesystem::remove(written, ignored);
+    const Run run = moya(std::string(kScene) + " --paths --output \"" + written.string() + "\"");
+    BOOST_TEST(run.succeeded, run.printed);
+    BOOST_TEST((boost::filesystem::exists(written) && boost::filesystem::file_size(written) > 0U));
+    boost::filesystem::remove(written, ignored);
 }
 
 /**

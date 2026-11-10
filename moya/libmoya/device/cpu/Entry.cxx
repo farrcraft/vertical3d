@@ -26,6 +26,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/TriangleHit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
+#include <moya/libmoya/kernel/integrate/Paths.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 
 #include <bit>
@@ -354,6 +355,7 @@ MOYA_CPU_EXPORT const v3d::moya::device::cpu::Module * moya_cpu_module() {
     static const v3d::moya::device::cpu::Module module { .version = v3d::moya::device::cpu::kModuleVersion,
         .isa = MOYA_CPU_ISA,
         .hits = &v3d::moya::kernel::view::hits<v3d::moya::device::cpu::Traversal>,
-        .trace = &v3d::moya::kernel::geometry::traceRays<v3d::moya::device::cpu::Traversal> };
+        .trace = &v3d::moya::kernel::geometry::traceRays<v3d::moya::device::cpu::Traversal>,
+        .paths = &v3d::moya::kernel::integrate::paths<v3d::moya::device::cpu::Traversal> };
     return &module;
 }

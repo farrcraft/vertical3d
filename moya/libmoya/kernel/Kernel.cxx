@@ -40,6 +40,10 @@
 #include <moya/libmoya/kernel/geometry/Sampled.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Trace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Traversal.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Dimensions.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Paths.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/PathState.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Settings.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/sample/Hash.h>  // IWYU pragma: keep

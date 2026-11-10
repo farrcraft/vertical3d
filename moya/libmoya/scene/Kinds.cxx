@@ -32,6 +32,15 @@ constexpr float kYon = 1.0e38F;
 constexpr int kSamples = 4;
 constexpr float kFilterWidth = 2.0F;
 
+/**
+ * The integrator's depth limits, as Cycles sets them: twelve bounces in all and of each kind but
+ * four diffuse and four glossy, and Russian roulette from the third.
+ **/
+constexpr int kMaxDepth = 12;
+constexpr int kDiffuseDepth = 4;
+constexpr int kGlossyDepth = 4;
+constexpr int kRouletteDepth = 3;
+
 /** A film channel's floats, from 1 to 4, and the three of a colour. **/
 constexpr int kColourComponents = 3;
 
@@ -84,7 +93,14 @@ Kind options() {
             Declaration { .name = "frame", .type = Type::Integer, .fallback = Value::integer(0) },
             Declaration { .name = "camera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } },
             Declaration { .name = "edgeLength", .type = Type::Float, .fallback = Value::number(1.0F) },
-            Declaration { .name = "dicingCamera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } } } };
+            Declaration { .name = "dicingCamera", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "camera" } },
+            Declaration { .name = "maxDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
+            Declaration { .name = "diffuseDepth", .type = Type::Integer, .fallback = Value::integer(kDiffuseDepth) },
+            Declaration { .name = "glossyDepth", .type = Type::Integer, .fallback = Value::integer(kGlossyDepth) },
+            Declaration { .name = "specularDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
+            Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
+            Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
+            Declaration { .name = "environment", .type = Type::Colour, .fallback = Value::colour(glm::vec3(0.0F)) } } };
 }
 
 Kind channel() {

@@ -46,7 +46,10 @@ then derived as RI derives it.
   `filter`, one of RI's five, and `filterWidth`. `frame`, which seeds the sampler. `camera`, the
   camera the render looks through. `edgeLength`, the longest a tessellated edge may be in
   pixels, 1 until a client sets it, and `dicingCamera`, the camera that length is measured
-  from, which is the render camera while it names none.
+  from, which is the render camera while it names none. `maxDepth`, `diffuseDepth`,
+  `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth` limit a path's
+  bounces, and `environment` is the colour a path that leaves the scene meets, as
+  [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the

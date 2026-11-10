@@ -7,7 +7,11 @@
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/version/Version.h>
+#include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Description.h>
@@ -23,6 +27,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
@@ -72,22 +77,27 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
 /**
  * Why the options cannot be used together, or empty when they can.
  *
- * --scene and --hits each read the scene into the new core in place of rendering it, so only one
- * of them can be given. Both take the picture's size from the scene's Format, and neither
- * renders in grids or buckets. --width, --height, --grid and --bucket are refused with either.
- * --scene writes no file, so --output is refused with it. --hits writes an EXR file, so its
- * --output has to end in .exr, in any case.
+ * --scene, --hits and --paths each read the scene into the new core in place of rendering it
+ * with the hiders, so only one of them can be given. Each takes the picture's size from the
+ * scene's Format, and none renders in grids or buckets. --width, --height, --grid and --bucket
+ * are refused with any of them. --scene writes no file, so --output is refused with it. --hits
+ * and --paths write an EXR file, so their --output has to end in .exr, in any case.
  **/
 std::string conflict(const boost::program_options::variables_map& var_map) {
-    const bool scene = var_map.count("scene") > 0;
-    const bool hits = var_map.count("hits") > 0;
-    if (scene && hits) {
-        return "--scene and --hits cannot be given together";
+    std::vector<std::string> modes;
+    for (const char* const mode : { "scene", "hits", "paths" }) {
+        if (var_map.count(mode) > 0) {
+            modes.push_back("--" + std::string(mode));
+        }
     }
-    if (!scene && !hits) {
+    if (modes.size() > 1) {
+        return modes[0] + " and " + modes[1] + " cannot be given together";
+    }
+    if (modes.empty()) {
         return {};
     }
-    const std::string mode = scene ? "--scene" : "--hits";
+    const std::string & mode = modes.front();
+    const bool scene = mode == "--scene";
     for (const char* const option : { "width", "height", "grid", "bucket" }) {
         if (var_map.count(option) > 0) {
             return "--" + std::string(option) + " cannot be given with " + mode + ", which takes the scene's own Format";
@@ -96,12 +106,12 @@ std::string conflict(const boost::program_options::variables_map& var_map) {
     if (scene && var_map.count("output") > 0) {
         return "--output cannot be given with --scene, which prints the scene and writes no file";
     }
-    if (hits && var_map.count("output") > 0) {
+    if (!scene && var_map.count("output") > 0) {
         std::string name = var_map["output"].as<std::string>();
         std::transform(name.begin(), name.end(), name.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
         const std::string extension = ".exr";
         if (name.size() < extension.size() || name.compare(name.size() - extension.size(), extension.size(), extension) != 0) {
-            return "--output has to name an .exr file with --hits, which writes an EXR file";
+            return "--output has to name an .exr file with " + mode + ", which writes an EXR file";
         }
     }
     return {};
@@ -147,6 +157,30 @@ int showHits(const std::string & infile, const std::string & outfile, const boos
     return EXIT_SUCCESS;
 }
 
+/**
+ * Read a file into the new core's scene, and write the picture its integrator renders after each
+ * frame the file commits, in place of rendering it with the hiders. A file of several frames leaves
+ * the last frame's.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
+int renderPaths(const std::string & infile, const std::string & outfile, const boost::shared_ptr<v3d::log::Logger> & logger) {
+    v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
+    v3d::moya::ri::SceneClient client(scene, logger);
+    v3d::moya::device::CpuDevice device;
+    const v3d::moya::colour::Config config;
+    client.frame([&]() {
+        scene.apply();
+        v3d::moya::output::writeExr(outfile, v3d::moya::integrate::render(device, scene, logger, config),
+            { { .name = "", .outputs = { std::string(v3d::moya::output::kBeauty) }, .precision = v3d::moya::output::Precision::Float } }, {});
+    });
+    v3d::render::offline::rib::Reader reader(logger);
+    if (!reader.read(infile, &client)) {
+        std::cout << "error reading rib file - " << reader.error() << "\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int run(int argc, char *argv[]) {
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -154,16 +188,18 @@ int run(int argc, char *argv[]) {
         ("version", "display version info")
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
         ("output", boost::program_options::value<std::string>(), "filename to be written; not with --scene")
-        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height; not with --scene or --hits")
-        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width; not with --scene or --hits")
+        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height; not with --scene, --hits or --paths")
+        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width; not with --scene, --hits or --paths")
         ("silent", "print no progress line")
-        ("scene", "print the scene the new core reads from the file, in place of rendering it; not with --hits")
+        ("scene", "print the scene the new core reads from the file, in place of rendering it; not with --hits or --paths")
         ("hits", "write what the new core's rays hit to --output, which has to end in .exr, or to hits.exr, as an EXR file, "
-            "in place of rendering it; not with --scene")
+            "in place of rendering it; not with --scene or --paths")
+        ("paths", "write the picture the new core's path tracer renders to --output, which has to end in .exr, or to paths.exr, "
+            "as an EXR file, in place of rendering it; not with --scene or --hits")
         ("grid", boost::program_options::value<int>(),
-            "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene or --hits")
+            "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
         ("bucket", boost::program_options::value<int>(),
-            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene or --hits");
+            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths");
 
     boost::program_options::variables_map var_map;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts_desc), var_map);
@@ -211,6 +247,9 @@ int run(int argc, char *argv[]) {
     }
     if (var_map.count("scene") != 0) {
         return describe(infile, logger);
+    }
+    if (var_map.count("paths") != 0) {
+        return renderPaths(infile, outfile.empty() ? std::string("paths.exr") : outfile, logger);
     }
     v3d::moya::ri::RIBHandler handler;
 

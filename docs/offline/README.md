@@ -155,7 +155,7 @@ Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-
 
 moya is being rebuilt as a spectral path tracer, and its new core sits beside the two hiders.
 The hiders render every RIB scene as before. The new core holds a scene, read from RIB or kept in
-step with the editor's, and traces rays through it. It lights nothing yet, and nothing in it
+step with the editor's, traces rays through it, and renders it by path tracing. Nothing in it
 changes a picture the hiders make.
 
 - **It lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
@@ -207,6 +207,9 @@ changes a picture the hiders make.
 - **A hit becomes a shading point** through the scene's surfaces, which are held apart from any
   traversal: its position, normals and frame at the hit's time, with the primvars shading reads.
   [Surfaces.md](Surfaces.md)
+- **The integrator builds paths in stages** over a path state declared once, with depth limits
+  and Russian roulette, and lights a scene by an environment. `moya --paths` renders a RIB
+  file through it. [Integrator.md](Integrator.md)
 - **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
   [Traversal.md](Traversal.md#speed)
 

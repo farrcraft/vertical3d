@@ -30,14 +30,21 @@ options "options"
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     dicingCamera handle = none
+    diffuseDepth integer = 4
     edgeLength float = 1
+    environment colour = (0, 0, 0)
     filter string = "box"
     filterWidth float[2] = 1 1
     frame integer = 0
     frameAspect float = 0
+    glossyDepth integer = 4
+    maxDepth integer = 12
     pixelAspect float = 1
     resolution integer[2] = 64 48
+    rouletteDepth integer = 3
     samples integer = 1
+    specularDepth integer = 12
+    transmissionDepth integer = 12
     variance float = 0
 shader "constant"
     Cs colour = (0.9, 0.2, 0.2)
