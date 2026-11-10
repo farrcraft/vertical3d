@@ -135,7 +135,7 @@ among the options before the record is drafted.
 | [11](#step-11--next-event-estimation-and-mis) | Next event estimation and MIS | `moya/libmoya/kernel` | — | done |
 | [12](#step-12--distant-lights-and-points) | Distant lights, and lights of no size | `moya/libmoya/kernel` | — | done |
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | done |
-| [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | open |
+| [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | done |
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | open |
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | open |
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | open |
@@ -695,6 +695,44 @@ square. A mesh light instanced twice gives twice the light. A moving mesh light 
 places it passes.
 
 ### Step 14 — The dome light
+
+**Done.** `output::readExr()` reads an image's R, G and B as floats, with the space its
+chromaticities name, and `light::internal::Textures` holds each image a light reads in ACEScg.
+`kernel/light/Dome.h` maps a dome's image in latitude and longitude, gives its radiance, and
+draws a texel by one of two ways, with Karlik and others' compensation under MIS. A ray that
+leaves the scene meets every dome by its share, and the options' `environment` is gone.
+`settingsOf()` no longer takes the colour configuration. `colour::Config::spaceOf()` finds a space
+by its interop ID. `PathParams` gains the images, their texels and sums and the domes, so the CPU
+library's table is now version 10. Six things the list below did not settle:
+
+* **An image is converted from the space its chromaticities name**, among the six the EXR writer
+  names, and is linear Rec. 709 with none, as OpenEXR takes a file. Chromaticities of another
+  space are reported and read as linear Rec. 709.
+* **An image is read as a texture over [0, 1]**, each texel the box it covers, as renderers read
+  a latitude and longitude map. OpenEXR's own envmap functions put the texel centres on the
+  image's edges instead. Texels are not filtered until section 5's texture cache.
+* **A texel is drawn by its luminance times the solid angle it covers**, the exact band of
+  latitude it spans, so a texel's chance is in proportion to its share of the dome's light.
+* **The compensated way is drawn under MIS alone.** Light samples alone draw by the full way,
+  since nothing else would find the directions compensation leaves out.
+* **`format` is UsdLux's `texture:format`.** `automatic` reads the file's envmap attribute, and
+  a cube map is reported and not lit, as is any layout but latitude and longitude. A dome's
+  `poleAxis`, which UsdLux's newer schema adds, is not read: the dome's +y is its pole.
+* **The environment option is gone**, so twenty-two committed scene descriptions lose it, and
+  the furnace cases light their sphere by a white dome of no image.
+
+[Lights.md](../offline/Lights.md#dome-lights) states the rules, and
+[Integrator.md](../offline/Integrator.md#lights) how a path meets a dome.
+
+Each case was run against broken code as well, one break at a time. Light samples alone drawn by
+the compensated way failed the varied image. A density without the cosine of its latitude failed
+the furnace. Longitude read the wrong way failed the orientation, the bright texel and the varied
+image. A dome met whole under MIS failed the furnace, the bright texel and the varied image. A
+dome read without its turn failed the bright texel, once that case turned the dome a quarter as
+well as a half, since a half turn lights nothing either way. A rect's texture left out or turned
+failed the rect's case. Every format read as latitude and longitude failed the layout case. A
+texel left out of the light's colour failed the bright texel and the rect. An image's green read
+as its red failed the reader's case and four others.
 
 * **OpenEXR reads a light's image**, beside its writer, into device memory whole. Section 5's
   texture cache takes over, and a dome light then reads through it.

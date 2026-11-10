@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/output/Chromaticities.h>
 #include <moya/libmoya/output/ExrMetadata.h>
 #include <moya/libmoya/output/ExrPart.h>
 #include <Imath/ImathMatrix.h>
@@ -42,21 +43,6 @@ namespace {
 
 /** A part's channels: each one's name in the file, and where its float sits in a pixel. **/
 typedef std::vector<std::pair<std::string, std::uint32_t>> FileChannels;
-
-/** The Color Interop Forum IDs of the linear spaces whose chromaticities a header can carry. **/
-constexpr const char * const kLinearIds[6] = {
-    "lin_ap0_scene", "lin_ap1_scene", "lin_rec709_scene", "lin_p3d65_scene", "lin_rec2020_scene", "lin_adobergb_scene",
-};
-
-/** Each of kLinearIds' chromaticities, x and y: the red, green and blue primaries, then white. **/
-constexpr float kLinearPrimaries[6][4][2] = {
-    { { 0.7347F, 0.2653F }, { 0.0F, 1.0F }, { 0.0001F, -0.077F }, { 0.32168F, 0.33767F } },
-    { { 0.713F, 0.293F }, { 0.165F, 0.830F }, { 0.128F, 0.044F }, { 0.32168F, 0.33767F } },
-    { { 0.64F, 0.33F }, { 0.30F, 0.60F }, { 0.15F, 0.06F }, { 0.3127F, 0.3290F } },
-    { { 0.680F, 0.320F }, { 0.265F, 0.690F }, { 0.150F, 0.060F }, { 0.3127F, 0.3290F } },
-    { { 0.708F, 0.292F }, { 0.170F, 0.797F }, { 0.131F, 0.046F }, { 0.3127F, 0.3290F } },
-    { { 0.64F, 0.33F }, { 0.21F, 0.71F }, { 0.15F, 0.06F }, { 0.3127F, 0.3290F } },
-};
 
 /** The suffixes of a channel of several floats, in order. **/
 constexpr const char * const kComponents[4] = { "R", "G", "B", "A" };
@@ -168,7 +154,7 @@ Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, cons
     if (!metadata.colourSpace.empty()) {
         Imf::addColorInteropID(header, metadata.colourSpace);
     }
-    for (std::size_t i = 0; i < std::size(kLinearIds); ++i) {
+    for (std::size_t i = 0; i < kLinearSpaces; ++i) {
         if (metadata.colourSpace == kLinearIds[i]) {
             const auto & xy = kLinearPrimaries[i];
             Imf::addChromaticities(header, Imf::Chromaticities(Imath::V2f(xy[0][0], xy[0][1]), Imath::V2f(xy[1][0], xy[1][1]),

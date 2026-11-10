@@ -4,7 +4,8 @@ This page is for anyone changing how moya's new core places lights and what they
 kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
 host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
 shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point
-and a distant light have none. A mesh light makes a geometry of the scene emit.
+and a distant light have none. A mesh light makes a geometry of the scene emit, and a dome light
+surrounds the scene.
 [Scene.md](Scene.md) lists each light's parameters, and [Integrator.md](Integrator.md) covers the
 paths that meet them.
 
@@ -129,6 +130,51 @@ the world that places the geometry.
 `Lights::triangleAt()` gives a triangle in the world at a time, with the unit normal of the side
 it emits from.
 
+## Images
+
+A rect light's `texture` and a dome light's are EXR files. `light::internal::Textures` reads each
+path once, through `output::readExr()`, and holds the images in a device's memory whole, as
+`kernel::light::Image`s.
+
+- **An image is read as floats**: its R, G and B channels, or its Y as grey. A channel it lacks is
+  zero.
+- **An image is converted into ACEScg** from the space its chromaticities name, one of the six
+  linear spaces the EXR writer names. A file with none is linear Rec. 709, as OpenEXR takes it.
+  Chromaticities of any other space are read as linear Rec. 709, and reported.
+- **A file that cannot be read is reported**, once for each path, and the light reads no image.
+- **A texel is the box it covers.** A place in an image from (0, 0) at its top left to (1, 1) at
+  its bottom right reads the texel that holds it, with no filtering between texels.
+- **A texture tints the light's colour**: the colour times the texel, before the light's scale.
+- **A rect light's texture lies across the rect**, its first corner at the rect's +x and +y, and
+  its last at its -x and -y, as UsdLux lays it. A rect with a texture is sampled by area, and its
+  power is weighed by the average of its texels' luminance.
+
+## Dome lights
+
+A dome light surrounds the scene, and every ray that leaves the scene meets it. Its emission is
+its `intensity` times two to its `exposure`, times its `colour` as an illuminant, tinted by its
+image where it has one. `normalize` is not read, as UsdLux says of a dome.
+
+- **Its image is laid out in latitude and longitude**, as OpenEXR lays out an environment and
+  UsdLux takes it. Its top is the dome's +y, and its bottom -y. Its middle across faces +z, and a
+  quarter of the way in from its left +x. Its `transform` turns it into the world.
+- **Its `format` names the layout.** `latlong` reads the image so. `automatic` does too, unless
+  the file's envmap attribute names a cube map. Any other layout, or a cube map, is reported, and
+  the light emits nothing.
+- **A dome with no image** emits its colour from every direction, and is drawn uniformly over the
+  sphere.
+- **A texel is drawn in proportion to its luminance times the solid angle it covers**: a row by
+  the sums of its texels, then a texel along it, then a place within it uniformly. A place covers
+  2 pi^2 times the cosine of its latitude for each unit of the image's area, so its density by
+  solid angle is its density over the image over that. A way that gives nothing to draw by is
+  drawn in proportion to solid angle alone.
+- **Multiple importance sampling draws by Karlik and others' compensation.** A second way of
+  drawing takes the image's average luminance over the sphere off each texel, held to zero or more.
+  Light samples under `mis` draw by it, since BSDF samples find the dim directions it leaves out.
+  Light samples alone draw by the first way.
+- **Its power** is its emission's luminance, times the integral of its image's luminance over the
+  sphere, or four pi with no image, times the area of a disk of the world's reach.
+
 ## Meeting a light
 
 `kernel::light::Lights::at()` gives the place among the lights of the light whose shape a hit
@@ -151,6 +197,7 @@ it was drawn with. Each light's cone is left out of its power.
   chain places, times pi. `Lights::pickTriangle()` then draws one of its triangles in
   proportion to its area in the world when the shutter opens, and `Lights::triangleChance()`
   gives the chance. `triangles` holds each mesh light's sums of chances from its own first.
+- **A dome light** has the power [Dome lights](#dome-lights) gives.
 - **A distant light** has the luminance of the irradiance it gives a plane that faces it, times
   the area of a disk of the world's reach. The reach is the radius of a sphere about the box that
   bounds the world over the shutter. `integrate::render()` gives `light::Lights` the reach.

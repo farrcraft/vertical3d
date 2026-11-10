@@ -15,6 +15,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
 
 namespace {
@@ -133,6 +134,15 @@ BOOST_AUTO_TEST_CASE(moya_colour_refuses_what_the_configuration_lacks_test) {
     BOOST_CHECK_THROW(config.input("No Such Space"), std::runtime_error);
     BOOST_CHECK_THROW(config.display(kSrgb, "No Such View"), std::runtime_error);
     BOOST_CHECK_THROW(colour::Config("no-such-config.ocio"), std::runtime_error);
+}
+
+// a space is found by its Color Interop Forum ID, and an ID no space has finds nothing
+BOOST_AUTO_TEST_CASE(moya_colour_a_space_is_found_by_its_interop_id_test) {
+    const colour::Config config;
+    const std::string rec709 = config.spaceOf("lin_rec709_scene");
+    BOOST_TEST(!rec709.empty());
+    BOOST_TEST(glm::distance(config.input(rec709).apply(glm::vec3 { 0.8F, 0.3F, 0.1F }), config.input("Linear Rec.709 (sRGB)").apply(glm::vec3 { 0.8F, 0.3F, 0.1F })) <= 1.0e-6F);
+    BOOST_TEST(config.spaceOf("no_such_space").empty());
 }
 
 };  // namespace

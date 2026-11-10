@@ -21,6 +21,7 @@
 #include <moya/libmoya/kernel/integrate/PathState.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
+#include <moya/libmoya/kernel/light/Dome.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/light/LightSample.h>
@@ -143,12 +144,17 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
 /**
  * A point drawn on the light at a place from a point, at a time within the shutter. A mesh light
  * draws a triangle in proportion to its area first, and its density holds the triangle's chance.
+ * A dome light is drawn by its image's compensated way under multiple importance sampling, and by
+ * its other way under light samples alone, where nothing else finds what compensation leaves out.
  **/
 template <geometry::Traversal T>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
 MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t place, const glm::vec3 & from, float time, const glm::vec2 & u,
     float triangle) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & chosen = paths.lights.lights[place];
+    if (chosen.shape == light::Shape::Dome) {
+        return light::domeSample(paths.lights, place, paths.lights.placement(place, time), from, u, paths.settings.strategy == Strategy::Mis);
+    }
     if (chosen.shape != light::Shape::Mesh) {
         return light::sample(chosen, paths.lights.placement(place, time), from, u);
     }
@@ -165,13 +171,17 @@ MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t p
 
 /**
  * The density with which drawLight() draws a point of the light at a place from a point, at a
- * time within the shutter. A mesh light's point lies on one of its triangles, which a hit names.
+ * time within the shutter, under multiple importance sampling. A mesh light's point lies on one of
+ * its triangles, which a hit names.
  **/
 template <geometry::Traversal T>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the triangle
 MOYA_KERNEL float lightDensity(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & met,
     float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & light = paths.lights.lights[place];
+    if (light.shape == light::Shape::Dome) {
+        return light::domeDensity(paths.lights, place, paths.lights.placement(place, time), glm::normalize(met - from), true);
+    }
     if (light.shape != light::Shape::Mesh) {
         return light::density(light, paths.lights.placement(place, time), from, met);
     }
@@ -181,6 +191,22 @@ MOYA_KERNEL float lightDensity(const Paths<T> & paths, std::uint32_t place, std:
         return 0.0F;
     }
     return paths.lights.triangleChance(place, primitive) * light::triangleDensity(corners, normal, from, met);
+}
+
+/** What the light at a place sends to a point from a point drawn on it, at a time. **/
+template <geometry::Traversal T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::uint32_t place, float time, const glm::vec3 & from,
+    const light::LightSample & drawn, const spectrum::SampledWavelengths & wavelengths) {
+    const light::Light & chosen = paths.lights.lights[place];
+    if (chosen.shape == light::Shape::Mesh) {
+        return light::glow(chosen, paths.table, wavelengths);
+    }
+    const glm::mat4 toWorld = paths.lights.placement(place, time);
+    if (chosen.shape == light::Shape::Dome) {
+        return light::domeRadiance(paths.lights, place, toWorld, drawn.incoming, paths.table, wavelengths);
+    }
+    return light::arriving(chosen, toWorld, from, drawn.point, drawn.incoming, paths.lights.tint(place, toWorld, drawn.point), paths.table, wavelengths);
 }
 
 /**
@@ -224,16 +250,13 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
     if (value.black()) {
         return none;
     }
-    const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
-    const spectrum::SampledSpectrum emitted = chosen.shape == light::Shape::Mesh ?
-        light::glow(chosen, paths.table, wavelengths) :
-        light::arriving(chosen, paths.lights.placement(place, held), point.position, drawn.point, drawn.incoming, paths.table, wavelengths);
+    const spectrum::SampledSpectrum emitted = arrivingFrom(paths, place, held, point.position, drawn, MOYA_PATH(state, wavelengths));
     if (emitted.black()) {
         return none;
     }
-    // a shadow ray towards a distant light runs on past everything in the scene
+    // a shadow ray towards a distant or a dome light runs on past everything in the scene
     geometry::Ray shadow = leavingRay(point, drawn.incoming, time, geometry::kShadowRay);
-    if (chosen.shape != light::Shape::Distant) {
+    if (chosen.shape != light::Shape::Distant && chosen.shape != light::Shape::Dome) {
         shadow.direction = drawn.point - shadow.origin;
         shadow.end = 1.0F - kShadowShort;
     }
@@ -308,19 +331,26 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
 }
 
 /**
- * What a ray that leaves the scene meets: the environment, gathered whole, and each distant light
- * with an angle whose cone holds the ray, gathered by its share. A camera ray sees no distant
- * light.
+ * What a ray that leaves the scene meets, each light gathered by its share: every dome light, and
+ * each distant light with an angle whose cone holds the ray. A camera ray sees the dome lights
+ * and no distant light.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geometry::Ray & ray, const PathState & state) {
     const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
-    spectrum::SampledSpectrum out = spectrum::illuminant(paths.table, paths.settings.environment, wavelengths);
+    spectrum::SampledSpectrum out(0.0F);
+    const float time = paths.surfaces.held(ray.time);
+    const glm::vec3 towards = glm::normalize(ray.direction);
+    for (std::uint32_t i = 0; i < paths.lights.domes.size; ++i) {
+        const std::uint32_t place = paths.lights.domes[i];
+        const float share = metShare(paths, place, geometry::kNoPrimitive, time, MOYA_PATH(state, from) + towards, state);
+        if (share > 0.0F) {
+            out += light::domeRadiance(paths.lights, place, paths.lights.placement(place, time), towards, paths.table, wavelengths) * share;
+        }
+    }
     if (MOYA_PATH(state, bounces) == 0U) {
         return out;
     }
-    const float time = paths.surfaces.held(ray.time);
-    const glm::vec3 towards = glm::normalize(ray.direction);
     for (std::uint32_t i = 0; i < paths.lights.distant.size; ++i) {
         const std::uint32_t place = paths.lights.distant[i];
         const spectrum::SampledSpectrum emitted =
@@ -340,7 +370,7 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geom
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
  * accumulate stages run back to back. At each shading point a path gathers its share of what a
  * mesh light emits there, then a light sample, before it scatters. A path that leaves the scene
- * gathers the environment and the distant lights it meets. One that meets a light's shape gathers
+ * gathers the dome and distant lights it meets. One that meets a light's shape gathers
  * its share of what the light emits towards it, and ends there.
  **/
 template <geometry::Traversal T>

@@ -44,8 +44,10 @@
 #include <moya/libmoya/kernel/integrate/Paths.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/PathState.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Settings.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/Dome.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Elliptic.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Emission.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/Image.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Light.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Lights.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/LightSample.h>  // IWYU pragma: keep

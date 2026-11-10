@@ -84,16 +84,13 @@ float reach(const accel::LinearBox & bounds) {
 
 };  // namespace
 
-kernel::integrate::Settings settingsOf(const scene::Scene & scene, const colour::Config & config) {
-    const scene::Value & environment = option(scene, "environment");
-    const std::vector<float> & floats = environment.floatArray();
+kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
     return kernel::integrate::Settings { .maxDepth = count(scene, "maxDepth"),
         .diffuseDepth = count(scene, "diffuseDepth"),
         .glossyDepth = count(scene, "glossyDepth"),
         .specularDepth = count(scene, "specularDepth"),
         .transmissionDepth = count(scene, "transmissionDepth"),
         .rouletteDepth = count(scene, "rouletteDepth"),
-        .environment = config.input(environment.space()).apply(glm::vec3 { floats[0], floats[1], floats[2] }),
         .strategy = strategyNamed(option(scene, "lightSampling").stringArray().front()) };
 }
 
@@ -113,7 +110,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const film::Filter filter(device, kind, glm::vec2 { width[0], width[1] });
 
     const kernel::sample::ZSobol sampler(std::max(count(scene, "samples"), 1U), resolution, 0, count(scene, "frame"));
-    const kernel::integrate::Settings settings = settingsOf(scene, config);
+    const kernel::integrate::Settings settings = settingsOf(scene);
     const kernel::Function<device::cpu::PathParams> entry = device.module().paths;
     film::Film picture(device, resolution, {});
     for (std::uint32_t first = 0; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {

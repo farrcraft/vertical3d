@@ -44,13 +44,12 @@ pixel in index order.
 - **Generate** draws the sample's place in the pixel from the pixel filter, with the filter's
   weight, and its point on the lens, its time and its wavelengths. Its ray is the camera's.
 - **Intersect** traces the ray through the traversal the launch was built with.
-- **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers the
-  environment, the options' colour as an illuminant, and the distant lights it meets, as
-  [Lights](#lights) says, times its throughput. A path whose ray meets
-  a light's shape gathers its share of the radiance the light sends back along it, times its
-  throughput, and ends there. A path whose ray meets a geometry a mesh light makes emit gathers its
-  share of what the light emits, and goes on to scatter there. At a shading point, a path gathers
-  a light sample, as [Lights](#lights) says.
+- **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers its share
+  of the dome lights and the distant lights it meets, as [Lights](#lights) says, times its
+  throughput. A path whose ray meets a light's shape gathers its share of the radiance the light
+  sends back along it, times its throughput, and ends there. A path whose ray meets a geometry a
+  mesh light makes emit gathers its share of what the light emits, and goes on to scatter there. At
+  a shading point, a path gathers a light sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
   the BSDF's value and the cosine to the shading normal, over the density. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
@@ -95,15 +94,17 @@ met where a ray that leaves the scene lies inside its cone. The options'
   triangle, times the point's density on the triangle.
 - **A bounce that a depth limit refuses draws no light sample.** A shading point at `maxDepth`
   bounces, or at the diffuse limit, draws none, since the BSDF's sample there would end the path.
-- **The environment is found by BSDF samples alone**, and gathers all of its light, whatever
-  the strategy.
+- **A dome light is met by every ray that leaves the scene**, and camera rays see it. Its light
+  sample is drawn by its image's compensated way under `mis`, and by its other way under
+  `light`, as [Lights.md](Lights.md#dome-lights) says, so each strategy draws by the density it
+  weighs by.
 
 ## Depth limits and Russian roulette
 
 The scene's options set the integrator's `Settings`, which `integrate::settingsOf()` reads.
 
 - **`maxDepth`** is the most bounces a path makes, twelve by default. A path at its limit gathers
-  nothing more where it next meets a surface. A limit of zero shows the environment where camera
+  nothing more where it next meets a surface. A limit of zero shows the dome lights where camera
   rays miss, and nothing where they meet a surface.
 - **`diffuseDepth`, `glossyDepth`, `specularDepth` and `transmissionDepth`** each limit one kind of
   bounce: four diffuse and four glossy by default, and twelve of the others. A bounce of a kind
@@ -112,8 +113,6 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
   default. A path survives with the chance of its largest throughput, held to one, and a
   survivor's throughput is divided by that chance, so the picture's mean is unchanged.
 - **A depth below zero is taken as zero.**
-- **`environment`** is the radiance a path that leaves the scene meets, black by default. It is
-  converted into ACEScg from the space its colour names.
 
 ## Rendering a scene
 

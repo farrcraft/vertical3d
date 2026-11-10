@@ -26,13 +26,10 @@ namespace v3d::moya::integrate {
 inline constexpr std::uint32_t kSamplesPerPass = 16;
 
 /**
- * The integrator's settings from a scene's options: its depth limits, and its environment
- * converted into ACEScg from the space the colour names. A depth below zero is taken as zero.
- *
- * @throws std::runtime_error, from OpenColorIO, when the environment names a space the
- *         configuration cannot convert into ACEScg
+ * The integrator's settings from a scene's options: its depth limits and how it finds the
+ * lights. A depth below zero is taken as zero.
  **/
-kernel::integrate::Settings settingsOf(const scene::Scene & scene, const colour::Config & config);
+kernel::integrate::Settings settingsOf(const scene::Scene & scene);
 
 /**
  * A scene rendered through the integrator on the CPU, through the hierarchy. Each pixel takes the

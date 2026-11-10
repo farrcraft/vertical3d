@@ -51,6 +51,9 @@ class Config final {
     /** The working space's Color Interop Forum ID, such as lin_ap1_scene, or empty for none. **/
     std::string workingInteropId() const;
 
+    /** The name of the space whose Color Interop Forum ID is given, or empty for none. **/
+    std::string spaceOf(const std::string & interopId) const;
+
     /**
      * Converts a colour named in a space into ACEScg, for the spectrum table. A colour that names
      * no space is in the working space.

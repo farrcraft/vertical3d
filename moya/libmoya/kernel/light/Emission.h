@@ -59,12 +59,17 @@ MOYA_KERNEL inline float coneShare(const Light & light, float cosine) {
     return 1.0F - smoothStep(off, light.coneAngle * (1.0F - light.coneSoftness), light.coneAngle);
 }
 
-/** A light's spectrum at the wavelengths a path carries, before its scale and its cone. **/
-MOYA_KERNEL inline spectrum::SampledSpectrum spectrumOf(const Light & light, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+/**
+ * A light's spectrum at the wavelengths a path carries, before its scale and its cone, with its
+ * colour tinted by a texture's.
+ **/
+MOYA_KERNEL inline spectrum::SampledSpectrum spectrumOf(const Light & light, const glm::vec3 & tint, const spectrum::RgbTable & table,
+    const spectrum::SampledWavelengths & wavelengths) {
+    const glm::vec3 colour = light.colour * tint;
     if (!(light.temperature > 0.0F)) {
-        return spectrum::illuminant(table, light.colour, wavelengths);
+        return spectrum::illuminant(table, colour, wavelengths);
     }
-    spectrum::SampledSpectrum out = spectrum::unbounded(table, light.colour, wavelengths);
+    spectrum::SampledSpectrum out = spectrum::unbounded(table, colour, wavelengths);
     for (int i = 0; i < spectrum::kSamples; ++i) {
 #ifdef MOYA_RGB
         out[i] *= light.planckColour[i];
@@ -73,6 +78,11 @@ MOYA_KERNEL inline spectrum::SampledSpectrum spectrumOf(const Light & light, con
 #endif
     }
     return out;
+}
+
+/** A light's spectrum at the wavelengths a path carries, before its scale and its cone. **/
+MOYA_KERNEL inline spectrum::SampledSpectrum spectrumOf(const Light & light, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    return spectrumOf(light, glm::vec3 { 1.0F }, table, wavelengths);
 }
 
 /**
@@ -87,6 +97,7 @@ MOYA_KERNEL inline glm::vec3 emittingNormal(const Light & light, const glm::vec3
         case Shape::Point:
         case Shape::Distant:
         case Shape::Mesh:
+        case Shape::Dome:
             break;
         case Shape::Sphere:
             return local;
@@ -98,12 +109,13 @@ MOYA_KERNEL inline glm::vec3 emittingNormal(const Light & light, const glm::vec3
 
 /**
  * The radiance a light sends from a point of its shape in the world towards a unit direction,
- * with its prototype's transformation into the world. It sends none from behind its emitting
- * face. Its face and its cone's axis are turned into the world as normals are.
+ * with its prototype's transformation into the world, its colour tinted by its texture's there.
+ * It sends none from behind its emitting face. Its face and its cone's axis are turned into the
+ * world as normals are.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, then the direction
 MOYA_KERNEL inline spectrum::SampledSpectrum radiance(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & point, const glm::vec3 & towards,
-    const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    const glm::vec3 & tint, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
     const glm::mat4 toLocal = glm::inverse(toWorld);
     const glm::mat3 normals = glm::transpose(glm::mat3(toLocal));
     const glm::vec3 local { toLocal * glm::vec4(point, 1.0F) };
@@ -114,7 +126,7 @@ MOYA_KERNEL inline spectrum::SampledSpectrum radiance(const Light & light, const
     if (!(share > 0.0F)) {
         return spectrum::SampledSpectrum(0.0F);
     }
-    return spectrumOf(light, table, wavelengths) * (light.scale * share);
+    return spectrumOf(light, tint, table, wavelengths) * (light.scale * share);
 }
 
 /** The radiance a mesh light sends from the side its triangles emit from. No cone shapes it. **/
@@ -147,14 +159,15 @@ MOYA_KERNEL inline spectrum::SampledSpectrum fromAfar(const Light & light, const
 }
 
 /**
- * What a light sends to a point from a point drawn on it, along the unit direction to it. A
- * light with a shape sends its radiance. A point sends its radiant intensity, shaped by its cone,
- * over the distance squared, and a distant light of no angle its irradiance. A distant light with
+ * What a light sends to a point from a point drawn on it, along the unit direction to it, its
+ * colour tinted by its texture's at the point drawn. A light with a shape sends its radiance. A
+ * point sends its radiant intensity, shaped by its cone, over the distance squared, and a distant
+ * light of no angle its irradiance. A distant light with
  * an angle sends its radiance inside its cone.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point it reaches, then the point drawn
 MOYA_KERNEL inline spectrum::SampledSpectrum arriving(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from, const glm::vec3 & drawn,
-    const glm::vec3 & incoming, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    const glm::vec3 & incoming, const glm::vec3 & tint, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
     switch (light.shape) {
         case Shape::Point: {
             const glm::vec3 between = drawn - from;
@@ -175,9 +188,10 @@ MOYA_KERNEL inline spectrum::SampledSpectrum arriving(const Light & light, const
         case Shape::Sphere:
         case Shape::Cylinder:
         case Shape::Mesh:
+        case Shape::Dome:
             break;
     }
-    return radiance(light, toWorld, drawn, -incoming, table, wavelengths);
+    return radiance(light, toWorld, drawn, -incoming, tint, table, wavelengths);
 }
 
 };  // namespace v3d::moya::kernel::light

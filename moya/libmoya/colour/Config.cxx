@@ -52,6 +52,18 @@ std::string Config::workingInteropId() const {
     return space ? space->getInteropID() : std::string();
 }
 
+std::string Config::spaceOf(const std::string & interopId) const {
+    const ocio::ConstConfigRcPtr & config = config_->get();
+    for (int i = 0; i < config->getNumColorSpaces(ocio::SEARCH_REFERENCE_SPACE_ALL, ocio::COLORSPACE_ALL); ++i) {
+        const char * name = config->getColorSpaceNameByIndex(ocio::SEARCH_REFERENCE_SPACE_ALL, ocio::COLORSPACE_ALL, i);
+        const ocio::ConstColorSpaceRcPtr space = config->getColorSpace(name);
+        if (space && interopId == space->getInteropID()) {
+            return name;
+        }
+    }
+    return {};
+}
+
 Transform Config::input(const std::string & space) const {
     const std::string from = space.empty() ? workingSpace() : space;
     return transformOf(ocio::Config::GetProcessorToBuiltinColorSpace(config_->get(), from.c_str(), kAcescg));

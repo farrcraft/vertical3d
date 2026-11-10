@@ -80,6 +80,7 @@ glm::vec2 parametersOf(const light::Light & shape, const glm::vec3 & local) {
         case light::Shape::Point:
         case light::Shape::Distant:
         case light::Shape::Mesh:
+        case light::Shape::Dome:
             break;
     }
     return glm::vec2 { 0.0F };

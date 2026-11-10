@@ -30,12 +30,12 @@ namespace v3d::moya::kernel::light {
  * A point is drawn where it stands, and a distant light of no angle along its direction, each
  * with a density of one. A distant light with an angle is drawn uniformly in its cone.
  *
- * Each light is sampled from a point by the solid angle it subtends where a method exists for
- * its shape as it stands in the world, and by area otherwise. A rect whose edges stay at right
- * angles is a spherical rectangle, a disk that stays round is a spherical ellipse, and a sphere
- * that stays round is the cone it subtends from outside it. Anything else is sampled uniformly by
- * its area, and its density converted to solid angle. A spherical rectangle or ellipse below
- * kSmallestSolidAngle is sampled by area too, since its solid angle loses precision there.
+ * Each light is sampled from a point by the solid angle it subtends where a method exists for its
+ * shape as it stands in the world, and by area otherwise. A rect with no texture whose edges stay
+ * at right angles is a spherical rectangle. A disk that stays round is a spherical ellipse, and a
+ * sphere that stays round is the cone it subtends from outside it. Anything else is sampled
+ * uniformly by its area, and its density converted to solid angle. A spherical rectangle or ellipse
+ * below kSmallestSolidAngle is sampled by area too, since its solid angle loses precision there.
  */
 
 /** How a light is sampled from a point. **/
@@ -88,6 +88,7 @@ MOYA_KERNEL inline float localArea(const Light & light) {
         case Shape::Point:
         case Shape::Distant:
         case Shape::Mesh:
+        case Shape::Dome:
             break;
     }
     return 0.0F;
@@ -114,6 +115,7 @@ MOYA_KERNEL inline glm::vec3 areaPoint(const Light & light, const glm::vec2 & u)
         case Shape::Point:
         case Shape::Distant:
         case Shape::Mesh:
+        case Shape::Dome:
             break;
     }
     return glm::vec3 { 0.0F };
@@ -132,7 +134,8 @@ MOYA_KERNEL inline Method methodOf(const Light & light, const glm::mat4 & toWorl
     const glm::mat3 map { toWorld };
     switch (light.shape) {
         case Shape::Rect:
-            return square(map[0], map[1]) ? Method::Rectangle : Method::Area;
+            // a texture varies what it emits, so it is drawn by its area
+            return square(map[0], map[1]) && light.image == geometry::kNoPrimitive ? Method::Rectangle : Method::Area;
         case Shape::Disk:
             return square(map[0], map[1]) && alike(glm::length(map[0]), glm::length(map[1])) ? Method::Ellipse : Method::Area;
         case Shape::Sphere: {
@@ -145,6 +148,7 @@ MOYA_KERNEL inline Method methodOf(const Light & light, const glm::mat4 & toWorl
         case Shape::Point:
         case Shape::Distant:
         case Shape::Mesh:
+        case Shape::Dome:
             break;
     }
     return Method::Area;

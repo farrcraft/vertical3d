@@ -11,6 +11,7 @@
 #include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/light/Emission.h>
+#include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
@@ -23,6 +24,7 @@
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -57,6 +59,14 @@ struct Lights {
      * index in the scene, or none. The mesh lights an instance places follow each other.
      **/
     Array<std::uint32_t> meshes;
+
+    /** Every image a light reads, and their texels and their sums for drawing a texel. **/
+    Array<Image> images;
+    Array<glm::vec3> texels;
+    Array<float> sums;
+
+    /** The places of the dome lights, which every ray that leaves the scene meets. **/
+    Array<std::uint32_t> domes;
 
     /**
      * The place, among count chances from a first, of one drawn by a random number, from the sums
@@ -178,6 +188,36 @@ struct Lights {
         return true;
     }
 
+    /** Which of count cells over [0, 1] holds a fraction, held to the first and last. **/
+    MOYA_KERNEL static std::uint32_t cellOf(float fraction, std::uint32_t count) {
+        const float scaled = fraction * static_cast<float>(count);
+        if (!(scaled > 0.0F)) {
+            return 0U;
+        }
+        const auto whole = static_cast<std::uint32_t>(scaled);
+        return whole < count ? whole : count - 1U;
+    }
+
+    /** The texel of an image at a place, (0, 0) at its top left and (1, 1) at its bottom right. **/
+    MOYA_KERNEL glm::vec3 texel(const Image & image, const glm::vec2 & at) const {
+        return texels[image.texels + (cellOf(at.y, image.height) * image.width) + cellOf(at.x, image.width)];
+    }
+
+    /**
+     * What the texture of the light at a place tints its colour by, at a point of its shape in the
+     * world: a rect light's texel there, or one. A texture's first corner lies at the rect's +x and
+     * +y, and its last at its -x and -y.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the transformation, then the point
+    MOYA_KERNEL glm::vec3 tint(std::uint32_t place, const glm::mat4 & toWorld, const glm::vec3 & point) const {
+        const Light & light = lights[place];
+        if (light.shape != Shape::Rect || light.image == geometry::kNoPrimitive) {
+            return glm::vec3 { 1.0F };
+        }
+        const glm::vec3 local { glm::inverse(toWorld) * glm::vec4(point, 1.0F) };
+        return texel(images[light.image], glm::vec2 { 0.5F - (local.x / light.size.x), 0.5F - (local.y / light.size.y) });
+    }
+
     /**
      * The radiance the light at a place sends back along a ray that met its shape, as its shape
      * stood at a time within the shutter.
@@ -185,7 +225,9 @@ struct Lights {
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
     MOYA_KERNEL spectrum::SampledSpectrum emitted(std::uint32_t place, float time, const geometry::Ray & ray, const geometry::Hit & hit,
         const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
-        return radiance(lights[place], placement(place, time), ray.at(hit.distance), -glm::normalize(ray.direction), table, wavelengths);
+        const glm::mat4 toWorld = placement(place, time);
+        const glm::vec3 point = ray.at(hit.distance);
+        return radiance(lights[place], toWorld, point, -glm::normalize(ray.direction), tint(place, toWorld, point), table, wavelengths);
     }
 };
 

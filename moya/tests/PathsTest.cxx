@@ -52,7 +52,8 @@ constexpr std::uint32_t kOutsideTo = 4;
 
 /**
  * A scene of a camera five units back along -z looking at the origin, at kSide pixels square and
- * a field of view of thirty degrees, with samples per pixel and a white environment.
+ * a field of view of thirty degrees, with samples per pixel. A white dome light of no image
+ * lights it.
  **/
 scene::Handle framed(scene::Scene & scene, std::uint32_t samples) {
     const scene::Handle options = scene.create("options", "options");
@@ -60,7 +61,7 @@ scene::Handle framed(scene::Scene & scene, std::uint32_t samples) {
     scene.set(options, "camera", scene::Value::handle(camera));
     scene.set(options, "resolution", scene::Value::integers({ kSide, kSide }));
     scene.set(options, "samples", scene::Value::integer(static_cast<std::int32_t>(samples)));
-    scene.set(options, "environment", scene::Value::colour(glm::vec3 { 1.0F }));
+    scene.create("domeLight", "sky");
     scene.set(camera, "fov", scene::Value::number(30.0F));
     scene.set(camera, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -5.0F)));
     return options;
@@ -78,7 +79,7 @@ scene::Handle ball(scene::Scene & scene, const std::string & name, float grey, c
     return instanced(scene, name, sphere, {}, place);
 }
 
-/** A scene of one sphere of a grey in the white environment, with a depth limit. **/
+/** A scene of one sphere of a grey under the white dome, with a depth limit. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the grey, the depth, then the samples
 film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples = 64) {
     scene::Scene scene(scene::kinds());
@@ -92,7 +93,7 @@ film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples =
 }
 
 /**
- * A grey sphere resting on a grey plane under the white environment, so light bounces between
+ * A grey sphere resting on a grey plane under the white dome, so light bounces between
  * them, with Russian roulette from a depth.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the depth, then the threads
@@ -118,8 +119,8 @@ film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0) {
     return integrate::render(device, scene, {}, colour::Config());
 }
 
-// a white sphere in a white environment is white wherever it is seen: every path reaches the
-// environment carrying all of its light
+// a white sphere under a white dome is white wherever it is seen: every path reaches the
+// dome carrying all of its light
 BOOST_AUTO_TEST_CASE(moya_paths_a_white_sphere_in_a_white_furnace_is_white_test) {
     const film::Snapshot snapshot = sphereIn(1.0F, 12);
     const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });
@@ -129,7 +130,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_white_sphere_in_a_white_furnace_is_white_test)
     BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 1.0F) < 3.0F);
 }
 
-// a convex grey sphere never meets itself, so it shows its albedo times the environment
+// a convex grey sphere never meets itself, so it shows its albedo times the dome
 BOOST_AUTO_TEST_CASE(moya_paths_a_grey_sphere_shows_its_albedo_test) {
     const film::Snapshot snapshot = sphereIn(0.5F, 12);
     BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 0.5F) < 3.0F);
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_grey_sphere_shows_its_albedo_test) {
 }
 
 // with no bounce allowed, a camera ray that meets the sphere gathers nothing, and one that misses
-// it still meets the environment. A diffuse limit of zero ends the same paths
+// it still meets the dome. A diffuse limit of zero ends the same paths
 BOOST_AUTO_TEST_CASE(moya_paths_a_depth_limit_of_zero_shows_the_environment_alone_test) {
     const film::Snapshot snapshot = sphereIn(1.0F, 0);
     BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 0.0F);
@@ -173,8 +174,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_picture_is_the_same_on_one_thread_and_on_every
     BOOST_TEST(one.values == every.values, boost::test_tools::per_element());
 }
 
-// the settings are the options', each depth held to zero or more, and the environment converted
-// into ACEScg from the space its colour names
+// the settings are the options', each depth held to zero or more
 BOOST_AUTO_TEST_CASE(moya_paths_the_settings_are_the_options_test) {
     scene::Scene scene(scene::kinds());
     const scene::Handle options = scene.create("options", "options");
@@ -184,25 +184,21 @@ BOOST_AUTO_TEST_CASE(moya_paths_the_settings_are_the_options_test) {
     scene.set(options, "specularDepth", scene::Value::integer(5));
     scene.set(options, "transmissionDepth", scene::Value::integer(6));
     scene.set(options, "rouletteDepth", scene::Value::integer(2));
-    scene.set(options, "environment", scene::Value::colour(glm::vec3 { 0.8F, 0.3F, 0.1F }, "Linear Rec.709 (sRGB)"));
     scene.commit();
     scene.apply();
-    const colour::Config config;
-    const v3d::moya::kernel::integrate::Settings settings = integrate::settingsOf(scene, config);
+    const v3d::moya::kernel::integrate::Settings settings = integrate::settingsOf(scene);
     BOOST_TEST(settings.maxDepth == 7U);
     BOOST_TEST(settings.diffuseDepth == 0U);
     BOOST_TEST(settings.glossyDepth == 3U);
     BOOST_TEST(settings.specularDepth == 5U);
     BOOST_TEST(settings.transmissionDepth == 6U);
     BOOST_TEST(settings.rouletteDepth == 2U);
-    BOOST_TEST(glm::distance(settings.environment, config.input("Linear Rec.709 (sRGB)").apply({ 0.8F, 0.3F, 0.1F })) <= 1.0e-6F);
 
     const scene::Scene empty(scene::kinds());
-    const v3d::moya::kernel::integrate::Settings fallback = integrate::settingsOf(empty, config);
+    const v3d::moya::kernel::integrate::Settings fallback = integrate::settingsOf(empty);
     BOOST_TEST(fallback.maxDepth == 12U);
     BOOST_TEST(fallback.diffuseDepth == 4U);
     BOOST_TEST(fallback.rouletteDepth == 3U);
-    BOOST_TEST(glm::distance(fallback.environment, glm::vec3 { 0.0F }) == 0.0F);
 }
 
 };  // namespace

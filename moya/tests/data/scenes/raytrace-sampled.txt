@@ -60,7 +60,6 @@ options "options"
     dicingCamera handle = none
     diffuseDepth integer = 4
     edgeLength float = 1
-    environment colour = (0, 0, 0)
     filter string = "gaussian"
     filterWidth float[2] = 2 2
     frame integer = 0

@@ -100,7 +100,6 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    dicingCamera handle = none\n"
         "    diffuseDepth integer = 4\n"
         "    edgeLength float = 1\n"
-        "    environment colour = (0, 0, 0)\n"
         "    filter string = \"gaussian\"\n"
         "    filterWidth float[2] = 2 2\n"
         "    frame integer = 0\n"

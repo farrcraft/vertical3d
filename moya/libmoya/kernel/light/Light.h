@@ -23,7 +23,8 @@ inline constexpr float kQuarterTurn = 1.57079632679489661923F;
 /**
  * The shape a light emits from. A point and a distant light have none that a ray can meet: a
  * point is a sphere light of no size, and a distant light lies beyond the scene. A mesh light
- * emits from the triangles of a geometry where a chain of instances places it.
+ * emits from the triangles of a geometry where a chain of instances places it. A dome light
+ * surrounds the scene, and is met by every ray that leaves it.
  **/
 enum class Shape : std::uint8_t {
     Rect,
@@ -32,7 +33,8 @@ enum class Shape : std::uint8_t {
     Cylinder,
     Point,
     Distant,
-    Mesh
+    Mesh,
+    Dome
 };
 
 /**
@@ -66,6 +68,9 @@ enum class Shape : std::uint8_t {
  *   surfaces' geometries. Its triangles' chances of being drawn are held from triangles among the
  *   lights' triangle chances, one for each of its count triangles. camera is whether camera rays
  *   see what it emits. Its transform, axis and cone are not read.
+ * - image is the place among the lights' images of the image a rect light's texture or a dome
+ *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
+ *   exposure, a radiance, and its transform turns its image into the world.
  **/
 struct Light {
     std::uint32_t id { 0 };
@@ -88,11 +93,12 @@ struct Light {
     std::uint32_t triangles { 0 };
     std::uint32_t count { 0 };
     bool camera { false };
+    std::uint32_t image { geometry::kNoPrimitive };
 };
 
 /** Whether a light has a shape of its own: a rect, disk, sphere or cylinder. **/
 MOYA_KERNEL inline bool shaped(const Light & light) {
-    return light.shape != Shape::Point && light.shape != Shape::Distant && light.shape != Shape::Mesh;
+    return light.shape == Shape::Rect || light.shape == Shape::Disk || light.shape == Shape::Sphere || light.shape == Shape::Cylinder;
 }
 
 /**

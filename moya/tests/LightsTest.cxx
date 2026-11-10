@@ -16,25 +16,36 @@
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/light/Light.h>
+#include <moya/libmoya/kernel/light/Dome.h>
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <OpenEXR/ImfEnvmap.h>
+#include <OpenEXR/ImfHeader.h>
+#include <OpenEXR/ImfRgba.h>
+#include <OpenEXR/ImfRgbaFile.h>
+#include <OpenEXR/ImfStandardAttributes.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/vec2.hpp>
@@ -64,6 +75,12 @@ constexpr std::uint32_t kSide = 32;
 constexpr std::uint32_t kMiddleFrom = 14;
 constexpr std::uint32_t kMiddleTo = 18;
 
+/** The texel a bright texel test lights, of an image of kDomeWidth by kDomeHeight. **/
+constexpr std::uint32_t kDomeWidth = 64;
+constexpr std::uint32_t kDomeHeight = 32;
+constexpr std::uint32_t kLitColumn = 6;
+constexpr std::uint32_t kLitRow = 12;
+
 /** A half turn about x, which turns -z onto +z. **/
 glm::mat4 flipped(const glm::mat4 & place) {
     return glm::rotate(place, glm::radians(180.0F), glm::vec3 { 1.0F, 0.0F, 0.0F });
@@ -72,7 +89,7 @@ glm::mat4 flipped(const glm::mat4 & place) {
 /**
  * A scene of an orthographic camera at a distance back along -z, which looks along +z. It sees
  * the square of a half width about a centre in x and y, at kSide pixels square, with samples per
- * pixel and a black environment. Gives the options.
+ * pixel and no dome. Gives the options.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the samples, then the view
 scene::Handle viewed(scene::Scene & scene, std::uint32_t samples, float distance, const glm::vec2 & centre, float half) {
@@ -754,6 +771,195 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_of_no_triangles_emits_nothing_test
     const film::Estimate alone = lit(false);
     BOOST_TEST(alone.value > 0.1F);
     BOOST_TEST(film::sigmas(lit(true), alone) < 3.0F);
+}
+
+/**
+ * An EXR image of texels, row after row from its top, written to a file of a name in the
+ * temporary directory, which says it is a cube map when asked. Gives the file's path.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the width, then the height
+std::string imageFile(const std::string & name, std::uint32_t width, std::uint32_t height, const std::vector<glm::vec3> & texels, bool cube = false) {
+    const std::string path = (boost::filesystem::temp_directory_path() / ("v3d_lights_" + name + ".exr")).string();
+    Imf::Header header(static_cast<int>(width), static_cast<int>(height));
+    if (cube) {
+        Imf::addEnvmap(header, Imf::ENVMAP_CUBE);
+    }
+    Imf::RgbaOutputFile file(path.c_str(), header, Imf::WRITE_RGB);
+    std::vector<Imf::Rgba> pixels;
+    pixels.reserve(texels.size());
+    for (const glm::vec3 & texel : texels) {
+        pixels.emplace_back(texel.x, texel.y, texel.z, 1.0F);
+    }
+    file.setFrameBuffer(pixels.data(), 1, width);
+    file.writePixels(static_cast<int>(height));
+    return path;
+}
+
+/** A dome light that reads an image file, or none when the path is empty. **/
+scene::Handle sky(scene::Scene & scene, const std::string & path) {
+    const scene::Handle dome = scene.create("domeLight", "sky");
+    scene.set(dome, "texture", scene::Value::string(path));
+    return dome;
+}
+
+/** The image of a dome of a width and a height, black but for one texel. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the size, then the texel
+std::vector<glm::vec3> oneTexel(const glm::uvec2 & size, const glm::uvec2 & lit, float value) {
+    std::vector<glm::vec3> out(static_cast<std::size_t>(size.x) * size.y, glm::vec3 { 0.0F });
+    out[(static_cast<std::size_t>(lit.y) * size.x) + lit.x] = glm::vec3 { value };
+    return out;
+}
+
+// a dome's image is laid out as OpenEXR lays out latitude and longitude: its middle faces +z, a
+// quarter of the way in from its left +x, and its top +y. A direction and its place in the image
+// are each other's
+BOOST_AUTO_TEST_CASE(moya_lights_a_domes_image_faces_as_usdlux_lays_it_out_test) {
+    BOOST_TEST(glm::distance(kernel::light::domeDirection(glm::vec2 { 0.5F, 0.5F }), glm::vec3 { 0.0F, 0.0F, 1.0F }) < 1.0e-6F);
+    BOOST_TEST(glm::distance(kernel::light::domeDirection(glm::vec2 { 0.25F, 0.5F }), glm::vec3 { 1.0F, 0.0F, 0.0F }) < 1.0e-6F);
+    BOOST_TEST(glm::distance(kernel::light::domeDirection(glm::vec2 { 0.75F, 0.5F }), glm::vec3 { -1.0F, 0.0F, 0.0F }) < 1.0e-6F);
+    BOOST_TEST(glm::distance(kernel::light::domeDirection(glm::vec2 { 0.5F, 0.0F }), glm::vec3 { 0.0F, 1.0F, 0.0F }) < 1.0e-6F);
+    for (const glm::vec2 at : { glm::vec2 { 0.1F, 0.4F }, glm::vec2 { 0.7F, 0.9F }, glm::vec2 { 0.45F, 0.2F } }) {
+        BOOST_TEST(glm::distance(kernel::light::domePlace(kernel::light::domeDirection(at)), at) < 1.0e-5F);
+    }
+}
+
+// a white plane under a dome of an image of one everywhere sends back one, by light samples
+// alone, by BSDF samples alone and by both
+BOOST_AUTO_TEST_CASE(moya_lights_a_dome_of_one_colour_gives_the_furnace_test) {
+    const std::string path = imageFile("even", 16, 8, std::vector<glm::vec3>(std::size_t { 128 }, glm::vec3 { 1.0F }));
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            scene::Scene scene(scene::kinds());
+            litPlane(scene, strategy, 64, 0.25F);
+            sky(scene, path);
+            BOOST_TEST(film::sigmas(film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }), 1.0F) < 3.0F);
+        }
+    }
+}
+
+/**
+ * The radiance a white diffuse plane facing -z sends back under one texel of a dome of a value,
+ * turned into the world. It is the value times the integral over the texel of the cosine to the
+ * plane's normal, over pi.
+ **/
+float underTexel(float value, const glm::mat4 & turn) {
+    constexpr std::uint32_t kSteps = 64;
+    double sum = 0.0;
+    const double cell = 1.0 / (static_cast<double>(kDomeWidth) * kSteps * kDomeHeight * kSteps);
+    for (std::uint32_t row = 0; row < kSteps; ++row) {
+        for (std::uint32_t column = 0; column < kSteps; ++column) {
+            const glm::vec2 at { (static_cast<float>(kLitColumn) + ((static_cast<float>(column) + 0.5F) / kSteps)) / kDomeWidth,
+                (static_cast<float>(kLitRow) + ((static_cast<float>(row) + 0.5F) / kSteps)) / kDomeHeight };
+            const glm::vec3 local = kernel::light::domeDirection(at);
+            const glm::vec3 towards = glm::mat3(turn) * local;
+            const double across = std::sqrt(1.0 - (static_cast<double>(local.y) * local.y));
+            sum += std::fmax(0.0, -static_cast<double>(towards.z)) * kernel::light::kTwicePiSquared * across * cell;
+        }
+    }
+    return static_cast<float>(value * sum / kPi);
+}
+
+// a dome of one bright texel lights a plane as its closed form says, by light samples alone and by
+// both, and as a distant light from the texel's middle does. Turned a quarter about y, it lights
+// the plane as the turned closed form says. Turned half about y, the texel lies behind the plane,
+// and lights nothing
+BOOST_AUTO_TEST_CASE(moya_lights_a_dome_of_one_bright_texel_lights_as_a_distant_light_test) {
+    constexpr float kBright = 500.0F;
+    const std::string path = imageFile("texel", kDomeWidth, kDomeHeight, oneTexel({ kDomeWidth, kDomeHeight }, { kLitColumn, kLitRow }, kBright));
+    const auto lit = [&](const char * strategy, const glm::mat4 & turn) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, strategy, 64, 0.25F);
+        scene.set(sky(scene, path), "transform", scene::Value::matrix(turn));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    const glm::mat4 quarter = glm::rotate(glm::mat4(1.0F), glm::radians(90.0F), glm::vec3 { 0.0F, 1.0F, 0.0F });
+    const float expected = underTexel(kBright, glm::mat4(1.0F));
+    for (const char * strategy : { "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            BOOST_TEST(film::sigmas(lit(strategy, glm::mat4(1.0F)), expected) < 3.0F);
+            BOOST_TEST(film::sigmas(lit(strategy, quarter), underTexel(kBright, quarter)) < 3.0F);
+        }
+    }
+    BOOST_TEST(std::fabs(underTexel(kBright, quarter) - expected) > 0.1F * expected);
+    BOOST_TEST(lit("light", glm::rotate(glm::mat4(1.0F), glm::radians(180.0F), glm::vec3 { 0.0F, 1.0F, 0.0F })).value == 0.0F);
+
+    // the texel's solid angle and middle, which a distant light of its irradiance shines from
+    const float band = std::sin(kPi * (0.5F - (static_cast<float>(kLitRow) / kDomeHeight))) - std::sin(kPi * (0.5F - (static_cast<float>(kLitRow + 1U) / kDomeHeight)));
+    const float angle = 2.0F * kPi * band / kDomeWidth;
+    const glm::vec3 middle = kernel::light::domeDirection(
+        glm::vec2 { (static_cast<float>(kLitColumn) + 0.5F) / kDomeWidth, (static_cast<float>(kLitRow) + 0.5F) / kDomeHeight });
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "light", 16, 0.25F);
+    const scene::Handle sun = scene.create("distantLight", "sun");
+    scene.set(sun, "angle", scene::Value::number(0.0F));
+    scene.set(sun, "intensity", scene::Value::number(kBright * angle));
+    scene.set(sun, "transform", scene::Value::matrix(scene::aimed(glm::vec3 { 0.0F }, -middle)));
+    const float distant = film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value;
+    BOOST_TEST(std::fabs((distant / expected) - 1.0F) < 0.01F);
+}
+
+// light samples, BSDF samples and both give the same picture of a plane under a varied image: a
+// gradient from the top down, with a brighter patch facing the plane
+BOOST_AUTO_TEST_CASE(moya_lights_each_strategy_gives_one_picture_of_a_varied_dome_test) {
+    std::vector<glm::vec3> texels;
+    for (std::uint32_t row = 0; row < 16U; ++row) {
+        for (std::uint32_t column = 0; column < 32U; ++column) {
+            const bool patch = column >= 2U && column < 6U && row >= 5U && row < 9U;
+            texels.push_back(glm::vec3 { 0.2F + (0.05F * static_cast<float>(row)), 0.3F, 0.1F } + glm::vec3 { patch ? 20.0F : 0.0F });
+        }
+    }
+    const std::string path = imageFile("varied", 32, 16, texels);
+    const auto lit = [&](const char * strategy) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, strategy, 256, 0.25F);
+        sky(scene, path);
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide });
+    };
+    const film::Estimate both = lit("mis");
+    BOOST_TEST(film::sigmas(lit("light"), both) < 3.0F);
+    BOOST_TEST(film::sigmas(lit("bsdf"), both) < 3.0F);
+    BOOST_TEST(both.value > 0.5F);
+}
+
+// a dome reads its image in latitude and longitude. A format of another layout, or a file that
+// says it is a cube map, lights nothing, though latitude and longitude light the same image
+BOOST_AUTO_TEST_CASE(moya_lights_a_dome_of_another_layout_emits_nothing_test) {
+    const std::vector<glm::vec3> even(std::size_t { 128 }, glm::vec3 { 1.0F });
+    const auto lit = [](const std::string & path, const char * format) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, "mis", 16, 0.25F);
+        scene.set(sky(scene, path), "format", scene::Value::string(format));
+        return film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value;
+    };
+    const std::string plain = imageFile("plain", 16, 8, even);
+    const std::string cube = imageFile("cube", 16, 8, even, true);
+    BOOST_TEST(lit(plain, "latlong") > 0.5F);
+    BOOST_TEST(lit(plain, "automatic") > 0.5F);
+    BOOST_TEST(lit(plain, "angular") == 0.0F);
+    BOOST_TEST(lit(cube, "automatic") == 0.0F);
+}
+
+// a rect light's texture tints what it emits. Its first corner lies at the rect's +x and +y. A
+// texture white on its left half and black on its right then gives the picture of a rect of half
+// the width on the +x side
+BOOST_AUTO_TEST_CASE(moya_lights_a_rect_lights_texture_tints_what_it_emits_test) {
+    const std::string path = imageFile("halves", 2, 1, { glm::vec3 { 1.0F }, glm::vec3 { 0.0F } });
+    const auto lit = [&](bool textured) {
+        scene::Scene scene(scene::kinds());
+        litPlane(scene, "mis", 256, 0.25F);
+        const scene::Handle rect = scene.create("rectLight", "rect");
+        scene.set(rect, "width", scene::Value::number(textured ? 1.0F : 0.5F));
+        scene.set(rect, "height", scene::Value::number(1.0F));
+        scene.set(rect, "transform", scene::Value::matrix(flipped(moved(textured ? 0.0F : 0.25F, 0.0F, -0.5F))));
+        if (textured) {
+            scene.set(rect, "texture", scene::Value::string(path));
+        }
+        return rendered(scene);
+    };
+    const film::Snapshot textured = lit(true);
+    const film::Snapshot half = lit(false);
+    BOOST_TEST(film::sigmas(film::mean(textured, { 0, 0 }, { kSide, kSide }), film::mean(half, { 0, 0 }, { kSide, kSide })) < 3.0F);
+    BOOST_TEST(film::furthest(textured, half).sigmas < 5.0F);
 }
 
 // each light with a shape is an instance in the world, after every other, with the light's index

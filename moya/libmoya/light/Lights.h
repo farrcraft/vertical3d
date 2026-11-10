@@ -81,6 +81,10 @@ class Lights final {
     boost::shared_ptr<device::Buffer> cdf_;
     boost::shared_ptr<device::Buffer> triangles_;
     boost::shared_ptr<device::Buffer> meshes_;
+    boost::shared_ptr<device::Buffer> images_;
+    boost::shared_ptr<device::Buffer> texels_;
+    boost::shared_ptr<device::Buffer> sums_;
+    boost::shared_ptr<device::Buffer> domes_;
 };
 
 };  // namespace v3d::moya::light

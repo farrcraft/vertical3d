@@ -103,7 +103,6 @@ Kind options() {
             Declaration { .name = "specularDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
-            Declaration { .name = "environment", .type = Type::Colour, .fallback = Value::colour(glm::vec3(0.0F)) },
             Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } } } };
 }
 
@@ -352,7 +351,12 @@ std::vector<Kind> lights() {
         Kind { .name = "meshLight",
             .parameters = areaLight({ Declaration { .name = "geometry", .type = Type::Handle, .fallback = Value::handle({}), .targets = shapes() } }) },
         Kind { .name = "distantLight", .parameters = farLight({ size("angle", kSunAngle) }) },
-        Kind { .name = "domeLight", .parameters = farLight({ texture() }) } };
+        Kind { .name = "domeLight",
+            .parameters = farLight({ texture(),
+                Declaration { .name = "format",
+                    .type = Type::String,
+                    .fallback = Value::string("automatic"),
+                    .choices = { "automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross" } } }) } };
 }
 
 };  // namespace

@@ -19,9 +19,11 @@
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -64,6 +66,9 @@ constexpr float kWholeCone = 180.0F;
 
 /** A whole turn, in degrees: the widest a distant light's angle is held to. **/
 constexpr float kWholeTurn = 360.0F;
+
+/** The solid angle of the whole sphere, in steradians. **/
+constexpr float kWholeSphere = 4.0F * kPi;
 
 /** A sphere's area over the area of the disk it casts: 4 pi r^2 over pi r^2. **/
 constexpr float kSphereOverDisk = 4.0F;
@@ -256,7 +261,9 @@ kernel::light::Light distantOf(const scene::Scene & scene, const scene::Handle &
 /**
  * A light's power before its luminance, which leaves its cone out. A light with a shape has its
  * radiance times its area times pi. A point has its intensity times four pi. A distant light has
- * the irradiance it gives a plane that faces it, times the area of a disk of the world's reach.
+ * the irradiance it gives a plane that faces it, times the area of a disk of the world's reach. A
+ * dome light has its radiance times the integral of its image's luminance over the sphere, given
+ * as its size, times the area of that disk.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the area, then the reach
 float powerOf(const kernel::light::Light & light, float size, float reach) {
@@ -265,6 +272,8 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
             return light.scale * kSphereOverDisk * kPi;
         case kernel::light::Shape::Distant:
             return light.scale * coneFactor(light.size.x) * kPi * reach * reach;
+        case kernel::light::Shape::Dome:
+            return light.scale * size * kPi * reach * reach;
         case kernel::light::Shape::Rect:
         case kernel::light::Shape::Disk:
         case kernel::light::Shape::Sphere:
@@ -273,6 +282,34 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
             break;
     }
     return light.scale * size * kPi;
+}
+
+/**
+ * A dome light, whose image is read in latitude and longitude. A format of another layout, or a
+ * file that says it is a cube map, is reported, and the light emits nothing.
+ **/
+kernel::light::Light domeOf(const scene::Scene & scene, const scene::Handle & handle, const colour::Config & config, internal::Textures & textures) {
+    kernel::light::Light out = emitter(scene, handle, config);
+    out.id = kernel::geometry::kNoPrimitive;
+    out.shape = kernel::light::Shape::Dome;
+    const std::string & path = scene.value(handle, "texture").stringArray().front();
+    if (path.empty()) {
+        return out;
+    }
+    const std::uint32_t image = textures.load(path);
+    if (image == kernel::geometry::kNoPrimitive) {
+        return out;
+    }
+    const std::string & format = scene.value(handle, "format").stringArray().front();
+    if ((format != "automatic" && format != "latlong") || (format == "automatic" && textures.cube(image))) {
+        const std::string layout = format == "automatic" ? std::string("a cube map") : "the format " + format;
+        textures.report("the dome light " + scene.name(handle) + " reads " + layout + ", which moya does not read, so it emits nothing");
+        out.scale = 0.0F;
+        return out;
+    }
+    textures.drawable(image);
+    out.image = image;
+    return out;
 }
 
 /**
@@ -433,6 +470,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     std::vector<std::uint32_t> distant;
     std::vector<float> triangles;
     std::vector<std::uint32_t> meshes;
+    std::vector<std::uint32_t> domes;
+    internal::Textures textures(config, logger);
     const auto add = [&](kernel::light::Light light, const geometry::Instance & placed, float size) {
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
@@ -446,7 +485,15 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         const geometry::Instance & instance = prototypes.instances[shaped.instance];
         const std::string & kind = scene.schema().kind(shaped.handle.kind).name;
         const float size = area(scene, shaped.handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
-        add(withShape(scene, shaped.handle, instance.id, size, config), instance, size);
+        kernel::light::Light made = withShape(scene, shaped.handle, instance.id, size, config);
+        float shining = size;
+        const std::string & path = kind == "rectLight" ? scene.value(shaped.handle, "texture").stringArray().front() : std::string();
+        made.image = path.empty() ? kernel::geometry::kNoPrimitive : textures.load(path);
+        if (made.image != kernel::geometry::kNoPrimitive) {
+            // a texture shines by its texels, so it weighs the light by their average
+            shining *= textures.average(made.image);
+        }
+        add(made, instance, shining);
         most = std::max(most, instance.id + 1U);
     }
     std::vector<scene::Handle> unshaped = scene.objects("distantLight");
@@ -469,6 +516,13 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         }
         add(sun, placed, 0.0F);
     }
+    std::vector<scene::Handle> skies = scene.objects("domeLight");
+    std::sort(skies.begin(), skies.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
+    for (const scene::Handle & handle : skies) {
+        const kernel::light::Light sky = domeOf(scene, handle, config, textures);
+        domes.push_back(static_cast<std::uint32_t>(lights.size()));
+        add(sky, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
+    }
     meshLights(scene, prototypes, config, logger, lights, powers, triangles, meshes);
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
     for (std::size_t i = 0; i < lights.size(); ++i) {
@@ -483,6 +537,10 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     cdf_ = uploaded(device, cumulative(powers));
     triangles_ = uploaded(device, triangles);
     meshes_ = uploaded(device, meshes);
+    images_ = uploaded(device, textures.images());
+    texels_ = uploaded(device, textures.texels());
+    sums_ = uploaded(device, textures.sums());
+    domes_ = uploaded(device, domes);
 }
 
 kernel::light::Lights Lights::view() const {
@@ -492,7 +550,11 @@ kernel::light::Lights Lights::view() const {
         .byId = device::view<std::uint32_t>(*byId_),
         .cdf = device::view<float>(*cdf_),
         .triangles = device::view<float>(*triangles_),
-        .meshes = device::view<std::uint32_t>(*meshes_) };
+        .meshes = device::view<std::uint32_t>(*meshes_),
+        .images = device::view<kernel::light::Image>(*images_),
+        .texels = device::view<glm::vec3>(*texels_),
+        .sums = device::view<float>(*sums_),
+        .domes = device::view<std::uint32_t>(*domes_) };
 }
 
 };  // namespace v3d::moya::light

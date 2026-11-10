@@ -6,6 +6,7 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/ExrImage.h>
 #include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -29,6 +30,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -228,6 +230,31 @@ BOOST_AUTO_TEST_CASE(moya_exr_the_header_names_the_colour_space_it_is_given_test
     const Imf::InputFile bare(unnamed.c_str());
     BOOST_TEST(!Imf::hasColorInteropID(bare.header()));
     BOOST_TEST(!Imf::hasChromaticities(bare.header()));
+}
+
+// an image reads back the beauty the writer wrote, as floats, in the space its chromaticities
+// name: ACEScg as written, and linear Rec. 709 for a file that names none
+BOOST_AUTO_TEST_CASE(moya_exr_an_image_reads_back_in_the_space_its_chromaticities_name_test) {
+    const Sandbox sandbox("image");
+    const std::string ap1 = sandbox.file("ap1.exr");
+    const std::string unnamed = sandbox.file("unnamed.exr");
+    const film::Snapshot written = snapshot();
+    output::writeExr(ap1, written, { { .name = "", .outputs = { "beauty" }, .precision = output::Precision::Float } }, {});
+    output::writeExr(unnamed, written, { { .name = "", .outputs = { "beauty" } } }, { .colourSpace = "" });
+
+    const output::ExrImage read = output::readExr(ap1);
+    BOOST_TEST(read.width == kWidth);
+    BOOST_TEST(read.height == kHeight);
+    BOOST_TEST(read.interopId == "lin_ap1_scene");
+    BOOST_TEST(!read.cube);
+    BOOST_TEST_REQUIRE(read.texels.size() == static_cast<std::size_t>(kWidth) * kHeight);
+    for (std::size_t i = 0; i < read.texels.size(); ++i) {
+        for (std::size_t component = 0; component < 3U; ++component) {
+            BOOST_TEST(read.texels[i][static_cast<glm::length_t>(component)] == written.values[(i * written.stride) + component]);
+        }
+    }
+    BOOST_TEST(output::readExr(unnamed).interopId == "lin_rec709_scene");
+    BOOST_CHECK_THROW(output::readExr(sandbox.file("missing.exr")), std::exception);
 }
 
 BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {

@@ -48,9 +48,8 @@ then derived as RI derives it.
   pixels, 1 until a client sets it, and `dicingCamera`, the camera that length is measured
   from, which is the render camera while it names none. `maxDepth`, `diffuseDepth`,
   `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth` limit a path's
-  bounces, and `environment` is the colour a path that leaves the scene meets, as
-  [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says. `lightSampling` is how a
-  path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
+  bounces, as [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says.
+  `lightSampling` is how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
   [Integrator.md](Integrator.md#lights) says.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
@@ -91,16 +90,16 @@ then derived as RI derives it.
   `sphereLight`, `cylinderLight`, `meshLight`, `distantLight` and `domeLight`. Each holds a
   `transform` over the shutter, `colour`, `intensity`, `exposure` and `normalize`, and what it
   lights. Each also holds a colour temperature in kelvin, `colorTemperature`, which applies while
-  `enableColorTemperature` is 1. As in UsdLux's light linking, a light lights every instance
-  while its `includeRoot` is 1, the fallback. When it is 0, the light lights only the `instances`
-  it names, which may be none. A light with an area holds `coneAngle` and `coneSoftness`. It also
-  holds `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do
-  not. A rect light holds its `width`, `height` and `texture`, a disk or sphere light its
-  `radius`, and a cylinder light its `radius` and `length`. A sphere light also holds
-  `treatAsPoint`, which is 1 for a light that is a point. A distant light holds its `angle` in
-  degrees, and a dome light its `texture`. A mesh light makes the geometry prototype its
-  `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights)
-  says.
+  `enableColorTemperature` is 1. As in UsdLux's light linking, a light lights every instance while
+  its `includeRoot` is 1, the fallback. When it is 0, the light lights only the `instances` it
+  names, which may be none. A light with an area holds `coneAngle` and `coneSoftness`. It also holds
+  `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do not. A rect
+  light holds its `width`, `height` and `texture`, a disk or sphere light its `radius`, and a
+  cylinder light its `radius` and `length`. A sphere light also holds `treatAsPoint`, which is 1 for
+  a light that is a point. A distant light holds its `angle` in degrees, and a dome light its
+  `texture` and its `format`, UsdLux's `texture:format`: `automatic`, the fallback, `latlong`,
+  `mirroredBall`, `angular` or `cubeMapVerticalCross`. A mesh light makes the geometry prototype its
+  `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights) says.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
 
