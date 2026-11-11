@@ -1,0 +1,23 @@
+##RenderMan RIB-Structure 1.1
+##Scene A grey floor and back wall under a sphere light shaped by an IES profile, which throws a cone onto the floor
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -30 1 0 0
+WorldBegin
+# the light faces its +z, turned to face down onto the floor. It is placed in a
+# transformation block, since an attribute block would turn it off at its end
+TransformBegin
+Translate 0 0.5 0
+Rotate 90 1 0 0
+Scale 0.1 0.1 0.1
+Light "PxrSphereLight" "lamp" "float intensity" [5] "string iesProfile" ["data/paths.ies"]
+TransformEnd
+Color [0.6 0.6 0.6]
+Surface "matte"
+Polygon "P" [-2 -1 -2  2 -1 -2  2 -1 2  -2 -1 2]
+Polygon "P" [-2 -1 1  2 -1 1  2 1.5 1  -2 1.5 1]
+WorldEnd

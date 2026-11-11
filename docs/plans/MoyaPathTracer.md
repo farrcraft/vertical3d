@@ -143,7 +143,7 @@ among the options before the record is drafted.
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | done |
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | done |
 | [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | done |
-| [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | done |
 | [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | open |
 
 ## What blocks what
@@ -1016,6 +1016,24 @@ settle:
 **Tests:** the benchmark's short pass times the lit scene.
 
 ### Step 22 — The reference renders
+
+**Done.** Seven scenes in `moya/tests/data/`, `paths-*.rib`, each with its render committed as
+`paths-*.exr` at 64 by 64 pixels and 64 samples. `PathsReferenceTest.cxx` renders each from its
+file and compares it with its reference within five standard errors. Each scene's description and
+hit view are committed under `scenes/` too, as every RIB file's are. Four things the list below
+did not settle:
+
+* **The scenes are the furnace, a room under a dome, RenderMan's four shaped lights, RI's three
+  standard lights, mesh lights, linked lights and an IES profile.** Each kind of light lights its
+  own part of a scene, so a broken one changes pixels of its own.
+* **A reference holds its standard errors.** A render's EXR holds the beauty and no error, so the
+  suite writes and reads its references itself, with an `error` channel beside R, G and B.
+* **The comparison against a broken light is a case of its own.** It renders every scene with
+  every light's exposure raised by one and checks that each fails the comparison.
+* **Only a spectral build is compared**, as the foundation's chart is. An RGB build draws no
+  wavelengths, so its pictures are not the committed ones.
+
+[Testing.md](../contributing/Testing.md#moya-references) states the rules.
 
 * **A set of scenes made for the path tracer**, as RIB files in `moya/tests/data`: the furnace, a
   room under a dome, every light kind, linked lights and an IES profile. Step 18 lets each name

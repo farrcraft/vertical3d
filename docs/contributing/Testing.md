@@ -451,6 +451,11 @@ The moya suite renders scenes on the CPU and compares them with committed PNGs i
   the file and from code, so both paths are tied to one picture.
 - `foundation-chart.png` is rendered by the new core, from code alone, and only in a spectral
   build.
+- `paths-*.exr` are rendered by the new core's path tracer from the `.rib` file beside each, and
+  only in a spectral build. They cover a furnace, a room under a dome, RenderMan's shaped lights,
+  RI's standard lights, mesh lights, lights that `Illuminate` links, and a light that
+  `paths.ies` shapes. Each holds the beauty as `R`, `G` and `B` floats and the standard error of
+  each pixel's luminance as `error`.
 
 The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
 differences between compilers. It reports the worst pixel and by how much. A failing case, or a
@@ -470,6 +475,16 @@ measures an estimate against a value or another estimate. A case chooses how man
 errors it allows. A picture of many pixels lies a few errors from its mean somewhere by chance,
 so a case over every pixel allows more than one over a region's mean.
 [Film.md](../offline/Film.md#a-pixels-noise) states how a pixel's error is estimated.
+
+- **A path tracer's render is compared with its committed one this way**, every pixel within
+  five standard errors. The same samples are drawn on every run, so a render lies far less than
+  an error from its reference unless its light changed. Rounding between compilers stays inside
+  the bound. A second case renders each scene with every light twice as bright and checks that
+  the comparison fails it.
+- **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
+  commit and a PNG to look at. Copy the EXR over the reference to change it on purpose.
+- **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone
+  does not rebuild the suite, so copy it into the build's `data/` while working on a scene.
 
 Each `.rib` file also has what the new core makes of it committed in `moya/tests/data/scenes/`:
 

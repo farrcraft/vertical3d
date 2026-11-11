@@ -24,6 +24,7 @@ v3d_add_test(moya
 	"LightSamplingTest.cxx"
 	"LightsTest.cxx"
 	"MotionTest.cxx"
+	"PathsReferenceTest.cxx"
 	"PathsTest.cxx"
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
