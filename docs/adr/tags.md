@@ -269,6 +269,7 @@ reported, so the table lists only tags in use.
 | [0200](offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md) | Offline: scene objects are nodes of declared parameters |
 | [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
 | [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 
 ### lighting
 
@@ -377,6 +378,7 @@ reported, so the table lists only tags in use.
 | [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
 | [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
 | [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 
 ### particles
 
@@ -455,6 +457,7 @@ reported, so the table lists only tags in use.
 | [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 
 ### shell
 

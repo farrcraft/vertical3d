@@ -135,7 +135,7 @@ among the options before the record is drafted.
 | [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | accepted |
 | [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | accepted |
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | accepted |
-| [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | open |
+| [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | accepted |
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | open |
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | open |
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | open |
@@ -340,6 +340,13 @@ file. No client gives the scene one today.
 
 The record also settles the request's name and parameters, and how a material's inputs are
 overridden from RIB.
+
+**Drafted** as
+[ADR-0226](../adr/offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md):
+RenderMan's `Pattern` and `Bxdf` requests make MaterialX nodes of the types they name, connected
+by RenderMan's `reference` parameters, and the last `Bxdf` is the surface terminal. A `Bxdf` of
+type `materialx` names a document and a material in it, and its other parameters override the
+material's inputs. RenderMan's own node types can be mapped later in the same syntax.
 
 ### Step 6 — The record: opacity
 
