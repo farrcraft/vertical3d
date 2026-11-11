@@ -278,6 +278,7 @@ reported, so the table lists only tags in use.
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
 | [0213](offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md) | Offline: a light's shape is a primitive of the hierarchy |
 | [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 
 ### lit
 
@@ -371,6 +372,7 @@ reported, so the table lists only tags in use.
 | [0215](offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md) | Offline: a pixel's noise is the difference of two halves |
 | [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
 | [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 
 ### particles
 
@@ -447,6 +449,7 @@ reported, so the table lists only tags in use.
 | [0008](rendering/0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency |
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
 | [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 
 ### shell
 

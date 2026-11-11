@@ -229,6 +229,7 @@
     - [ADR-0214: Offline: the light tree has a subtree per emitting prototype](adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md)
     - [ADR-0215: Offline: a pixel's noise is the difference of two halves](adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md)
     - [ADR-0216: Offline: a checkpoint is an EXR of the film's sums](adr/offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md)
+    - [ADR-0222: Offline: a BSDF is a list of weighted closures](adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

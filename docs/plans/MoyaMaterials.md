@@ -131,7 +131,7 @@ among the options before the record is drafted.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | open |
+| [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | accepted |
 | [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | open |
 | [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | open |
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | open |
@@ -232,6 +232,13 @@ The record also settles how energy lost to a microfacet lobe's single scattering
 whether by Kulla and Conty's tables of albedo or by Turquin's scale. It settles how a lobe is
 picked for a sample, and whether a material's emission is found by light samples or by the BSDF's
 alone.
+
+**Drafted** as
+[ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): a bounded list
+of weighted closures, which `open_pbr_surface` and MaterialX's `layer` node weight by the albedo
+of the layers above, as Cycles' layered Principled BSDF does. A sample picks a closure by its
+estimated albedo. Kulla and Conty's compensation lobe restores a microfacet lobe's energy, and an
+emitting material makes its prototype a light of the light tree.
 
 ### Step 2 — The record: the node program
 
