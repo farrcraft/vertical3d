@@ -136,7 +136,7 @@ among the options before the record is drafted.
 | [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | accepted |
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | accepted |
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | accepted |
-| [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | open |
+| [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | accepted |
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | open |
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | open |
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | open |
@@ -364,6 +364,13 @@ transparent, for camera, indirect and shadow rays.
 
 The record also settles whether a shadow ray is attenuated by a transparency or passes by a draw,
 and the most surfaces a ray passes through.
+
+**Drafted** as
+[ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md): each device's
+traversal tests a hit on geometry whose material has an opacity, as pbrt-v4 tests alpha and as
+OptiX's any-hit programs and HIP RT's filters run. A shadow ray is attenuated by one minus the
+opacity. A camera or indirect ray keeps a hit with a probability of its opacity, drawn from a
+hash of the sample's draw and the primitive. No limit is set on the surfaces a ray passes.
 
 ### Step 7 — MaterialX
 

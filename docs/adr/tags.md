@@ -379,6 +379,7 @@ reported, so the table lists only tags in use.
 | [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
 | [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
 
 ### particles
 
@@ -458,6 +459,7 @@ reported, so the table lists only tags in use.
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
 
 ### shell
 

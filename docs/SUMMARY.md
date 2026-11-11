@@ -234,6 +234,7 @@
     - [ADR-0224: Offline: a ray's footprint is a cone](adr/offline/0224-offline-a-rays-footprint-is-a-cone.md)
     - [ADR-0225: Offline: textures are tiled EXR, cached by tile](adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md)
     - [ADR-0226: Offline: RIB names MaterialX nodes in RenderMan's syntax](adr/offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md)
+    - [ADR-0227: Offline: opacity is tested inside the traversal](adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)
