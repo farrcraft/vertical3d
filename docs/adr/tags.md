@@ -226,6 +226,7 @@ reported, so the table lists only tags in use.
 | [0073](engine/0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time |
 | [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
 | [0218](editor/0218-editor-shared-geometry-is-a-record-mesh-items-refer-to.md) | Editor: shared geometry is a record mesh items refer to |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
 
 ### frames
 
@@ -375,6 +376,7 @@ reported, so the table lists only tags in use.
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
 | [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
 
 ### particles
 
@@ -503,6 +505,7 @@ reported, so the table lists only tags in use.
 | [0082](rendering/0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context |
 | [0109](rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot |
 | [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
 
 ### tooling
 

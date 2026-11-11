@@ -134,7 +134,7 @@ among the options before the record is drafted.
 | [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | accepted |
 | [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | accepted |
 | [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | accepted |
-| [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | open |
+| [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | accepted |
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | open |
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | open |
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | open |
@@ -314,6 +314,13 @@ run, so a lookup cannot read a coarser level because a tile was absent.
 
 The record also settles which file formats a texture is read from, when an image is converted
 into ACEScg, and how a texture's path is found.
+
+**Drafted** as [ADR-0225](../adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md):
+tiled, mipmapped OpenEXR files, cached tile by tile, as Cycles' texture cache holds `.tx` files. A
+missed lookup runs again once its tile is loaded, never at a coarser level. A colour texture is
+converted into ACEScg when it is made, and a data texture keeps its values. Any other image is made
+into one in a cache directory, keyed by its content and colour space. A path is found relative to
+the file that names it, then along RI's texture search path.
 
 ### Step 5 — The record: materials in RIB
 

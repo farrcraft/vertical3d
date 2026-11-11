@@ -232,6 +232,7 @@
     - [ADR-0222: Offline: a BSDF is a list of weighted closures](adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
     - [ADR-0223: Offline: a material is an interpreted node program](adr/offline/0223-offline-a-material-is-an-interpreted-node-program.md)
     - [ADR-0224: Offline: a ray's footprint is a cone](adr/offline/0224-offline-a-rays-footprint-is-a-cone.md)
+    - [ADR-0225: Offline: textures are tiled EXR, cached by tile](adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)
