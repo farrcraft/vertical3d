@@ -123,8 +123,8 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
 
 ## Rendering a scene
 
-`integrate::render(device, scene, logger, config)` renders a scene through the integrator on the
-CPU, through the hierarchy, and gives the film's snapshot.
+`integrate::render(device, scene, logger, config, checkpoints)` renders a scene through the
+integrator on the CPU, through the hierarchy, and gives the film's snapshot.
 
 - **The integrator runs through the CPU's library for its instruction set**, as its `paths` entry
   point, since only those libraries define the CPU's traversal.
@@ -155,3 +155,21 @@ pixel to the most. [Film.md](Film.md#stopping-a-pixel) says how a pixel's noise 
 - **RI's `PixelVariance`** sets the threshold, as RenderMan's path tracer reads it.
 
 Background: [ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md)
+
+## Checkpoint and resume
+
+`render()` takes an `integrate::Checkpoints` as its last argument. With its `path` empty, the
+fallback, a render keeps no checkpoint.
+
+- **A checkpoint is written after each pass**, or after the first pass once `interval` seconds
+  have passed since the last write. The last pass a render runs is always written.
+  [Film.md](Film.md#checkpoints) describes the file.
+- **`resume` continues the render the checkpoint holds**, at the pass after its last. Its
+  picture is the same, byte for byte, as that of a render that never stopped, on any thread
+  count. A pixel that adaptive sampling stopped stays stopped, and the noise check before the
+  next pass is made again from the same sums.
+- **A checkpoint of another scene or film is refused** with `output::Refused`, by its
+  fingerprint. The sampler's samples depend on the samples per pixel, so a render resumed to more
+  samples than it began with is another render, and is refused too.
+- **`stop` is asked before each pass** with the passes the film holds. A render it answers true
+  for writes its checkpoint and returns the snapshot of what it holds.

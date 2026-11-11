@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/film/State.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 
@@ -154,6 +155,35 @@ Snapshot Film::snapshot() const {
         out.errors[pixel] = standardError(weight, moments, kernel::spectrum::acescgToXyz(glm::vec3(to[0], to[1], to[2])).y);
     }
     return out;
+}
+
+State Film::state() const {
+    const std::scoped_lock lock(mutex_);
+    State out { .resolution = resolution_, .passes = passes_, .channels = channels_, .stored = stored(),
+        .sums = std::vector<float>(stops_.size() * stored()), .stopped = stops_ };
+    device_.download(*pixels_, out.sums.data(), out.sums.size() * sizeof(float));
+    return out;
+}
+
+void Film::restore(const State & state) {
+    if (state.resolution != resolution_) {
+        throw std::invalid_argument("a film state of another resolution");
+    }
+    bool same = state.channels.size() == channels_.size();
+    for (std::size_t i = 0; same && i < channels_.size(); ++i) {
+        same = state.channels[i].name == channels_[i].name && state.channels[i].components == channels_[i].components;
+    }
+    if (!same) {
+        throw std::invalid_argument("a film state of other channels");
+    }
+    if (state.stored != stored() || state.sums.size() != stops_.size() * stored() || state.stopped.size() != stops_.size()) {
+        throw std::invalid_argument("a film state whose floats or flags do not fill its resolution");
+    }
+    const std::scoped_lock lock(mutex_);
+    device_.upload(*pixels_, state.sums.data(), state.sums.size() * sizeof(float));
+    stops_ = state.stopped;
+    device_.upload(*stopped_, stops_.data(), stops_.size() * sizeof(std::uint32_t));
+    passes_ = state.passes;
 }
 
 std::uint32_t Film::stored() const {

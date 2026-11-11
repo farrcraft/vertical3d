@@ -10,6 +10,7 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
+#include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -18,8 +19,11 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <string>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
@@ -36,6 +40,7 @@ namespace {
 namespace colour = v3d::moya::colour;
 namespace film = v3d::moya::film;
 namespace integrate = v3d::moya::integrate;
+namespace output = v3d::moya::output;
 namespace scene = v3d::moya::scene;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
@@ -97,17 +102,17 @@ film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples =
 }
 
 /**
- * A grey sphere resting on a grey plane under the white dome, so light bounces between
- * them, with Russian roulette from a depth, and adaptive sampling to a noise threshold.
+ * Builds a sphere of a grey resting on a grey plane under the white dome, so light bounces
+ * between them. The options give the samples per pixel, Russian roulette from a depth, and
+ * adaptive sampling to a noise threshold. The scene is committed and applied.
  **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the depth, then the threads
-film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0, float threshold = 0.0F) {
-    scene::Scene scene(scene::kinds());
-    const scene::Handle options = framed(scene, 256);
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the settings, then the grey
+void buildSphereOnPlane(scene::Scene & scene, std::uint32_t samples, std::uint32_t roulette, float threshold, float grey = 0.7F) {
+    const scene::Handle options = framed(scene, samples);
     scene.set(options, "noiseThreshold", scene::Value::number(threshold));
     scene.set(options, "rouletteDepth", scene::Value::integer(static_cast<std::int32_t>(roulette)));
     scene.set(options, "diffuseDepth", scene::Value::integer(12));
-    ball(scene, "ball", 0.7F, glm::mat4(1.0F));
+    ball(scene, "ball", grey, glm::mat4(1.0F));
     const scene::Handle floor = scene.create("disk", "floor");
     scene.set(floor, "radius", scene::Value::number(20.0F));
     scene.declare(floor, scene::Declaration { .name = "Cs",
@@ -120,8 +125,48 @@ film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0, f
     instanced(scene, "floor", floor, {}, glm::rotate(moved(0.0F, -1.0F, 0.0F), glm::radians(90.0F), glm::vec3 { 1.0F, 0.0F, 0.0F }));
     scene.commit();
     scene.apply();
+}
+
+/** The sphere on the plane at 256 samples per pixel, rendered on a number of threads. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the depth, then the threads
+film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0, float threshold = 0.0F) {
+    scene::Scene scene(scene::kinds());
+    buildSphereOnPlane(scene, 256, roulette, threshold);
     CpuDevice device(threads);
     return integrate::render(device, scene, {}, colour::Config());
+}
+
+/** A checkpoint's path in the temporary directory, with no file there. **/
+std::string checkpointNamed(const std::string & name) {
+    const boost::filesystem::path path = boost::filesystem::temp_directory_path() / ("v3d_paths_" + name + ".exr");
+    boost::system::error_code ignored;
+    boost::filesystem::remove(path, ignored);
+    return path.string();
+}
+
+/**
+ * The sphere on the plane at 128 samples per pixel, eight passes, rendered on a number of threads
+ * with checkpoints.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the threshold, then the threads
+film::Snapshot checkpointed(float threshold, unsigned int threads, const integrate::Checkpoints & checkpoints, float grey = 0.7F) {
+    scene::Scene scene(scene::kinds());
+    buildSphereOnPlane(scene, 128, 3, threshold, grey);
+    CpuDevice device(threads);
+    return integrate::render(device, scene, {}, colour::Config(), checkpoints);
+}
+
+/** The fingerprint of checkpointed()'s scene at a threshold. **/
+std::uint64_t printOf(float threshold) {
+    scene::Scene scene(scene::kinds());
+    buildSphereOnPlane(scene, 128, 3, threshold);
+    return integrate::fingerprint(scene, {});
+}
+
+/** Whether two snapshots hold the same floats, bit for bit, and the same counts of samples. **/
+bool sameBytes(const film::Snapshot & one, const film::Snapshot & other) {
+    return one.values.size() == other.values.size() && one.samples == other.samples &&
+        std::memcmp(one.values.data(), other.values.data(), one.values.size() * sizeof(float)) == 0;
 }
 
 // a white sphere under a white dome is white wherever it is seen: every path reaches the
@@ -217,6 +262,60 @@ BOOST_AUTO_TEST_CASE(moya_paths_adaptive_sampling_is_the_same_on_one_thread_and_
     const film::Snapshot every = sphereOnPlane(3, 0, kThreshold);
     BOOST_TEST(one.samples == every.samples, boost::test_tools::per_element());
     BOOST_TEST(one.values == every.values, boost::test_tools::per_element());
+}
+
+// a render stopped after two passes and resumed to eight, on another thread count, is the same,
+// byte for byte, as one of eight passes that never stopped
+BOOST_AUTO_TEST_CASE(moya_paths_a_resumed_render_is_the_same_as_one_that_never_stopped_test) {
+    const std::string path = checkpointNamed("resumed");
+    const film::Snapshot whole = checkpointed(0.0F, 0, {});
+    BOOST_TEST(whole.passes == 8U);
+    const film::Snapshot stopped = checkpointed(0.0F, 0, { .path = path, .stop = [](std::uint32_t passes) { return passes == 2U; } });
+    BOOST_TEST(stopped.passes == 2U);
+    BOOST_TEST(output::readCheckpoint(path, {}, printOf(0.0F)).passes == 2U);
+    const film::Snapshot resumed = checkpointed(0.0F, 1, { .path = path, .resume = true });
+    BOOST_TEST(resumed.passes == 8U);
+    BOOST_TEST(sameBytes(resumed, whole));
+    BOOST_TEST(!sameBytes(stopped, whole));
+    boost::system::error_code ignored;
+    boost::filesystem::remove(path, ignored);
+}
+
+// a render that adaptive sampling stopped pixels of keeps them stopped in its checkpoint, and
+// resumed it stops the same pixels after the same samples as one that never stopped
+BOOST_AUTO_TEST_CASE(moya_paths_a_resumed_render_keeps_its_stopped_pixels_test) {
+    const std::string path = checkpointNamed("adaptive");
+    const film::Snapshot whole = checkpointed(kThreshold, 0, {});
+    checkpointed(kThreshold, 0, { .path = path, .stop = [](std::uint32_t passes) { return passes == 4U; } });
+    std::uint32_t stopped = 0;
+    for (const std::uint32_t flag : output::readCheckpoint(path, {}, printOf(kThreshold)).stopped) {
+        stopped += flag != 0U ? 1U : 0U;
+    }
+    BOOST_TEST(stopped > 0U);
+    const film::Snapshot resumed = checkpointed(kThreshold, 0, { .path = path, .resume = true });
+    BOOST_TEST(sameBytes(resumed, whole));
+    boost::system::error_code ignored;
+    boost::filesystem::remove(path, ignored);
+}
+
+// a checkpoint of a scene is refused by the same scene changed, which has another fingerprint
+BOOST_AUTO_TEST_CASE(moya_paths_a_resume_against_a_changed_scene_is_refused_test) {
+    const std::string path = checkpointNamed("changed");
+    checkpointed(0.0F, 0, { .path = path, .stop = [](std::uint32_t passes) { return passes == 1U; } });
+    BOOST_CHECK_THROW(checkpointed(0.0F, 0, { .path = path, .resume = true }, 0.5F), output::Refused);
+    BOOST_CHECK_NO_THROW(checkpointed(0.0F, 0, { .path = path, .resume = true }));
+
+    scene::Scene first(scene::kinds());
+    scene::Scene again(scene::kinds());
+    scene::Scene changed(scene::kinds());
+    buildSphereOnPlane(first, 128, 3, 0.0F);
+    buildSphereOnPlane(again, 128, 3, 0.0F);
+    buildSphereOnPlane(changed, 128, 3, 0.0F, 0.5F);
+    BOOST_TEST(integrate::fingerprint(first, {}) == integrate::fingerprint(again, {}));
+    BOOST_TEST(integrate::fingerprint(first, {}) != integrate::fingerprint(changed, {}));
+    BOOST_TEST(integrate::fingerprint(first, {}) != integrate::fingerprint(first, { { .name = "depth", .components = 1 } }));
+    boost::system::error_code ignored;
+    boost::filesystem::remove(path, ignored);
 }
 
 // the settings are the options', each depth held to zero or more

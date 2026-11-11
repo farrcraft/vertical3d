@@ -7,6 +7,7 @@
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/film/Filter.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/film/State.h>
 #include <moya/libmoya/kernel/film/FilterSample.h>
 #include <moya/libmoya/kernel/film/PixelFilter.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
@@ -311,6 +312,48 @@ BOOST_AUTO_TEST_CASE(moya_film_a_pixel_stops_with_its_neighbours_test) {
     }
     // a pixel that stopped stays stopped
     BOOST_TEST(film.converge(0.01F) == 12U);
+}
+
+// a film restored from another's state holds its floats, its stopped pixels and its passes, and
+// the passes after continue from them as they do in the film the state was taken from
+BOOST_AUTO_TEST_CASE(moya_film_a_restored_film_continues_as_its_original_test) {
+    CpuDevice device;
+    film::Film original = withChannels(device, { 5, 3 });
+    film::Film restored = withChannels(device, { 5, 3 });
+    const auto pass = [&](film::Film & film) {
+        film.pass([&](const kernel::film::Pixels & pixels) {
+            device.launch(5, 3, paramsFor(film, pixels), &halved);
+        });
+    };
+    pass(original);
+    BOOST_TEST(original.converge(0.01F) == 12U);
+    const film::State state = original.state();
+    BOOST_TEST(state.passes == 1U);
+    BOOST_TEST(state.stopped.size() == 15U);
+    restored.restore(state);
+    pass(original);
+    pass(restored);
+    const film::Snapshot expected = original.snapshot();
+    const film::Snapshot actual = restored.snapshot();
+    BOOST_TEST(actual.passes == 2U);
+    BOOST_TEST(actual.values == expected.values, boost::test_tools::per_element());
+    BOOST_TEST(actual.samples == expected.samples, boost::test_tools::per_element());
+    BOOST_TEST(restored.state().stopped == original.state().stopped, boost::test_tools::per_element());
+}
+
+BOOST_AUTO_TEST_CASE(moya_film_refuses_a_state_of_another_film_test) {
+    CpuDevice device;
+    const film::State state = withChannels(device, { 5, 3 }).state();
+    BOOST_CHECK_THROW(withChannels(device, { 3, 5 }).restore(state), std::invalid_argument);
+    BOOST_CHECK_THROW(film::Film(device, { 5, 3 }, {}).restore(state), std::invalid_argument);
+    BOOST_CHECK_THROW(film::Film(device, { 5, 3 }, { { .name = "depth", .components = 2 }, { .name = "albedo", .components = 2 } }).restore(state),
+        std::invalid_argument);
+    film::State shorter = state;
+    shorter.sums.pop_back();
+    BOOST_CHECK_THROW(withChannels(device, { 5, 3 }).restore(shorter), std::invalid_argument);
+    film::State unflagged = state;
+    unflagged.stopped.pop_back();
+    BOOST_CHECK_THROW(withChannels(device, { 5, 3 }).restore(unflagged), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(moya_film_refuses_channels_it_cannot_hold_test) {

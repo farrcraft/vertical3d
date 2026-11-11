@@ -14,9 +14,11 @@
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Module.h>
+#include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/film/Filter.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/film/State.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
@@ -25,7 +27,9 @@
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
+#include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
@@ -33,6 +37,7 @@
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -47,6 +52,10 @@
 namespace v3d::moya::integrate {
 
 namespace {
+
+/** FNV-1a's 64-bit offset basis and prime. **/
+constexpr std::uint64_t kFnvOffset = 0xCBF29CE484222325ULL;
+constexpr std::uint64_t kFnvPrime = 0x100000001B3ULL;
 
 /** A parameter of the scene's options, or its fallback while the scene has none. **/
 const scene::Value & option(const scene::Scene & scene, const std::string & name) {
@@ -95,8 +104,22 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
         .picking = option(scene, "lightPicking").stringArray().front() == "power" ? kernel::integrate::Picking::Power : kernel::integrate::Picking::Tree };
 }
 
+std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Channel> & channels) {
+    std::string text = scene::describe(scene);
+    for (const film::Channel & channel : channels) {
+        text += "channel " + channel.name + " " + std::to_string(channel.components) + "\n";
+    }
+    text += "samplesPerPass " + std::to_string(kSamplesPerPass) + "\n";
+    std::uint64_t hash = kFnvOffset;
+    for (const char letter : text) {
+        hash ^= static_cast<unsigned char>(letter);
+        hash *= kFnvPrime;
+    }
+    return hash;
+}
+
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    const colour::Config & config) {
+    const colour::Config & config, const Checkpoints & checkpoints) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     const geometry::Prototypes prototypes = geometry::gather(scene, logger);
@@ -115,10 +138,26 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const kernel::Function<device::cpu::PathParams> entry = device.module().paths;
     const float threshold = option(scene, "noiseThreshold").floatArray().front();
     const std::uint32_t least = count(scene, "minSamples");
-    film::Film picture(device, resolution, {});
-    for (std::uint32_t first = 0; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {
+    const std::vector<film::Channel> channels;
+    film::Film picture(device, resolution, channels);
+    const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
+    std::uint32_t done = 0;
+    if (checkpoints.resume) {
+        const film::State state = output::readCheckpoint(checkpoints.path, channels, print);
+        picture.restore(state);
+        done = state.passes;
+    }
+    std::uint32_t written = done;
+    std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
+    const std::uint32_t start =
+        static_cast<std::uint32_t>(std::min<std::uint64_t>(std::uint64_t { done } * kSamplesPerPass, sampler.samplesPerPixel()));
+    for (std::uint32_t first = start; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {
+        if (checkpoints.stop && checkpoints.stop(done)) {
+            break;
+        }
         const std::uint32_t samples = std::min(kSamplesPerPass, sampler.samplesPerPixel() - first);
-        // a pass only adds samples that the noise check after the pass before it left sampling
+        // a pass only adds samples that the noise check after the pass before it left sampling.
+        // A resumed render repeats the check the render it continues made before this pass
         if (first != 0 && threshold > 0.0F && first >= least && picture.converge(threshold) == 0U) {
             break;
         }
@@ -136,6 +175,16 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .count = samples };
             device.launch(resolution.x, resolution.y, params, entry);
         });
+        ++done;
+        const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if (!checkpoints.path.empty() && std::chrono::duration<double>(now - last).count() >= checkpoints.interval) {
+            output::writeCheckpoint(checkpoints.path, picture.state(), print);
+            written = done;
+            last = now;
+        }
+    }
+    if (!checkpoints.path.empty() && written != done) {
+        output::writeCheckpoint(checkpoints.path, picture.state(), print);
     }
     return picture.snapshot();
 }

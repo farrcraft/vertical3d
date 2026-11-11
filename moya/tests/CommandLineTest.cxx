@@ -105,6 +105,50 @@ BOOST_AUTO_TEST_CASE(moya_command_line_paths_writes_the_picture_test) {
     boost::filesystem::remove(written, ignored);
 }
 
+// only the path tracer keeps a checkpoint, and the interval and --resume need the file it names
+BOOST_AUTO_TEST_CASE(moya_command_line_refuses_checkpoints_it_cannot_keep_test) {
+    for (const std::string option : { "--checkpoint c.exr", "--checkpoint-interval 5", "--resume" }) {
+        const Run run = moya(std::string(kScene) + " " + option);
+        BOOST_TEST(!run.succeeded, option);
+        BOOST_TEST(run.printed.find("can only be given with --paths") != std::string::npos, option << ": " << run.printed);
+    }
+    for (const std::string option : { "--checkpoint-interval 5", "--resume" }) {
+        const Run run = moya(std::string(kScene) + " --paths " + option);
+        BOOST_TEST(!run.succeeded, option);
+        BOOST_TEST(run.printed.find("needs --checkpoint") != std::string::npos, option << ": " << run.printed);
+    }
+    const Run below = moya(std::string(kScene) + " --paths --checkpoint c.exr --checkpoint-interval -1");
+    BOOST_TEST(!below.succeeded);
+    BOOST_TEST(below.printed.find("--checkpoint-interval cannot be below zero") != std::string::npos, below.printed);
+}
+
+/** A file's bytes. **/
+std::string bytesOf(const boost::filesystem::path & path) {
+    std::ifstream stream(path.string(), std::ios::binary);
+    return { std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>() };
+}
+
+// --paths --checkpoint writes the checkpoint beside the picture. --resume continues from it, and
+// a render it holds the end of writes the same picture again
+BOOST_AUTO_TEST_CASE(moya_command_line_paths_writes_and_resumes_a_checkpoint_test) {
+    const boost::filesystem::path written = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_resumed.exr";
+    const boost::filesystem::path kept = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_checkpoint.exr";
+    boost::system::error_code ignored;
+    boost::filesystem::remove(written, ignored);
+    boost::filesystem::remove(kept, ignored);
+    const std::string files = " --paths --output \"" + written.string() + "\" --checkpoint \"" + kept.string() + "\"";
+    const Run run = moya(std::string(kScene) + files);
+    BOOST_TEST(run.succeeded, run.printed);
+    BOOST_TEST(boost::filesystem::exists(kept));
+    const std::string picture = bytesOf(written);
+    boost::filesystem::remove(written, ignored);
+    const Run resumed = moya(std::string(kScene) + files + " --resume");
+    BOOST_TEST(resumed.succeeded, resumed.printed);
+    BOOST_TEST((!picture.empty() && bytesOf(written) == picture));
+    boost::filesystem::remove(written, ignored);
+    boost::filesystem::remove(kept, ignored);
+}
+
 /**
  * --hits writes an output named .exr in any case.
  *

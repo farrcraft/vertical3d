@@ -117,3 +117,35 @@ uses it.
   0 to 2 for the beauty or at a channel's offset. `error(x, y)` reads a pixel's standard error.
 - **A snapshot describes itself.** It holds the film's channels and their offsets, so
   `offset(name)` finds a channel without the film, and a writer needs only the snapshot.
+
+## Checkpoints
+
+A checkpoint is the film as its device holds it, written so that a stopped render can continue
+and give the same picture, byte for byte, as one that never stopped. A resolved snapshot cannot
+do that, since multiplying a pixel back by its weight does not give its sums exactly.
+
+- **`state()` gives the film unresolved**: every float each pixel holds, which pixels have
+  stopped, and the count of passes, as a `film::State`. `restore(state)` puts them back, and the
+  next pass continues from them. A state of another resolution, other channels, or too few
+  floats or flags throws `std::invalid_argument`.
+- **`output::writeCheckpoint(path, state, fingerprint)` writes a state as an EXR file** of one
+  part, of floats, ZIP compressed, so any EXR reader opens it. The beauty's weighted sums are `R`,
+  `G` and `B`, so a reader shows the picture scaled by each pixel's weight. A channel is named as
+  the picture's writer names it. The floats after the channels are `moya.half.R`, `moya.half.G`,
+  `moya.half.B`, `moya.half.weight`, `moya.sampleCount`, `moya.moment.Y2`, `moya.moment.Y`,
+  `moya.moment.weight2` and `moya.weight`. Each pixel's stop flag is `moya.stopped`, of unsigned
+  integers. The header's `moya/passes` holds the count of passes, and `moya/fingerprint` the
+  fingerprint as sixteen hexadecimal digits.
+- **A checkpoint is written whole or not at all.** It is written to the path with `.partial`
+  added, then renamed over the path, so a render stopped while it writes keeps the checkpoint
+  before.
+- **`output::readCheckpoint(path, channels, fingerprint)` reads one back** for a film of the
+  channels given. A file that is not a checkpoint, a fingerprint that differs, or a missing
+  channel throws `output::Refused`.
+- **The fingerprint names the scene and the film.** `integrate::fingerprint(scene, channels)` is
+  a 64-bit FNV-1a hash of the scene's description, the film's channels and `kSamplesPerPass`. A
+  change to any object, parameter or channel changes it, and a resume against it is refused. The
+  description writes a float to six digits, so a change smaller than that keeps the fingerprint.
+  A file a parameter names, such as a texture, is in the description by its name alone.
+
+Background: [ADR-0216](../adr/offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md)

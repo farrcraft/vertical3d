@@ -141,7 +141,7 @@ among the options before the record is drafted.
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | done |
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | done |
-| [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | open |
+| [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | done |
 | [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | open |
 | [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | open |
@@ -953,6 +953,27 @@ picture sampled adaptively is within its threshold of one sampled to the most. T
 different thread counts stop the same pixels.
 
 ### Step 20 — Checkpoint and resume
+
+**Done.** `film::Film` gives its unresolved `film::State` and restores one, and
+`output::writeCheckpoint()` and `readCheckpoint()` keep it as an EXR file of floats.
+`integrate::render()` takes an `integrate::Checkpoints`, which names the file, the interval, a
+resume and a stop asked before each pass. `moya --paths` gains `--checkpoint`,
+`--checkpoint-interval` and `--resume`. Four things the list below did not settle:
+
+* **The checkpoint holds the moments and the stop flags too.** The record listed the sums, the
+  weights, the counts and the half beauty. The moments give a resumed render's standard error,
+  and the flags keep stopped pixels stopped, as the plan's test asks. The flags are a channel of
+  unsigned integers.
+* **The fingerprint is FNV-1a over the description, the channels and the pass length.** A
+  version of moya with another pass length would schedule a resumed render's samples otherwise.
+* **A render resumed to more samples is refused.** ZSobol orders a pixel's samples by its count,
+  so the passes of a render of 32 samples are not the first passes of one of 128. A render is
+  stopped by its `stop` function, or by ending the process, in place of a smaller count.
+* **A checkpoint is written to a `.partial` file and renamed**, so a process ended while it
+  writes keeps the checkpoint before.
+
+[Film.md](../offline/Film.md#checkpoints) and
+[Integrator.md](../offline/Integrator.md#checkpoint-and-resume) state the rules.
 
 * **A render writes a checkpoint** as the record of step 5 decides, after each pass or at an
   interval the command line gives.

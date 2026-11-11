@@ -10,6 +10,7 @@ v3d_add_test(moya
 	"BucketsTest.cxx"
 	"BuilderTest.cxx"
 	"ColourTest.cxx"
+	"CheckpointTest.cxx"
 	"CommandLineTest.cxx"
 	"CompareTest.cxx"
 	"CurvesTest.cxx"

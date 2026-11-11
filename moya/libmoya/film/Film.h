@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/film/State.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 
 #include <cstdint>
@@ -68,6 +69,18 @@ class Film final {
 
     /** The film as it stood after the last pass to end. **/
     Snapshot snapshot() const;
+
+    /** The film's floats and stopped pixels as they stood after the last pass to end. **/
+    State state() const;
+
+    /**
+     * Replaces every pixel's floats, which pixels have stopped, and the count of passes with a
+     * state's. The next pass continues from them.
+     *
+     * @throws std::invalid_argument when the state is of another resolution or other channels,
+     *         or holds too few or too many floats or flags
+     **/
+    void restore(const State & state);
 
     /**
      * Stops each pixel whose noise and whose four neighbours' noise are all below a threshold.
