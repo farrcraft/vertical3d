@@ -132,7 +132,7 @@ among the options before the record is drafted.
 | | What | Where | ADR | State |
 |---|---|---|---|---|
 | [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | accepted |
-| [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | open |
+| [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | accepted |
 | [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | open |
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | open |
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | open |
@@ -260,6 +260,13 @@ CPU runs kernel code compiled ahead of time, and a GPU will too.
 The record also settles where MaterialX's node graphs are flattened into its standard nodes,
 which nodes the program implements, and how a program reads primvars, textures and the shading
 point.
+
+**Drafted** as
+[ADR-0223](../adr/offline/0223-offline-a-material-is-an-interpreted-node-program.md): a program of
+instructions over a store of registers, compiled on the host and run by one interpreter on every
+device, as Cycles' SVM runs. Compiling flattens every node with a graph implementation into
+standard nodes, and stops at surface shader and BSDF nodes, which build the closure list. An
+instruction reads the shading point, a primvar by its slot or a texture by its handle.
 
 ### Step 3 — The record: a ray's footprint
 

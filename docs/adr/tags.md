@@ -373,6 +373,7 @@ reported, so the table lists only tags in use.
 | [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
 | [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
+| [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
 
 ### particles
 
@@ -450,6 +451,7 @@ reported, so the table lists only tags in use.
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
 | [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
+| [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
 
 ### shell
 
