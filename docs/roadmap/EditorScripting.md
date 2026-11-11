@@ -3,6 +3,8 @@
 What the editor needs so that a script can build a whole scene and render it, with or without a
 window, and in what order. It is written for whoever picks up the editor's scripting next.
 
+Every section has been started. [EditorScripting](../plans/EditorScripting.md) is their plan.
+
 A script can already create primitives, select, key and undo, as
 [Scripting.md](../editor/Scripting.md) describes. It cannot place what it creates, cannot choose
 how a key interpolates, and runs only once the editor's window is open. Every item also turns in
@@ -77,14 +79,15 @@ can batch edits, exports and renders on a machine with no GPU.
 ### 6. Batches in parallel
 
 A batch renders one frame at a time. Its frames are independent files, and could run as several
-moya.exe processes at once. The number of processes is a setting of the batch, defaulting to the
-machine's cores. Stop stops all of them, and the status counts frames from every process.
+moya.exe processes at once. The number of processes is a setting of the batch. Stop stops all
+of them, and the status counts frames from every process.
 
-This section is written against moya as it renders today, with the reyes and ray hiders.
-[The moya rebuild](MoyaRebuild.md) is replacing that core. moya.exe stays as the batch's
-renderer, but the new core renders on GPUs as well as the CPU, and decides how a frame uses the
-machine's cores itself. Before this section gets a plan, check it against the new core: how
-many processes a machine should run, and whether frames on a GPU run as processes at all.
+The reyes and ray hiders run on one thread, so a process for each core uses the machine.
+[The moya rebuild](MoyaRebuild.md) is replacing that core. The new core's CPU device takes
+every thread by default, so a process for each core would give each process every thread.
+moya.exe therefore needs an option for its thread count, and the batch gives each process a
+share. A GPU is held by one process, so frames on a GPU share it rather than run beside each
+other.
 
 ## The order
 

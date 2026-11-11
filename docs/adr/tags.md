@@ -73,6 +73,7 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0070](scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step |
+| [0217](editor/0217-editor-a-change-of-rotation-order-keeps-the-angles-or-the-pose.md) | Editor: a change of rotation order keeps the angles or the pose |
 
 ### apps
 
@@ -82,6 +83,7 @@ reported, so the table lists only tags in use.
 | [0080](engine/0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order |
 | [0117](engine/0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds |
 | [0163](engine/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line |
+| [0220](editor/0220-editor-a-headless-run-is-a-console-program-of-its-own.md) | Editor: a headless run is a console program of its own |
 
 ### assets
 
@@ -210,6 +212,11 @@ reported, so the table lists only tags in use.
 | [0169](editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked |
 | [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
 | [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
+| [0217](editor/0217-editor-a-change-of-rotation-order-keeps-the-angles-or-the-pose.md) | Editor: a change of rotation order keeps the angles or the pose |
+| [0218](editor/0218-editor-shared-geometry-is-a-record-mesh-items-refer-to.md) | Editor: shared geometry is a record mesh items refer to |
+| [0219](editor/0219-editor-a-placement-is-set-in-the-parents-space-or-the-scenes.md) | Editor: a placement is set in the parent's space or the scene's |
+| [0220](editor/0220-editor-a-headless-run-is-a-console-program-of-its-own.md) | Editor: a headless run is a console program of its own |
+| [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
 
 ### files
 
@@ -218,6 +225,7 @@ reported, so the table lists only tags in use.
 | [0041](engine/0041-files-write-documents-atomically.md) | Files: write documents atomically |
 | [0073](engine/0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time |
 | [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
+| [0218](editor/0218-editor-shared-geometry-is-a-record-mesh-items-refer-to.md) | Editor: shared geometry is a record mesh items refer to |
 
 ### frames
 
@@ -362,6 +370,7 @@ reported, so the table lists only tags in use.
 | [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
 | [0215](offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md) | Offline: a pixel's noise is the difference of two halves |
 | [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
+| [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
 
 ### particles
 

@@ -87,7 +87,7 @@ has the figures, and `moya/bench/Baseline.md` the run to measure a change agains
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
 menu's 98 commands has a handler. Each group below is a piece of work of its own, in any order.
 [MoyaRebuild](roadmap/MoyaRebuild.md#9-interactive-rendering) holds taking an edit into a render
-that is running. [EditorScripting](roadmap/EditorScripting.md) holds the scripting work:
+that is running. The [EditorScripting](plans/EditorScripting.md) plan holds the scripting work:
 rotation order, shared meshes in a scene document, placing an item and setting a key's
 interpolation by command, a headless mode, and batches in parallel.
 
