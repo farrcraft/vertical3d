@@ -113,9 +113,15 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const kernel::sample::ZSobol sampler(std::max(count(scene, "samples"), 1U), resolution, 0, count(scene, "frame"));
     const kernel::integrate::Settings settings = settingsOf(scene);
     const kernel::Function<device::cpu::PathParams> entry = device.module().paths;
+    const float threshold = option(scene, "noiseThreshold").floatArray().front();
+    const std::uint32_t least = count(scene, "minSamples");
     film::Film picture(device, resolution, {});
     for (std::uint32_t first = 0; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {
         const std::uint32_t samples = std::min(kSamplesPerPass, sampler.samplesPerPixel() - first);
+        // a pass only adds samples that the noise check after the pass before it left sampling
+        if (first != 0 && threshold > 0.0F && first >= least && picture.converge(threshold) == 0U) {
+            break;
+        }
         picture.pass([&](const kernel::film::Pixels & pixels) {
             const device::cpu::PathParams params { .pixels = pixels,
                 .filter = filter.view(),

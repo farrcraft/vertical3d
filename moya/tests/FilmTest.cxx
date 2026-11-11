@@ -48,6 +48,9 @@ constexpr float kWeights[kWeighted] = { 1.0F, 2.0F, 0.5F };
 constexpr float kLambdas[kWeighted] = { 0.1F, 0.5F, 0.8F };
 constexpr float kRadiances[kWeighted] = { 1.0F, 3.0F, 0.25F };
 
+/** The samples halved() adds to each pixel, the first half of them to the half beauty. **/
+constexpr std::uint32_t kHalved = 16;
+
 /** What a kernel function writes, and where the film's channels are. **/
 struct Params {
     kernel::film::Pixels pixels;
@@ -99,6 +102,33 @@ void sampled(const Params & params, kernel::Item item) {
         const kernel::spectrum::SampledSpectrum radiance(params.sampler.get1D(pixel, index, 2) * 10.0F);
         params.pixels.add(item, weight, radiance, wavelengths);
         params.pixels.addChannel(item, params.depth, weight, params.sampler.get1D(pixel, index, 3));
+    }
+}
+
+/**
+ * Whether halved() makes a pixel noisy: one in the two right-hand columns, or at the left of the
+ * third row.
+ **/
+bool noisy(kernel::Item item) {
+    return item.x >= 3U || (item.x == 0U && item.y == 2U);
+}
+
+/**
+ * Adds kHalved samples to a pixel that has not stopped, the first half to the half beauty too.
+ * Each sample of a flat pixel is one. A noisy pixel's are a half in the first half and one and a
+ * half in the second.
+ **/
+void halved(const Params & params, kernel::Item item) {
+    if (params.pixels.done(item)) {
+        return;
+    }
+    for (std::uint32_t sample = 0; sample < kHalved; ++sample) {
+        const bool half = sample < kHalved / 2U;
+        float radiance = 1.0F;
+        if (noisy(item)) {
+            radiance = half ? 0.5F : 1.5F;
+        }
+        params.pixels.add(item, 1.0F, kernel::spectrum::SampledSpectrum(radiance), kernel::spectrum::SampledWavelengths::visible(0.5F), half);
     }
 }
 
@@ -240,6 +270,47 @@ BOOST_AUTO_TEST_CASE(moya_film_is_the_same_on_one_thread_and_on_every_thread_tes
     const film::Snapshot one = sampledOn(1);
     const film::Snapshot every = sampledOn(0);
     BOOST_TEST(one.values == every.values, boost::test_tools::per_element());
+}
+
+// a pixel's noise is how far its half beauty is from its beauty, over the square root of the
+// beauty's sum, and is infinite while either holds no weight
+BOOST_AUTO_TEST_CASE(moya_film_a_pixels_noise_is_the_distance_of_its_halves_test) {
+    // the beauty, the half beauty and its weight, the count, the moments and the weight
+    const float apart[] = { 2.0F, 4.0F, 6.0F, 0.5F, 1.0F, 2.0F, 1.0F, 2.0F, 0.0F, 0.0F, 0.0F, 2.0F };
+    const float expected = (0.5F + 1.0F + 1.0F) / (1.0e-4F + std::sqrt(6.0F));
+    BOOST_TEST(film::Film::noise(apart, 3) == expected, boost::test_tools::tolerance(1.0e-6F));
+
+    const float together[] = { 2.0F, 4.0F, 6.0F, 1.0F, 2.0F, 3.0F, 1.0F, 2.0F, 0.0F, 0.0F, 0.0F, 2.0F };
+    BOOST_TEST(film::Film::noise(together, 3) == 0.0F);
+
+    const float noHalf[] = { 2.0F, 4.0F, 6.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 0.0F, 0.0F, 0.0F, 2.0F };
+    BOOST_TEST(std::isinf(film::Film::noise(noHalf, 3)));
+}
+
+// a pixel stops once its noise and its four neighbours' are below the threshold, and takes no
+// samples after it stops. Each pixel's samples are counted
+BOOST_AUTO_TEST_CASE(moya_film_a_pixel_stops_with_its_neighbours_test) {
+    CpuDevice device;
+    film::Film film = withChannels(device, { 5, 3 });
+    const auto pass = [&]() {
+        film.pass([&](const kernel::film::Pixels & pixels) {
+            device.launch(5, 3, paramsFor(film, pixels), &halved);
+        });
+    };
+    pass();
+    BOOST_TEST(film.snapshot().count(4, 2) == kHalved);
+    // the third column and the two pixels beside the noisy corner keep sampling, so three stop
+    BOOST_TEST(film.converge(0.01F) == 12U);
+    pass();
+    const film::Snapshot snapshot = film.snapshot();
+    for (std::uint32_t y = 0; y < 3; ++y) {
+        for (std::uint32_t x = 0; x < 5; ++x) {
+            const bool stopped = (x < 2U && y == 0U) || (x == 1U && y == 1U);
+            BOOST_TEST(snapshot.count(x, y) == (stopped ? kHalved : 2U * kHalved), "pixel " << x << ", " << y);
+        }
+    }
+    // a pixel that stopped stays stopped
+    BOOST_TEST(film.converge(0.01F) == 12U);
 }
 
 BOOST_AUTO_TEST_CASE(moya_film_refuses_channels_it_cannot_hold_test) {

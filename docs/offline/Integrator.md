@@ -132,7 +132,26 @@ CPU, through the hierarchy, and gives the film's snapshot.
   at most `kSamplesPerPass`. The options' pixel filter and frame are used.
 - **The scene's lights** are lit, through `light::Lights`, with the world's reach from the box
   that bounds its hierarchy.
+- **Adaptive sampling** stops each pixel at the options' `noiseThreshold`, as
+  [the next section](#adaptive-sampling) says.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
 - **`moya --paths`** reads a RIB file through the scene client and writes the picture as an EXR
   file. [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
+
+## Adaptive sampling
+
+A render stops each pixel once its noise falls below the options' `noiseThreshold`. The samples
+the options name are the most a pixel takes. A threshold of zero, the fallback, samples every
+pixel to the most. [Film.md](Film.md#stopping-a-pixel) says how a pixel's noise is measured.
+
+- **The threshold is in the working space**, ACEScg, so it means the same under every view.
+- **A pixel is checked only between passes**, from the samples of the passes before. The same
+  pixels then stop on every run and on any thread count.
+- **The first check comes once a pixel holds `minSamples`**, 16 unless the options give
+  another, so both halves hold a few samples before they are compared. A check comes before each
+  pass from then on.
+- **A render ends early** when a check leaves no pixel sampling.
+- **RI's `PixelVariance`** sets the threshold, as RenderMan's path tracer reads it.
+
+Background: [ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md)

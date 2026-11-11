@@ -15,8 +15,9 @@ UTF-8.
   resolution.
 - **One part is written as a plain scanline file**, which every EXR reader opens. Several are
   written as a multi-part file, and each then needs a name of its own.
-- **An output is the beauty or a channel.** `kBeauty`, "beauty", is the beauty. Any other output
-  is the name of one of the film's channels.
+- **An output is the beauty, the count of samples or a channel.** `kBeauty`, "beauty", is the
+  beauty, and `kSampleCount`, "sampleCount", each pixel's count of samples. A snapshot that holds
+  no count for each pixel refuses it. Any other output is the name of one of the film's channels.
 - **Precision is per part**: `Precision::Half` stores 16-bit floats and `Precision::Float` 32-bit
   ones. A half part converts the snapshot's floats to halves before it writes them, because
   OpenEXR converts between pixel types only when it reads a file. To store the beauty as halves
@@ -26,6 +27,7 @@ UTF-8.
 ## Channel names
 
 - **The beauty is R, G and B.** The film has no coverage yet, so there is no A.
+- **The count of samples is `sampleCount`**, as a float.
 - **A channel of one float** keeps the channel's name, such as `depth`.
 - **A channel of several floats** is the channel's name followed by `.R`, `.G`, `.B` and `.A` in
   order, such as `albedo.R`, `albedo.G` and `albedo.B`.

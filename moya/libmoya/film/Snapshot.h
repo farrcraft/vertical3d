@@ -42,8 +42,14 @@ struct Snapshot {
      **/
     std::vector<float> errors;
 
+    /** Every pixel's count of samples, row by row from the top left. **/
+    std::vector<std::uint32_t> samples;
+
     /** A pixel's standard error. **/
     float error(std::uint32_t x, std::uint32_t y) const;
+
+    /** A pixel's count of samples. **/
+    std::uint32_t count(std::uint32_t x, std::uint32_t y) const;
 
     /** A pixel's float at an offset: 0 to 2 for the beauty, or offset() for a channel. **/
     float at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const;

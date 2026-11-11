@@ -490,15 +490,23 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
     }
 }
 
-/** One pixel of a pass: each of its samples traced, and added to the pixel in index order. **/
+/**
+ * One pixel of a pass: each of its samples traced, and added to the pixel in index order. The
+ * first half of the pass's samples, which are stratified as a whole run is, go to the half beauty
+ * too. A pixel that has stopped takes none.
+ **/
 template <geometry::Traversal T>
 MOYA_KERNEL void paths(const Paths<T> & params, Item item) {
+    if (params.pixels.done(item)) {
+        return;
+    }
     const glm::uvec2 pixel { item.x, item.y };
     for (std::uint32_t sample = params.first; sample < params.first + params.count; ++sample) {
         PathState state;
         generate(params, pixel, sample, state);
         trace(params, state);
-        params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths));
+        const bool half = (sample - params.first) < (params.count / 2U);
+        params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths), half);
     }
 }
 

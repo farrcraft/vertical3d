@@ -131,7 +131,7 @@ void SceneClient::pixelFilter(v3d::render::offline::film::Filter filter, float x
 }
 
 void SceneClient::pixelVariance(float variation) {
-    scene_.set(options_, "variance", scene::Value::number(variation));
+    scene_.set(options_, "noiseThreshold", scene::Value::number(variation));
 }
 
 scene::Handle SceneClient::output(const std::string & file) {

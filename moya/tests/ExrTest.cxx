@@ -147,6 +147,27 @@ BOOST_AUTO_TEST_CASE(moya_exr_a_float_part_holds_the_snapshots_values_exactly_te
     }
 }
 
+// each pixel's count of samples is written as the channel sampleCount, in a float part and in a
+// half one alike, and a snapshot that holds no counts refuses it
+BOOST_AUTO_TEST_CASE(moya_exr_a_part_holds_each_pixels_count_of_samples_test) {
+    const Sandbox sandbox("counts");
+    film::Snapshot written = snapshot();
+    std::vector<float> counts;
+    for (std::uint32_t i = 0; i < kWidth * kHeight; ++i) {
+        written.samples.push_back(16U * (1U + (i % 5U)));
+        counts.push_back(static_cast<float>(written.samples.back()));
+    }
+    for (const output::Precision precision : { output::Precision::Float, output::Precision::Half }) {
+        const std::string path = sandbox.file(precision == output::Precision::Float ? "float.exr" : "half.exr");
+        output::writeExr(path, written, { { .name = "", .outputs = { "beauty", "sampleCount" }, .precision = precision } }, {});
+        Imf::InputFile file(path.c_str());
+        BOOST_TEST(channelOf(file.header(), "sampleCount", file) == counts, boost::test_tools::per_element());
+        const float red = precision == output::Precision::Float ? written.values.front() : static_cast<float>(half(written.values.front()));
+        BOOST_TEST(channelOf(file.header(), "R", file).front() == red);
+    }
+    BOOST_CHECK_THROW(output::writeExr(sandbox.file("none.exr"), snapshot(), { { .name = "", .outputs = { "sampleCount" } } }, {}), std::invalid_argument);
+}
+
 // a half rounds each value to its 11 significant bits, and reads back as that rounded value
 BOOST_AUTO_TEST_CASE(moya_exr_a_half_part_holds_the_values_within_halfs_precision_test) {
     const Sandbox sandbox("half");

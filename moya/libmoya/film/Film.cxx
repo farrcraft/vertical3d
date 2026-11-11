@@ -54,6 +54,10 @@ Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::ve
     const std::vector<float> zeros(floats, 0.0F);
     pixels_ = device_.allocate(floats * sizeof(float));
     device_.upload(*pixels_, zeros.data(), floats * sizeof(float));
+
+    stops_.assign(static_cast<std::size_t>(resolution.x) * resolution.y, 0U);
+    stopped_ = device_.allocate(stops_.size() * sizeof(std::uint32_t));
+    device_.upload(*stopped_, stops_.data(), stops_.size() * sizeof(std::uint32_t));
 }
 
 glm::uvec2 Film::resolution() const {
@@ -71,8 +75,60 @@ std::uint32_t Film::offset(const std::string & name) const {
 
 void Film::pass(const std::function<void(const kernel::film::Pixels &)> & launch) {
     const std::scoped_lock lock(mutex_);
-    launch(kernel::film::Pixels { device::view<float>(*pixels_), resolution_.x, stored() });
+    launch(kernel::film::Pixels { .values = device::view<float>(*pixels_),
+        .width = resolution_.x,
+        .stride = stored(),
+        .stopped = device::view<std::uint32_t>(*stopped_) });
     ++passes_;
+}
+
+std::uint32_t Film::converge(float threshold) {
+    const std::scoped_lock lock(mutex_);
+    const std::size_t pixels = stops_.size();
+    const std::uint32_t stored = this->stored();
+    std::vector<float> sums(pixels * stored);
+    device_.download(*pixels_, sums.data(), sums.size() * sizeof(float));
+    std::vector<float> noises(pixels);
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        noises[pixel] = noise(&sums[pixel * stored], stride_);
+    }
+
+    // a pixel stops with its neighbours, so one whose halves agree by chance keeps sampling
+    const auto quiet = [&](std::uint32_t x, std::uint32_t y) {
+        return noises[(static_cast<std::size_t>(y) * resolution_.x) + x] < threshold;
+    };
+    std::uint32_t sampling = 0;
+    for (std::uint32_t y = 0; y < resolution_.y; ++y) {
+        for (std::uint32_t x = 0; x < resolution_.x; ++x) {
+            std::uint32_t & stop = stops_[(static_cast<std::size_t>(y) * resolution_.x) + x];
+            if (stop == 0U && quiet(x, y) && (x == 0 || quiet(x - 1U, y)) && (x + 1U == resolution_.x || quiet(x + 1U, y)) &&
+                (y == 0 || quiet(x, y - 1U)) && (y + 1U == resolution_.y || quiet(x, y + 1U))) {
+                stop = 1U;
+            }
+            sampling += stop == 0U ? 1U : 0U;
+        }
+    }
+    device_.upload(*stopped_, stops_.data(), stops_.size() * sizeof(std::uint32_t));
+    return sampling;
+}
+
+float Film::noise(const float * sums, std::uint32_t stride) {
+    const float * const tail = sums + stride;
+    const float weight = tail[kernel::film::kTailFloats - 1U];
+    const float half = tail[kernel::film::kBeautyComponents];
+    if (weight == 0.0F || half == 0.0F) {
+        return std::numeric_limits<float>::infinity();
+    }
+    float apart = 0.0F;
+    float total = 0.0F;
+    for (std::uint32_t i = 0; i < kernel::film::kBeautyComponents; ++i) {
+        const float mean = sums[i] / weight;
+        apart += std::abs(mean - (tail[i] / half));
+        total += mean;
+    }
+    // the small term keeps a black pixel's noise finite
+    constexpr float kFloor = 1.0e-4F;
+    return apart / (kFloor + std::sqrt(std::max(total, 0.0F)));
 }
 
 Snapshot Film::snapshot() const {
@@ -80,7 +136,7 @@ Snapshot Film::snapshot() const {
     const std::uint32_t stored = this->stored();
     std::vector<float> sums(pixels * stored);
     Snapshot out { .resolution = resolution_, .passes = 0, .stride = stride_, .channels = channels_, .offsets = offsets_,
-        .values = std::vector<float>(pixels * stride_), .errors = std::vector<float>(pixels) };
+        .values = std::vector<float>(pixels * stride_), .errors = std::vector<float>(pixels), .samples = std::vector<std::uint32_t>(pixels) };
     {
         const std::scoped_lock lock(mutex_);
         device_.download(*pixels_, sums.data(), sums.size() * sizeof(float));
@@ -93,14 +149,15 @@ Snapshot Film::snapshot() const {
         for (std::uint32_t i = 0; i < stride_; ++i) {
             to[i] = weight != 0.0F ? from[i] / weight : 0.0F;
         }
-        const float * const moments = from + stride_;
+        const float * const moments = from + (stored - 1U - kernel::film::kMomentFloats);
+        out.samples[pixel] = static_cast<std::uint32_t>(from[stride_ + kernel::film::kHalfFloats]);
         out.errors[pixel] = standardError(weight, moments, kernel::spectrum::acescgToXyz(glm::vec3(to[0], to[1], to[2])).y);
     }
     return out;
 }
 
 std::uint32_t Film::stored() const {
-    return stride_ + kernel::film::kMomentFloats + 1U;
+    return stride_ + kernel::film::kTailFloats;
 }
 
 float Film::standardError(float weight, const float * moments, float mean) {

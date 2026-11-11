@@ -70,13 +70,14 @@ options "options"
     lightPicking string = "tree"
     lightSampling string = "mis"
     maxDepth integer = 12
+    minSamples integer = 16
+    noiseThreshold float = 0
     pixelAspect float = 1
     resolution integer[2] = 64 48
     rouletteDepth integer = 3
     samples integer = 1
     specularDepth integer = 12
     transmissionDepth integer = 12
-    variance float = 0
 shader "matte"
     Cs colour = (0.8, 0.75, 0.6)
     Os colour = (1, 1, 1)

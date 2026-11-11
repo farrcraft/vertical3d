@@ -38,7 +38,7 @@ struct ExrPart {
     /** The part's name. A file of several parts names each, and no two alike. **/
     std::string name;
 
-    /** The outputs it holds, in order: kBeauty, or the name of one of the film's channels. **/
+    /** The outputs it holds, in order: kBeauty, kSampleCount, or a film channel's name. **/
     std::vector<std::string> outputs;
 
     Precision precision { Precision::Half };

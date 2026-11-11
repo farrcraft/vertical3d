@@ -41,13 +41,16 @@ reads.
 
 `film::Film` holds a picture's pixels in a device's memory. The device outlives the film.
 
-- **Each pixel holds the beauty, the channels, the beauty's moments and a weight.** The moments
-  give the pixel's noise, as [the next section](#a-pixels-noise) describes. The beauty is
-  ACEScg's red, green and blue.
+- **Each pixel holds the beauty, the channels, the half beauty, a count of samples, the beauty's
+  moments and a weight.** The moments give the pixel's standard error, as
+  [the next section](#a-pixels-noise) describes, and the half beauty decides when the pixel
+  stops, as [Stopping a pixel](#stopping-a-pixel) does. The beauty is ACEScg's red, green and
+  blue.
   The channels are those the film was made with, each a name and 1 to 4 floats, in the order
   given. `offset(name)` is where a channel's first float sits.
 - **Each pixel holds weighted sums, and one sum of weights.** `kernel::film::Pixels::add()` adds
-  a sample's radiance, converted to ACEScg through the observer, and adds its weight.
+  a sample's radiance, converted to ACEScg through the observer, and adds its weight. It adds one
+  to the pixel's count of samples.
   `addChannel()` adds the same sample's value to a channel, with the same weight, and does not
   add the weight again.
 - **A pixel's samples are added in index order**, by the one work item that owns the pixel. Its
@@ -72,6 +75,31 @@ luminance, times the luminance, and alone.
 - **The error treats the samples as independent.** ZSobol's samples are stratified, so their
   mean converges faster than the error says, and a comparison through it errs towards passing.
 - **The sums are floats**, and the snapshot computes the error from them in doubles.
+
+## Stopping a pixel
+
+Adaptive sampling stops each pixel once its noise falls below a threshold.
+[Integrator.md](Integrator.md#adaptive-sampling) says when a render checks.
+
+- **The half beauty holds half of each pass's samples.** A pass's samples are a run of a power of
+  two, and the first half of a run is stratified as the whole run is. `add()` given `half` adds
+  the sample to the half beauty too, as weighted sums of red, green and blue and a sum of their
+  weights.
+- **A pixel's noise is `Film::noise()`**, as Cycles measures it. It is the distance of the half
+  beauty's mean from the beauty's, summed over red, green and blue. That is divided by the square
+  root of the beauty's sum of red, green and blue, held to zero or more. 0.0001 is added to the
+  root so that a black pixel's noise is finite. A pixel whose beauty or half beauty
+  holds no weight has an infinite noise.
+- **`converge(threshold)` stops a pixel with its four neighbours.** A pixel stops when its noise
+  and the noise of each neighbour inside the picture are below the threshold, all as the last
+  pass left them. A pixel whose two halves agree by chance beside noise then keeps sampling. It
+  returns how many pixels still sample.
+- **A pixel that has stopped stays stopped**, and `Pixels::done()` says so to kernel code, which
+  adds it no samples. The flags are a buffer of their own, one for each pixel, which
+  `converge()` uploads.
+- **A snapshot holds each pixel's count of samples**, as `samples` and `count(x, y)`.
+
+Background: [ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md)
 
 `film/Compare.h` measures a snapshot against an expected value or against another snapshot, in
 standard errors. [Testing.md](../contributing/Testing.md#moya-references) describes how a test

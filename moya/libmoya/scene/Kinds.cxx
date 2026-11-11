@@ -10,6 +10,7 @@
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
@@ -61,6 +62,9 @@ constexpr float kOpenCone = 90.0F;
 /** UsdLux's colour temperature until a client sets one, in kelvin. **/
 constexpr float kWhiteTemperature = 6500.0F;
 
+/** The samples a pixel takes before adaptive sampling first checks its noise: one pass. **/
+constexpr std::int32_t kMinSamples = 16;
+
 Kind camera() {
     return Kind { .name = "camera",
         .parameters = {
@@ -87,7 +91,8 @@ Kind options() {
             Declaration { .name = "frameAspect", .type = Type::Float, .fallback = Value::number(0.0F) },
             Declaration { .name = "crop", .type = Type::Float, .count = 4, .fallback = Value::floats({ 0.0F, 1.0F, 0.0F, 1.0F }) },
             Declaration { .name = "samples", .type = Type::Integer, .fallback = Value::integer(kSamples) },
-            Declaration { .name = "variance", .type = Type::Float, .fallback = Value::number(0.0F) },
+            Declaration { .name = "noiseThreshold", .type = Type::Float, .fallback = Value::number(0.0F) },
+            Declaration { .name = "minSamples", .type = Type::Integer, .fallback = Value::integer(kMinSamples) },
             Declaration { .name = "filter",
                 .type = Type::String,
                 .fallback = Value::string("gaussian"),

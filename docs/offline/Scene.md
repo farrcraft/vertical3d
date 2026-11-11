@@ -42,7 +42,10 @@ then derived as RI derives it.
   is empty. `near` and `far` clipping. `fstop`, `focalLength` and `focalDistance` for depth of
   field, with an infinite f-stop for a pinhole. `shutter`, its open and close times.
 - **`options`**: `resolution` in pixels, `pixelAspect`, and `frameAspect`, which is derived from
-  the resolution while it is zero. `crop` as RI's crop window. `samples` per pixel, the pixel
+  the resolution while it is zero. `crop` as RI's crop window. `samples` per pixel, the most a
+  pixel takes. `noiseThreshold`, the noise at which a pixel stops sampling, and zero for none,
+  and `minSamples`, the samples a pixel takes before its noise is first checked, as
+  [Integrator.md](Integrator.md#adaptive-sampling) says. The pixel
   `filter`, one of RI's five, and `filterWidth`. `frame`, which seeds the sampler. `camera`, the
   camera the render looks through. `edgeLength`, the longest a tessellated edge may be in
   pixels, 1 until a client sets it, and `dicingCamera`, the camera that length is measured

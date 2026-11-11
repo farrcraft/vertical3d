@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -43,6 +44,9 @@ namespace {
 
 /** A part's channels: each one's name in the file, and where its float sits in a pixel. **/
 typedef std::vector<std::pair<std::string, std::uint32_t>> FileChannels;
+
+/** Where a part's channel of the count of samples sits, in place of a float of a pixel. **/
+constexpr std::uint32_t kCounted = std::numeric_limits<std::uint32_t>::max();
 
 /** The suffixes of a channel of several floats, in order. **/
 constexpr const char * const kComponents[4] = { "R", "G", "B", "A" };
@@ -72,6 +76,13 @@ FileChannels channelsOf(const film::Snapshot & snapshot, const ExrPart & part) {
             for (std::uint32_t i = 0; i < 3; ++i) {
                 add(kComponents[i], i);
             }
+            continue;
+        }
+        if (output == kSampleCount) {
+            if (snapshot.samples.size() != static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y) {
+                throw std::invalid_argument("an EXR part names the count of samples, which the snapshot does not hold");
+            }
+            add(std::string(kSampleCount), kCounted);
             continue;
         }
         std::size_t index = 0;
@@ -179,7 +190,7 @@ Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, cons
  * converts between pixel types only when it reads a file.
  **/
 Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & channels, Precision precision,
-    std::vector<half> & halves) {
+    const std::vector<float> & counts, std::vector<half> & halves) {
     Imf::FrameBuffer out;
     if (precision == Precision::Float) {
         // OpenEXR reads through a pointer that is not const, and writing a file reads nothing back
@@ -187,6 +198,11 @@ Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & c
         const std::size_t across = sizeof(float) * snapshot.stride;
         const std::size_t down = across * snapshot.resolution.x;
         for (const auto & [name, offset] : channels) {
+            if (offset == kCounted) {
+                char * const counted = const_cast<char *>(reinterpret_cast<const char *>(counts.data()));
+                out.insert(name, Imf::Slice(Imf::FLOAT, counted, sizeof(float), sizeof(float) * snapshot.resolution.x));
+                continue;
+            }
             out.insert(name, Imf::Slice(Imf::FLOAT, base + (offset * sizeof(float)), across, down));
         }
         return out;
@@ -197,7 +213,8 @@ Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & c
     halves.resize(pixels * count);
     for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
         for (std::size_t i = 0; i < count; ++i) {
-            halves[(pixel * count) + i] = half(snapshot.values[(pixel * snapshot.stride) + channels[i].second]);
+            const std::uint32_t offset = channels[i].second;
+            halves[(pixel * count) + i] = half(offset == kCounted ? counts[pixel] : snapshot.values[(pixel * snapshot.stride) + offset]);
         }
     }
     char * const base = reinterpret_cast<char *>(halves.data());
@@ -235,18 +252,24 @@ void writeExr(const std::string & path, const film::Snapshot & snapshot, const s
         headers.push_back(headerOf(snapshot, part, channels.back(), metadata));
     }
 
+    // OpenEXR writes floats or halves, so each count of samples is written as a float
+    std::vector<float> counts;
+    counts.reserve(snapshot.samples.size());
+    for (const std::uint32_t samples : snapshot.samples) {
+        counts.push_back(static_cast<float>(samples));
+    }
     const int rows = static_cast<int>(snapshot.resolution.y);
     std::vector<std::vector<half>> halves(parts.size());
     if (parts.size() == 1) {
         Imf::OutputFile file(path.c_str(), headers.front());
-        file.setFrameBuffer(frameOf(snapshot, channels.front(), parts.front().precision, halves.front()));
+        file.setFrameBuffer(frameOf(snapshot, channels.front(), parts.front().precision, counts, halves.front()));
         file.writePixels(rows);
         return;
     }
     Imf::MultiPartOutputFile file(path.c_str(), headers.data(), static_cast<int>(headers.size()));
     for (std::size_t i = 0; i < parts.size(); ++i) {
         Imf::OutputPart part(file, static_cast<int>(i));
-        part.setFrameBuffer(frameOf(snapshot, channels[i], parts[i].precision, halves[i]));
+        part.setFrameBuffer(frameOf(snapshot, channels[i], parts[i].precision, counts, halves[i]));
         part.writePixels(rows);
     }
 }

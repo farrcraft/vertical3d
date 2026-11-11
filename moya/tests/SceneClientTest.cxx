@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_the_options_and_camera_follow_the_frames_r
     BOOST_TEST((read.value("options", "options", "samples") == scene::Value::integer(8)));
     BOOST_TEST((read.value("options", "options", "filter") == scene::Value::string("box")));
     BOOST_TEST((read.value("options", "options", "filterWidth") == scene::Value::floats({ 1.0F, 1.0F })));
-    BOOST_TEST((read.value("options", "options", "variance") == scene::Value::number(0.01F)));
+    BOOST_TEST((read.value("options", "options", "noiseThreshold") == scene::Value::number(0.01F)));
     BOOST_TEST((read.value("camera", "camera", "screen") == scene::Value::floats({ -2.0F, 2.0F, -1.0F, 1.0F })));
     BOOST_TEST((read.value("camera", "camera", "projection") == scene::Value::string("perspective")));
     BOOST_TEST((read.value("camera", "camera", "fov") == scene::Value::number(40.0F)));

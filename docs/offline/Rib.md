@@ -120,7 +120,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 
 - **The options and the camera are made with the client**, named `options` and `camera`, so a
   scene that names neither has RI's defaults. The frame's requests set their parameters.
-  `PixelSamples` sets the samples per pixel to its two counts multiplied.
+  `PixelSamples` sets the samples per pixel to its two counts multiplied, and `PixelVariance`
+  sets the options' `noiseThreshold`.
 - **`WorldBegin` makes the current transformation the camera's.** It takes world space to camera
   space, so the camera holds its inverse, and the transformation is reset for the world.
 - **The current transformation holds a sample at each time of a motion block.** Inside a block,

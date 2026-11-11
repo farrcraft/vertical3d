@@ -16,6 +16,7 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <cmath>
 #include <cstdint>
 #include <string>
 
@@ -49,6 +50,9 @@ constexpr std::uint32_t kInsideFrom = 12;
 constexpr std::uint32_t kInsideTo = 20;
 constexpr std::uint32_t kOutsideFrom = 0;
 constexpr std::uint32_t kOutsideTo = 4;
+
+/** The adaptive sampling threshold of the cases that sample adaptively. **/
+constexpr float kThreshold = 0.05F;
 
 /**
  * A scene of a camera five units back along -z looking at the origin, at kSide pixels square and
@@ -94,12 +98,13 @@ film::Snapshot sphereIn(float grey, std::uint32_t depth, std::uint32_t samples =
 
 /**
  * A grey sphere resting on a grey plane under the white dome, so light bounces between
- * them, with Russian roulette from a depth.
+ * them, with Russian roulette from a depth, and adaptive sampling to a noise threshold.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the depth, then the threads
-film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0) {
+film::Snapshot sphereOnPlane(std::uint32_t roulette, unsigned int threads = 0, float threshold = 0.0F) {
     scene::Scene scene(scene::kinds());
     const scene::Handle options = framed(scene, 256);
+    scene.set(options, "noiseThreshold", scene::Value::number(threshold));
     scene.set(options, "rouletteDepth", scene::Value::integer(static_cast<std::int32_t>(roulette)));
     scene.set(options, "diffuseDepth", scene::Value::integer(12));
     ball(scene, "ball", 0.7F, glm::mat4(1.0F));
@@ -171,6 +176,46 @@ BOOST_AUTO_TEST_CASE(moya_paths_russian_roulette_keeps_the_mean_test) {
 BOOST_AUTO_TEST_CASE(moya_paths_a_picture_is_the_same_on_one_thread_and_on_every_thread_test) {
     const film::Snapshot one = sphereOnPlane(3, 1);
     const film::Snapshot every = sphereOnPlane(3, 0);
+    BOOST_TEST(one.values == every.values, boost::test_tools::per_element());
+}
+
+// the dome seen directly is nearly flat, its noise only that of the wavelengths drawn, so its
+// pixels stop within two passes, while the floor in the sphere's shadow keeps sampling
+BOOST_AUTO_TEST_CASE(moya_paths_adaptive_sampling_stops_the_flat_pixels_first_test) {
+    const film::Snapshot snapshot = sphereOnPlane(3, 0, kThreshold);
+    BOOST_TEST(snapshot.count(0, 0) <= 2U * integrate::kSamplesPerPass);
+    BOOST_TEST(snapshot.count(16, 30) > 8U * integrate::kSamplesPerPass);
+    // with no threshold every pixel takes every sample
+    const film::Snapshot full = sphereOnPlane(3, 0);
+    BOOST_TEST(full.count(0, 0) == 256U);
+    BOOST_TEST(full.count(16, 30) == 256U);
+}
+
+// a picture sampled adaptively differs from one sampled to the most by less than the threshold,
+// measured as the noise is, on average over its pixels
+BOOST_AUTO_TEST_CASE(moya_paths_an_adaptive_picture_is_within_its_threshold_test) {
+    const film::Snapshot adaptive = sphereOnPlane(3, 0, kThreshold);
+    const film::Snapshot full = sphereOnPlane(3, 0);
+    double sum = 0.0;
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            float apart = 0.0F;
+            float total = 0.0F;
+            for (std::uint32_t i = 0; i < 3; ++i) {
+                apart += std::abs(adaptive.at(x, y, i) - full.at(x, y, i));
+                total += full.at(x, y, i);
+            }
+            sum += apart / (1.0e-4F + std::sqrt(total));
+        }
+    }
+    BOOST_TEST(sum / (kSide * kSide) < kThreshold);
+}
+
+// the same pixels stop, after the same samples, on one thread and on every thread
+BOOST_AUTO_TEST_CASE(moya_paths_adaptive_sampling_is_the_same_on_one_thread_and_on_every_thread_test) {
+    const film::Snapshot one = sphereOnPlane(3, 1, kThreshold);
+    const film::Snapshot every = sphereOnPlane(3, 0, kThreshold);
+    BOOST_TEST(one.samples == every.samples, boost::test_tools::per_element());
     BOOST_TEST(one.values == every.values, boost::test_tools::per_element());
 }
 

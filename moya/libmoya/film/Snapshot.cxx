@@ -20,6 +20,10 @@ float Snapshot::error(std::uint32_t x, std::uint32_t y) const {
     return errors.at((static_cast<std::size_t>(y) * resolution.x) + x);
 }
 
+std::uint32_t Snapshot::count(std::uint32_t x, std::uint32_t y) const {
+    return samples.at((static_cast<std::size_t>(y) * resolution.x) + x);
+}
+
 std::uint32_t Snapshot::offset(const std::string & name) const {
     for (std::size_t i = 0; i < channels.size(); ++i) {
         if (channels[i].name == name) {

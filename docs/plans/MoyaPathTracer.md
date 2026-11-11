@@ -140,7 +140,7 @@ among the options before the record is drafted.
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | done |
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | done |
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
-| [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | open |
+| [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | done |
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | open |
 | [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | open |
 | [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | open |
@@ -901,6 +901,12 @@ area light takes. Four things the list below did not settle:
 
 [Rib.md](../offline/Rib.md#the-scene-client) states the rules.
 
+Each case was run against broken code as well, one break at a time. A light left unmirrored
+failed the case of the axes, and so did a dome turned as the other lights are. A distant light
+left at UsdLux's intensity failed the case of the lights, and so did a dome that took
+`areaNormalize`. A mesh light shaped by a cone failed the mesh light's case, and so did one
+whose `textureColor` was ignored.
+
 * **The RIB reader reads `Light`**, as RenderMan's RIB names a light and its handle.
 * **The scene client maps RenderMan's lights to UsdLux's**: `PxrRectLight`, `PxrDiskLight`,
   `PxrSphereLight`, `PxrCylinderLight`, `PxrDistantLight`, `PxrDomeLight` and `PxrMeshLight`,
@@ -913,6 +919,26 @@ description. A `Light` inside an attribute block is turned off by `Illuminate`, 
 `LightSource` is.
 
 ### Step 19 — Adaptive sampling
+
+**Done.** Each pixel holds a half beauty, of the first half of each pass's samples, and a count of
+its samples. `film::Film::converge()` measures each pixel's noise between passes and stops it
+with its four neighbours, and the kernel adds no samples to a pixel that has stopped. The options
+gain `noiseThreshold` and `minSamples`, and lose `variance`, which nothing read. RI's
+`PixelVariance` sets the threshold, so twenty-two committed scene descriptions change. The EXR
+writer takes `sampleCount` as an output beside the beauty. The CPU library's table is now version
+14. Four things the list below did not settle:
+
+* **The first half of a run is the first half of a pass.** A pass is a run of 16 samples, or of
+  the whole count when that is less. A render of fewer than 32 samples is therefore never checked.
+* **The half beauty holds its own sum of weights**, four floats where the record counted three,
+  since a filter with negative lobes gives weights of either sign.
+* **A pixel that has stopped stays stopped**, and its noise as it stopped still counts for its
+  neighbours.
+* **`PixelVariance` is the threshold**, since RenderMan's path tracer reads it so, though its
+  metric is moya's rather than RenderMan's.
+
+[Film.md](../offline/Film.md#stopping-a-pixel) and
+[Integrator.md](../offline/Integrator.md#adaptive-sampling) state the rules.
 
 * **A pixel stops sampling** when its error, as the record of step 4 measures it, falls below a
   threshold in the scene's `options`. The samples per pixel are the most it takes.

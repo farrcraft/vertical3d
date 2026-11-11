@@ -35,6 +35,9 @@ namespace v3d::moya::film {
  * that pixel, in index order. A snapshot can be taken from any thread at any time. It waits for a
  * pass in progress to end, so it holds every sample of the passes before it and none of the next.
  *
+ * Between passes, converge() stops each pixel whose noise has fallen below a threshold, and a
+ * pixel that has stopped takes no samples from the passes after it.
+ *
  * The film reads its device's memory, so the device outlives it.
  **/
 class Film final {
@@ -66,6 +69,25 @@ class Film final {
     /** The film as it stood after the last pass to end. **/
     Snapshot snapshot() const;
 
+    /**
+     * Stops each pixel whose noise and whose four neighbours' noise are all below a threshold.
+     * A pixel's noise is noise() of its sums as the last pass left them. A pixel that has stopped
+     * stays stopped.
+     *
+     * @return how many pixels still take samples
+     **/
+    std::uint32_t converge(float threshold);
+
+    /**
+     * A pixel's noise, from the floats it holds: how far its half beauty is from its beauty,
+     * summed over red, green and blue, over the square root of the beauty's sum, as Cycles
+     * measures it. It is infinite while either holds no weight.
+     *
+     * @param sums a pixel's floats as the device holds them
+     * @param stride the floats the beauty and the channels take, before the half beauty
+     **/
+    static float noise(const float * sums, std::uint32_t stride);
+
  private:
     /** The floats each pixel holds on the device: the snapshot's, the moments and the weight. **/
     std::uint32_t stored() const;
@@ -83,6 +105,10 @@ class Film final {
     std::uint32_t stride_ { kernel::film::kBeautyComponents };
     boost::shared_ptr<device::Buffer> pixels_;
     std::uint32_t passes_ { 0 };
+
+    /** Each pixel's flag, which is not zero once it has stopped, on the device and on the host. **/
+    boost::shared_ptr<device::Buffer> stopped_;
+    std::vector<std::uint32_t> stops_;
 
     /** Held by a pass and by a snapshot, so that neither sees the other half done. **/
     mutable std::mutex mutex_;

@@ -34,6 +34,9 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene);
 /**
  * A scene rendered through the integrator on the CPU, through the hierarchy. Each pixel takes the
  * samples the options name, rounded up to a power of two, in passes of at most kSamplesPerPass.
+ * While the options' noiseThreshold is above zero, the film stops the pixels whose noise falls
+ * below it, checked before each pass once the pixels hold minSamples, and a render whose pixels
+ * have all stopped ends.
  * The pixel filter and its width, the frame that seeds the sampler, and the camera are the
  * options'. The picture is the same on any thread count and whatever the passes hold.
  *
