@@ -164,6 +164,7 @@ again.
 | `LightSource "name" handle params` | Creates a light and switches it on. See [Lights.md](Lights.md) |
 | `AreaLightSource "name" handle params` | Creates an area light. The polygons and spheres after it in the same block are its geometry |
 | `Illuminate handle on` | Switches a light on (1) or off (0) for the primitives that follow |
+| `Light "name" handle params` | One of RenderMan's lights, such as `PxrRectLight`. Read, and not drawn by the reyes and ray-trace hiders. The first a scene names is logged |
 | `MakeTexture ...` | Nothing. A shader reads the image file itself. See [Textures.md](Textures.md) |
 
 - A handle is a number or a string.

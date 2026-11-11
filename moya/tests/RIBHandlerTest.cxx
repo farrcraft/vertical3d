@@ -147,8 +147,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_geometry_the_hiders_do_not_draw_is_reported
         "Cone 1 1 360\nCone 1 1 360\nCylinder 1 -1 1 360\nHyperboloid 1 0 -1 1 0 1 360\nParaboloid 1 0 1 360\nDisk 0 1 360\n"
         "Torus 1 0.25 0 360 360\nPoints \"P\" [0 0 5]\n"
         "SubdivisionMesh \"catmull-clark\" [3] [0 1 2] [] [] [] [] \"P\" [0 0 5 1 0 5 0 1 5]\n"
+        "Light \"PxrRectLight\" \"key\"\n"
         "WorldEnd\n", &handler));
-    for (const char * request : { "Cone", "Cylinder", "Hyperboloid", "Paraboloid", "Disk", "Torus", "Points", "SubdivisionMesh" }) {
+    for (const char * request : { "Cone", "Cylinder", "Hyperboloid", "Paraboloid", "Disk", "Torus", "Points", "SubdivisionMesh", "Light" }) {
         BOOST_TEST(heard.said(std::string("do not draw ") + request), request);
     }
 }

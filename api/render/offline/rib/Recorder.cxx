@@ -218,6 +218,10 @@ void Recorder::lightSource(const requests::LightSource & request, const Paramete
     requests_.emplace_back([request, parameters](Handler & to) { to.lightSource(request, parameters); });
 }
 
+void Recorder::light(const requests::LightSource & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.light(request, parameters); });
+}
+
 void Recorder::areaLightSource(const requests::LightSource & request, const ParameterList & parameters) {
     requests_.emplace_back([request, parameters](Handler & to) { to.areaLightSource(request, parameters); });
 }

@@ -353,7 +353,7 @@ void SceneClient::place(const internal::Shape & shape) {
     instance(prototype, nameFor("instance", shape.request), !inObject);
 
     if (current_.area && !inObject) {
-        lights_.glow(prototype, current_.area->name, current_.area->parameters, current_.transformation);
+        lights_.glow(prototype, current_.area->light, current_.area->name, current_.area->parameters, current_.transformation);
     }
 }
 
@@ -475,7 +475,25 @@ void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::Lig
         current_.area.reset();
         return;
     }
-    current_.area = Shader { .name = current_.name.empty() ? "light " + request.handle : current_.name, .parameters = parameters };
+    current_.area = Shader { .name = current_.name.empty() ? "light " + request.handle : current_.name, .parameters = parameters, .light = request.shader };
+}
+
+void SceneClient::light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
+    if (!world_) {
+        warnings_.once("light outside", "a light outside WorldBegin and WorldEnd makes no light");
+        return;
+    }
+    const std::string name = current_.name.empty() ? "light " + request.handle : current_.name;
+    if (request.shader == "PxrMeshLight") {
+        current_.area = Shader { .name = name, .parameters = parameters, .light = request.shader };
+        return;
+    }
+    if (lights_.renderman(request, parameters, name, current_.transformation)) {
+        current_.lights.insert(request.handle);
+    }
 }
 
 void SceneClient::illuminate(const std::string & handle, bool on) {

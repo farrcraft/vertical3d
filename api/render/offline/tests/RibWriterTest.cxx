@@ -106,6 +106,7 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->displacement("lift", one("amount", UNIFORM_FLOAT, { 0.1F }));
     to->lightSource({.shader = "pointlight", .handle = "1"}, one("intensity", UNIFORM_FLOAT, { 2 }));
     to->areaLightSource({.shader = "arealight", .handle = "lamp"}, none);
+    to->light({.shader = "PxrRectLight", .handle = "key"}, one("intensity", UNIFORM_FLOAT, { 3 }));
     to->illuminate("1", false);
     to->illuminate("lamp", true);
     to->makeTexture({.picture = "a.png", .texture = "a.tx", .swrap = "periodic", .twrap = "clamp", .filter = "box", .swidth = 2, .twidth = 2}, none);

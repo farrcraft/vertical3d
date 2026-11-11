@@ -116,6 +116,7 @@ class Recorder final : public Handler {
     void surface(const std::string & name, const ParameterList & parameters) override;
     void displacement(const std::string & name, const ParameterList & parameters) override;
     void lightSource(const requests::LightSource & request, const ParameterList & parameters) override;
+    void light(const requests::LightSource & request, const ParameterList & parameters) override;
     void areaLightSource(const requests::LightSource & request, const ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
     void makeTexture(const requests::MakeTexture & request, const ParameterList & parameters) override;

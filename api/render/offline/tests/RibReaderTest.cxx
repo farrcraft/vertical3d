@@ -271,6 +271,10 @@ class CapableHandler final : public v3d::render::offline::rib::Handler {
         (void)parameters;
         lights_++;
     }
+    void light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        renderman_ = request.shader + "|" + request.handle + "|" + std::to_string(parameters.number("intensity", 0.0F)) + "|" +
+            std::to_string(parameters.points("lightColor").front().y);
+    }
     void makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         made_ = request.picture + "|" + request.texture + "|" + request.swrap + "|" + request.twrap + "|" + request.filter + "|" +
@@ -296,6 +300,7 @@ class CapableHandler final : public v3d::render::offline::rib::Handler {
 
     std::string area_;
     std::string made_;
+    std::string renderman_;
     unsigned int lights_ = 0;
     std::vector<unsigned int> vertices_;
     Later later_;
@@ -743,6 +748,26 @@ BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
     BOOST_REQUIRE_EQUAL(handler.illuminated_.size(), 2U);
     BOOST_CHECK_EQUAL(handler.illuminated_[0], "1|off");
     BOOST_CHECK_EQUAL(handler.illuminated_[1], "fill|on");
+}
+
+/**
+ * RenderMan's Light reaches light() with its shader, its handle and its parameters, typed where
+ * it names them. A handler that does not override light() ignores it, as an ordinary light, and
+ * the reader still recognises it.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_renderman_light_test) {
+    const std::string source = "Light \"PxrRectLight\" \"key\" \"float intensity\" [3] \"color lightColor\" [1 0.5 0.25]\n";
+    CapableHandler capable;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(source, &capable, &reader));
+    BOOST_CHECK_EQUAL(capable.renderman_, "PxrRectLight|key|3.000000|0.500000");
+    BOOST_CHECK_EQUAL(capable.lights_, 0U);
+
+    CountingHandler counting;
+    v3d::render::offline::rib::Reader other(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(source, &counting, &other));
+    BOOST_TEST(counting.lights_.empty());
+    BOOST_TEST(other.unrecognised().empty());
 }
 
 /**

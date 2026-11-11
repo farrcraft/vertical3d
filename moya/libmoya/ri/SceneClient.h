@@ -91,6 +91,12 @@ namespace v3d::moya::ri {
  * none. Another light shader is logged and makes no light. `AreaLightSource` makes a mesh light
  * of each geometry after it in its attribute block.
  *
+ * **RenderMan's lights.** `Light` makes UsdLux's light of the same shape from `PxrRectLight`,
+ * `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`, `PxrDistantLight` and
+ * `PxrDomeLight`, which is on as a `LightSource` is. `PxrMeshLight` makes a mesh light of each
+ * geometry after it in its attribute block, as `AreaLightSource` does. Another shader is logged
+ * and makes no light.
+ *
  * **Names.** An object takes its name from RI's `Attribute "identifier" "name"`, or from its
  * request and its place in the file. A name a kind already holds gets a number after it. A
  * display's output is named after its file, and a light without a name after its handle.
@@ -166,6 +172,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
 
     Handler* deformation() override;
@@ -199,10 +206,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** Whether a file name ends with a suffix, compared exactly. **/
     static bool endsWith(const std::string & text, const std::string & suffix);
 
-    /** A shader as a request names it. **/
+    /**
+     * A shader as a request names it. An area light's name is the light's, and its light is
+     * the shader that made it.
+     **/
     struct Shader {
         std::string name{};
         v3d::render::offline::rib::ParameterList parameters{};
+        std::string light{};
     };
 
     /** What AttributeBegin saves and AttributeEnd restores. **/

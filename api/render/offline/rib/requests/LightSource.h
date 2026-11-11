@@ -10,7 +10,7 @@
 namespace v3d::render::offline::rib::requests {
 
 /**
- * RiLightSource and RiAreaLightSource.
+ * RiLightSource and RiAreaLightSource, and RenderMan's Light.
  *
  * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. The reader
  * accepts both and stores the handle as a string, so a renderer keys its lights on one type.

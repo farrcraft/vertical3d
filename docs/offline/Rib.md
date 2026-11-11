@@ -92,8 +92,11 @@ the reader and the handler.
   `RIBHandler` does not instance, so it leaves out the geometry inside an object, as RI leaves it
   out where it is declared, and logs the first object.
 - **`RIBHandler` logs each request its hiders do not draw**, once per name: `Points`, the quadrics
-  but `Sphere`, `SubdivisionMesh` and `ObjectBegin`. The handler's empty bodies accept them, so
-  another handler sees each one.
+  but `Sphere`, `SubdivisionMesh`, `ObjectBegin` and `Light`. The handler's empty bodies accept
+  them, so another handler sees each one.
+- **RenderMan's `Light` reaches `Handler::light()`**, with its shader, its handle and its
+  parameters, as `LightSource` does. RI's shading language has no such lights, so the default
+  body ignores it. The writer and the recorder carry it.
 - **A `PixelFilter` name the reader does not recognise never reaches the handler.** A
   `PixelSamples` rate reaches the handler as a count of at least one. `DepthOfField` with no
   arguments is sent as an infinite fstop.
@@ -176,6 +179,30 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
   its `intensity` and `lightcolor`. The mesh light names the geometry's prototype, so the
   instance that places it emits.
+- **RenderMan's lights become UsdLux's.** `Light` makes a rect, disk, sphere, cylinder, distant
+  or dome light of `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
+  `PxrDistantLight` and `PxrDomeLight`. Each is on as a `LightSource` is, and `Illuminate` and
+  `AttributeEnd` turn it off. Another shader is logged and makes no light.
+- **A RenderMan light's parameters keep RenderMan's meaning under UsdLux's names.** Every light
+  takes `intensity`, `exposure`, `lightColor` as its colour, `enableTemperature` as
+  `enableColorTemperature` and `temperature` as `colorTemperature`. Every light but the dome
+  takes `areaNormalize` as `normalize`. A rect, disk, sphere or cylinder light takes `coneAngle`,
+  `coneSoftness`, `iesProfile` as `iesFile`, `iesProfileScale` as `iesAngleScale` and
+  `iesProfileNormalize` as `iesNormalize`. A rect or dome light takes `lightColorMap` as its
+  `texture`. A distant light takes `angleExtent` as its `angle`, and its intensity is 50000
+  unless the request gives one, as RenderMan's is. A parameter the request does not give keeps
+  UsdLux's fallback, which is RenderMan's default.
+- **A RenderMan light's shape is UsdLux's at its fallback size**, since RenderMan sizes a light by
+  its transformation alone. A rect is a unit square, and a disk, sphere and cylinder have a radius
+  of 0.5. A cylinder is of length 1 along x.
+- **A RenderMan light is mirrored onto UsdLux's axes.** It faces its +z, where UsdLux's faces -z,
+  and lays a rect's texture from its -x and -y. Its transformation is therefore the current one
+  scaled by -1 on every axis, as Pixar's hdPrman places a UsdLux light in RenderMan. A dome's pole
+  is its +z, where UsdLux's is +y, so a dome is turned instead: its UsdLux +y is RenderMan's +z,
+  its +z is RenderMan's -x, and its +x is RenderMan's -y.
+- **`PxrMeshLight` makes a mesh light of each geometry after it in its attribute block**, as
+  `AreaLightSource` does, with RenderMan's parameters. Its colour is `lightColor` times a
+  constant `textureColor`. No cone or profile shapes it.
 - **`CoordinateSystem` names the current transformation**, and `CoordSysTransform` makes a named
   one current. `"world"` is the identity, and `"camera"` is the camera's own space. Another name
   is logged.

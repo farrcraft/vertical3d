@@ -34,6 +34,12 @@ namespace v3d::moya::ri::internal {
  * `from`. A sphere light of radius zero is normalised, with four times RI's intensity, so its
  * radiant intensity is RI's. Another light shader is logged and makes no light. An area light
  * makes a mesh light of a geometry.
+ *
+ * RenderMan's `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
+ * `PxrDistantLight` and `PxrDomeLight` become the UsdLux light of the same shape, with
+ * RenderMan's parameters under UsdLux's names. A RenderMan light faces its +z, and a dome's pole
+ * is its +z, so each light's transformation is turned onto UsdLux's axes. `PxrMeshLight` makes
+ * a mesh light of a geometry, as an area light does.
  **/
 class Lights final {
  public:
@@ -64,9 +70,23 @@ class Lights final {
     /** Record an instance that is lit, and the lights that are on for it. **/
     void lit(const scene::Handle & instance, const std::set<std::string> & on);
 
-    /** Make a mesh light of a geometry, from an area light's shader name and parameters. **/
-    void glow(const scene::Handle & geometry, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
-        const Sampled & transformation);
+    /**
+     * Make the light a RenderMan Light request names, at a transformation.
+     *
+     * @param name what the light is called before it is made unique
+     * @return whether a light was made, so that it is on
+     **/
+    bool renderman(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters,
+        const std::string & name, const Sampled & transformation);
+
+    /**
+     * Make a mesh light of a geometry, from the light shader that names it and its parameters:
+     * `PxrMeshLight`'s, or an area light's.
+     *
+     * @param name what the light is called before it is made unique
+     **/
+    void glow(const scene::Handle & geometry, const std::string & shader, const std::string & name,
+        const v3d::render::offline::rib::ParameterList & parameters, const Sampled & transformation);
 
     /**
      * Give each light the instances it lit. A light that lit every instance keeps `includeRoot`.
@@ -85,12 +105,25 @@ class Lights final {
     static constexpr float kConeAngle = 0.5235988F;
     static constexpr float kConeDelta = 0.0872665F;
 
+    /** RenderMan's distant light's default intensity, where UsdLux's is one. **/
+    static constexpr float kDistantIntensity = 50000.0F;
+
     /** A point a light's parameters give, or the fallback when they give none. **/
     static glm::vec3 pointOf(const v3d::render::offline::rib::ParameterList & parameters, const std::string & name, const glm::vec3 & fallback);
 
     /** A light at a transformation, from `from` towards `to`. **/
     scene::Handle light(const std::string & kind, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
         const glm::vec3 & defaultTo, const Sampled & transformation);
+
+    /** A number RenderMan names, its UsdLux name, and whether UsdLux's is an integer. **/
+    struct Renamed {
+        const char * from;
+        const char * to;
+        bool integer;
+    };
+
+    /** Give a light of a kind each RenderMan parameter a request holds, by its UsdLux name. **/
+    void rename(const scene::Handle & made, const std::string & kind, const v3d::render::offline::rib::ParameterList & parameters);
 
     scene::Scene * scene_;
     Objects * objects_;

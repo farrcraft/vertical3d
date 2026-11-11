@@ -170,6 +170,14 @@ class Handler {
         (void)parameters;
     }
     /**
+     * RenderMan's `Light`, which names a light such as `PxrRectLight` and its handle. RI's
+     * shading language lights do not include these, so the default body ignores the request.
+     **/
+    virtual void light(const requests::LightSource & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    /**
      * A light whose shape matters, bound to the geometry that follows it. A renderer that
      * cannot sample a light's area treats it as an ordinary light. The default body does
      * this, so a scene that uses one is still lit.

@@ -124,6 +124,9 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    /** RenderMan's lights are the new core's alone, so the hiders log the first and draw none. **/
+    void light(const v3d::render::offline::rib::requests::LightSource & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
     void imager(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;

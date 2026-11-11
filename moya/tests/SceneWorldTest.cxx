@@ -230,6 +230,100 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_an_area_light_makes_a_mesh_light_of_its_ge
     BOOST_TEST(read.scene().objects("instance").size() == 2U);
 }
 
+// each of RenderMan's analytic lights makes UsdLux's light of its shape, with RenderMan's
+// parameters under UsdLux's names
+BOOST_AUTO_TEST_CASE(moya_sceneclient_renderman_lights_make_usdlux_lights_test) {
+    const Read read(world(
+        "Light \"PxrRectLight\" \"rect\" \"float intensity\" [3] \"float exposure\" [2] \"color lightColor\" [1 0.5 0.25]"
+        " \"int enableTemperature\" [1] \"float temperature\" [3200] \"int areaNormalize\" [1] \"string lightColorMap\" [\"sky.exr\"]"
+        " \"float coneAngle\" [40] \"float coneSoftness\" [0.5] \"string iesProfile\" [\"lamp.ies\"] \"float iesProfileScale\" [2]"
+        " \"int iesProfileNormalize\" [1]\n"
+        "Light \"PxrDiskLight\" \"disk\"\n"
+        "Light \"PxrSphereLight\" \"sphere\"\n"
+        "Light \"PxrCylinderLight\" \"cylinder\"\n"
+        "Light \"PxrDistantLight\" \"sun\" \"float angleExtent\" [2]\n"
+        "Light \"PxrDistantLight\" \"plain\"\n"
+        "Light \"PxrDomeLight\" \"dome\" \"string lightColorMap\" [\"sky.exr\"] \"int areaNormalize\" [1]\n"
+        "Light \"PxrPortalLight\" \"portal\"\n"
+        "Sphere 1 -1 1 360\n"));
+    BOOST_TEST((read.value("rectLight", "light rect", "intensity") == scene::Value::number(3.0F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "exposure") == scene::Value::number(2.0F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "colour") == scene::Value::colour(glm::vec3(1.0F, 0.5F, 0.25F))));
+    BOOST_TEST((read.value("rectLight", "light rect", "enableColorTemperature") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("rectLight", "light rect", "colorTemperature") == scene::Value::number(3200.0F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "normalize") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("rectLight", "light rect", "texture") == scene::Value::string("sky.exr")));
+    BOOST_TEST((read.value("rectLight", "light rect", "coneAngle") == scene::Value::number(40.0F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "coneSoftness") == scene::Value::number(0.5F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "iesFile") == scene::Value::string("lamp.ies")));
+    BOOST_TEST((read.value("rectLight", "light rect", "iesAngleScale") == scene::Value::number(2.0F)));
+    BOOST_TEST((read.value("rectLight", "light rect", "iesNormalize") == scene::Value::integer(1)));
+    BOOST_TEST(read.scene().objects("diskLight").size() == 1U);
+    BOOST_TEST(read.scene().objects("sphereLight").size() == 1U);
+    BOOST_TEST(read.scene().objects("cylinderLight").size() == 1U);
+    // RenderMan's sun is far brighter than UsdLux's default
+    BOOST_TEST((read.value("distantLight", "light sun", "angle") == scene::Value::number(2.0F)));
+    BOOST_TEST((read.value("distantLight", "light plain", "intensity") == scene::Value::number(50000.0F)));
+    BOOST_TEST((read.value("distantLight", "light plain", "angle") == scene::Value::number(0.53F)));
+    BOOST_TEST((read.value("domeLight", "light dome", "texture") == scene::Value::string("sky.exr")));
+    BOOST_TEST((read.value("domeLight", "light dome", "normalize") == scene::Value::integer(0)));
+    BOOST_TEST(read.heard("makes no light"));
+}
+
+// a RenderMan light faces its +z, as UsdLux's faces its -z, and its dome's pole is its +z, as
+// UsdLux's is its +y
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_renderman_light_is_turned_onto_usdlux_axes_test) {
+    const Read read(world(
+        "Translate 1 2 3\n"
+        "Light \"PxrRectLight\" \"rect\"\n"
+        "Light \"PxrDomeLight\" \"dome\"\n"));
+    const glm::mat4 rect = read.value("rectLight", "light rect", "transform").matrixAt(0);
+    BOOST_TEST((rect * glm::vec4(0.0F, 0.0F, -1.0F, 0.0F) == glm::vec4(0.0F, 0.0F, 1.0F, 0.0F)));
+    // the rect's texture runs from RenderMan's -x and -y, which UsdLux lays at its +x and +y
+    BOOST_TEST((rect * glm::vec4(1.0F, 1.0F, 0.0F, 0.0F) == glm::vec4(-1.0F, -1.0F, 0.0F, 0.0F)));
+    BOOST_TEST((rect[3] == glm::vec4(1.0F, 2.0F, 3.0F, 1.0F)));
+    const glm::mat4 dome = read.value("domeLight", "light dome", "transform").matrixAt(0);
+    BOOST_TEST((dome * glm::vec4(0.0F, 1.0F, 0.0F, 0.0F) == glm::vec4(0.0F, 0.0F, 1.0F, 0.0F)));
+    BOOST_TEST((dome * glm::vec4(0.0F, 0.0F, 1.0F, 0.0F) == glm::vec4(-1.0F, 0.0F, 0.0F, 0.0F)));
+}
+
+// a RenderMan light is on as a LightSource is: Illuminate turns it off, and AttributeEnd turns
+// off one made inside the block
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_renderman_light_is_turned_off_as_a_light_source_is_test) {
+    const Read read(world(
+        "AttributeBegin\n"
+        "Light \"PxrSphereLight\" \"key\"\n"
+        "Light \"PxrRectLight\" \"fill\"\n"
+        "Sphere 1 -1 1 360\n"
+        "Illuminate \"key\" 0\n"
+        "Sphere 2 -2 2 360\n"
+        "AttributeEnd\n"
+        "Sphere 3 -3 3 360\n"));
+    BOOST_TEST((read.value("sphereLight", "light key", "instances") == scene::Value::handles({ read.handle("instance", "Sphere 1") })));
+    BOOST_TEST((read.value("rectLight", "light fill", "instances") ==
+        scene::Value::handles({ read.handle("instance", "Sphere 1"), read.handle("instance", "Sphere 2") })));
+    BOOST_TEST((read.value("rectLight", "light fill", "includeRoot") == scene::Value::integer(0)));
+}
+
+// PxrMeshLight makes a mesh light of each geometry after it in its attribute block, with its
+// textureColor tinting its colour
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_renderman_mesh_light_makes_a_mesh_light_of_its_geometry_test) {
+    const Read read(world(
+        "AttributeBegin\n"
+        "Light \"PxrMeshLight\" \"glow\" \"float intensity\" [2] \"color lightColor\" [1 0.5 1] \"color textureColor\" [0.5 1 1]"
+        " \"int areaNormalize\" [1] \"float coneAngle\" [10]\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "AttributeEnd\n"
+        "Polygon \"P\" [0 0 1 1 0 1 1 1 1]\n"));
+    BOOST_TEST(read.scene().objects("meshLight").size() == 1U);
+    BOOST_TEST((read.value("meshLight", "light glow", "geometry") == scene::Value::handle(read.handle("mesh", "Polygon 1"))));
+    BOOST_TEST((read.value("meshLight", "light glow", "intensity") == scene::Value::number(2.0F)));
+    BOOST_TEST((read.value("meshLight", "light glow", "colour") == scene::Value::colour(glm::vec3(0.5F, 0.5F, 1.0F))));
+    BOOST_TEST((read.value("meshLight", "light glow", "normalize") == scene::Value::integer(1)));
+    // no cone shapes a mesh light
+    BOOST_TEST((read.value("meshLight", "light glow", "coneAngle") == scene::Value::number(90.0F)));
+}
+
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_primitive_repeated_in_a_motion_block_deforms_test) {
     const Read read(world(
         "MotionBegin [0 0.5]\n"

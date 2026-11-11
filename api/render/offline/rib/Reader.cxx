@@ -447,7 +447,7 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
     std::string second;
     ParameterList list;
 
-    if (name == "LightSource" || name == "AreaLightSource") {
+    if (name == "LightSource" || name == "AreaLightSource" || name == "Light") {
         if (!operands_.text(lexer, &first) || !operands_.handle(lexer, &second)) {
             return Result::Failed;
         }
@@ -456,6 +456,8 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         }
         if (name == "AreaLightSource") {
             handler->areaLightSource({.shader = first, .handle = second}, list);
+        } else if (name == "Light") {
+            handler->light({.shader = first, .handle = second}, list);
         } else {
             handler->lightSource({.shader = first, .handle = second}, list);
         }

@@ -139,7 +139,7 @@ among the options before the record is drafted.
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | done |
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | done |
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | done |
-| [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
+| [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | open |
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | open |
 | [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | open |
@@ -881,6 +881,25 @@ its horizon lights nothing below a sphere light. A malformed file is reported an
 unshaped.
 
 ### Step 18 — RenderMan lights from RIB
+
+**Done.** The RIB reader reads `Light` into `Handler::light()`, whose default body ignores it,
+and the writer and the recorder carry it. `RIBHandler` logs the first, so the old hiders draw no
+RenderMan light and no picture they make changes. `ri::internal::Lights::renderman()` makes
+UsdLux's light of each of RenderMan's six analytic lights, and `PxrMeshLight` takes the slot an
+area light takes. Four things the list below did not settle:
+
+* **A RenderMan light is mirrored through its origin onto UsdLux's axes**, and a dome turned so
+  that RenderMan's +z is UsdLux's +y. These are the turns Pixar's hdPrman makes the other way,
+  and Gaffer's converter names the same parameters.
+* **The cone, the IES profile and the light's size are read too**, since step 22 names its IES
+  profile in RIB. RenderMan sizes a light by its transformation alone, so each keeps UsdLux's
+  fallback size, which is RenderMan's unit shape.
+* **A parameter a request does not give keeps UsdLux's fallback**, which is RenderMan's default
+  for every one but a distant light's intensity. That is set to RenderMan's 50000.
+* **A mesh light's `textureColor` is read as a constant** that tints its colour. A texture
+  connected to it is a shading network, and is not read.
+
+[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
 
 * **The RIB reader reads `Light`**, as RenderMan's RIB names a light and its handle.
 * **The scene client maps RenderMan's lights to UsdLux's**: `PxrRectLight`, `PxrDiskLight`,

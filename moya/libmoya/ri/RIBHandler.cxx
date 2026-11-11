@@ -167,6 +167,14 @@ void RIBHandler::areaLightSource(const v3d::render::offline::rib::requests::Ligh
     context().areaLightSource(request, parameters);
 }
 
+void RIBHandler::light(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters) {
+    (void)parameters;
+    if (request.shader.empty()) {
+        return;
+    }
+    unsupported("Light");
+}
+
 void RIBHandler::illuminate(const std::string & handle, bool on) {
     if (handle.empty()) {
         return;

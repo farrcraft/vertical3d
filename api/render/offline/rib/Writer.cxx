@@ -341,6 +341,10 @@ void Writer::lightSource(const requests::LightSource & request, const ParameterL
     start("LightSource").text(request.shader).handle(request.handle).parameters(parameters).end();
 }
 
+void Writer::light(const requests::LightSource & request, const ParameterList & parameters) {
+    start("Light").text(request.shader).handle(request.handle).parameters(parameters).end();
+}
+
 void Writer::areaLightSource(const requests::LightSource & request, const ParameterList & parameters) {
     start("AreaLightSource").text(request.shader).handle(request.handle).parameters(parameters).end();
 }
