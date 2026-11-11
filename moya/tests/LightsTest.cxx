@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <api/log/Logger.h>
 #include <moya/libmoya/accel/Assembler.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
@@ -25,6 +26,7 @@
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/light/Ies.h>
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/scene/Declaration.h>
@@ -44,6 +46,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <fstream>
+#include <ios>
 #include <map>
 #include <string>
 #include <utility>
@@ -51,6 +55,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
@@ -62,6 +67,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include "Handling.h"
 #include "Tracing.h"
 
 namespace v3d::moya::tracing {
@@ -1381,6 +1387,174 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_shadow_link_casts_shadows_only_from_the_insta
             BOOST_TEST(film::mean(shadowLinked(strategy, true, true), { 0, 0 }, { kSide, kSide }).value == 0.0F);
         }
     }
+}
+
+/** The numbers of an IES file after its TILT line, of type C photometry and a multiplier of 1. **/
+std::string iesNumbers(const std::vector<float> & vertical, const std::vector<float> & horizontal, const std::vector<float> & candela) {
+    std::string out = "1 -1 1 " + std::to_string(vertical.size()) + " " + std::to_string(horizontal.size()) + " 1 1 0 0 0\n1 1 0\n";
+    for (const std::vector<float> * values : { &vertical, &horizontal, &candela }) {
+        for (const float value : *values) {
+            out += std::to_string(value) + " ";
+        }
+        out += "\n";
+    }
+    return out;
+}
+
+/** An IES file of a name in the temporary directory, holding a text. Gives its path. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the name, then the text
+std::string iesFile(const std::string & name, const std::string & text) {
+    const std::string path = (boost::filesystem::temp_directory_path() / ("v3d_lights_" + name + ".ies")).string();
+    std::ofstream(path, std::ios::binary) << text;
+    return path;
+}
+
+/** An IES file of LM-63-2002 with no tilt, of type C photometry. Gives its path. **/
+std::string iesFile(const std::string & name, const std::vector<float> & vertical, const std::vector<float> & horizontal, const std::vector<float> & candela) {
+    return iesFile(name, "IESNA:LM-63-2002\n[TEST] moya\nTILT=NONE\n" + iesNumbers(vertical, horizontal, candela));
+}
+
+/**
+ * A white plane under a sphere light of a radius at a height, viewed across a half width. The
+ * light's -z faces the plane while facing holds, and an IES file shapes it when one is named.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, the height, then the width
+film::Snapshot underProfile(const std::string & path, float radius, float height, float half, bool facing, bool normalise = false) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 64, half);
+    const scene::Handle sphere = bulb(scene, radius, height);
+    if (facing) {
+        scene.set(sphere, "transform", scene::Value::matrix(flipped(moved(0.0F, 0.0F, -height))));
+    }
+    scene.set(sphere, "iesFile", scene::Value::string(path));
+    scene.set(sphere, "iesNormalize", scene::Value::integer(normalise ? 1 : 0));
+    return rendered(scene);
+}
+
+// an IES file of one candela in every direction leaves a light as it was, and one of 250 candela
+// does too once normalised. A point and a sphere light are shaped alike
+BOOST_AUTO_TEST_CASE(moya_lights_a_uniform_ies_profile_leaves_a_light_as_it_was_test) {
+    const std::string one = iesFile("uniform", { 0.0F, 180.0F }, { 0.0F }, { 1.0F, 1.0F });
+    const std::string many = iesFile("bright", { 0.0F, 90.0F, 180.0F }, { 0.0F, 90.0F }, { 250.0F, 250.0F, 250.0F, 250.0F, 250.0F, 250.0F });
+    for (const float radius : { 0.0F, 0.2F }) {
+        BOOST_TEST_CONTEXT("radius " << radius) {
+            const film::Snapshot plain = underProfile("", radius, 1.0F, 0.5F, false);
+            for (const film::Snapshot & shaped : { underProfile(one, radius, 1.0F, 0.5F, false), underProfile(many, radius, 1.0F, 0.5F, false, true) }) {
+                BOOST_TEST(film::sigmas(film::mean(shaped, { 0, 0 }, { kSide, kSide }), film::mean(plain, { 0, 0 }, { kSide, kSide })) < 3.0F);
+                BOOST_TEST(film::furthest(shaped, plain).sigmas < 5.0F);
+            }
+        }
+    }
+}
+
+// a profile dark on its nadir's side lights nothing that the light's -z faces, and lights the
+// plane once the light turns its -z away. A cylinder light is shaped from its own -z, as a
+// sphere light is, though its shape lies along its prototype's z
+BOOST_AUTO_TEST_CASE(moya_lights_an_ies_profile_is_measured_from_the_lights_minus_z_test) {
+    const std::string upward = iesFile("upward", { 0.0F, 89.0F, 91.0F, 180.0F }, { 0.0F }, { 0.0F, 0.0F, 1.0F, 1.0F });
+    for (const char * kind : { "sphereLight", "cylinderLight" }) {
+        for (const bool facing : { true, false }) {
+            BOOST_TEST_CONTEXT(kind << (facing ? " facing" : " turned away")) {
+                scene::Scene scene(scene::kinds());
+                litPlane(scene, "mis", 16, 0.5F);
+                const scene::Handle light = scene.create(kind, "shaped");
+                scene.set(light, "radius", scene::Value::number(0.1F));
+                const glm::mat4 place = moved(0.0F, 0.0F, -1.0F);
+                scene.set(light, "transform", scene::Value::matrix(facing ? flipped(place) : place));
+                scene.set(light, "iesFile", scene::Value::string(upward));
+                const float lit = film::mean(rendered(scene), { 0, 0 }, { kSide, kSide }).value;
+                BOOST_TEST((facing ? lit == 0.0F : lit > 0.0F));
+            }
+        }
+    }
+}
+
+// a profile's horizontal angle runs about the light's -z from its +x towards its +y. A profile lit
+// only between 0 and 44 degrees lights a wedge of the plane beside the point's +x, and none beside
+// its +y or past its -x. The point is turned half about x to face the plane, so its +y is the
+// plane's -y, which the picture's lower half shows
+BOOST_AUTO_TEST_CASE(moya_lights_an_ies_profiles_horizontal_angle_runs_from_the_lights_plus_x_test) {
+    const std::string wedge = iesFile("wedge", { 0.0F, 180.0F }, { 0.0F, 44.0F, 46.0F, 360.0F }, { 1.0F, 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F });
+    const film::Snapshot snapshot = underProfile(wedge, 0.0F, 1.0F, 1.5F, true);
+    // the plane's +x beside its -y, then its -y beside its +x, then its -x
+    BOOST_TEST(film::mean(snapshot, { 21, 17 }, { kSide, 20 }).value > 0.0F);
+    BOOST_TEST(film::mean(snapshot, { 17, 22 }, { 19, kSide - 1 }).value == 0.0F);
+    BOOST_TEST(film::mean(snapshot, { 0, 0 }, { 14, kSide }).value == 0.0F);
+}
+
+// a positive angle scale narrows a profile about its nadir. A profile lit within 30 degrees of its
+// nadir lights a ring of the plane between 22 and 26 degrees off a point's axis, and none of it
+// once its angle scale halves its spread. What lies within 6 degrees is lit either way. The ring
+// lies more than a pixel past the narrowed edge, so the pixel filter carries no light into it
+BOOST_AUTO_TEST_CASE(moya_lights_an_ies_angle_scale_narrows_a_profile_test) {
+    const std::string spot = iesFile("spot", { 0.0F, 29.0F, 31.0F, 180.0F }, { 0.0F }, { 1.0F, 1.0F, 0.0F, 0.0F });
+    for (const float scale : { 0.0F, 0.5F }) {
+        BOOST_TEST_CONTEXT("angle scale " << scale) {
+            scene::Scene scene(scene::kinds());
+            litPlane(scene, "mis", 16, 1.5F);
+            const scene::Handle point = bulb(scene, 0.0F, 1.0F);
+            scene.set(point, "transform", scene::Value::matrix(flipped(moved(0.0F, 0.0F, -1.0F))));
+            scene.set(point, "iesFile", scene::Value::string(spot));
+            scene.set(point, "iesAngleScale", scene::Value::number(scale));
+            const film::Snapshot snapshot = rendered(scene);
+            const float ring = sumInside(snapshot, 1.5F, glm::vec2 { 0.0F }, 0.48F) - sumInside(snapshot, 1.5F, glm::vec2 { 0.0F }, 0.4F);
+            BOOST_TEST(sumInside(snapshot, 1.5F, glm::vec2 { 0.0F }, 0.12F) > 0.0F);
+            BOOST_TEST((scale > 0.0F ? ring == 0.0F : ring > 0.0F));
+        }
+    }
+}
+
+// LM-63's numbers may be parted by commas and line breaks alike, and the tilt an INCLUDE gives is
+// skipped. Each of these files is refused with why: one with no TILT line, one whose TILT names
+// another file, and one of type B photometry. A file is refused for angles that do not rise, a span
+// type C does not allow, a candela below zero, or for being cut short
+BOOST_AUTO_TEST_CASE(moya_lights_an_ies_file_is_read_as_lm_63_says_test) {
+    const std::string numbers = iesNumbers({ 0.0F, 90.0F }, { 0.0F, 180.0F }, { 1.0F, 2.0F, 3.0F, 4.0F });
+    light::Photometry plain;
+    std::string why;
+    BOOST_TEST_REQUIRE(light::parseIes("IESNA91\nTILT=NONE\n" + numbers, plain, why));
+    BOOST_TEST((plain.candela == std::vector<float> { 1.0F, 2.0F, 3.0F, 4.0F }));
+    BOOST_TEST(std::fabs(plain.horizontal.back() - kPi) < 1.0e-6F);
+    std::string commas = numbers;
+    std::replace(commas.begin(), commas.end(), ' ', ',');
+    light::Photometry tilted;
+    BOOST_TEST_REQUIRE(light::parseIes("[TEST] tilted\nTILT=INCLUDE\n1\n2\n0 90\n1 0.5\n" + commas, tilted, why));
+    BOOST_TEST((tilted.candela == plain.candela));
+    BOOST_TEST((tilted.vertical == plain.vertical));
+    const std::vector<std::pair<std::string, std::string>> refused {
+        { "1 -1 1 2 2 1 1 0 0 0\n", "no TILT line" },
+        { "TILT=lamp.tlt\n" + numbers, "names the file lamp.tlt" },
+        { "TILT=NONE\n1 -1 1 2 2 2 1 0 0 0\n1 1 0\n0 90\n0 180\n1 2 3 4\n", "not of type C" },
+        { "TILT=NONE\n" + iesNumbers({ 90.0F, 0.0F }, { 0.0F }, { 1.0F, 1.0F }), "vertical angles do not rise" },
+        { "TILT=NONE\n" + iesNumbers({ 0.0F, 90.0F }, { 0.0F, 120.0F }, { 1.0F, 1.0F, 1.0F, 1.0F }), "horizontal angles" },
+        { "TILT=NONE\n" + iesNumbers({ 0.0F, 90.0F }, { 0.0F }, { 1.0F, -1.0F }), "below zero" },
+        { "TILT=NONE\n1 -1 1 2 1 1 1 0 0 0\n1 1 0\n0 90\n0\n1\n", "cut short" },
+    };
+    for (const auto & [text, reason] : refused) {
+        BOOST_TEST_CONTEXT(reason) {
+            light::Photometry read;
+            std::string said;
+            BOOST_TEST(!light::parseIes(text, read, said));
+            BOOST_TEST(said.find(reason) != std::string::npos, said);
+        }
+    }
+}
+
+// a light that names a malformed IES file is reported, and lit as though it named none
+BOOST_AUTO_TEST_CASE(moya_lights_a_malformed_ies_file_is_reported_and_the_light_unshaped_test) {
+    const std::string broken = iesFile("broken", "IESNA:LM-63-2002\nTILT=NONE\n1 -1 1 two\n");
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, "mis", 64, 0.5F);
+    scene.set(bulb(scene, 0.2F, 1.0F), "iesFile", scene::Value::string(broken));
+    scene.commit();
+    scene.apply();
+    const auto logger = boost::make_shared<v3d::log::Logger>();
+    const handling::Heard heard(logger->get());
+    CpuDevice device;
+    const film::Snapshot shaped = integrate::render(device, scene, logger, colour::Config());
+    BOOST_TEST(heard.said("cannot be read"));
+    const film::Snapshot plain = underProfile("", 0.2F, 1.0F, 0.5F, false);
+    BOOST_TEST(film::furthest(shaped, plain).sigmas < 5.0F);
 }
 
 };  // namespace

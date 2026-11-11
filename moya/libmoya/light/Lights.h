@@ -107,6 +107,8 @@ class Lights final {
     boost::shared_ptr<device::Buffer> linkSteps_;
     boost::shared_ptr<device::Buffer> lit_;
     boost::shared_ptr<device::Buffer> casters_;
+    boost::shared_ptr<device::Buffer> profiles_;
+    boost::shared_ptr<device::Buffer> photometry_;
     std::uint32_t count_ { 0 };
 };
 

@@ -55,6 +55,7 @@
 #include <moya/libmoya/kernel/light/Lights.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/LightSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Picked.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/Profile.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Sampling.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/SphericalEllipse.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/SphericalRectangle.h>  // IWYU pragma: keep

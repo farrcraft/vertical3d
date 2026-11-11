@@ -26,12 +26,14 @@
 #include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/light/Profile.h>
 #include <moya/libmoya/kernel/light/link/Links.h>
 #include <moya/libmoya/kernel/light/link/LinkStep.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/light/internal/Gathered.h>
 #include <moya/libmoya/light/internal/Linking.h>
+#include <moya/libmoya/light/internal/Profiles.h>
 #include <moya/libmoya/light/internal/Subtree.h>
 #include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/internal/Tree.h>
@@ -206,6 +208,15 @@ kernel::light::Bounds boundsOf(const kernel::light::Light & light, const geometr
         out.cosFalloff = std::cos(light.coneAngle * light.coneSoftness);
     }
     return out;
+}
+
+/** The IES profile a light's iesFile names, with its angle scale and normalisation, or none. **/
+std::uint32_t profileOf(const scene::Scene & scene, const scene::Handle & handle, internal::Profiles & profiles) {
+    const std::string & path = scene.value(handle, "iesFile").stringArray().front();
+    if (path.empty()) {
+        return kernel::geometry::kNoPrimitive;
+    }
+    return profiles.load(path, scene.value(handle, "iesAngleScale").floatArray().front(), scene.value(handle, "iesNormalize").integerArray().front() != 0);
 }
 
 /** A float parameter held between a least and a most. **/
@@ -650,6 +661,27 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
 }
 
 /**
+ * The light a shaped light makes, with the size its power is measured by: its area in the world
+ * as it stands when the shutter opens, weighed by its texture's average where it has one.
+ **/
+kernel::light::Light shapedLight(const scene::Scene & scene, const geometry::Prototypes & prototypes, const geometry::ShapedLight & shaped,
+    const colour::Config & config, internal::Textures & textures, internal::Profiles & profiles, float & shining) {
+    const geometry::Instance & instance = prototypes.instances[shaped.instance];
+    const std::string & kind = scene.schema().kind(shaped.handle.kind).name;
+    const float size = area(scene, shaped.handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
+    kernel::light::Light made = withShape(scene, shaped.handle, instance.id, size, config);
+    made.profile = profileOf(scene, shaped.handle, profiles);
+    shining = size;
+    const std::string & path = kind == "rectLight" ? scene.value(shaped.handle, "texture").stringArray().front() : std::string();
+    made.image = path.empty() ? kernel::geometry::kNoPrimitive : textures.load(path);
+    if (made.image != kernel::geometry::kNoPrimitive) {
+        // a texture shines by its texels, so it weighs the light by their average
+        shining *= textures.average(made.image);
+    }
+    return made;
+}
+
+/**
  * A top tree for each set of linked lights over the lights with a place that light it, and the
  * distant and dome lights that do, appended to what is gathered.
  **/
@@ -676,12 +708,14 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     std::vector<std::uint32_t> distant;
     std::vector<std::uint32_t> domes;
     internal::Textures textures(config, logger);
+    internal::Profiles profiles(logger);
     const auto add = [&](kernel::light::Light light, const scene::Handle & handle, const geometry::Instance & placed, float size) {
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
         light.keyCount = static_cast<std::uint32_t>(placed.keys.size());
         keys.insert(keys.end(), placed.keys.begin(), placed.keys.end());
-        const float power = std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y);
+        const float shaped = light.profile == kernel::geometry::kNoPrimitive ? 1.0F : profiles.mean(light.profile);
+        const float power = std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y * shaped);
         const auto place = static_cast<std::uint32_t>(lights.size());
         if (light.shape == kernel::light::Shape::Distant || light.shape == kernel::light::Shape::Dome) {
             all.infinite.push_back(place);
@@ -695,16 +729,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     std::uint32_t most = 0;
     for (const geometry::ShapedLight & shaped : prototypes.lights) {
         const geometry::Instance & instance = prototypes.instances[shaped.instance];
-        const std::string & kind = scene.schema().kind(shaped.handle.kind).name;
-        const float size = area(scene, shaped.handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
-        kernel::light::Light made = withShape(scene, shaped.handle, instance.id, size, config);
-        float shining = size;
-        const std::string & path = kind == "rectLight" ? scene.value(shaped.handle, "texture").stringArray().front() : std::string();
-        made.image = path.empty() ? kernel::geometry::kNoPrimitive : textures.load(path);
-        if (made.image != kernel::geometry::kNoPrimitive) {
-            // a texture shines by its texels, so it weighs the light by their average
-            shining *= textures.average(made.image);
-        }
+        float shining = 0.0F;
+        const kernel::light::Light made = shapedLight(scene, prototypes, shaped, config, textures, profiles, shining);
         add(made, shaped.handle, instance, shining);
         most = std::max(most, instance.id + 1U);
     }
@@ -719,7 +745,9 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         const geometry::Instance placed = placement(scene, handle);
         if (scene.schema().kind(handle.kind).name == "sphereLight") {
             const float size = area(scene, handle, "sphereLight", glm::mat3(geometry::transformAt(placed, prototypes.open)));
-            add(point(scene, handle, size, config), handle, placed, size);
+            kernel::light::Light bulb = point(scene, handle, size, config);
+            bulb.profile = profileOf(scene, handle, profiles);
+            add(bulb, handle, placed, size);
             continue;
         }
         const kernel::light::Light sun = distantOf(scene, handle, config);
@@ -765,6 +793,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     linkSteps_ = uploaded(device, links.steps);
     lit_ = uploaded(device, links.lit);
     casters_ = uploaded(device, links.casters);
+    profiles_ = uploaded(device, profiles.profiles());
+    photometry_ = uploaded(device, profiles.photometry());
     count_ = static_cast<std::uint32_t>(lights.size());
 }
 
@@ -790,7 +820,9 @@ kernel::light::Lights Lights::view() const {
             .steps = device::view<kernel::light::link::LinkStep>(*linkSteps_),
             .lit = device::view<std::uint8_t>(*lit_),
             .count = count_,
-            .casters = device::view<std::uint32_t>(*casters_) } };
+            .casters = device::view<std::uint32_t>(*casters_) },
+        .profiles = device::view<kernel::light::Profile>(*profiles_),
+        .photometry = device::view<float>(*photometry_) };
 }
 
 };  // namespace v3d::moya::light

@@ -175,6 +175,40 @@ image where it has one. `normalize` is not read, as UsdLux says of a dome.
 - **Its power** is its emission's luminance, times the integral of its image's luminance over the
   sphere, or four pi with no image, times the area of a disk of the world's reach.
 
+## IES profiles
+
+A light's `iesFile` names an IES file, in the IESNA's LM-63 format, that shapes what it emits by
+direction, as UsdLux's `shaping:ies` does. A rect, disk, sphere or cylinder light and a point are
+shaped by one. A mesh light's is not read, as its cone is not.
+
+- **`light::parseIes()` reads the file**, of any year of LM-63. The keyword lines
+  before `TILT` are skipped, and the tilt `TILT=INCLUDE` gives is skipped too. Numbers may be
+  parted by spaces, line breaks or commas.
+- **Only type C photometry is read**, the photometry of luminaires. A file of type A or B, one
+  whose `TILT` names another file, or one moya cannot read is reported, once for each path, and
+  its light is not shaped.
+- **Its candela are the file's**, times its candela multiplier, its ballast factor and its
+  ballast-lamp photometric factor.
+- **A vertical angle is measured from the light's -z axis**, its nadir, towards its +z, and a
+  horizontal angle about that axis from its +x towards its +y. A cylinder light's own axes are
+  read through the turn that lays its shape along its prototype's z.
+- **The horizontal angles are one angle, or span 0 to 90, 0 to 180, 90 to 270 or 0 to 360
+  degrees.** A smaller span is mirrored to fill the turn, as type C photometry says.
+- **A direction is interpolated linearly** between the angles about it, horizontal and
+  vertical. A vertical angle the profile does not reach is dark.
+- **`iesAngleScale` scales the vertical angle first**, as UsdLux's `ies:angleScale` does. Above
+  zero, the angle is divided by it from the nadir. Below zero, it is divided by its negation
+  from the zenith.
+- **Without `iesNormalize`, the profile multiplies the light's emission by its candela.** With
+  it, the candela are divided by their mean over the sphere first, so the profile shapes the
+  light and leaves its power as it was. UsdLux writes that step as a product with the profile's
+  power, which would not keep the power.
+- **The profile shapes every way a light is found**: the light a light sample brings in, and
+  what a BSDF sample that meets the light gathers.
+
+`light::internal::Profiles` reads each file once, and `kernel::light::Lights::shaping()` gives
+what a light's profile multiplies its emission by along a direction.
+
 ## Meeting a light
 
 `kernel::light::Lights::at()` gives the place among the lights of the light whose shape a hit
@@ -190,7 +224,8 @@ light's shape does not scatter.
 A light sample draws one light. The options' `lightPicking` chooses how: by `tree`, the
 fallback, which draws by what each light may bring to the shading point, or by `power`, which
 draws in proportion to each light's power alone. Both use the powers below. Each light's cone is
-left out of its power.
+left out of its power. An IES profile weighs it by the profile's mean over the sphere, as
+[IES profiles](#ies-profiles) says.
 
 `Lights::pick()` draws a light in proportion to its power, and `Lights::chance()` gives the chance
 it was drawn with.

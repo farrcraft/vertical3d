@@ -312,12 +312,19 @@ std::vector<Declaration> light() {
             .name = "shadowInstances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
 }
 
-/** A light with an area, which a cone may shape. Camera rays see it while camera is 1. **/
+/**
+ * A light with an area, which a cone and an IES profile may shape, as UsdLux's shaping does. The
+ * profile is the one iesFile names, with UsdLux's ies:angleScale as iesAngleScale and its
+ * ies:normalize as iesNormalize. Camera rays see it while camera is 1.
+ **/
 std::vector<Declaration> areaLight(const std::vector<Declaration> & own) {
     std::vector<Declaration> parameters = light();
     parameters.push_back(Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(0) });
     parameters.push_back(Declaration { .name = "coneAngle", .type = Type::Float, .fallback = Value::number(kOpenCone) });
     parameters.push_back(Declaration { .name = "coneSoftness", .type = Type::Float, .fallback = Value::number(0.0F) });
+    parameters.push_back(Declaration { .name = "iesFile", .type = Type::String, .fallback = Value::string("") });
+    parameters.push_back(Declaration { .name = "iesAngleScale", .type = Type::Float, .fallback = Value::number(0.0F) });
+    parameters.push_back(Declaration { .name = "iesNormalize", .type = Type::Integer, .fallback = Value::integer(0) });
     parameters.insert(parameters.end(), own.begin(), own.end());
     return parameters;
 }

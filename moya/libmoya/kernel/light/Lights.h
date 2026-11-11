@@ -15,6 +15,7 @@
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/link/Links.h>
 #include <moya/libmoya/kernel/light/Picked.h>
+#include <moya/libmoya/kernel/light/Profile.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/sample/Sobol.h>
@@ -91,6 +92,10 @@ struct Lights {
     Array<std::uint32_t> infiniteFirst;
 
     link::Links links;
+
+    /** The IES profiles that shape the lights, and their angles and candela. **/
+    Array<Profile> profiles;
+    Array<float> photometry;
 
     /**
      * The place, among count chances from a first, of one drawn by a random number, from the sums
@@ -239,6 +244,24 @@ struct Lights {
         return chance * reached(nodes, triangleLeaves[light.leaves + primitive], local, turned);
     }
 
+    /**
+     * What the IES profile of the light at a place multiplies its emission by, along a unit
+     * direction it emits along in the world, with its prototype's transformation into the world.
+     * One for a light that no profile shapes.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the transformation, then the direction
+    MOYA_KERNEL float shaping(std::uint32_t place, const glm::mat4 & toWorld, const glm::vec3 & towards) const {
+        const Light & light = lights[place];
+        if (light.profile == geometry::kNoPrimitive) {
+            return 1.0F;
+        }
+        const glm::vec3 local = glm::inverse(glm::mat3(toWorld)) * towards;
+        if (!(glm::dot(local, local) > 0.0F)) {
+            return 0.0F;
+        }
+        return profileShare(profiles[light.profile], photometry, ownSpace(light, glm::normalize(local)));
+    }
+
     /** The place among the lights of the light whose shape a hit met, or kNoPrimitive. **/
     MOYA_KERNEL std::uint32_t at(const geometry::Hit & hit) const {
         if (!hit.found() || hit.depth != 1U) {
@@ -367,7 +390,8 @@ struct Lights {
         const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
         const glm::mat4 toWorld = placement(place, time);
         const glm::vec3 point = ray.at(hit.distance);
-        return radiance(lights[place], toWorld, point, -glm::normalize(ray.direction), tint(place, toWorld, point), table, wavelengths);
+        const glm::vec3 towards = -glm::normalize(ray.direction);
+        return radiance(lights[place], toWorld, point, towards, tint(place, toWorld, point), table, wavelengths) * shaping(place, toWorld, towards);
     }
 };
 

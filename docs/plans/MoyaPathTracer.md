@@ -138,7 +138,7 @@ among the options before the record is drafted.
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | done |
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | done |
 | [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | done |
-| [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | open |
+| [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | done |
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | open |
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | open |
@@ -838,6 +838,37 @@ light's shadow link casts no shadow from it, and still casts one from another li
 ignores linking fails the first case.
 
 ### Step 17 — IES profiles
+
+**Done.** `light::parseIes()` reads LM-63 of any year, and `light::internal::Profiles`
+reads each file once. `kernel/light/Profile.h` gives a profile's candela along a direction,
+interpolated between its angles. `Lights::shaping()` shapes what a light sample brings in and
+what a BSDF sample that meets the light gathers. A light's power is weighed by its profile's mean
+over the sphere. The scene's area lights gain `iesFile`, `iesAngleScale` and `iesNormalize`, so
+seven committed scene descriptions gain them. The CPU library's table is now version 13. Five
+things the list below did not settle:
+
+* **ADR-0187 needs no amending.** It names the reference library of each format that has one,
+  and LM-63 has none. Reading it in moya rather than through a small library is easy to reverse,
+  so it is not a record of its own.
+* **A vertical angle is measured from the light's -z**, its nadir, and a horizontal angle from
+  its +x towards its +y. UsdLux names neither axis. Its lights emit along -z, and it calls a
+  profile of a positive angle scale one aimed down.
+* **`iesNormalize` divides by the profile's mean over the sphere.** UsdLux writes it as a product
+  with the profile's power, which would not keep the light's power as its own words say.
+* **Only type C photometry with no tilt or an included one is read.** Types A and B, and a tilt
+  in another file, are reported, and the light is not shaped.
+* **A mesh light's profile is not read**, as its cone is not.
+
+[Lights.md](../offline/Lights.md#ies-profiles) states the rules.
+
+Each case was run against broken code as well, one break at a time. A vertical angle measured
+from +z failed the profile's orientation and its angle scale. A horizontal angle measured from +y
+failed the horizontal case, once that case lit a wedge of 44 degrees, since a quarter turn is
+the same either way. A cylinder shaped in its prototype's space failed the orientation. The angle
+scale left out failed its case, and so did normalisation left out. A light sample left unshaped
+failed three cases, and a light a BSDF sample meets left unshaped failed the orientation. A
+quarter span left unfolded failed the uniform profile, and an included tilt misread failed the
+reader's case.
 
 * **An IES file**, as UsdLux's `shaping:ies:file`, `shaping:ies:angleScale` and
   `shaping:ies:normalize` name it. The scene's lights gain the three.

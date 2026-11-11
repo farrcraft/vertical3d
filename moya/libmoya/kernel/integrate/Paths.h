@@ -250,7 +250,8 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::
     if (chosen.shape == light::Shape::Dome) {
         return light::domeRadiance(paths.lights, place, toWorld, drawn.incoming, paths.table, wavelengths);
     }
-    return light::arriving(chosen, toWorld, from, drawn.point, drawn.incoming, paths.lights.tint(place, toWorld, drawn.point), paths.table, wavelengths);
+    return light::arriving(chosen, toWorld, from, drawn.point, drawn.incoming, paths.lights.tint(place, toWorld, drawn.point), paths.table, wavelengths) *
+        paths.lights.shaping(place, toWorld, -drawn.incoming);
 }
 
 /**

@@ -73,6 +73,8 @@ enum class Shape : std::uint8_t {
  * - image is the place among the lights' images of the image a rect light's texture or a dome
  *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
  *   exposure, a radiance, and its transform turns its image into the world.
+ * - profile is the place among the lights' profiles of the IES profile that shapes what it emits,
+ *   or kNoPrimitive for none.
  * - shadowLinked is whether only some instances cast its shadows: those held among the links'
  *   casters, shadowCount of them from shadowFirst. A light that every instance shadows casts
  *   from all.
@@ -101,6 +103,7 @@ struct Light {
     std::uint32_t leaves { 0 };
     bool camera { false };
     std::uint32_t image { geometry::kNoPrimitive };
+    std::uint32_t profile { geometry::kNoPrimitive };
     bool shadowLinked { false };
     std::uint32_t shadowFirst { 0 };
     std::uint32_t shadowCount { 0 };

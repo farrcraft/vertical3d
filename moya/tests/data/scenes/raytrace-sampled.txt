@@ -97,6 +97,9 @@ sphereLight "light 2"
     coneSoftness float = 0
     enableColorTemperature integer = 0
     exposure float = 0
+    iesAngleScale float = 0
+    iesFile string = ""
+    iesNormalize integer = 0
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 4.8

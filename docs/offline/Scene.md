@@ -96,7 +96,9 @@ then derived as RI derives it.
   names, which may be none. As in UsdLux's shadow linking, every instance casts a light's
   shadows while its `shadowIncludeRoot` is 1, the fallback. When it is 0, only the
   `shadowInstances` it names do, as [Lights.md](Lights.md#light-linking) says. A light with an
-  area holds `coneAngle` and `coneSoftness`. It also holds
+  area holds `coneAngle` and `coneSoftness`, and an IES profile, after UsdLux's
+  `shaping:ies`: `iesFile`, `iesAngleScale` and `iesNormalize`, as
+  [Lights.md](Lights.md#ies-profiles) says. It also holds
   `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do not. A rect
   light holds its `width`, `height` and `texture`, a disk or sphere light its `radius`, and a
   cylinder light its `radius` and `length`. A sphere light also holds `treatAsPoint`, which is 1 for

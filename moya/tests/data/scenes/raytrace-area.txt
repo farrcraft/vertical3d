@@ -129,6 +129,9 @@ meshLight "light 1"
     enableColorTemperature integer = 0
     exposure float = 0
     geometry handle = mesh "Polygon 1"
+    iesAngleScale float = 0
+    iesFile string = ""
+    iesNormalize integer = 0
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 6
