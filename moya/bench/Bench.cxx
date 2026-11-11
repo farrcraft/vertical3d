@@ -7,23 +7,30 @@
  * moya_bench times the new core's hierarchies over fixed scenes. For each scene it gives how long
  * it takes to gather and to build, and the memory its hierarchies take for each primitive. It
  * gives how many coherent and incoherent rays a second the traversal traces, at each instruction
- * set the processor runs. It prints one Markdown table.
+ * set the processor runs. It prints that as one Markdown table. A second table times the
+ * integrator over a lit room. It gives the samples a second, the rays a second over the paths,
+ * and the share of the time in traversal.
  */
 
 #include <moya/bench/Rays.h>
 #include <moya/bench/Scenes.h>
 #include <moya/libmoya/accel/Assembly.h>
+#include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/cpu/Instance.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/cpu/MotionNode.h>
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/CpuLibrary.h>
+#include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/integrate/Profile.h>
+#include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
@@ -48,6 +55,7 @@
 #include <vector>
 
 #include <boost/program_options.hpp>
+#include <boost/shared_ptr.hpp>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -72,6 +80,12 @@ constexpr std::uint32_t kSide = 1024;
 constexpr std::uint32_t kRepeats = 3;
 constexpr std::uint32_t kQuickSide = 32;
 constexpr float kQuickShrink = 256.0F;
+
+/** The lit room's pixels to a side and samples per pixel, in a full run and in a short pass. **/
+constexpr std::uint32_t kPixels = 256;
+constexpr std::uint32_t kSamples = 16;
+constexpr std::uint32_t kQuickPixels = 16;
+constexpr std::uint32_t kQuickSamples = 4;
 
 /** A million, the rays a rate is given in, and the milliseconds in a second. **/
 constexpr double kMillion = 1.0e6;
@@ -169,6 +183,42 @@ std::vector<cpu::Isa> isasOf(const std::string & named) {
     return out;
 }
 
+/**
+ * Times the integrator over the lit room at each instruction set, and prints a second table. The
+ * room is rendered some times, timed, and the fastest gives the samples a second. It is rendered
+ * once more, counted, for its rays and the share of its time in traversal. The counted render
+ * times every ray, so its own time is not used. The rays a second are the counted render's rays
+ * over the fastest timed render's time.
+ **/
+void lit(const std::vector<cpu::Isa> & isas, bool quick, std::uint32_t repeats) {
+    const std::uint32_t side = quick ? kQuickPixels : kPixels;
+    const std::uint32_t samples = quick ? kQuickSamples : kSamples;
+    const boost::shared_ptr<scene::Scene> room = litRoom(quick ? 1.0F / kQuickShrink : 1.0F, side, samples);
+    const std::size_t primitives = primitivesOf(geometry::gather(*room, {}));
+    std::cout << "\n| lit scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % |\n";
+    std::cout << "|---|---|---:|---:|---:|---:|---:|---:|---:|\n";
+    for (const cpu::Isa isa : isas) {
+        device::CpuDevice device(0, isa);
+        integrate::Profile timed { .seconds = std::numeric_limits<double>::infinity() };
+        film::Snapshot picture;
+        for (std::uint32_t repeat = 0; repeat < repeats; ++repeat) {
+            integrate::Profile once;
+            picture = integrate::render(device, *room, {}, colour::Config(), {}, &once);
+            timed.seconds = std::min(timed.seconds, once.seconds);
+        }
+        integrate::Profile counted { .counted = true };
+        integrate::render(device, *room, {}, colour::Config(), {}, &counted);
+        std::uint64_t taken = 0;
+        for (const std::uint32_t count : picture.samples) {
+            taken += count;
+        }
+        const auto rays = static_cast<double>(counted.nearest + counted.any);
+        std::cout << "| lit room | " << device::isaName(isa) << " | " << primitives << " | " << (side * side) << " | " << samples << " | "
+                  << fixed(static_cast<double>(taken) / timed.seconds / kMillion, 3) << " | " << fixed(rays / timed.seconds / kMillion, 3) << " | "
+                  << fixed(rays / static_cast<double>(taken), 2) << " | " << fixed(100.0 * counted.traversal, 1) << " |\n";
+    }
+}
+
 int run(int argc, char * argv[]) {
     boost::program_options::options_description described("Allowed options");
     described.add_options()("help", "produce help message")(
@@ -215,6 +265,7 @@ int run(int argc, char * argv[]) {
                       << " |\n";
         }
     }
+    lit(isas, quick, repeats);
     return EXIT_SUCCESS;
 }
 

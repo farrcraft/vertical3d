@@ -76,11 +76,14 @@ handler's names.
 triangles `moya_bench` traces 11 to 12.5 million rays a second. Embree's paper gives 38 to 59
 million on an older processor with half the cores. The build with spatial splits is five to
 seven times slower. Most of a ray's cost does not grow with the scene: 32 triangles
-trace at 8.5 million a second, and coherent rays come no faster than incoherent ones. Profile a
-trace to find where that cost goes, among the launch, the copies of the rays and hits, and the
-second traversal each ray takes for whether it meets anything, and then the build. ADR-0193's
-cost is that this traversal reaches Embree's speed. [Traversal.md](offline/Traversal.md#speed)
-has the figures, and `moya/bench/Baseline.md` the run to measure a change against.
+trace at 8.5 million a second, and coherent rays come no faster than incoherent ones. Inside the
+path tracer a traversal runs at the rate the benchmark measures, about 20 million a second. The
+cost is therefore in the traversal itself, not in the launch or the copies of the rays and hits.
+Profile a traversal to find where its cost goes, and then the build. ADR-0193's cost is that
+this traversal reaches Embree's speed. In the path tracer over a lit room of a million
+triangles, traversal takes 35 to 38 percent of the time, so a traversal twice as fast makes that
+render about a fifth faster. [Traversal.md](offline/Traversal.md#speed) has the
+figures, and `moya/bench/Baseline.md` the run to measure a change against.
 
 ## Editor
 

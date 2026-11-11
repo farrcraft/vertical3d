@@ -86,6 +86,29 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_every_scene_test) {
     }
 }
 
+// a short pass times the integrator over the lit room, at a rate of samples and of rays. There
+// are more rays than samples, since a sample traces a camera ray and its lights' shadow rays. The
+// share of the time in traversal lies between none and all
+BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_lit_room_test) {
+    const Run run = bench("--quick --isa sse42");
+    BOOST_TEST_REQUIRE(run.succeeded, run.printed);
+    const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "lit room");
+    BOOST_TEST_REQUIRE(rows.size() == 1U);
+    // the cells after the leading bar: scene, isa, primitives, pixels, samples per pixel, samples
+    // and rays a second, rays per sample, and the share in traversal
+    const std::vector<std::string> & cells = rows.front();
+    BOOST_TEST_REQUIRE(cells.size() >= 10U);
+    BOOST_TEST(cells[2] == "sse42");
+    BOOST_TEST(std::stod(cells[3]) > 0.0);
+    BOOST_TEST(std::stod(cells[4]) == 256.0);
+    BOOST_TEST(std::stod(cells[5]) == 4.0);
+    BOOST_TEST(std::stod(cells[6]) > 0.0);
+    BOOST_TEST(std::stod(cells[7]) > std::stod(cells[6]));
+    BOOST_TEST(std::stod(cells[8]) > 1.0);
+    BOOST_TEST(std::stod(cells[9]) > 0.0);
+    BOOST_TEST(std::stod(cells[9]) < 100.0);
+}
+
 // an instruction set the processor does not run, or one that has no such name, is refused
 BOOST_AUTO_TEST_CASE(moya_bench_refuses_an_instruction_set_it_cannot_run_test) {
     const Run run = bench("--quick --isa mmx");

@@ -14,6 +14,7 @@
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Module.h>
+#include <moya/libmoya/device/cpu/ProfileParams.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Film.h>
 #include <moya/libmoya/film/Filter.h>
@@ -21,6 +22,8 @@
 #include <moya/libmoya/film/State.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/integrate/Profile.h>
+#include <moya/libmoya/integrate/internal/Tallies.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
@@ -39,6 +42,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -119,7 +123,7 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
 }
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    const colour::Config & config, const Checkpoints & checkpoints) {
+    const colour::Config & config, const Checkpoints & checkpoints, Profile * profile) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     const geometry::Prototypes prototypes = geometry::gather(scene, logger);
@@ -149,6 +153,11 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     }
     std::uint32_t written = done;
     std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
+    std::optional<internal::Tallies> tallies;
+    if (profile != nullptr && profile->counted) {
+        tallies.emplace(device, resolution);
+    }
+    double passing = 0.0;
     const std::uint32_t start =
         static_cast<std::uint32_t>(std::min<std::uint64_t>(std::uint64_t { done } * kSamplesPerPass, sampler.samplesPerPixel()));
     for (std::uint32_t first = start; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {
@@ -161,6 +170,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
         if (first != 0 && threshold > 0.0F && first >= least && picture.converge(threshold) == 0U) {
             break;
         }
+        const std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
         picture.pass([&](const kernel::film::Pixels & pixels) {
             const device::cpu::PathParams params { .pixels = pixels,
                 .filter = filter.view(),
@@ -173,10 +183,15 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .settings = settings,
                 .first = first,
                 .count = samples };
+            if (tallies) {
+                device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
+                return;
+            }
             device.launch(resolution.x, resolution.y, params, entry);
         });
         ++done;
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        passing += std::chrono::duration<double>(now - began).count();
         if (!checkpoints.path.empty() && std::chrono::duration<double>(now - last).count() >= checkpoints.interval) {
             output::writeCheckpoint(checkpoints.path, picture.state(), print);
             written = done;
@@ -185,6 +200,12 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     }
     if (!checkpoints.path.empty() && written != done) {
         output::writeCheckpoint(checkpoints.path, picture.state(), print);
+    }
+    if (profile != nullptr) {
+        profile->seconds = passing;
+        if (tallies) {
+            tallies->into(*profile);
+        }
     }
     return picture.snapshot();
 }

@@ -22,6 +22,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/trigonometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
@@ -76,6 +77,23 @@ constexpr float kMovingSize = 0.4F;
 constexpr float kRippledBox = 0.1F;
 constexpr float kCurvesBox = 0.4F;
 constexpr float kMovingBox = 0.3F;
+
+/**
+ * The lit room: the camera's field of view and height above the floor, the walls' height, the
+ * size of the rect and disk lights, and the sphere light's radius and height.
+ **/
+constexpr float kRoomFov = 60.0F;
+constexpr float kRoomEye = 2.6F;
+constexpr float kWallHeight = 0.8F;
+constexpr float kLightSize = 0.4F;
+constexpr float kSphereRadius = 0.1F;
+constexpr float kSphereHeight = 0.4F;
+
+/** A half turn, in degrees, which turns the camera to look down. **/
+constexpr float kHalfTurn = 180.0F;
+
+/** Where the rect, disk and sphere lights hang over the floor, as x and y. **/
+constexpr float kLightsAt[3][2] = { { 0.4F, 0.4F }, { -0.4F, 0.5F }, { -0.5F, -0.3F } };
 
 /** How many cells a side of a grid has at a scale, at least two. **/
 std::int32_t cellsAt(std::int32_t full, float scale) {
@@ -268,6 +286,52 @@ Fixed motion(float scale) {
 }
 
 };  // namespace
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = boost::make_shared<scene::Scene>(scene::kinds());
+    scene::Scene & made = *out;
+    const scene::Handle options = made.create("options", "options");
+    const scene::Handle camera = made.create("camera", "camera");
+    made.set(options, "camera", scene::Value::handle(camera));
+    made.set(options, "resolution", scene::Value::integers({ static_cast<std::int32_t>(side), static_cast<std::int32_t>(side) }));
+    made.set(options, "samples", scene::Value::integer(static_cast<std::int32_t>(samples)));
+    made.set(camera, "fov", scene::Value::number(kRoomFov));
+    // the camera looks along its +z, so it is turned half a turn to look down
+    made.set(camera, "transform",
+        scene::Value::matrix(glm::rotate(glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, 0.0F, kRoomEye }), glm::radians(kHalfTurn), glm::vec3 { 1.0F, 0.0F, 0.0F })));
+
+    place(made, "floor", grid(made, "floor", cellsAt(kSmallCells, scale), kGroundRipple, { 0.0F }), {}, { glm::mat4(1.0F) });
+    // four walls of a quad each, from the floor to kWallHeight around its edges
+    const std::vector<glm::vec3> corners { { -1.0F, -1.0F, 0.0F }, { 1.0F, -1.0F, 0.0F }, { 1.0F, 1.0F, 0.0F }, { -1.0F, 1.0F, 0.0F } };
+    std::vector<glm::vec3> points;
+    std::vector<std::int32_t> indices;
+    for (std::size_t wall = 0; wall < corners.size(); ++wall) {
+        const glm::vec3 & from = corners[wall];
+        const glm::vec3 & to = corners[(wall + 1U) % corners.size()];
+        const auto first = static_cast<std::int32_t>(points.size());
+        points.insert(points.end(), { from, to, to + glm::vec3 { 0.0F, 0.0F, kWallHeight }, from + glm::vec3 { 0.0F, 0.0F, kWallHeight } });
+        indices.insert(indices.end(), { first, first + 1, first + 2, first + 3 });
+    }
+    const scene::Handle walls = made.create("mesh", "walls");
+    made.set(walls, "P", scene::Value::points(points));
+    made.set(walls, "vertices", scene::Value::integers(std::vector<std::int32_t>(corners.size(), 4)));
+    made.set(walls, "indices", scene::Value::integers(indices));
+    place(made, "walls", walls, {}, { glm::mat4(1.0F) });
+
+    made.create("domeLight", "sky");
+    // a rect light and a disk light face down, along their -z, and a sphere light hangs low
+    const scene::Handle rect = made.create("rectLight", "rect");
+    made.set(rect, "transform", scene::Value::matrix(placed({ kLightsAt[0][0], kLightsAt[0][1], kWallHeight }, kLightSize)));
+    const scene::Handle disk = made.create("diskLight", "disk");
+    made.set(disk, "transform", scene::Value::matrix(placed({ kLightsAt[1][0], kLightsAt[1][1], kWallHeight }, kLightSize)));
+    const scene::Handle sphere = made.create("sphereLight", "sphere");
+    made.set(sphere, "radius", scene::Value::number(kSphereRadius));
+    made.set(sphere, "transform", scene::Value::matrix(placed({ kLightsAt[2][0], kLightsAt[2][1], kSphereHeight }, 1.0F)));
+    made.commit();
+    made.apply();
+    return out;
+}
 
 std::vector<Fixed> scenes(float scale) {
     std::vector<Fixed> out { smallTriangles(scale), largeTriangles(), curves(scale), instances(scale), motion(scale) };

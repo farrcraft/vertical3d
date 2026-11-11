@@ -23,3 +23,15 @@ by up to a tenth in the rates, so a smaller difference is noise.
 | instances | avx2 | 20000 | 4.4 | 171.4 | 56.8 | 9.17 | 100.0 | 8.24 | 47.3 |
 | motion | sse42 | 133120 | 31.1 | 380.9 | 134.0 | 5.87 | 100.0 | 6.39 | 58.1 |
 | motion | avx2 | 133120 | 31.1 | 374.8 | 134.0 | 6.49 | 100.0 | 6.84 | 58.1 |
+
+## The lit room
+
+The integrator over the lit room, run in the same build on the same machine. Each
+rate is of the fastest of three timed renders, over the passes alone. The rays are counted in a
+fourth render, which also gives the share of every thread's time in traversal. Two runs differ by
+up to a tenth in the rates.
+
+| lit scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| lit room | sse42 | 1048364 | 65536 | 16 | 1.973 | 7.863 | 3.99 | 38.2 |
+| lit room | avx2 | 1048364 | 65536 | 16 | 2.071 | 8.252 | 3.99 | 34.6 |

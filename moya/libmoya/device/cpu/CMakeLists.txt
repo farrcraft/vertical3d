@@ -8,6 +8,9 @@ add_library("v3dlib_moya_cpu" INTERFACE
 	"Module.h"
 	"MotionNode.h"
 	"Node.h"
+	"Profiled.h"
+	"ProfileParams.h"
+	"Tally.h"
 	"Traversal.h"
 )
 target_include_directories("v3dlib_moya_cpu" INTERFACE "${V3D_ROOT}")

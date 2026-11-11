@@ -142,7 +142,7 @@ among the options before the record is drafted.
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | done |
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | done |
-| [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | open |
+| [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | done |
 | [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | open |
 
@@ -985,6 +985,27 @@ one of eight passes. A resume against a changed scene is refused. A checkpoint o
 adaptive sampling stopped keeps its stopped pixels.
 
 ### Step 21 — Speed
+
+**Done.** `moya_bench` prints a second table, for the integrator over a lit room of 1048364
+primitives at 256 by 256 pixels and 16 samples. On the baseline's machine it renders 2.0
+million samples a second, and 7.9 to 8.3 million rays a second over the paths at four rays a
+sample. Traversal takes 35 to 38 percent of the time. A traversal twice as fast would make the
+render about a fifth faster, and the TODO item says so. Three things the list below did not
+settle:
+
+* **The rays and the traversal's share come from a counted render.** The CPU libraries gain a
+  `profiled` entry point, whose traversal counts each ray into its pixel's tally and reads the
+  time-stamp counter around it. `integrate::render()` takes an `integrate::Profile` to fill. The
+  counter's cost slows the counted render, so the rates are of a separate timed one. The
+  libraries' table is now version 15.
+* **The rates are of the passes alone**, without the gather, the build and the lights, and of the
+  fastest of three renders, as the ray traces are.
+* **Within the integrator, traversal runs about 20 million traversals a second**, as the
+  benchmark's incoherent rays do at two traversals each. The launch and the copies of a traced
+  list therefore cost little beside the traversal.
+
+[Integrator.md](../offline/Integrator.md#profiling-a-render) and
+[Traversal.md](../offline/Traversal.md#speed) state the rules.
 
 * **`moya_bench` gains a lit scene**: a diffuse room of a million triangles under a dome light
   and a few shaped lights. It reports samples a second, and rays a second over the paths.

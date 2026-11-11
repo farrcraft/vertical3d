@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -75,6 +76,8 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
  * A render that resumes reads the checkpoint, and continues at the pass after the last it holds.
  * Its picture is the same, byte for byte, as that of a render that never stopped.
  *
+ * A render given a profile fills it. A counted render gives the same picture as one that is not.
+ *
  * @throws std::runtime_error when the CPU device's library cannot be loaded, or from OpenColorIO
  *         when a colour names a space the configuration cannot convert into ACEScg
  * @throws output::Refused when the checkpoint to resume from is not one of this scene's
@@ -82,6 +85,6 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
  *         written
  **/
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    const colour::Config & config, const Checkpoints & checkpoints = {});
+    const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr);
 
 };  // namespace v3d::moya::integrate

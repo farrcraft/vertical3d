@@ -12,6 +12,9 @@
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/cpu/Node.h>
+#include <moya/libmoya/device/cpu/ProfileParams.h>
+#include <moya/libmoya/device/cpu/Profiled.h>
+#include <moya/libmoya/device/cpu/Tally.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/device/cpu/internal/Boxes.h>
 #include <moya/libmoya/device/cpu/internal/Nearest.h>
@@ -27,6 +30,7 @@
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
 #include <moya/libmoya/kernel/integrate/Paths.h>
+#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 
 #include <bit>
@@ -37,6 +41,12 @@
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 #ifdef _WIN32
 #define MOYA_CPU_EXPORT extern "C" __declspec(dllexport)
@@ -321,6 +331,29 @@ bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel
     return false;
 }
 
+/**
+ * One pixel of a profiled pass: the integrator's pixel over a traversal that counts into the
+ * pixel's tally, and the ticks the whole pixel takes.
+ **/
+void profiledPaths(const ProfileParams & params, kernel::Item item) {
+    const PathParams & from = params.paths;
+    Tally & tally = params.tallies[(item.y * from.pixels.width) + item.x];
+    const kernel::integrate::Paths<Profiled> paths { .pixels = from.pixels,
+        .filter = from.filter,
+        .camera = from.camera,
+        .sampler = from.sampler,
+        .traversal = Profiled { .traversal = from.traversal, .tally = &tally },
+        .surfaces = from.surfaces,
+        .lights = from.lights,
+        .table = from.table,
+        .settings = from.settings,
+        .first = from.first,
+        .count = from.count };
+    const std::uint64_t start = __rdtsc();
+    kernel::integrate::paths(paths, item);
+    tally.whole += __rdtsc() - start;
+}
+
 };  // namespace
 
 Instance Traversal::worldOf(const Traversal & traversal) {
@@ -348,6 +381,22 @@ bool Traversal::any(const kernel::geometry::Ray & ray) const {
     return anyFrom(*this, worldOf(*this), held(*this, ray), 0);
 }
 
+kernel::geometry::Hit Profiled::nearest(const kernel::geometry::Ray & ray) const {
+    const std::uint64_t start = __rdtsc();
+    const kernel::geometry::Hit out = traversal.nearest(ray);
+    tally->traversing += __rdtsc() - start;
+    ++tally->nearest;
+    return out;
+}
+
+bool Profiled::any(const kernel::geometry::Ray & ray) const {
+    const std::uint64_t start = __rdtsc();
+    const bool out = traversal.any(ray);
+    tally->traversing += __rdtsc() - start;
+    ++tally->any;
+    return out;
+}
+
 };  // namespace v3d::moya::device::cpu
 
 /** This library's table, which the CPU device reads when it loads it. **/
@@ -356,6 +405,7 @@ MOYA_CPU_EXPORT const v3d::moya::device::cpu::Module * moya_cpu_module() {
         .isa = MOYA_CPU_ISA,
         .hits = &v3d::moya::kernel::view::hits<v3d::moya::device::cpu::Traversal>,
         .trace = &v3d::moya::kernel::geometry::traceRays<v3d::moya::device::cpu::Traversal>,
-        .paths = &v3d::moya::kernel::integrate::paths<v3d::moya::device::cpu::Traversal> };
+        .paths = &v3d::moya::kernel::integrate::paths<v3d::moya::device::cpu::Traversal>,
+        .profiled = &v3d::moya::device::cpu::profiledPaths };
     return &module;
 }

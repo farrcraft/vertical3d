@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -41,5 +42,14 @@ struct Fixed {
  * A scale below 1 makes each scene that many times smaller, for a short pass.
  **/
 std::vector<Fixed> scenes(float scale);
+
+/**
+ * The lit scene the integrator is timed over: a room whose floor is the small triangles' rippled
+ * grid, about a million triangles at a scale of 1, with four walls and no ceiling. A white dome
+ * lights it from above, and a rect, a disk and a sphere light hang inside it. Every surface is
+ * diffuse. A camera above the room looks down into it, at side by side pixels and samples per
+ * pixel. The scene is committed and applied, and is the same on every run.
+ **/
+boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::uint32_t samples);
 
 };  // namespace v3d::moya::bench

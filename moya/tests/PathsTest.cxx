@@ -8,6 +8,7 @@
 #include <moya/libmoya/film/Compare.h>
 #include <moya/libmoya/film/Estimate.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/output/Checkpoint.h>
@@ -316,6 +317,34 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_resume_against_a_changed_scene_is_refused_test
     BOOST_TEST(integrate::fingerprint(first, {}) != integrate::fingerprint(first, { { .name = "depth", .components = 1 } }));
     boost::system::error_code ignored;
     boost::filesystem::remove(path, ignored);
+}
+
+// a counted render gives the same picture as one that is not. Under the dome alone every camera
+// ray leaves the scene, so each sample traces one ray for its nearest hit and no shadow ray
+BOOST_AUTO_TEST_CASE(moya_paths_a_counted_render_counts_its_rays_test) {
+    scene::Scene empty(scene::kinds());
+    framed(empty, 32);
+    empty.commit();
+    empty.apply();
+    CpuDevice device;
+    integrate::Profile counted { .counted = true };
+    integrate::render(device, empty, {}, colour::Config(), {}, &counted);
+    BOOST_TEST(counted.nearest == std::uint64_t { kSide } * kSide * 32U);
+    BOOST_TEST(counted.any == 0U);
+    BOOST_TEST(counted.seconds > 0.0);
+
+    scene::Scene lit(scene::kinds());
+    buildSphereOnPlane(lit, 32, 3, 0.0F);
+    integrate::Profile timed;
+    const film::Snapshot plain = integrate::render(device, lit, {}, colour::Config(), {}, &timed);
+    integrate::Profile profiled { .counted = true };
+    const film::Snapshot measured = integrate::render(device, lit, {}, colour::Config(), {}, &profiled);
+    BOOST_TEST(sameBytes(plain, measured));
+    BOOST_TEST(timed.nearest == 0U);
+    BOOST_TEST(profiled.nearest > std::uint64_t { kSide } * kSide * 32U);
+    BOOST_TEST(profiled.any > 0U);
+    BOOST_TEST(profiled.traversal > 0.0);
+    BOOST_TEST(profiled.traversal < 1.0);
 }
 
 // the settings are the options', each depth held to zero or more

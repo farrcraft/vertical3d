@@ -493,7 +493,8 @@ endings are made LF before the file is committed.
 
 `moya_bench` times the new core's hierarchies over fixed scenes, as
 [Traversal.md](../offline/Traversal.md#speed) describes. The suite runs one short pass of it,
-`--quick` at SSE4.2, in every build and checks that each scene is timed, so it keeps working. Its
+`--quick` at SSE4.2, in every build and checks that each scene and the lit room are timed, so it
+keeps working. Its
 numbers mean something only in the `x64-Release` build. Compare a change against
 `moya/bench/Baseline.md` on the machine it names, and write that file again from a fresh run
 when a change moves the numbers on purpose.
