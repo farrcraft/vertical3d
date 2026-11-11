@@ -139,6 +139,8 @@ built.
 
 ### 5. Materials and textures
 
+[MoyaMaterials](../plans/MoyaMaterials.md) is its plan.
+
 - **The BSDF library**: GGX with visible-normal sampling and energy compensation, a dielectric
   with transmission, coat, sheen and thin film, as OpenPBR Surface 1.1 arranges them.
 - **The MaterialX node program**: MaterialX standard nodes compiled into a small program that

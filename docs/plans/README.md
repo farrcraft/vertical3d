@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaMaterials](MoyaMaterials.md) | Offline rendering | The rebuilt moya's materials: a BSDF library arranged as OpenPBR Surface, MaterialX graphs compiled into a node program every device runs, a texture cache filtered by a ray's footprint, displacement and opacity from the material, and materials named in RIB |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans
