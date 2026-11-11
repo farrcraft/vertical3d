@@ -1,7 +1,7 @@
 # Moya Path Tracer — The Integrator and Its Lights
 
 Drafted 2026-11-09 against `92191de5`. This plan takes up section 4 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core lights the
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core lights the
 scene that sections 2 and 3 built. The integrator builds paths through it in stages over an
 explicit path state, fused on the CPU. Each bounce samples a light and the surface, and weighs the
 two by multiple importance sampling. Every UsdLux light the scene holds is sampled by solid angle
@@ -15,15 +15,15 @@ The rebuild's decisions are ADR-0186 to ADR-0194, the foundation's ADR-0195 to A
 scene's ADR-0200 to ADR-0203, and the geometry's ADR-0204 to ADR-0211, all accepted. This plan
 follows five of them:
 
-* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
   moya implements its own light sampling and light tree, and OpenEXR reads a light's image.
-* [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a path carries
+* [ADR-0189](../../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a path carries
   four sampled wavelengths.
-* [ADR-0192](../adr/offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md):
+* [ADR-0192](../../adr/offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md):
   the integrator is stages over an explicit path state, run back to back on the CPU.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): samples
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): samples
   come from ZSobol, and each device gives one picture on every run.
-* [ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md): each stage
+* [ADR-0204](../../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md): each stage
   that traces takes its traversal as a type.
 
 The plan keeps the roadmap's order, with five changes:
@@ -55,7 +55,7 @@ The tree was read at `92191de5`.
 
 **The foundation and the geometry:**
 
-* **A hit holds no point, normal or differential** ([Traversal.md](../offline/Traversal.md#hits)).
+* **A hit holds no point, normal or differential** ([Traversal.md](../../offline/Traversal.md#hits)).
   It holds its distance, time, primitive, `uv` and chain of instances. The stage that shades it
   computes the rest from the primitive.
 * **A traversal gives `nearest(ray)` and `any(ray)`**, and a ray carries its kind: camera, shadow
@@ -64,22 +64,22 @@ The tree was read at `92191de5`.
   on the lens and a time over the shutter. The hit view takes one ray through each pixel's
   centre.
 * **The film places a camera sample by the pixel filter** and adds it to its own pixel alone,
-  in index order ([Film.md](../offline/Film.md)). It holds weighted sums and one sum of weights.
+  in index order ([Film.md](../../offline/Film.md)). It holds weighted sums and one sum of weights.
   It holds no second moment.
 * **ZSobol gives a sample from its pixel, index and dimension**, with no state
-  ([Sampler.md](../offline/Sampler.md)). Nothing yet allocates dimensions to a path's draws.
+  ([Sampler.md](../../offline/Sampler.md)). Nothing yet allocates dimensions to a path's draws.
 * **Spectra are four wavelengths drawn by luminance.** `illuminant()` gives a light's colour as a
-  spectrum, and a light of (1, 1, 1) shines with ACES white ([Spectra.md](../offline/Spectra.md)).
+  spectrum, and a light of (1, 1, 1) shines with ACES white ([Spectra.md](../../offline/Spectra.md)).
 * **No geometry holds primvars on the device.** `subdivision::Surface::at()` evaluates a primvar,
   and `normals()` gives the limit surface's normals, but neither reaches a hit
-  ([Geometry.md](../offline/Geometry.md)).
+  ([Geometry.md](../../offline/Geometry.md)).
 * **The CPU traversal traces 11 to 12.5 million rays a second** on a million triangles, several
-  times slower than Embree ([TODO.md](../TODO.md#offline-rendering)). A path tracer traces at
+  times slower than Embree ([TODO.md](../../TODO.md#offline-rendering)). A path tracer traces at
   least two rays a bounce, so this sets its speed.
 
 **The scene:**
 
-* **Every UsdLux light is a kind** ([Scene.md](../offline/Scene.md#moyas-kinds)): rect, disk,
+* **Every UsdLux light is a kind** ([Scene.md](../../offline/Scene.md#moyas-kinds)): rect, disk,
   sphere, cylinder, mesh, distant and dome. Each holds a transformation over the shutter,
   `colour`, `intensity`, `exposure` and `normalize`. A light with an area holds a cone angle and
   softness. Light linking is UsdLux's `includeRoot` and a list of `instances`.
@@ -94,7 +94,7 @@ The tree was read at `92191de5`.
 
 * **RI's `pointlight`, `spotlight` and `distantlight` become UsdLux lights**, and
   `AreaLightSource` makes a mesh light of each geometry after it. A point light is a sphere
-  light of radius zero. [Rib.md](../offline/Rib.md#the-scene-client)
+  light of radius zero. [Rib.md](../../offline/Rib.md#the-scene-client)
 * **The RIB reader knows no `Light` request**, so a file names no rect, disk, cylinder or dome
   light.
 
@@ -144,7 +144,7 @@ among the options before the record is drafted.
 | [20](#step-20--checkpoint-and-resume) | Checkpoint and resume | `moya/libmoya/film`, `output`, `moya` | 0216 | done |
 | [21](#step-21--speed) | Speed: samples a second against a baseline | `moya/bench` | — | done |
 | [22](#step-22--the-reference-renders) | The reference renders | `moya/tests` | — | done |
-| [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | open |
+| [23](#step-23--the-documents) | The reference pages for the integrator and lights | `docs` | — | done |
 
 ## What blocks what
 
@@ -214,7 +214,7 @@ index. It also settles how a path's draws take ZSobol dimensions: a fixed number
 as Cycles allots them, or the next free dimension, as pbrt-v4 takes them.
 
 **Drafted** as
-[ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+[ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
 the state declared once as a list of fields, laid out as a structure per path on the CPU and an
 array per field on a GPU, as Cycles' integrator state is. A shadow ray is a state of its own.
 Each bounce owns a fixed block of dimensions, as Cycles and pbrt-v4's wavefront integrator
@@ -242,7 +242,7 @@ The record also settles whether camera rays see a light's shape. UsdLux names no
 visibility for its lights, and renderers differ in their default.
 
 **Drafted** as
-[ADR-0213](../adr/offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md): each
+[ADR-0213](../../adr/offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md): each
 light with a shape is an instance of a light prototype in the world's hierarchy, as pbrt-v4 and
 Mitsuba 3 hold an area light's shape. A light's shape is hidden from camera rays unless the scene
 sets it, and a dome light is seen, as Arnold and RenderMan default them.
@@ -269,7 +269,7 @@ tree. How a BSDF sample that meets a light finds the density the tree would have
 pbrt-v4's `BVHLightSampler` and Cycles' tree are the references.
 
 **Drafted** as
-[ADR-0214](../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md): a
+[ADR-0214](../../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md): a
 top tree over the lights and the instances of mesh lights, and a subtree per emitting prototype,
 as Cycles' tree holds instances. A tree for each unique set of linked lights, as Cycles builds
 them. Distant and dome lights picked beside the tree as pbrt-v4 picks them, and one light a
@@ -295,7 +295,7 @@ The record also settles when a pixel's error is checked, and whether the thresho
 working space or after a display transform.
 
 **Drafted** as
-[ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md): a
+[ADR-0215](../../adr/offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md): a
 second beauty takes the first half of each run of a pixel's samples, and the error is the
 difference of the two estimates, normalised as Cycles normalises it. A pixel is checked between
 passes and stops with its four neighbours, as Cycles spreads its check. The threshold is in the
@@ -321,7 +321,7 @@ The record also settles how a checkpoint names the scene it belongs to, so that 
 a changed scene is refused.
 
 **Drafted** as
-[ADR-0216](../adr/offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md): an OpenEXR
+[ADR-0216](../../adr/offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md): an OpenEXR
 file of its own holding the film's unresolved sums as floats, as Karma writes a checkpoint apart
 from its outputs. Its header holds the pass count and a hash of the scene's description and the
 film's channels, and a resume whose hash differs is refused.
@@ -348,8 +348,8 @@ things the list below did not settle:
 * **A NaN is furthest.** A pixel or an expected value that is not a number makes the comparison
   NaN, which fails any bound.
 
-[Film.md](../offline/Film.md#a-pixels-noise) and
-[Testing.md](../contributing/Testing.md#moya-references) state the rules.
+[Film.md](../../offline/Film.md#a-pixels-noise) and
+[Testing.md](../../contributing/Testing.md#moya-references) state the rules.
 
 * **The film holds each pixel's second moment**: a weighted sum of each sample's squared
   luminance, in a channel of its own. A snapshot resolves it with the beauty.
@@ -390,7 +390,7 @@ Four things the list below did not settle:
   surface through the corners and their normals. An octahedron's bulges past its sphere at the
   middle of each edge, to a length of 1.0607.
 
-[Surfaces.md](../offline/Surfaces.md) states the rules.
+[Surfaces.md](../../offline/Surfaces.md) states the rules.
 
 * **A shading point** holds the hit's position, its geometric normal, its shading normal, a frame
   around the shading normal, its `uv`, and the instance chain's transformation at the ray's time.
@@ -428,7 +428,7 @@ settle:
 * **The diffuse lobe reflects on either side** that light leaves towards, as pbrt's does. A
   reflection that would cross the geometric surface is refused on every model.
 
-[Surfaces.md](../offline/Surfaces.md#the-bsdf) states the rules.
+[Surfaces.md](../../offline/Surfaces.md#the-bsdf) states the rules.
 
 * **The interface evaluates, samples and gives a density**, in the shading frame, each for the
   path's four wavelengths. It is a tagged type with a `switch`, as kernel code has no virtual
@@ -469,8 +469,8 @@ unoffset failed the furnace and the grey sphere. Four things the list below did 
   writes its view. Writing the outputs the scene names, with their channels, waits for the AOVs
   of section 6, which fill those channels.
 
-[Integrator.md](../offline/Integrator.md) states the rules, and the moya manual's
-[CommandLine.md](../manual/moya/CommandLine.md) names `--paths`.
+[Integrator.md](../../offline/Integrator.md) states the rules, and the moya manual's
+[CommandLine.md](../../manual/moya/CommandLine.md) names `--paths`.
 
 * **The stages**, as ADR-0192 names them: generate, intersect, shade, scatter and accumulate,
   over the path state step 1 decides. The CPU runs them back to back for one path at a time.
@@ -519,7 +519,7 @@ not built again failed the rebuild. Five things the list below did not settle:
   ellipsoid's has no closed form. The sum is exact under a turn and a scale of the same size on
   every axis.
 
-[Lights.md](../offline/Lights.md) states the rules, and [Scene.md](../offline/Scene.md) names the
+[Lights.md](../../offline/Lights.md) states the rules, and [Scene.md](../../offline/Scene.md) names the
 lights' new `camera`, `enableColorTemperature` and `colorTemperature`.
 
 * **Rect, disk, sphere and cylinder lights** as the record of step 2 decides, met by the paths a
@@ -575,8 +575,8 @@ chi-squared case. Six things the list below did not settle:
   bound allows. Its case holds it within twice the better strategy's error and below 0.6 of the
   worse one's.
 
-[Lights.md](../offline/Lights.md) states how each light is drawn and sampled, and
-[Integrator.md](../offline/Integrator.md#lights) the strategies.
+[Lights.md](../../offline/Lights.md) states how each light is drawn and sampled, and
+[Integrator.md](../../offline/Integrator.md#lights) the strategies.
 
 * **Each bounce samples a light**, and casts a shadow ray through `any()`. One light is picked
   in proportion to its power until step 15.
@@ -621,8 +621,8 @@ settle:
   the sine squared of its half. A sample's sine comes from one less its cosine. A cone of the
   sun's half degree is then sampled as exactly as a wide one.
 
-[Lights.md](../offline/Lights.md#points) states the rules, and
-[Integrator.md](../offline/Integrator.md#lights) how a path finds each light.
+[Lights.md](../../offline/Lights.md#points) states the rules, and
+[Integrator.md](../../offline/Integrator.md#lights) how a path finds each light.
 
 Each case was run against broken code as well, one break at a time. A delta light weighed by MIS
 failed both closed forms, the soft shadow and the shrinking sphere. A delta light left unsampled
@@ -668,8 +668,8 @@ CPU library's table is now version 9. Five things the list below did not settle:
 * **A geometry with no triangles emits nothing**, and the logger reports it. A quadric, curves
   and points have no triangles to sample.
 
-[Lights.md](../offline/Lights.md#mesh-lights) states the rules, and
-[Integrator.md](../offline/Integrator.md#lights) how a path meets a mesh light.
+[Lights.md](../../offline/Lights.md#mesh-lights) states the rules, and
+[Integrator.md](../../offline/Integrator.md#lights) how a path meets a mesh light.
 
 Each case was run against broken code as well, one break at a time. A light sample or an MIS
 weight that left out the triangle's chance failed the rect light's picture and four other cases.
@@ -721,8 +721,8 @@ library's table is now version 10. Six things the list below did not settle:
 * **The environment option is gone**, so twenty-two committed scene descriptions lose it, and
   the furnace cases light their sphere by a white dome of no image.
 
-[Lights.md](../offline/Lights.md#dome-lights) states the rules, and
-[Integrator.md](../offline/Integrator.md#lights) how a path meets a dome.
+[Lights.md](../../offline/Lights.md#dome-lights) states the rules, and
+[Integrator.md](../../offline/Integrator.md#lights) how a path meets a dome.
 
 Each case was run against broken code as well, one break at a time. Light samples alone drawn by
 the compensated way failed the varied image. A density without the cosine of its latitude failed
@@ -770,7 +770,7 @@ CPU library's table is now version 11. Five things the list below did not settle
 * **The tree is built on one thread**, so it depends on the scene alone. Each render builds it
   again with the lights.
 
-[Lights.md](../offline/Lights.md#the-light-tree) states the rules.
+[Lights.md](../../offline/Lights.md#the-light-tree) states the rules.
 
 Each case was run against broken code as well, one break at a time. The walk up taking the left
 child's chance for both children failed the chance the tree reports and the picture by power. A
@@ -817,7 +817,7 @@ Four things the list below did not settle:
 * **Drawn by power, a light that does not light the set gathers nothing**, rather than having a
   table of powers for each set. The tree is the fallback, and power is there to compare with.
 
-[Lights.md](../offline/Lights.md#light-linking) states the rules.
+[Lights.md](../../offline/Lights.md#light-linking) states the rules.
 
 Each case was run against broken code as well, one break at a time. Every set's tree holding
 every light failed both cases of linked lights, as the list below asks of a tree that ignores
@@ -859,7 +859,7 @@ things the list below did not settle:
   in another file, are reported, and the light is not shaped.
 * **A mesh light's profile is not read**, as its cone is not.
 
-[Lights.md](../offline/Lights.md#ies-profiles) states the rules.
+[Lights.md](../../offline/Lights.md#ies-profiles) states the rules.
 
 Each case was run against broken code as well, one break at a time. A vertical angle measured
 from +z failed the profile's orientation and its angle scale. A horizontal angle measured from +y
@@ -899,7 +899,7 @@ area light takes. Four things the list below did not settle:
 * **A mesh light's `textureColor` is read as a constant** that tints its colour. A texture
   connected to it is a shading network, and is not read.
 
-[Rib.md](../offline/Rib.md#the-scene-client) states the rules.
+[Rib.md](../../offline/Rib.md#the-scene-client) states the rules.
 
 Each case was run against broken code as well, one break at a time. A light left unmirrored
 failed the case of the axes, and so did a dome turned as the other lights are. A distant light
@@ -937,8 +937,8 @@ writer takes `sampleCount` as an output beside the beauty. The CPU library's tab
 * **`PixelVariance` is the threshold**, since RenderMan's path tracer reads it so, though its
   metric is moya's rather than RenderMan's.
 
-[Film.md](../offline/Film.md#stopping-a-pixel) and
-[Integrator.md](../offline/Integrator.md#adaptive-sampling) state the rules.
+[Film.md](../../offline/Film.md#stopping-a-pixel) and
+[Integrator.md](../../offline/Integrator.md#adaptive-sampling) state the rules.
 
 * **A pixel stops sampling** when its error, as the record of step 4 measures it, falls below a
   threshold in the scene's `options`. The samples per pixel are the most it takes.
@@ -972,8 +972,8 @@ resume and a stop asked before each pass. `moya --paths` gains `--checkpoint`,
 * **A checkpoint is written to a `.partial` file and renamed**, so a process ended while it
   writes keeps the checkpoint before.
 
-[Film.md](../offline/Film.md#checkpoints) and
-[Integrator.md](../offline/Integrator.md#checkpoint-and-resume) state the rules.
+[Film.md](../../offline/Film.md#checkpoints) and
+[Integrator.md](../../offline/Integrator.md#checkpoint-and-resume) state the rules.
 
 * **A render writes a checkpoint** as the record of step 5 decides, after each pass or at an
   interval the command line gives.
@@ -1004,14 +1004,14 @@ settle:
   benchmark's incoherent rays do at two traversals each. The launch and the copies of a traced
   list therefore cost little beside the traversal.
 
-[Integrator.md](../offline/Integrator.md#profiling-a-render) and
-[Traversal.md](../offline/Traversal.md#speed) state the rules.
+[Integrator.md](../../offline/Integrator.md#profiling-a-render) and
+[Traversal.md](../../offline/Traversal.md#speed) state the rules.
 
 * **`moya_bench` gains a lit scene**: a diffuse room of a million triangles under a dome light
   and a few shaped lights. It reports samples a second, and rays a second over the paths.
 * **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
 * **The share of time in traversal** is reported, so the open traversal item in
-  [TODO.md](../TODO.md#offline-rendering) can be weighed against the integrator.
+  [TODO.md](../../TODO.md#offline-rendering) can be weighed against the integrator.
 
 **Tests:** the benchmark's short pass times the lit scene.
 
@@ -1033,7 +1033,7 @@ did not settle:
 * **Only a spectral build is compared**, as the foundation's chart is. An RGB build draws no
   wavelengths, so its pictures are not the committed ones.
 
-[Testing.md](../contributing/Testing.md#moya-references) states the rules.
+[Testing.md](../../contributing/Testing.md#moya-references) states the rules.
 
 * **A set of scenes made for the path tracer**, as RIB files in `moya/tests/data`: the furnace, a
   room under a dome, every light kind, linked lights and an IES profile. Step 18 lets each name
@@ -1047,17 +1047,74 @@ comparison fails it.
 
 ### Step 23 — The documents
 
+**Done.** Integrator.md and Lights.md were written by the steps that built what they describe,
+and the docs site's summary lists both. The offline README names both pages and says the new
+core lights, samples, links, stops and resumes. ADR-0192 is documented in Integrator.md, which
+states its stages. The roadmap's section 4 is done, and the EditorScripting plan no longer waits
+on this one.
+
 * **New reference pages**: `docs/offline/Integrator.md` for the stages, the path state, depth
   limits, Russian roulette and adaptive sampling, and `docs/offline/Lights.md` for each light,
   its units, its sampling, the tree and linking. The docs site's summary lists them.
-* **[Film.md](../offline/Film.md)** names the second moment, the sample count and checkpoints.
-* **[Scene.md](../offline/Scene.md)** names the lights' new parameters and the options' depth
+* **[Film.md](../../offline/Film.md)** names the second moment, the sample count and checkpoints.
+* **[Scene.md](../../offline/Scene.md)** names the lights' new parameters and the options' depth
   limits and threshold.
-* **[Rib.md](../offline/Rib.md)** names `Light` and RenderMan's lights.
-* **[The offline README](../offline/README.md)**'s section on the new core says that it lights.
-* **[Testing.md](../contributing/Testing.md)** names the statistical comparison and the reference
+* **[Rib.md](../../offline/Rib.md)** names `Light` and RenderMan's lights.
+* **[The offline README](../../offline/README.md)**'s section on the new core says that it lights.
+* **[Testing.md](../../contributing/Testing.md)** names the statistical comparison and the reference
   renders.
-* **The moya manual's [CommandLine.md](../manual/moya/CommandLine.md)** names `--paths` and
+* **The moya manual's [CommandLine.md](../../manual/moya/CommandLine.md)** names `--paths` and
   `--resume`.
 * **Each record's `Documented in` line** names the reference page that states its rule.
 * **The roadmap's section 4** links here, and says so when this plan closes.
+
+## Outcome
+
+Closed 2026-11-11. moya's new core lights the scene by path tracing. The integrator builds paths
+in stages over a path state, fused on the CPU, with a depth limit for each kind of bounce and
+Russian roulette. Each bounce samples a light and the BSDF and weighs them by MIS. Every UsdLux
+light lights the scene, sampled by solid angle where a method exists, and a light tree picks
+among them. Light linking, shadow linking and IES profiles shape what each light reaches. RIB
+names RenderMan's lights as well as RI's. A pixel stops at a noise threshold, and a stopped render
+resumes to the same picture. Surfaces are diffuse until section 5. No picture the reyes and ray
+hiders make changed.
+
+**Delivered:**
+
+- What the path state holds (ADR-0212), how a ray meets a light (ADR-0213), the light tree
+  (ADR-0214), adaptive sampling (ADR-0215) and checkpoints (ADR-0216).
+- The film's moments and the statistical comparison every later step was held to.
+- The shading point, the BSDF interface with one diffuse lobe, and the integrator's stages, with
+  `moya --paths`.
+- Rect, disk, sphere and cylinder lights, distant lights and points, mesh lights, and a dome
+  light and a rect light's texture drawn by their luminance.
+- Next event estimation and MIS, the light tree, light linking and shadow linking, and IES
+  profiles.
+- RenderMan's lights from RIB, through the `Light` request.
+- Adaptive sampling, checkpoints, `--checkpoint`, `--checkpoint-interval` and `--resume`.
+- `moya_bench`'s lit room, and seven reference renders held to the comparison.
+- `Integrator.md` and `Lights.md`, and the film, scene, RIB, output, traversal, testing and
+  offline pages brought up to date.
+
+**Different from the plan:**
+
+- The film holds three moments rather than one, since a filter's weights differ in sign, and the
+  half beauty holds its own sum of weights.
+- A light's shape is hidden from shadow rays, and every light emits from one face.
+- A shape its transformation shears or stretches is sampled by area, not by solid angle.
+- RI's `pointlight` and `spotlight` are normalised points at four times RI's intensity, so their
+  radiant intensity is RI's.
+- The environment option is gone, and a dome light is the environment.
+- The checkpoint holds the moments and the stop flags beside the sums, and a render resumed to
+  more samples than it began with is refused.
+- The benchmark counts its rays through a profiled entry point in the CPU libraries, and times a
+  separate render for its rates.
+- A reference render holds each pixel's standard error, and only a spectral build compares one.
+
+**Left open:**
+
+- Traversal takes 35 to 38 percent of the lit room's time, and runs several times slower than
+  Embree's published figures. Profiling it is in [TODO.md](../../TODO.md#offline-rendering).
+- The reference renders, the checkpoint cases and the lit room's short pass have been run only on
+  Windows. portable.yml runs them on Linux, under Clang and GCC, on the pull request that carries
+  this plan.

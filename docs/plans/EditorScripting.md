@@ -178,8 +178,8 @@ a whole.
 
 ## Working beside the moya rebuild
 
-The rebuild's open plan is [MoyaPathTracer](MoyaPathTracer.md), at step 19 of 23. Its remaining
-steps work inside `moya/` and `docs/offline/`. Its later sections reach the editor: materials
+The rebuild has no open plan. Its sections up to the path tracer are closed, the last by
+[MoyaPathTracer](completed/MoyaPathTracer.md). Its later sections reach the editor: materials
 (section 5), output for compositing (section 6), the retirement of the old hiders (section 7)
 and interactive rendering (section 9).
 
@@ -190,7 +190,7 @@ and interactive rendering (section 9).
 | `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Each light step's parameters; section 5's materials; section 7 | Step 10 |
 | `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the new core | Steps 14 and 17 |
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
-| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | MoyaPathTracer step 20, which adds `--resume` | Step 16 |
+| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer's step 20 added `--checkpoint`, `--checkpoint-interval` and `--resume` | Step 16 |
 | The scene document's schema and kind versions | Section 5, if it brings materials into the document | Step 8 |
 | `src/scene/RenderSettings.h` and its codec | Sections 6 and 7: the hider list and the AOVs | Nothing |
 | `docs/editor/Rendering.md` | Sections 5, 7 and 9 | Steps 14, 17 and 19 |
@@ -215,8 +215,9 @@ and interactive rendering (section 9).
   this plan does not need is listed as a number with no record, as the ADR index requires.
 * **Each commit names its paths.** The rebuild's work is often staged while it is in progress,
   so a commit of this plan's work is made with `git commit -- <paths>` and takes nothing else.
-* **Step 16 and MoyaPathTracer step 20 edit different options of the same two files.** Each
-  lands as a commit of its own, and the second merges onto the first.
+* **Step 16's option sits beside the checkpoint options in the same two files.** `moya.cxx`
+  refuses those options without `--paths` in `conflict()`, and keeps its option table in
+  `optionsOf()`, where step 16 adds its own.
 
 ---
 

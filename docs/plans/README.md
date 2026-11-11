@@ -23,7 +23,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
-| [MoyaPathTracer](MoyaPathTracer.md) | Offline rendering | The rebuilt moya's path tracer: the integrator's stages over a path state, next event estimation and MIS, every UsdLux light sampled by solid angle, a dome light, a light tree, light linking, IES profiles, adaptive sampling, checkpoints and a statistical oracle |
 
 ## Completed plans
 
@@ -31,6 +30,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaPathTracer](completed/MoyaPathTracer.md) | Offline rendering | 2026-11-11 | The rebuilt moya's path tracer: the integrator's stages over a path state, next event estimation and MIS, every UsdLux light sampled by solid angle, a dome light, a light tree, light and shadow linking, IES profiles, RenderMan's lights from RIB, adaptive sampling, checkpoints, a statistical oracle and reference renders |
 | [MoyaGeometry](completed/MoyaGeometry.md) | Offline rendering | 2026-11-09 | The rebuilt moya's ray traversal: a wide hierarchy over every primitive the scene names, with motion and nested instances, SIMD on the CPU, OpenSubdiv, tessellation and displacement, rebuilding what changed, a hit view and a benchmark |
 | [MoyaScene](completed/MoyaScene.md) | Offline rendering, editor | 2026-11-07 | The rebuilt moya's retained scene: objects of declared kinds by handle, with samples over the shutter and versioned commits, read from RIB by a client and kept in step with the editor's |
 | [MoyaFoundation](completed/MoyaFoundation.md) | Offline rendering, build | 2026-11-07 | The rebuilt moya's foundation: kernel code on a CPU device over oneTBB, sampled spectra and a fitted RGB-to-spectrum table, a ZSobol sampler, a film of AOVs that filters by importance sampling, EXR and 8-bit output, and colour management through OpenColorIO |

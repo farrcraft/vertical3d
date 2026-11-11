@@ -21,6 +21,8 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Spectra.md](Spectra.md) | Change how the new core carries light as wavelengths and turns it into colour |
 | [Sampler.md](Sampler.md) | Change how the new core draws the random numbers a path uses |
 | [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
+| [Integrator.md](Integrator.md) | Change how the new core builds paths, samples lights, stops a pixel and resumes a render |
+| [Lights.md](Lights.md) | Change the new core's lights, how a path meets and samples them, the light tree and linking |
 | [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
 | [Colour.md](Colour.md) | Change how the new core converts between colour spaces and shows a picture on a display |
 
@@ -210,15 +212,26 @@ changes a picture the hiders make.
 - **The integrator builds paths in stages** over a path state declared once, with depth limits
   and Russian roulette. Each bounce samples a light and the BSDF, and weighs the two by multiple
   importance sampling. `moya --paths` renders a RIB file through it. [Integrator.md](Integrator.md)
-- **A light with a shape is an instance in the world's hierarchy**, which a path meets as it meets
-  geometry, and emits UsdLux's radiance. A point and a distant light have no shape.
-  [Lights.md](Lights.md)
-- **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline.
-  [Traversal.md](Traversal.md#speed)
+- **Every UsdLux light lights the scene.** A rect, disk, sphere or cylinder light is an instance
+  in the world's hierarchy, which a path meets as it meets geometry. A point and a distant light
+  have no shape. A mesh light makes a geometry emit. A dome light is the environment, and its
+  image and a rect light's texture are drawn by their luminance. A cone and an IES profile shape
+  what a light emits. [Lights.md](Lights.md)
+- **Each light is sampled by solid angle** where a method exists, and a light tree picks the
+  light a shading point samples by its expected contribution. A light lights only the instances
+  it links, and casts shadows only from those its shadow link names.
+  [Lights.md](Lights.md#the-light-tree)
+- **RIB names the lights**: RI's standard and area lights, and RenderMan's `PxrRectLight` and its
+  kin through `Light`. [Rib.md](Rib.md#the-scene-client)
+- **A pixel stops at a noise threshold**, measured from two halves of its samples. A render keeps
+  a checkpoint it resumes from, and gives the same picture as one that never stopped.
+  [Integrator.md](Integrator.md#adaptive-sampling)
+- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room,
+  against a committed baseline. [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
-all of it.
+all of it, and `PathsReferenceTest.cxx` holds seven lit scenes to their committed renders.
 
 Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
 

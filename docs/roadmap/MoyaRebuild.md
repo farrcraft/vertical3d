@@ -117,18 +117,25 @@ it built.
 
 ### 4. The path tracer
 
-[MoyaPathTracer](../plans/MoyaPathTracer.md) is its plan.
+Done. [MoyaPathTracer](../plans/completed/MoyaPathTracer.md) was its plan, and
+[Integrator.md](../offline/Integrator.md) and [Lights.md](../offline/Lights.md) describe what it
+built.
 
 - **The integrator stages**: generate, intersect, shade, sample lights, scatter and accumulate,
   over an explicit path state.
 - **NEE and MIS**, Russian roulette, and a depth limit per kind of bounce.
-- **Lights**: rect, disk, sphere and cylinder lights, a distant light with an angle, mesh lights,
-  and a dome light from an HDR image. Each can be sampled by solid angle.
+- **Lights**: rect, disk, sphere and cylinder lights, a distant light with an angle, points, mesh
+  lights, and a dome light from an HDR image. Each is sampled by solid angle where a method
+  exists.
 - **An importance-sampled environment**, from a luminance distribution over the image.
 - **A light tree** that picks lights by their expected contribution, after Conty Estevez and
   Kulla.
-- **Light linking**, and IES profiles.
+- **Light linking** and shadow linking, and IES profiles.
+- **RenderMan's lights from RIB**, through its `Light` request.
 - **Adaptive sampling** to a noise threshold, and checkpoint and resume.
+- **A statistical comparison** of a picture with an expected value or with another picture, and
+  seven reference renders held to it.
+- **A benchmark** of the integrator over a lit room, against a committed baseline.
 
 ### 5. Materials and textures
 

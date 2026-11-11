@@ -10,6 +10,18 @@ that section to its version, and the section becomes the release's notes.
 
 ## [Unreleased]
 
+### Added
+
+- `moya --paths` renders a RIB file through moya's new path tracer and writes the picture as an
+  EXR file. Every surface is diffuse for now. It lights a scene by RI's standard and area lights,
+  and by RenderMan's `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
+  `PxrDistantLight`, `PxrDomeLight` and `PxrMeshLight` through the `Light` request, with cones
+  and IES profiles. `Illuminate` links a light to the objects it lights.
+- `PixelVariance` stops each pixel of a `--paths` render once its noise falls below it.
+- `moya --paths --checkpoint <file>` writes a checkpoint after each pass, or at most once in the
+  seconds `--checkpoint-interval` gives. `--resume` continues a stopped render from it, and gives
+  the same picture as a render that never stopped.
+
 ### Fixed
 
 - The API reference describes each namespace, where it showed the copyright notice.
