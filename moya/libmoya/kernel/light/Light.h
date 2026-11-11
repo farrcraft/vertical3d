@@ -73,6 +73,9 @@ enum class Shape : std::uint8_t {
  * - image is the place among the lights' images of the image a rect light's texture or a dome
  *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
  *   exposure, a radiance, and its transform turns its image into the world.
+ * - shadowLinked is whether only some instances cast its shadows: those held among the links'
+ *   casters, shadowCount of them from shadowFirst. A light that every instance shadows casts
+ *   from all.
  **/
 struct Light {
     std::uint32_t id { 0 };
@@ -98,6 +101,9 @@ struct Light {
     std::uint32_t leaves { 0 };
     bool camera { false };
     std::uint32_t image { geometry::kNoPrimitive };
+    bool shadowLinked { false };
+    std::uint32_t shadowFirst { 0 };
+    std::uint32_t shadowCount { 0 };
 };
 
 /** Whether a light has a shape of its own: a rect, disk, sphere or cylinder. **/
@@ -111,6 +117,15 @@ MOYA_KERNEL inline bool shaped(const Light & light) {
  **/
 MOYA_KERNEL inline bool delta(const Light & light) {
     return light.shape == Shape::Point || (light.shape == Shape::Distant && !(light.size.x > 0.0F));
+}
+
+/**
+ * Whether only a light sample finds a light: one that lies at a point or along a direction, or
+ * one whose shadow link leaves an instance out. A BSDF's direction that meets such a light through
+ * an instance it casts no shadow from would be stopped there, so it takes the whole weight.
+ **/
+MOYA_KERNEL inline bool sampledAlone(const Light & light) {
+    return delta(light) || light.shadowLinked;
 }
 
 };  // namespace v3d::moya::kernel::light

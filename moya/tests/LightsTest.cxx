@@ -1146,21 +1146,21 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_lights_afar_alone_by_their
     const Built built(scene, 0);
     const kernel::light::Lights lights = built.lights.view();
     const kernel::surface::Surfaces surfaces = built.surfaces.view();
-    BOOST_TEST_REQUIRE(lights.root == kernel::geometry::kNoPrimitive);
-    BOOST_TEST_REQUIRE(lights.infinite.size == 2U);
+    BOOST_TEST_REQUIRE(lights.rootOf(0) == kernel::geometry::kNoPrimitive);
+    BOOST_TEST_REQUIRE(lights.afar(0) == 2U);
     constexpr std::uint32_t kDraws = 1024;
     std::map<std::uint32_t, std::uint32_t> counts;
     for (std::uint32_t draw = 0; draw < kDraws; ++draw) {
         const float u = (static_cast<float>(draw) + 0.5F) / static_cast<float>(kDraws);
-        const kernel::light::Picked picked = lights.pickByTree(surfaces, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F, u);
+        const kernel::light::Picked picked = lights.pickByTree(surfaces, 0, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F, u);
         BOOST_TEST_REQUIRE(picked.place != kernel::geometry::kNoPrimitive);
         BOOST_TEST(picked.chance == 0.5F);
         ++counts[picked.place];
     }
-    for (std::uint32_t i = 0; i < lights.infinite.size; ++i) {
-        const std::uint32_t place = lights.infinite[i];
+    for (std::uint32_t i = 0; i < lights.afar(0); ++i) {
+        const std::uint32_t place = lights.infinite[lights.infiniteFirst[0] + i];
         BOOST_TEST(counts[place] == kDraws / 2U);
-        BOOST_TEST(lights.chanceByTree(surfaces, place, kernel::geometry::kNoPrimitive, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F) == 0.5F);
+        BOOST_TEST(lights.chanceByTree(surfaces, 0, place, kernel::geometry::kNoPrimitive, glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F }, 0.0F) == 0.5F);
     }
 }
 
@@ -1175,7 +1175,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_by_the_chance_it_reports_t
     const Built built(scene, 0);
     const kernel::light::Lights lights = built.lights.view();
     const kernel::surface::Surfaces surfaces = built.surfaces.view();
-    BOOST_TEST_REQUIRE(lights.root != kernel::geometry::kNoPrimitive);
+    BOOST_TEST_REQUIRE(lights.rootOf(0) != kernel::geometry::kNoPrimitive);
     constexpr std::uint32_t kDraws = 1U << 16U;
     const std::vector<std::pair<glm::vec3, glm::vec3>> shading { { glm::vec3 { 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F } },
         { glm::vec3 { 1.2F, -0.4F, 0.0F }, glm::vec3 { 0.0F, 0.0F, -1.0F } }, { glm::vec3 { 0.1F, 0.2F, -0.6F }, glm::vec3 { 0.6F, 0.0F, -0.8F } },
@@ -1187,13 +1187,13 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_by_the_chance_it_reports_t
             float furthest = 0.0F;
             for (std::uint32_t draw = 0; draw < kDraws; ++draw) {
                 const float u = (static_cast<float>(draw) + 0.5F) / static_cast<float>(kDraws);
-                const kernel::light::Picked picked = lights.pickByTree(surfaces, point, normal, 0.5F, u);
+                const kernel::light::Picked picked = lights.pickByTree(surfaces, 0, point, normal, 0.5F, u);
                 if (picked.place == kernel::geometry::kNoPrimitive) {
                     ++none;
                     continue;
                 }
                 ++counts[{ picked.place, picked.primitive }];
-                const float reported = lights.chanceByTree(surfaces, picked.place, picked.primitive, point, normal, 0.5F);
+                const float reported = lights.chanceByTree(surfaces, 0, picked.place, picked.primitive, point, normal, 0.5F);
                 furthest = std::fmax(furthest, std::fabs(picked.chance - reported) / reported);
             }
             BOOST_TEST(furthest < 1.0e-5F);
@@ -1203,7 +1203,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_draws_by_the_chance_it_reports_t
                 const bool mesh = light.shape == kernel::light::Shape::Mesh;
                 for (std::uint32_t triangle = 0; triangle < (mesh ? light.count : 1U); ++triangle) {
                     const std::uint32_t primitive = mesh ? triangle : kernel::geometry::kNoPrimitive;
-                    const double chance = lights.chanceByTree(surfaces, place, primitive, point, normal, 0.5F);
+                    const double chance = lights.chanceByTree(surfaces, 0, place, primitive, point, normal, 0.5F);
                     sum += chance;
                     const auto drawn = counts.find({ place, primitive });
                     const double times = drawn == counts.end() ? 0.0 : drawn->second;
@@ -1226,7 +1226,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_is_the_same_on_any_count_of_thre
     const Built many(scene, 8);
     const kernel::light::Lights left = one.lights.view();
     const kernel::light::Lights right = many.lights.view();
-    BOOST_TEST(left.root == right.root);
+    BOOST_TEST(left.rootOf(0) == right.rootOf(0));
     BOOST_TEST(left.nodes.size > 1U);
     BOOST_TEST_REQUIRE(left.nodes.size == right.nodes.size);
     BOOST_TEST(std::memcmp(left.nodes.data, right.nodes.data, left.nodes.size * sizeof(kernel::light::TreeNode)) == 0);
@@ -1264,6 +1264,123 @@ BOOST_AUTO_TEST_CASE(moya_lights_the_light_tree_lowers_the_error_under_many_smal
         return sum / (kSide * kSide);
     };
     BOOST_TEST(error("tree") < 0.5 * error("power"));
+}
+
+/**
+ * The sum of the luminance of the pixels whose centres lie within a radius of a point, as a camera
+ * views a square of a half width about the origin. The picture's first row is the square's +y.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the half width, then the radius
+float sumInside(const film::Snapshot & snapshot, float half, const glm::vec2 & centre, float radius) {
+    float sum = 0.0F;
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            const float step = 2.0F * half / static_cast<float>(kSide);
+            const glm::vec2 at { -half + ((static_cast<float>(x) + 0.5F) * step), half - ((static_cast<float>(y) + 0.5F) * step) };
+            if (glm::distance(at, centre) < radius) {
+                sum += film::luminance(snapshot, x, y).value;
+            }
+        }
+    }
+    return sum;
+}
+
+// a light linked to one of two spheres lights that sphere alone, by each strategy and each way of
+// picking: a disk light, and a dome light beside the tree. The other sphere is black, since a
+// diffuse limit of one leaves it no light by way of the first. Each sphere is measured well inside
+// its edge, where the pixel filter reaches no light behind it
+BOOST_AUTO_TEST_CASE(moya_lights_a_linked_light_lights_only_the_instances_it_names_test) {
+    for (const char * kind : { "diskLight", "domeLight" }) {
+        for (const char * picking : { "tree", "power" }) {
+            for (const char * strategy : { "light", "bsdf", "mis" }) {
+                BOOST_TEST_CONTEXT(kind << " " << picking << " " << strategy) {
+                    scene::Scene scene(scene::kinds());
+                    const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 1.5F);
+                    scene.set(options, "lightSampling", scene::Value::string(strategy));
+                    scene.set(options, "lightPicking", scene::Value::string(picking));
+                    scene.set(options, "diffuseDepth", scene::Value::integer(1));
+                    const scene::Handle ball = scene.create("sphere", "ball");
+                    scene.set(ball, "radius", scene::Value::number(0.5F));
+                    const scene::Handle left = instanced(scene, "left", ball, {}, moved(-0.8F, 0.0F, 0.0F));
+                    instanced(scene, "right", ball, {}, moved(0.8F, 0.0F, 0.0F));
+                    const scene::Handle light = std::string(kind) == "diskLight" ? diskAbove(scene, 1.0F, 2.0F) : sky(scene, "");
+                    scene.set(light, "includeRoot", scene::Value::integer(0));
+                    scene.set(light, "instances", scene::Value::handles({ left }));
+                    const film::Snapshot snapshot = rendered(scene);
+                    BOOST_TEST(sumInside(snapshot, 1.5F, glm::vec2 { -0.8F, 0.0F }, 0.3F) > 0.0F);
+                    BOOST_TEST(sumInside(snapshot, 1.5F, glm::vec2 { 0.8F, 0.0F }, 0.3F) == 0.0F);
+                }
+            }
+        }
+    }
+}
+
+// a light names an instance in a group, and lights what that instance places wherever the group
+// is placed. A second placing of the group's other member is left dark
+BOOST_AUTO_TEST_CASE(moya_lights_a_linked_light_lights_an_instance_it_names_within_a_group_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 1.5F);
+    scene.set(options, "diffuseDepth", scene::Value::integer(1));
+    const scene::Handle ball = scene.create("sphere", "ball");
+    scene.set(ball, "radius", scene::Value::number(0.4F));
+    const scene::Handle group = scene.create("group", "pair");
+    const scene::Handle upper = instanced(scene, "upper", ball, group, moved(0.0F, -0.6F, 0.0F));
+    instanced(scene, "lower", ball, group, moved(0.0F, 0.6F, 0.0F));
+    instanced(scene, "west", group, {}, moved(-0.8F, 0.0F, 0.0F));
+    instanced(scene, "east", group, {}, moved(0.8F, 0.0F, 0.0F));
+    const scene::Handle light = diskAbove(scene, 1.0F, 2.0F);
+    scene.set(light, "includeRoot", scene::Value::integer(0));
+    scene.set(light, "instances", scene::Value::handles({ upper }));
+    const film::Snapshot snapshot = rendered(scene);
+    for (const float x : { -0.8F, 0.8F }) {
+        BOOST_TEST(sumInside(snapshot, 1.5F, glm::vec2 { x, -0.6F }, 0.2F) > 0.0F);
+        BOOST_TEST(sumInside(snapshot, 1.5F, glm::vec2 { x, 0.6F }, 0.2F) == 0.0F);
+    }
+}
+
+/**
+ * A white plane under two disk lights, found by a strategy, with a black disk wider than the plane
+ * between them that camera rays see through. The first light's shadow link names the cover while
+ * castsFirst holds, and nothing otherwise. The second's names every instance. Without the cover,
+ * the first light is alone.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - covered, then whether it casts
+film::Snapshot shadowLinked(const char * strategy, bool covered, bool castsFirst) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = viewed(scene, 64, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+    scene.set(options, "lightSampling", scene::Value::string(strategy));
+    plane(scene);
+    const scene::Handle first = diskAbove(scene, 0.5F, 2.0F);
+    if (!covered) {
+        return rendered(scene);
+    }
+    const scene::Handle cover = scene.create("disk", "cover");
+    scene.set(cover, "radius", scene::Value::number(200.0F));
+    black(scene, cover);
+    const scene::Handle placed = instanced(scene, "cover", cover, {}, moved(0.0F, 0.0F, -1.0F));
+    scene.set(placed, "camera", scene::Value::integer(0));
+    scene.set(first, "shadowIncludeRoot", scene::Value::integer(0));
+    scene.set(first, "shadowInstances", castsFirst ? scene::Value::handles({ placed }) : scene::Value::handles({}));
+    const scene::Handle second = scene.create("diskLight", "second");
+    scene.set(second, "radius", scene::Value::number(0.5F));
+    scene.set(second, "transform", scene::Value::matrix(flipped(moved(0.3F, 0.0F, -2.0F))));
+    return rendered(scene);
+}
+
+// a light's shadow link that leaves the cover out lights the plane through it, as though the
+// cover were not there, by each strategy. A second light is still shadowed by the cover, and the
+// first is too once its shadow link names the cover
+BOOST_AUTO_TEST_CASE(moya_lights_a_shadow_link_casts_shadows_only_from_the_instances_it_names_test) {
+    for (const char * strategy : { "light", "bsdf", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot open = shadowLinked(strategy, false, false);
+            const film::Snapshot through = shadowLinked(strategy, true, false);
+            BOOST_TEST(film::mean(open, { 0, 0 }, { kSide, kSide }).value > 0.0F);
+            BOOST_TEST(film::sigmas(film::mean(through, { 0, 0 }, { kSide, kSide }), film::mean(open, { 0, 0 }, { kSide, kSide })) < 3.0F);
+            BOOST_TEST(film::furthest(through, open).sigmas < 5.0F);
+            BOOST_TEST(film::mean(shadowLinked(strategy, true, true), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+        }
+    }
 }
 
 };  // namespace

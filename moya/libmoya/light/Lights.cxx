@@ -26,9 +26,12 @@
 #include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/light/link/Links.h>
+#include <moya/libmoya/kernel/light/link/LinkStep.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/light/internal/Gathered.h>
+#include <moya/libmoya/light/internal/Linking.h>
 #include <moya/libmoya/light/internal/Subtree.h>
 #include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/internal/Tree.h>
@@ -44,6 +47,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
@@ -608,6 +612,7 @@ void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototy
             .held = static_cast<std::uint32_t>(out.lights.size()) });
     }
     out.lights.push_back(made);
+    out.handles.push_back(handle);
     out.powers.push_back(power);
 }
 
@@ -644,6 +649,23 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
     });
 }
 
+/**
+ * A top tree for each set of linked lights over the lights with a place that light it, and the
+ * distant and dome lights that do, appended to what is gathered.
+ **/
+void treesBySet(const internal::Linking & links, internal::Gathered & all) {
+    const auto count = static_cast<std::uint32_t>(all.lights.size());
+    all.leaves.assign(static_cast<std::size_t>(links.count) * count, kernel::geometry::kNoPrimitive);
+    all.afarFirst.assign(1, 0U);
+    for (std::uint32_t set = 0; set < links.count; ++set) {
+        std::vector<internal::Leaf> top;
+        std::copy_if(all.top.begin(), all.top.end(), std::back_inserter(top), [&](const internal::Leaf & leaf) { return links.lights(set, leaf.held, count); });
+        all.roots.push_back(internal::build(top, all.nodes, all.leaves, set * count));
+        std::copy_if(all.infinite.begin(), all.infinite.end(), std::back_inserter(all.afar), [&](std::uint32_t place) { return links.lights(set, place, count); });
+        all.afarFirst.push_back(static_cast<std::uint32_t>(all.afar.size()));
+    }
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
@@ -653,9 +675,8 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     std::vector<kernel::geometry::Key> keys;
     std::vector<std::uint32_t> distant;
     std::vector<std::uint32_t> domes;
-    std::vector<std::uint32_t> infinite;
     internal::Textures textures(config, logger);
-    const auto add = [&](kernel::light::Light light, const geometry::Instance & placed, float size) {
+    const auto add = [&](kernel::light::Light light, const scene::Handle & handle, const geometry::Instance & placed, float size) {
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
         light.keyCount = static_cast<std::uint32_t>(placed.keys.size());
@@ -663,12 +684,13 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         const float power = std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y);
         const auto place = static_cast<std::uint32_t>(lights.size());
         if (light.shape == kernel::light::Shape::Distant || light.shape == kernel::light::Shape::Dome) {
-            infinite.push_back(place);
+            all.infinite.push_back(place);
         } else {
             all.top.push_back(internal::Leaf { .bounds = boundsOf(light, placed, power, prototypes.open, prototypes.close), .held = place });
         }
         lights.push_back(light);
         all.powers.push_back(power);
+        all.handles.push_back(handle);
     };
     std::uint32_t most = 0;
     for (const geometry::ShapedLight & shaped : prototypes.lights) {
@@ -683,7 +705,7 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
             // a texture shines by its texels, so it weighs the light by their average
             shining *= textures.average(made.image);
         }
-        add(made, instance, shining);
+        add(made, shaped.handle, instance, shining);
         most = std::max(most, instance.id + 1U);
     }
     std::vector<scene::Handle> unshaped = scene.objects("distantLight");
@@ -697,25 +719,25 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         const geometry::Instance placed = placement(scene, handle);
         if (scene.schema().kind(handle.kind).name == "sphereLight") {
             const float size = area(scene, handle, "sphereLight", glm::mat3(geometry::transformAt(placed, prototypes.open)));
-            add(point(scene, handle, size, config), placed, size);
+            add(point(scene, handle, size, config), handle, placed, size);
             continue;
         }
         const kernel::light::Light sun = distantOf(scene, handle, config);
         if (sun.size.x > 0.0F) {
             distant.push_back(static_cast<std::uint32_t>(lights.size()));
         }
-        add(sun, placed, 0.0F);
+        add(sun, handle, placed, 0.0F);
     }
     std::vector<scene::Handle> skies = scene.objects("domeLight");
     std::sort(skies.begin(), skies.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
     for (const scene::Handle & handle : skies) {
         const kernel::light::Light sky = domeOf(scene, handle, config, textures);
         domes.push_back(static_cast<std::uint32_t>(lights.size()));
-        add(sky, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
+        add(sky, handle, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
     }
     meshLights(scene, prototypes, config, logger, all);
-    std::vector<std::uint32_t> leaves(lights.size(), kernel::geometry::kNoPrimitive);
-    root_ = internal::build(all.top, all.nodes, leaves, 0);
+    const internal::Linking links = internal::linking(scene, prototypes, all.handles, lights);
+    treesBySet(links, all);
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
     for (std::size_t i = 0; i < lights.size(); ++i) {
         if (lights[i].id != kernel::geometry::kNoPrimitive) {
@@ -734,9 +756,16 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     sums_ = uploaded(device, textures.sums());
     domes_ = uploaded(device, domes);
     nodes_ = uploaded(device, all.nodes);
-    leaves_ = uploaded(device, leaves);
+    roots_ = uploaded(device, all.roots);
+    leaves_ = uploaded(device, all.leaves);
     triangleLeaves_ = uploaded(device, all.triangleLeaves);
-    infinite_ = uploaded(device, infinite);
+    infinite_ = uploaded(device, all.afar);
+    infiniteFirst_ = uploaded(device, all.afarFirst);
+    linkFirst_ = uploaded(device, links.first);
+    linkSteps_ = uploaded(device, links.steps);
+    lit_ = uploaded(device, links.lit);
+    casters_ = uploaded(device, links.casters);
+    count_ = static_cast<std::uint32_t>(lights.size());
 }
 
 kernel::light::Lights Lights::view() const {
@@ -752,10 +781,16 @@ kernel::light::Lights Lights::view() const {
         .sums = device::view<float>(*sums_),
         .domes = device::view<std::uint32_t>(*domes_),
         .nodes = device::view<kernel::light::TreeNode>(*nodes_),
-        .root = root_,
+        .roots = device::view<std::uint32_t>(*roots_),
         .leaves = device::view<std::uint32_t>(*leaves_),
         .triangleLeaves = device::view<std::uint32_t>(*triangleLeaves_),
-        .infinite = device::view<std::uint32_t>(*infinite_) };
+        .infinite = device::view<std::uint32_t>(*infinite_),
+        .infiniteFirst = device::view<std::uint32_t>(*infiniteFirst_),
+        .links = kernel::light::link::Links { .first = device::view<std::uint32_t>(*linkFirst_),
+            .steps = device::view<kernel::light::link::LinkStep>(*linkSteps_),
+            .lit = device::view<std::uint8_t>(*lit_),
+            .count = count_,
+            .casters = device::view<std::uint32_t>(*casters_) } };
 }
 
 };  // namespace v3d::moya::light

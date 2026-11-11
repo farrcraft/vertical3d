@@ -50,6 +50,8 @@
 #include <moya/libmoya/kernel/light/Emission.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Image.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Light.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/link/Links.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/link/LinkStep.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Lights.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/LightSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Picked.h>  // IWYU pragma: keep

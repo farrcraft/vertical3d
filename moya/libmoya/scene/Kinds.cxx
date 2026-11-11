@@ -293,7 +293,8 @@ Kind material() {
  * What every light holds: its placement, its colour and strength, its colour temperature in
  * kelvin while enableColorTemperature is 1, and what it lights. As in UsdLux's light linking, it
  * lights every instance while includeRoot is 1, and otherwise only the instances it names, which
- * may be none.
+ * may be none. As in UsdLux's shadow linking, every instance casts its shadows while
+ * shadowIncludeRoot is 1, and otherwise only the instances shadowInstances names.
  **/
 std::vector<Declaration> light() {
     return {
@@ -305,7 +306,10 @@ std::vector<Declaration> light() {
         Declaration { .name = "enableColorTemperature", .type = Type::Integer, .fallback = Value::integer(0) },
         Declaration { .name = "colorTemperature", .type = Type::Float, .fallback = Value::number(kWhiteTemperature) },
         Declaration { .name = "includeRoot", .type = Type::Integer, .fallback = Value::integer(1) },
-        Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
+        Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } },
+        Declaration { .name = "shadowIncludeRoot", .type = Type::Integer, .fallback = Value::integer(1) },
+        Declaration {
+            .name = "shadowInstances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
 }
 
 /** A light with an area, which a cone may shape. Camera rays see it while camera is 1. **/

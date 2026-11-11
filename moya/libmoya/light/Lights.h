@@ -61,6 +61,11 @@ namespace v3d::moya::light {
  * and the directions it emits along. It depends on the scene alone, so every run builds the same
  * tree.
  *
+ * Light linking decides which lights light each shading point, as the scene's includeRoot and
+ * instances say. Each set of lights that some shading point is lit by has a top tree of its own,
+ * and the mesh lights' subtrees are shared among them. A light whose shadowIncludeRoot is 0 casts
+ * shadows only from the instances its shadowInstances names.
+ *
  * A cone angle is held to [0, 180] degrees and a softness to [0, 1].
  *
  * It reads the device's memory, so the device outlives it.
@@ -93,10 +98,16 @@ class Lights final {
     boost::shared_ptr<device::Buffer> sums_;
     boost::shared_ptr<device::Buffer> domes_;
     boost::shared_ptr<device::Buffer> nodes_;
-    std::uint32_t root_ { 0 };
+    boost::shared_ptr<device::Buffer> roots_;
     boost::shared_ptr<device::Buffer> leaves_;
     boost::shared_ptr<device::Buffer> triangleLeaves_;
     boost::shared_ptr<device::Buffer> infinite_;
+    boost::shared_ptr<device::Buffer> infiniteFirst_;
+    boost::shared_ptr<device::Buffer> linkFirst_;
+    boost::shared_ptr<device::Buffer> linkSteps_;
+    boost::shared_ptr<device::Buffer> lit_;
+    boost::shared_ptr<device::Buffer> casters_;
+    std::uint32_t count_ { 0 };
 };
 
 };  // namespace v3d::moya::light

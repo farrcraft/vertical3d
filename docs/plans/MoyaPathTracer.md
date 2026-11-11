@@ -137,7 +137,7 @@ among the options before the record is drafted.
 | [13](#step-13--mesh-lights) | Mesh lights | `moya/libmoya` | 0213 | done |
 | [14](#step-14--the-dome-light) | The dome light and an importance-sampled environment | `moya/libmoya`, `output` | — | done |
 | [15](#step-15--the-light-tree) | The light tree | `moya/libmoya/light` | 0214 | done |
-| [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | open |
+| [16](#step-16--light-linking-and-shadow-linking) | Light linking and shadow linking | `moya/libmoya`, `scene` | 0214 | done |
 | [17](#step-17--ies-profiles) | IES profiles | `moya/libmoya/light`, `scene` | — | open |
 | [18](#step-18--renderman-lights-from-rib) | RenderMan's lights from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
 | [19](#step-19--adaptive-sampling) | Adaptive sampling to a noise threshold | `moya/libmoya/film`, `kernel` | 0215 | open |
@@ -796,6 +796,36 @@ error through the tree than by power at the same sample count. The tree's picks 
 density it reports. Two builds on different thread counts are equal node for node.
 
 ### Step 16 — Light linking and shadow linking
+
+**Done.** `light::internal::linking()` walks the chains of instances from the world once. It
+finds each set of linked lights a shading point can lie in, and the steps from set to set at the
+instances the lights name. `kernel::light::link::Links` follows the steps along a hit's chain.
+Each set has a top tree of its own and a list of distant and dome lights, and the mesh lights'
+subtrees are shared by every set. The path state gains the shading point's set, which a BSDF
+sample that meets a light is weighed by. The scene's lights gain `shadowIncludeRoot` and
+`shadowInstances`, so fifteen committed scene descriptions gain them. The CPU library's table is
+now version 12.
+Four things the list below did not settle:
+
+* **A light names an instance at any depth of a chain**, and lights everything placed through
+  it, as a UsdLux collection takes in a prim's descendants.
+* **A shadow-linked light is found by light samples alone**, as a point is. A BSDF's direction
+  towards it would stop at what its shadow ray passes through, so the two would not agree.
+  Cycles traces a second ray for such a light, which this step does not.
+* **A shadow ray passes through at most `kMostPassed` instances** that cast none of its light's
+  shadows, and past that is blocked.
+* **Drawn by power, a light that does not light the set gathers nothing**, rather than having a
+  table of powers for each set. The tree is the fallback, and power is there to compare with.
+
+[Lights.md](../offline/Lights.md#light-linking) states the rules.
+
+Each case was run against broken code as well, one break at a time. Every set's tree holding
+every light failed both cases of linked lights, as the list below asks of a tree that ignores
+linking. Every set listing every distant and dome light failed the case of two spheres, through
+its dome. A chain that never stepped out of set 0 failed both, and so did a BSDF sample that
+ignored the links. A walk that did not enter groups failed the case of a group. A shadow cast by
+every instance failed the shadow link, and so did a shadow-linked light weighed against the
+BSDF.
 
 * **Light linking** as the scene holds it: a light lights only the instances its `includeRoot`
   and `instances` allow. The tree leaves out what a shading point's instance is not linked to, as

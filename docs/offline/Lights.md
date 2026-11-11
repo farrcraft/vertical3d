@@ -259,11 +259,46 @@ host, in `kernel/light/Tree.h`'s nodes.
 - **The tree is built from the scene alone**, on one thread, so every run builds the same tree.
   Each render builds it again, with the lights.
 
-`nodes` holds every tree, and `root` is the top tree's root. `leaves` holds each light's leaf by
-its place, and `triangleLeaves` each triangle's, from the mesh light's `leaves`. `infinite`
-holds the distant and dome lights.
+`nodes` holds every tree, and `roots` the root of each set of linked lights' top tree, as
+[Light linking](#light-linking) says. `leaves` holds each light's leaf in each set, and
+`triangleLeaves` each triangle's, from the mesh light's `leaves`. `infinite` holds the distant
+and dome lights of each set, from `infiniteFirst`.
 
 Background: [ADR-0214](../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md)
+
+## Light linking
+
+A light lights every instance while its `includeRoot` is 1. When it is 0, it lights only what a
+chain of instances places through an instance its `instances` names, at any depth of the chain.
+Camera rays see every light, whatever it lights.
+
+- **A shading point lies in a set of linked lights**, which its chain of instances decides. Set 0
+  holds every light whose `includeRoot` is 1. A chain that reaches an instance a linked light
+  names moves on into a set that also holds that light.
+- **`light::internal::linking()` finds every set** by walking the chains from the world once,
+  and records each step from one set to another at the instance that makes it. A group reached
+  in the same set at the same depth is walked once.
+- **`kernel::light::link::Links::setOf()`** follows those steps along a hit's chain, and
+  `Links::lights()` says whether a light lights a set.
+- **Each set has a top tree of its own**, over the lights with a place that light it, and a list
+  of the distant and dome lights that do. The mesh lights' subtrees are shared by every set.
+- **A light sample draws from the shading point's set.** Drawn in proportion to power, a light
+  that does not light the set gathers nothing.
+- **A BSDF sample that meets a light** gathers nothing from a light that does not light the set
+  of the shading point the sample left. The path keeps that set for it.
+
+A light's `shadowIncludeRoot` and `shadowInstances` say what casts its shadows, as UsdLux's
+shadow linking does. While `shadowIncludeRoot` is 1, every instance casts them. When it is 0,
+only what a chain places through an instance `shadowInstances` names does.
+
+- **A shadow ray from such a light passes through what casts none of its shadows.** It goes on
+  from just past each point it meets, until it meets what casts its shadow or nothing.
+  `kernel::integrate::kMostPassed` is the most it passes through, past which it is blocked.
+- **Such a light is found by light samples alone**, as a point is, and its light sample takes
+  the whole weight. A BSDF's direction towards it would stop at what the shadow ray passes
+  through.
+- **`Links::casts()`** says whether a hit's chain casts a light's shadows, from the light's
+  sorted list among `casters`.
 
 ## Sampling a light
 

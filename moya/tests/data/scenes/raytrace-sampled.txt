@@ -19,6 +19,8 @@ distantLight "light 1"
     instances handle[0] =
     intensity float = 0.9
     normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
     transform matrix = [-0.819232 0 0.573462 0 0.285279 0.867482 0.407542 0 -0.497468 0.497468 -0.710669 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
@@ -100,5 +102,7 @@ sphereLight "light 2"
     intensity float = 4.8
     normalize integer = 1
     radius float = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
     transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 -0.6 0.5 1.2 1]
     treatAsPoint integer = 0

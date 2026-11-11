@@ -93,7 +93,10 @@ then derived as RI derives it.
   lights. Each also holds a colour temperature in kelvin, `colorTemperature`, which applies while
   `enableColorTemperature` is 1. As in UsdLux's light linking, a light lights every instance while
   its `includeRoot` is 1, the fallback. When it is 0, the light lights only the `instances` it
-  names, which may be none. A light with an area holds `coneAngle` and `coneSoftness`. It also holds
+  names, which may be none. As in UsdLux's shadow linking, every instance casts a light's
+  shadows while its `shadowIncludeRoot` is 1, the fallback. When it is 0, only the
+  `shadowInstances` it names do, as [Lights.md](Lights.md#light-linking) says. A light with an
+  area holds `coneAngle` and `coneSoftness`. It also holds
   `camera`, which is 1 for a light camera rays see, and 0, the fallback, for one they do not. A rect
   light holds its `width`, `height` and `texture`, a disk or sphere light its `radius`, and a
   cylinder light its `radius` and `length`. A sphere light also holds `treatAsPoint`, which is 1 for

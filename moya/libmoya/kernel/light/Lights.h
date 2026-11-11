@@ -13,6 +13,7 @@
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
+#include <moya/libmoya/kernel/light/link/Links.h>
 #include <moya/libmoya/kernel/light/Picked.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
@@ -42,13 +43,15 @@ namespace v3d::moya::kernel::light {
  * is then drawn in proportion to its area: triangles holds the sums of each mesh light's chances
  * in the same way, from its own first.
  *
- * The light tree draws a light by what it may bring to a shading point instead. Its top tree, from
- * root among nodes, holds every light with a place: those with a shape, the points and the mesh
- * lights. Each mesh light's leaf leads on into its geometry's subtree over its triangles, in the
- * geometry's own space, which every light that places the geometry shares. leaves holds the leaf
- * of each light by its place, or none, and triangleLeaves that of each triangle of each subtree's
- * geometry. infinite holds every distant and dome light, which are drawn beside the tree, each
- * with the same chance as the tree.
+ * The light tree draws a light by what it may bring to a shading point instead. Each set of
+ * linked lights has a top tree of its own, from roots[set] among nodes. It holds the lights with
+ * a place that light the set: those with a shape, the points and the mesh lights. Each mesh light's
+ * leaf leads on into its geometry's subtree over its triangles, in the geometry's own space,
+ * which every set and every light that places the geometry shares. leaves holds the leaf of each
+ * light in each set, by the set times the count of lights plus its place, or none, and
+ * triangleLeaves that of each triangle of each subtree's geometry. infinite holds the distant and
+ * dome lights of each set, from infiniteFirst[set] up to infiniteFirst[set + 1]. They are drawn
+ * beside the set's tree, each with the same chance as the tree.
  **/
 struct Lights {
     Array<Light> lights;
@@ -81,10 +84,13 @@ struct Lights {
     Array<std::uint32_t> domes;
 
     Array<TreeNode> nodes;
-    std::uint32_t root { geometry::kNoPrimitive };
+    Array<std::uint32_t> roots;
     Array<std::uint32_t> leaves;
     Array<std::uint32_t> triangleLeaves;
     Array<std::uint32_t> infinite;
+    Array<std::uint32_t> infiniteFirst;
+
+    link::Links links;
 
     /**
      * The place, among count chances from a first, of one drawn by a random number, from the sums
@@ -117,9 +123,22 @@ struct Lights {
         return place == 0U ? sums[first] : sums[first + place] - sums[first + place - 1U];
     }
 
-    /** The chance of drawing the tree, and each distant and dome light: the same for each. **/
-    MOYA_KERNEL float aside() const {
-        const std::uint32_t count = infinite.size + (root != geometry::kNoPrimitive ? 1U : 0U);
+    /** How many distant and dome lights light a set of linked lights. **/
+    MOYA_KERNEL std::uint32_t afar(std::uint32_t set) const {
+        return infiniteFirst.size > set + 1U ? infiniteFirst[set + 1U] - infiniteFirst[set] : 0U;
+    }
+
+    /** The root of a set's tree, or kNoPrimitive when no light with a place lights it. **/
+    MOYA_KERNEL std::uint32_t rootOf(std::uint32_t set) const {
+        return roots.size > set ? roots[set] : geometry::kNoPrimitive;
+    }
+
+    /**
+     * The chance of drawing a set's tree, and each of its distant and dome lights: the same for
+     * each, and zero when nothing lights the set.
+     **/
+    MOYA_KERNEL float aside(std::uint32_t set) const {
+        const std::uint32_t count = afar(set) + (rootOf(set) != geometry::kNoPrimitive ? 1U : 0U);
         return count == 0U ? 0.0F : 1.0F / static_cast<float>(count);
     }
 
@@ -146,24 +165,27 @@ struct Lights {
     }
 
     /**
-     * A light drawn by the light tree for a shading point, with a normal, at a time within the
-     * shutter, by one random number. A mesh light's triangle is drawn on through its subtree by
-     * what is left of the number. Draws nothing when the tree's nodes bring nothing to the point.
+     * A light drawn by the light tree for a shading point of a set of linked lights, with a
+     * normal, at a time within the shutter, by one random number. A mesh light's triangle is drawn
+     * on through its subtree by what is left of the number. Draws nothing when the tree's nodes
+     * bring nothing to the point, or nothing lights the set.
      **/
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, its normal, then the time
-    MOYA_KERNEL Picked pickByTree(const surface::Surfaces & surfaces, const glm::vec3 & point, const glm::vec3 & normal, float time, float u) const {
-        const float share = aside();
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the point, then the time
+    MOYA_KERNEL Picked pickByTree(const surface::Surfaces & surfaces, std::uint32_t set, const glm::vec3 & point, const glm::vec3 & normal, float time,
+        float u) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        const float share = aside(set);
         if (!(share > 0.0F)) {
             return Picked {};
         }
-        const float sideways = share * static_cast<float>(infinite.size);
+        const std::uint32_t count = afar(set);
+        const float sideways = share * static_cast<float>(count);
         if (u < sideways) {
             const auto drawn = static_cast<std::uint32_t>(u / share);
-            return Picked { .place = infinite[drawn < infinite.size ? drawn : infinite.size - 1U], .chance = share };
+            return Picked { .place = infinite[infiniteFirst[set] + (drawn < count ? drawn : count - 1U)], .chance = share };
         }
         float rest = std::fmin((u - sideways) / (1.0F - sideways), sample::kOneMinusEpsilon);
         float chance = share;
-        const std::uint32_t leaf = walk(nodes, root, point, normal, rest, chance);
+        const std::uint32_t leaf = walk(nodes, roots[set], point, normal, rest, chance);
         if (leaf == geometry::kNoPrimitive) {
             return Picked {};
         }
@@ -186,20 +208,25 @@ struct Lights {
     }
 
     /**
-     * The chance that pickByTree() draws the light at a place for a shading point, with a normal,
-     * at a time within the shutter, and the triangle given of a mesh light.
+     * The chance that pickByTree() draws the light at a place, and the triangle given of a mesh
+     * light. It is drawn for a shading point of a set of linked lights, with a normal, at a time
+     * within the shutter. Zero for a light that does not light the set.
      **/
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
-    MOYA_KERNEL float chanceByTree(const surface::Surfaces & surfaces, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & point,
-        const glm::vec3 & normal, float time) const {  // NOLINT(bugprone-easily-swappable-parameters)
-        const Light & light = lights[place];
-        if (light.shape == Shape::Distant || light.shape == Shape::Dome) {
-            return aside();
-        }
-        if (leaves[place] == geometry::kNoPrimitive) {
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the place, then the time
+    MOYA_KERNEL float chanceByTree(const surface::Surfaces & surfaces, std::uint32_t set, std::uint32_t place, std::uint32_t primitive,
+        const glm::vec3 & point, const glm::vec3 & normal, float time) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        if (!links.lights(set, place)) {
             return 0.0F;
         }
-        const float chance = aside() * reached(nodes, leaves[place], point, normal);
+        const Light & light = lights[place];
+        if (light.shape == Shape::Distant || light.shape == Shape::Dome) {
+            return aside(set);
+        }
+        const std::uint32_t leaf = leaves[(set * lights.size) + place];
+        if (leaf == geometry::kNoPrimitive) {
+            return 0.0F;
+        }
+        const float chance = aside(set) * reached(nodes, leaf, point, normal);
         if (light.shape != Shape::Mesh) {
             return chance;
         }

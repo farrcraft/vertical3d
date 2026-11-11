@@ -50,6 +50,9 @@ namespace v3d::moya::kernel::integrate {
 /** How far short of a light's point a shadow ray stops, as a share of its length. **/
 inline constexpr float kShadowShort = 1.0e-4F;
 
+/** The most instances a shadow ray passes through that cast none of its light's shadows. **/
+inline constexpr std::uint32_t kMostPassed = 256;
+
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
  * sampler, a traversal, the scene's surfaces and lights, the RGB-to-spectrum table and the
@@ -142,9 +145,10 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
 }
 
 /**
- * The light a light sample draws at a shading point, at a time within the shutter. The light tree
- * draws it, or its power does, with a mesh light's triangle then drawn in proportion to its area.
- * Its chance holds the triangle's.
+ * The light a light sample draws at a shading point of the path's set of linked lights, at a time
+ * within the shutter. The set's light tree draws it, or the power of every light does, with a mesh
+ * light's triangle then drawn in proportion to its area. Its chance holds the triangle's. A light
+ * drawn by power that does not light the set draws nothing.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::ShadingPoint & point, float time, const PathState & state) {
@@ -152,10 +156,14 @@ MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::Shadi
     const std::uint32_t sample = MOYA_PATH(state, sample);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
     const float u = paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightPick));
+    const std::uint32_t set = MOYA_PATH(state, linked);
     if (paths.settings.picking == Picking::Tree) {
-        return paths.lights.pickByTree(paths.surfaces, point.position, point.shading, time, u);
+        return paths.lights.pickByTree(paths.surfaces, set, point.position, point.shading, time, u);
     }
     light::Picked out { .place = paths.lights.pick(u) };
+    if (out.place == geometry::kNoPrimitive || !paths.lights.links.lights(set, out.place)) {
+        return light::Picked {};
+    }
     out.chance = paths.lights.chance(out.place);
     if (out.chance > 0.0F && paths.lights.lights[out.place].shape == light::Shape::Mesh) {
         out.primitive = paths.lights.pickTriangle(out.place, paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightTriangle)));
@@ -165,15 +173,16 @@ MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::Shadi
 }
 
 /**
- * The chance that pickLight() draws the light at a place, and the triangle given of a mesh light,
- * at a shading point with a normal, at a time within the shutter.
+ * The chance that pickLight() draws the light at a place, and the triangle given of a mesh light.
+ * It is drawn at a shading point of a set of linked lights with a normal, at a time within the
+ * shutter.
  **/
 template <geometry::Traversal T>
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
-MOYA_KERNEL float pickChance(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & normal,
-    float time) {  // NOLINT(bugprone-easily-swappable-parameters)
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the place, then the time
+MOYA_KERNEL float pickChance(const Paths<T> & paths, std::uint32_t set, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from,
+    const glm::vec3 & normal, float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     if (paths.settings.picking == Picking::Tree) {
-        return paths.lights.chanceByTree(paths.surfaces, place, primitive, from, normal, time);
+        return paths.lights.chanceByTree(paths.surfaces, set, place, primitive, from, normal, time);
     }
     const float chance = paths.lights.chance(place);
     return paths.lights.lights[place].shape == light::Shape::Mesh ? chance * paths.lights.triangleChance(place, primitive) : chance;
@@ -245,14 +254,37 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::
 }
 
 /**
+ * Whether anything casts a light's shadow along a shadow ray. A ray from a light whose shadow link
+ * leaves instances out passes through each of those, from just past where it met it. One that
+ * passes through more than kMostPassed is taken as blocked.
+ **/
+template <geometry::Traversal T>
+MOYA_KERNEL bool blocked(const Paths<T> & paths, const light::Light & light, geometry::Ray shadow) {
+    if (!light.shadowLinked) {
+        return paths.traversal.any(shadow);
+    }
+    for (std::uint32_t passed = 0; passed < kMostPassed; ++passed) {
+        const geometry::Hit hit = paths.traversal.nearest(shadow);
+        if (!hit.found()) {
+            return false;
+        }
+        if (paths.lights.links.casts(light, hit)) {
+            return true;
+        }
+        shadow.start = std::fmax(hit.distance * (1.0F + kShadowShort), hit.distance + std::numeric_limits<float>::min());
+    }
+    return true;
+}
+
+/**
  * Next event estimation at a shading point: the light a light sample brings in, weighed against
  * the BSDF's sample by the power heuristic. A light is drawn by pickLight(), then a point on it,
  * and a shadow ray towards the point says whether anything lies between. A bounce that a depth
  * limit refuses samples no light, since the BSDF's sample there ends the path.
  *
- * A light that lies at one point or along one direction takes the whole weight, since no BSDF
- * sample meets it, and is sampled whatever the strategy. While the BSDF alone finds the lights,
- * a light sample of any other light gathers nothing.
+ * A light that only a light sample finds takes the whole weight, and is sampled whatever the
+ * strategy. It lies at one point or along one direction, or its shadow link leaves an instance
+ * out. While the BSDF alone finds the lights, a light sample of any other light gathers nothing.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
@@ -273,8 +305,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
     }
     const std::uint32_t place = picked.place;
     const light::Light & chosen = paths.lights.lights[place];
-    const bool delta = light::delta(chosen);
-    if (paths.settings.strategy == Strategy::Bsdf && !delta) {
+    const bool alone = light::sampledAlone(chosen);
+    if (paths.settings.strategy == Strategy::Bsdf && !alone) {
         return none;
     }
     const light::LightSample drawn =
@@ -296,11 +328,11 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
         shadow.direction = drawn.point - shadow.origin;
         shadow.end = 1.0F - kShadowShort;
     }
-    if (paths.traversal.any(shadow)) {
+    if (blocked(paths, chosen, shadow)) {
         return none;
     }
     const float density = chance * drawn.density;
-    const bool weighed = paths.settings.strategy == Strategy::Mis && !delta;
+    const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
     const float weight = weighed ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
     return value * emitted * (std::fabs(glm::dot(drawn.incoming, point.shading)) * weight / density);
 }
@@ -346,8 +378,10 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
  * The share of a light that a ray met carries back, at a point of the light's shape, a point of a
  * mesh light's triangle, or a point along the ray to a distant light. A camera ray's carries all
  * of it, since nothing else samples the light for it, but none of a mesh light's unless camera
- * rays see it. A bounce's carries the power heuristic's weight of the BSDF's sample against the
- * light's: all of it when the BSDF alone finds lights, and none when light samples alone do.
+ * rays see it. A bounce's carries none of a light that does not light the set of linked lights of
+ * the shading point it left, or that only a light sample finds. Otherwise it carries the power
+ * heuristic's weight of the BSDF's sample against the light's: all of it when the BSDF alone finds
+ * lights, and none when light samples alone do.
  **/
 template <geometry::Traversal T>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the light, the triangle, then the time
@@ -357,6 +391,10 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
         const light::Light & light = paths.lights.lights[place];
         return light.shape != light::Shape::Mesh || light.camera ? 1.0F : 0.0F;
     }
+    const std::uint32_t set = MOYA_PATH(state, linked);
+    if (!paths.lights.links.lights(set, place) || light::sampledAlone(paths.lights.lights[place])) {
+        return 0.0F;
+    }
     if (paths.settings.strategy == Strategy::Bsdf) {
         return 1.0F;
     }
@@ -364,7 +402,7 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
         return 0.0F;
     }
     const glm::vec3 & from = MOYA_PATH(state, from);
-    const float density = pickChance(paths, place, primitive, from, MOYA_PATH(state, normal), time) * lightDensity(paths, place, primitive, from, met, time);
+    const float density = pickChance(paths, set, place, primitive, from, MOYA_PATH(state, normal), time) * lightDensity(paths, place, primitive, from, met, time);
     return powerHeuristic(MOYA_PATH(state, density), density);
 }
 
@@ -407,9 +445,9 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geom
 /**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
  * accumulate stages run back to back. At each shading point a path gathers its share of what a
- * mesh light emits there, then a light sample, before it scatters. A path that leaves the scene
- * gathers the dome and distant lights it meets. One that meets a light's shape gathers
- * its share of what the light emits towards it, and ends there.
+ * mesh light emits there, then a light sample of its set of linked lights, before it scatters. A
+ * path that leaves the scene gathers the dome and distant lights it meets. One that meets a
+ * light's shape gathers its share of what the light emits towards it, and ends there.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
@@ -441,6 +479,7 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
                 MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * light::glow(paths.lights.lights[glowing], paths.table, MOYA_PATH(state, wavelengths)) * share;
             }
         }
+        MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
         const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, MOYA_PATH(state, wavelengths));
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
