@@ -133,7 +133,7 @@ among the options before the record is drafted.
 |---|---|---|---|---|
 | [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | accepted |
 | [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | accepted |
-| [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | open |
+| [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | accepted |
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | open |
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | open |
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | open |
@@ -287,6 +287,12 @@ the area a pixel's sample covers. A path state's size is ADR-0212's concern on e
 
 The record also settles how a rough bounce widens the footprint, and whether a lookup filters
 trilinearly or over an anisotropic footprint.
+
+**Drafted** as [ADR-0224](../adr/offline/0224-offline-a-rays-footprint-is-a-cone.md): a ray cone,
+a width and a spread angle, carried through reflection and refraction. At each hit it grows by
+the surface's curvature, its spread widens by the lobe's roughness, and it is projected onto the
+surface as an ellipse. A lookup takes a bounded number of trilinear probes along the ellipse's
+major axis, as OpenImageIO's texture system does.
 
 ### Step 4 — The record: the texture cache
 

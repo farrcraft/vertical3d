@@ -374,6 +374,7 @@ reported, so the table lists only tags in use.
 | [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
+| [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
 
 ### particles
 
@@ -501,6 +502,7 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0082](rendering/0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context |
 | [0109](rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot |
+| [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
 
 ### tooling
 
