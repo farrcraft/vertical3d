@@ -471,13 +471,19 @@ distance within a tolerance, since the two round apart.
 A BSDF's samples are checked against its density by chi-squared, through `densityFit()` in
 `moya/tests/Scattering.h`, which every lobe's case calls.
 
-- **The sphere about the shading normal is cut into bins of equal area**, even in the cosine and
-  the turn. Each bin expects the BSDF's density integrated over it on a finer grid.
+- **The sphere about the shading normal is cut into bins even in the polar angle and the turn**,
+  40 by 80, so a narrow lobe falls across many. Each bin expects the BSDF's density integrated
+  over its solid angle on a finer grid.
 - **Bins expected to hold fewer than five samples are pooled into one.**
 - **A specular sample falls in no bin**, so the bins expect only what the density holds.
 - **A fit passes below six deviations above its mean**, a false failure less than once in a
   billion.
 - **Each sample's density is checked** against the BSDF's density for its direction.
+
+`furnace()`, beside it, is the mean weight of a BSDF's samples, as the scatter stage weighs each:
+what the BSDF returns of a white furnace's light along outgoing. A lobe's case checks it against
+the energy a closed form says the lobe keeps, or against the lobe's value integrated over the
+hemisphere. A case checks a lobe's reciprocity by its value with the two directions swapped.
 
 A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
 finds the pixel whose luminance lies furthest from an expected value, or from another picture,

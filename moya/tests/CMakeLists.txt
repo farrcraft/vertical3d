@@ -13,6 +13,7 @@ v3d_add_test(moya
 	"CheckpointTest.cxx"
 	"CommandLineTest.cxx"
 	"CompareTest.cxx"
+	"ConductorTest.cxx"
 	"CurvesTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"

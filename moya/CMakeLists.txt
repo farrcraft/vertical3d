@@ -1,4 +1,5 @@
 add_subdirectory("libmoya")
+add_subdirectory("tools/albedo")
 add_subdirectory("tools/rgbtable")
 add_subdirectory("bench")
 if(V3D_BUILD_TESTS)

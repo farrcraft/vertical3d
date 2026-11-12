@@ -139,7 +139,7 @@ among the options before the record is drafted.
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | accepted |
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | done |
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | done |
-| [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | open |
+| [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222 | open |
@@ -426,6 +426,16 @@ changed. The chi-squared check is `densityFit()` in `moya/tests/Scattering.h`.
 
 **Tests:** chi-squared, reciprocity, and a white furnace in which a white conductor of every
 roughness keeps all its energy. Its reflectance at normal incidence is its base colour.
+
+**Done.** `Ggx` holds the distribution, Smith's height-correlated masking and shadowing, and
+Heitz's sampling of visible normals. `F82` is OpenPBR's Fresnel factor at each wavelength. A
+`Conductor` closure sums GGX's single scattering and Kulla and Conty's compensation lobe. It is
+singular below an alpha of 0.001, and its anisotropy follows the shading frame's tangent.
+`moya_albedo` integrates the albedo table at build time from the kernel's own GGX, and the kernel
+reads it through `Paths`, as it reads the RGB-to-spectrum table. A white conductor keeps its
+energy within 1% from a roughness of 0.1 to 1. Anisotropic compensation reads the isotropic
+table at the alphas' geometric mean. The chi-squared bins became even in the polar angle, so a
+narrow lobe falls across many.
 
 ### Step 10 — The dielectric
 

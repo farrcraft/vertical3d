@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/AtSurface.h>
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
@@ -55,9 +56,9 @@ inline constexpr std::uint32_t kMostPassed = 256;
 
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
- * sampler, a traversal, the scene's surfaces and lights, the RGB-to-spectrum table and the
- * settings. A pass
- * adds the samples from first, count of them, to each pixel.
+ * sampler, a traversal, the scene's surfaces and lights, the RGB-to-spectrum table, the albedo
+ * table that energy compensation reads, and the settings. A pass adds the samples from first,
+ * count of them, to each pixel.
  **/
 template <geometry::Traversal T>
 struct Paths {
@@ -69,6 +70,7 @@ struct Paths {
     surface::Surfaces surfaces;
     light::Lights lights;
     spectrum::RgbTable table;
+    bsdf::Albedos albedos;
     Settings settings;
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
@@ -491,7 +493,7 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
             }
         }
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
-        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, MOYA_PATH(state, wavelengths));
+        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths));
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
         if (!scatter(paths, point, scattering, outgoing, state)) {

@@ -91,7 +91,8 @@ its corners' weights. It is false for a geometry without that primvar.
 The gather reads the material each instance names, once per material. A `kernel::surface::Material`
 holds the colour its surface node's `Cs` input gives, converted into ACEScg from the space the
 value names, and whether it gives one. It also holds the closures its BSDF is built from, at most
-`kMostMaterialClosures`, each a model and a scale of the surface's colour. The gather gives every
+`kMostMaterialClosures`. Each is a model and a scale, and a conductor's also holds its roughness,
+its anisotropy and its F82 tint. The gather gives every
 material one diffuse closure of scale one. Code can set others on the gathered prototypes, and
 `integrate::render()` renders prototypes it is given, as
 [Integrator.md](Integrator.md#rendering-a-scene) says. A shading point names the material of the
@@ -134,12 +135,48 @@ The library's models:
   disk. Its bounces are diffuse.
 - **`Mirror` is perfect specular reflection** about the shading normal, on either side. It is
   singular, and its bounces are specular.
+- **`Conductor` is a metal's reflection**, on either side, and its bounces are glossy. It is
+  singular, and its bounces specular, while both its alphas are below `kSmoothest`, 0.001.
+  The parts are set out below.
 
-`bsdf::atSurface(surfaces, point, table, wavelengths)` gives the BSDF at a shading point: the
-closures its material names, or one diffuse closure for a surface with no material. Its colour is
-the geometry's `Cs` primvar, which overrides its material's as RI's does, or its material's
-colour, or a mid grey. The colour becomes a reflectance through the RGB-to-spectrum table, as
-[Spectra.md](Spectra.md#rgb-to-spectrum) says, and each closure's weight is that reflectance
-times its scale.
+A conductor is made of four parts:
+
+- **GGX's distribution of microfacet normals**, by the closure's alphas along the tangent and
+  the bitangent. Masking and shadowing are Smith's, height-correlated.
+- **OpenPBR's roughness and anisotropy** give the alphas, through `Ggx::alphas()`. The alpha is
+  the roughness squared, and an anisotropy stretches it along the tangent and shrinks it along
+  the bitangent, keeping its area. No alpha falls below `kLeast`, 0.0001.
+- **Its Fresnel factor is OpenPBR's F82 tint**, an `F82`: Schlick's from the reflectance at
+  normal incidence, less Hoffman's term that brings it to the tint times Schlick's at a cosine of
+  one seventh. Each wavelength is its own.
+- **Kulla and Conty's compensation** gives back what a single scattering loses. It is a lobe of
+  one minus each direction's albedo, over pi times one minus the mean albedo, coloured by the
+  Fresnel factor's mean over the bounces light makes between microfacets. It reads the albedo
+  table at the geometric mean of the two alphas, so an anisotropic conductor's compensation is an
+  isotropic one's. Both parts are reciprocal.
+
+A conductor samples a visible normal by Heitz's method with the chance of outgoing's albedo, and
+reflects about it. Otherwise it samples by the cosine, as the compensation is shaped. Its
+estimated albedo is its weight's mean times its Fresnel factor's.
+
+**The albedo table is integrated when moya is built.** `moya_albedo`, in `moya/tools/albedo/`,
+integrates a GGX reflection with a Fresnel factor of one at 32 cosines and 32 roughnesses, the
+roughness being the square root of the alpha. Each point is the mean weight of reflections drawn
+through visible normals, on a 128 by 128 grid of the random numbers, by the kernel's own GGX. The
+mean albedo at each roughness is twice the integral of the cosine times the table. The table is
+read between the cosines as the kernel reads it, so the compensation returns all of what the
+table says is lost. The tool writes a C++ source, which libmoya compiles, and
+`material::ggxAlbedos()` returns a `bsdf::Albedos` view of it. The source is generated, so
+clang-tidy and `/analyze` skip it. A table of no points reads an albedo of one, which compensates
+nothing.
+
+`bsdf::atSurface(surfaces, point, table, albedos, wavelengths)` gives the BSDF at a shading
+point: the closures its material names, or one diffuse closure for a surface with no material.
+Its colour is the geometry's `Cs` primvar, which overrides its material's as RI's does, or its
+material's colour, or a mid grey. The colour becomes a reflectance through the RGB-to-spectrum
+table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. A diffuse closure's or a mirror's
+weight is that reflectance times its scale. A conductor's weight is its scale, and that
+reflectance is its reflectance at normal incidence. Its roughness, anisotropy and F82 tint are
+its material closure's, the tint becoming a reflectance through the same table.
 
 Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)

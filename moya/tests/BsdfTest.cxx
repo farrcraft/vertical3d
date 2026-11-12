@@ -21,6 +21,7 @@
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -78,24 +79,6 @@ kernel::spectrum::SampledSpectrum flat(float value) {
     return kernel::spectrum::SampledSpectrum(value);
 }
 
-/**
- * The mean weight of a BSDF's samples for outgoing: the share of light from a white furnace it
- * sends back along outgoing, as the integrator's scatter stage weighs each sample.
- **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count drawn, then the seed
-float furnace(const bsdf::Bsdf & bsdf, const glm::vec3 & outgoing, std::size_t drawn, std::uint32_t seed) {
-    double sum = 0.0;
-    for (std::size_t i = 0; i < drawn; ++i) {
-        const bsdf::Sample sample = bsdf.sample(outgoing, { next(seed), next(seed) });
-        if (!sample.found()) {
-            continue;
-        }
-        const float cosine = sample.specular ? 1.0F : std::fabs(glm::dot(sample.incoming, bsdf.frame.normal));
-        sum += static_cast<double>(sample.value[0] * cosine / sample.density);
-    }
-    return static_cast<float>(sum / static_cast<double>(drawn));
-}
-
 /** A shader node with a constant colour Cs, and a material whose surface it is. **/
 scene::Handle colouredMaterial(scene::Scene & scene, const std::string & name, const glm::vec3 & colour) {
     const scene::Handle node = scene.create("shader", name);
@@ -129,7 +112,7 @@ kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, cons
     const kernel::surface::Surfaces held = surfaces.view();
     const kernel::surface::ShadingPoint point = held.at(traced.nearest.front(), ray);
     BOOST_TEST_REQUIRE(point.found());
-    const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), wavelengths);
+    const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), v3d::moya::material::ggxAlbedos(), wavelengths);
     BOOST_TEST_REQUIRE(scattering.count == 1U);
     BOOST_TEST_REQUIRE((scattering.closures[0].model == bsdf::Model::Diffuse));
     return scattering.closures[0].weight;

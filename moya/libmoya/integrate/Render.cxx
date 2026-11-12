@@ -30,6 +30,7 @@
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
+#include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
@@ -184,6 +185,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .surfaces = surfaces.view(),
                 .lights = lights.view(),
                 .table = colour::acescgTable(),
+                .albedos = material::ggxAlbedos(),
                 .settings = settings,
                 .first = first,
                 .count = samples };

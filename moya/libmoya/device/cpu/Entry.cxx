@@ -346,6 +346,7 @@ void profiledPaths(const ProfileParams & params, kernel::Item item) {
         .surfaces = from.surfaces,
         .lights = from.lights,
         .table = from.table,
+        .albedos = from.albedos,
         .settings = from.settings,
         .first = from.first,
         .count = from.count };
