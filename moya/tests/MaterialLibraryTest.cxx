@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(moya_material_library_a_node_implemented_in_code_has_no_gra
 BOOST_AUTO_TEST_CASE(moya_material_library_a_missing_directory_is_refused_test) {
     const boost::filesystem::path missing = boost::filesystem::temp_directory_path() / "v3d_moya_no_materialx_libraries";
     boost::filesystem::remove_all(missing);
-    BOOST_CHECK_THROW(material::Library library(missing), std::runtime_error);
+    BOOST_CHECK_THROW(const material::Library library(missing), std::runtime_error);
 }
 
 };  // namespace
