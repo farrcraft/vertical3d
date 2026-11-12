@@ -327,8 +327,9 @@ Background: [ADR-0144](../adr/text/0144-text-glyph-pages-of-plots-reused-least-r
 
 - It rasterizes at the key's size in pixels, the glyph's pen moved right by the key's
   `subpixel` step, in steps of a quarter of a pixel (`SUBPIXEL_STEPS`).
-- It hints the glyph by its face's own instructions vertically, so stems and the x-height sit
-  on whole pixels. It does not hint horizontally, so the glyph's shape is the same at every step.
+- It hints the glyph lightly, by FreeType's light hinting, which works vertically only: stems
+  and the x-height sit on whole pixels. It does not hint horizontally, so the glyph's shape is
+  the same at every step.
 - It gives one byte a pixel, with the `bearing` of its top left pixel from the pen.
 - It loads the glyph at the key's `coordinates`.
 - A key whose mode is not `Coverage`, a face that cannot be sized or set to the coordinates, or
@@ -514,8 +515,10 @@ Background: [ADR-0146](../adr/text/0146-text-effects-drawn-from-a-distance-field
     and text at any other size is drawn as a ratio of it. `spread` is how many pixels either side
     of an edge the field runs. A larger spread lets a glyph scale up further before its edge
     softens, and costs `2 × spread` extra texels per axis of every glyph.
-  - A distance field is built from the unhinted outline. A coverage glyph is hinted by the
-    face's own instructions. A glyph's advance comes from the same load as its bitmap.
+  - A distance field is built from the unhinted outline. A coverage glyph is hinted lightly,
+    vertically only, and rendered in the mode the atlas holds: one channel of coverage, or three
+    of subpixel coverage. A glyph's advance is its outline's own, unhinted and with its fraction
+    of a pixel, as a shaped glyph's is.
   - Glyphs are kept by their index in the face. Code points drawn with one glyph pack it once.
 - **`atlas(textureAtlas)`** sets the atlas the glyphs pack into, and **`loadGlyphs(utf8)`**
   rasterizes and packs each character of a UTF-8 string. **Check its result.** It returns

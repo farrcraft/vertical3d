@@ -37,9 +37,9 @@ class FaceHandle final {
      * Set the size glyphs are loaded at, in pixels. A face has one size at a time, so a font
      * sets its size before each load that may follow another font's.
      *
-     * The face is loaded at HORIZONTAL_OVERSAMPLE times its horizontal resolution, and the
-     * transform scales x back down by the same factor. Hinting then fits outlines to whole
-     * pixels vertically and to a fraction of a pixel horizontally.
+     * The face's transform is cleared, so a load that moves its glyph by a fraction of a pixel
+     * sets its own. A hinted load asks for light hinting, which fits outlines to whole pixels
+     * vertically only, and leaves them where they fall horizontally.
      *
      * @return whether FreeType took the size
      **/
@@ -56,7 +56,6 @@ class FaceHandle final {
 
     // metrics and advances are 26.6 fixed point, 64 units to the pixel
     static constexpr float FIXED_POINT_SCALE = 64.0F;
-    static constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
 
     FT_Face face = nullptr;
     hb_face_t* shaping = nullptr;

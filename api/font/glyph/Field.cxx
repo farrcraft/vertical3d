@@ -49,14 +49,6 @@ Store::Bitmap field(const Store::Key& key) {
     // the spread is the library's, not the face's, so it is set for each field made
     FT_Int spread = std::min(key.spread, MAX_SPREAD);
     FT_Property_Set(key.face->library()->handle().library, "sdf", "spread", &spread);
-    // the face is sized at many times its horizontal resolution, which the transform takes back
-    FT_Matrix matrix = {
-        static_cast<FT_Fixed>((1.0 / font::internal::FaceHandle::HORIZONTAL_OVERSAMPLE) * 0x10000L),  // checked: a constant, 1024
-        0,
-        0,
-        static_cast<FT_Fixed>(0x10000L)
-    };
-    FT_Set_Transform(handle.face, &matrix, nullptr);
     if (FT_Load_Glyph(handle.face, key.index, FT_LOAD_NO_HINTING | FT_LOAD_NO_BITMAP) != 0 ||
         FT_Render_Glyph(handle.face->glyph, FT_RENDER_MODE_SDF) != 0) {
         return Store::Bitmap();

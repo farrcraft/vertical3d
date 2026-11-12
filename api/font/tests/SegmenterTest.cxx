@@ -90,6 +90,22 @@ BOOST_AUTO_TEST_CASE(a_newline_is_a_mandatory_break) {
 }
 
 /**
+ * The end of the text is a break a line may end at, not one it has to end at, unless a newline
+ * comes before it.
+ **/
+BOOST_AUTO_TEST_CASE(the_end_of_the_text_is_mandatory_only_after_a_newline) {
+    const std::vector<v3d::font::text::Segmenter::LineBreak> plain = segmenter.lineBreaks("one two");
+    BOOST_REQUIRE(!plain.empty());
+    BOOST_CHECK_EQUAL(plain.back().offset, 7U);
+    BOOST_CHECK(!plain.back().mandatory);
+
+    const std::vector<v3d::font::text::Segmenter::LineBreak> ended = segmenter.lineBreaks("one two\n");
+    BOOST_REQUIRE(!ended.empty());
+    BOOST_CHECK_EQUAL(ended.back().offset, 8U);
+    BOOST_CHECK(ended.back().mandatory);
+}
+
+/**
  * Thai marks no word boundaries, so its line breaks come from a dictionary: the two words of
  * "Thai language" can be split.
  **/
