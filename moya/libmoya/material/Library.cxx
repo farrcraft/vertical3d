@@ -81,16 +81,10 @@ std::string Library::graph(const std::string & definition) const {
     if (!def) {
         return {};
     }
-    // a definition names its graph directly, or through an implementation element that names it
+    // MaterialX resolves an implementation element that names a graph to the graph itself, so
+    // anything else is implemented in code
     const mx::InterfaceElementPtr implementation = def->getImplementation();
-    if (!implementation) {
-        return {};
-    }
-    if (implementation->isA<mx::NodeGraph>()) {
-        return implementation->getName();
-    }
-    const mx::ImplementationPtr association = implementation->asA<mx::Implementation>();
-    return association ? association->getNodeGraph() : std::string();
+    return implementation && implementation->isA<mx::NodeGraph>() ? implementation->getName() : std::string();
 }
 
 };  // namespace v3d::moya::material
