@@ -169,6 +169,10 @@ A kind that holds primvars takes a declaration of each one from its client, per 
 
 - **A primvar's `Interpolation`** is one of RI's and USD's five classes: constant, uniform,
   varying, vertex and face-varying.
+- **A float primvar's `width`** is the floats each of its elements holds, one to four, as RI's
+  `float[n]` gives it, so `st` is of width two. Its count counts elements, and its value holds
+  count times width floats. A primvar of any other type is of width one. A description writes a
+  width above one after the type, as `float2`.
 - **A primvar is set and read as a parameter** once it is declared, and holds its fallback until
   it is set.
 - **Declaring a primvar the object already has replaces it**, and its value goes back to the new

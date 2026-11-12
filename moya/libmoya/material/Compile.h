@@ -59,8 +59,12 @@ struct Compiled {
  * A surface of any other definition is reported, and leaves the material diffuse.
  *
  * A colour constant is in the space its primvar names, or the space its document names for it.
+ *
+ * A node that reads a primvar names it by its number in primvars, which holds the name of each
+ * primvar by its number. A name read first is added at the end. texcoord reads `st`, and
+ * geomcolor reads `Cs`.
  **/
-Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material);
+Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
 
 /** The flattened MaterialX document that compile() reads a material's surface from, as XML. **/
 std::string flattened(const Library & library, const scene::Scene & scene, const scene::Handle & material);

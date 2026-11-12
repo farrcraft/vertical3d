@@ -25,7 +25,7 @@ material "paintedplastic"
 mesh "Polygon 1"
     P point[4] = (-0.666667, -0.666667, 5) (0.666667, -0.666667, 5) (0.666667, 0.666667, 5) (-0.666667, 0.666667, 5)
     indices integer[4] = 0 1 2 3
-    st float[8] varying = 0 1 1 1 1 0 0 0
+    st float2[4] varying = 0 1 1 1 1 0 0 0
     vertices integer[1] = 4
 options "options"
     camera handle = camera "camera"

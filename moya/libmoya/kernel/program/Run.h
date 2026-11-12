@@ -12,9 +12,17 @@
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
+#include <moya/libmoya/kernel/surface/ShadingPoint.h>
+#include <moya/libmoya/kernel/surface/Surfaces.h>
 
 #include <cmath>
 #include <cstdint>
+
+#include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/matrix.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::moya::kernel::program {
 
@@ -276,10 +284,56 @@ MOYA_KERNEL inline void whole(const Instruction & instruction, const float * reg
     }
 }
 
-/** Runs one instruction over the registers. **/
-MOYA_KERNEL inline void execute(const Instruction & instruction, float * registers) {
+/** A direction at a shading point, in the world or turned into its geometry's own space. **/
+MOYA_KERNEL inline glm::vec3 directionIn(const surface::ShadingPoint & point, const glm::vec3 & world, std::uint32_t space, bool normal) {
+    if (space == kWorld) {
+        return world;
+    }
+    const glm::mat3 turn { point.toWorld };
+    // a normal moves by the inverse transpose, so it moves back into the geometry by the transpose
+    const glm::vec3 own = normal ? glm::transpose(turn) * world : glm::inverse(turn) * world;
+    return glm::dot(own, own) > 0.0F ? glm::normalize(own) : own;
+}
+
+/** An operation that reads the shading point, into out. **/
+MOYA_KERNEL inline void geometric(const Instruction & instruction, const float * registers, const surface::Surfaces & surfaces,
+    const surface::ShadingPoint & point, float * out) {
+    const std::uint32_t chosen = instruction.in[0];
+    glm::vec3 value { 0.0F };
+    switch (instruction.op) {
+        case Op::Primvar:
+            if (!surfaces.read(point, chosen, out, instruction.width)) {
+                for (std::uint32_t component = 0; component < instruction.width && component < kMostComponents; ++component) {
+                    out[component] = registers[instruction.in[1] + component];
+                }
+            }
+            return;
+        case Op::Position:
+            value = chosen == kWorld ? point.position : glm::vec3(glm::inverse(point.toWorld) * glm::vec4(point.position, 1.0F));
+            break;
+        case Op::Normal:
+            value = directionIn(point, point.shading, chosen, true);
+            break;
+        case Op::Tangent:
+            value = directionIn(point, surfaces.tangentFrame(point).tangent, chosen, false);
+            break;
+        case Op::Bitangent:
+            value = directionIn(point, surfaces.tangentFrame(point).bitangent, chosen, false);
+            break;
+        default:
+            return;
+    }
+    out[0] = value.x;
+    out[1] = value.y;
+    out[2] = value.z;
+}
+
+/** Runs one instruction over the registers, at a shading point. **/
+MOYA_KERNEL inline void execute(const Instruction & instruction, float * registers, const surface::Surfaces & surfaces, const surface::ShadingPoint & point) {
     float out[kMostComponents] {};
-    if (componentwise(instruction.op)) {
+    if (static_cast<std::uint32_t>(instruction.op) >= static_cast<std::uint32_t>(Op::Primvar)) {
+        geometric(instruction, registers, surfaces, point, out);
+    } else if (componentwise(instruction.op)) {
         for (std::uint32_t component = 0; component < instruction.width && component < kMostComponents; ++component) {
             float operands[kMostOperands] {};
             for (std::uint32_t i = 0; i < kMostOperands; ++i) {
@@ -296,16 +350,17 @@ MOYA_KERNEL inline void execute(const Instruction & instruction, float * registe
 }
 
 /**
- * Runs a program, from the values its registers hold before it, and gives the surface's
- * parameters its registers hold after it. The surface is not thin-walled.
+ * Runs a program at a shading point, from the values its registers hold before it, and gives the
+ * surface's parameters its registers hold after it. The surfaces hold the program's instructions
+ * and values. The surface is not thin-walled.
  **/
-MOYA_KERNEL inline surface::OpenPbr evaluate(const Array<Instruction> & instructions, const Array<float> & values, const Program & program) {
+MOYA_KERNEL inline surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const Program & program) {
     float registers[kRegisters] {};
     for (std::uint32_t i = 0; i < program.size && i < kRegisters; ++i) {
-        registers[i] = values[program.values + i];
+        registers[i] = surfaces.programValues[program.values + i];
     }
     for (std::uint32_t i = 0; i < program.count; ++i) {
-        execute(instructions[program.instructions + i], registers);
+        execute(surfaces.instructions[program.instructions + i], registers, surfaces, point);
     }
     return parameters(registers);
 }

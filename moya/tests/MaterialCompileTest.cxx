@@ -39,6 +39,12 @@ using v3d::moya::kernel::surface::OpenPbr;
 
 constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
 
+/** A material compiled through the installed libraries, numbering primvars as the gather does. **/
+material::Compiled compileOf(const scene::Scene & scene, const scene::Handle & held) {
+    std::vector<std::string> primvars { "N", "Cs", "tangent", "st" };
+    return material::compile(material::Library::installed(), scene, held, primvars);
+}
+
 /** A MaterialX node of a definition. **/
 scene::Handle node(scene::Scene & scene, const std::string & name, const char * definition) {
     const scene::Handle out = scene.create("shader", name);
@@ -106,7 +112,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_constant_inputs_give_the_bsdf_they_na
     const scene::Handle held = materialOf(scene, "gold", surface);
     apply(scene);
 
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.reports.empty());
     BOOST_TEST(compiled.material.layered == 1U);
     const OpenPbr & layers = compiled.material.surface;
@@ -184,7 +190,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_a_node_not_compiled_gives_its_default
     const scene::Handle held = materialOf(scene, "gridded", surface);
     apply(scene);
 
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.material.layered == 1U);
     BOOST_TEST((compiled.material.surface.baseColour == glm::vec3 { 0.0F }));
     BOOST_TEST((compiled.material.surface.coatColour == glm::vec3 { 0.0F }));
@@ -204,7 +210,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_an_unknown_node_is_reported_once_test
     const scene::Handle held = materialOf(scene, "unknown", surface);
     apply(scene);
 
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.material.layered == 1U);
     BOOST_TEST((compiled.material.surface.baseColour == glm::vec3 { 0.25F }));
     BOOST_TEST((compiled.material.surface.specularColour == OpenPbr().specularColour));
@@ -219,7 +225,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_another_surface_shader_is_diffuse_and
     const scene::Handle held = materialOf(scene, "standard", surface);
     apply(scene);
 
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.material.layered == 0U);
     BOOST_TEST(mentioning(compiled.reports, "ND_standard_surface_surfaceshader") == 1U);
 }
@@ -233,7 +239,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_an_input_the_definition_does_not_take
     const scene::Handle held = materialOf(scene, "plastic", surface);
     apply(scene);
 
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.material.layered == 1U);
     BOOST_TEST(compiled.material.surface.baseWeight == OpenPbr().baseWeight);
     BOOST_TEST(mentioning(compiled.reports, "no_such_input") == 1U);

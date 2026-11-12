@@ -8,6 +8,7 @@
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 
@@ -25,8 +26,14 @@ const char * name(Interpolation interpolation) {
 }
 
 void Declaration::admit(const Value & value) const {
-    if (count != kAny && value.size() != count) {
-        throw std::invalid_argument("parameter " + name + " holds " + std::to_string(count) + " elements, not " + std::to_string(value.size()));
+    if (width == 0 || width > kMostWidth || (width != 1 && type != Type::Float)) {
+        throw std::invalid_argument("parameter " + name + " is of a width a " + scene::name(type) + " cannot have");
+    }
+    if (value.size() % width != 0) {
+        throw std::invalid_argument("parameter " + name + " holds floats that do not make whole elements of " + std::to_string(width));
+    }
+    if (count != kAny && value.size() != static_cast<std::size_t>(count) * width) {
+        throw std::invalid_argument("parameter " + name + " holds " + std::to_string(count) + " elements, not " + std::to_string(value.size() / width));
     }
     if (choices.empty()) {
         return;

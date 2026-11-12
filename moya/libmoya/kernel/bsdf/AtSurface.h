@@ -46,8 +46,8 @@ namespace v3d::moya::kernel::bsdf {
  * tables.
  *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
- * outgoing, of the parameters its program gives. The geometry's `Cs` primvar overrides its base
- * colour.
+ * outgoing, of the parameters its program gives, in the tangent frame Surfaces gives the point.
+ * The geometry's `Cs` primvar overrides its base colour.
  **/
 MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
     const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
@@ -67,9 +67,10 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
     out.frame = point.frame;
     out.geometric = point.geometric;
     if (material.layered != 0U) {
+        out.frame = surfaces.tangentFrame(point);
         surface::OpenPbr layers = material.surface;
         if (material.program.count != 0U) {
-            layers = program::evaluate(surfaces.instructions, surfaces.programValues, material.program);
+            layers = program::evaluate(surfaces, point, material.program);
             layers.thinWalled = material.surface.thinWalled;
         }
         if (painted) {

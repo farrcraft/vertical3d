@@ -17,6 +17,7 @@
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -68,11 +69,15 @@ struct Prototypes {
     /**
      * Every geometry's primvars that shading reads, as their first sample holds them, spread over
      * its primitives. A colour's values are as the scene gives them, in the space that
-     * primvarSpaces names for it, which is empty for the working space and for any other type.
+     * primvarSpaces names for it, which is empty for the working space. A primvar that is not a
+     * colour has no space.
      **/
     std::vector<kernel::surface::Primvar> primvars;
     std::vector<float> primvarValues;
-    std::vector<std::string> primvarSpaces;
+    std::vector<std::optional<std::string>> primvarSpaces;
+
+    /** The name of each primvar shading reads, by the number a Primvar names it with. **/
+    std::vector<std::string> primvarNames;
 
     /**
      * Every material an instance names, each held once, with its surface node's colour in the

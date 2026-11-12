@@ -39,7 +39,7 @@ struct Piece {
     /** Its primvars, each counting its values from the start of the piece's own. **/
     std::vector<kernel::surface::Primvar> primvars;
     std::vector<float> primvarValues;
-    std::vector<std::string> primvarSpaces;
+    std::vector<std::optional<std::string>> primvarSpaces;
 
     /** What was reported while it was made, reported again where it is placed again. **/
     std::vector<std::string> reports;

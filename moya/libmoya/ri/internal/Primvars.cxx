@@ -118,10 +118,17 @@ void declare(scene::Scene * scene, const scene::Handle & object, const v3d::rend
             continue;
         }
         const Declaration * declared = parameters.declaration(name);
-        const bool one = constant && value->size() == 1;
+        // RI's float[n] makes each element n floats, as many as the scene's elements hold
+        const unsigned int arity = declared->count();
+        const std::uint32_t width = value->type() == scene::Type::Float && arity > 1U && arity <= scene::Declaration::kMostWidth ? arity : 1U;
+        if (value->size() % width != 0) {
+            continue;
+        }
+        const bool one = constant && value->size() == width;
         scene->declare(object, scene::Declaration { .name = name,
             .type = value->type(),
             .count = one ? 1U : scene::Declaration::kAny,
+            .width = width,
             .fallback = *value,
             .interpolation = constant ? scene::Interpolation::Constant : interpolationOf(declared->storage()) });
     }

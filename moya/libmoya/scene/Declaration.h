@@ -44,6 +44,13 @@ struct Declaration {
      **/
     std::uint32_t count { 1 };
 
+    /**
+     * The floats each element of a float primvar holds, one to four, as RI's float[n] gives it.
+     * Every other declaration's elements are of one. A count counts elements, so a value holds
+     * count times width floats.
+     **/
+    std::uint32_t width { 1 };
+
     /** Whether it may hold several samples, each at a time of its own. **/
     bool motion { false };
 
@@ -65,10 +72,14 @@ struct Declaration {
     /** The count of an array of any length. **/
     static constexpr std::uint32_t kAny = 0;
 
+    /** The most floats an element may hold. **/
+    static constexpr std::uint32_t kMostWidth = 4;
+
     /**
      * Check a value's size and, for a string, its choices.
      *
-     * @throws std::invalid_argument when the value breaks them
+     * @throws std::invalid_argument when the value breaks them, or the declaration's width is not
+     *         one for a type other than a float, or is more than four
      **/
     void admit(const Value & value) const;
 };

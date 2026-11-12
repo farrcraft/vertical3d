@@ -582,6 +582,14 @@ compositing nodes of colours with alpha. Emission that a node feeds is an entry 
 **Tests:** a primvar of each class and width reads back at a shading point. A tangent lies along
 the direction `s` increases.
 
+**Done, but for the transform and matrix nodes.** The scene's declarations gain a width, so RI's
+`float[2] st` is a primvar of two floats. Every MaterialX material is compiled before the gather
+walks the scene, and the primvars the programs read are numbered after `N`, `Cs`, `tangent` and
+`st`. A cached geometry is made again when those names change. `Surfaces::tangentFrame()` gives a
+point's frame from `tangent` or from `st`, and a layered BSDF is built in it. The program reads
+geompropvalue, texcoord, geomcolor, position, normal, tangent and bitangent, in the geometry's
+own space or the world.
+
 ### Step 17 — Procedural patterns
 
 * **MaterialX's noises**: `noise2d`, `noise3d`, `fractal3d`, `cellnoise2d`, `cellnoise3d` and

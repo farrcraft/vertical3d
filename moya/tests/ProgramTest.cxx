@@ -75,6 +75,12 @@ struct Case {
     std::vector<float> expected;
 };
 
+/** A material compiled through the installed libraries, numbering primvars as the gather does. **/
+material::Compiled compileOf(const scene::Scene & scene, const scene::Handle & held) {
+    std::vector<std::string> primvars { "N", "Cs", "tangent", "st" };
+    return material::compile(material::Library::installed(), scene, held, primvars);
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the node's name, then its definition
 scene::Handle node(scene::Scene & scene, const std::string & name, const std::string & definition, const std::vector<Given> & inputs) {
     const scene::Handle out = scene.create("shader", name);
@@ -101,12 +107,17 @@ scene::Handle materialOf(scene::Scene & scene, const std::string & name, const s
     return out;
 }
 
-/** The parameters a compiled material's program gives when it runs. **/
+/** The parameters a program of instructions and values gives at a point of no surface. **/
+OpenPbr runOver(std::vector<program::Instruction> instructions, std::vector<float> values, const program::Program & held) {
+    kernel::surface::Surfaces surfaces;
+    surfaces.instructions = kernel::Array<program::Instruction> { instructions.data(), static_cast<std::uint32_t>(instructions.size()) };
+    surfaces.programValues = kernel::Array<float> { values.data(), static_cast<std::uint32_t>(values.size()) };
+    return program::evaluate(surfaces, kernel::surface::ShadingPoint {}, held);
+}
+
+/** The parameters a compiled material's program gives when it runs at a point of no surface. **/
 OpenPbr run(const material::Compiled & compiled) {
-    std::vector<program::Instruction> instructions = compiled.instructions;
-    std::vector<float> values = compiled.values;
-    return program::evaluate(kernel::Array<program::Instruction> { instructions.data(), static_cast<std::uint32_t>(instructions.size()) },
-        kernel::Array<float> { values.data(), static_cast<std::uint32_t>(values.size()) }, compiled.material.program);
+    return runOver(compiled.instructions, compiled.values, compiled.material.program);
 }
 
 /** How many of the reports mention a text. **/
@@ -152,7 +163,7 @@ std::vector<float> outputOf(const char * definition, const std::string & type, c
         }
     }
     const scene::Handle held = materialOf(scene, "tested", surface);
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(compiled.reports.empty(), definition << " reports " << (compiled.reports.empty() ? std::string() : compiled.reports.front()));
     const OpenPbr layers = run(compiled);
     std::vector<float> out;
@@ -275,13 +286,13 @@ BOOST_AUTO_TEST_CASE(moya_program_a_node_is_compiled_once_and_constants_run_noth
     connect(scene, grey, surface, "base_color");
     connect(scene, grey, surface, "coat_color");
     const scene::Handle fed = materialOf(scene, "fed", surface);
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, fed);
+    const material::Compiled compiled = compileOf(scene, fed);
     // the node, then a copy into each input
     BOOST_TEST(compiled.instructions.size() == 3U);
 
     scene::Scene constant(scene::kinds());
     const scene::Handle plain = materialOf(constant, "plain", node(constant, "surface", kOpenPbr, { { "base_color", colour3(0.5F, 0.5F, 0.5F) } }));
-    const material::Compiled still = material::compile(material::Library::installed(), constant, plain);
+    const material::Compiled still = compileOf(constant, plain);
     BOOST_TEST(still.material.program.count == 0U);
     BOOST_TEST(still.material.surface.baseColour.x == 0.5F);
 }
@@ -294,7 +305,7 @@ BOOST_AUTO_TEST_CASE(moya_program_a_node_reading_its_own_output_is_reported_test
     const scene::Handle surface = node(scene, "surface", kOpenPbr, {});
     connect(scene, looped, surface, "base_color");
     const scene::Handle held = materialOf(scene, "looped", surface);
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(mentioning(compiled.reports, "reads its own output") == 1U);
     const OpenPbr layers = run(compiled);
     BOOST_TEST(layers.baseColour.x == 0.1F, boost::test_tools::tolerance(1.0e-6F));
@@ -313,7 +324,7 @@ BOOST_AUTO_TEST_CASE(moya_program_a_program_too_large_is_reported_and_gives_defa
     const scene::Handle surface = node(scene, "surface", kOpenPbr, {});
     connect(scene, last, surface, "base_color");
     const scene::Handle held = materialOf(scene, "large", surface);
-    const material::Compiled compiled = material::compile(material::Library::installed(), scene, held);
+    const material::Compiled compiled = compileOf(scene, held);
     BOOST_TEST(mentioning(compiled.reports, "more registers") == 1U);
     BOOST_TEST(compiled.values.size() <= program::kRegisters);
     BOOST_TEST(run(compiled).baseColour.x == 0.0F);
@@ -351,10 +362,7 @@ BOOST_AUTO_TEST_CASE(moya_program_a_colour_is_converted_from_its_space_test) {
     const kernel::surface::Material & made = converted.materials.front();
     BOOST_TEST(made.surface.coatColour.x == expected.x, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(made.surface.coatColour.z == expected.z, boost::test_tools::tolerance(1.0e-5F));
-    std::vector<program::Instruction> instructions = prototypes.instructions;
-    std::vector<float> values = converted.programValues;
-    const OpenPbr layers = program::evaluate(kernel::Array<program::Instruction> { instructions.data(), static_cast<std::uint32_t>(instructions.size()) },
-        kernel::Array<float> { values.data(), static_cast<std::uint32_t>(values.size()) }, made.program);
+    const OpenPbr layers = runOver(prototypes.instructions, converted.programValues, made.program);
     BOOST_TEST(layers.baseColour.x == expected.x, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(layers.baseColour.y == expected.y, boost::test_tools::tolerance(1.0e-5F));
 }

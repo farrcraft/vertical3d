@@ -32,8 +32,6 @@
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
-#include <moya/libmoya/material/Compile.h>
-#include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -183,12 +181,29 @@ std::vector<float> dicingOf(const kernel::camera::Camera & camera, float edgeLen
     return out;
 }
 
+/**
+ * How many floats shading reads a primvar of a number as. `N`, `Cs` and `tangent` are of three,
+ * and `st` of two. Zero is for a primvar a program reads by its name, which holds one to four.
+ **/
+std::size_t widthOf(std::uint32_t number) {
+    if (number == kernel::surface::kTexture) {
+        return 2;
+    }
+    return number < kernel::surface::kFirstNamed ? 3U : 0U;
+}
+
 };  // namespace
 
 Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, Cache * cache) :
-    scene_(scene), logger_(logger), groups_(byGroup(scene)), cache_(cache) {
+    scene_(scene), logger_(logger), groups_(byGroup(scene)), cache_(cache), programs_(scene) {
+    prototypes_.primvarNames = programs_.names();
     if (cache_ != nullptr) {
         cache_->made_.clear();
+        // a cached geometry holds only the primvars that were read when it was made
+        if (cache_->primvarNames_ != programs_.names()) {
+            cache_->pieces_.clear();
+            cache_->primvarNames_ = programs_.names();
+        }
     }
 }
 
@@ -330,8 +345,12 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     kernel::surface::Material out;
     std::string space;
     const scene::Handle surface = scene_.value(handle, "surface").handleArray().front();
-    if (surface.valid() && scene_.contains(surface) && scene_.value(surface, "language").stringArray().front() == "materialx") {
-        out = compiled(handle);
+    if (programs_.compiles(handle.index)) {
+        std::vector<std::string> said;
+        out = programs_.place(handle.index, prototypes_, said);
+        for (const std::string & message : said) {
+            report(message);
+        }
     } else if (surface.valid() && scene_.contains(surface)) {
         for (const scene::Declaration & declaration : scene_.primvars(surface)) {
             if (declaration.name != "Cs" || scene::floatsOf(declaration.type) != 3U) {
@@ -351,30 +370,6 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     prototypes_.materialSpaces.push_back(space);
     materialIndex_.emplace(handle.index, index);
     return index;
-}
-
-kernel::surface::Material Walk::compiled(const scene::Handle & handle) {
-    try {
-        const material::Compiled out = material::compile(material::Library::installed(), scene_, handle);
-        for (const std::string & message : out.reports) {
-            report(message);
-        }
-        // the program's instructions and values follow every other material's
-        kernel::surface::Material placed = out.material;
-        const auto values = static_cast<std::uint32_t>(prototypes_.programValues.size());
-        placed.program.instructions = static_cast<std::uint32_t>(prototypes_.instructions.size());
-        placed.program.values = values;
-        prototypes_.instructions.insert(prototypes_.instructions.end(), out.instructions.begin(), out.instructions.end());
-        prototypes_.programValues.insert(prototypes_.programValues.end(), out.values.begin(), out.values.end());
-        for (const std::uint32_t at : out.colours) {
-            prototypes_.programColours.push_back(values + at);
-        }
-        prototypes_.programSpaces.insert(prototypes_.programSpaces.end(), out.spaces.begin(), out.spaces.end());
-        return placed;
-    } catch (const std::runtime_error & refused) {
-        report("material " + scene_.name(handle) + " is diffuse, because " + refused.what());
-        return {};
-    }
 }
 
 std::uint32_t Walk::group(const scene::Handle & handle) {
@@ -715,7 +710,7 @@ void Walk::cutSurfaces() {
                 const auto from = normals.begin() + static_cast<std::ptrdiff_t>(static_cast<std::size_t>(corner) * 3U);
                 spread.values.insert(spread.values.end(), from, from + 3);
             }
-            addPrimvar(mesh, kernel::surface::kNormal, 3, spread, "");
+            addPrimvar(mesh, kernel::surface::kNormal, 3, spread, std::nullopt);
         }
         addPrimvars(uncut.handle, mesh, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
             return spreadOverSurface(interpolation, values, width, uncut.surface, tessellation);
@@ -900,32 +895,29 @@ kernel::geometry::Sampled Walk::sampled(std::size_t first, std::size_t count, co
 
 void Walk::addPrimvars(const scene::Handle & handle, Geometry & geometry,
     const std::function<Spread(scene::Interpolation, const std::vector<float> &, std::size_t)> & spread) {
-    struct Wanted {
-        const char * name;
-        std::uint32_t number;
-    };
-    constexpr Wanted kWanted[] = { { .name = "N", .number = kernel::surface::kNormal }, { .name = "Cs", .number = kernel::surface::kColour } };
-    for (const Wanted & wanted : kWanted) {
+    const std::vector<std::string> & names = programs_.names();
+    for (std::uint32_t number = 0; number < names.size(); ++number) {
         // a primvar the geometry already holds, such as a subdivision surface's limit normal, stays
         bool holds = false;
         for (std::uint32_t i = 0; i < geometry.primvarCount; ++i) {
-            holds = holds || prototypes_.primvars[geometry.primvars + i].name == wanted.number;
-        }
-        if (holds) {
-            continue;
+            holds = holds || prototypes_.primvars[geometry.primvars + i].name == number;
         }
         for (const scene::Declaration & declaration : scene_.primvars(handle)) {
-            if (declaration.name != wanted.name) {
+            if (holds || declaration.name != names[number]) {
                 continue;
             }
             const std::string what = "primvar " + declaration.name + " of " + scene_.name(handle);
-            if (scene::floatsOf(declaration.type) != 3U) {
-                report(what + " is not of three floats, so it is left out");
+            const std::size_t width = scene::floatsOf(declaration.type) * declaration.width;
+            const std::size_t wanted = widthOf(number);
+            const bool fits = wanted == 0U ? width >= 1U && width <= scene::Declaration::kMostWidth : width == wanted;
+            if (!fits) {
+                report(what + " is not of the floats shading reads, so it is left out");
                 break;
             }
             const scene::Value & value = scene_.value(handle, declaration.name);
+            const std::optional<std::string> space = declaration.type == scene::Type::Colour ? std::optional<std::string>(value.space()) : std::nullopt;
             try {
-                addPrimvar(geometry, wanted.number, 3, spread(declaration.interpolation, value.floatArray(), 3), value.space());
+                addPrimvar(geometry, number, static_cast<std::uint32_t>(width), spread(declaration.interpolation, value.floatArray(), width), space);
             } catch (const std::invalid_argument & refused) {
                 report(what + " is left out, because " + refused.what());
             }
@@ -934,7 +926,7 @@ void Walk::addPrimvars(const scene::Handle & handle, Geometry & geometry,
     }
 }
 
-void Walk::addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::string & space) {
+void Walk::addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::optional<std::string> & space) {
     // a geometry's primvars are added together, so they are one run
     if (geometry.primvarCount == 0) {
         geometry.primvars = static_cast<std::uint32_t>(prototypes_.primvars.size());

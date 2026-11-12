@@ -132,6 +132,21 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_value_that_breaks_its_declaration_is_refused_t
     scene.set(shape, "P", scene::Value::points({ glm::vec3(0.0F), glm::vec3(1.0F) }));
 }
 
+// a float primvar's value holds whole elements of its width, and only a float has a width above one
+BOOST_AUTO_TEST_CASE(moya_scene_a_primvars_width_is_held_to_whole_elements_test) {
+    scene::Scene scene(schema());
+    const scene::Handle shape = scene.create("shape", "shape 5");
+    const auto declaration = [](scene::Type type, std::uint32_t width, const scene::Value & fallback) {
+        return scene::Declaration { .name = "uv", .type = type, .count = scene::Declaration::kAny, .width = width, .fallback = fallback,
+            .interpolation = scene::Interpolation::Vertex };
+    };
+    scene.declare(shape, declaration(scene::Type::Float, 2, scene::Value::floats({})));
+    scene.set(shape, "uv", scene::Value::floats({ 0.0F, 1.0F, 0.5F, 0.5F }));
+    BOOST_CHECK_THROW(scene.set(shape, "uv", scene::Value::floats({ 0.0F, 1.0F, 0.5F })), std::invalid_argument);
+    BOOST_CHECK_THROW(scene.declare(shape, declaration(scene::Type::Float, 5, scene::Value::floats({}))), std::invalid_argument);
+    BOOST_CHECK_THROW(scene.declare(shape, declaration(scene::Type::Colour, 2, scene::Value::colours({}))), std::invalid_argument);
+}
+
 BOOST_AUTO_TEST_CASE(moya_scene_a_handle_value_names_a_live_object_test) {
     scene::Scene scene(schema());
     const scene::Handle shape = scene.create("shape", "shape 30");

@@ -35,6 +35,8 @@ time. The time is held to the shutter, as a traversal holds a ray's.
   limit normal, or the geometric normal. It is turned onto the geometric normal's side.
 - **The frame** is three directions at right angles around the shading normal, by Duff and
   others' construction.
+- **`toWorld` and `time`** are the transformation from the geometry's own space into the world,
+  and the time it was composed at, which a program's geometric nodes read.
 - **`front`** says whether the ray met the side the geometric normal faces.
 - **`weights`** are the triangle's corners' weights at the position, which a primvar read at its
   corners is interpolated by.
@@ -43,6 +45,18 @@ time. The time is held to the shutter, as a traversal holds a ray's.
 
 A hit that found nothing, or names an instance or a geometry the surfaces do not hold, gives a
 point whose `found()` is false.
+
+### The tangent frame
+
+`Surfaces::tangentFrame(point)` gives the frame a layered BSDF is built in, and a program's
+tangent and bitangent nodes read.
+
+- **The tangent** is the geometry's `tangent` primvar, turned into the world, where it has one.
+  Otherwise it is the direction the point moves in as `s` increases, on a triangle whose corners
+  each hold `st`. It is laid flat against the shading normal.
+- **The bitangent** is the normal's cross product with the tangent, turned to the side `t`
+  increases on.
+- **A point with neither keeps its frame**, as does one where the tangent lies along the normal.
 
 ## Leaving a smooth surface
 
@@ -58,9 +72,16 @@ that leaves the flat triangle towards a light near the horizon meets the next on
 
 ## Primvars
 
-The gather reads the primvars shading reads from each geometry's object: `N` as
-`kernel::surface::kNormal` and `Cs` as `kColour`. Each is of three floats, as its first sample
-holds it.
+The gather reads the primvars shading reads from each geometry's object, as their first sample
+holds them. Each is named by a number, which `Prototypes::primvarNames` maps back to its name.
+
+- **Four are read whatever a program does**: `N` as `kernel::surface::kNormal`, `Cs` as
+  `kColour` and `tangent` as `kTangent`, each of three floats, and `st` as `kTexture`, of two.
+- **Every other primvar a program reads** is numbered from `kFirstNamed`, in the order the
+  programs first read them, and is of one to four floats.
+- **Every MaterialX material is compiled before any geometry is gathered**, so the names are
+  known first. A cached geometry holds only the primvars that were read when it was made, so the
+  cache is emptied when the names change.
 
 - **A primvar is spread over its geometry's primitives.** A `kernel::surface::Primvar` holds its
   name, its floats per value, its first value, and its values per primitive:
@@ -76,10 +97,10 @@ holds it.
   point's.
 - **A quadric holds constant and uniform values**, and curves constant values and a uniform
   value per curve. Their other classes are reported and left out.
-- **A primvar of another width than three, or of a count its class does not give**, is reported
-  and left out.
-- **A colour is converted into ACEScg** from the space its value names, through
-  `colour::Config::input()`, when the surfaces are made.
+- **A primvar of another width than shading reads it at, or of a count its class does not give**,
+  is reported and left out. A float primvar's width is its declaration's.
+- **A colour primvar is converted into ACEScg** from the space its value names, through
+  `colour::Config::input()`, when the surfaces are made. A primvar of another type has no space.
 - **A cached geometry keeps its primvars**, which a later gather places again with the rest of
   it.
 
@@ -145,14 +166,20 @@ The gather appends each material's instructions and values after the one before.
   `kMostOperands` operands, each a first register and its components. Integers and booleans are
   held as floats, a boolean as one or zero. Most operations are taken one component at a time,
   and an operand of one component is spread over every component.
-- **The program compiles MaterialX's math, adjustment, compositing, conditional, logical and
-  channel nodes** on floats, integers, booleans, vectors and colours, each as MaterialX defines
-  it. That is add, subtract, multiply, divide, modulo, fract, invert, absval, floor, ceil, round,
-  power, the trigonometric functions and atan2, sqrt, ln, exp, sign, clamp, min, max, normalize,
-  magnitude, dotproduct and crossproduct. It is remap, smoothstep, luminance, rgbtohsv and
-  hsvtorgb. It is mix, plus, minus, difference, burn, dodge, screen, inside and outside. It is
-  ifgreater, ifgreatereq, ifequal, and, or and not, and it is constant, dot, convert, extract and
-  combine.
+- **The program compiles MaterialX's geometric nodes, and its math, adjustment, compositing,
+  conditional, logical and channel nodes** on floats, integers, booleans, vectors and colours,
+  each as MaterialX defines it. That is add, subtract, multiply, divide, modulo, fract, invert,
+  absval, floor, ceil, round, power, the trigonometric functions and atan2, sqrt, ln, exp, sign,
+  clamp, min, max, normalize, magnitude, dotproduct and crossproduct. It is remap, smoothstep,
+  luminance, rgbtohsv and hsvtorgb. It is mix, plus, minus, difference, burn, dodge, screen,
+  inside and outside. It is ifgreater, ifgreatereq, ifequal, and, or and not, and it is constant,
+  dot, convert, extract and combine.
+- **The geometric nodes read the shading point.** geompropvalue reads the primvar it names, of up
+  to four floats, and gives its `default` where the geometry has none. texcoord reads `st`, or
+  `st1` and on for a later index, and geomcolor reads `Cs`, each giving zero where there is none.
+  position, normal, tangent and bitangent give the point's, in the world where their `space` is
+  `world` and in the geometry's own space otherwise. A primvar's number is its instruction's
+  first operand, and a space's is `kObject` or `kWorld`.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
 - **An emission input that a node feeds gives that default too**, because a material's light is

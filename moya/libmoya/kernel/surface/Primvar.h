@@ -15,6 +15,15 @@ inline constexpr std::uint32_t kNormal = 0;
 /** The number a geometry names its `Cs` primvar by: a colour, in ACEScg. **/
 inline constexpr std::uint32_t kColour = 1;
 
+/** The number a geometry names its `tangent` primvar by: a direction, in its own space. **/
+inline constexpr std::uint32_t kTangent = 2;
+
+/** The number a geometry names its `st` primvar by: its texture coordinates, of two floats. **/
+inline constexpr std::uint32_t kTexture = 3;
+
+/** The first number a primvar that a material's program reads by its name is given. **/
+inline constexpr std::uint32_t kFirstNamed = 4;
+
 /**
  * A primvar of a geometry, as shading reads it: the number of its name, its floats per value, and
  * where its values start.

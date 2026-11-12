@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <map>
 #include <set>
+#include <string>
+#include <vector>
 
 namespace v3d::moya::geometry {
 
@@ -43,6 +45,9 @@ class Cache final {
 
     std::map<std::uint32_t, internal::Piece> pieces_;
     std::set<std::uint32_t> made_;
+
+    /** The primvars shading read, by their numbers, when the pieces were made. **/
+    std::vector<std::string> primvarNames_;
 };
 
 };  // namespace v3d::moya::geometry

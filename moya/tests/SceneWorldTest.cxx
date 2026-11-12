@@ -131,6 +131,22 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_primitive_is_a_prototype_and_an_instance
     BOOST_TEST((read.scene().value(surface, "Cs") == scene::Value::colour(glm::vec3(0.5F, 0.25F, 1.0F))));
 }
 
+// RI's float[2] makes each of a primvar's elements two floats
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_float_array_primvar_is_of_its_width_test) {
+    const Read read(world(
+        "AttributeBegin\n"
+        "Attribute \"identifier\" \"name\" \"floor\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0 0 1 0] \"facevarying float[2] st\" [0 0 1 0 1 1 0 1] \"constant float[3] weights\" [1 2 3]\n"
+        "AttributeEnd\n"));
+    const scene::Handle mesh = read.handle("mesh", "floor");
+    const std::vector<scene::Declaration> & primvars = read.scene().primvars(mesh);
+    BOOST_TEST_REQUIRE(primvars.size() == 2U);
+    for (const scene::Declaration & declared : primvars) {
+        BOOST_TEST(declared.width == (declared.name == "st" ? 2U : 3U));
+    }
+    BOOST_TEST(read.scene().value(mesh, "st").size() == 8U);
+}
+
 BOOST_AUTO_TEST_CASE(moya_sceneclient_instances_under_one_attribute_state_share_a_material_test) {
     const Read read(world(
         "Surface \"matte\"\n"

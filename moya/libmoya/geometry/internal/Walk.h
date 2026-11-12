@@ -9,6 +9,7 @@
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/internal/Piece.h>
 #include <moya/libmoya/geometry/internal/Primvars.h>
+#include <moya/libmoya/geometry/internal/Programs.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/subdivision/Surface.h>
 #include <moya/libmoya/geometry/subdivision/Tessellation.h>
@@ -104,11 +105,6 @@ class Walk final {
     /** The index of a material among the prototypes', gathered once from its surface node. **/
     std::uint32_t material(const scene::Handle & handle);
 
-    /**
-     * A material whose surface node is a MaterialX node, compiled through the libraries installed
-     * beside moya. Without them it is diffuse, and is reported.
-     **/
-    kernel::surface::Material compiled(const scene::Handle & handle);
 
     /**
      * The index of a geometry among the geometries, gathered once or placed from the cache, or
@@ -177,7 +173,7 @@ class Walk final {
         const std::function<Spread(scene::Interpolation, const std::vector<float> &, std::size_t)> & spread);
 
     /** Appends one primvar of a geometry, already spread. **/
-    void addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::string & space);
+    void addPrimvar(Geometry & geometry, std::uint32_t name, std::uint32_t components, const Spread & spread, const std::optional<std::string> & space);
 
     /**
      * Where values are held from first, count for each of a list of samples' times, which the
@@ -220,6 +216,9 @@ class Walk final {
     std::set<std::uint32_t> placed_;
 
     Prototypes prototypes_;
+
+    /** Every MaterialX material, compiled before the walk, and the primvars they read. **/
+    Programs programs_;
 };
 
 };  // namespace v3d::moya::geometry::internal

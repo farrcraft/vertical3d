@@ -14,6 +14,10 @@ namespace v3d::moya::kernel::program {
  * operation up to Not is taken one component at a time, over the components of its output, and
  * an operand of one component is spread over all of them. The rest take their operands whole.
  * Integers and booleans are held as floats, a boolean as one or zero.
+ *
+ * The operations from Primvar on read the shading point. Their first operand is not a register
+ * but a number: a primvar's, or kObject or kWorld for the space a direction or a position is
+ * given in.
  **/
 enum class Op : std::uint8_t {
     Copy,        /**< the first operand: dot, constant and convert **/
@@ -65,7 +69,16 @@ enum class Op : std::uint8_t {
     RgbToHsv,
     HsvToRgb,
     Extract,     /**< in's component at index, held to its components **/
-    Combine      /**< each operand's components, one operand after another **/
+    Combine,     /**< each operand's components, one operand after another **/
+    Primvar,     /**< the primvar the first operand numbers, or the second operand where there is none **/
+    Position,    /**< the shading point's position **/
+    Normal,      /**< its shading normal **/
+    Tangent,     /**< its tangent frame's tangent **/
+    Bitangent    /**< its tangent frame's bitangent **/
 };
+
+/** The space a geometric operation gives its value in: the geometry's own, or the world. **/
+inline constexpr std::uint32_t kObject = 0;
+inline constexpr std::uint32_t kWorld = 1;
 
 };  // namespace v3d::moya::kernel::program

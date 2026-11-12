@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -124,7 +125,8 @@ mx::OutputPtr outputOf(const mx::NodeDefPtr & def, const std::string & name) {
 
 };  // namespace
 
-Emitter::Emitter(Network & network) : network_(network), values_(kernel::program::kParameterRegisters, 0.0F) {
+Emitter::Emitter(Network & network, std::vector<std::string> & primvars) :
+    network_(network), primvars_(primvars), values_(kernel::program::kParameterRegisters, 0.0F) {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the type, then the space
@@ -211,11 +213,64 @@ std::uint32_t Emitter::operand(const mx::NodePtr & node, const mx::InputPtr & de
     return at;
 }
 
+std::uint32_t Emitter::primvar(const std::string & name) {
+    for (std::size_t i = 0; i < primvars_.size(); ++i) {
+        if (primvars_[i] == name) {
+            return static_cast<std::uint32_t>(i);
+        }
+    }
+    primvars_.push_back(name);
+    return static_cast<std::uint32_t>(primvars_.size() - 1U);
+}
+
+std::optional<Instruction> Emitter::geometric(const mx::NodePtr & node, std::uint32_t width) {
+    const std::string & category = node->getCategory();
+    const auto text = [&](const std::string & name) {
+        const mx::ValuePtr value = node->getInputValue(name);
+        return value ? value->getValueString() : std::string();
+    };
+    Instruction out;
+    out.width = width;
+    if (category == "geompropvalue" || category == "texcoord" || category == "geomcolor") {
+        std::string name = text("geomprop");
+        if (category == "texcoord") {
+            const std::string index = text("index");
+            name = index.empty() || index == "0" ? "st" : "st" + index;
+        } else if (category == "geomcolor") {
+            name = "Cs";
+        }
+        if (name.empty() || (category == "texcoord" && width != 2U) || (category == "geomcolor" && width != 3U)) {
+            return std::nullopt;
+        }
+        out.op = Op::Primvar;
+        out.in[0] = primvar(name);
+        const mx::InputPtr fallback = node->getNodeDef()->getActiveInput("default");
+        out.in[1] = fallback ? operand(node, fallback) : allocate(width);
+        out.widths[1] = width;
+        return out;
+    }
+    const std::map<std::string, Op> directions { { "position", Op::Position }, { "normal", Op::Normal }, { "tangent", Op::Tangent }, { "bitangent", Op::Bitangent } };
+    const auto found = directions.find(category);
+    if (found == directions.end() || width != 3U) {
+        return std::nullopt;
+    }
+    out.op = found->second;
+    out.in[0] = text("space") == "world" ? kernel::program::kWorld : kernel::program::kObject;
+    return out;
+}
+
 std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     const mx::NodeDefPtr def = node->getNodeDef();
-    const std::optional<Operation> operation = Operation::of(node->getCategory());
     const mx::OutputPtr output = outputOf(def, std::string());
-    if (!def || !operation || !output || widthOf(output->getType()) == 0U || operation->inputs.size() > kernel::program::kMostOperands) {
+    if (!def || !output || widthOf(output->getType()) == 0U) {
+        return std::nullopt;
+    }
+    const std::optional<Instruction> reading = geometric(node, widthOf(output->getType()));
+    if (reading) {
+        return reading;
+    }
+    const std::optional<Operation> operation = Operation::of(node->getCategory());
+    if (!operation || operation->inputs.size() > kernel::program::kMostOperands) {
         return std::nullopt;
     }
     Instruction out;

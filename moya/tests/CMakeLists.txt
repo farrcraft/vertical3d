@@ -16,6 +16,7 @@ v3d_add_test(moya
 	"ConductorTest.cxx"
 	"DielectricTest.cxx"
 	"FuzzTest.cxx"
+	"GeometricNodesTest.cxx"
 	"LayeringTest.cxx"
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"

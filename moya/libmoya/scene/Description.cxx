@@ -137,8 +137,11 @@ const Declaration * declarationOf(const Kind & kind, const std::vector<Declarati
 /** A parameter's line. **/
 std::string parameterLine(const Scene & scene, const Declaration & declared, bool primvar, const Samples & samples) {
     std::string line = "    " + declared.name + " " + name(declared.type);
+    if (declared.width != 1) {
+        line += std::to_string(declared.width);
+    }
     if (declared.count != 1) {
-        line += "[" + std::to_string(samples.values.front().size()) + "]";
+        line += "[" + std::to_string(samples.values.front().size() / declared.width) + "]";
     }
     if (primvar && declared.interpolation != Interpolation::Constant) {
         line += std::string(" ") + name(declared.interpolation);

@@ -262,7 +262,7 @@ void fill(internal::Emitter & emitter, Network & network, bool compiling) {
 
 };  // namespace
 
-Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material) {
+Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
     Network held = network(library, scene, material);
     Compiled out;
     if (held.surface) {
@@ -270,9 +270,9 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
         if (definition != kOpenPbr) {
             held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it is diffuse");
         } else {
-            internal::Emitter compiled(held);
+            internal::Emitter compiled(held, primvars);
             fill(compiled, held, true);
-            internal::Emitter constants(held);
+            internal::Emitter constants(held, primvars);
             if (compiled.overflowed()) {
                 held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
                 fill(constants, held, false);

@@ -27,7 +27,11 @@ namespace v3d::moya::material::internal {
  **/
 class Emitter final {
  public:
-    explicit Emitter(Network & network);
+    /**
+     * @param primvars the name of each primvar a program reads, by its number, to which a name read
+     *        first is added
+     **/
+    Emitter(Network & network, std::vector<std::string> & primvars);
 
     /** Holds a constant in registers from a first. A colour's first is kept with its space. **/
     void constant(std::uint32_t at, const MaterialX::ConstValuePtr & value, const std::string & type, const std::string & space);
@@ -83,7 +87,17 @@ class Emitter final {
      **/
     std::optional<kernel::program::Instruction> instruction(const MaterialX::NodePtr & node);
 
+    /**
+     * The instruction a node that reads the shading point compiles to, or nothing when it is not
+     * such a node or cannot be compiled.
+     **/
+    std::optional<kernel::program::Instruction> geometric(const MaterialX::NodePtr & node, std::uint32_t width);
+
+    /** The number of a primvar's name, given it the first time it is read. **/
+    std::uint32_t primvar(const std::string & name);
+
     Network & network_;
+    std::vector<std::string> & primvars_;
     std::vector<kernel::program::Instruction> instructions_;
     std::vector<float> values_;
     std::vector<std::uint32_t> colours_;

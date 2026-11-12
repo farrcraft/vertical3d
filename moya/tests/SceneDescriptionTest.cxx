@@ -94,6 +94,23 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_description_names_every_parameter_and_value_te
     BOOST_TEST(built(true) == expected);
 }
 
+// a float primvar of elements of more than one float names its width after its type, and counts
+// its elements
+BOOST_AUTO_TEST_CASE(moya_scene_a_description_names_a_primvars_width_test) {
+    scene::Scene scene(schema());
+    const scene::Handle shape = scene.create("shape", "a");
+    scene.declare(shape, scene::Declaration { .name = "st",
+        .type = scene::Type::Float,
+        .count = scene::Declaration::kAny,
+        .width = 2,
+        .fallback = scene::Value::floats({}),
+        .interpolation = scene::Interpolation::Vertex });
+    scene.set(shape, "st", scene::Value::floats({ 0.0F, 0.25F, 1.0F, 0.5F }));
+    scene.commit();
+    scene.apply();
+    BOOST_TEST(describe(scene).find("    st float2[2] vertex = 0 0.25 1 0.5\n") != std::string::npos);
+}
+
 BOOST_AUTO_TEST_CASE(moya_scene_a_description_holds_only_applied_objects_test) {
     scene::Scene scene(schema());
     scene.create("look", "red");

@@ -12,6 +12,7 @@
 
 #include <cstdint>
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -43,6 +44,12 @@ struct ShadingPoint {
 
     /** The frame around the shading normal. **/
     Frame frame;
+
+    /** The transformation from the geometry's own space into the world, at the hit's time. **/
+    glm::mat4 toWorld { 1.0F };
+
+    /** The hit's time, held to the shutter. **/
+    float time { 0.0F };
 
     /** The hit's position on its primitive. **/
     glm::vec2 uv { 0.0F };

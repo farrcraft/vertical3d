@@ -22,6 +22,7 @@
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 
+#include <cmath>
 #include <cstdint>
 
 #include <glm/geometric.hpp>
@@ -33,6 +34,9 @@
 
 /** The scene's surfaces as shading reads them, apart from any device's traversal. **/
 namespace v3d::moya::kernel::surface {
+
+/** The least a tangent may hold, squared, before it is taken as none. **/
+inline constexpr float kLeastTangent = 1.0e-12F;
 
 /**
  * Every geometry the scene's instances place, each in its own space at each of its samples, with
@@ -217,6 +221,43 @@ struct Surfaces {
         out.front = glm::dot(ray.direction, out.geometric) < 0.0F;
         out.geometry = placed;
         out.primitive = hit.primitive;
+        out.toWorld = toWorld;
+        out.time = time;
+        return out;
+    }
+
+    /**
+     * The frame a shading point's tangent gives, around its shading normal. The tangent is the
+     * geometry's `tangent` primvar where it has one, and otherwise the direction `s` increases
+     * across a triangle whose corners each hold `st`. The bitangent is the normal's cross product
+     * with the tangent, turned to the side `t` increases on. A point with neither, or where they
+     * lie along the normal, keeps the frame it was given.
+     **/
+    MOYA_KERNEL Frame tangentFrame(const ShadingPoint & point) const {
+        if (!point.found()) {
+            return point.frame;
+        }
+        const glm::mat3 turn { point.toWorld };
+        const glm::vec3 normal = point.shading;
+        glm::vec3 along { 0.0F };
+        glm::vec3 across { 0.0F };
+        float given[3] {};
+        if (read(point, kTangent, given, 3U)) {
+            along = turn * glm::vec3 { given[0], given[1], given[2] };
+        } else if (!textureDerivatives(point, along, across)) {
+            return point.frame;
+        }
+        const glm::vec3 flat = along - (normal * glm::dot(normal, along));
+        if (!(glm::dot(flat, flat) > kLeastTangent)) {
+            return point.frame;
+        }
+        Frame out;
+        out.normal = normal;
+        out.tangent = glm::normalize(flat);
+        out.bitangent = glm::cross(normal, out.tangent);
+        if (glm::dot(out.bitangent, across) < 0.0F) {
+            out.bitangent = -out.bitangent;
+        }
         return out;
     }
 
@@ -272,6 +313,35 @@ struct Surfaces {
     }
 
  private:
+    /**
+     * How a triangle's point moves in the world as `s` and as `t` increase, from the `st` its
+     * corners hold. False for a point not on such a triangle, or where `st` does not vary.
+     **/
+    MOYA_KERNEL bool textureDerivatives(const ShadingPoint & point, glm::vec3 & alongS, glm::vec3 & alongT) const {
+        const Primvar * found = primvar(point.geometry, kTexture);
+        if (geometries[point.geometry].form != geometry::primitive::Form::Triangles || found == nullptr || found->components != 2U ||
+            found->perPrimitive != 3U) {
+            return false;
+        }
+        glm::vec3 corner[3];
+        corners(point.geometry, point.primitive, point.time, corner);
+        const std::uint32_t first = found->first + (point.primitive * 6U);
+        const float ds1 = values[first + 2U] - values[first];
+        const float dt1 = values[first + 3U] - values[first + 1U];
+        const float ds2 = values[first + 4U] - values[first];
+        const float dt2 = values[first + 5U] - values[first + 1U];
+        const float determinant = (ds1 * dt2) - (ds2 * dt1);
+        if (!(std::fabs(determinant) > kLeastTangent)) {
+            return false;
+        }
+        const glm::vec3 edge1 = corner[1] - corner[0];
+        const glm::vec3 edge2 = corner[2] - corner[0];
+        const glm::mat3 turn { point.toWorld };
+        alongS = turn * (((edge1 * dt2) - (edge2 * dt1)) / determinant);
+        alongT = turn * (((edge2 * ds1) - (edge1 * ds2)) / determinant);
+        return true;
+    }
+
     /**
      * The transformation from the geometry a hit's chain places into the world at a time, the
      * geometry, and the chain's material. False for a chain the surfaces do not hold.

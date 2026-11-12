@@ -52,10 +52,10 @@ std::vector<float> convertedValues(const Prototypes & prototypes, const colour::
     std::map<std::string, colour::Transform> transforms;
     for (std::size_t i = 0; i < prototypes.primvars.size(); ++i) {
         const kernel::surface::Primvar & primvar = prototypes.primvars[i];
-        if (primvar.name != kernel::surface::kColour) {
+        if (!prototypes.primvarSpaces[i]) {
             continue;
         }
-        const std::string & space = prototypes.primvarSpaces[i];
+        const std::string & space = *prototypes.primvarSpaces[i];
         auto found = transforms.find(space);
         if (found == transforms.end()) {
             found = transforms.emplace(space, config.input(space)).first;
