@@ -143,7 +143,7 @@ among the options before the record is drafted.
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222, 0228 | done |
-| [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | open |
+| [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | done |
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | open |
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | open |
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | open |
@@ -513,6 +513,14 @@ and a white surface under fuzz or a film keeps its energy within 2%.
 
 **Tests:** an emitting sphere in a black scene shows its luminance. A diffuse plane beside it
 receives the irradiance a closed form gives, within its errors.
+
+**Done.** `surface::OpenPbr` holds `emissionLuminance` and `emissionColour`. Each chain that
+gives a layered, emitting material to a geometry of triangles makes a mesh light of its own.
+Camera rays see it, and it lights everything. Light linking gives a light the scene does
+not hold its defaults. A chain a mesh light names makes both lights, and `Lights::emitting()`
+finds each in turn at a hit, so they add. The emitter is a square, as a geometry with no
+triangles emits nothing, as with a mesh light. It shows its luminance to the camera, and lights
+a plane as a rect light of its radiance does, by each strategy. With a mesh light it adds.
 
 ### Step 14 — Compiling a material
 

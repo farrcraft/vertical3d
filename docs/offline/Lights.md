@@ -4,8 +4,8 @@ This page is for anyone changing how moya's new core places lights and what they
 kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
 host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
 shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point
-and a distant light have none. A mesh light makes a geometry of the scene emit, and a dome light
-surrounds the scene.
+and a distant light have none. A mesh light makes a geometry of the scene emit, as an emitting
+material does, and a dome light surrounds the scene.
 [Scene.md](Scene.md) lists each light's parameters, and [Integrator.md](Integrator.md) covers the
 paths that meet them.
 
@@ -125,8 +125,19 @@ the world that places the geometry.
 - **A geometry that moves emits from where it stands at the ray's time.** Its chain's
   transformation and its points are both read then.
 
-`kernel::light::Lights::emitting()` gives the mesh light whose geometry a hit's chain places, from
-`meshes`, which holds the first mesh light each instance in the world places.
+**A material that emits** makes a mesh light of its own for each chain of instances that gives
+it to a geometry of triangles. A chain gives its geometry the material of its innermost instance
+that names one, as a shading point takes it. The material is layered, and emits OpenPBR's
+`emissionLuminance`, in nits, in its `emissionColour`, in ACEScg. Camera rays see it, it is not
+normalised, and it lights everything, with every instance casting its shadows. A geometry with
+no triangles emits nothing from its material either. A chain whose geometry a mesh light also
+names makes both lights, the mesh light's first, and their light adds.
+
+`kernel::light::Lights::emitting()` gives a mesh light whose geometry a hit's chain places, from
+`meshes`, which holds the first mesh light each instance in the world places. Given the place of
+one it found, it gives the next, so a hit meets both of its chain's lights.
+
+Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
 `Lights::triangleAt()` gives a triangle in the world at a time, with the unit normal of the side
 it emits from.
 

@@ -25,6 +25,7 @@
 #include <moya/libmoya/kernel/light/Picked.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
 #include <moya/libmoya/light/Ies.h>
 #include <moya/libmoya/light/Lights.h>
@@ -697,6 +698,84 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_normalised_mesh_light_is_divided_by_its_area_
     const film::Estimate expected = film::mean(rendered(other), { 0, 0 }, { kSide, kSide });
     BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
     BOOST_TEST(expected.value > 0.02F);
+}
+
+/** A material whose surface node is RI's matte, which an instance names. **/
+void withMaterial(scene::Scene & scene, const scene::Handle & instance, const std::string & name) {
+    const scene::Handle node = scene.create("shader", name);
+    scene.set(node, "shader", scene::Value::string("matte"));
+    scene.set(node, "language", scene::Value::string("ri"));
+    const scene::Handle material = scene.create("material", name);
+    scene.set(material, "surface", scene::Value::handle(node));
+    scene.set(instance, "material", scene::Value::handle(material));
+}
+
+/**
+ * A scene rendered with every material made an OpenPBR surface that reflects nothing and emits a
+ * luminance in white.
+ **/
+film::Snapshot renderedGlowing(scene::Scene & scene, float luminance) {
+    scene.commit();
+    scene.apply();
+    geometry::Prototypes prototypes = geometry::gather(scene, {});
+    for (kernel::surface::Material & material : prototypes.materials) {
+        material.layered = 1U;
+        material.surface.baseColour = glm::vec3 { 0.0F };
+        material.surface.specularWeight = 0.0F;
+        material.surface.emissionLuminance = luminance;
+    }
+    CpuDevice device;
+    return integrate::render(device, scene, prototypes, {}, colour::Config());
+}
+
+/**
+ * A white plane under a square of a half side at a height whose material emits a luminance, and
+ * which a mesh light also makes emit where one is asked for.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the strategy, luminance and light
+film::Snapshot underGlowingSquare(const char * strategy, float luminance, bool meshLight) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, strategy, 256, 0.25F);
+    const scene::Handle panel = square(scene, "panel", 0.5F);
+    const scene::Handle placed = instanced(scene, "panel", panel, {}, moved(0.0F, 0.0F, -0.5F));
+    scene.set(placed, "camera", scene::Value::integer(0));
+    withMaterial(scene, placed, "emissive");
+    if (meshLight) {
+        glowing(scene, panel);
+    }
+    return renderedGlowing(scene, luminance);
+}
+
+// a square whose material emits gives the picture of a rect light of its radiance, by light samples
+// alone, by BSDF samples alone and by both, as a mesh light does
+BOOST_AUTO_TEST_CASE(moya_lights_an_emitting_material_gives_a_rect_lights_picture_test) {
+    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot glowed = underGlowingSquare(strategy, 1.0F, false);
+            BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+            BOOST_TEST(film::furthest(glowed, rect).sigmas < 5.0F);
+        }
+    }
+}
+
+// a square whose material emits a luminance shows that luminance to the camera, in a black scene
+BOOST_AUTO_TEST_CASE(moya_lights_an_emitting_material_shows_its_luminance_test) {
+    scene::Scene scene(scene::kinds());
+    viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+    const scene::Handle panel = square(scene, "panel", 1.0F);
+    withMaterial(scene, instanced(scene, "panel", panel, {}, flipped(moved(0.0F, 0.0F, -0.5F))), "emissive");
+    const film::Estimate seen = film::mean(renderedGlowing(scene, 2.5F), { 0, 0 }, { kSide, kSide });
+    BOOST_TEST(seen.value == 2.5F, boost::test_tools::tolerance(1.0e-3F));
+}
+
+// a mesh light and an emitting material on one geometry both emit, and their light adds: a square
+// of both lights the plane as a rect light of their summed radiance does
+BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_and_an_emitting_material_add_test) {
+    const film::Estimate alone = film::mean(underRect(1.0F, 0.5F), { 0, 0 }, { kSide, kSide });
+    const film::Estimate both = film::mean(underGlowingSquare("mis", 1.5F, true), { 0, 0 }, { kSide, kSide });
+    BOOST_TEST(film::sigmas(both, film::Estimate { .value = 2.5F * alone.value, .error = 2.5F * alone.error }) < 3.0F);
 }
 
 // a moving mesh light lights the places it passes. A square that crosses the plane over the

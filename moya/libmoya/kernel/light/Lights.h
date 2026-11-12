@@ -302,12 +302,17 @@ struct Lights {
         return chanceIn(triangles, light.triangles, light.count, primitive);
     }
 
-    /** The place of the mesh light whose geometry a hit's chain places, or kNoPrimitive. **/
-    MOYA_KERNEL std::uint32_t emitting(const geometry::Hit & hit) const {
+    /**
+     * The place of a mesh light whose geometry a hit's chain places, or kNoPrimitive. A chain
+     * makes a mesh light's and its material's, which lie together: the first is found from none,
+     * and the next from the place of the one before.
+     **/
+    MOYA_KERNEL std::uint32_t emitting(const geometry::Hit & hit, std::uint32_t after = geometry::kNoPrimitive) const {
         if (!hit.found() || hit.depth == 0U || hit.instances[0] >= meshes.size) {
             return geometry::kNoPrimitive;
         }
-        for (std::uint32_t place = meshes[hit.instances[0]]; place < lights.size; ++place) {
+        const std::uint32_t first = after == geometry::kNoPrimitive ? meshes[hit.instances[0]] : after + 1U;
+        for (std::uint32_t place = first; place < lights.size; ++place) {
             const Light & light = lights[place];
             if (light.shape != Shape::Mesh || light.chain[0] != hit.instances[0]) {
                 break;

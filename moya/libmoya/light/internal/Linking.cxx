@@ -22,9 +22,15 @@ namespace v3d::moya::light::internal {
 
 namespace {
 
-/** The indices in the scene of the instances a light's parameter names, sorted, each once. **/
+/**
+ * The indices in the scene of the instances a light's parameter names, sorted, each once. A light
+ * the scene does not hold, such as an emitting material's, names none.
+ **/
 std::vector<std::uint32_t> named(const scene::Scene & scene, const scene::Handle & light, const char * name) {
     std::vector<std::uint32_t> out;
+    if (!scene.contains(light)) {
+        return out;
+    }
     for (const scene::Handle & instance : scene.value(light, name).handleArray()) {
         out.push_back(instance.index);
     }
@@ -33,9 +39,12 @@ std::vector<std::uint32_t> named(const scene::Scene & scene, const scene::Handle
     return out;
 }
 
-/** Whether an integer parameter of a light is 1. **/
+/**
+ * Whether an integer parameter of a light is 1. A light the scene does not hold, such as an
+ * emitting material's, lights everything and every instance casts its shadows.
+ **/
 bool on(const scene::Scene & scene, const scene::Handle & light, const char * name) {
-    return scene.value(light, name).integerArray().front() != 0;
+    return !scene.contains(light) || scene.value(light, name).integerArray().front() != 0;
 }
 
 /**

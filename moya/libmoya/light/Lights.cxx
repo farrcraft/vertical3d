@@ -566,13 +566,14 @@ kernel::light::Bounds meshBounds(const geometry::Prototypes & prototypes, const 
 }
 
 /**
- * The mesh light that a mesh light's handle makes where a chain of instances places a geometry of
- * triangles, appended to what is gathered with its power. It leads into the geometry's subtree,
- * which the first light that places the geometry builds. A chain that places triangles of no area
- * adds nothing.
+ * A mesh light made where a chain of instances places a geometry of triangles, appended to what
+ * is gathered with its power. made holds what it emits, whether camera rays see it, and whether
+ * it is normalised by its area. It leads into the geometry's subtree, which the first light that
+ * places the geometry builds. A chain that places triangles of no area adds nothing. The handle
+ * is the mesh light's, or one no scene gave for a material that emits.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what is read, then what is built
-void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config, const scene::Handle & handle,
+void appendMesh(const geometry::Prototypes & prototypes, kernel::light::Light made, bool normalise, const scene::Handle & handle,
     const std::vector<std::uint32_t> & placed, std::uint32_t at, std::map<std::uint32_t, internal::Subtree> & subtrees, internal::Gathered & out) {
     const geometry::Geometry & shape = prototypes.geometries[at];
     glm::mat4 toWorld { 1.0F };
@@ -594,7 +595,6 @@ void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototy
     if (subtree == subtrees.end()) {
         subtree = subtrees.emplace(at, subtreeOf(prototypes, shape, out)).first;
     }
-    kernel::light::Light made = emitter(scene, handle, config);
     made.id = kernel::geometry::kNoPrimitive;
     made.shape = kernel::light::Shape::Mesh;
     made.depth = static_cast<std::uint32_t>(placed.size());
@@ -606,8 +606,7 @@ void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototy
     made.count = shape.count;
     made.tree = subtree->second.root;
     made.leaves = subtree->second.leaves;
-    made.camera = scene.value(handle, "camera").integerArray().front() != 0;
-    if (normalised(scene, handle)) {
+    if (normalise) {
         made.scale /= size;
     }
     out.triangles.insert(out.triangles.end(), sums.begin(), sums.end());
@@ -628,35 +627,76 @@ void appendMesh(const scene::Scene & scene, const geometry::Prototypes & prototy
 }
 
 /**
- * The scene's mesh lights, each a light for every chain of instances that places its geometry,
- * appended to what is gathered with their powers. Each triangle's chance is appended to the
- * triangles, and the first light each instance in the world places to the meshes. Each geometry
- * that emits has one subtree, which each light that places it leads into from the top tree. A
- * light whose geometry has no triangles emits nothing, and is reported.
+ * The material a chain of instances gives its geometry: the innermost instance's that names one,
+ * or kNoMaterial.
+ **/
+std::uint32_t materialOf(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & placed) {
+    for (auto level = placed.rbegin(); level != placed.rend(); ++level) {
+        const std::uint32_t material = prototypes.instances[*level].material;
+        if (material != kernel::surface::kNoMaterial) {
+            return material;
+        }
+    }
+    return kernel::surface::kNoMaterial;
+}
+
+/**
+ * The light an emitting material makes: OpenPBR's emission luminance in its emission colour,
+ * which camera rays see. A material that is not layered, or emits no luminance, makes none.
+ **/
+bool materialEmitter(const geometry::Prototypes & prototypes, std::uint32_t material, kernel::light::Light & out) {
+    if (material == kernel::surface::kNoMaterial) {
+        return false;
+    }
+    const kernel::surface::Material & held = prototypes.materials[material];
+    if (held.layered == 0U || !(held.surface.emissionLuminance > 0.0F)) {
+        return false;
+    }
+    out = kernel::light::Light {};
+    out.colour = held.surface.emissionColour;
+    out.scale = held.surface.emissionLuminance;
+    out.camera = true;
+    return true;
+}
+
+/**
+ * The scene's mesh lights and its emitting materials, each a light for every chain of instances
+ * that places its geometry, appended to what is gathered with their powers. A chain whose
+ * geometry a mesh light names makes that light, then the light of its material where its material
+ * emits, so the two lie together and add. Each triangle's chance is appended to the triangles,
+ * and the first light each instance in the world places to the meshes. Each geometry that emits
+ * has one subtree, which each light that places it leads into from the top tree. A geometry with
+ * no triangles emits nothing, and a mesh light that names one is reported.
  **/
 void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
     const boost::shared_ptr<log::Logger> & logger, internal::Gathered & out) {
     const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
-    if (named.empty()) {
-        return;
-    }
     std::set<std::uint32_t> reported;
     std::map<std::uint32_t, internal::Subtree> subtrees;
     std::vector<std::uint32_t> chain;
     chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
         const geometry::Geometry & shape = prototypes.geometries[at];
         const auto naming = named.find(shape.id);
-        if (naming == named.end()) {
+        kernel::light::Light glowing;
+        const bool glows = materialEmitter(prototypes, materialOf(prototypes, placed), glowing);
+        if (naming == named.end() && !glows) {
             return;
         }
-        const scene::Handle & handle = naming->second;
         if (shape.form != kernel::geometry::primitive::Form::Triangles) {
-            if (reported.insert(handle.index).second && logger) {
-                logger->get()->warn("the mesh light {} names a geometry of no triangles, so it emits nothing", scene.name(handle));
+            if (naming != named.end() && reported.insert(naming->second.index).second && logger) {
+                logger->get()->warn("the mesh light {} names a geometry of no triangles, so it emits nothing", scene.name(naming->second));
             }
             return;
         }
-        appendMesh(scene, prototypes, config, handle, placed, at, subtrees, out);
+        if (naming != named.end()) {
+            const scene::Handle & handle = naming->second;
+            kernel::light::Light made = emitter(scene, handle, config);
+            made.camera = scene.value(handle, "camera").integerArray().front() != 0;
+            appendMesh(prototypes, made, normalised(scene, handle), handle, placed, at, subtrees, out);
+        }
+        if (glows) {
+            appendMesh(prototypes, glowing, false, scene::Handle {}, placed, at, subtrees, out);
+        }
     });
 }
 

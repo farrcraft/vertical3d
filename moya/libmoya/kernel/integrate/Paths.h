@@ -458,10 +458,11 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geom
 
 /**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
- * accumulate stages run back to back. At each shading point a path gathers its share of what a
- * mesh light emits there, then a light sample of its set of linked lights, before it scatters. A
- * path that leaves the scene gathers the dome and distant lights it meets. One that meets a
- * light's shape gathers its share of what the light emits towards it, and ends there.
+ * accumulate stages run back to back. At each shading point a path gathers its share of what
+ * each mesh light emits there, a mesh light's and its material's both. It then takes a light
+ * sample of its set of linked lights, before it scatters. A path that leaves the scene gathers
+ * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
+ * the light emits towards it, and ends there.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
@@ -486,8 +487,8 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
         if (!point.found()) {
             return;
         }
-        const std::uint32_t glowing = paths.lights.emitting(hit);
-        if (glowing != geometry::kNoPrimitive && point.front) {
+        for (std::uint32_t glowing = paths.lights.emitting(hit); glowing != geometry::kNoPrimitive && point.front;
+             glowing = paths.lights.emitting(hit, glowing)) {
             const float share = metShare(paths, glowing, hit.primitive, paths.surfaces.held(hit.time), point.position, state);
             if (share > 0.0F) {
                 MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * light::glow(paths.lights.lights[glowing], paths.table, MOYA_PATH(state, wavelengths)) * share;

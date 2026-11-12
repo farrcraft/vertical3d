@@ -12,11 +12,11 @@
 namespace v3d::moya::kernel::surface {
 
 /**
- * OpenPBR Surface's parameters of its base, specular layer, coat, fuzz and thin film, each by
- * OpenPBR's name and with OpenPBR's default. Colours are in ACEScg. A weight, a roughness, a
- * metalness and the darkening run from zero to one, an anisotropy from zero up to one, and an
- * index from one up. A thin film's thickness is in micrometres. Subsurface scatters as the
- * diffuse base, its colour mixed in by its weight.
+ * OpenPBR Surface's parameters of its base, specular layer, coat, fuzz, thin film and
+ * emission, each by OpenPBR's name and with OpenPBR's default. Colours are in ACEScg. A weight,
+ * a roughness, a metalness and the darkening run from zero to one, an anisotropy from zero up to
+ * one, and an index from one up. A thin film's thickness is in micrometres, and the emission's
+ * luminance in nits. Subsurface scatters as the diffuse base, its colour mixed in by its weight.
  **/
 struct OpenPbr {
     float baseWeight { 1.0F };
@@ -50,6 +50,9 @@ struct OpenPbr {
     float thinFilmWeight { 0.0F };
     float thinFilmThickness { 0.5F };
     float thinFilmIor { 1.4F };
+
+    float emissionLuminance { 0.0F };
+    glm::vec3 emissionColour { 1.0F };
 
     /** One when the surface is a thin wall, with the same medium on both sides. **/
     std::uint32_t thinWalled { 0 };

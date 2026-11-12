@@ -338,4 +338,6 @@ reciprocal, though each lobe but fuzz is.
   The layer below the specular layer takes one less its albedo times the film's reflectance over
   the bare Fresnel factor, at outgoing's cosine and each wavelength.
 
-Specular anisotropy follows the shading frame's tangent, with no rotation.
+Specular anisotropy follows the shading frame's tangent, with no rotation. A layered material's
+emission is no closure: it makes the material's geometry a light of the light tree, as
+[Lights.md](Lights.md#mesh-lights) says.
