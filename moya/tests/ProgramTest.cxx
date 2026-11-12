@@ -41,6 +41,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
 
 namespace {
@@ -387,14 +388,26 @@ BOOST_AUTO_TEST_CASE(moya_program_a_mix_of_two_colours_renders_as_the_mix_test) 
     const scene::Handle constant = node(plain, "surface", kOpenPbr, { { "base_color", colour3(0.3F, 0.1F, 0.7F) } });
     placeSquare(plain, materialOf(plain, "plain", constant));
 
+    // OpenPBR's default base colour, which a program that did not run would give
+    scene::Scene unmixed(scene::kinds());
+    placeSquare(unmixed, materialOf(unmixed, "grey", node(unmixed, "surface", kOpenPbr, {})));
+
     const kernel::bsdf::Bsdf got = bsdfOf(mixing);
     const kernel::bsdf::Bsdf expected = bsdfOf(plain);
+    const kernel::bsdf::Bsdf grey = bsdfOf(unmixed);
     BOOST_TEST_REQUIRE(got.count == expected.count);
-    for (std::uint32_t i = 0; i < got.count; ++i) {
-        BOOST_TEST((got.closures[i].model == expected.closures[i].model));
+    // light reflected towards the camera from along the normal and from a slant
+    const glm::vec3 outgoing { 0.0F, 0.0F, 1.0F };
+    for (const glm::vec3 & incoming : { glm::vec3 { 0.0F, 0.0F, 1.0F }, glm::normalize(glm::vec3 { 0.5F, 0.2F, 1.0F }) }) {
+        const kernel::spectrum::SampledSpectrum value = got.evaluate(outgoing, incoming);
+        const kernel::spectrum::SampledSpectrum wanted = expected.evaluate(outgoing, incoming);
+        const kernel::spectrum::SampledSpectrum greyed = grey.evaluate(outgoing, incoming);
+        bool differs = false;
         for (int sample = 0; sample < kernel::spectrum::kSamples; ++sample) {
-            BOOST_TEST(got.closures[i].weight[sample] == expected.closures[i].weight[sample], boost::test_tools::tolerance(1.0e-5F));
+            BOOST_TEST(value[sample] == wanted[sample], boost::test_tools::tolerance(1.0e-5F));
+            differs = differs || std::fabs(value[sample] - greyed[sample]) > 1.0e-3F;
         }
+        BOOST_TEST(differs);
     }
 }
 
