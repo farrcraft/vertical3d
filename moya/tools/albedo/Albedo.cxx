@@ -16,14 +16,16 @@
 // A dielectric's albedo is integrated the same way at each point of the ior axis too, from outside
 // and from inside. Each visible normal both reflects, weighed by Fresnel's equations, and
 // refracts, weighed by the rest, each by the shadowing over the masking when it leaves on its own
-// side. The transmission is counted by the energy it carries. The shares a smooth interface
-// transmits and a thin slab reflects are integrated over the cosine at each point of the axis.
+// side. The transmission is counted by the energy it carries. Its reflection alone is integrated
+// from outside too, where a smooth interface reflects by Fresnel's equations. The shares a smooth
+// interface transmits and a thin slab reflects are integrated over the cosine at each point of the
+// axis.
 //
 // Usage: moya_albedo <output.cxx>
 
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
-#include <moya/libmoya/kernel/bsdf/Fresnel.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 
@@ -71,8 +73,8 @@ constexpr std::size_t kPerLine = 8;
 using Table = std::pair<const char *, std::vector<double>>;
 
 /** The GGX distribution of a roughness. **/
-bsdf::Ggx ggxAt(float roughness) {
-    return bsdf::Ggx { glm::vec2 { std::max(roughness * roughness, bsdf::kLeast) } };
+bsdf::scattering::Ggx ggxAt(float roughness) {
+    return bsdf::scattering::Ggx { glm::vec2 { std::max(roughness * roughness, bsdf::scattering::kLeast) } };
 }
 
 /** The direction at a cosine, in the plane of x and z. **/
@@ -90,8 +92,8 @@ glm::vec2 cell(std::size_t row, std::size_t column, std::size_t side) {
 /** A reflection's directional albedo at a cosine and a roughness, each from zero to one. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the roughness
 double directional(float cosine, float roughness) {
-    const bsdf::Ggx ggx = ggxAt(roughness);
-    if (bsdf::Ggx::smooth(ggx.alpha)) {
+    const bsdf::scattering::Ggx ggx = ggxAt(roughness);
+    if (bsdf::scattering::Ggx::smooth(ggx.alpha)) {
         return 1.0;
     }
     const glm::vec3 outgoing = outgoingAt(cosine);
@@ -109,12 +111,15 @@ double directional(float cosine, float roughness) {
     return sum / static_cast<double>(kSide * kSide);
 }
 
-/** A dielectric's directional albedo at a cosine, a roughness and a ratio of indices eta. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, the roughness, then eta
-double dielectric(float cosine, float roughness, float eta) {
-    const bsdf::Ggx ggx = ggxAt(roughness);
-    if (bsdf::Ggx::smooth(ggx.alpha)) {
-        return 1.0;
+/**
+ * A dielectric's directional albedo at a cosine, a roughness and a ratio of indices eta: its
+ * reflection and its transmission, or its reflection alone.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, the roughness, eta, then which
+double dielectric(float cosine, float roughness, float eta, bool alone) {
+    const bsdf::scattering::Ggx ggx = ggxAt(roughness);
+    if (bsdf::scattering::Ggx::smooth(ggx.alpha)) {
+        return alone ? static_cast<double>(bsdf::scattering::Fresnel::reflected(std::max(cosine, kLeastCosine), eta)) : 1.0;
     }
     const glm::vec3 outgoing = outgoingAt(cosine);
     const float masking = ggx.masking(outgoing);
@@ -123,13 +128,13 @@ double dielectric(float cosine, float roughness, float eta) {
         for (std::size_t column = 0; column < kDielectricSide; ++column) {
             const glm::vec3 normal = ggx.sampleVisible(outgoing, cell(row, column, kDielectricSide));
             const float facing = glm::dot(outgoing, normal);
-            const float reflected = bsdf::Fresnel::reflected(facing, eta);
+            const float reflected = bsdf::scattering::Fresnel::reflected(facing, eta);
             const glm::vec3 mirrored = (2.0F * facing * normal) - outgoing;
             if (mirrored.z > 0.0F) {
                 sum += static_cast<double>(reflected * ggx.shadowing(outgoing, mirrored) / masking);
             }
             glm::vec3 bent { 0.0F };
-            if (reflected < 1.0F && bsdf::Fresnel::refract(outgoing, normal, eta, bent) && bent.z < 0.0F) {
+            if (!alone && reflected < 1.0F && bsdf::scattering::Fresnel::refract(outgoing, normal, eta, bent) && bent.z < 0.0F) {
                 sum += static_cast<double>((1.0F - reflected) * ggx.shadowing(outgoing, bent) / masking);
             }
         }
@@ -200,7 +205,7 @@ std::vector<double> integrate(std::size_t points, Albedo albedo) {
 
 /**
  * Writes the tables as a C++ source that defines ggxAlbedos(). They are given in the order of the
- * view's fields: the reflection's two, then the dielectric's six.
+ * view's fields: the reflection's two, then the dielectric's seven.
  **/
 bool write(const char * path, const std::vector<Table> & tables) {
     std::ofstream out(path, std::ios::binary);
@@ -239,21 +244,24 @@ bool write(const char * path, const std::vector<Table> & tables) {
 int run(const char * path) {
     const std::vector<double> reflection = integrate(1, [](float cosine, float roughness, std::size_t) { return directional(cosine, roughness); });
     const std::vector<double> entering =
-        integrate(kIors, [](float cosine, float roughness, std::size_t point) { return dielectric(cosine, roughness, iorAt(point)); });
+        integrate(kIors, [](float cosine, float roughness, std::size_t point) { return dielectric(cosine, roughness, iorAt(point), false); });
     const std::vector<double> leaving =
-        integrate(kIors, [](float cosine, float roughness, std::size_t point) { return dielectric(cosine, roughness, 1.0F / iorAt(point)); });
+        integrate(kIors, [](float cosine, float roughness, std::size_t point) { return dielectric(cosine, roughness, 1.0F / iorAt(point), false); });
+    const std::vector<double> reflected =
+        integrate(kIors, [](float cosine, float roughness, std::size_t point) { return dielectric(cosine, roughness, iorAt(point), true); });
     std::vector<double> transmitted;
     std::vector<double> slab;
     for (std::size_t point = 0; point < kIors; ++point) {
         const float eta = iorAt(point);
-        transmitted.push_back(overCosine([eta](float cosine) { return 1.0F - bsdf::Fresnel::reflected(cosine, eta); }));
-        slab.push_back(overCosine([eta](float cosine) { return bsdf::Fresnel::slab(cosine, eta); }));
+        transmitted.push_back(overCosine([eta](float cosine) { return 1.0F - bsdf::scattering::Fresnel::reflected(cosine, eta); }));
+        slab.push_back(overCosine([eta](float cosine) { return bsdf::scattering::Fresnel::slab(cosine, eta); }));
     }
     const std::vector<double> average = averages(reflection);
     std::cout << "moya_albedo: " << reflection.size() << " points of reflection and " << (2 * entering.size())
               << " of a dielectric, the roughest mean albedo " << average.back() << "\n";
     const std::vector<Table> tables { { "kDirectional", reflection }, { "kAverage", average }, { "kEntering", entering }, { "kLeaving", leaving },
-        { "kEnteringAverage", averages(entering) }, { "kLeavingAverage", averages(leaving) }, { "kTransmitted", transmitted }, { "kSlab", slab } };
+        { "kEnteringAverage", averages(entering) }, { "kLeavingAverage", averages(leaving) }, { "kTransmitted", transmitted }, { "kSlab", slab },
+        { "kReflected", reflected } };
     return write(path, tables) ? 0 : 1;
 }
 

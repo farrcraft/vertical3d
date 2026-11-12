@@ -5,8 +5,8 @@
 
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
-#include <moya/libmoya/kernel/bsdf/Fresnel.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
@@ -50,7 +50,7 @@ bsdf::Bsdf glass(float roughness, float ior, bool thin = false, float anisotropy
     bsdf::Closure closure;
     closure.model = bsdf::Model::Dielectric;
     closure.weight = spectrum::SampledSpectrum(1.0F);
-    closure.alpha = bsdf::Ggx::alphas(roughness, anisotropy);
+    closure.alpha = bsdf::scattering::Ggx::alphas(roughness, anisotropy);
     closure.ior = ior;
     closure.thin = thin;
     out.add(closure);
@@ -64,20 +64,20 @@ BOOST_AUTO_TEST_CASE(moya_dielectric_fresnel_meets_its_closed_forms_test) {
     for (const float eta : { 1.33F, 1.5F, 2.4F }) {
         BOOST_TEST_CONTEXT("eta " << eta) {
             const float normal = ((eta - 1.0F) / (eta + 1.0F)) * ((eta - 1.0F) / (eta + 1.0F));
-            BOOST_TEST(bsdf::Fresnel::reflected(1.0F, eta) == normal, boost::test_tools::tolerance(1.0e-5F));
-            BOOST_TEST(bsdf::Fresnel::reflected(1.0F, 1.0F / eta) == normal, boost::test_tools::tolerance(1.0e-5F));
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(1.0F, eta) == normal, boost::test_tools::tolerance(1.0e-5F));
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(1.0F, 1.0F / eta) == normal, boost::test_tools::tolerance(1.0e-5F));
             const float brewster = 1.0F / std::sqrt(1.0F + (eta * eta));
             const float through = std::sqrt(1.0F - ((1.0F - (brewster * brewster)) / (eta * eta)));
             const float perpendicular = (brewster - (eta * through)) / (brewster + (eta * through));
-            BOOST_TEST(bsdf::Fresnel::reflected(brewster, eta) == 0.5F * perpendicular * perpendicular, boost::test_tools::tolerance(1.0e-4F));
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(brewster, eta) == 0.5F * perpendicular * perpendicular, boost::test_tools::tolerance(1.0e-4F));
             const float critical = std::sqrt(1.0F - (1.0F / (eta * eta)));
-            BOOST_TEST(bsdf::Fresnel::reflected(critical - 0.01F, 1.0F / eta) == 1.0F);
-            BOOST_TEST(bsdf::Fresnel::reflected(critical + 0.01F, 1.0F / eta) < 1.0F);
-            BOOST_TEST(bsdf::Fresnel::reflected(0.0F, eta) == 1.0F, boost::test_tools::tolerance(1.0e-5F));
-            BOOST_TEST(bsdf::Fresnel::slab(1.0F, eta) == 2.0F * normal / (1.0F + normal), boost::test_tools::tolerance(1.0e-5F));
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(critical - 0.01F, 1.0F / eta) == 1.0F);
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(critical + 0.01F, 1.0F / eta) < 1.0F);
+            BOOST_TEST(bsdf::scattering::Fresnel::reflected(0.0F, eta) == 1.0F, boost::test_tools::tolerance(1.0e-5F));
+            BOOST_TEST(bsdf::scattering::Fresnel::slab(1.0F, eta) == 2.0F * normal / (1.0F + normal), boost::test_tools::tolerance(1.0e-5F));
         }
     }
-    BOOST_TEST(bsdf::Fresnel::reflected(0.7F, 1.0F) == 0.0F);
+    BOOST_TEST(bsdf::scattering::Fresnel::reflected(0.7F, 1.0F) == 0.0F);
 }
 
 // a refraction keeps Snell's law: the sines of the two angles are in the ratio of the indices, on
@@ -86,14 +86,14 @@ BOOST_AUTO_TEST_CASE(moya_dielectric_a_refraction_keeps_snells_law_test) {
     const glm::vec3 normal { 0.0F, 0.0F, 1.0F };
     const glm::vec3 from = towards(0.6F, 0.3F);
     glm::vec3 bent { 0.0F };
-    BOOST_TEST_REQUIRE(bsdf::Fresnel::refract(from, normal, 1.5F, bent));
+    BOOST_TEST_REQUIRE(bsdf::scattering::Fresnel::refract(from, normal, 1.5F, bent));
     BOOST_TEST(bent.z < 0.0F);
     BOOST_TEST(glm::length(bent) == 1.0F, boost::test_tools::tolerance(1.0e-5F));
     const float sineIn = std::sqrt(1.0F - (from.z * from.z));
     const float sineOut = std::sqrt(1.0F - (bent.z * bent.z));
     BOOST_TEST(sineIn == 1.5F * sineOut, boost::test_tools::tolerance(1.0e-4F));
     BOOST_TEST(bent.x * from.x < 0.0F);
-    BOOST_TEST(!bsdf::Fresnel::refract(towards(0.3F, 0.0F), normal, 1.0F / 1.5F, bent));
+    BOOST_TEST(!bsdf::scattering::Fresnel::refract(towards(0.3F, 0.0F), normal, 1.0F / 1.5F, bent));
 }
 
 // a rough dielectric's samples follow its density over both hemispheres, entering and leaving,
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(moya_dielectric_a_smooth_dielectric_is_specular_test) {
     const bsdf::Sample unbent = glass(0.0F, 1.5F, true).sample(slanted, { 0.5F, 0.5F }, 0.9F);
     BOOST_TEST_REQUIRE(unbent.found());
     BOOST_TEST(glm::distance(unbent.incoming, -slanted) < 1.0e-6F);
-    BOOST_TEST(unbent.value[0] == 1.0F - bsdf::Fresnel::slab(0.6F, 1.5F), boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(unbent.value[0] == 1.0F - bsdf::scattering::Fresnel::slab(0.6F, 1.5F), boost::test_tools::tolerance(1.0e-5F));
 
     const bsdf::Sample passed = glass(0.5F, 1.0F).sample(slanted, { 0.5F, 0.5F }, 0.5F);
     BOOST_TEST_REQUIRE(passed.found());

@@ -141,7 +141,7 @@ among the options before the record is drafted.
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | done |
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | done |
-| [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | open |
+| [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | open |
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | open |
@@ -476,6 +476,16 @@ side, and a clear sphere vanishes in a white furnace, smooth, rough or thin-wall
 **Tests:** OpenPBR's limiting cases: a metalness of one is the conductor, a specular weight of
 zero is the base alone, and a coat of weight zero changes nothing. A white furnace keeps the energy
 each layer's closed form allows.
+
+**Done.** `OrenNayar` is the energy-preserving Oren-Nayar lobe, sampled by the cosine. `Specular`
+is a dielectric's reflection alone, compensated as a conductor is by the mean a smooth interface
+reflects. `moya_albedo` integrates the reflection alone at every point of the ior axis, which the
+layering reads. A dielectric's reflection and transmission take colours of their own.
+`surface::OpenPbr` holds OpenPBR's parameters, and a material with one set is layered by
+`bsdf::Layering`. Each layer scales the one below by one less its albedo at the outgoing
+direction. The coat tints, darkens and roughens what lies below it. A white surface keeps its
+energy within 2%, coated, metal or not, and a grey one matches each layer's closed form. Anisotropy
+follows the tangent without rotation until tangents arrive in step 16.
 
 ### Step 12 — Fuzz and thin film
 

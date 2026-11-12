@@ -519,6 +519,36 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test)
     }
 }
 
+// a white OpenPBR sphere under a white dome is white wherever it is seen: its coat, its metal, its
+// specular layer and its rough diffuse base give back all of the dome's light between them
+BOOST_AUTO_TEST_CASE(moya_paths_a_white_openpbr_sphere_in_a_white_furnace_is_white_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle options = framed(scene, 64);
+    scene.set(options, "maxDepth", scene::Value::integer(32));
+    scene.set(options, "diffuseDepth", scene::Value::integer(32));
+    scene.set(options, "glossyDepth", scene::Value::integer(32));
+    scene.set(options, "specularDepth", scene::Value::integer(32));
+    const scene::Handle placed = ball(scene, "ball", 1.0F, glm::mat4(1.0F));
+    scene.set(placed, "material", scene::Value::handle(greyMaterial(scene, "layered", 1.0F)));
+    scene.commit();
+    scene.apply();
+    geometry::Prototypes prototypes = geometry::gather(scene, {});
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+    kernel::surface::Material & material = prototypes.materials.front();
+    material.layered = 1U;
+    material.surface.baseColour = glm::vec3 { 1.0F };
+    material.surface.baseDiffuseRoughness = 0.5F;
+    material.surface.baseMetalness = 0.3F;
+    material.surface.specularRoughness = 0.4F;
+    material.surface.coatWeight = 1.0F;
+    material.surface.coatRoughness = 0.2F;
+    CpuDevice device;
+    const film::Snapshot snapshot = integrate::render(device, scene, prototypes, {}, colour::Config());
+    const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });
+    BOOST_TEST(furthest.sigmas < 5.0F);
+    BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 1.0F, boost::test_tools::tolerance(0.02F));
+}
+
 };  // namespace
 
 };  // namespace v3d::moya::tracing

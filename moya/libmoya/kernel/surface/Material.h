@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>
+#include <moya/libmoya/kernel/surface/OpenPbr.h>
 
 #include <cstdint>
 #include <limits>
@@ -24,6 +25,8 @@ inline constexpr std::uint32_t kMostMaterialClosures = 8;
  * A material as shading reads it: the colour its surface node gives, in ACEScg, when it gives
  * one, and the closures its BSDF holds. Each closure's weight is its scale times the surface's
  * colour. A material is one diffuse closure of scale one unless code sets others.
+ *
+ * A layered material is OpenPBR Surface of its parameters in place of its closures.
  **/
 struct Material {
     glm::vec3 colour { 0.5F };
@@ -33,6 +36,10 @@ struct Material {
 
     MaterialClosure closures[kMostMaterialClosures] {};
     std::uint32_t count { 1 };
+
+    /** OpenPBR's parameters, and one when the material is layered by them. **/
+    OpenPbr surface;
+    std::uint32_t layered { 0 };
 };
 
 };  // namespace v3d::moya::kernel::surface

@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /** The cosine at which the F82 tint is given: one seventh, an angle near 82 degrees. **/
 inline constexpr float kTintCosine = 1.0F / 7.0F;
@@ -68,4 +68,4 @@ struct F82 {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

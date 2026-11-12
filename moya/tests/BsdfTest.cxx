@@ -112,7 +112,7 @@ kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, cons
     const kernel::surface::Surfaces held = surfaces.view();
     const kernel::surface::ShadingPoint point = held.at(traced.nearest.front(), ray);
     BOOST_TEST_REQUIRE(point.found());
-    const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), v3d::moya::material::ggxAlbedos(), wavelengths);
+    const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), v3d::moya::material::ggxAlbedos(), wavelengths, glm::vec3 { 0.0F, 0.0F, 1.0F });
     BOOST_TEST_REQUIRE(scattering.count == 1U);
     BOOST_TEST_REQUIRE((scattering.closures[0].model == bsdf::Model::Diffuse));
     return scattering.closures[0].weight;

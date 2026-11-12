@@ -33,10 +33,11 @@ inline constexpr float kMostIorAxis = 0.6F;
  * the directional albedo.
  *
  * Two values at each point of the ior axis complete them: the share of light a smooth interface
- * transmits from outside, and the share a thin slab reflects, each a mean over the hemisphere.
+ * transmits from outside, and the share a thin slab reflects, each a mean over the hemisphere. A
+ * last table holds a dielectric's reflection alone from outside, as a layer over a base reflects.
  *
  * A table of no points reads an albedo of one everywhere, which compensates nothing, and shares
- * of zero.
+ * and a reflection alone of zero.
  **/
 struct Albedos {
     /** The points along the cosine and along the roughness. **/
@@ -64,6 +65,9 @@ struct Albedos {
     Array<const float> transmitted;
     Array<const float> slab;
 
+    /** A dielectric's reflection alone from outside, by ior, roughness and cosine. **/
+    Array<const float> reflected;
+
     /** The reflection's directional albedo at a cosine and an alpha. **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the alpha
     MOYA_KERNEL float at(float cosine, float alpha) const {
@@ -87,13 +91,16 @@ struct Albedos {
         if (cosines < 2U || roughnesses < 2U || iors < 2U) {
             return 1.0F;
         }
-        const Array<const float> & table = inside ? leaving : entering;
-        const Place across = place(cosine, cosines);
-        const Place up = place(std::sqrt(alpha), roughnesses);
-        const Place over = place(axis(eta) / kMostIorAxis, iors);
-        const std::uint32_t layer = cosines * roughnesses;
-        const float low = grid(table, over.index * layer, across, up);
-        return low + ((grid(table, (over.index + 1U) * layer, across, up) - low) * over.fraction);
+        return volume(inside ? leaving : entering, cosine, alpha, eta);
+    }
+
+    /** A dielectric's reflection alone from outside, at a cosine, an alpha and a ratio eta. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, the alpha, then eta
+    MOYA_KERNEL float reflectedAt(float cosine, float alpha, float eta) const {
+        if (cosines < 2U || roughnesses < 2U || iors < 2U) {
+            return 0.0F;
+        }
+        return volume(reflected, cosine, alpha, eta);
     }
 
     /** A dielectric's mean albedo at an alpha and a ratio eta, from a side. **/
@@ -149,6 +156,17 @@ struct Albedos {
     MOYA_KERNEL static float line(const Array<const float> & table, std::uint32_t start, const Place & along) {
         const float low = table[start + along.index];
         return low + ((table[start + along.index + 1U] - low) * along.fraction);
+    }
+
+    /** A table by ior, roughness and cosine, read between eight of its values. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, the alpha, then eta
+    MOYA_KERNEL float volume(const Array<const float> & table, float cosine, float alpha, float eta) const {
+        const Place across = place(cosine, cosines);
+        const Place up = place(std::sqrt(alpha), roughnesses);
+        const Place over = place(axis(eta) / kMostIorAxis, iors);
+        const std::uint32_t layer = cosines * roughnesses;
+        const float low = grid(table, over.index * layer, across, up);
+        return low + ((grid(table, (over.index + 1U) * layer, across, up) - low) * over.fraction);
     }
 
     /** A grid of rows of cosines from a start, read between four of its values. **/

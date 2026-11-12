@@ -7,8 +7,8 @@
 
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
-#include <moya/libmoya/kernel/bsdf/Diffuse.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 
@@ -18,7 +18,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /**
  * A metal's reflection, in a frame whose z is the shading normal and whose x is the tangent. It
@@ -117,4 +117,4 @@ struct Conductor {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

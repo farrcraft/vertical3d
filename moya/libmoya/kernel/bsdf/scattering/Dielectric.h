@@ -7,9 +7,9 @@
 
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
-#include <moya/libmoya/kernel/bsdf/Diffuse.h>
-#include <moya/libmoya/kernel/bsdf/Fresnel.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Singular.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
@@ -20,7 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /** The least share of energy a single scattering loses on each side before it is given back. **/
 inline constexpr float kLeastLoss = 1.0e-5F;
@@ -33,6 +33,7 @@ inline constexpr float kLeastLoss = 1.0e-5F;
  *
  * - **A single scattering** is GGX's, by the closure's alphas. Each microfacet reflects by
  *   Fresnel's equations at the angle between outgoing and its normal, and refracts the rest.
+ * - **The closure's colour tints its reflection**, and its transmitted colour its transmission.
  * - **A transmission's value is the radiance it carries**, divided by the square of the ratio of
  *   the indices, eta, the index of incoming's side over outgoing's. Its value over the square of
  *   the index on outgoing's side is reciprocal.
@@ -54,10 +55,10 @@ inline constexpr float kLeastLoss = 1.0e-5F;
  **/
 struct Dielectric {
     /** The value for two directions, before the closure's weight. **/
-    MOYA_KERNEL static float evaluate(const Closure & closure, const Albedos & albedos, glm::vec3 outgoing, glm::vec3 incoming) {
+    MOYA_KERNEL static spectrum::SampledSpectrum evaluate(const Closure & closure, const Albedos & albedos, glm::vec3 outgoing, glm::vec3 incoming) {
         const bool inside = upward(outgoing, incoming);
         if (!(outgoing.z > 0.0F) || incoming.z == 0.0F) {
-            return 0.0F;
+            return spectrum::SampledSpectrum(0.0F);
         }
         const Ggx ggx { closure.alpha };
         const float alpha = shared(closure);
@@ -66,15 +67,16 @@ struct Dielectric {
             const glm::vec3 mirrored { incoming.x, incoming.y, std::fabs(incoming.z) };
             const float reflected = Fresnel::slab(glm::dot(outgoing, glm::normalize(outgoing + mirrored)), index(closure));
             const float share = crossed ? 1.0F - albedos.slabAt(index(closure)) : albedos.slabAt(index(closure));
-            return ((crossed ? 1.0F - reflected : reflected) * ggx.reflected(outgoing, mirrored)) +
+            const float value = ((crossed ? 1.0F - reflected : reflected) * ggx.reflected(outgoing, mirrored)) +
                 (share * slabCompensation(albedos, alpha, outgoing.z, mirrored.z));
+            return (crossed ? closure.transmitted : closure.colour) * value;
         }
         const float eta = inside ? 1.0F / index(closure) : index(closure);
         const Lost lost = lostOf(closure, albedos, outgoing.z, inside);
         if (incoming.z > 0.0F) {
             const glm::vec3 normal = glm::normalize(outgoing + incoming);
             const float compensation = lost.own * lost.reflected * (1.0F - albedos.dielectricAt(incoming.z, alpha, index(closure), inside));
-            return (Fresnel::reflected(glm::dot(outgoing, normal), eta) * ggx.reflected(outgoing, incoming)) + compensation;
+            return closure.colour * ((Fresnel::reflected(glm::dot(outgoing, normal), eta) * ggx.reflected(outgoing, incoming)) + compensation);
         }
         const Refraction through = refraction(outgoing, incoming, eta);
         float single = 0.0F;
@@ -84,7 +86,7 @@ struct Dielectric {
                 (outgoing.z * -incoming.z * through.denominator * through.denominator);
         }
         const float compensation = lost.own * lost.crossed * (1.0F - albedos.dielectricAt(-incoming.z, alpha, index(closure), !inside));
-        return (single + compensation) / (eta * eta);
+        return closure.transmitted * ((single + compensation) / (eta * eta));
     }
 
     /** The density sample() draws incoming with, for outgoing. **/
@@ -180,7 +182,7 @@ struct Dielectric {
         Singular out;
         if (choice < reflected) {
             out.direction = glm::vec3 { -outgoing.x, -outgoing.y, outgoing.z };
-            out.value = spectrum::SampledSpectrum(reflected);
+            out.value = closure.colour * reflected;
             out.chance = reflected;
             return out;
         }
@@ -188,14 +190,14 @@ struct Dielectric {
         out.chance = transmitted;
         if (closure.thin) {
             out.direction = -outgoing;
-            out.value = spectrum::SampledSpectrum(transmitted);
+            out.value = closure.transmitted * transmitted;
             return out;
         }
         const float side = inside ? -1.0F : 1.0F;
         glm::vec3 bent { 0.0F };
         Fresnel::refract(glm::vec3 { outgoing.x, outgoing.y, cosine }, glm::vec3 { 0.0F, 0.0F, 1.0F }, eta, bent);
         out.direction = glm::vec3 { bent.x, bent.y, bent.z * side };
-        out.value = spectrum::SampledSpectrum(transmitted / (eta * eta));
+        out.value = closure.transmitted * (transmitted / (eta * eta));
         return out;
     }
 
@@ -305,4 +307,4 @@ struct Dielectric {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

@@ -6,8 +6,8 @@
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
-#include <moya/libmoya/kernel/bsdf/F82.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/F82.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
@@ -57,8 +57,8 @@ bsdf::Bsdf metal(float roughness, float anisotropy, float normal = 1.0F, float t
     bsdf::Closure closure;
     closure.model = bsdf::Model::Conductor;
     closure.weight = flat(1.0F);
-    closure.alpha = bsdf::Ggx::alphas(roughness, anisotropy);
-    closure.fresnel = bsdf::F82 { .normal = flat(normal), .tint = flat(tint) };
+    closure.alpha = bsdf::scattering::Ggx::alphas(roughness, anisotropy);
+    closure.fresnel = bsdf::scattering::F82 { .normal = flat(normal), .tint = flat(tint) };
     out.add(closure);
     return out;
 }
@@ -66,9 +66,9 @@ bsdf::Bsdf metal(float roughness, float anisotropy, float normal = 1.0F, float t
 // the F82 factor is the reflectance at normal incidence there, the tint times Schlick's at the
 // tint's cosine, and one at grazing. Its mean is twice its integral times the cosine
 BOOST_AUTO_TEST_CASE(moya_conductor_the_fresnel_factor_meets_its_reflectance_and_tint_test) {
-    const bsdf::F82 fresnel { .normal = flat(0.6F), .tint = flat(0.8F) };
+    const bsdf::scattering::F82 fresnel { .normal = flat(0.6F), .tint = flat(0.8F) };
     BOOST_TEST(fresnel(1.0F)[0] == 0.6F, boost::test_tools::tolerance(1.0e-6F));
-    BOOST_TEST(fresnel(bsdf::kTintCosine)[0] == 0.8F * bsdf::F82::schlick(0.6F, bsdf::kTintCosine), boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(fresnel(bsdf::scattering::kTintCosine)[0] == 0.8F * bsdf::scattering::F82::schlick(0.6F, bsdf::scattering::kTintCosine), boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(fresnel(0.0F)[0] == 1.0F, boost::test_tools::tolerance(1.0e-6F));
     constexpr int kSteps = 20000;
     double integral = 0.0;
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(moya_conductor_the_fresnel_factor_meets_its_reflectance_and
         integral += 2.0 * static_cast<double>(fresnel(cosine)[0] * cosine) / kSteps;
     }
     BOOST_TEST(fresnel.average()[0] == integral, boost::test_tools::tolerance(1.0e-4));
-    const bsdf::F82 white;
+    const bsdf::scattering::F82 white;
     BOOST_TEST(white(0.3F)[0] == 1.0F);
     BOOST_TEST(white.average()[0] == 1.0F);
 }
@@ -85,10 +85,10 @@ BOOST_AUTO_TEST_CASE(moya_conductor_the_fresnel_factor_meets_its_reflectance_and
 // OpenPBR's alphas: the square of the roughness, the same along both axes with no anisotropy,
 // and stretched along the tangent with it, keeping their product's root at the alpha's
 BOOST_AUTO_TEST_CASE(moya_conductor_anisotropy_stretches_the_alphas_along_the_tangent_test) {
-    const glm::vec2 even = bsdf::Ggx::alphas(0.5F, 0.0F);
+    const glm::vec2 even = bsdf::scattering::Ggx::alphas(0.5F, 0.0F);
     BOOST_TEST(even.x == 0.25F, boost::test_tools::tolerance(1.0e-6F));
     BOOST_TEST(even.y == 0.25F, boost::test_tools::tolerance(1.0e-6F));
-    const glm::vec2 stretched = bsdf::Ggx::alphas(0.5F, 0.6F);
+    const glm::vec2 stretched = bsdf::scattering::Ggx::alphas(0.5F, 0.6F);
     BOOST_TEST(stretched.x > 0.25F);
     BOOST_TEST(stretched.y < 0.25F);
     BOOST_TEST(stretched.y == 0.4F * stretched.x, boost::test_tools::tolerance(1.0e-5F));

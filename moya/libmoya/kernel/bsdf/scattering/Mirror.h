@@ -9,7 +9,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /**
  * Perfect specular reflection, in a frame whose z is the shading normal. Light from one direction
@@ -23,4 +23,4 @@ struct Mirror {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

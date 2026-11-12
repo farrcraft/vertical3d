@@ -12,7 +12,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /** One over pi. **/
 inline constexpr float kInversePi = 0.318309886F;
@@ -64,4 +64,4 @@ struct Diffuse {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

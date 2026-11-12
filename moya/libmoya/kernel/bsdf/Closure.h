@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <moya/libmoya/kernel/bsdf/F82.h>
-#include <moya/libmoya/kernel/bsdf/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/F82.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
@@ -24,16 +24,21 @@ inline constexpr float kLeastBend = 1.0e-3F;
  * that sampling picks it by, and what its model reads. A microfacet model reads its alphas along
  * the tangent and the bitangent, and a conductor its Fresnel factor. A dielectric reads the index
  * of refraction of the side the shading normal points away from, the outside's being one, and
- * whether it is a thin slab with the same medium on both sides.
+ * whether it is a thin slab with the same medium on both sides. Its reflection is tinted by its
+ * colour and its transmission by its transmitted colour. A specular reflection reads its index
+ * and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness.
  **/
 struct Closure {
     Model model { Model::Diffuse };
     spectrum::SampledSpectrum weight { 0.0F };
     float albedo { 0.0F };
     glm::vec2 alpha { 0.5F, 0.5F };
-    F82 fresnel;
+    scattering::F82 fresnel;
     float ior { 1.5F };
     bool thin { false };
+    spectrum::SampledSpectrum colour { 1.0F };
+    spectrum::SampledSpectrum transmitted { 1.0F };
+    float roughness { 0.0F };
 
     /**
      * Whether it scatters into a single direction for each outgoing one, or two for a dielectric.
@@ -47,10 +52,12 @@ struct Closure {
             case Model::Mirror:
                 return true;
             case Model::Conductor:
-                return Ggx::smooth(alpha);
+            case Model::Specular:
+                return scattering::Ggx::smooth(alpha);
             case Model::Dielectric:
-                return Ggx::smooth(alpha) || !(ior > 1.0F + kLeastBend);
+                return scattering::Ggx::smooth(alpha) || !(ior > 1.0F + kLeastBend);
             case Model::Diffuse:
+            case Model::OrenNayar:
                 break;
         }
         return false;
@@ -64,7 +71,7 @@ struct Closure {
         if (singular()) {
             return Lobe::Specular;
         }
-        return model == Model::Diffuse ? Lobe::Diffuse : Lobe::Glossy;
+        return model == Model::Diffuse || model == Model::OrenNayar ? Lobe::Diffuse : Lobe::Glossy;
     }
 };
 

@@ -7,13 +7,15 @@
 
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
-#include <moya/libmoya/kernel/bsdf/Conductor.h>
-#include <moya/libmoya/kernel/bsdf/Dielectric.h>
-#include <moya/libmoya/kernel/bsdf/Diffuse.h>
-#include <moya/libmoya/kernel/bsdf/Mirror.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Conductor.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Dielectric.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Mirror.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
+#include <moya/libmoya/kernel/bsdf/scattering/OrenNayar.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
 #include <moya/libmoya/kernel/bsdf/Singular.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Specular.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
@@ -69,13 +71,30 @@ struct Bsdf {
 
     /**
      * Adds a closure, estimating its albedo as the mean of its weight over the wavelengths, times
-     * the mean of a conductor's Fresnel factor. A closure of no albedo is left out. A BSDF that
-     * holds kMostClosures replaces the one of the smallest albedo with it, while that is smaller.
+     * what its model reflects. That is a conductor's Fresnel factor's mean, or an Oren-Nayar lobe's
+     * colour's. A specular reflection's is its colour's mean times the mean a smooth interface
+     * reflects, and a dielectric's the larger mean of its two colours. A closure of no albedo is
+     * left out. A BSDF that holds kMostClosures replaces the one of the smallest albedo with it,
+     * while that is smaller. The albedo tables are set before a specular reflection is added.
      **/
     MOYA_KERNEL void add(Closure closure) {
         closure.albedo = closure.weight.average();
-        if (closure.model == Model::Conductor) {
-            closure.albedo *= closure.fresnel.average().average();
+        switch (closure.model) {
+            case Model::Conductor:
+                closure.albedo *= closure.fresnel.average().average();
+                break;
+            case Model::OrenNayar:
+                closure.albedo *= closure.colour.average();
+                break;
+            case Model::Specular:
+                closure.albedo *= closure.colour.average() * (1.0F - albedos.transmittedAt(std::fmax(closure.ior, 1.0F)));
+                break;
+            case Model::Dielectric:
+                closure.albedo *= std::fmax(closure.colour.average(), closure.transmitted.average());
+                break;
+            case Model::Diffuse:
+            case Model::Mirror:
+                break;
         }
         if (!(closure.albedo > 0.0F)) {
             return;
@@ -152,14 +171,18 @@ struct Bsdf {
         glm::vec3 drawn { 0.0F };
         switch (closure.model) {
             case Model::Conductor:
-                drawn = Conductor::sample(closure, albedos, local, stretched);
+                drawn = scattering::Conductor::sample(closure, albedos, local, stretched);
+                break;
+            case Model::Specular:
+                drawn = scattering::Conductor::sample(closure, albedos, local, stretched);
                 break;
             case Model::Dielectric:
-                drawn = Dielectric::sample(closure, albedos, local, stretched, choice);
+                drawn = scattering::Dielectric::sample(closure, albedos, local, stretched, choice);
                 break;
             case Model::Diffuse:
             case Model::Mirror:
-                drawn = Diffuse::sample(local, stretched);
+            case Model::OrenNayar:
+                drawn = scattering::Diffuse::sample(local, stretched);
                 break;
         }
         if (drawn.x == 0.0F && drawn.y == 0.0F && drawn.z == 0.0F) {
@@ -200,15 +223,19 @@ struct Bsdf {
         Singular out;
         switch (closure.model) {
             case Model::Dielectric:
-                return Dielectric::scatter(closure, outgoing, choice);
+                return scattering::Dielectric::scatter(closure, outgoing, choice);
             case Model::Conductor:
-                out.value = Conductor::mirrored(closure, outgoing);
+                out.value = scattering::Conductor::mirrored(closure, outgoing);
+                break;
+            case Model::Specular:
+                out.value = scattering::Specular::mirrored(closure, outgoing);
                 break;
             case Model::Diffuse:
             case Model::Mirror:
+            case Model::OrenNayar:
                 break;
         }
-        out.direction = Mirror::sample(outgoing);
+        out.direction = scattering::Mirror::sample(outgoing);
         return out;
     }
 
@@ -222,14 +249,20 @@ struct Bsdf {
             }
             switch (closure.model) {
                 case Model::Conductor:
-                    out += closure.weight * Conductor::evaluate(closure, albedos, outgoing, incoming);
+                    out += closure.weight * scattering::Conductor::evaluate(closure, albedos, outgoing, incoming);
                     break;
                 case Model::Dielectric:
-                    out += closure.weight * Dielectric::evaluate(closure, albedos, outgoing, incoming);
+                    out += closure.weight * scattering::Dielectric::evaluate(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Specular:
+                    out += closure.weight * scattering::Specular::evaluate(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::OrenNayar:
+                    out += closure.weight * scattering::OrenNayar::evaluate(closure, outgoing, incoming);
                     break;
                 case Model::Diffuse:
                 case Model::Mirror:
-                    out += closure.weight * Diffuse::evaluate(outgoing, incoming);
+                    out += closure.weight * scattering::Diffuse::evaluate(outgoing, incoming);
                     break;
             }
         }
@@ -251,14 +284,16 @@ struct Bsdf {
             float own = 0.0F;
             switch (closure.model) {
                 case Model::Conductor:
-                    own = Conductor::density(closure, albedos, outgoing, incoming);
+                case Model::Specular:
+                    own = scattering::Conductor::density(closure, albedos, outgoing, incoming);
                     break;
                 case Model::Dielectric:
-                    own = Dielectric::density(closure, albedos, outgoing, incoming);
+                    own = scattering::Dielectric::density(closure, albedos, outgoing, incoming);
                     break;
                 case Model::Diffuse:
                 case Model::Mirror:
-                    own = Diffuse::density(outgoing, incoming);
+                case Model::OrenNayar:
+                    own = scattering::Diffuse::density(outgoing, incoming);
                     break;
             }
             out += (closure.albedo / total) * own;

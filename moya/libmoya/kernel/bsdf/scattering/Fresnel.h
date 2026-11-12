@@ -12,7 +12,7 @@
 #include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::bsdf {
+namespace v3d::moya::kernel::bsdf::scattering {
 
 /**
  * Fresnel's equations for an interface between two dielectrics. eta is the index of refraction of
@@ -69,4 +69,4 @@ struct Fresnel {
     }
 };
 
-};  // namespace v3d::moya::kernel::bsdf
+};  // namespace v3d::moya::kernel::bsdf::scattering

@@ -494,8 +494,8 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
             }
         }
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
-        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths));
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
+        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
         if (!scatter(paths, point, scattering, outgoing, state)) {
             return;

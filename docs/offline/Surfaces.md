@@ -92,7 +92,8 @@ The gather reads the material each instance names, once per material. A `kernel:
 holds the colour its surface node's `Cs` input gives, converted into ACEScg from the space the
 value names, and whether it gives one. It also holds the closures its BSDF is built from, at most
 `kMostMaterialClosures`. Each is a model and a scale, and a conductor's also holds its roughness,
-its anisotropy and its F82 tint. The gather gives every
+its anisotropy and its F82 tint. A layered material holds OpenPBR's parameters in a
+`surface::OpenPbr` in place of its closures, as [Layering](#layering) says. The gather gives every
 material one diffuse closure of scale one. Code can set others on the gathered prototypes, and
 `integrate::render()` renders prototypes it is given, as
 [Integrator.md](Integrator.md#rendering-a-scene) says. A shading point names the material of the
@@ -123,7 +124,9 @@ comes from.
   gathers nothing through it. Its sample is marked `specular`: its value is the share of light
   the closure carries along the direction, times its weight, with no cosine. Its density is the
   chance the closure was picked, times the chance of that direction among the closure's.
-- **Kernel code has no virtual call**, so each closure switches over its `Model`.
+- **Kernel code has no virtual call**, so each closure switches over its `Model`. Each model, and
+  the GGX distribution and Fresnel factors they share, is in `kernel/bsdf/scattering/`, in the
+  namespace `bsdf::scattering`.
 - **Every closure works in the frame around the shading normal.**
 - **The geometric surface and the shading normal have to agree** on whether two directions lie on
   one side or cross the surface. Where they disagree, the pair has no value, no density and no
@@ -145,6 +148,14 @@ The library's models:
   the side light leaves towards and transmits to the other. It is singular while both its alphas
   are below `kSmoothest`, and while its index lies within `kLeastBend`, 0.001, of one, where
   light passes straight through. It is set out after the conductor.
+- **`OrenNayar` is OpenPBR's energy-preserving Oren-Nayar reflection**, on either side, and its
+  bounces are diffuse. It samples by the cosine. It is set out after the dielectric.
+- **`Specular` is a dielectric's reflection alone**, as a layer over a base reflects, on either
+  side. Its bounces are glossy, or specular while both its alphas are below `kSmoothest`. It is
+  GGX's reflection by Fresnel's equations at the closure's index, tinted by its colour. What a
+  single scattering loses is given back as a conductor's is, its Fresnel factor's mean being the
+  mean a smooth interface reflects. It samples as a conductor does. Its estimated albedo is its
+  weight's mean times its colour's, times the mean a smooth interface reflects.
 
 A conductor is made of four parts:
 
@@ -177,6 +188,7 @@ of the index on incoming's side to the index on outgoing's.
   reflects by Fresnel's equations at the angle between outgoing and its normal, and refracts the
   rest, as Walter and others give it. A microfacet that faces either direction the wrong way
   scatters nothing.
+- **Its colour tints its reflection**, and its transmitted colour its transmission.
 - **A transmission's value is the radiance it carries**: the energy it carries, divided by eta
   squared. Its value over the square of the index on outgoing's side is reciprocal.
 - **Kulla and Conty's compensation** gives back what a single scattering loses, on each side. It is
@@ -195,7 +207,22 @@ of the index on incoming's side to the index on outgoing's.
 A dielectric samples a visible normal with the chance of outgoing's albedo, then reflects about it
 with the chance of its Fresnel factor, or refracts through it. A reflection that falls below the
 surface, or a refraction that comes out above it, is no sample. Otherwise it samples by the
-cosine, on the side the compensation's share picks. Its estimated albedo is its weight's mean.
+cosine, on the side the compensation's share picks. Its estimated albedo is its weight's mean
+times the larger mean of its two colours.
+
+An Oren-Nayar lobe is Portsmouth, Kutz and Hill's, its closure's colour its reflectance and its
+roughness from zero, Lambert's, to one.
+
+- **A single scattering** is Fujii's improved Oren-Nayar: the reflectance over pi, times A times
+  one plus the roughness times s over t. A is one over one plus the roughness times one half less
+  two over three pi. s is the dot product of the two directions less the product of their
+  cosines. t is the larger cosine where s is above zero, and one otherwise.
+- **Its albedo** at a cosine has a closed form, and its mean is A times one plus the roughness
+  times two thirds less 28 over 15 pi.
+- **What it loses** is given back by a lobe of one minus each direction's albedo, over pi times
+  one minus the mean albedo. It is coloured by the reflectance of the bounces between facets: the
+  colour squared times the mean albedo, over one less the colour times one less the mean. A white
+  lobe keeps all its energy, and both parts are reciprocal.
 
 **The albedo tables are integrated when moya is built.** `moya_albedo`, in `moya/tools/albedo/`,
 integrates them at 32 cosines and 32 roughnesses, the roughness being the square root of the
@@ -208,6 +235,8 @@ alpha, by the kernel's own GGX and Fresnel.
   inside, at 16 points of the ior axis, (eta - 1) / (eta + 1) from zero to 0.6, an index of four.
   Each point weighs each visible normal's reflection by its Fresnel factor and its refraction by
   the rest, on a 64 by 64 grid, and counts the transmission by the energy it carries.
+- **A dielectric's reflection alone** is held from outside on the same grid. A smooth
+  interface's is Fresnel's factor at the cosine.
 - **At each point of the ior axis**, the mean share a smooth interface transmits from outside and
   the mean share a thin slab reflects are integrated over the cosine.
 - **The mean albedo** at each roughness is twice the integral of the cosine times a table. The
@@ -218,15 +247,51 @@ The tool writes a C++ source, which libmoya compiles, and `material::ggxAlbedos(
 `bsdf::Albedos` view of it. The source is generated, so clang-tidy and `/analyze` skip it. Tables
 of no points read an albedo of one, which compensates nothing.
 
-`bsdf::atSurface(surfaces, point, table, albedos, wavelengths)` gives the BSDF at a shading
-point: the closures its material names, or one diffuse closure for a surface with no material.
-Its colour is the geometry's `Cs` primvar, which overrides its material's as RI's does, or its
-material's colour, or a mid grey. The colour becomes a reflectance through the RGB-to-spectrum
-table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. A diffuse closure's or a mirror's
-weight is that reflectance times its scale. A conductor's weight is its scale, and that
-reflectance is its reflectance at normal incidence. Its roughness, anisotropy and F82 tint are
-its material closure's, the tint becoming a reflectance through the same table. A dielectric's
-weight is its scale, and its roughness, anisotropy, index and whether it is thin-walled are its
-material closure's.
+`bsdf::atSurface(surfaces, point, table, albedos, wavelengths, outgoing)` gives the BSDF at a
+shading point: the closures its material names, or one diffuse closure for a surface with no
+material. Its colour is the geometry's `Cs` primvar, which overrides its material's as RI's does, or
+its material's colour, or a mid grey. The colour becomes a reflectance through the RGB-to-spectrum
+table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. A diffuse closure's or a mirror's weight is
+that reflectance times its scale. An Oren-Nayar lobe's weight is its scale, its colour that
+reflectance and its roughness its material closure's. A conductor's weight is its scale, and that
+reflectance is its reflectance at normal incidence. Its roughness, anisotropy and F82 tint are its
+material closure's, the tint becoming a reflectance through the same table. A dielectric's weight is
+its scale, and its roughness, anisotropy, index and whether it is thin-walled are its material
+closure's. A layered material's closures are OpenPBR's for light leaving along outgoing, and the
+`Cs` primvar overrides its base colour.
 
 Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
+
+## Layering
+
+`bsdf::Layering::add()` adds the closures of a `surface::OpenPbr` to a BSDF, top down, for light
+leaving at a cosine to the shading normal. Each parameter has OpenPBR's name and default, and its
+colours are in ACEScg. Each layer scales what lies below it by one less its albedo at that
+cosine, as a white one reflects it, so a white surface keeps its energy. The whole is not
+reciprocal, though each lobe is.
+
+- **The coat**, of its weight, is a `Specular` reflection of its own roughness, anisotropy and
+  index. What lies below takes one less the coat's weight, plus its weight times one less its
+  albedo, times the coat's colour and its darkening.
+- **The coat roughens the layers below it.** Their roughness becomes the fourth root of its fourth
+  power plus twice the coat's, at most one, mixed in by the coat's weight.
+- **The coat darkens the base** as OpenPBR gives it: one less K, over one less the base's albedo
+  times K, mixed in by `coatDarkening`. K is the share of light the coat reflects back down. For a
+  smooth base it is Fresnel's factor inside the coat, at the angle light refracts to. For a rough
+  base it is one less the mean a smooth interface transmits over the coat's index squared. The two
+  are mixed by the base's roughness, which is one for the diffuse base. The base's albedo is its
+  diffuse colour, or its metal's colour mixed in by the metalness.
+- **The metal**, of the base's metalness, is a `Conductor` of the base's colour times its weight,
+  with the specular colour as its F82 tint, scaled by the specular weight.
+- **The rest is a dielectric.** Its index is the specular index with its reflectance at normal
+  incidence scaled by the specular weight, at most 0.9999. Of the transmission's weight, it is a
+  `Dielectric` that transmits, thin-walled where the surface is. Its reflection is tinted by the
+  specular colour and its transmission by the transmission colour.
+- **The opaque rest** is a `Specular` reflection over the diffuse base, tinted by the specular
+  colour. Its index is relative to the coat's, mixed in by the coat's weight, and its reciprocal
+  where that falls below one. The diffuse base is an `OrenNayar` lobe of `baseDiffuseRoughness`.
+  Its colour is the base colour times its weight, mixed with the subsurface colour by the
+  subsurface weight, as subsurface scatters as the diffuse base. It takes one less the specular
+  layer's albedo, which is the table's reflection alone plus what the compensation returns.
+
+Specular anisotropy follows the shading frame's tangent, with no rotation.
