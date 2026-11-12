@@ -13,13 +13,16 @@
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Closure.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Conductor.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Dielectric.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Diffuse.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/F82.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Fresnel.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Ggx.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Lobe.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Mirror.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Model.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Sample.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/Singular.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/camera/Camera.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/FilterSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/PixelFilter.h>  // IWYU pragma: keep

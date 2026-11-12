@@ -33,7 +33,7 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
   and the wavelengths.
 - **Each bounce has a block of `kBounceDraws` dimensions**, and each draw has a fixed place in it.
   The draws are the BSDF's direction, Russian roulette, the light a light sample draws, the point
-  on it, and a mesh light's triangle. The rest of the block is kept for draws to come.
+  on it, a mesh light's triangle, and the BSDF's choice between reflecting and transmitting.
 - **`bounceDimension(bounce, place)`** gives a draw's dimension. Any stage then draws its numbers
   from the pixel, the sample, the bounce and the place alone.
 
@@ -57,8 +57,8 @@ pixel in index order.
   value holds no cosine, so the throughput is multiplied by its value over its density alone, and
   the path marks the sample specular. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
-  offset off the surface as [Traversal.md](Traversal.md#leaving-a-surface) says. It is an
-  indirect ray.
+  and from the shading point on the other side, offset off the surface as
+  [Traversal.md](Traversal.md#leaving-a-surface) says. It is an indirect ray.
 - **Accumulate** adds the light the path gathered to its pixel, with the filter's weight.
 
 A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
@@ -121,7 +121,9 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
   rays miss, and nothing where they meet a surface.
 - **`diffuseDepth`, `glossyDepth`, `specularDepth` and `transmissionDepth`** each limit one kind of
   bounce: four diffuse and four glossy by default, and twelve of the others. A bounce of a kind
-  at its limit ends the path.
+  at its limit ends the path. A bounce that crosses the surface is a transmission, smooth or
+  rough. One that stays on its side is specular from a singular closure, glossy from a
+  microfacet lobe, and diffuse from a diffuse one.
 - **`rouletteDepth`** is the bounce from which Russian roulette may end a path, the third by
   default. A path survives with the chance of its largest throughput, held to one, and a
   survivor's throughput is divided by that chance, so the picture's mean is unchanged.

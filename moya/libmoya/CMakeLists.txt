@@ -18,13 +18,13 @@ if(MSVC)
 	set_source_files_properties("${V3D_MOYA_ACESCG_TABLE}" PROPERTIES COMPILE_OPTIONS "/analyze-")
 endif()
 
-# The GGX albedo table energy compensation reads, which moya_albedo integrates when the tool or the
-# kernel's GGX changes. The output is generated, so it is not linted.
+# The GGX albedo tables energy compensation reads, which moya_albedo integrates when the tool, the
+# kernel's GGX or its Fresnel changes. The output is generated, so it is not linted.
 set(V3D_MOYA_GGX_ALBEDOS "${CMAKE_CURRENT_BINARY_DIR}/material/GgxAlbedos.cxx")
 add_custom_command(OUTPUT "${V3D_MOYA_GGX_ALBEDOS}"
 	COMMAND moya_albedo "${V3D_MOYA_GGX_ALBEDOS}"
 	DEPENDS moya_albedo
-	COMMENT "Integrating the GGX albedo table"
+	COMMENT "Integrating the GGX albedo tables"
 	VERBATIM)
 set_source_files_properties("${V3D_MOYA_GGX_ALBEDOS}" PROPERTIES SKIP_LINTING ON)
 if(MSVC)

@@ -361,7 +361,8 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
-    const bsdf::Sample drawn = scattering.sample(outgoing, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kScatter)));
+    const bsdf::Sample drawn = scattering.sample(outgoing, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kScatter)),
+        paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kScatterChoice)));
     if (!drawn.found() || !counted(paths.settings, drawn.lobe, state)) {
         return false;
     }

@@ -35,7 +35,8 @@ namespace v3d::moya::kernel::bsdf {
  * or a mid grey. The colour is in ACEScg, and becomes a reflectance through the RGB-to-spectrum
  * table. A diffuse closure's or a mirror's weight is that reflectance times its scale. A
  * conductor's weight is its scale, and it reflects that reflectance at normal incidence, tinted
- * towards grazing by its F82 tint. Its microfacet lobe reads the albedo table.
+ * towards grazing by its F82 tint. A dielectric's weight is its scale, and it takes its index and
+ * whether it is thin-walled. A microfacet lobe reads the albedo tables.
  **/
 MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
     const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths) {
@@ -53,15 +54,20 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
     out.albedos = albedos;
     for (std::uint32_t i = 0; i < material.count && i < surface::kMostMaterialClosures; ++i) {
         const surface::MaterialClosure & named = material.closures[i];
-        if (named.model != Model::Conductor) {
+        if (named.model != Model::Conductor && named.model != Model::Dielectric) {
             out.add(named.model, reflectance * named.scale);
             continue;
         }
         Closure closure;
-        closure.model = Model::Conductor;
+        closure.model = named.model;
         closure.weight = spectrum::SampledSpectrum(named.scale);
         closure.alpha = Ggx::alphas(named.roughness, named.anisotropy);
-        closure.fresnel = F82 { .normal = reflectance, .tint = spectrum::reflectance(table, named.tint, wavelengths) };
+        if (named.model == Model::Conductor) {
+            closure.fresnel = F82 { .normal = reflectance, .tint = spectrum::reflectance(table, named.tint, wavelengths) };
+        } else {
+            closure.ior = named.ior;
+            closure.thin = named.thin;
+        }
         out.add(closure);
     }
     out.frame = point.frame;

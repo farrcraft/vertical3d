@@ -14,6 +14,7 @@ v3d_add_test(moya
 	"CommandLineTest.cxx"
 	"CompareTest.cxx"
 	"ConductorTest.cxx"
+	"DielectricTest.cxx"
 	"CurvesTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"

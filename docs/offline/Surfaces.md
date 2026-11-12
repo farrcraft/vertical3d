@@ -116,17 +116,20 @@ comes from.
 - **A sample picks one closure by its share of the albedo** and draws a direction from it. The
   first random number picks the closure, and is then stretched over the closure's share so the
   closure draws from it again. A BSDF of one closure draws from the same numbers as that closure
-  alone.
+  alone. A third random number picks between a dielectric's reflection and its transmission.
 - **The density of a direction** is each closure's density times the chance it is picked, summed.
-- **A closure that scatters into a single direction is singular.** It has no value and no density
-  for any direction it is given, so a light sample gathers nothing through it. Its sample is
-  marked `specular`: its value is the closure's weight with no cosine, and its density is the
-  chance the closure was picked.
+- **A closure that scatters into a single direction is singular**, or into one of two for a
+  dielectric. It has no value and no density for any direction it is given, so a light sample
+  gathers nothing through it. Its sample is marked `specular`: its value is the share of light
+  the closure carries along the direction, times its weight, with no cosine. Its density is the
+  chance the closure was picked, times the chance of that direction among the closure's.
 - **Kernel code has no virtual call**, so each closure switches over its `Model`.
 - **Every closure works in the frame around the shading normal.**
-- **A reflection that would cross the geometric surface is refused.** A direction on the other
-  side of the geometric surface from outgoing has no value, no density and no sample, whatever
-  the shading normal says.
+- **The geometric surface and the shading normal have to agree** on whether two directions lie on
+  one side or cross the surface. Where they disagree, the pair has no value, no density and no
+  sample, so a reflection never crosses the geometric surface and a transmission always does.
+- **A sample that crosses the surface is a transmission.** One that stays on its side is
+  specular from a singular closure, glossy from a microfacet lobe and diffuse from a diffuse one.
 
 The library's models:
 
@@ -138,6 +141,10 @@ The library's models:
 - **`Conductor` is a metal's reflection**, on either side, and its bounces are glossy. It is
   singular, and its bounces specular, while both its alphas are below `kSmoothest`, 0.001.
   The parts are set out below.
+- **`Dielectric` is an interface between two dielectrics**, or a thin slab of one. It reflects on
+  the side light leaves towards and transmits to the other. It is singular while both its alphas
+  are below `kSmoothest`, and while its index lies within `kLeastBend`, 0.001, of one, where
+  light passes straight through. It is set out after the conductor.
 
 A conductor is made of four parts:
 
@@ -159,16 +166,57 @@ A conductor samples a visible normal by Heitz's method with the chance of outgoi
 reflects about it. Otherwise it samples by the cosine, as the compensation is shaped. Its
 estimated albedo is its weight's mean times its Fresnel factor's.
 
-**The albedo table is integrated when moya is built.** `moya_albedo`, in `moya/tools/albedo/`,
-integrates a GGX reflection with a Fresnel factor of one at 32 cosines and 32 roughnesses, the
-roughness being the square root of the alpha. Each point is the mean weight of reflections drawn
-through visible normals, on a 128 by 128 grid of the random numbers, by the kernel's own GGX. The
-mean albedo at each roughness is twice the integral of the cosine times the table. The table is
-read between the cosines as the kernel reads it, so the compensation returns all of what the
-table says is lost. The tool writes a C++ source, which libmoya compiles, and
-`material::ggxAlbedos()` returns a `bsdf::Albedos` view of it. The source is generated, so
-clang-tidy and `/analyze` skip it. A table of no points reads an albedo of one, which compensates
-nothing.
+A dielectric's closure holds the index of refraction inside, the side the shading normal points
+away from, and the outside's index is one. An index below one is taken as one. eta is the ratio
+of the index on incoming's side to the index on outgoing's.
+
+- **A smooth interface** reflects along the mirror direction by Fresnel's equations for
+  unpolarised light, and refracts the rest by Snell's law. Beyond the critical angle it reflects
+  everything. A sample takes the reflection with the chance of the Fresnel factor.
+- **A rough interface** is GGX's, by the closure's alphas, as a conductor's is. Each microfacet
+  reflects by Fresnel's equations at the angle between outgoing and its normal, and refracts the
+  rest, as Walter and others give it. A microfacet that faces either direction the wrong way
+  scatters nothing.
+- **A transmission's value is the radiance it carries**: the energy it carries, divided by eta
+  squared. Its value over the square of the index on outgoing's side is reciprocal.
+- **Kulla and Conty's compensation** gives back what a single scattering loses, on each side. It is
+  a lobe of one minus outgoing's albedo, times one minus incoming's albedo on incoming's side, over
+  pi times one minus that side's mean albedo. From outside, it transmits the share a smooth
+  interface transmits, averaged over the hemisphere. From inside, it transmits the share that
+  keeps the two sides reciprocal: outside's share times outside's mean loss equals eta squared
+  times inside's share times inside's mean loss. Where inside's share would exceed one, it is one
+  and outside's follows. The albedos are read at the geometric mean of the two alphas.
+- **A thin slab** has the same medium on both sides, so light passes through it unbent. It reflects
+  by the slab's Fresnel factor, which counts the light that bounces back and forth inside it, and
+  transmits the rest. A rough slab is GGX's reflection by that factor, with its transmission the
+  reflection's mirror image through the surface. Its compensation is a conductor's of a white
+  Fresnel factor, the slab's mean reflectance of it reflected and the rest transmitted.
+
+A dielectric samples a visible normal with the chance of outgoing's albedo, then reflects about it
+with the chance of its Fresnel factor, or refracts through it. A reflection that falls below the
+surface, or a refraction that comes out above it, is no sample. Otherwise it samples by the
+cosine, on the side the compensation's share picks. Its estimated albedo is its weight's mean.
+
+**The albedo tables are integrated when moya is built.** `moya_albedo`, in `moya/tools/albedo/`,
+integrates them at 32 cosines and 32 roughnesses, the roughness being the square root of the
+alpha, by the kernel's own GGX and Fresnel.
+
+- **A reflection's table** holds a GGX reflection with a Fresnel factor of one. Each point is the
+  mean weight of reflections drawn through visible normals, on a 128 by 128 grid of the random
+  numbers.
+- **A dielectric's tables** hold its reflection and transmission together, from outside and from
+  inside, at 16 points of the ior axis, (eta - 1) / (eta + 1) from zero to 0.6, an index of four.
+  Each point weighs each visible normal's reflection by its Fresnel factor and its refraction by
+  the rest, on a 64 by 64 grid, and counts the transmission by the energy it carries.
+- **At each point of the ior axis**, the mean share a smooth interface transmits from outside and
+  the mean share a thin slab reflects are integrated over the cosine.
+- **The mean albedo** at each roughness is twice the integral of the cosine times a table. The
+  table is read between the cosines as the kernel reads it, so the compensation returns all of
+  what the table says is lost.
+
+The tool writes a C++ source, which libmoya compiles, and `material::ggxAlbedos()` returns a
+`bsdf::Albedos` view of it. The source is generated, so clang-tidy and `/analyze` skip it. Tables
+of no points read an albedo of one, which compensates nothing.
 
 `bsdf::atSurface(surfaces, point, table, albedos, wavelengths)` gives the BSDF at a shading
 point: the closures its material names, or one diffuse closure for a surface with no material.
@@ -177,6 +225,8 @@ material's colour, or a mid grey. The colour becomes a reflectance through the R
 table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. A diffuse closure's or a mirror's
 weight is that reflectance times its scale. A conductor's weight is its scale, and that
 reflectance is its reflectance at normal incidence. Its roughness, anisotropy and F82 tint are
-its material closure's, the tint becoming a reflectance through the same table.
+its material closure's, the tint becoming a reflectance through the same table. A dielectric's
+weight is its scale, and its roughness, anisotropy, index and whether it is thin-walled are its
+material closure's.
 
 Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)

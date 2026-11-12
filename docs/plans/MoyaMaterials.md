@@ -140,7 +140,7 @@ among the options before the record is drafted.
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | done |
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | done |
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | done |
-| [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | open |
+| [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | open |
@@ -450,6 +450,18 @@ narrow lobe falls across many.
 **Tests:** Fresnel's closed forms at several angles, chi-squared over both hemispheres,
 reciprocity across the interface by the ratio of the indices, and a white furnace of a clear
 sphere.
+
+**Done.** `Fresnel` holds the equations for unpolarised light, Snell's refraction and a thin
+slab's reflectance. A `Dielectric` closure reflects and refracts by GGX and Walter's
+transmission, its transmission's value being radiance, divided by eta squared. Kulla and Conty's
+compensation is given back on each side, and a share of it transmitted that keeps the two sides
+reciprocal. A thin slab transmits the mirror image of its reflection, and a smooth one passes light
+unbent. `moya_albedo` integrates the dielectric's albedos from outside and inside at 16 points of
+the ior axis, with the mean share a smooth interface transmits and a thin slab reflects. The BSDF
+asks the geometric surface and the shading frame to agree on whether two directions cross. A
+crossing sample is a transmission, and a third random number of each bounce picks between
+reflection and transmission. A white rough dielectric keeps its energy within 2% from either
+side, and a clear sphere vanishes in a white furnace, smooth, rough or thin-walled.
 
 ### Step 11 — OpenPBR's base, specular and coat
 

@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_diffuse_samples_follow_their_density_test) {
     BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
     std::uint32_t seed = 7;
     for (int i = 0; i < 1000; ++i) {
-        const bsdf::Sample drawn = diffuse.sample(outgoing, { next(seed), next(seed) });
+        const bsdf::Sample drawn = diffuse.sample(outgoing, { next(seed), next(seed) }, 0.5F);
         BOOST_TEST_REQUIRE(drawn.found());
         BOOST_TEST_REQUIRE((drawn.lobe == bsdf::Lobe::Diffuse));
         BOOST_TEST_REQUIRE(!drawn.specular);
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_diffuse_reflects_its_reflectance_test) {
 
     std::uint32_t seed = 9;
     for (int i = 0; i < 1000; ++i) {
-        const bsdf::Sample drawn = diffuse.sample(outgoing, { next(seed), next(seed) });
+        const bsdf::Sample drawn = diffuse.sample(outgoing, { next(seed), next(seed) }, 0.5F);
         BOOST_TEST_REQUIRE(drawn.found());
         BOOST_TEST(drawn.value[0] * glm::dot(drawn.incoming, diffuse.geometric) / drawn.density == 0.8F, boost::test_tools::tolerance(1.0e-4F));
     }
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_reflection_below_the_geometric_surface_is_refus
     int refused = 0;
     int kept = 0;
     for (int i = 0; i < 5000; ++i) {
-        const bsdf::Sample drawn = tilted.sample(outgoing, { next(seed), next(seed) });
+        const bsdf::Sample drawn = tilted.sample(outgoing, { next(seed), next(seed) }, 0.5F);
         if (glm::dot(drawn.incoming, geometric) <= 0.0F) {
             ++refused;
             BOOST_TEST(!drawn.found());
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_diffuse_reflects_on_either_side_test) {
     const glm::vec3 under = glm::normalize(glm::vec3 { 0.3F, 0.1F, -1.0F });
     std::uint32_t seed = 17;
     for (int i = 0; i < 200; ++i) {
-        const bsdf::Sample drawn = diffuse.sample(under, { next(seed), next(seed) });
+        const bsdf::Sample drawn = diffuse.sample(under, { next(seed), next(seed) }, 0.5F);
         BOOST_TEST_REQUIRE(drawn.found());
         BOOST_TEST(drawn.incoming.z < 0.0F);
     }
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_mirror_reflects_about_the_shading_normal_test) 
     const glm::vec3 reflected = (2.0F * glm::dot(outgoing, normal) * normal) - outgoing;
     std::uint32_t seed = 31;
     for (int i = 0; i < 100; ++i) {
-        const bsdf::Sample drawn = mirror.sample(outgoing, { next(seed), next(seed) });
+        const bsdf::Sample drawn = mirror.sample(outgoing, { next(seed), next(seed) }, 0.5F);
         BOOST_TEST_REQUIRE(drawn.found());
         BOOST_TEST(drawn.specular);
         BOOST_TEST((drawn.lobe == bsdf::Lobe::Specular));
@@ -323,11 +323,11 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_mirror_reflects_about_the_shading_normal_test) 
 BOOST_AUTO_TEST_CASE(moya_bsdf_a_mirror_refuses_a_reflection_below_the_geometric_surface_test) {
     bsdf::Bsdf mirror = emptyAbout({ 1.0F, 0.0F, 0.6F }, { 0.0F, 0.0F, 1.0F });
     mirror.add(bsdf::Model::Mirror, flat(1.0F));
-    const bsdf::Sample grazing = mirror.sample(glm::normalize(glm::vec3 { -1.0F, 0.0F, 0.2F }), { 0.5F, 0.5F });
+    const bsdf::Sample grazing = mirror.sample(glm::normalize(glm::vec3 { -1.0F, 0.0F, 0.2F }), { 0.5F, 0.5F }, 0.5F);
     BOOST_TEST(grazing.specular);
     BOOST_TEST(grazing.incoming.z < 0.0F);
     BOOST_TEST(!grazing.found());
-    BOOST_TEST(mirror.sample(glm::normalize(glm::vec3 { 1.0F, 0.0F, 0.6F }), { 0.5F, 0.5F }).found());
+    BOOST_TEST(mirror.sample(glm::normalize(glm::vec3 { 1.0F, 0.0F, 0.6F }), { 0.5F, 0.5F }, 0.5F).found());
 }
 
 // a diffuse closure beside a mirror: each is picked by its share of the albedo, the diffuse
@@ -342,7 +342,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_sample_picks_a_closure_by_its_albedo_test) {
     std::uint32_t seed = 41;
     int specular = 0;
     for (int i = 0; i < kDrawn; ++i) {
-        const bsdf::Sample drawn = both.sample(outgoing, { next(seed), next(seed) });
+        const bsdf::Sample drawn = both.sample(outgoing, { next(seed), next(seed) }, 0.5F);
         BOOST_TEST_REQUIRE(drawn.found());
         if (drawn.specular) {
             ++specular;
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_full_bsdf_keeps_its_largest_closures_test) {
     bsdf::Bsdf full = emptyAbout({ 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, 1.0F });
     full.add(bsdf::Model::Diffuse, flat(0.0F));
     BOOST_TEST(full.count == 0U);
-    BOOST_TEST(!full.sample({ 0.0F, 0.0F, 1.0F }, { 0.5F, 0.5F }).found());
+    BOOST_TEST(!full.sample({ 0.0F, 0.0F, 1.0F }, { 0.5F, 0.5F }, 0.5F).found());
     for (std::uint32_t i = 0; i <= bsdf::kMostClosures; ++i) {
         full.add(bsdf::Model::Diffuse, flat(0.01F * static_cast<float>(i + 1U)));
     }

@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(moya_conductor_a_coloured_furnace_is_its_values_integral_te
 // incidence it reflects its reflectance there. A rough one's samples are glossy
 BOOST_AUTO_TEST_CASE(moya_conductor_a_smooth_conductor_is_specular_test) {
     const bsdf::Bsdf smooth = metal(0.0F, 0.0F, 0.55F, 0.8F);
-    const bsdf::Sample straight = smooth.sample({ 0.0F, 0.0F, 1.0F }, { 0.3F, 0.6F });
+    const bsdf::Sample straight = smooth.sample({ 0.0F, 0.0F, 1.0F }, { 0.3F, 0.6F }, 0.5F);
     BOOST_TEST_REQUIRE(straight.found());
     BOOST_TEST(straight.specular);
     BOOST_TEST((straight.lobe == bsdf::Lobe::Specular));
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(moya_conductor_a_smooth_conductor_is_specular_test) {
     BOOST_TEST(glm::distance(straight.incoming, glm::vec3 { 0.0F, 0.0F, 1.0F }) < 1.0e-6F);
     BOOST_TEST(smooth.evaluate({ 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, 1.0F })[0] == 0.0F);
 
-    const bsdf::Sample rough = metal(0.5F, 0.0F).sample(towards(0.8F, 0.0F), { 0.3F, 0.6F });
+    const bsdf::Sample rough = metal(0.5F, 0.0F).sample(towards(0.8F, 0.0F), { 0.3F, 0.6F }, 0.5F);
     BOOST_TEST_REQUIRE(rough.found());
     BOOST_TEST(!rough.specular);
     BOOST_TEST((rough.lobe == bsdf::Lobe::Glossy));

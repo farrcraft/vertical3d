@@ -8,10 +8,12 @@
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/Conductor.h>
+#include <moya/libmoya/kernel/bsdf/Dielectric.h>
 #include <moya/libmoya/kernel/bsdf/Diffuse.h>
 #include <moya/libmoya/kernel/bsdf/Mirror.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
+#include <moya/libmoya/kernel/bsdf/Singular.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
@@ -40,14 +42,15 @@ inline constexpr float kBelowOne = 0x1.fffffep-1F;
  * - **Its value is the sum of its closures' values**, each times its weight.
  * - **A sample picks one closure** by its estimated albedo and draws a direction from it. The
  *   first random number picks the closure and is then stretched over the closure's share, so it
- *   is drawn from again.
+ *   is drawn from again. A third number picks between a dielectric's reflection and transmission.
  * - **The density of a direction** sums each closure's density times the chance it is picked.
  * - **A singular closure** has no value and no density for any direction it is given. Its sample
  *   is specular, as Sample says.
- * - **The albedo table** is what a microfacet lobe's energy compensation reads.
+ * - **The albedo tables** are what a microfacet lobe's energy compensation reads.
  *
- * A reflection that would cross the geometric surface is refused: a direction on the other side
- * of it from outgoing has no value, no density and no sample, whatever the shading normal says.
+ * The geometric surface and the shading normal have to agree on whether two directions lie on one
+ * side or cross the surface. Where they disagree, the pair has no value, no density and no
+ * sample, so a reflection never crosses the geometric surface and a transmission always does.
  **/
 struct Bsdf {
     Closure closures[kMostClosures];
@@ -96,22 +99,26 @@ struct Bsdf {
 
     /** The value for light coming in along incoming and leaving along outgoing. **/
     MOYA_KERNEL spectrum::SampledSpectrum evaluate(const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
-        if (!sameSide(outgoing, incoming)) {
+        const glm::vec3 local = frame.toLocal(outgoing);
+        const glm::vec3 towards = frame.toLocal(incoming);
+        if (!agrees(outgoing, incoming, local, towards)) {
             return spectrum::SampledSpectrum(0.0F);
         }
-        return valueAt(frame.toLocal(outgoing), frame.toLocal(incoming));
+        return valueAt(local, towards);
     }
 
     /** The density sample() draws incoming with, for outgoing. **/
     MOYA_KERNEL float density(const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
-        if (!sameSide(outgoing, incoming)) {
+        const glm::vec3 local = frame.toLocal(outgoing);
+        const glm::vec3 towards = frame.toLocal(incoming);
+        if (!agrees(outgoing, incoming, local, towards)) {
             return 0.0F;
         }
-        return densityAt(frame.toLocal(outgoing), frame.toLocal(incoming));
+        return densityAt(local, towards);
     }
 
-    /** A direction light comes in from for outgoing, drawn from two random numbers. **/
-    MOYA_KERNEL Sample sample(const glm::vec3 & outgoing, const glm::vec2 & u) const {
+    /** A direction light comes in from for outgoing, drawn from two random numbers and a third. **/
+    MOYA_KERNEL Sample sample(const glm::vec3 & outgoing, const glm::vec2 & u, float choice) const {
         Sample out;
         const float total = albedo();
         if (!(total > 0.0F)) {
@@ -130,20 +137,37 @@ struct Bsdf {
         }
         const Closure & closure = closures[picked];
         const glm::vec3 local = frame.toLocal(outgoing);
-        out.lobe = closure.lobe();
         if (closure.singular()) {
-            out.incoming = frame.toWorld(Mirror::sample(local));
+            const Singular scattered = singular(closure, local, choice);
+            out.incoming = frame.toWorld(scattered.direction);
             out.specular = true;
-            if (sameSide(outgoing, out.incoming)) {
-                out.value = closure.model == Model::Conductor ? closure.weight * Conductor::mirrored(closure, local) : closure.weight;
-                out.density = chance;
+            out.lobe = closure.lobe(scattered.direction.z * local.z < 0.0F);
+            if (scattered.chance > 0.0F && agrees(outgoing, out.incoming, local, scattered.direction)) {
+                out.value = closure.weight * scattered.value;
+                out.density = chance * scattered.chance;
             }
             return out;
         }
         const glm::vec2 stretched { std::fmin((u.x - below) / chance, kBelowOne), u.y };
-        const glm::vec3 drawn = closure.model == Model::Conductor ? Conductor::sample(closure, albedos, local, stretched) : Diffuse::sample(local, stretched);
+        glm::vec3 drawn { 0.0F };
+        switch (closure.model) {
+            case Model::Conductor:
+                drawn = Conductor::sample(closure, albedos, local, stretched);
+                break;
+            case Model::Dielectric:
+                drawn = Dielectric::sample(closure, albedos, local, stretched, choice);
+                break;
+            case Model::Diffuse:
+            case Model::Mirror:
+                drawn = Diffuse::sample(local, stretched);
+                break;
+        }
+        if (drawn.x == 0.0F && drawn.y == 0.0F && drawn.z == 0.0F) {
+            return out;
+        }
         out.incoming = frame.toWorld(drawn);
-        if (sameSide(outgoing, out.incoming)) {
+        out.lobe = closure.lobe(drawn.z * local.z < 0.0F);
+        if (agrees(outgoing, out.incoming, local, drawn)) {
             out.value = valueAt(local, drawn);
             out.density = densityAt(local, drawn);
         }
@@ -160,9 +184,32 @@ struct Bsdf {
     }
 
  private:
-    /** Whether two directions lie on one side of the geometric surface. **/
-    MOYA_KERNEL bool sameSide(const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
-        return glm::dot(outgoing, geometric) * glm::dot(incoming, geometric) > 0.0F;
+    /**
+     * Whether the geometric surface and the shading frame agree that two directions lie on one
+     * side, or that they lie on either side. The directions are given in world space and in the
+     * shading frame.
+     **/
+    MOYA_KERNEL bool agrees(const glm::vec3 & outgoing, const glm::vec3 & incoming, const glm::vec3 & local, const glm::vec3 & towards) const {
+        const float across = glm::dot(outgoing, geometric) * glm::dot(incoming, geometric);
+        const float shaded = local.z * towards.z;
+        return (across > 0.0F && shaded > 0.0F) || (across < 0.0F && shaded < 0.0F);
+    }
+
+    /** Where a singular closure scatters outgoing, in the shading frame, by the third number. **/
+    MOYA_KERNEL static Singular singular(const Closure & closure, const glm::vec3 & outgoing, float choice) {
+        Singular out;
+        switch (closure.model) {
+            case Model::Dielectric:
+                return Dielectric::scatter(closure, outgoing, choice);
+            case Model::Conductor:
+                out.value = Conductor::mirrored(closure, outgoing);
+                break;
+            case Model::Diffuse:
+            case Model::Mirror:
+                break;
+        }
+        out.direction = Mirror::sample(outgoing);
+        return out;
     }
 
     /** The sum of the closures' values, for two directions in the shading frame. **/
@@ -173,10 +220,17 @@ struct Bsdf {
             if (closure.singular()) {
                 continue;
             }
-            if (closure.model == Model::Conductor) {
-                out += closure.weight * Conductor::evaluate(closure, albedos, outgoing, incoming);
-            } else {
-                out += closure.weight * Diffuse::evaluate(outgoing, incoming);
+            switch (closure.model) {
+                case Model::Conductor:
+                    out += closure.weight * Conductor::evaluate(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Dielectric:
+                    out += closure.weight * Dielectric::evaluate(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Diffuse:
+                case Model::Mirror:
+                    out += closure.weight * Diffuse::evaluate(outgoing, incoming);
+                    break;
             }
         }
         return out;
@@ -194,7 +248,19 @@ struct Bsdf {
             if (closure.singular()) {
                 continue;
             }
-            const float own = closure.model == Model::Conductor ? Conductor::density(closure, albedos, outgoing, incoming) : Diffuse::density(outgoing, incoming);
+            float own = 0.0F;
+            switch (closure.model) {
+                case Model::Conductor:
+                    own = Conductor::density(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Dielectric:
+                    own = Dielectric::density(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Diffuse:
+                case Model::Mirror:
+                    own = Diffuse::density(outgoing, incoming);
+                    break;
+            }
             out += (closure.albedo / total) * own;
         }
         return out;

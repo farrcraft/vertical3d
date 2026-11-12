@@ -489,6 +489,36 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_white_metal_sphere_in_a_white_furnace_is_white
     BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 1.0F, boost::test_tools::tolerance(0.01F));
 }
 
+// a clear sphere under a white dome vanishes: light that enters it, is trapped inside it and
+// leaves it carries all of the dome's light back, smooth or rough, and as a thin-walled bubble
+BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test) {
+    for (const float roughness : { 0.0F, 0.5F }) {
+        for (const bool thin : { false, true }) {
+            BOOST_TEST_CONTEXT("roughness " << roughness << ", thin " << thin) {
+                scene::Scene scene(scene::kinds());
+                const scene::Handle options = framed(scene, 64);
+                scene.set(options, "maxDepth", scene::Value::integer(64));
+                scene.set(options, "specularDepth", scene::Value::integer(64));
+                scene.set(options, "glossyDepth", scene::Value::integer(64));
+                scene.set(options, "transmissionDepth", scene::Value::integer(64));
+                const scene::Handle placed = ball(scene, "ball", 1.0F, glm::mat4(1.0F));
+                scene.set(placed, "material", scene::Value::handle(greyMaterial(scene, "glass", 1.0F)));
+                scene.commit();
+                scene.apply();
+                geometry::Prototypes prototypes = geometry::gather(scene, {});
+                BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+                prototypes.materials.front().closures[0] =
+                    kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Dielectric, .scale = 1.0F, .roughness = roughness, .ior = 1.5F, .thin = thin };
+                CpuDevice device;
+                const film::Snapshot snapshot = integrate::render(device, scene, prototypes, {}, colour::Config());
+                const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });
+                BOOST_TEST(furthest.sigmas < 5.0F);
+                BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 1.0F, boost::test_tools::tolerance(0.01F));
+            }
+        }
+    }
+}
+
 };  // namespace
 
 };  // namespace v3d::moya::tracing

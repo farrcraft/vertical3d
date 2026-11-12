@@ -483,7 +483,10 @@ A BSDF's samples are checked against its density by chi-squared, through `densit
 `furnace()`, beside it, is the mean weight of a BSDF's samples, as the scatter stage weighs each:
 what the BSDF returns of a white furnace's light along outgoing. A lobe's case checks it against
 the energy a closed form says the lobe keeps, or against the lobe's value integrated over the
-hemisphere. A case checks a lobe's reciprocity by its value with the two directions swapped.
+hemisphere. A dielectric's case multiplies each sample that crosses the surface by eta squared,
+so it counts energy rather than radiance. A case checks a lobe's reciprocity by its value with
+the two directions swapped, each divided by the square of the index on its outgoing side where a
+lobe transmits.
 
 A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
 finds the pixel whose luminance lies furthest from an expected value, or from another picture,
