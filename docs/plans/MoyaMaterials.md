@@ -144,7 +144,7 @@ among the options before the record is drafted.
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222, 0228 | done |
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | done |
-| [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | open |
+| [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | done |
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | open |
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | open |
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | open |
@@ -535,8 +535,18 @@ a plane as a rect light of its radiance does, by each strategy. With a mesh ligh
 **Tests:** a material of constant inputs compiles to the BSDF those constants give. A node graph
 flattens to the nodes MaterialX's own flattening gives. An unknown node is reported once.
 
+**Done.** `material::compile()` reads a material whose surface node is of language `materialx`
+into a MaterialX document, over the standard libraries `Library::installed()` reads once. It
+flattens every node a graph implements, leaving shader, closure and material nodes, and fills
+`surface::OpenPbr` from `open_pbr_surface`'s inputs. The gather compiles each such material on
+every update. A node feeding the surface gives its output's default and is reported, and each
+report is given once. The instructions and the register store wait for step 15, which has the
+first node to compile, and so does converting a colour input from its space.
+
 ### Step 15 — The node program on the device
 
+* **A program** of instructions over a store of registers, as the record of step 2 decides,
+  compiled from the flattened network of step 14 and held with the surfaces.
 * **The program runs at a shading point** before the BSDF is built, and gives its parameters.
 * **MaterialX's standard nodes of math, colour, logic and channels**, each as MaterialX defines
   it.

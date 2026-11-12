@@ -28,6 +28,7 @@ v3d_add_test(moya
 	"InstancesTest.cxx"
 	"LightSamplingTest.cxx"
 	"LightsTest.cxx"
+	"MaterialCompileTest.cxx"
 	"MaterialLibraryTest.cxx"
 	"MotionTest.cxx"
 	"PathsReferenceTest.cxx"
@@ -77,9 +78,10 @@ v3d_add_test(moya
 # come through the api libraries, as a package does. It launches kernel code on the CPU device,
 # and its main waits for TBB's threads, which libmoya links PRIVATE. It reads back the EXR files
 # libmoya writes through OpenEXR and Imath, and checks colour conversions against OpenColorIO's own,
-# which libmoya links PRIVATE too.
+# which libmoya links PRIVATE too. It flattens MaterialX documents through MaterialX itself, to
+# check the materials libmoya flattens against MaterialX's own.
 target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
-	v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
+	v3dlib_type Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
 
 # The command line cases run the moya executable itself, and the benchmark's case runs
 # moya_bench, each by its path in the build tree, so both are built before the suite.

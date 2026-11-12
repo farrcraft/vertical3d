@@ -26,6 +26,8 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['OpenEXR::OpenEXR', /^OpenEXR\//],
     ['Imath::Imath', /^Imath\//],
     ['OpenColorIO::OpenColorIO', /^OpenColorIO\//],
+    ['MaterialXCore', /^MaterialXCore\//],
+    ['MaterialXFormat', /^MaterialXFormat\//],
 ];
 
 /**

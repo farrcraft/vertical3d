@@ -130,9 +130,12 @@ add_library("v3dlib_moya"
 	"geometry/subdivision/internal/Scalar.h"
 
 	"material/Albedos.h"
+	"material/Compile.h" "material/Compile.cxx"
 	"${V3D_MOYA_GGX_ALBEDOS}"
 	"material/Library.h" "material/Library.cxx"
 	"material/internal/Definitions.h"
+	"material/internal/Network.h"
+	"material/internal/OpenPbrInput.h"
 
 	"output/Checkpoint.h" "output/Checkpoint.cxx"
 	"output/ExrPart.h"

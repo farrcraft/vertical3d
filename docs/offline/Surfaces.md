@@ -88,7 +88,10 @@ its corners' weights. It is false for a geometry without that primvar.
 
 ## Materials
 
-The gather reads the material each instance names, once per material. A `kernel::surface::Material`
+The gather reads the material each instance names, once per material, and reads it again on every
+update, so a changed material takes effect as the hierarchy does. A material whose surface node is
+of language `materialx` is compiled, as [Compiling a material](#compiling-a-material) says. Any
+other material is RI's: a `kernel::surface::Material`
 holds the colour its surface node's `Cs` input gives, converted into ACEScg from the space the
 value names, and whether it gives one. It also holds the closures its BSDF is built from, at most
 `kMostMaterialClosures`. Each is a model and a scale, and a conductor's also holds its roughness,
@@ -98,7 +101,33 @@ material one diffuse closure of scale one. Code can set others on the gathered p
 `integrate::render()` renders prototypes it is given, as
 [Integrator.md](Integrator.md#rendering-a-scene) says. A shading point names the material of the
 innermost instance of its chain that names one, so an instance in a group with no material takes
-the material of an instance that places the group. The material program replaces this.
+the material of an instance that places the group.
+
+### Compiling a material
+
+`material::compile()` reads a material's network into a MaterialX document, through the standard
+libraries `material::Library::installed()` reads once from beside the executable.
+
+- **The network is the surface node and every node that feeds it** through the scene's
+  connections. Each node becomes the MaterialX node of the definition its `shader` names, such as
+  `ND_open_pbr_surface_surfaceshader`, with the inputs its primvars give.
+- **What cannot be read is left out and reported.** That is a node of another language, or of a
+  definition the libraries do not hold. It is an input the definition does not take, or a value
+  not of its type. It is a connection between names or types that do not match. An input fed by
+  a node left out keeps its own value.
+- **Every node a node graph implements is flattened** into the nodes of its graph, as MaterialX's
+  own flattening does. Shader, closure and material nodes are not flattened, because their inputs
+  feed moya's BSDF library. `material::flattened()` gives the flattened document as XML.
+- **A surface of `open_pbr_surface` makes the material layered.** Each of OpenPBR's inputs that
+  `surface::OpenPbr` holds takes the value its node gives, or the definition's default.
+  `geometry_thin_walled` sets `thinWalled`.
+- **An input that a node feeds takes the default of the output that feeds it**, and the node is
+  reported. An output with no default gives zero.
+- **A colour input is taken as ACEScg**, whatever space its primvar names.
+- **A surface of any other definition is reported**, and the material stays diffuse.
+- **Without the libraries**, a MaterialX material is diffuse, and the reason is reported.
+
+Each report is given once, with the gather's others.
 
 ## The BSDF
 

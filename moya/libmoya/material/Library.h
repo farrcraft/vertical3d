@@ -43,6 +43,14 @@ class Library final {
      **/
     explicit Library(const boost::filesystem::path & directory);
 
+    /**
+     * The libraries installed beside the running executable, read the first time they are asked
+     * for and shared by every caller after.
+     *
+     * @throws std::runtime_error as Library() does, and again on each later call
+     **/
+    static const Library & installed();
+
     /** Whether a node definition is defined, such as ND_open_pbr_surface_surfaceshader. **/
     bool defines(const std::string & definition) const;
 
@@ -54,6 +62,11 @@ class Library final {
      * implemented in code or is not defined.
      **/
     std::string graph(const std::string & definition) const;
+
+    /** The document MaterialX read the libraries into. **/
+    const internal::Definitions & definitions() const {
+        return *definitions_;
+    }
 
  private:
     boost::shared_ptr<const internal::Definitions> definitions_;

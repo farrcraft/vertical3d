@@ -32,6 +32,8 @@
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
+#include <moya/libmoya/material/Compile.h>
+#include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -328,7 +330,9 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     kernel::surface::Material out;
     std::string space;
     const scene::Handle surface = scene_.value(handle, "surface").handleArray().front();
-    if (surface.valid() && scene_.contains(surface)) {
+    if (surface.valid() && scene_.contains(surface) && scene_.value(surface, "language").stringArray().front() == "materialx") {
+        out = compiled(handle);
+    } else if (surface.valid() && scene_.contains(surface)) {
         for (const scene::Declaration & declaration : scene_.primvars(surface)) {
             if (declaration.name != "Cs" || scene::floatsOf(declaration.type) != 3U) {
                 continue;
@@ -347,6 +351,19 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     prototypes_.materialSpaces.push_back(space);
     materialIndex_.emplace(handle.index, index);
     return index;
+}
+
+kernel::surface::Material Walk::compiled(const scene::Handle & handle) {
+    try {
+        const material::Compiled out = material::compile(material::Library::installed(), scene_, handle);
+        for (const std::string & message : out.reports) {
+            report(message);
+        }
+        return out.material;
+    } catch (const std::runtime_error & refused) {
+        report("material " + scene_.name(handle) + " is diffuse, because " + refused.what());
+        return {};
+    }
 }
 
 std::uint32_t Walk::group(const scene::Handle & handle) {

@@ -14,6 +14,7 @@
 #include <moya/libmoya/geometry/subdivision/Tessellation.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -102,6 +103,12 @@ class Walk final {
 
     /** The index of a material among the prototypes', gathered once from its surface node. **/
     std::uint32_t material(const scene::Handle & handle);
+
+    /**
+     * A material whose surface node is a MaterialX node, compiled through the libraries installed
+     * beside moya. Without them it is diffuse, and is reported.
+     **/
+    kernel::surface::Material compiled(const scene::Handle & handle);
 
     /**
      * The index of a geometry among the geometries, gathered once or placed from the cache, or

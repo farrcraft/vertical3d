@@ -67,6 +67,12 @@ Library::Library(const boost::filesystem::path & directory) {
     definitions_ = boost::make_shared<const internal::Definitions>(document);
 }
 
+const Library & Library::installed() {
+    // a failed read leaves nothing behind, so the next call reads again and throws again
+    static const Library library;
+    return library;
+}
+
 bool Library::defines(const std::string & definition) const {
     return nodeDef(*definitions_, definition) != nullptr;
 }
