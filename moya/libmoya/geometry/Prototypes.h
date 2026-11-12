@@ -11,6 +11,7 @@
 #include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
+#include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -79,6 +80,16 @@ struct Prototypes {
      **/
     std::vector<kernel::surface::Material> materials;
     std::vector<std::string> materialSpaces;
+
+    /**
+     * Every material's program: its instructions, and the values its registers start from, each
+     * material's after the one before. Each colour constant is named by its first value, with the
+     * space its values are in, which is empty for the working space.
+     **/
+    std::vector<kernel::program::Instruction> instructions;
+    std::vector<float> programValues;
+    std::vector<std::uint32_t> programColours;
+    std::vector<std::string> programSpaces;
 
     std::vector<Geometry> geometries;
     std::vector<Group> groups;

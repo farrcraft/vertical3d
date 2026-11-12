@@ -1,0 +1,244 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+#include <moya/libmoya/material/internal/Emitter.h>
+
+#include <moya/libmoya/kernel/program/Instruction.h>
+#include <moya/libmoya/kernel/program/Op.h>
+#include <moya/libmoya/kernel/program/Parameters.h>
+#include <moya/libmoya/kernel/program/Program.h>
+#include <moya/libmoya/kernel/program/Run.h>
+#include <moya/libmoya/material/internal/Network.h>
+#include <moya/libmoya/material/internal/Operation.h>
+#include <MaterialXCore/Definition.h>
+#include <MaterialXCore/Interface.h>
+#include <MaterialXCore/Node.h>
+#include <MaterialXCore/Value.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace v3d::moya::material::internal {
+
+namespace {
+
+namespace mx = MaterialX;
+using kernel::program::Instruction;
+using kernel::program::Op;
+
+/** How many registers a value of a MaterialX type takes, or zero for one no program holds. **/
+std::uint32_t widthOf(const std::string & type) {
+    if (type == "float" || type == "integer" || type == "boolean") {
+        return 1;
+    }
+    if (type == "vector2") {
+        return 2;
+    }
+    if (type == "color3" || type == "vector3") {
+        return 3;
+    }
+    if (type == "color4" || type == "vector4") {
+        return 4;
+    }
+    return 0;
+}
+
+/** A value's components as a program holds them, a boolean as one or zero. **/
+std::vector<float> componentsOf(const mx::ConstValuePtr & value) {
+    std::vector<float> out;
+    if (!value) {
+        return out;
+    }
+    const std::string written = value->getValueString();
+    std::size_t at = 0;
+    while (at <= written.size()) {
+        const std::size_t comma = written.find(',', at);
+        const std::size_t end = comma == std::string::npos ? written.size() : comma;
+        std::string piece = written.substr(at, end - at);
+        piece.erase(0, piece.find_first_not_of(' '));
+        if (piece == "true" || piece == "false") {
+            out.push_back(piece == "true" ? 1.0F : 0.0F);
+        } else if (!piece.empty()) {
+            out.push_back(std::stof(piece));
+        }
+        at = end + 1U;
+    }
+    return out;
+}
+
+/** Whether an instruction's operands have the shapes its operation reads. **/
+bool shaped(const Instruction & instruction, std::size_t operands) {
+    const std::uint32_t width = instruction.width;
+    const std::uint32_t first = instruction.widths[0];
+    if (kernel::program::componentwise(instruction.op)) {
+        for (std::size_t i = 0; i < operands; ++i) {
+            if (instruction.widths[i] != width && instruction.widths[i] != 1U) {
+                return false;
+            }
+        }
+        return true;
+    }
+    switch (instruction.op) {
+        case Op::Normalize:
+        case Op::RgbToHsv:
+        case Op::HsvToRgb:
+            return first == width && width >= 2U;
+        case Op::Magnitude:
+            return width == 1U && first >= 2U;
+        case Op::Dot:
+            return width == 1U && first == instruction.widths[1];
+        case Op::Cross:
+            return width == 3U && first == 3U && instruction.widths[1] == 3U;
+        case Op::Luminance:
+            return first == width && width >= 3U && instruction.widths[1] == 3U;
+        case Op::Extract:
+            return width == 1U && instruction.widths[1] == 1U;
+        case Op::Combine: {
+            std::uint32_t sum = 0;
+            for (std::size_t i = 0; i < operands; ++i) {
+                sum += instruction.widths[i];
+            }
+            return sum == width;
+        }
+        default:
+            return false;
+    }
+}
+
+/** A node's output of a name, or its first when the name is empty. **/
+mx::OutputPtr outputOf(const mx::NodeDefPtr & def, const std::string & name) {
+    if (!def) {
+        return nullptr;
+    }
+    if (name.empty()) {
+        const std::vector<mx::OutputPtr> outputs = def->getActiveOutputs();
+        return outputs.empty() ? nullptr : outputs.front();
+    }
+    return def->getActiveOutput(name);
+}
+
+};  // namespace
+
+Emitter::Emitter(Network & network) : network_(network), values_(kernel::program::kParameterRegisters, 0.0F) {
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the type, then the space
+void Emitter::constant(std::uint32_t at, const mx::ConstValuePtr & value, const std::string & type, const std::string & space) {
+    const std::uint32_t width = widthOf(type);
+    const std::vector<float> components = componentsOf(value);
+    for (std::uint32_t i = 0; i < width && at + i < values_.size(); ++i) {
+        values_[at + i] = i < components.size() ? components[i] : 0.0F;
+    }
+    if (type == "color3" || type == "color4") {
+        colours_.push_back(at);
+        spaces_.push_back(space);
+    }
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - from, to, then the components
+void Emitter::copyValue(std::uint32_t from, std::uint32_t to, std::uint32_t width) {
+    Instruction out;
+    out.op = Op::Copy;
+    out.out = to;
+    out.width = width;
+    out.in[0] = from;
+    out.widths[0] = width;
+    instructions_.push_back(out);
+}
+
+std::uint32_t Emitter::output(const mx::NodePtr & node, const std::string & name) {
+    const std::string key = node->getName() + "." + name;
+    const auto found = outputs_.find(key);
+    if (found != outputs_.end()) {
+        return found->second;
+    }
+    if (visiting_.contains(node->getName())) {
+        network_.report("node " + node->getName() + " reads its own output, and gives its output's default");
+        return uncompiled(node, name);
+    }
+    visiting_.insert(node->getName());
+    const std::optional<Instruction> compiled = instruction(node);
+    visiting_.erase(node->getName());
+    std::uint32_t out = 0;
+    if (compiled) {
+        Instruction placed = *compiled;
+        placed.out = allocate(placed.width);
+        instructions_.push_back(placed);
+        out = placed.out;
+    } else {
+        out = uncompiled(node, name);
+    }
+    outputs_.insert_or_assign(key, out);
+    return out;
+}
+
+std::uint32_t Emitter::uncompiled(const mx::NodePtr & node, const std::string & name) {
+    const mx::NodeDefPtr def = node->getNodeDef();
+    const mx::OutputPtr output = outputOf(def, name);
+    const std::string type = output ? output->getType() : node->getType();
+    network_.report("node " + node->getName() + " of " + (def ? def->getName() : node->getCategory()) + " is not compiled, and gives its output's default");
+    const std::uint32_t width = widthOf(type) > 0U ? widthOf(type) : 1U;
+    const std::uint32_t at = allocate(width);
+    const std::string written = output ? output->getAttribute("default") : std::string();
+    constant(at, written.empty() ? nullptr : mx::Value::createValueFromStrings(written, type), type, std::string());
+    return at;
+}
+
+std::uint32_t Emitter::allocate(std::uint32_t width) {
+    const auto at = static_cast<std::uint32_t>(values_.size());
+    if (at + width > kernel::program::kRegisters) {
+        overflowed_ = true;
+    }
+    values_.resize(at + width, 0.0F);
+    return at;
+}
+
+std::uint32_t Emitter::operand(const mx::NodePtr & node, const mx::InputPtr & declared) {
+    const std::string & name = declared->getName();
+    const mx::InputPtr input = node->getInput(name);
+    const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
+    if (from) {
+        return output(from, input->getOutputString());
+    }
+    const std::string & type = declared->getType();
+    const std::uint32_t at = allocate(widthOf(type));
+    constant(at, node->getInputValue(name), type, (input ? input : declared)->getActiveColorSpace());
+    return at;
+}
+
+std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
+    const mx::NodeDefPtr def = node->getNodeDef();
+    const std::optional<Operation> operation = Operation::of(node->getCategory());
+    const mx::OutputPtr output = outputOf(def, std::string());
+    if (!def || !operation || !output || widthOf(output->getType()) == 0U || operation->inputs.size() > kernel::program::kMostOperands) {
+        return std::nullopt;
+    }
+    Instruction out;
+    out.op = operation->op;
+    out.width = widthOf(output->getType());
+    std::vector<mx::InputPtr> declared;
+    for (const std::string & name : operation->inputs) {
+        const mx::InputPtr input = def->getActiveInput(name);
+        if (!input || widthOf(input->getType()) == 0U) {
+            return std::nullopt;
+        }
+        declared.push_back(input);
+    }
+    for (std::size_t i = 0; i < declared.size(); ++i) {
+        out.widths[i] = widthOf(declared[i]->getType());
+    }
+    if (!shaped(out, declared.size())) {
+        return std::nullopt;
+    }
+    for (std::size_t i = 0; i < declared.size(); ++i) {
+        out.in[i] = operand(node, declared[i]);
+    }
+    return out;
+}
+
+};  // namespace v3d::moya::material::internal

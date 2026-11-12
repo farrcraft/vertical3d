@@ -6,8 +6,10 @@
 #include <moya/libmoya/material/Compile.h>
 
 #include <moya/libmoya/kernel/surface/Material.h>
-#include <moya/libmoya/kernel/surface/OpenPbr.h>
+#include <moya/libmoya/kernel/program/Parameters.h>
+#include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/material/internal/Definitions.h>
+#include <moya/libmoya/material/internal/Emitter.h>
 #include <moya/libmoya/material/internal/Network.h>
 #include <moya/libmoya/material/internal/OpenPbrInput.h>
 #include <moya/libmoya/material/Library.h>
@@ -36,8 +38,6 @@
 #include <utility>
 #include <vector>
 
-#include <glm/vec3.hpp>
-
 namespace v3d::moya::material {
 
 namespace {
@@ -45,7 +45,6 @@ namespace {
 namespace mx = MaterialX;
 using internal::Network;
 using internal::OpenPbrInput;
-using kernel::surface::OpenPbr;
 
 constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
 
@@ -129,12 +128,16 @@ mx::NodePtr addNode(Network & network, const scene::Scene & scene, const scene::
             network.report(joined({ "shader ", name, "'s ", declaration.name, " is not an input of ", definition, ", so it is left out" }));
             continue;
         }
-        const std::optional<std::string> written = valueString(scene.value(handle, declaration.name), declared->getType());
+        const scene::Value & value = scene.value(handle, declaration.name);
+        const std::optional<std::string> written = valueString(value, declared->getType());
         if (!written) {
             network.report(joined({ "shader ", name, "'s ", declaration.name, " is not a ", declared->getType(), ", so it is left out" }));
             continue;
         }
-        node->setInputValue(declaration.name, *written, declared->getType());
+        const mx::InputPtr input = node->setInputValue(declaration.name, *written, declared->getType());
+        if (!value.space().empty()) {
+            input->setColorSpace(value.space());
+        }
     }
     return node;
 }
@@ -228,29 +231,33 @@ Network network(const Library & library, const scene::Scene & scene, const scene
     return out;
 }
 
+/** Whether an input of open_pbr_surface sets its emission, which a light gives as a constant. **/
+bool emits(const std::string & name) {
+    return name.rfind("emission_", 0) == 0;
+}
+
 /**
- * The value an input of a node gives: the default of the output that feeds it, or the value the
- * node holds, or its definition's default. A node that feeds it is reported.
+ * Compiles the inputs of a surface of open_pbr_surface into the registers of its parameters. An
+ * input a node feeds is compiled from that node while compiling, and otherwise gives the default
+ * of the output that feeds it. An emission input a node feeds always gives that default.
  **/
-mx::ValuePtr inputValue(Network & network, const mx::NodePtr & node, const std::string & name) {
-    const mx::InputPtr input = node->getInput(name);
-    const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
-    if (!from) {
-        return node->getInputValue(name);
+void fill(internal::Emitter & emitter, Network & network, bool compiling) {
+    const mx::NodePtr & surface = network.surface;
+    const mx::NodeDefPtr def = surface->getNodeDef();
+    for (const OpenPbrInput & parameter : internal::kOpenPbrInputs) {
+        const std::uint32_t width = parameter.colour ? 3U : 1U;
+        const mx::InputPtr input = surface->getInput(parameter.name);
+        const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
+        if (from) {
+            const std::string & output = input->getOutputString();
+            const bool compiled = compiling && !emits(parameter.name);
+            emitter.copyValue(compiled ? emitter.output(from, output) : emitter.uncompiled(from, output), parameter.at, width);
+            continue;
+        }
+        const mx::InputPtr declared = def->getActiveInput(parameter.name);
+        const std::string space = (input ? input : declared)->getActiveColorSpace();
+        emitter.constant(parameter.at, surface->getInputValue(parameter.name), declared->getType(), space);
     }
-    const mx::NodeDefPtr def = from->getNodeDef();
-    if (!def) {
-        return nullptr;
-    }
-    network.report("node " + from->getName() + " of " + def->getName() + " is not compiled, and gives its output's default");
-    const std::string outputName = input->getOutputString();
-    const mx::OutputPtr output = outputName.empty() ? def->getActiveOutputs().front() : def->getActiveOutput(outputName);
-    const std::string written = output->getAttribute("default");
-    if (!written.empty()) {
-        return mx::Value::createValueFromStrings(written, output->getType());
-    }
-    // an output with no default gives zero
-    return mx::Value::createValueFromStrings(output->getType() == "color3" ? "0, 0, 0" : "0", output->getType());
 }
 
 };  // namespace
@@ -263,18 +270,25 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
         if (definition != kOpenPbr) {
             held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it is diffuse");
         } else {
-            OpenPbr & surface = out.material.surface;
-            for (const OpenPbrInput & input : internal::kOpenPbrInputs) {
-                const mx::ValuePtr value = inputValue(held, held.surface, input.name);
-                if (input.number != nullptr && value && value->isA<float>()) {
-                    surface.*input.number = value->asA<float>();
-                } else if (input.colour != nullptr && value && value->isA<mx::Color3>()) {
-                    const mx::Color3 colour = value->asA<mx::Color3>();
-                    surface.*input.colour = glm::vec3 { colour[0], colour[1], colour[2] };
-                }
+            internal::Emitter compiled(held);
+            fill(compiled, held, true);
+            internal::Emitter constants(held);
+            if (compiled.overflowed()) {
+                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
+                fill(constants, held, false);
             }
-            const mx::ValuePtr thin = inputValue(held, held.surface, "geometry_thin_walled");
-            surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
+            const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
+            out.instructions = emitter.instructions();
+            out.values = emitter.values();
+            out.colours = emitter.colours();
+            out.spaces = emitter.spaces();
+            out.material.program = kernel::program::Program { .instructions = 0,
+                .count = static_cast<std::uint32_t>(out.instructions.size()),
+                .values = 0,
+                .size = static_cast<std::uint32_t>(out.values.size()) };
+            out.material.surface = kernel::program::parameters(out.values.data());
+            const mx::ValuePtr thin = held.surface->getInputValue("geometry_thin_walled");
+            out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
             out.material.layered = 1;
         }
     }

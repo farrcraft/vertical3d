@@ -9,6 +9,7 @@
 #include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
+#include <moya/libmoya/geometry/ConvertedMaterials.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
@@ -17,6 +18,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/surface/Geometry.h>
 #include <moya/libmoya/kernel/surface/Instance.h>
+#include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
@@ -114,13 +116,10 @@ Surfaces::Surfaces(device::Device & device, const Prototypes & prototypes, const
     keys_ = uploaded(device, keys);
     instances_ = uploaded(device, instances);
     byId_ = uploaded(device, byId);
-    std::vector<kernel::surface::Material> materials = prototypes.materials;
-    for (std::size_t i = 0; i < materials.size(); ++i) {
-        if (materials[i].coloured != 0U) {
-            materials[i].colour = config.input(prototypes.materialSpaces[i]).apply(materials[i].colour);
-        }
-    }
-    materials_ = uploaded(device, materials);
+    const ConvertedMaterials converted = ConvertedMaterials::of(prototypes, config);
+    materials_ = uploaded(device, converted.materials);
+    instructions_ = uploaded(device, prototypes.instructions);
+    programValues_ = uploaded(device, converted.programValues);
     primvars_ = uploaded(device, prototypes.primvars);
     values_ = uploaded(device, convertedValues(prototypes, config));
 }
@@ -139,6 +138,8 @@ kernel::surface::Surfaces Surfaces::view() const {
         .byId = device::view<std::uint32_t>(*byId_),
         .primvars = device::view<kernel::surface::Primvar>(*primvars_),
         .materials = device::view<kernel::surface::Material>(*materials_),
+        .instructions = device::view<kernel::program::Instruction>(*instructions_),
+        .programValues = device::view<float>(*programValues_),
         .values = device::view<float>(*values_),
         .open = open_,
         .close = close_ };

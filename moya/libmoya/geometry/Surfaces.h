@@ -48,6 +48,8 @@ class Surfaces final {
     boost::shared_ptr<device::Buffer> byId_;
     boost::shared_ptr<device::Buffer> primvars_;
     boost::shared_ptr<device::Buffer> materials_;
+    boost::shared_ptr<device::Buffer> instructions_;
+    boost::shared_ptr<device::Buffer> programValues_;
     boost::shared_ptr<device::Buffer> values_;
     float open_ { 0.0F };
     float close_ { 0.0F };

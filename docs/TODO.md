@@ -85,6 +85,12 @@ triangles, traversal takes 35 to 38 percent of the time, so a traversal twice as
 render about a fifth faster. [Traversal.md](offline/Traversal.md#speed) has the
 figures, and `moya/bench/Baseline.md` the run to measure a change against.
 
+[] **A material's emission cannot vary over its surface.** An emitting material makes a light of
+its geometry on the host, from its emission inputs as constants, so an emission input that a node
+feeds gives that node's default and is reported. Camera rays see the light's radiance, not the
+program's. Emission that varies needs the light to take its radiance from the program at each
+point it is seen, and its triangles' power from the program's mean over each.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the

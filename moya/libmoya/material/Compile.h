@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/scene/Handle.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -19,9 +21,18 @@ namespace v3d::moya::material {
 
 class Library;
 
-/** A material compiled for shading, and what compiling it left out and why. **/
+/**
+ * A material compiled for shading, and what compiling it left out and why. A layered material's
+ * program runs the instructions here from the values here, and names the first of each as zero.
+ * The registers of each colour constant are named with the space the colour is in, and every
+ * other value is as the program reads it.
+ **/
 struct Compiled {
     kernel::surface::Material material;
+    std::vector<kernel::program::Instruction> instructions;
+    std::vector<float> values;
+    std::vector<std::uint32_t> colours;
+    std::vector<std::string> spaces;
     std::vector<std::string> reports;
 };
 
@@ -36,12 +47,18 @@ struct Compiled {
  * nodes of the graph, as MaterialX flattens it. Shader, closure and material nodes are not
  * flattened, because their inputs feed moya's BSDF library.
  *
- * A surface of `open_pbr_surface` makes the material layered, by OpenPBR's parameters. Each input
- * that is not connected gives the value its node holds, or its definition's default. Each input
- * that is connected gives the default of the output that feeds it, and the node that feeds it is
- * reported. A surface of any other definition is reported, and leaves the material diffuse.
+ * A surface of `open_pbr_surface` makes the material layered, and its program gives OpenPBR's
+ * parameters. Each input that is not connected gives the value its node holds, or its
+ * definition's default, as a constant. Each input that is connected is compiled from the node
+ * that feeds it, and from every node that one reads, each once. A node the program does not
+ * compile gives the default of its output, and is reported. An emission input that is connected
+ * gives that default too, because a material's light is made before rendering. A program that
+ * needs more registers than a shading point holds is reported, and each connected input then
+ * gives its default. The surface holds the parameters before the program runs.
  *
- * A colour input is taken as ACEScg, whatever space its primvar names.
+ * A surface of any other definition is reported, and leaves the material diffuse.
+ *
+ * A colour constant is in the space its primvar names, or the space its document names for it.
  **/
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material);
 

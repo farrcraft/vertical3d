@@ -14,6 +14,7 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Motion.h>
+#include <moya/libmoya/geometry/ConvertedMaterials.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/ShapedLight.h>
 #include <moya/libmoya/geometry/World.h>
@@ -643,13 +644,14 @@ std::uint32_t materialOf(const geometry::Prototypes & prototypes, const std::vec
 
 /**
  * The light an emitting material makes: OpenPBR's emission luminance in its emission colour,
- * which camera rays see. A material that is not layered, or emits no luminance, makes none.
+ * which camera rays see, in ACEScg. A material that is not layered, or emits no luminance, makes
+ * none.
  **/
-bool materialEmitter(const geometry::Prototypes & prototypes, std::uint32_t material, kernel::light::Light & out) {
+bool materialEmitter(const std::vector<kernel::surface::Material> & materials, std::uint32_t material, kernel::light::Light & out) {
     if (material == kernel::surface::kNoMaterial) {
         return false;
     }
-    const kernel::surface::Material & held = prototypes.materials[material];
+    const kernel::surface::Material & held = materials[material];
     if (held.layered == 0U || !(held.surface.emissionLuminance > 0.0F)) {
         return false;
     }
@@ -672,6 +674,7 @@ bool materialEmitter(const geometry::Prototypes & prototypes, std::uint32_t mate
 void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
     const boost::shared_ptr<log::Logger> & logger, internal::Gathered & out) {
     const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
+    const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config).materials;
     std::set<std::uint32_t> reported;
     std::map<std::uint32_t, internal::Subtree> subtrees;
     std::vector<std::uint32_t> chain;
@@ -679,7 +682,7 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
         const geometry::Geometry & shape = prototypes.geometries[at];
         const auto naming = named.find(shape.id);
         kernel::light::Light glowing;
-        const bool glows = materialEmitter(prototypes, materialOf(prototypes, placed), glowing);
+        const bool glows = materialEmitter(materials, materialOf(prototypes, placed), glowing);
         if (naming == named.end() && !glows) {
             return;
         }

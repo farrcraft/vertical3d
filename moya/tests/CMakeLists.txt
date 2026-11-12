@@ -36,6 +36,7 @@ v3d_add_test(moya
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
 	"PolygonTest.cxx"
+	"ProgramTest.cxx"
 	"ProjectedSpaceTest.cxx"
 	"RayHiderTest.cxx"
 	"Reference.cxx"

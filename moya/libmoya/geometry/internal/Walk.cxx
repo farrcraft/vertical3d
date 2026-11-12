@@ -359,7 +359,18 @@ kernel::surface::Material Walk::compiled(const scene::Handle & handle) {
         for (const std::string & message : out.reports) {
             report(message);
         }
-        return out.material;
+        // the program's instructions and values follow every other material's
+        kernel::surface::Material placed = out.material;
+        const auto values = static_cast<std::uint32_t>(prototypes_.programValues.size());
+        placed.program.instructions = static_cast<std::uint32_t>(prototypes_.instructions.size());
+        placed.program.values = values;
+        prototypes_.instructions.insert(prototypes_.instructions.end(), out.instructions.begin(), out.instructions.end());
+        prototypes_.programValues.insert(prototypes_.programValues.end(), out.values.begin(), out.values.end());
+        for (const std::uint32_t at : out.colours) {
+            prototypes_.programColours.push_back(values + at);
+        }
+        prototypes_.programSpaces.insert(prototypes_.programSpaces.end(), out.spaces.begin(), out.spaces.end());
+        return placed;
     } catch (const std::runtime_error & refused) {
         report("material " + scene_.name(handle) + " is diffuse, because " + refused.what());
         return {};

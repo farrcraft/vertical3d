@@ -13,6 +13,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/Quadric.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/Geometry.h>
@@ -74,6 +75,10 @@ struct Surfaces {
 
     /** Every material an instance names. **/
     Array<Material> materials;
+
+    /** Every material's program: its instructions, and the values its registers start from. **/
+    Array<program::Instruction> instructions;
+    Array<float> programValues;
 
     /** Every primvar's values. **/
     Array<float> values;

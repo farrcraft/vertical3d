@@ -118,16 +118,52 @@ libraries `material::Library::installed()` reads once from beside the executable
 - **Every node a node graph implements is flattened** into the nodes of its graph, as MaterialX's
   own flattening does. Shader, closure and material nodes are not flattened, because their inputs
   feed moya's BSDF library. `material::flattened()` gives the flattened document as XML.
-- **A surface of `open_pbr_surface` makes the material layered.** Each of OpenPBR's inputs that
-  `surface::OpenPbr` holds takes the value its node gives, or the definition's default.
-  `geometry_thin_walled` sets `thinWalled`.
-- **An input that a node feeds takes the default of the output that feeds it**, and the node is
-  reported. An output with no default gives zero.
-- **A colour input is taken as ACEScg**, whatever space its primvar names.
+- **A surface of `open_pbr_surface` makes the material layered**, and its program gives OpenPBR's
+  parameters, as [The node program](#the-node-program) says. `geometry_thin_walled` sets
+  `thinWalled`, and is read as a constant.
 - **A surface of any other definition is reported**, and the material stays diffuse.
 - **Without the libraries**, a MaterialX material is diffuse, and the reason is reported.
 
 Each report is given once, with the gather's others.
+
+### The node program
+
+A layered material's program is a list of `kernel::program::Instruction` over a store of
+`kRegisters` floats, which a shading point holds while the program runs. Its `program::Program`
+names its first instruction and their count, and its first value and how many registers it uses.
+The gather appends each material's instructions and values after the one before.
+
+- **The registers start from the program's values.** The first `kParameterRegisters` hold
+  OpenPBR's parameters, at the offsets `kernel/program/Parameters.h` names. Each constant and each
+  node's output takes registers of its own after them. A value of n components takes n registers.
+- **Each input of the surface that is not connected is a constant** in its parameter's
+  registers: the value its node holds, or the definition's default.
+- **Each input that a node feeds is compiled from that node**, and from every node it reads,
+  each once. The node's instruction writes its output's registers, and a copy moves them into the
+  parameter's.
+- **An instruction is one MaterialX node**: an `Op`, its output's registers, and up to
+  `kMostOperands` operands, each a first register and its components. Integers and booleans are
+  held as floats, a boolean as one or zero. Most operations are taken one component at a time,
+  and an operand of one component is spread over every component.
+- **The program compiles MaterialX's math, adjustment, compositing, conditional, logical and
+  channel nodes** on floats, integers, booleans, vectors and colours, each as MaterialX defines
+  it. That is add, subtract, multiply, divide, modulo, fract, invert, absval, floor, ceil, round,
+  power, the trigonometric functions and atan2, sqrt, ln, exp, sign, clamp, min, max, normalize,
+  magnitude, dotproduct and crossproduct. It is remap, smoothstep, luminance, rgbtohsv and
+  hsvtorgb. It is mix, plus, minus, difference, burn, dodge, screen, inside and outside. It is
+  ifgreater, ifgreatereq, ifequal, and, or and not, and it is constant, dot, convert, extract and
+  combine.
+- **Any other node gives its output's default**, and is reported. An output with no default
+  gives zero, and so does a node that reads its own output.
+- **An emission input that a node feeds gives that default too**, because a material's light is
+  made on the host before rendering.
+- **A program that needs more than `kRegisters` registers is reported**, and every input a node
+  feeds then gives the default of that node's output.
+- **Each colour constant is converted into ACEScg** from the space its primvar names, or the space
+  its document names for it, when the surfaces are made. `geometry::ConvertedMaterials` converts
+  them, and the material's lights read the same conversion.
+- **A program of no instructions is not run.** Its material's `surface` holds its parameters.
+  Otherwise `bsdf::atSurface()` runs it through `program::evaluate()` before the BSDF is built.
 
 ## The BSDF
 

@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Layering.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
+#include <moya/libmoya/kernel/program/Run.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
@@ -45,7 +46,8 @@ namespace v3d::moya::kernel::bsdf {
  * tables.
  *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
- * outgoing. The geometry's `Cs` primvar overrides its base colour.
+ * outgoing, of the parameters its program gives. The geometry's `Cs` primvar overrides its base
+ * colour.
  **/
 MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
     const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
@@ -66,6 +68,10 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
     out.geometric = point.geometric;
     if (material.layered != 0U) {
         surface::OpenPbr layers = material.surface;
+        if (material.program.count != 0U) {
+            layers = program::evaluate(surfaces.instructions, surfaces.programValues, material.program);
+            layers.thinWalled = material.surface.thinWalled;
+        }
         if (painted) {
             layers.baseColour = colour;
         }

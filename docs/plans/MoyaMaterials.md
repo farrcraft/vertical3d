@@ -145,7 +145,7 @@ among the options before the record is drafted.
 | [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222, 0228 | done |
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | done |
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | done |
-| [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | open |
+| [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | done |
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | open |
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | open |
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | open |
@@ -556,6 +556,16 @@ first node to compile, and so does converting a colour input from its space.
 **Tests:** each node against its definition at sample inputs. A material that mixes two colours
 by a constant renders as the mix. The path tracer's references are unchanged.
 
+**Done.** `kernel::program` holds the instruction, the program, OpenPBR's registers and
+`evaluate()`, which `bsdf::atSurface()` runs before it builds a layered BSDF. The compiler's
+`Emitter` compiles each node once, into registers after the surface's parameters, and copies each
+connected output into its parameter. The program compiles the math, adjustment, compositing,
+conditional, logical and channel nodes on values of up to four components.
+`geometry::ConvertedMaterials` converts each colour constant into ACEScg for the surfaces and
+the lights. Steps 16, 17 and 20 now name the transform and matrix nodes, the rotations, and the
+compositing nodes of colours with alpha. Emission that a node feeds is an entry in
+[TODO.md](../TODO.md#offline-rendering).
+
 ### Step 16 — Primvars by name and tangents
 
 * **Every primvar a program reads reaches the device**, by name, of one to four floats, spread
@@ -565,6 +575,9 @@ by a constant renders as the mix. The path tracer's references are unchanged.
   `tangent` primvar where a geometry gives one.
 * **MaterialX's geometric nodes**: `texcoord`, `geompropvalue`, `position`, `normal`, `tangent`
   and `bitangent`, in the spaces MaterialX names.
+* **MaterialX's transform and matrix nodes**: `transformpoint`, `transformvector`,
+  `transformnormal` and `transformmatrix` between those spaces, and the nodes of `matrix33` and
+  `matrix44` values, which take sixteen registers.
 
 **Tests:** a primvar of each class and width reads back at a shading point. A tangent lies along
 the direction `s` increases.
@@ -574,6 +587,9 @@ the direction `s` increases.
 * **MaterialX's noises**: `noise2d`, `noise3d`, `fractal3d`, `cellnoise2d`, `cellnoise3d` and
   `worleynoise2d` and `3d`, as MaterialX's library defines them.
 * **Its procedural shapes and ramps**, such as `ramplr`, `ramp4` and `checkerboard`.
+* **`rotate2d` and `rotate3d`**, which `place2d`'s graph reads. MaterialX's GLSL and OSL
+  implementations turn in opposite directions, so the test fixes the direction MaterialX's
+  specification gives.
 
 **Tests:** each noise against MaterialX's definition at sample points, and a checkerboard's
 squares where its frequency puts them.
@@ -605,6 +621,8 @@ Wrap modes and a texture of one texel hold at their edges.
 * **The cache** as the record of step 4 decides, within a memory limit the options give.
 * **MaterialX's `image` and `tiledimage` nodes** look up through it, filtered over the footprint.
 * **UDIM tiles**, by the `<UDIM>` token in a texture's path.
+* **The compositing nodes of colours with alpha**: `premult`, `unpremult`, `over`, `in`, `mask`,
+  `matte`, `out` and `disjointover`.
 * **A texture's path** is found as the record settles, and the scene's options gain RI's texture
   search path.
 
