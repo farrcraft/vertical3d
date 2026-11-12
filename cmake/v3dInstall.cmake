@@ -124,7 +124,6 @@ endfunction()
 function(v3d_install_usd_plugins)
 	if(WIN32)
 		install(DIRECTORY "$<TARGET_FILE_DIR:usd>/usd" DESTINATION .)
-		install(FILES "$<TARGET_FILE_DIR:usd>/../lib/usd/plugInfo.json" DESTINATION usd)
 	endif()
 endfunction()
 

@@ -478,6 +478,12 @@ to a temporary.
 - **Editing `vcpkg.json` re-runs the package install at the next configure.** Adding or removing
   a boost port can rebuild boost. Changing the `sdl3` feature list rebuilds SDL only, which takes
   about five minutes.
+- **A new baseline does not rebuild the tree's objects.** The packages' headers are on an
+  `/external:I` path, and ninja records no dependency on them, so an object compiled against an
+  older package is linked as it stands. A mismatch can then show as LNK2038 between two versions
+  of one package, as EnTT checks its own, or not at all. After the configure that installs the
+  new packages, run `ninja -C out/build/<config> -t clean`, configure again and build. It
+  deletes the build's outputs and leaves `vcpkg_installed/` alone.
 - **cgltf has no CMake config.** It is a single header. `cmake/v3dDependencies.cmake` finds it with
   `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_interchange` and `v3dlib_asset_media` each
   add that directory to their own include path. Its implementation is compiled once for every
