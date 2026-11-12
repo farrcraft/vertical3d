@@ -214,6 +214,19 @@ BOOST_AUTO_TEST_CASE(moya_geometric_a_tangent_lies_along_the_direction_s_increas
     BOOST_TEST(read[3] == 1.0F, boost::test_tools::tolerance(1.0e-5F));
 }
 
+// mirrored texture coordinates turn the bitangent to the side t increases on
+BOOST_AUTO_TEST_CASE(moya_geometric_a_mirrored_texture_turns_the_bitangent_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle mesh = square(scene);
+    // s runs along +y and t along +x, so the normal's cross with the tangent faces away from t
+    primvar(scene, mesh, "st", scene::Interpolation::Vertex, scene::Value::floats({ -1.0F, -1.0F, -1.0F, 1.0F, 1.0F, 1.0F, 1.0F, -1.0F }), 2);
+    place(scene, mesh, node(scene, "surface", kOpenPbr, {}), glm::mat4(1.0F));
+
+    const kernel::surface::Frame frame = shadedAt(scene, downAt(0.3F, -0.4F)).frame;
+    BOOST_TEST(frame.tangent.y == 1.0F, boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(frame.bitangent.x == 1.0F, boost::test_tools::tolerance(1.0e-5F));
+}
+
 // a tangent primvar gives the tangent, turned into the world and laid flat against the normal
 BOOST_AUTO_TEST_CASE(moya_geometric_a_tangent_primvar_gives_the_tangent_test) {
     scene::Scene scene(scene::kinds());
