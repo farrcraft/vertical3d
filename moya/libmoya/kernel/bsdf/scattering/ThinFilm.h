@@ -126,7 +126,8 @@ struct ThinFilm {
     /** The phase between successive bounces inside the film at a cosine, for a wavelength. **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the wavelength
     MOYA_KERNEL float phaseAt(float cosine, float wavelength) const {
-        return 4.0F * kFilmPi * ior * thickness * cosine / wavelength;
+        // light crosses the film twice, and each crossing adds 2 pi n d cos / wavelength
+        return 2.0F * (2.0F * kFilmPi * ior * thickness * cosine / wavelength);
     }
 
     /** A path's wavelength, or an RGB build's for its channel. **/

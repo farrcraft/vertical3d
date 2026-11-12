@@ -179,8 +179,6 @@ struct Bsdf {
         glm::vec3 drawn { 0.0F };
         switch (closure.model) {
             case Model::Conductor:
-                drawn = scattering::Conductor::sample(closure, albedos, local, stretched);
-                break;
             case Model::Specular:
                 drawn = scattering::Conductor::sample(closure, albedos, local, stretched);
                 break;
@@ -223,6 +221,7 @@ struct Bsdf {
      * side, or that they lie on either side. The directions are given in world space and in the
      * shading frame.
      **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - two in world space, two in the frame
     MOYA_KERNEL bool agrees(const glm::vec3 & outgoing, const glm::vec3 & incoming, const glm::vec3 & local, const glm::vec3 & towards) const {
         const float across = glm::dot(outgoing, geometric) * glm::dot(incoming, geometric);
         const float shaded = local.z * towards.z;

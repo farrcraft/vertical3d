@@ -55,8 +55,8 @@ struct OrenNayar {
         const float roughness = closure.roughness;
         const float s = glm::dot(outgoing, incoming) - (outgoing.z * incoming.z);
         const float overT = s > 0.0F ? s / std::fmax(outgoing.z, incoming.z) : s;
-        const float a = scale(roughness);
-        const float single = a * (1.0F + (roughness * overT)) * kInversePi;
+        const float scaled = scale(roughness);
+        const float single = scaled * (1.0F + (roughness * overT)) * kInversePi;
         const float mean = average(roughness);
         const float shape = std::fmax(kLeastLost, 1.0F - albedo(outgoing.z, roughness)) * std::fmax(kLeastLost, 1.0F - albedo(incoming.z, roughness)) * kInversePi /
             std::fmax(kLeastLost, 1.0F - mean);
@@ -90,9 +90,9 @@ struct OrenNayar {
     MOYA_KERNEL static float albedo(float cosine, float roughness) {
         const float mu = std::fmin(std::fmax(cosine, 1.0e-4F), 1.0F);
         const float sine = std::sqrt(std::fmax(0.0F, 1.0F - (mu * mu)));
-        const float g = (sine * (std::acos(mu) - (sine * mu))) + ((2.0F / 3.0F) * (((sine / mu) * (1.0F - (sine * sine * sine))) - sine));
-        const float a = scale(roughness);
-        return a + (roughness * a * g * kInversePi);
+        const float term = (sine * (std::acos(mu) - (sine * mu))) + ((2.0F / 3.0F) * (((sine / mu) * (1.0F - (sine * sine * sine))) - sine));
+        const float scaled = scale(roughness);
+        return scaled + (roughness * scaled * term * kInversePi);
     }
 
     /** The single scattering's mean albedo, white, at a roughness. **/

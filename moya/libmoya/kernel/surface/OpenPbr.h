@@ -20,27 +20,27 @@ namespace v3d::moya::kernel::surface {
  **/
 struct OpenPbr {
     float baseWeight { 1.0F };
-    glm::vec3 baseColour { 0.8F };
+    glm::vec3 baseColour { 0.8F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
     float baseDiffuseRoughness { 0.0F };
     float baseMetalness { 0.0F };
 
     float specularWeight { 1.0F };
     glm::vec3 specularColour { 1.0F };
-    float specularRoughness { 0.3F };
+    float specularRoughness { 0.3F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
     float specularAnisotropy { 0.0F };
-    float specularIor { 1.5F };
+    float specularIor { 1.5F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
 
     float transmissionWeight { 0.0F };
     glm::vec3 transmissionColour { 1.0F };
 
     float subsurfaceWeight { 0.0F };
-    glm::vec3 subsurfaceColour { 0.8F };
+    glm::vec3 subsurfaceColour { 0.8F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
 
     float coatWeight { 0.0F };
     glm::vec3 coatColour { 1.0F };
     float coatRoughness { 0.0F };
     float coatAnisotropy { 0.0F };
-    float coatIor { 1.6F };
+    float coatIor { 1.6F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
     float coatDarkening { 1.0F };
 
     float fuzzWeight { 0.0F };
@@ -49,7 +49,7 @@ struct OpenPbr {
 
     float thinFilmWeight { 0.0F };
     float thinFilmThickness { 0.5F };
-    float thinFilmIor { 1.4F };
+    float thinFilmIor { 1.4F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
 
     float emissionLuminance { 0.0F };
     glm::vec3 emissionColour { 1.0F };

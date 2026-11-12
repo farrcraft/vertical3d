@@ -31,6 +31,7 @@
 #include <moya/libmoya/kernel/light/link/LinkStep.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/light/internal/Gathered.h>
 #include <moya/libmoya/light/internal/Linking.h>
 #include <moya/libmoya/light/internal/Profiles.h>

@@ -11,6 +11,9 @@
 
 namespace v3d::moya::kernel::surface {
 
+/** The index of refraction of common glass, a dielectric closure's unless code sets another. **/
+inline constexpr float kGlassIor = 1.5F;
+
 /**
  * A closure a material names: its model and its scale, and what a model beyond the diffuse one
  * reads. A diffuse closure or a mirror weighs its scale times the surface's colour. A conductor
@@ -25,7 +28,7 @@ struct MaterialClosure {
     float roughness { 0.0F };
     float anisotropy { 0.0F };
     glm::vec3 tint { 1.0F };
-    float ior { 1.5F };
+    float ior { kGlassIor };
     bool thin { false };
 };
 

@@ -23,6 +23,15 @@ namespace v3d::moya::kernel::bsdf::scattering {
 inline constexpr float kLeastFuzz = 0.01F;
 
 /**
+ * The fit of the inverse matrix's diagonal at a cosine x and a roughness y, as
+ * (c0 x + c1 y) y / (1 + c2 x^2 + c3 x y).
+ **/
+MOYA_KERNEL_DATA inline constexpr float kFuzzDiagonal[4] = { 2.58126F, 0.813703F, 0.310327F, 2.60994F };
+
+/** The fit of its corner, as sqrt(1 - x) (y - 1) y^3 / (c0 + c1 x - c2 x y + c3 y^2). **/
+MOYA_KERNEL_DATA inline constexpr float kFuzzCorner[4] = { 0.0000254053F, 1.71228F, 1.71506F, 1.34174F };
+
+/**
  * OpenPBR's fuzz: Zeltner, Burley and Chiang's sheen of a layer of fibres, in a frame whose z is
  * the shading normal. It reflects on the side light leaves towards, on either side. The closure's
  * colour tints it, and its roughness, held to [kLeastFuzz, 1], spreads it.
@@ -63,10 +72,10 @@ struct Fuzz {
         const glm::vec3 up { outgoing.x, outgoing.y, outgoing.z * side };
         const float roughness = held(closure.roughness);
         const float cosine = std::fmin(up.z, 1.0F);
-        const float a = inverseA(cosine, roughness);
-        const float b = inverseB(cosine, roughness);
+        const float diagonal = inverseDiagonal(cosine, roughness);
+        const float corner = inverseCorner(cosine, roughness);
         const glm::vec3 drawn = Diffuse::sample(glm::vec3 { 0.0F, 0.0F, 1.0F }, u);
-        const glm::vec3 shaped = glm::normalize(glm::vec3 { (drawn.x - (drawn.z * b)) / a, drawn.y / a, drawn.z });
+        const glm::vec3 shaped = glm::normalize(glm::vec3 { (drawn.x - (drawn.z * corner)) / diagonal, drawn.y / diagonal, drawn.z });
         const glm::vec3 across = acrossOf(up);
         const glm::vec3 along { -across.y, across.x, 0.0F };
         const glm::vec3 out = (shaped.x * across) + (shaped.y * along) + glm::vec3 { 0.0F, 0.0F, shaped.z };
@@ -79,10 +88,10 @@ struct Fuzz {
         const float x = std::fmin(std::fmax(cosine, 0.0F), 1.0F);
         const float y = held(roughness);
         const float s = y * (0.0206607F + (1.58491F * y)) / (0.0379424F + (y * (1.32227F + y)));
-        const float m = y * (-0.193854F + (y * (-1.14885F + (y * (1.7932F - (0.95943F * y * y)))))) / (0.046391F + y);
-        const float o = y * (0.000654023F + ((-0.0207818F + (0.119681F * y)) * y)) / (1.26264F + (y * (-1.92021F + y)));
-        const float t = (x - m) / s;
-        return std::fmin(std::fmax((std::exp(-0.5F * t * t) / (s * std::sqrt(2.0F * kPi))) + o, 0.0F), 1.0F);
+        const float centre = y * (-0.193854F + (y * (-1.14885F + (y * (1.7932F - (0.95943F * y * y)))))) / (0.046391F + y);
+        const float offset = y * (0.000654023F + ((-0.0207818F + (0.119681F * y)) * y)) / (1.26264F + (y * (-1.92021F + y)));
+        const float t = (x - centre) / s;
+        return std::fmin(std::fmax((std::exp(-0.5F * t * t) / (s * std::sqrt(2.0F * kPi))) + offset, 0.0F), 1.0F);
     }
 
  private:
@@ -99,15 +108,18 @@ struct Fuzz {
         }
     }
 
-    /** The fitted entries of the inverse matrix: its diagonal, and its corner. **/
+    /** The inverse matrix's fitted diagonal at a cosine x and a roughness y. **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the roughness
-    MOYA_KERNEL static float inverseA(float x, float y) {
-        return ((2.58126F * x) + (0.813703F * y)) * y / (1.0F + (0.310327F * x * x) + (2.60994F * x * y));
+    MOYA_KERNEL static float inverseDiagonal(float x, float y) {
+        const float * const fit = kFuzzDiagonal;
+        return ((fit[0] * x) + (fit[1] * y)) * y / (1.0F + (fit[2] * x * x) + (fit[3] * x * y));
     }
 
+    /** The inverse matrix's fitted corner at a cosine x and a roughness y. **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the roughness
-    MOYA_KERNEL static float inverseB(float x, float y) {
-        return std::sqrt(std::fmax(0.0F, 1.0F - x)) * (y - 1.0F) * y * y * y / (0.0000254053F + (1.71228F * x) - (1.71506F * x * y) + (1.34174F * y * y));
+    MOYA_KERNEL static float inverseCorner(float x, float y) {
+        const float * const fit = kFuzzCorner;
+        return std::sqrt(std::fmax(0.0F, 1.0F - x)) * (y - 1.0F) * y * y * y / (fit[0] + (fit[1] * x) - (fit[2] * x * y) + (fit[3] * y * y));
     }
 
     /** The unit direction of outgoing's projection onto the surface, or x where it has none. **/
@@ -124,17 +136,17 @@ struct Fuzz {
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the directions, then the roughness
     MOYA_KERNEL static float distribution(const glm::vec3 & outgoing, const glm::vec3 & incoming, float roughness) {
         const float cosine = std::fmin(outgoing.z, 1.0F);
-        const float a = inverseA(cosine, roughness);
-        const float b = inverseB(cosine, roughness);
+        const float diagonal = inverseDiagonal(cosine, roughness);
+        const float corner = inverseCorner(cosine, roughness);
         const glm::vec3 across = acrossOf(outgoing);
         const glm::vec3 along { -across.y, across.x, 0.0F };
         const glm::vec3 local { glm::dot(incoming, across), glm::dot(incoming, along), incoming.z };
-        const glm::vec3 shaped { (a * local.x) + (b * local.z), a * local.y, local.z };
+        const glm::vec3 shaped { (diagonal * local.x) + (corner * local.z), diagonal * local.y, local.z };
         const float squared = glm::dot(shaped, shaped);
         if (!(shaped.z > 0.0F) || !(squared > 0.0F)) {
             return 0.0F;
         }
-        return shaped.z * kInversePi * (a / squared) * (a / squared);
+        return shaped.z * kInversePi * (diagonal / squared) * (diagonal / squared);
     }
 };
 

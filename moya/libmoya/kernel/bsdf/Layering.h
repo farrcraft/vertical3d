@@ -201,19 +201,18 @@ struct Layering {
      * light refracts to. For a rough base it is one less the mean a smooth interface transmits,
      * over the index squared. The two are mixed by the base's roughness.
      **/
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, roughness, cosine, amount
-    MOYA_KERNEL static spectrum::SampledSpectrum darkening(const Albedos & albedos, const spectrum::SampledSpectrum & albedo, float coatIor, float roughness,
-        float cosine, float amount) {
-        const float squared = (1.0F - (cosine * cosine)) / (coatIor * coatIor);
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, roughness, cosine, share
+    MOYA_KERNEL static spectrum::SampledSpectrum darkening(const Albedos & albedos, const spectrum::SampledSpectrum & base, float ior, float roughness, float cosine, float share) {
+        const float squared = (1.0F - (cosine * cosine)) / (ior * ior);
         const float refracted = std::sqrt(std::fmax(0.0F, 1.0F - squared));
-        const float smooth = scattering::Fresnel::reflected(refracted, 1.0F / coatIor);
-        const float rough = 1.0F - (albedos.transmittedAt(coatIor) / (coatIor * coatIor));
+        const float smooth = scattering::Fresnel::reflected(refracted, 1.0F / ior);
+        const float rough = 1.0F - (albedos.transmittedAt(ior) / (ior * ior));
         const float back = smooth + ((rough - smooth) * roughness);
         spectrum::SampledSpectrum out;
         for (int i = 0; i < spectrum::kSamples; ++i) {
-            const float denominator = 1.0F - (albedo[i] * back);
+            const float denominator = 1.0F - (base[i] * back);
             const float darker = denominator > kLeastDarkening ? (1.0F - back) / denominator : 1.0F;
-            out[i] = 1.0F + ((darker - 1.0F) * amount);
+            out[i] = 1.0F + ((darker - 1.0F) * share);
         }
         return out;
     }

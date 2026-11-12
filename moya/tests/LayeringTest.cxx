@@ -6,8 +6,8 @@
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>
-#include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Layering.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
