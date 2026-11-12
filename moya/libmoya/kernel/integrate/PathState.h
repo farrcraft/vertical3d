@@ -27,7 +27,8 @@
  * - bounces counts its bounces, and each kind's count is kept apart for its depth limit.
  * - density is the last BSDF sample's, which multiple importance sampling weighs a light by, and
  *   from and normal are the shading point that sample was drawn at and its shading normal.
- *   linked is that shading point's set of linked lights.
+ *   linked is that shading point's set of linked lights. specular is one when that sample was
+ *   specular, so no light sample could have drawn its direction.
  **/
 #define MOYA_PATH_FIELDS(FIELD)                                \
     FIELD(glm::uvec2, pixel)                                   \
@@ -45,7 +46,8 @@
     FIELD(float, density)                                      \
     FIELD(glm::vec3, from)                                     \
     FIELD(glm::vec3, normal)                                   \
-    FIELD(std::uint32_t, linked)
+    FIELD(std::uint32_t, linked)                               \
+    FIELD(std::uint32_t, specular)
 
 namespace v3d::moya::kernel::integrate {
 

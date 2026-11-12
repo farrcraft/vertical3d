@@ -6,7 +6,6 @@
 #pragma once
 
 #include <moya/libmoya/kernel/Qualifiers.h>
-#include <moya/libmoya/kernel/spectrum/Spectrum.h>
 
 #include <cmath>
 
@@ -21,17 +20,12 @@ inline constexpr float kInversePi = 0.318309886F;
 /**
  * Lambert's diffuse reflection, in a frame whose z is the shading normal. It reflects into the
  * side of the surface light leaves towards, on either side, with the same value in every
- * direction: its reflectance over pi.
+ * direction. Its closure's weight is its reflectance.
  **/
 struct Diffuse {
-    spectrum::SampledSpectrum reflectance { 0.5F };
-
-    /** The value for light from incoming leaving along outgoing, both away from the surface. **/
-    MOYA_KERNEL spectrum::SampledSpectrum evaluate(const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
-        if (outgoing.z * incoming.z <= 0.0F) {
-            return spectrum::SampledSpectrum(0.0F);
-        }
-        return reflectance * kInversePi;
+    /** The value for light from incoming leaving along outgoing, for a reflectance of one. **/
+    MOYA_KERNEL static float evaluate(const glm::vec3 & outgoing, const glm::vec3 & incoming) {
+        return outgoing.z * incoming.z > 0.0F ? kInversePi : 0.0F;
     }
 
     /** The density sample() draws incoming with: its cosine over pi, on outgoing's side. **/

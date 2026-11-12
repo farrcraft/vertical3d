@@ -468,6 +468,17 @@ case traces a fixed set of rays through both, and each ray meets the same primit
 distance within a tolerance, since the two round apart.
 [Traversal.md](../offline/Traversal.md#the-brute-force-traversal) states how it places the scene.
 
+A BSDF's samples are checked against its density by chi-squared, through `densityFit()` in
+`moya/tests/Scattering.h`, which every lobe's case calls.
+
+- **The sphere about the shading normal is cut into bins of equal area**, even in the cosine and
+  the turn. Each bin expects the BSDF's density integrated over it on a finer grid.
+- **Bins expected to hold fewer than five samples are pooled into one.**
+- **A specular sample falls in no bin**, so the bins expect only what the density holds.
+- **A fit passes below six deviations above its mean**, a false failure less than once in a
+  billion.
+- **Each sample's density is checked** against the BSDF's density for its direction.
+
 A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
 finds the pixel whose luminance lies furthest from an expected value, or from another picture,
 in standard errors. `film::mean()` gives a region's mean with its error, and `film::sigmas()`

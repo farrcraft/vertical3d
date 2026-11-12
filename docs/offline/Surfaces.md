@@ -90,9 +90,13 @@ its corners' weights. It is false for a geometry without that primvar.
 
 The gather reads the material each instance names, once per material. A `kernel::surface::Material`
 holds the colour its surface node's `Cs` input gives, converted into ACEScg from the space the
-value names, and whether it gives one. A shading point names the material of the innermost
-instance of its chain that names one, so an instance in a group with no material takes the
-material of an instance that places the group. The material program replaces this.
+value names, and whether it gives one. It also holds the closures its BSDF is built from, at most
+`kMostMaterialClosures`, each a model and a scale of the surface's colour. The gather gives every
+material one diffuse closure of scale one. Code can set others on the gathered prototypes, and
+`integrate::render()` renders prototypes it is given, as
+[Integrator.md](Integrator.md#rendering-a-scene) says. A shading point names the material of the
+innermost instance of its chain that names one, so an instance in a group with no material takes
+the material of an instance that places the group. The material program replaces this.
 
 ## The BSDF
 
@@ -100,20 +104,42 @@ A `kernel::bsdf::Bsdf` is how a shading point scatters light. Its directions are
 point away from the surface: outgoing towards where light goes, and incoming towards where it
 comes from.
 
+- **It is a list of weighted closures**, at most `kMostClosures`. Each closure is one lobe: a
+  `Model`, a weight at the path's wavelengths, and an estimate of its albedo, the mean of its
+  weight. A closure of no albedo is left out. A full BSDF replaces its closure of the smallest
+  albedo with a larger one, and keeps its closures when the new one is smaller.
 - **It evaluates, gives a density and samples**, each at a path's four wavelengths. A sample
   holds the incoming direction, the value, the density it was drawn with, and its `Lobe`:
   diffuse, glossy, specular or transmission. A density of zero is no sample.
-- **It is a tagged type.** Kernel code has no virtual call, so it switches over its `Model`.
-- **Its model works in the frame around the shading normal.**
+- **Its value is the sum of its closures' values**, each times its weight.
+- **A sample picks one closure by its share of the albedo** and draws a direction from it. The
+  first random number picks the closure, and is then stretched over the closure's share so the
+  closure draws from it again. A BSDF of one closure draws from the same numbers as that closure
+  alone.
+- **The density of a direction** is each closure's density times the chance it is picked, summed.
+- **A closure that scatters into a single direction is singular.** It has no value and no density
+  for any direction it is given, so a light sample gathers nothing through it. Its sample is
+  marked `specular`: its value is the closure's weight with no cosine, and its density is the
+  chance the closure was picked.
+- **Kernel code has no virtual call**, so each closure switches over its `Model`.
+- **Every closure works in the frame around the shading normal.**
 - **A reflection that would cross the geometric surface is refused.** A direction on the other
   side of the geometric surface from outgoing has no value, no density and no sample, whatever
   the shading normal says.
-- **The diffuse model is Lambert's**: its reflectance over pi, on whichever side light leaves
-  towards. It samples by the cosine, through Shirley and Chiu's concentric mapping of the square
-  onto the disk.
 
-`bsdf::atSurface(surfaces, point, table, wavelengths)` gives the BSDF at a shading point. Every
-surface is diffuse. Its colour is the geometry's `Cs` primvar, which overrides its material's as
-RI's does, or its material's colour, or a mid grey. The colour becomes a reflectance through the
-RGB-to-spectrum table, as [Spectra.md](Spectra.md#rgb-to-spectrum) says. The BSDF library
-replaces the diffuse model.
+The library's models:
+
+- **`Diffuse` is Lambert's**: its weight over pi, on whichever side light leaves towards. It
+  samples by the cosine, through Shirley and Chiu's concentric mapping of the square onto the
+  disk. Its bounces are diffuse.
+- **`Mirror` is perfect specular reflection** about the shading normal, on either side. It is
+  singular, and its bounces are specular.
+
+`bsdf::atSurface(surfaces, point, table, wavelengths)` gives the BSDF at a shading point: the
+closures its material names, or one diffuse closure for a surface with no material. Its colour is
+the geometry's `Cs` primvar, which overrides its material's as RI's does, or its material's
+colour, or a mid grey. The colour becomes a reflectance through the RGB-to-spectrum table, as
+[Spectra.md](Spectra.md#rgb-to-spectrum) says, and each closure's weight is that reflectance
+times its scale.
+
+Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)

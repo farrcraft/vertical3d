@@ -138,7 +138,7 @@ among the options before the record is drafted.
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | accepted |
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | accepted |
 | [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | done |
-| [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | open |
+| [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | done |
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | open |
@@ -405,6 +405,15 @@ implementations. The Flatpak builds MaterialX as a module.
 **Tests:** every committed reference render of the path tracer is unchanged. A BSDF of two
 diffuse lobes of half weight renders as one. A perfect mirror in front of a light shows the light
 with no MIS weight lost.
+
+**Done.** A BSDF holds up to eight weighted closures, and a sample picks one by its share of the
+albedo. The first random number is stretched over that share, so a BSDF of one closure draws as
+before, and every reference render is unchanged byte for byte. A `Mirror` model is the first
+singular closure. Its sample is marked specular, the scatter stage multiplies by its value over
+the chance of its closure, and a light the next ray meets takes its whole weight under every
+strategy. A device material holds the closures its BSDF is built from, one diffuse closure until
+code sets others, and an overload of `integrate::render()` renders prototypes a case has
+changed. The chi-squared check is `densityFit()` in `moya/tests/Scattering.h`.
 
 ### Step 9 — Microfacets and the conductor
 

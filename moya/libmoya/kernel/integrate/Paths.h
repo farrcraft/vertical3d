@@ -343,6 +343,10 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
  * along it, and the ray that leaves. False when the path ends there: at a depth limit, for a
  * sample the BSDF refused, or by Russian roulette.
  *
+ * The throughput is multiplied by the sample's value and the cosine to the shading normal, over
+ * its density. A specular sample's value holds no cosine, so it is multiplied by its value over
+ * its density alone, and the path marks the sample specular.
+ *
  * From the settings' roulette depth on, a path survives with the chance of its largest throughput,
  * held to one, and a survivor's throughput is divided by that chance.
  **/
@@ -359,8 +363,13 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
     if (!drawn.found() || !counted(paths.settings, drawn.lobe, state)) {
         return false;
     }
-    MOYA_PATH(state, throughput) *= drawn.value * (std::fabs(glm::dot(drawn.incoming, point.shading)) / drawn.density);
+    if (drawn.specular) {
+        MOYA_PATH(state, throughput) *= drawn.value / drawn.density;
+    } else {
+        MOYA_PATH(state, throughput) *= drawn.value * (std::fabs(glm::dot(drawn.incoming, point.shading)) / drawn.density);
+    }
     MOYA_PATH(state, density) = drawn.density;
+    MOYA_PATH(state, specular) = drawn.specular ? 1U : 0U;
     MOYA_PATH(state, from) = point.position;
     MOYA_PATH(state, normal) = point.shading;
     MOYA_PATH(state, bounces) = bounce + 1U;
@@ -380,9 +389,10 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
  * mesh light's triangle, or a point along the ray to a distant light. A camera ray's carries all
  * of it, since nothing else samples the light for it, but none of a mesh light's unless camera
  * rays see it. A bounce's carries none of a light that does not light the set of linked lights of
- * the shading point it left, or that only a light sample finds. Otherwise it carries the power
- * heuristic's weight of the BSDF's sample against the light's: all of it when the BSDF alone finds
- * lights, and none when light samples alone do.
+ * the shading point it left, or that only a light sample finds. A specular bounce's carries all
+ * of it, whatever the strategy, since no light sample could have drawn its direction. Otherwise
+ * it carries the power heuristic's weight of the BSDF's sample against the light's: all of it
+ * when the BSDF alone finds lights, and none when light samples alone do.
  **/
 template <geometry::Traversal T>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the light, the triangle, then the time
@@ -396,7 +406,7 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
     if (!paths.lights.links.lights(set, place) || light::sampledAlone(paths.lights.lights[place])) {
         return 0.0F;
     }
-    if (paths.settings.strategy == Strategy::Bsdf) {
+    if (MOYA_PATH(state, specular) != 0U || paths.settings.strategy == Strategy::Bsdf) {
         return 1.0F;
     }
     if (paths.settings.strategy == Strategy::Light) {

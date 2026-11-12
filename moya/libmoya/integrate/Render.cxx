@@ -124,9 +124,13 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
     const colour::Config & config, const Checkpoints & checkpoints, Profile * profile) {
+    return render(device, scene, geometry::gather(scene, logger), logger, config, checkpoints, profile);
+}
+
+film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const geometry::Prototypes & prototypes,
+    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints, Profile * profile) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
-    const geometry::Prototypes prototypes = geometry::gather(scene, logger);
     const accel::Assembly assembly = accel::assemble(device, prototypes);
     const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);

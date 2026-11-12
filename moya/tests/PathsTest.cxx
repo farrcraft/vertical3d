@@ -8,9 +8,12 @@
 #include <moya/libmoya/film/Compare.h>
 #include <moya/libmoya/film/Estimate.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -40,6 +43,8 @@ namespace {
 
 namespace colour = v3d::moya::colour;
 namespace film = v3d::moya::film;
+namespace geometry = v3d::moya::geometry;
+namespace kernel = v3d::moya::kernel;
 namespace integrate = v3d::moya::integrate;
 namespace output = v3d::moya::output;
 namespace scene = v3d::moya::scene;
@@ -162,6 +167,44 @@ std::uint64_t printOf(float threshold) {
     scene::Scene scene(scene::kinds());
     buildSphereOnPlane(scene, 128, 3, threshold);
     return integrate::fingerprint(scene, {});
+}
+
+/** A shader node with a constant grey Cs, and a material whose surface it is. **/
+scene::Handle greyMaterial(scene::Scene & scene, const std::string & name, float grey) {
+    const scene::Handle node = scene.create("shader", name);
+    scene.set(node, "shader", scene::Value::string("plastic"));
+    scene.set(node, "language", scene::Value::string("ri"));
+    scene.declare(node, scene::Declaration { .name = "Cs", .type = scene::Type::Colour, .fallback = scene::Value::colour(glm::vec3 { 1.0F }) });
+    scene.set(node, "Cs", scene::Value::colour(glm::vec3 { grey }));
+    const scene::Handle material = scene.create("material", name);
+    scene.set(material, "surface", scene::Value::handle(node));
+    return material;
+}
+
+/**
+ * The scene the mirror case renders, under a light sampling strategy. It holds the camera of
+ * framed() and a white sphere light of radius three and a radiance of one. The light lies fifteen
+ * units ahead of the camera along z, or as far behind it with a square mirror at the origin facing
+ * the camera. The mirror's material is a grey of 0.8, which code makes a mirror.
+ **/
+void buildMirrored(scene::Scene & scene, const std::string & strategy, bool mirrored) {
+    const scene::Handle options = framed(scene, 16);
+    scene.set(options, "lightSampling", scene::Value::string(strategy));
+    const scene::Handle bulb = scene.create("sphereLight", "bulb");
+    scene.set(bulb, "radius", scene::Value::number(3.0F));
+    scene.set(bulb, "normalize", scene::Value::integer(0));
+    scene.set(bulb, "camera", scene::Value::integer(1));
+    scene.set(bulb, "transform", scene::Value::matrix(moved(0.0F, 0.0F, mirrored ? -15.0F : 15.0F)));
+    if (mirrored) {
+        const scene::Handle square = scene.create("mesh", "square");
+        scene.set(square, "P", scene::Value::points({ { -3.0F, -3.0F, 0.0F }, { 3.0F, -3.0F, 0.0F }, { 3.0F, 3.0F, 0.0F }, { -3.0F, 3.0F, 0.0F } }));
+        scene.set(square, "vertices", scene::Value::integers({ 4 }));
+        scene.set(square, "indices", scene::Value::integers({ 0, 1, 2, 3 }));
+        const scene::Handle placed = instanced(scene, "mirror", square, {}, glm::mat4(1.0F));
+        scene.set(placed, "material", scene::Value::handle(greyMaterial(scene, "mirror", 0.8F)));
+    }
+    scene.commit();
+    scene.apply();
 }
 
 /** Whether two snapshots hold the same floats, bit for bit, and the same counts of samples. **/
@@ -372,6 +415,57 @@ BOOST_AUTO_TEST_CASE(moya_paths_the_settings_are_the_options_test) {
     BOOST_TEST(fallback.maxDepth == 12U);
     BOOST_TEST(fallback.diffuseDepth == 4U);
     BOOST_TEST(fallback.rouletteDepth == 3U);
+}
+
+// a surface of two diffuse closures of half its colour each renders as one of the whole, within
+// its errors. Rendering the prototypes gathered from a scene gives the scene's own picture
+BOOST_AUTO_TEST_CASE(moya_paths_two_halves_of_a_diffuse_lobe_render_as_one_test) {
+    scene::Scene scene(scene::kinds());
+    buildSphereOnPlane(scene, 256, 3, 0.0F);
+    const scene::Handle material = greyMaterial(scene, "grey", 0.5F);
+    for (const scene::Handle & instance : scene.objects("instance")) {
+        scene.set(instance, "material", scene::Value::handle(material));
+    }
+    scene.commit();
+    scene.apply();
+    CpuDevice device;
+    geometry::Prototypes prototypes = geometry::gather(scene, {});
+    const film::Snapshot whole = integrate::render(device, scene, prototypes, {}, colour::Config());
+    BOOST_TEST(sameBytes(whole, integrate::render(device, scene, {}, colour::Config())));
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+    kernel::surface::Material & halved = prototypes.materials.front();
+    halved.closures[0] = kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Diffuse, .scale = 0.5F };
+    halved.closures[1] = kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Diffuse, .scale = 0.5F };
+    halved.count = 2;
+    const film::Snapshot halves = integrate::render(device, scene, prototypes, {}, colour::Config());
+    BOOST_TEST(!sameBytes(whole, halves));
+    const film::Furthest furthest = film::furthest(whole, halves);
+    BOOST_TEST(furthest.sigmas < 5.0F);
+    BOOST_TEST(furthest.unmeasured == 0U);
+}
+
+// a light seen in a perfect mirror shows the mirror's reflectance times the light, under every
+// strategy. No light sample can draw the mirror's direction, so the light it meets takes the
+// sample's whole weight
+BOOST_AUTO_TEST_CASE(moya_paths_a_mirror_shows_a_light_with_its_whole_weight_test) {
+    CpuDevice device;
+    for (const char * strategy : { "mis", "light", "bsdf" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            scene::Scene direct(scene::kinds());
+            buildMirrored(direct, strategy, false);
+            const film::Estimate seen = film::mean(integrate::render(device, direct, {}, colour::Config()), glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo));
+            BOOST_TEST_REQUIRE(seen.value > 0.5F);
+
+            scene::Scene mirrored(scene::kinds());
+            buildMirrored(mirrored, strategy, true);
+            geometry::Prototypes prototypes = geometry::gather(mirrored, {});
+            BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+            prototypes.materials.front().closures[0].model = kernel::bsdf::Model::Mirror;
+            const film::Estimate reflected =
+                film::mean(integrate::render(device, mirrored, prototypes, {}, colour::Config()), glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo));
+            BOOST_TEST(reflected.value == 0.8F * seen.value, boost::test_tools::tolerance(0.01F));
+        }
+    }
 }
 
 };  // namespace

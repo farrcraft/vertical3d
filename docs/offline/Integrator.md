@@ -19,8 +19,9 @@ A path's state is what one stage hands the next. Its fields are declared once, i
 
 The state holds the pixel and the sample, the ray traced next, the throughput and the light
 gathered so far. It also holds the wavelengths, the pixel filter's weight, and the count of
-bounces in all and of each kind. Last, it holds the last BSDF sample's density, and the shading
-point it was drawn at with its shading normal and its set of linked lights.
+bounces in all and of each kind. Last, it holds the last BSDF sample's density and whether it was
+specular, and the shading point it was drawn at with its shading normal and its set of linked
+lights.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -52,7 +53,9 @@ pixel in index order.
   mesh light makes emit gathers its share of what the light emits, and goes on to scatter there. At
   a shading point, a path gathers a light sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
-  the BSDF's value and the cosine to the shading normal, over the density. The ray that leaves
+  the BSDF's value and the cosine to the shading normal, over the density. A specular sample's
+  value holds no cosine, so the throughput is multiplied by its value over its density alone, and
+  the path marks the sample specular. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
   offset off the surface as [Traversal.md](Traversal.md#leaving-a-surface) says. It is an
   indirect ray.
@@ -85,6 +88,9 @@ met where a ray that leaves the scene lies inside its cone. The options'
   strategy, and is drawn under `bsdf` too.
 - **A BSDF sample that meets a light gathers nothing of a light that does not light the shading
   point it left**, which the path keeps the set of linked lights of.
+- **A specular sample that meets a light gathers all of it**, whatever the strategy, since no
+  light sample could have drawn its direction. A light sample at a shading point of singular
+  closures alone gathers nothing, since they have no value for its direction.
 - **`mis`**, the fallback, weighs the two by multiple importance sampling with the power
   heuristic. A light sample is weighed by its density against the BSDF's density for its
   direction. A BSDF sample that meets a light is weighed by its density against the chance of the
@@ -124,7 +130,9 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
 ## Rendering a scene
 
 `integrate::render(device, scene, logger, config, checkpoints)` renders a scene through the
-integrator on the CPU, through the hierarchy, and gives the film's snapshot.
+integrator on the CPU, through the hierarchy, and gives the film's snapshot. Its overload that
+takes `geometry::Prototypes` renders those in place of gathering them from the scene, so a case
+can change what was gathered, such as a material's closures, before it renders.
 
 - **The integrator runs through the CPU's library for its instruction set**, as its `paths` entry
   point, since only those libraries define the CPU's traversal.

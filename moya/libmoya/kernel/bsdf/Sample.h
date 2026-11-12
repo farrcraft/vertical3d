@@ -16,12 +16,18 @@ namespace v3d::moya::kernel::bsdf {
 /**
  * A direction a BSDF sampled: the direction light comes in from, in world space, the BSDF's value
  * for it, the density it was drawn with, and the kind of bounce. A density of zero is no sample.
+ *
+ * A specular sample was drawn from a closure that scatters into a single direction. Its value is
+ * the share of light that closure carries along incoming, with no cosine, and its density is the
+ * chance the closure was picked. No other strategy can draw its direction, so nothing weighs it
+ * against one.
  **/
 struct Sample {
     glm::vec3 incoming { 0.0F, 0.0F, 1.0F };
     spectrum::SampledSpectrum value { 0.0F };
     float density { 0.0F };
     Lobe lobe { Lobe::Diffuse };
+    bool specular { false };
 
     MOYA_KERNEL bool found() const {
         return density > 0.0F;

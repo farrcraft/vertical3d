@@ -9,6 +9,7 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -86,5 +87,12 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
  **/
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
     const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr);
+
+/**
+ * A scene rendered as render() renders it, from the prototypes gathered from it, which the caller
+ * may have changed since. It throws what render() throws.
+ **/
+film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const geometry::Prototypes & prototypes,
+    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr);
 
 };  // namespace v3d::moya::integrate

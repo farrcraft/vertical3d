@@ -10,8 +10,8 @@
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/kernel/bsdf/AtSurface.h>
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
-#include <moya/libmoya/kernel/bsdf/Diffuse.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
+#include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
@@ -29,7 +29,6 @@
 #include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -43,6 +42,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "Scattering.h"
 #include "Tracing.h"
 
 namespace v3d::moya::tracing {
@@ -58,21 +58,42 @@ typedef v3d::moya::device::CpuDevice CpuDevice;
 
 constexpr float kPi = 3.14159265F;
 
-/** A diffuse BSDF of a constant reflectance, shaded and lying about a normal. **/
-bsdf::Bsdf diffuseAbout(const glm::vec3 & shading, const glm::vec3 & geometric, float reflectance) {
+/** A BSDF of no closures, shaded and lying about a normal. **/
+bsdf::Bsdf emptyAbout(const glm::vec3 & shading, const glm::vec3 & geometric) {
     bsdf::Bsdf out;
-    out.model = bsdf::Model::Diffuse;
-    out.diffuse.reflectance = kernel::spectrum::SampledSpectrum(reflectance);
     out.frame = kernel::surface::Frame::around(glm::normalize(shading));
     out.geometric = glm::normalize(geometric);
     return out;
 }
 
-/** The value of chi-squared that a fit of a number of degrees of freedom passes below. **/
-float chiSquaredBound(std::size_t freedom) {
-    // the statistic's mean is its freedom and its deviation the root of twice it; six deviations
-    // above the mean is a false failure less than once in a billion
-    return static_cast<float>(freedom) + (6.0F * std::sqrt(2.0F * static_cast<float>(freedom)));
+/** A diffuse BSDF of a constant reflectance, shaded and lying about a normal. **/
+bsdf::Bsdf diffuseAbout(const glm::vec3 & shading, const glm::vec3 & geometric, float reflectance) {
+    bsdf::Bsdf out = emptyAbout(shading, geometric);
+    out.add(bsdf::Model::Diffuse, kernel::spectrum::SampledSpectrum(reflectance));
+    return out;
+}
+
+/** A spectrum of one value at every wavelength. **/
+kernel::spectrum::SampledSpectrum flat(float value) {
+    return kernel::spectrum::SampledSpectrum(value);
+}
+
+/**
+ * The mean weight of a BSDF's samples for outgoing: the share of light from a white furnace it
+ * sends back along outgoing, as the integrator's scatter stage weighs each sample.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count drawn, then the seed
+float furnace(const bsdf::Bsdf & bsdf, const glm::vec3 & outgoing, std::size_t drawn, std::uint32_t seed) {
+    double sum = 0.0;
+    for (std::size_t i = 0; i < drawn; ++i) {
+        const bsdf::Sample sample = bsdf.sample(outgoing, { next(seed), next(seed) });
+        if (!sample.found()) {
+            continue;
+        }
+        const float cosine = sample.specular ? 1.0F : std::fabs(glm::dot(sample.incoming, bsdf.frame.normal));
+        sum += static_cast<double>(sample.value[0] * cosine / sample.density);
+    }
+    return static_cast<float>(sum / static_cast<double>(drawn));
 }
 
 /** A shader node with a constant colour Cs, and a material whose surface it is. **/
@@ -108,7 +129,10 @@ kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, cons
     const kernel::surface::Surfaces held = surfaces.view();
     const kernel::surface::ShadingPoint point = held.at(traced.nearest.front(), ray);
     BOOST_TEST_REQUIRE(point.found());
-    return bsdf::atSurface(held, point, colour::acescgTable(), wavelengths).diffuse.reflectance;
+    const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), wavelengths);
+    BOOST_TEST_REQUIRE(scattering.count == 1U);
+    BOOST_TEST_REQUIRE((scattering.closures[0].model == bsdf::Model::Diffuse));
+    return scattering.closures[0].weight;
 }
 
 /** Whether two spectra are equal at each wavelength, within a tolerance. **/
@@ -121,40 +145,21 @@ bool near(const kernel::spectrum::SampledSpectrum & left, const kernel::spectrum
     return true;
 }
 
-// directions drawn from the diffuse lobe fall into bins of the hemisphere as its density says:
-// a share of the cosine's square between a bin's bounds, evenly around the normal
+// directions drawn from the diffuse lobe fall into bins of the sphere as its density says, and
+// each density is its cosine over pi
 BOOST_AUTO_TEST_CASE(moya_bsdf_diffuse_samples_follow_their_density_test) {
-    constexpr std::size_t kHeights = 10;
-    constexpr std::size_t kTurns = 20;
-    constexpr std::size_t kDrawn = 200000;
     const bsdf::Bsdf diffuse = diffuseAbout({ 0.3F, -0.2F, 1.0F }, { 0.3F, -0.2F, 1.0F }, 0.7F);
     const glm::vec3 outgoing = glm::normalize(glm::vec3 { 0.2F, 0.5F, 1.0F });
-    std::vector<std::size_t> counts(kHeights * kTurns, 0);
-    std::uint32_t seed = 5;
-    for (std::size_t i = 0; i < kDrawn; ++i) {
-        const glm::vec2 u { next(seed), next(seed) };
-        const bsdf::Sample drawn = diffuse.sample(outgoing, u);
+    const Fit fit = densityFit(diffuse, outgoing, 200000, 5);
+    BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
+    std::uint32_t seed = 7;
+    for (int i = 0; i < 1000; ++i) {
+        const bsdf::Sample drawn = diffuse.sample(outgoing, { next(seed), next(seed) });
         BOOST_TEST_REQUIRE(drawn.found());
         BOOST_TEST_REQUIRE((drawn.lobe == bsdf::Lobe::Diffuse));
-        const glm::vec3 local = diffuse.frame.toLocal(drawn.incoming);
-        BOOST_TEST_REQUIRE(drawn.density == diffuse.density(outgoing, drawn.incoming), boost::test_tools::tolerance(1.0e-4F));
-        BOOST_TEST_REQUIRE(drawn.density == local.z / kPi, boost::test_tools::tolerance(1.0e-3F));
-        const auto height = std::min(static_cast<std::size_t>(local.z * kHeights), kHeights - 1);
-        const float turn = (std::atan2(local.y, local.x) + kPi) / (2.0F * kPi);
-        const auto around = std::min(static_cast<std::size_t>(turn * kTurns), kTurns - 1);
-        ++counts[(height * kTurns) + around];
+        BOOST_TEST_REQUIRE(!drawn.specular);
+        BOOST_TEST_REQUIRE(drawn.density == diffuse.frame.toLocal(drawn.incoming).z / kPi, boost::test_tools::tolerance(1.0e-3F));
     }
-    float chiSquared = 0.0F;
-    for (std::size_t height = 0; height < kHeights; ++height) {
-        const float low = static_cast<float>(height) / kHeights;
-        const float high = static_cast<float>(height + 1) / kHeights;
-        const float expected = static_cast<float>(kDrawn) * ((high * high) - (low * low)) / static_cast<float>(kTurns);
-        for (std::size_t around = 0; around < kTurns; ++around) {
-            const float difference = static_cast<float>(counts[(height * kTurns) + around]) - expected;
-            chiSquared += difference * difference / expected;
-        }
-    }
-    BOOST_TEST(chiSquared < chiSquaredBound((kHeights * kTurns) - 1));
 }
 
 // the diffuse lobe reflects as much light as its reflectance says: its value times the cosine,
@@ -283,6 +288,114 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_a_group_member_takes_the_material_that_places_it_
             BOOST_TEST(near(reflectanceOf(scene, wavelengths), kernel::spectrum::reflectance(table, own ? inner : outer, wavelengths)));
         }
     }
+}
+
+// two diffuse closures of half a reflectance each scatter as one of the whole: the same value and
+// density in every direction, and samples that follow that density
+BOOST_AUTO_TEST_CASE(moya_bsdf_two_halves_of_a_diffuse_lobe_scatter_as_one_test) {
+    const glm::vec3 normal { 0.1F, 0.2F, 1.0F };
+    const bsdf::Bsdf whole = diffuseAbout(normal, normal, 0.6F);
+    bsdf::Bsdf halves = emptyAbout(normal, normal);
+    halves.add(bsdf::Model::Diffuse, flat(0.3F));
+    halves.add(bsdf::Model::Diffuse, flat(0.3F));
+    BOOST_TEST_REQUIRE(halves.count == 2U);
+    const glm::vec3 outgoing = glm::normalize(glm::vec3 { -0.3F, 0.4F, 1.0F });
+    std::uint32_t seed = 21;
+    for (int i = 0; i < 200; ++i) {
+        const glm::vec3 incoming = glm::normalize(glm::vec3 { next(seed) - 0.5F, next(seed) - 0.5F, next(seed) });
+        BOOST_TEST(halves.evaluate(outgoing, incoming)[0] == whole.evaluate(outgoing, incoming)[0], boost::test_tools::tolerance(1.0e-5F));
+        BOOST_TEST(halves.density(outgoing, incoming) == whole.density(outgoing, incoming), boost::test_tools::tolerance(1.0e-5F));
+    }
+    const Fit fit = densityFit(halves, outgoing, 200000, 23);
+    BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
+    BOOST_TEST(furnace(halves, outgoing, 20000, 25) == 0.6F, boost::test_tools::tolerance(1.0e-4F));
+}
+
+// a mirror sends light from one direction alone, the reflection of outgoing about the shading
+// normal. Its sample is specular, of its weight and the chance of its closure, and every
+// direction it is given has no value and no density
+BOOST_AUTO_TEST_CASE(moya_bsdf_a_mirror_reflects_about_the_shading_normal_test) {
+    const glm::vec3 normal = glm::normalize(glm::vec3 { 0.2F, -0.1F, 1.0F });
+    bsdf::Bsdf mirror = emptyAbout(normal, normal);
+    mirror.add(bsdf::Model::Mirror, flat(0.9F));
+    const glm::vec3 outgoing = glm::normalize(glm::vec3 { 0.5F, 0.3F, 1.0F });
+    const glm::vec3 reflected = (2.0F * glm::dot(outgoing, normal) * normal) - outgoing;
+    std::uint32_t seed = 31;
+    for (int i = 0; i < 100; ++i) {
+        const bsdf::Sample drawn = mirror.sample(outgoing, { next(seed), next(seed) });
+        BOOST_TEST_REQUIRE(drawn.found());
+        BOOST_TEST(drawn.specular);
+        BOOST_TEST((drawn.lobe == bsdf::Lobe::Specular));
+        BOOST_TEST(glm::distance(drawn.incoming, reflected) < 1.0e-5F);
+        BOOST_TEST(drawn.value[0] == 0.9F);
+        BOOST_TEST(drawn.density == 1.0F);
+    }
+    BOOST_TEST(mirror.evaluate(outgoing, reflected)[0] == 0.0F);
+    BOOST_TEST(mirror.density(outgoing, reflected) == 0.0F);
+    BOOST_TEST(furnace(mirror, outgoing, 100, 33) == 0.9F, boost::test_tools::tolerance(1.0e-5F));
+}
+
+// a mirror whose shading normal is tilted far from the geometric one refuses a reflection that
+// would cross the geometric surface
+BOOST_AUTO_TEST_CASE(moya_bsdf_a_mirror_refuses_a_reflection_below_the_geometric_surface_test) {
+    bsdf::Bsdf mirror = emptyAbout({ 1.0F, 0.0F, 0.6F }, { 0.0F, 0.0F, 1.0F });
+    mirror.add(bsdf::Model::Mirror, flat(1.0F));
+    const bsdf::Sample grazing = mirror.sample(glm::normalize(glm::vec3 { -1.0F, 0.0F, 0.2F }), { 0.5F, 0.5F });
+    BOOST_TEST(grazing.specular);
+    BOOST_TEST(grazing.incoming.z < 0.0F);
+    BOOST_TEST(!grazing.found());
+    BOOST_TEST(mirror.sample(glm::normalize(glm::vec3 { 1.0F, 0.0F, 0.6F }), { 0.5F, 0.5F }).found());
+}
+
+// a diffuse closure beside a mirror: each is picked by its share of the albedo, the diffuse
+// samples follow the density the diffuse closure keeps, and a white furnace returns both
+BOOST_AUTO_TEST_CASE(moya_bsdf_a_sample_picks_a_closure_by_its_albedo_test) {
+    const glm::vec3 normal { 0.0F, 0.0F, 1.0F };
+    bsdf::Bsdf both = emptyAbout(normal, normal);
+    both.add(bsdf::Model::Diffuse, flat(0.6F));
+    both.add(bsdf::Model::Mirror, flat(0.2F));
+    const glm::vec3 outgoing = glm::normalize(glm::vec3 { 0.3F, 0.0F, 1.0F });
+    constexpr int kDrawn = 40000;
+    std::uint32_t seed = 41;
+    int specular = 0;
+    for (int i = 0; i < kDrawn; ++i) {
+        const bsdf::Sample drawn = both.sample(outgoing, { next(seed), next(seed) });
+        BOOST_TEST_REQUIRE(drawn.found());
+        if (drawn.specular) {
+            ++specular;
+            BOOST_TEST_REQUIRE(drawn.density == 0.25F, boost::test_tools::tolerance(1.0e-6F));
+        } else {
+            BOOST_TEST_REQUIRE(drawn.density == 0.75F * drawn.incoming.z / kPi, boost::test_tools::tolerance(1.0e-4F));
+            BOOST_TEST_REQUIRE(drawn.value[0] == 0.6F / kPi, boost::test_tools::tolerance(1.0e-5F));
+        }
+    }
+    // the count of specular samples is binomial, of a deviation near 87 over 40000
+    BOOST_TEST(std::fabs(static_cast<float>(specular) - (0.25F * kDrawn)) < 450.0F);
+    const Fit fit = densityFit(both, outgoing, 200000, 43);
+    BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
+    BOOST_TEST(furnace(both, outgoing, 200000, 45) == 0.8F, boost::test_tools::tolerance(1.0e-2F));
+}
+
+// a closure of no albedo is left out, and a full BSDF keeps the closures of the largest albedo
+BOOST_AUTO_TEST_CASE(moya_bsdf_a_full_bsdf_keeps_its_largest_closures_test) {
+    bsdf::Bsdf full = emptyAbout({ 0.0F, 0.0F, 1.0F }, { 0.0F, 0.0F, 1.0F });
+    full.add(bsdf::Model::Diffuse, flat(0.0F));
+    BOOST_TEST(full.count == 0U);
+    BOOST_TEST(!full.sample({ 0.0F, 0.0F, 1.0F }, { 0.5F, 0.5F }).found());
+    for (std::uint32_t i = 0; i <= bsdf::kMostClosures; ++i) {
+        full.add(bsdf::Model::Diffuse, flat(0.01F * static_cast<float>(i + 1U)));
+    }
+    BOOST_TEST(full.count == bsdf::kMostClosures);
+    float least = 1.0F;
+    for (std::uint32_t i = 0; i < full.count; ++i) {
+        least = std::fmin(least, full.closures[i].albedo);
+    }
+    BOOST_TEST(least == 0.02F, boost::test_tools::tolerance(1.0e-6F));
+    const float before = full.albedo();
+    full.add(bsdf::Model::Mirror, flat(0.015F));
+    BOOST_TEST(full.albedo() == before);
+    full.add(bsdf::Model::Mirror, flat(0.5F));
+    BOOST_TEST(full.albedo() == before - 0.02F + 0.5F, boost::test_tools::tolerance(1.0e-5F));
 }
 
 };  // namespace
