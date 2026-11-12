@@ -137,7 +137,7 @@ among the options before the record is drafted.
 | [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | accepted |
 | [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | accepted |
 | [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | accepted |
-| [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | open |
+| [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | done |
 | [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | open |
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | open |
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | open |
@@ -385,6 +385,14 @@ hash of the sample's draw and the primitive. No limit is set on the surfaces a r
 
 **Tests:** a document of the standard library loads, and `open_pbr_surface` resolves to its node
 graph.
+
+**Done.** The vcpkg baseline moved to a commit that builds MaterialX 1.39.5, whose
+`open_pbr_surface` is OpenPBR Surface 1.1.1, so no overlay port is needed. MaterialX joins the
+`moya` feature with none of its features, and libmoya links its core and format libraries.
+`material::Library` reads every definition under `materialx/` beside the executable, in a fixed
+order, and names the node graph a definition is implemented by. The definitions and graphs are
+copied there for moya and its suite, and installed there, without the shader generators'
+implementations. The Flatpak builds MaterialX as a module.
 
 ### Step 8 — A BSDF of several lobes
 

@@ -23,6 +23,7 @@ v3d_add_test(moya
 	"InstancesTest.cxx"
 	"LightSamplingTest.cxx"
 	"LightsTest.cxx"
+	"MaterialLibraryTest.cxx"
 	"MotionTest.cxx"
 	"PathsReferenceTest.cxx"
 	"PathsTest.cxx"
@@ -91,3 +92,6 @@ add_custom_command(TARGET v3dtest_moya POST_BUILD
 
 # The suite traces through the CPU device, which loads its libraries from beside the executable.
 v3d_moya_cpu_libraries(v3dtest_moya)
+
+# The suite reads MaterialX's standard libraries from beside the executable, as moya does.
+v3d_moya_materialx_libraries(v3dtest_moya)

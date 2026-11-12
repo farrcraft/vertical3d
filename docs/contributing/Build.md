@@ -285,6 +285,7 @@ A release ships the install tree. `cmake --install out/build/x64-Release` writes
   lays it out;
 - one copy of each DLL the apps load, and the MSVC runtime from `InstallRequiredSystemLibraries`;
 - OpenUSD's plugins in `usd/`, beside its DLLs, where it looks for them;
+- MaterialX's standard libraries in `materialx/`, beside moya, where it reads them;
 - `NOTICES.txt`, which [scripts/notices.ts](../../scripts/notices.ts) writes as the tree is
   installed. Installing needs Node on the `PATH` for it.
 

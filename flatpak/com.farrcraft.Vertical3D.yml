@@ -296,6 +296,36 @@ modules:
         url: https://github.com/PixarAnimationStudios/OpenSubdiv/archive/refs/tags/v3_5_0.tar.gz
         sha256: 8f5044f453b94162755131f77c08069004f25306fd6dc2192b6d49889efb8095
 
+  # MaterialX's core and format libraries and its standard libraries of node definitions, static
+  # and position-independent as vcpkg builds them on Linux, with no shader generator or renderer.
+  # moya installs the standard libraries beside itself, so the prefix's copy is removed, with the
+  # documents MaterialX installs at the prefix's root
+  - name: materialx
+    buildsystem: cmake-ninja
+    cleanup:
+      - /CHANGELOG.md
+      - /LICENSE
+      - /README.md
+      - /THIRD-PARTY.md
+      - /libraries
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DMATERIALX_BUILD_GEN_GLSL=OFF
+      - -DMATERIALX_BUILD_GEN_MDL=OFF
+      - -DMATERIALX_BUILD_GEN_MSL=OFF
+      - -DMATERIALX_BUILD_GEN_OSL=OFF
+      - -DMATERIALX_BUILD_GEN_SLANG=OFF
+      - -DMATERIALX_BUILD_RENDER=OFF
+      - -DMATERIALX_BUILD_SHARED_LIBS=OFF
+      - -DMATERIALX_BUILD_TESTS=OFF
+    license-files:
+      - LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/MaterialX/archive/refs/tags/v1.39.5.tar.gz
+        sha256: c0d739b70a36f6f72888a0e8e66db5c83ae87c40737cc9b51c108166804f3a3b
+
   - name: openusd
     buildsystem: cmake-ninja
     config-opts:

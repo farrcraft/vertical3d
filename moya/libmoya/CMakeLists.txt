@@ -25,6 +25,7 @@ endif()
 
 add_library("v3dlib_moya"
 	"Curve.h" "Curve.cxx"
+	"Executable.h" "Executable.cxx"
 	"Hider.h"
 	"Polygon.h" "Polygon.cxx"
 	"Vertex.h" "Vertex.cxx"
@@ -115,6 +116,9 @@ add_library("v3dlib_moya"
 	"geometry/subdivision/internal/Patches.h"
 	"geometry/subdivision/internal/Scalar.h"
 
+	"material/Library.h" "material/Library.cxx"
+	"material/internal/Definitions.h"
+
 	"output/Checkpoint.h" "output/Checkpoint.cxx"
 	"output/ExrPart.h"
 	"output/ExrMetadata.h"
@@ -199,11 +203,35 @@ endif()
 # PRIVATE: only Display writes an image, encoding it with image and writing the file through
 # asset. Only the CPU device's source includes TBB, and only the EXR writer's source includes
 # OpenEXR and Imath. Only the colour configuration's source and its internal headers include
-# OpenColorIO, and only the subdivision surface's OpenSubdiv. OpenSubdiv is linked static on every
-# platform, as vcpkg builds it on Windows.
+# OpenColorIO, only the subdivision surface's OpenSubdiv, and only the material library's source
+# and its internal header MaterialX. OpenSubdiv is linked static on every platform, as vcpkg builds
+# it on Windows.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat TBB::tbb)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
 # platforms, and finds it by its path.
 target_link_libraries("v3dlib_moya" PRIVATE ${CMAKE_DL_LIBS} Boost::filesystem)
+
+# MaterialX's standard libraries: its node definitions and the graphs that implement some of them,
+# without the shader generators' implementations, which moya does not use. They are staged in the
+# build tree when it is configured, and installed from there. The staged copy is made afresh, so a
+# file a newer MaterialX drops is not left behind.
+file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/materialx")
+file(COPY "${MATERIALX_STDLIB_DIR}/" DESTINATION "${CMAKE_BINARY_DIR}/materialx"
+	PATTERN "gen*" EXCLUDE
+	PATTERN "targets" EXCLUDE)
+
+# Copies MaterialX's standard libraries into materialx/ beside an executable that reads materials,
+# where material::Library finds them. The copy is a target of its own that runs on every build, so
+# libraries staged again are copied even when the executable is not linked again. It replaces the
+# directory, so a file no longer staged is not left behind.
+#
+# @param target the executable
+function(v3d_moya_materialx_libraries target)
+	add_custom_target("${target}_materialx_libraries"
+		COMMAND ${CMAKE_COMMAND} -E rm -rf "$<TARGET_FILE_DIR:${target}>/materialx"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_BINARY_DIR}/materialx" "$<TARGET_FILE_DIR:${target}>/materialx"
+		VERBATIM)
+	add_dependencies(${target} "${target}_materialx_libraries")
+endfunction()

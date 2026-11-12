@@ -30,7 +30,7 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 builds TBB and OpenUSD from source, which takes a long time.
 
 What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
-Imath, OpenColorIO and OpenSubdiv. No api library
+Imath, OpenColorIO, OpenSubdiv and MaterialX. No api library
 uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
 only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
 names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
@@ -47,6 +47,7 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | icu | `v3dlib_font` finds grapheme clusters, words and line breaks through it. It comes from the tree's [overlay port](#the-icu-overlay-port), not vcpkg's own. It is the `ICU::uc` and `ICU::data` targets of `find_package(ICU COMPONENTS uc data)`, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
+| materialx | MaterialX, in the `moya` feature, with none of its features, so no shader generator or renderer of its own. moya reads material documents through it, as the `MaterialXCore` and `MaterialXFormat` targets, linked PRIVATE because only the material library's source and its internal header include it. Its standard libraries of node definitions are copied into `materialx/` beside moya and its suite, and installed there, without the shader generators' `gen*` folders and `targets`. moya reads them from there alone, not from MaterialX's install or its search path in the environment. Its `open_pbr_surface` is OpenPBR Surface 1.1.1. The Flatpak builds it as a module |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
 | opensubdiv | OpenSubdiv, in the `moya` feature, with none of its features, so it has no OpenGL or GPU backend. moya evaluates subdivision surfaces through it. vcpkg builds it static on Windows, and it is linked as the `OpenSubdiv::osdCPU_static` target on every platform, PRIVATE because only the subdivision surface's source includes it. Its scheme headers use `M_PI`, so that source is compiled with `_USE_MATH_DEFINES` on MSVC. The Flatpak builds it as a module |
