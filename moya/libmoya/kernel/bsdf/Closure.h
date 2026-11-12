@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/ThinFilm.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
@@ -26,7 +27,9 @@ inline constexpr float kLeastBend = 1.0e-3F;
  * of refraction of the side the shading normal points away from, the outside's being one, and
  * whether it is a thin slab with the same medium on both sides. Its reflection is tinted by its
  * colour and its transmission by its transmitted colour. A specular reflection reads its index
- * and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness.
+ * and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness, and
+ * fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel factor
+ * is mixed towards a thin film's by the film's weight.
  **/
 struct Closure {
     Model model { Model::Diffuse };
@@ -39,6 +42,13 @@ struct Closure {
     spectrum::SampledSpectrum colour { 1.0F };
     spectrum::SampledSpectrum transmitted { 1.0F };
     float roughness { 0.0F };
+    scattering::ThinFilm film;
+    float filmWeight { 0.0F };
+
+    /** Whether a thin film changes its Fresnel factor. **/
+    MOYA_KERNEL bool filmed() const {
+        return filmWeight > 0.0F && film.present();
+    }
 
     /**
      * Whether it scatters into a single direction for each outgoing one, or two for a dielectric.
@@ -58,6 +68,7 @@ struct Closure {
                 return scattering::Ggx::smooth(alpha) || !(ior > 1.0F + kLeastBend);
             case Model::Diffuse:
             case Model::OrenNayar:
+            case Model::Fuzz:
                 break;
         }
         return false;
@@ -71,7 +82,7 @@ struct Closure {
         if (singular()) {
             return Lobe::Specular;
         }
-        return model == Model::Diffuse || model == Model::OrenNayar ? Lobe::Diffuse : Lobe::Glossy;
+        return model == Model::Diffuse || model == Model::OrenNayar || model == Model::Fuzz ? Lobe::Diffuse : Lobe::Glossy;
     }
 };
 

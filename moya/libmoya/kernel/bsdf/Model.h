@@ -23,6 +23,7 @@ namespace v3d::moya::kernel::bsdf {
  * - OrenNayar is OpenPBR's energy-preserving Oren-Nayar diffuse reflection of a roughness.
  * - Specular is a dielectric's GGX reflection alone, by Fresnel's equations, as a layer over a
  *   base reflects, with the energy a single scattering loses given back.
+ * - Fuzz is OpenPBR's fuzz, Zeltner, Burley and Chiang's sheen of a layer of fibres.
  **/
 enum class Model : std::uint8_t {
     Diffuse,
@@ -30,7 +31,8 @@ enum class Model : std::uint8_t {
     Conductor,
     Dielectric,
     OrenNayar,
-    Specular
+    Specular,
+    Fuzz
 };
 
 };  // namespace v3d::moya::kernel::bsdf

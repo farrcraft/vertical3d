@@ -61,6 +61,7 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
     }
     Bsdf out;
     out.albedos = albedos;
+    out.wavelengths = wavelengths;
     out.frame = point.frame;
     out.geometric = point.geometric;
     if (material.layered != 0U) {

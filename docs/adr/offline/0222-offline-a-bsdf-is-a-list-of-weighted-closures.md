@@ -1,8 +1,9 @@
 # ADR-0222: Offline: a BSDF is a list of weighted closures
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-11
 **Tags**: offline, shaders, lighting
+**Amended by**: ADR-0228
 **Documented in**: [plans/MoyaMaterials.md](../../plans/MoyaMaterials.md)
 
 ## Context

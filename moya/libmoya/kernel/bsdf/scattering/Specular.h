@@ -11,8 +11,10 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/ThinFilm.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
+#include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 
 #include <cmath>
 
@@ -31,12 +33,14 @@ namespace v3d::moya::kernel::bsdf::scattering {
  *   angle between outgoing and the microfacet normal, for the closure's index.
  * - **What a single scattering loses** is given back as a conductor's is, its Fresnel factor's mean
  *   being the mean a smooth interface reflects. Both parts are reciprocal.
- * - **The closure's colour tints it.**
+ * - **The closure's colour tints it**, and a thin film's reflectance at each wavelength is mixed
+ *   into its Fresnel factor by the film's weight. The compensation takes no film.
  * - **A sample** draws as a conductor's does.
  **/
 struct Specular {
     /** The value for two directions, before the closure's weight. **/
-    MOYA_KERNEL static spectrum::SampledSpectrum evaluate(const Closure & closure, const Albedos & albedos, glm::vec3 outgoing, glm::vec3 incoming) {
+    MOYA_KERNEL static spectrum::SampledSpectrum evaluate(const Closure & closure, const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths,
+        glm::vec3 outgoing, glm::vec3 incoming) {
         if (!(outgoing.z * incoming.z > 0.0F)) {
             return spectrum::SampledSpectrum(0.0F);
         }
@@ -46,13 +50,22 @@ struct Specular {
         }
         const Ggx ggx { closure.alpha };
         const glm::vec3 normal = glm::normalize(outgoing + incoming);
-        const float single = Fresnel::reflected(glm::dot(outgoing, normal), index(closure)) * ggx.reflected(outgoing, incoming);
-        return closure.colour * (single + compensation(albedos, shared(closure), index(closure), outgoing.z, incoming.z));
+        const spectrum::SampledSpectrum single = fresnel(closure, glm::dot(outgoing, normal), wavelengths) * ggx.reflected(outgoing, incoming);
+        return closure.colour * (single + spectrum::SampledSpectrum(compensation(albedos, shared(closure), index(closure), outgoing.z, incoming.z)));
     }
 
     /** What a smooth one reflects along the mirror direction of outgoing. **/
-    MOYA_KERNEL static spectrum::SampledSpectrum mirrored(const Closure & closure, const glm::vec3 & outgoing) {
-        return closure.colour * Fresnel::reflected(std::fabs(outgoing.z), index(closure));
+    MOYA_KERNEL static spectrum::SampledSpectrum mirrored(const Closure & closure, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
+        return closure.colour * fresnel(closure, std::fabs(outgoing.z), wavelengths);
+    }
+
+    /** Its Fresnel factor at a cosine, at each wavelength, with its film mixed in. **/
+    MOYA_KERNEL static spectrum::SampledSpectrum fresnel(const Closure & closure, float cosine, const spectrum::SampledWavelengths & wavelengths) {
+        const spectrum::SampledSpectrum bare(Fresnel::reflected(cosine, index(closure)));
+        if (!closure.filmed()) {
+            return bare;
+        }
+        return bare + ((closure.film.overDielectric(cosine, index(closure), wavelengths) - bare) * closure.filmWeight);
     }
 
     /**

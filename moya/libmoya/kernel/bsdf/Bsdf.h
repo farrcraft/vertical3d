@@ -9,6 +9,7 @@
 #include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Conductor.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Dielectric.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Mirror.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
@@ -18,6 +19,7 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Specular.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
+#include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 
 #include <cmath>
@@ -48,7 +50,8 @@ inline constexpr float kBelowOne = 0x1.fffffep-1F;
  * - **The density of a direction** sums each closure's density times the chance it is picked.
  * - **A singular closure** has no value and no density for any direction it is given. Its sample
  *   is specular, as Sample says.
- * - **The albedo tables** are what a microfacet lobe's energy compensation reads.
+ * - **The albedo tables** are what a microfacet lobe's energy compensation reads, and the
+ *   wavelengths what a thin film's interference reads.
  *
  * The geometric surface and the shading normal have to agree on whether two directions lie on one
  * side or cross the surface. Where they disagree, the pair has no value, no density and no
@@ -60,6 +63,7 @@ struct Bsdf {
     surface::Frame frame;
     glm::vec3 geometric { 0.0F, 0.0F, 1.0F };
     Albedos albedos;
+    spectrum::SampledWavelengths wavelengths;
 
     /** Adds a closure of a model and a weight, as add() adds any closure. **/
     MOYA_KERNEL void add(Model model, const spectrum::SampledSpectrum & weight) {
@@ -73,7 +77,8 @@ struct Bsdf {
      * Adds a closure, estimating its albedo as the mean of its weight over the wavelengths, times
      * what its model reflects. That is a conductor's Fresnel factor's mean, or an Oren-Nayar lobe's
      * colour's. A specular reflection's is its colour's mean times the mean a smooth interface
-     * reflects, and a dielectric's the larger mean of its two colours. A closure of no albedo is
+     * reflects, and a dielectric's the larger mean of its two colours. Fuzz's is its colour's mean
+     * times its albedo at a cosine of one half. A closure of no albedo is
      * left out. A BSDF that holds kMostClosures replaces the one of the smallest albedo with it,
      * while that is smaller. The albedo tables are set before a specular reflection is added.
      **/
@@ -91,6 +96,9 @@ struct Bsdf {
                 break;
             case Model::Dielectric:
                 closure.albedo *= std::fmax(closure.colour.average(), closure.transmitted.average());
+                break;
+            case Model::Fuzz:
+                closure.albedo *= closure.colour.average() * scattering::Fuzz::albedo(0.5F, closure.roughness);
                 break;
             case Model::Diffuse:
             case Model::Mirror:
@@ -179,6 +187,9 @@ struct Bsdf {
             case Model::Dielectric:
                 drawn = scattering::Dielectric::sample(closure, albedos, local, stretched, choice);
                 break;
+            case Model::Fuzz:
+                drawn = scattering::Fuzz::sample(closure, local, stretched);
+                break;
             case Model::Diffuse:
             case Model::Mirror:
             case Model::OrenNayar:
@@ -219,20 +230,21 @@ struct Bsdf {
     }
 
     /** Where a singular closure scatters outgoing, in the shading frame, by the third number. **/
-    MOYA_KERNEL static Singular singular(const Closure & closure, const glm::vec3 & outgoing, float choice) {
+    MOYA_KERNEL Singular singular(const Closure & closure, const glm::vec3 & outgoing, float choice) const {
         Singular out;
         switch (closure.model) {
             case Model::Dielectric:
                 return scattering::Dielectric::scatter(closure, outgoing, choice);
             case Model::Conductor:
-                out.value = scattering::Conductor::mirrored(closure, outgoing);
+                out.value = scattering::Conductor::mirrored(closure, wavelengths, outgoing);
                 break;
             case Model::Specular:
-                out.value = scattering::Specular::mirrored(closure, outgoing);
+                out.value = scattering::Specular::mirrored(closure, wavelengths, outgoing);
                 break;
             case Model::Diffuse:
             case Model::Mirror:
             case Model::OrenNayar:
+            case Model::Fuzz:
                 break;
         }
         out.direction = scattering::Mirror::sample(outgoing);
@@ -249,13 +261,16 @@ struct Bsdf {
             }
             switch (closure.model) {
                 case Model::Conductor:
-                    out += closure.weight * scattering::Conductor::evaluate(closure, albedos, outgoing, incoming);
+                    out += closure.weight * scattering::Conductor::evaluate(closure, albedos, wavelengths, outgoing, incoming);
                     break;
                 case Model::Dielectric:
                     out += closure.weight * scattering::Dielectric::evaluate(closure, albedos, outgoing, incoming);
                     break;
                 case Model::Specular:
-                    out += closure.weight * scattering::Specular::evaluate(closure, albedos, outgoing, incoming);
+                    out += closure.weight * scattering::Specular::evaluate(closure, albedos, wavelengths, outgoing, incoming);
+                    break;
+                case Model::Fuzz:
+                    out += closure.weight * scattering::Fuzz::evaluate(closure, outgoing, incoming);
                     break;
                 case Model::OrenNayar:
                     out += closure.weight * scattering::OrenNayar::evaluate(closure, outgoing, incoming);
@@ -289,6 +304,9 @@ struct Bsdf {
                     break;
                 case Model::Dielectric:
                     own = scattering::Dielectric::density(closure, albedos, outgoing, incoming);
+                    break;
+                case Model::Fuzz:
+                    own = scattering::Fuzz::density(closure, outgoing, incoming);
                     break;
                 case Model::Diffuse:
                 case Model::Mirror:

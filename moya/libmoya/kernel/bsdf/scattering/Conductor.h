@@ -11,6 +11,7 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
+#include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 
 #include <cmath>
 
@@ -36,14 +37,15 @@ namespace v3d::moya::kernel::bsdf::scattering {
  **/
 struct Conductor {
     /** The value for two directions, before the closure's weight. **/
-    MOYA_KERNEL static spectrum::SampledSpectrum evaluate(const Closure & closure, const Albedos & albedos, glm::vec3 outgoing, glm::vec3 incoming) {
+    MOYA_KERNEL static spectrum::SampledSpectrum evaluate(const Closure & closure, const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths,
+        glm::vec3 outgoing, glm::vec3 incoming) {
         if (!(outgoing.z * incoming.z > 0.0F)) {
             return spectrum::SampledSpectrum(0.0F);
         }
         upward(outgoing, incoming);
         const Ggx ggx { closure.alpha };
         const glm::vec3 normal = glm::normalize(outgoing + incoming);
-        return (closure.fresnel(glm::dot(outgoing, normal)) * ggx.reflected(outgoing, incoming)) +
+        return (reflectance(closure, glm::dot(outgoing, normal), wavelengths) * ggx.reflected(outgoing, incoming)) +
             compensation(closure, albedos, outgoing.z, incoming.z);
     }
 
@@ -75,8 +77,22 @@ struct Conductor {
     }
 
     /** What a smooth conductor reflects along the mirror direction of outgoing. **/
-    MOYA_KERNEL static spectrum::SampledSpectrum mirrored(const Closure & closure, const glm::vec3 & outgoing) {
-        return closure.fresnel(std::fabs(outgoing.z));
+    MOYA_KERNEL static spectrum::SampledSpectrum mirrored(const Closure & closure, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
+        return reflectance(closure, std::fabs(outgoing.z), wavelengths);
+    }
+
+    /**
+     * Its Fresnel factor at a cosine, at each wavelength: its F82 factor, with a thin film's
+     * reflectance over it mixed in by the film's weight. The compensation takes no film.
+     **/
+    MOYA_KERNEL static spectrum::SampledSpectrum reflectance(const Closure & closure, float cosine, const spectrum::SampledWavelengths & wavelengths) {
+        const spectrum::SampledSpectrum bare = closure.fresnel(cosine);
+        if (!closure.filmed()) {
+            return bare;
+        }
+        const auto inside = [&closure](float within) { return closure.fresnel(within); };
+        const spectrum::SampledSpectrum filmed = closure.film.overConductor(cosine, closure.fresnel.normal, inside, wavelengths);
+        return bare + ((filmed - bare) * closure.filmWeight);
     }
 
     /** The alpha the table is read at for a closure's two: their geometric mean. **/

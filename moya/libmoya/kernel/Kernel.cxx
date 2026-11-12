@@ -17,6 +17,7 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Layering.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Lobe.h>  // IWYU pragma: keep
@@ -26,6 +27,7 @@
 #include <moya/libmoya/kernel/bsdf/Sample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/Singular.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Specular.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/scattering/ThinFilm.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/camera/Camera.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/FilterSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/PixelFilter.h>  // IWYU pragma: keep

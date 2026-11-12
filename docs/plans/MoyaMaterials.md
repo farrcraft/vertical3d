@@ -142,7 +142,7 @@ among the options before the record is drafted.
 | [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | done |
 | [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | done |
-| [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222 | open |
+| [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222, 0228 | done |
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | open |
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | open |
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | open |
@@ -495,6 +495,15 @@ follows the tangent without rotation until tangents arrive in step 16.
 
 **Tests:** chi-squared and reciprocity for fuzz, and a film of zero thickness that changes
 nothing. A film's reflectance at a wavelength matches the closed form for one layer.
+
+**Done.** Fuzz is Zeltner, Burley and Chiang's sheen, which OpenPBR names. It is not reciprocal,
+so [ADR-0228](../adr/offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) amends
+ADR-0222, and fuzz is checked by chi-squared and by its closed-form albedo in place of
+reciprocity. Its fitted albedo dips just below zero at low roughness, so it is held to [0, 1]. A
+`ThinFilm` gives Airy's reflectance at each of a path's wavelengths, over a dielectric or over a
+conductor's F82 factor, and is mixed into the specular layer's and the metal's Fresnel factor by
+its weight. A vanishing film is the bare Fresnel factor, a quarter-wave film reflects nothing,
+and a white surface under fuzz or a film keeps its energy within 2%.
 
 ### Step 13 — Emission
 

@@ -9,9 +9,11 @@
 #include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Specular.h>
+#include <moya/libmoya/kernel/bsdf/scattering/ThinFilm.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
@@ -29,19 +31,25 @@ namespace v3d::moya::kernel::bsdf {
 /** The most a modulated specular layer reflects at normal incidence. **/
 inline constexpr float kMostNormalReflectance = 0.9999F;
 
+/** Nanometres in a micrometre, the unit OpenPBR gives a thin film's thickness in. **/
+inline constexpr float kNanometres = 1000.0F;
+
 /** The least the darkening's denominator is taken as before the darkening is left out. **/
 inline constexpr float kLeastDarkening = 1.0e-6F;
 
 /**
- * How OpenPBR Surface's base, specular layer and coat become a BSDF's closures, top down. Each
- * layer scales what lies below it by one less its albedo at outgoing's cosine, as a white one
- * reflects it. That keeps the energy of a white surface, though the whole is not reciprocal.
+ * How OpenPBR Surface's fuzz, coat, base and specular layer become a BSDF's closures, top
+ * down. Each layer scales what lies below it by one less its albedo at outgoing's cosine, as a
+ * white one reflects it. That keeps the energy of a white surface, though the whole is not
+ * reciprocal.
  **/
 struct Layering {
     /**
      * Adds the closures of OpenPBR's parameters to a BSDF whose albedo tables are set, for light
      * leaving at a cosine to the shading normal. Colours become spectra through the table.
      *
+     * - **The fuzz**, of its weight, tinted by its colour, lies over everything. What lies below
+     *   takes one less its weight times its albedo, untinted.
      * - **The coat**, of its weight, is a specular reflection of its own roughness and index. What
      *   lies below takes one less its weight, and its weight times one less its albedo, its colour
      *   and its darkening.
@@ -56,6 +64,10 @@ struct Layering {
      *   the coat's where the coat lies over it. The diffuse base is an Oren-Nayar lobe of the
      *   base's roughness, its colour the base colour times its weight, mixed with the subsurface
      *   colour by the subsurface weight. It takes one less the specular layer's albedo.
+     * - **A thin film**, of its weight, lies over the metal and the opaque specular layer, its
+     *   index relative to the coat's as the specular layer's is. The layer below the specular
+     *   layer takes one less its albedo times its film's reflectance over its bare Fresnel factor,
+     *   at outgoing's cosine and each wavelength.
      **/
     MOYA_KERNEL static void add(Bsdf & bsdf, const surface::OpenPbr & surface, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths,
         float cosine) {
@@ -68,7 +80,21 @@ struct Layering {
         const spectrum::SampledSpectrum metallic = spectrum::reflectance(table, base, wavelengths);
         const spectrum::SampledSpectrum specularColour = spectrum::reflectance(table, surface.specularColour, wavelengths);
         float roughness = unit(surface.specularRoughness);
+        bsdf.wavelengths = wavelengths;
         spectrum::SampledSpectrum below(1.0F);
+        const float fuzz = unit(surface.fuzzWeight);
+        if (fuzz > 0.0F) {
+            Closure layer;
+            layer.model = Model::Fuzz;
+            layer.weight = spectrum::SampledSpectrum(fuzz);
+            layer.colour = spectrum::reflectance(table, surface.fuzzColour, wavelengths);
+            layer.roughness = unit(surface.fuzzRoughness);
+            bsdf.add(layer);
+            below = spectrum::SampledSpectrum(1.0F - (fuzz * scattering::Fuzz::albedo(cosine, layer.roughness)));
+        }
+        const scattering::ThinFilm film { .thickness = std::fmax(surface.thinFilmThickness, 0.0F) * kNanometres,
+            .ior = relative(std::fmax(surface.thinFilmIor, 1.0F), coatIor, coat) };
+        const float filmWeight = unit(surface.thinFilmWeight);
         if (coat > 0.0F) {
             Closure layer;
             layer.model = Model::Specular;
@@ -83,7 +109,7 @@ struct Layering {
             const spectrum::SampledSpectrum lowest = mix(diffuse * (1.0F - transmission), metallic, metal);
             const float baseRoughness = roughness + ((1.0F - roughness) * (1.0F - metal) * (1.0F - transmission));
             const spectrum::SampledSpectrum darkened = darkening(bsdf.albedos, lowest, coatIor, baseRoughness, cosine, unit(surface.coatDarkening));
-            below = spectrum::SampledSpectrum(1.0F - coat) + (spectrum::reflectance(table, surface.coatColour, wavelengths) * darkened * (coat * (1.0F - reflected)));
+            below *= spectrum::SampledSpectrum(1.0F - coat) + (spectrum::reflectance(table, surface.coatColour, wavelengths) * darkened * (coat * (1.0F - reflected)));
         }
         const glm::vec2 alpha = scattering::Ggx::alphas(roughness, unit(surface.specularAnisotropy));
         const float ior = modulated(std::fmax(surface.specularIor, 1.0F), std::fmax(surface.specularWeight, 0.0F));
@@ -93,6 +119,8 @@ struct Layering {
             layer.weight = below * (metal * std::fmax(surface.specularWeight, 0.0F));
             layer.alpha = alpha;
             layer.fresnel = scattering::F82 { .normal = metallic, .tint = specularColour };
+            layer.film = film;
+            layer.filmWeight = filmWeight;
             bsdf.add(layer);
         }
         const spectrum::SampledSpectrum dielectric = below * (1.0F - metal);
@@ -114,14 +142,35 @@ struct Layering {
         specular.alpha = alpha;
         specular.ior = relative(ior, coatIor, coat);
         specular.colour = specularColour;
+        specular.film = film;
+        specular.filmWeight = filmWeight;
         bsdf.add(specular);
         const float reflected = scattering::Specular::albedo(bsdf.albedos, cosine, std::sqrt(alpha.x * alpha.y), specular.ior);
         Closure lambertian;
         lambertian.model = Model::OrenNayar;
-        lambertian.weight = opaque * (1.0F - reflected);
+        lambertian.weight = opaque * filmed(specular, reflected, cosine, wavelengths);
         lambertian.colour = diffuse;
         lambertian.roughness = unit(surface.baseDiffuseRoughness);
         bsdf.add(lambertian);
+    }
+
+    /**
+     * What a specular layer of an albedo lets through to the layer below it, at each wavelength.
+     * That is one less its albedo, which a thin film scales by its reflectance over the bare
+     * Fresnel factor at the cosine. The albedo is held to one.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the albedo, then the cosine
+    MOYA_KERNEL static spectrum::SampledSpectrum filmed(const Closure & specular, float reflected, float cosine, const spectrum::SampledWavelengths & wavelengths) {
+        const float bare = scattering::Fresnel::reflected(cosine, std::fmax(specular.ior, 1.0F));
+        if (!specular.filmed() || !(bare > 0.0F)) {
+            return spectrum::SampledSpectrum(1.0F - reflected);
+        }
+        const spectrum::SampledSpectrum factor = scattering::Specular::fresnel(specular, cosine, wavelengths);
+        spectrum::SampledSpectrum out;
+        for (int i = 0; i < spectrum::kSamples; ++i) {
+            out[i] = 1.0F - std::fmin(reflected * factor[i] / bare, 1.0F);
+        }
+        return out;
     }
 
     /**

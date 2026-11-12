@@ -156,6 +156,13 @@ The library's models:
   single scattering loses is given back as a conductor's is, its Fresnel factor's mean being the
   mean a smooth interface reflects. It samples as a conductor does. Its estimated albedo is its
   weight's mean times its colour's, times the mean a smooth interface reflects.
+- **`Fuzz` is OpenPBR's fuzz**, Zeltner, Burley and Chiang's sheen of a layer of fibres, on
+  either side, and its bounces are diffuse. It is the one lobe that is not reciprocal. It is set
+  out after the Oren-Nayar lobe.
+
+A conductor's or a specular reflection's Fresnel factor can carry a thin film, mixed in by the
+film's weight. The film is set out after fuzz. The BSDF holds the path's wavelengths, which the
+film reads. Neither compensation takes the film.
 
 A conductor is made of four parts:
 
@@ -224,6 +231,37 @@ roughness from zero, Lambert's, to one.
   colour squared times the mean albedo, over one less the colour times one less the mean. A white
   lobe keeps all its energy, and both parts are reciprocal.
 
+Fuzz's closure reads its colour and its roughness, held to [0.01, 1], where its fits hold.
+
+- **Its value times the cosine** is its albedo at outgoing's cosine times a distribution of
+  incoming that integrates to one. The distribution is a clamped cosine, transformed linearly by
+  a matrix fitted to outgoing's cosine and the roughness, in a frame whose x lies along
+  outgoing's projection onto the surface.
+- **Its albedo** is a fitted closed form, held to [0, 1], so a sample's mean weight is it. The fits
+  are the authors', as MaterialX's library gives them.
+- **A sample** draws from the distribution exactly, so its density is the distribution.
+- **It is not reciprocal**, since the distribution is fitted to outgoing alone. Its checks are
+  chi-squared and its albedo.
+- **Its estimated albedo** is its weight's mean times its colour's, times its albedo at a cosine
+  of one half.
+
+Background: [ADR-0228](../adr/offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md)
+
+A `scattering::ThinFilm` is a film over a surface, in nanometres thick, of an index relative to
+the medium over it. Its reflectance at each of the path's wavelengths is Airy's sum over the light
+bouncing inside it. Each polarisation is summed from the amplitudes each interface reflects, and
+the two are averaged.
+
+- **The phase** between successive bounces is four pi times the film's index, its thickness and the
+  cosine inside it, over the wavelength.
+- **Over a dielectric**, each interface reflects the amplitudes Fresnel's equations give.
+- **Over a conductor**, the conductor reflects the square root of its Fresnel factor at the cosine
+  inside the film, for both polarisations. The amplitude turns the phase back where the index its
+  reflectance at normal incidence implies lies below the film's.
+- **Light that cannot enter the film** is all reflected, and a film of no thickness is no film.
+- **An RGB build** has no wavelengths, so it evaluates the film at 630, 532 and 465 nanometres for
+  ACEScg's red, green and blue.
+
 **The albedo tables are integrated when moya is built.** `moya_albedo`, in `moya/tools/albedo/`,
 integrates them at 32 cosines and 32 roughnesses, the roughness being the square root of the
 alpha, by the kernel's own GGX and Fresnel.
@@ -268,8 +306,10 @@ Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-
 leaving at a cosine to the shading normal. Each parameter has OpenPBR's name and default, and its
 colours are in ACEScg. Each layer scales what lies below it by one less its albedo at that
 cosine, as a white one reflects it, so a white surface keeps its energy. The whole is not
-reciprocal, though each lobe is.
+reciprocal, though each lobe but fuzz is.
 
+- **The fuzz**, of its weight, tinted by its colour, lies over everything. What lies below takes
+  one less its weight times its albedo, untinted.
 - **The coat**, of its weight, is a `Specular` reflection of its own roughness, anisotropy and
   index. What lies below takes one less the coat's weight, plus its weight times one less its
   albedo, times the coat's colour and its darkening.
@@ -293,5 +333,9 @@ reciprocal, though each lobe is.
   Its colour is the base colour times its weight, mixed with the subsurface colour by the
   subsurface weight, as subsurface scatters as the diffuse base. It takes one less the specular
   layer's albedo, which is the table's reflection alone plus what the compensation returns.
+- **A thin film**, of its weight, lies over the metal and the opaque specular layer. Its thickness
+  is OpenPBR's in micrometres, and its index is relative to the coat's as the specular layer's is.
+  The layer below the specular layer takes one less its albedo times the film's reflectance over
+  the bare Fresnel factor, at outgoing's cosine and each wavelength.
 
 Specular anisotropy follows the shading frame's tangent, with no rotation.
