@@ -146,7 +146,7 @@ among the options before the record is drafted.
 | [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | done |
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | done |
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | done |
-| [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | open |
+| [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | done |
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | open |
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | open |
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | open |
@@ -582,13 +582,15 @@ compositing nodes of colours with alpha. Emission that a node feeds is an entry 
 **Tests:** a primvar of each class and width reads back at a shading point. A tangent lies along
 the direction `s` increases.
 
-**Done, but for the transform and matrix nodes.** The scene's declarations gain a width, so RI's
+**Done.** The scene's declarations gain a width, so RI's
 `float[2] st` is a primvar of two floats. Every MaterialX material is compiled before the gather
 walks the scene, and the primvars the programs read are numbered after `N`, `Cs`, `tangent` and
 `st`. A cached geometry is made again when those names change. `Surfaces::tangentFrame()` gives a
 point's frame from `tangent` or from `st`, and a layered BSDF is built in it. The program reads
 geompropvalue, texcoord, geomcolor, position, normal, tangent and bitangent, in the geometry's
-own space or the world.
+own space or the world. It holds a matrix in nine or sixteen registers, row after row, and
+compiles the matrix nodes and the transforms between the geometry's space and the world, each
+checked against MaterialX's own matrices.
 
 ### Step 17 — Procedural patterns
 

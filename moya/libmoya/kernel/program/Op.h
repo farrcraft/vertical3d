@@ -13,11 +13,14 @@ namespace v3d::moya::kernel::program {
  * What an instruction computes, each as the MaterialX node of the same name defines it. Each
  * operation up to Not is taken one component at a time, over the components of its output, and
  * an operand of one component is spread over all of them. The rest take their operands whole.
- * Integers and booleans are held as floats, a boolean as one or zero.
+ * Integers and booleans are held as floats, a boolean as one or zero. A matrix is held row after
+ * row, as MaterialX writes it, and a vector is transformed as a row on the matrix's left, so a
+ * translation is the last row.
  *
- * The operations from Primvar on read the shading point. Their first operand is not a register
- * but a number: a primvar's, or kObject or kWorld for the space a direction or a position is
- * given in.
+ * The operations from Primvar on read the shading point. The first operand of Primvar to
+ * Bitangent is not a register but a number: a primvar's, or kObject or kWorld for the space a
+ * direction or a position is given in. The transforms read their vector from the first operand,
+ * and take the spaces they turn it from and to as their second and third.
  **/
 enum class Op : std::uint8_t {
     Copy,        /**< the first operand: dot, constant and convert **/
@@ -68,13 +71,23 @@ enum class Op : std::uint8_t {
     Luminance,   /**< in's dot product with lumacoeffs in each of its colour's components **/
     RgbToHsv,
     HsvToRgb,
-    Extract,     /**< in's component at index, held to its components **/
+    Extract,     /**< in's component at index, or a matrix's row, held to those it has **/
     Combine,     /**< each operand's components, one operand after another **/
+    Product,     /**< the matrix product of in1 and in2 **/
+    Quotient,    /**< in1 times the inverse of in2 **/
+    Transpose,
+    Determinant,
+    Inverse,
+    Transform,   /**< in as a row times mat, a vector2 or vector3 taken with a last one before a larger matrix **/
+    Rows,        /**< a matrix44 of three rows from in1 to in3 and a translation from in4 **/
     Primvar,     /**< the primvar the first operand numbers, or the second operand where there is none **/
     Position,    /**< the shading point's position **/
     Normal,      /**< its shading normal **/
     Tangent,     /**< its tangent frame's tangent **/
-    Bitangent    /**< its tangent frame's bitangent **/
+    Bitangent,   /**< its tangent frame's bitangent **/
+    TransformPoint,  /**< a position from one space to another **/
+    TransformVector, /**< a direction from one space to another **/
+    TransformNormal  /**< a normal from one space to another, of unit length **/
 };
 
 /** The space a geometric operation gives its value in: the geometry's own, or the world. **/

@@ -78,6 +78,10 @@ std::optional<Operation> Operation::of(const std::string & category) {
         { "combine2", { Op::Combine, two } },
         { "combine3", { Op::Combine, { "in1", "in2", "in3" } } },
         { "combine4", { Op::Combine, { "in1", "in2", "in3", "in4" } } },
+        { "transpose", { Op::Transpose, one } },
+        { "determinant", { Op::Determinant, one } },
+        { "invertmatrix", { Op::Inverse, one } },
+        { "transformmatrix", { Op::Transform, { "in", "mat" } } },
     };
     const auto found = operations.find(category);
     if (found == operations.end()) {

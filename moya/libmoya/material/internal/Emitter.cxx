@@ -46,6 +46,12 @@ std::uint32_t widthOf(const std::string & type) {
     if (type == "color4" || type == "vector4") {
         return 4;
     }
+    if (type == "matrix33") {
+        return kernel::program::kMatrix3;
+    }
+    if (type == "matrix44") {
+        return kernel::program::kMatrix4;
+    }
     return 0;
 }
 
@@ -70,6 +76,43 @@ std::vector<float> componentsOf(const mx::ConstValuePtr & value) {
         at = end + 1U;
     }
     return out;
+}
+
+/** Whether a value of a number of components is a matrix. **/
+bool isMatrix(std::uint32_t width) {
+    return width == kernel::program::kMatrix3 || width == kernel::program::kMatrix4;
+}
+
+/** The space a transform names: the world, or the geometry's own for object, model and none. **/
+std::uint32_t spaceOf(const std::string & name) {
+    return name == "world" ? kernel::program::kWorld : kernel::program::kObject;
+}
+
+/** Whether a matrix operation's operands have the shapes it reads. **/
+bool matrixShaped(const Instruction & instruction) {
+    const std::uint32_t width = instruction.width;
+    const std::uint32_t first = instruction.widths[0];
+    const std::uint32_t second = instruction.widths[1];
+    switch (instruction.op) {
+        case Op::Product:
+        case Op::Quotient:
+            return isMatrix(width) && first == width && second == width;
+        case Op::Transpose:
+        case Op::Inverse:
+            return isMatrix(width) && first == width;
+        case Op::Determinant:
+            return width == 1U && isMatrix(first);
+        case Op::Transform: {
+            // a vector2 or vector3 before a matrix33, and a vector3 or vector4 before a matrix44
+            const bool smaller = second == kernel::program::kMatrix3 && (first == 2U || first == 3U);
+            const bool larger = second == kernel::program::kMatrix4 && (first == 3U || first == 4U);
+            return (smaller || larger) && width == first;
+        }
+        case Op::Rows:
+            return width == kernel::program::kMatrix4 && first == 3U && second == 3U && instruction.widths[2] == 3U && instruction.widths[3] == 3U;
+        default:
+            return false;
+    }
 }
 
 /** Whether an instruction's operands have the shapes its operation reads. **/
@@ -98,7 +141,15 @@ bool shaped(const Instruction & instruction, std::size_t operands) {
         case Op::Luminance:
             return first == width && width >= 3U && instruction.widths[1] == 3U;
         case Op::Extract:
-            return width == 1U && instruction.widths[1] == 1U;
+            return instruction.widths[1] == 1U && (width == 1U || (first == kernel::program::kMatrix3 && width == 3U) || (first == kernel::program::kMatrix4 && width == 4U));
+        case Op::Product:
+        case Op::Quotient:
+        case Op::Transpose:
+        case Op::Inverse:
+        case Op::Determinant:
+        case Op::Transform:
+        case Op::Rows:
+            return matrixShaped(instruction);
         case Op::Combine: {
             std::uint32_t sum = 0;
             for (std::size_t i = 0; i < operands; ++i) {
@@ -249,6 +300,21 @@ std::optional<Instruction> Emitter::geometric(const mx::NodePtr & node, std::uin
         out.widths[1] = width;
         return out;
     }
+    const std::map<std::string, Op> transforms { { "transformpoint", Op::TransformPoint }, { "transformvector", Op::TransformVector },
+        { "transformnormal", Op::TransformNormal } };
+    const auto transform = transforms.find(category);
+    if (transform != transforms.end()) {
+        const mx::InputPtr given = node->getNodeDef()->getActiveInput("in");
+        if (width != 3U || !given || widthOf(given->getType()) != 3U) {
+            return std::nullopt;
+        }
+        out.op = transform->second;
+        out.in[0] = operand(node, given);
+        out.widths[0] = 3U;
+        out.in[1] = spaceOf(text("fromspace"));
+        out.in[2] = spaceOf(text("tospace"));
+        return out;
+    }
     const std::map<std::string, Op> directions { { "position", Op::Position }, { "normal", Op::Normal }, { "tangent", Op::Tangent }, { "bitangent", Op::Bitangent } };
     const auto found = directions.find(category);
     if (found == directions.end() || width != 3U) {
@@ -269,7 +335,17 @@ std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     if (reading) {
         return reading;
     }
-    const std::optional<Operation> operation = Operation::of(node->getCategory());
+    std::optional<Operation> operation = Operation::of(node->getCategory());
+    if (node->getCategory() == "creatematrix") {
+        // rows of a matrix: three vector3, four vector4, or three vector3 and a translation
+        std::vector<std::string> rows { "in1", "in2", "in3" };
+        if (def->getActiveInput("in4")) {
+            rows.emplace_back("in4");
+        }
+        const mx::InputPtr first = def->getActiveInput("in1");
+        const bool translated = rows.size() == 4U && first && first->getType() == "vector3";
+        operation = Operation { .op = translated ? Op::Rows : Op::Combine, .inputs = rows };
+    }
     if (!operation || operation->inputs.size() > kernel::program::kMostOperands) {
         return std::nullopt;
     }
@@ -286,6 +362,10 @@ std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     }
     for (std::size_t i = 0; i < declared.size(); ++i) {
         out.widths[i] = widthOf(declared[i]->getType());
+    }
+    // a product or quotient of matrices is the matrix product, not one taken by components
+    if ((out.op == Op::Multiply || out.op == Op::Divide) && isMatrix(out.width) && out.widths[0] == out.width && out.widths[1] == out.width) {
+        out.op = out.op == Op::Multiply ? Op::Product : Op::Quotient;
     }
     if (!shaped(out, declared.size())) {
         return std::nullopt;

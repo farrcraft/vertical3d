@@ -272,6 +272,48 @@ BOOST_AUTO_TEST_CASE(moya_geometric_position_and_normal_are_in_the_space_asked_f
     }
 }
 
+// a position, a direction and a normal are carried between the geometry's space and the world
+BOOST_AUTO_TEST_CASE(moya_geometric_a_vector_is_transformed_between_spaces_test) {
+    // the square turned to face +x, and moved along y
+    const glm::mat4 transform = glm::rotate(glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, 2.0F, 0.0F }), glm::radians(90.0F), glm::vec3 { 0.0F, 1.0F, 0.0F });
+    kernel::geometry::Ray ray;
+    ray.origin = glm::vec3 { 3.0F, 2.2F, -0.1F };
+    ray.direction = glm::vec3 { -1.0F, 0.0F, 0.0F };
+    const scene::Value given = scene::Value::vector(glm::vec3 { 1.0F, 0.0F, 0.0F });
+    const auto spaces = [](const char * from, const char * to) {
+        return std::vector<Given> { { "fromspace", scene::Value::string(from) }, { "tospace", scene::Value::string(to) } };
+    };
+    const auto with = [](std::vector<Given> inputs, const scene::Value & value) {
+        inputs.push_back({ "in", value });
+        return inputs;
+    };
+
+    scene::Scene moving(scene::kinds());
+    const scene::Handle surface = node(moving, "surface", kOpenPbr, {});
+    readInto(moving, node(moving, "point", "ND_transformpoint_vector3", with(spaces("object", "world"), given)), "vector3", 3, surface, 0);
+    readInto(moving, node(moving, "vector", "ND_transformvector_vector3", with(spaces("object", "world"), given)), "vector3", 3, surface, 3);
+    place(moving, square(moving), surface, transform);
+    const std::vector<float> moved = readBack(shadedAt(moving, ray).layers);
+    // x turns to -z, and only the position is moved along y
+    const std::vector<float> expectedMoved { 0.0F, 2.0F, -1.0F, 0.0F, 0.0F, -1.0F };
+    for (std::size_t i = 0; i < moved.size(); ++i) {
+        BOOST_TEST(moved[i] == expectedMoved[i], boost::test_tools::tolerance(1.0e-5F));
+    }
+
+    scene::Scene turning(scene::kinds());
+    const scene::Handle normals = node(turning, "surface", kOpenPbr, {});
+    readInto(turning, node(turning, "out", "ND_transformnormal_vector3", with(spaces("object", "world"), scene::Value::vector(glm::vec3 { 0.0F, 0.0F, 2.0F }))), "vector3",
+        3, normals, 0);
+    readInto(turning, node(turning, "back", "ND_transformnormal_vector3", with(spaces("world", "object"), scene::Value::vector(glm::vec3 { 1.0F, 0.0F, 0.0F }))), "vector3",
+        3, normals, 3);
+    place(turning, square(turning), normals, transform);
+    const std::vector<float> turned = readBack(shadedAt(turning, ray).layers);
+    const std::vector<float> expectedTurned { 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F };
+    for (std::size_t i = 0; i < turned.size(); ++i) {
+        BOOST_TEST(turned[i] == expectedTurned[i], boost::test_tools::tolerance(1.0e-5F));
+    }
+}
+
 // a geometry the cache holds gains a primvar when a material starts to read it
 BOOST_AUTO_TEST_CASE(moya_geometric_a_cached_geometry_gains_a_primvar_a_material_reads_test) {
     scene::Scene scene(scene::kinds());

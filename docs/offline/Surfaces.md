@@ -180,6 +180,15 @@ The gather appends each material's instructions and values after the one before.
   position, normal, tangent and bitangent give the point's, in the world where their `space` is
   `world` and in the geometry's own space otherwise. A primvar's number is its instruction's
   first operand, and a space's is `kObject` or `kWorld`.
+- **Matrices are held row after row**, nine registers for a matrix33 and sixteen for a
+  matrix44, as MaterialX writes them. A vector is transformed as a row on the matrix's left, as
+  MaterialX's own matrices transform it, so a translation is the last row. multiply and divide of
+  two matrices are the matrix product, and the product with the second's inverse. The program
+  also compiles transpose, determinant, invertmatrix, creatematrix, transformmatrix and extract,
+  which gives a matrix's row, and the componentwise nodes on matrices.
+- **transformpoint, transformvector and transformnormal** carry a vector between the geometry's
+  own space and the world, by the shading point's transformation. A normal moves by the inverse
+  transpose and is of unit length. `object`, `model` and an empty space are the geometry's own.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
 - **An emission input that a node feeds gives that default too**, because a material's light is

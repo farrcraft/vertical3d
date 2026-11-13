@@ -31,6 +31,7 @@
 #include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
+#include <MaterialXCore/Types.h>
 
 #include <algorithm>
 #include <cmath>
@@ -53,6 +54,7 @@ namespace material = v3d::moya::material;
 namespace program = v3d::moya::kernel::program;
 namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
+namespace mx = MaterialX;
 using kernel::surface::OpenPbr;
 
 constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
@@ -65,7 +67,9 @@ struct Given {
 };
 
 /** The float inputs of open_pbr_surface that a test reads up to four components through. **/
-constexpr const char * kReadThrough[4] = { "base_weight", "base_diffuse_roughness", "base_metalness", "specular_weight" };
+constexpr const char * kReadThrough[16] = { "base_weight", "base_diffuse_roughness", "base_metalness", "specular_weight", "specular_roughness",
+"specular_roughness_anisotropy", "specular_ior", "transmission_weight", "subsurface_weight", "coat_weight", "coat_roughness", "coat_roughness_anisotropy",
+"coat_ior", "coat_darkening", "fuzz_weight", "fuzz_roughness" };
 
 /** A node's definition, its output's type, its inputs, and what MaterialX defines it to give. **/
 struct Case {
@@ -128,7 +132,9 @@ std::size_t mentioning(const std::vector<std::string> & reports, const std::stri
 }
 
 float readBack(const OpenPbr & layers, std::size_t component) {
-    const float read[4] = { layers.baseWeight, layers.baseDiffuseRoughness, layers.baseMetalness, layers.specularWeight };
+    const float read[16] = { layers.baseWeight, layers.baseDiffuseRoughness, layers.baseMetalness, layers.specularWeight, layers.specularRoughness,
+        layers.specularAnisotropy, layers.specularIor, layers.transmissionWeight, layers.subsurfaceWeight, layers.coatWeight, layers.coatRoughness,
+        layers.coatAnisotropy, layers.coatIor, layers.coatDarkening, layers.fuzzWeight, layers.fuzzRoughness };
     return read[component];
 }
 
@@ -151,6 +157,21 @@ std::vector<float> outputOf(const char * definition, const std::string & type, c
         const scene::Handle converted = node(scene, "converted", "ND_convert_" + type + "_float", {});
         connect(scene, tested, converted, "in");
         connect(scene, converted, surface, kReadThrough[0]);
+    } else if (type == "matrix33" || type == "matrix44") {
+        // each row, then each component of the row
+        const std::size_t size = type == "matrix33" ? 3U : 4U;
+        const std::string rowType = size == 3U ? "vector3" : "vector4";
+        components = size * size;
+        for (std::size_t row = 0; row < size; ++row) {
+            const scene::Handle rowOf = node(scene, "row" + std::to_string(row), "ND_extract_" + type, { { "index", scene::Value::integer(static_cast<std::int32_t>(row)) } });
+            connect(scene, tested, rowOf, "in");
+            for (std::size_t column = 0; column < size; ++column) {
+                const scene::Handle extract = node(scene, "extract" + std::to_string((row * size) + column), "ND_extract_" + rowType,
+                    { { "index", scene::Value::integer(static_cast<std::int32_t>(column)) } });
+                connect(scene, rowOf, extract, "in");
+                connect(scene, extract, surface, kReadThrough[(row * size) + column]);
+            }
+        }
     } else {
         components = type == "vector2" ? 2U : 4U;
         if (type == "vector3") {
@@ -276,6 +297,68 @@ BOOST_AUTO_TEST_CASE(moya_program_channel_nodes_give_what_materialx_defines_test
         { "ND_combine2_vector4VF", "vector4", { { "in1", vector(1.0F, 2.0F, 3.0F) }, { "in2", number(4.0F) } }, { 1.0F, 2.0F, 3.0F, 4.0F } },
         { "ND_combine4_color4", "color4", { { "in1", number(0.1F) }, { "in2", number(0.2F) }, { "in3", number(0.3F) }, { "in4", number(0.4F) } }, { 0.1F, 0.2F, 0.3F, 0.4F } },
     });
+}
+
+/** A MaterialX matrix's elements, row after row, as a program holds them. **/
+std::vector<float> elementsOf(const mx::Matrix44 & matrix) {
+    std::vector<float> out;
+    for (std::size_t row = 0; row < 4U; ++row) {
+        for (std::size_t column = 0; column < 4U; ++column) {
+            out.push_back(matrix[row][column]);
+        }
+    }
+    return out;
+}
+
+std::vector<float> elementsOf(const mx::Matrix33 & matrix) {
+    std::vector<float> out;
+    for (std::size_t row = 0; row < 3U; ++row) {
+        for (std::size_t column = 0; column < 3U; ++column) {
+            out.push_back(matrix[row][column]);
+        }
+    }
+    return out;
+}
+
+// the matrix nodes give what MaterialX's own matrices give: its product, quotient, inverse,
+// transpose and determinant, and a vector transformed as a row on the matrix's left
+BOOST_AUTO_TEST_CASE(moya_program_matrix_nodes_give_what_materialx_gives_test) {
+    // a turn, a scale and a translation, and a second matrix of no symmetry
+    const mx::Matrix44 first = mx::Matrix44::createRotationZ(0.7F) * mx::Matrix44::createScale(mx::Vector3(1.5F, 0.5F, 2.0F)) *
+        mx::Matrix44::createTranslation(mx::Vector3(1.0F, -2.0F, 3.0F));
+    const mx::Matrix44 second(2.0F, 0.1F, 0.0F, 0.0F, 0.3F, 1.0F, 0.2F, 0.0F, 0.0F, 0.4F, 3.0F, 0.0F, 0.5F, 0.6F, 0.7F, 1.0F);
+    const mx::Matrix33 flat = mx::Matrix33::createRotation(0.4F) * mx::Matrix33::createScale(mx::Vector2(2.0F, 3.0F)) *
+        mx::Matrix33::createTranslation(mx::Vector2(0.5F, -1.0F));
+    const mx::Matrix33 other(1.0F, 0.2F, 0.0F, 0.1F, 2.0F, 0.3F, 0.4F, 0.0F, 1.5F);
+    const auto value = [](const std::vector<float> & elements) {
+        return scene::Value::floats(elements);
+    };
+    const mx::Vector3 point(0.3F, -0.6F, 0.9F);
+    const mx::Vector3 placed = first.transformPoint(point);
+    const mx::Vector3 turned = first.transformVector(point);
+    const mx::Vector2 spot(0.25F, 0.75F);
+    const mx::Vector2 moved = flat.transformPoint(spot);
+    const mx::Vector3 viaFlat = flat.multiply(point);
+    check({
+        { "ND_multiply_matrix44", "matrix44", { { "in1", value(elementsOf(first)) }, { "in2", value(elementsOf(second)) } }, elementsOf(first * second) },
+        { "ND_divide_matrix44", "matrix44", { { "in1", value(elementsOf(first)) }, { "in2", value(elementsOf(second)) } }, elementsOf(first * second.getInverse()) },
+        { "ND_multiply_matrix33", "matrix33", { { "in1", value(elementsOf(flat)) }, { "in2", value(elementsOf(other)) } }, elementsOf(flat * other) },
+        { "ND_invertmatrix_matrix44", "matrix44", { { "in", value(elementsOf(first)) } }, elementsOf(first.getInverse()) },
+        { "ND_transpose_matrix33", "matrix33", { { "in", value(elementsOf(other)) } }, elementsOf(other.getTranspose()) },
+        { "ND_determinant_matrix44", "float", { { "in", value(elementsOf(second)) } }, { second.getDeterminant() } },
+        { "ND_add_matrix33", "matrix33", { { "in1", value(elementsOf(flat)) }, { "in2", value(elementsOf(other)) } }, elementsOf(flat + other) },
+        { "ND_transformmatrix_vector3M4", "vector3", { { "in", vector(point[0], point[1], point[2]) }, { "mat", value(elementsOf(first)) } },
+            { placed[0], placed[1], placed[2] } },
+        { "ND_transformmatrix_vector2M3", "vector2", { { "in", scene::Value::floats({ spot[0], spot[1] }) }, { "mat", value(elementsOf(flat)) } },
+            { moved[0], moved[1] } },
+        { "ND_transformmatrix_vector3", "vector3", { { "in", vector(point[0], point[1], point[2]) }, { "mat", value(elementsOf(flat)) } },
+            { viaFlat[0], viaFlat[1], viaFlat[2] } },
+        { "ND_creatematrix_vector3_matrix44", "matrix44",
+            { { "in1", vector(1.0F, 2.0F, 3.0F) }, { "in2", vector(4.0F, 5.0F, 6.0F) }, { "in3", vector(7.0F, 8.0F, 9.0F) }, { "in4", vector(0.5F, 0.6F, 0.7F) } },
+            { 1.0F, 2.0F, 3.0F, 0.0F, 4.0F, 5.0F, 6.0F, 0.0F, 7.0F, 8.0F, 9.0F, 0.0F, 0.5F, 0.6F, 0.7F, 1.0F } },
+    });
+    // a direction ignores the translation a position takes
+    BOOST_TEST(turned[0] != placed[0]);
 }
 
 // a node feeding two inputs is compiled once, and a constant material runs no instructions

@@ -26,8 +26,12 @@
 
 namespace v3d::moya::kernel::program {
 
-/** The most components a value holds. **/
-inline constexpr std::uint32_t kMostComponents = 4;
+/** The most components a value holds: a matrix44's. **/
+inline constexpr std::uint32_t kMostComponents = 16;
+
+/** The components of a matrix33 and of a matrix44. **/
+inline constexpr std::uint32_t kMatrix3 = 9;
+inline constexpr std::uint32_t kMatrix4 = 16;
 
 /** How close to zero burn's fg, and dodge's one less fg, may come before it gives zero. **/
 inline constexpr float kLeastDivisor = 1.0e-8F;
@@ -214,10 +218,100 @@ MOYA_KERNEL inline void rgbOf(const float * hsv, float * out) {
     out[2] = sectors[chosen][2];
 }
 
-/** The operation an instruction names that takes its operands whole, into out. **/
-MOYA_KERNEL inline void whole(const Instruction & instruction, const float * registers, float * out) {
-    const float * first = registers + instruction.in[0];
-    const float * second = registers + instruction.in[1];
+/**
+ * A matrix's registers, row after row, as glm holds a matrix, column after column. glm therefore
+ * holds its transpose, and a product of two is the product of their transposes in the other
+ * order. An inverse, a transpose and a determinant are the same either way round.
+ **/
+MOYA_KERNEL inline glm::mat4 loaded4(const float * registers) {
+    glm::mat4 out { 1.0F };
+    for (std::uint32_t i = 0; i < kMatrix4; ++i) {
+        out[static_cast<glm::length_t>(i / 4U)][static_cast<glm::length_t>(i % 4U)] = registers[i];
+    }
+    return out;
+}
+
+MOYA_KERNEL inline glm::mat3 loaded3(const float * registers) {
+    glm::mat3 out { 1.0F };
+    for (std::uint32_t i = 0; i < kMatrix3; ++i) {
+        out[static_cast<glm::length_t>(i / 3U)][static_cast<glm::length_t>(i % 3U)] = registers[i];
+    }
+    return out;
+}
+
+MOYA_KERNEL inline void stored(const glm::mat4 & matrix, float * out) {
+    for (std::uint32_t i = 0; i < kMatrix4; ++i) {
+        out[i] = matrix[static_cast<glm::length_t>(i / 4U)][static_cast<glm::length_t>(i % 4U)];
+    }
+}
+
+MOYA_KERNEL inline void stored(const glm::mat3 & matrix, float * out) {
+    for (std::uint32_t i = 0; i < kMatrix3; ++i) {
+        out[i] = matrix[static_cast<glm::length_t>(i / 3U)][static_cast<glm::length_t>(i % 3U)];
+    }
+}
+
+/** A matrix operation of matrix33 or matrix44 operands, by the components of the first. **/
+MOYA_KERNEL inline void matrixOf(const Instruction & instruction, const float * first, const float * second, float * out) {
+    const bool four = instruction.widths[0] == kMatrix4;
+    switch (instruction.op) {
+        case Op::Product:
+            if (four) {
+                stored(loaded4(second) * loaded4(first), out);
+            } else {
+                stored(loaded3(second) * loaded3(first), out);
+            }
+            return;
+        case Op::Quotient:
+            if (four) {
+                stored(glm::inverse(loaded4(second)) * loaded4(first), out);
+            } else {
+                stored(glm::inverse(loaded3(second)) * loaded3(first), out);
+            }
+            return;
+        case Op::Transpose:
+            if (four) {
+                stored(glm::transpose(loaded4(first)), out);
+            } else {
+                stored(glm::transpose(loaded3(first)), out);
+            }
+            return;
+        case Op::Determinant:
+            out[0] = four ? glm::determinant(loaded4(first)) : glm::determinant(loaded3(first));
+            return;
+        case Op::Inverse:
+            if (four) {
+                stored(glm::inverse(loaded4(first)), out);
+            } else {
+                stored(glm::inverse(loaded3(first)), out);
+            }
+            return;
+        default:
+            return;
+    }
+}
+
+/** A vector as a row times a matrix, taken with a last component of one before a larger matrix. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the vector, then the matrix
+MOYA_KERNEL inline void transformed(const Instruction & instruction, const float * vector, const float * matrix, float * out) {
+    const std::uint32_t width = instruction.widths[0];
+    if (instruction.widths[1] == kMatrix4) {
+        const glm::vec4 row { vector[0], vector[1], width > 2U ? vector[2] : 0.0F, width > 3U ? vector[3] : 1.0F };
+        const glm::vec4 turned = loaded4(matrix) * row;
+        for (std::uint32_t component = 0; component < width; ++component) {
+            out[component] = turned[static_cast<glm::length_t>(component)];
+        }
+        return;
+    }
+    const glm::vec3 row { vector[0], vector[1], width > 2U ? vector[2] : 1.0F };
+    const glm::vec3 turned = loaded3(matrix) * row;
+    for (std::uint32_t component = 0; component < width; ++component) {
+        out[component] = turned[static_cast<glm::length_t>(component)];
+    }
+}
+
+/** A vector operation: normalize, magnitude, dotproduct, crossproduct, luminance or a hue's. **/
+MOYA_KERNEL inline void vectorOf(const Instruction & instruction, const float * first, const float * second, float * out) {
     const std::uint32_t width = instruction.widths[0];
     switch (instruction.op) {
         case Op::Normalize:
@@ -257,19 +351,42 @@ MOYA_KERNEL inline void whole(const Instruction & instruction, const float * reg
             return;
         }
         case Op::RgbToHsv:
-        case Op::HsvToRgb:
-            if (instruction.op == Op::RgbToHsv) {
-                hsvOf(first, out);
-            } else {
-                rgbOf(first, out);
-            }
+            hsvOf(first, out);
             out[3] = width > 3U ? first[3] : 0.0F;
             return;
+        case Op::HsvToRgb:
+            rgbOf(first, out);
+            out[3] = width > 3U ? first[3] : 0.0F;
+            return;
+        default:
+            return;
+    }
+}
+
+/** A channel operation: extract, combine, or creatematrix's rows and translation. **/
+MOYA_KERNEL inline void channelsOf(const Instruction & instruction, const float * registers, float * out) {
+    const float * first = registers + instruction.in[0];
+    switch (instruction.op) {
         case Op::Extract: {
-            const float index = std::fmin(std::fmax(std::floor(second[0]), 0.0F), static_cast<float>(width) - 1.0F);
-            out[0] = first[static_cast<std::uint32_t>(index)];
+            // a matrix gives its row at the index, and anything else its component
+            const std::uint32_t size = instruction.width;
+            const std::uint32_t rows = instruction.widths[0] / size;
+            const float held = std::fmin(std::fmax(std::floor(registers[instruction.in[1]]), 0.0F), static_cast<float>(rows) - 1.0F);
+            const auto index = static_cast<std::uint32_t>(held);  // checked: held to [0, rows - 1] above
+            for (std::uint32_t component = 0; component < size; ++component) {
+                out[component] = first[(index * size) + component];
+            }
             return;
         }
+        case Op::Rows:
+            // three rows, each with a last zero, and a translation with a last one
+            for (std::uint32_t row = 0; row < 4U; ++row) {
+                for (std::uint32_t column = 0; column < 3U; ++column) {
+                    out[(row * 4U) + column] = registers[instruction.in[row] + column];
+                }
+                out[(row * 4U) + 3U] = row == 3U ? 1.0F : 0.0F;
+            }
+            return;
         case Op::Combine: {
             std::uint32_t at = 0;
             for (std::uint32_t i = 0; i < kMostOperands; ++i) {
@@ -280,6 +397,32 @@ MOYA_KERNEL inline void whole(const Instruction & instruction, const float * reg
             return;
         }
         default:
+            return;
+    }
+}
+
+/** The operation an instruction names that takes its operands whole, into out. **/
+MOYA_KERNEL inline void whole(const Instruction & instruction, const float * registers, float * out) {
+    const float * first = registers + instruction.in[0];
+    const float * second = registers + instruction.in[1];
+    switch (instruction.op) {
+        case Op::Extract:
+        case Op::Rows:
+        case Op::Combine:
+            channelsOf(instruction, registers, out);
+            return;
+        case Op::Product:
+        case Op::Quotient:
+        case Op::Transpose:
+        case Op::Determinant:
+        case Op::Inverse:
+            matrixOf(instruction, first, second, out);
+            return;
+        case Op::Transform:
+            transformed(instruction, first, second, out);
+            return;
+        default:
+            vectorOf(instruction, first, second, out);
             return;
     }
 }
@@ -295,12 +438,38 @@ MOYA_KERNEL inline glm::vec3 directionIn(const surface::ShadingPoint & point, co
     return glm::dot(own, own) > 0.0F ? glm::normalize(own) : own;
 }
 
+/**
+ * A vector at a shading point from one space into another: a position, a direction, or a normal,
+ * which moves by the inverse transpose and is of unit length.
+ **/
+MOYA_KERNEL inline glm::vec3 between(const surface::ShadingPoint & point, Op op, const glm::vec3 & given, std::uint32_t from, std::uint32_t to) {
+    if (from == to) {
+        return given;
+    }
+    const glm::mat4 toWorld = from == kWorld ? glm::inverse(point.toWorld) : point.toWorld;
+    if (op == Op::TransformPoint) {
+        return glm::vec3(toWorld * glm::vec4(given, 1.0F));
+    }
+    if (op == Op::TransformVector) {
+        return glm::mat3(toWorld) * given;
+    }
+    const glm::vec3 turned = glm::transpose(glm::inverse(glm::mat3(toWorld))) * given;
+    return glm::dot(turned, turned) > 0.0F ? glm::normalize(turned) : turned;
+}
+
 /** An operation that reads the shading point, into out. **/
 MOYA_KERNEL inline void geometric(const Instruction & instruction, const float * registers, const surface::Surfaces & surfaces,
     const surface::ShadingPoint & point, float * out) {
     const std::uint32_t chosen = instruction.in[0];
     glm::vec3 value { 0.0F };
     switch (instruction.op) {
+        case Op::TransformPoint:
+        case Op::TransformVector:
+        case Op::TransformNormal: {
+            const float * given = registers + chosen;
+            value = between(point, instruction.op, glm::vec3 { given[0], given[1], given[2] }, instruction.in[1], instruction.in[2]);
+            break;
+        }
         case Op::Primvar:
             if (!surfaces.read(point, chosen, out, instruction.width)) {
                 for (std::uint32_t component = 0; component < instruction.width && component < kMostComponents; ++component) {
