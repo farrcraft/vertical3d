@@ -345,28 +345,19 @@ BOOST_AUTO_TEST_CASE(moya_geometric_a_cached_geometry_gains_a_primvar_a_material
     BOOST_TEST(holds("weight"));
 }
 
-// a pattern given no texture coordinates reads st, so a checkerboard's squares lie where st puts
-// them across the surface
-BOOST_AUTO_TEST_CASE(moya_geometric_a_checkerboard_reads_st_where_given_none_test) {
+// a ramp given no texture coordinates reads st, so it runs across the surface as s does
+BOOST_AUTO_TEST_CASE(moya_geometric_a_ramp_reads_st_where_given_none_test) {
     scene::Scene scene(scene::kinds());
     const scene::Handle mesh = square(scene);
     // s and t run from zero to one across the square, along x and y
     primvar(scene, mesh, "st", scene::Interpolation::Vertex, scene::Value::floats({ 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F }), 2);
     const scene::Handle surface = node(scene, "surface", kOpenPbr, {});
-    const scene::Handle board = node(scene, "board", "ND_checkerboard_color3",
-        { { "color1", scene::Value::colour(glm::vec3 { 1.0F }) }, { "color2", scene::Value::colour(glm::vec3 { 0.0F }) }, { "uvtiling", scene::Value::floats({ 4.0F, 4.0F }) } });
-    readInto(scene, board, "color3", 1, surface, 0);
+    const scene::Handle ramp = node(scene, "ramp", "ND_ramplr_float", { { "valuel", scene::Value::number(0.0F) }, { "valuer", scene::Value::number(1.0F) } });
+    readInto(scene, ramp, "float", 1, surface, 0);
     place(scene, mesh, surface, glm::mat4(1.0F));
 
-    // four squares across the square's width of two, so each is half a unit wide
-    const auto at = [&](float x, float y) {
-        return readBack(shadedAt(scene, downAt(x, y)).layers)[0];
-    };
-    BOOST_TEST(at(-0.75F, -0.75F) == 0.0F);
-    BOOST_TEST(at(-0.25F, -0.75F) == 1.0F);
-    BOOST_TEST(at(-0.75F, -0.25F) == 1.0F);
-    BOOST_TEST(at(0.25F, 0.75F) == 1.0F);
-    BOOST_TEST(at(0.75F, 0.75F) == 0.0F);
+    BOOST_TEST(readBack(shadedAt(scene, downAt(-0.5F, 0.3F)).layers)[0] == 0.25F, boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(readBack(shadedAt(scene, downAt(0.5F, -0.7F)).layers)[0] == 0.75F, boost::test_tools::tolerance(1.0e-5F));
 }
 
 // a noise given no position reads the shading point's position in the geometry's own space

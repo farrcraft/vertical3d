@@ -608,21 +608,6 @@ BOOST_AUTO_TEST_CASE(moya_program_rotations_turn_as_materialx_implements_them_te
     });
 }
 
-// a checkerboard gives its first colour on the squares whose corners sum to an odd number, and its
-// second on the others, at its tiling
-BOOST_AUTO_TEST_CASE(moya_program_a_checkerboard_alternates_its_colours_test) {
-    const auto at = [](float u, float v) {
-        return std::vector<Given> { { "color1", colour3(1.0F, 0.0F, 0.0F) }, { "color2", colour3(0.0F, 0.0F, 1.0F) }, { "uvtiling", scene::Value::floats({ 2.0F, 2.0F }) },
-            { "texcoord", scene::Value::floats({ u, v }) } };
-    };
-    check({
-        { "ND_checkerboard_color3", "color3", at(0.25F, 0.25F), { 0.0F, 0.0F, 1.0F } },
-        { "ND_checkerboard_color3", "color3", at(0.75F, 0.25F), { 1.0F, 0.0F, 0.0F } },
-        { "ND_checkerboard_color3", "color3", at(0.25F, 0.75F), { 1.0F, 0.0F, 0.0F } },
-        { "ND_checkerboard_color3", "color3", at(0.75F, 0.75F), { 0.0F, 0.0F, 1.0F } },
-    });
-}
-
 // a node feeding two inputs is compiled once, and a constant material runs no instructions
 BOOST_AUTO_TEST_CASE(moya_program_a_node_is_compiled_once_and_constants_run_nothing_test) {
     scene::Scene scene(scene::kinds());

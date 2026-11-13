@@ -613,8 +613,8 @@ The code is written from that page. `ProgramTest` checks every noise against wha
 MaterialX's OSL implementation, rendered through Cycles, at eight points. MaterialX 1.39.5's GLSL
 and OSL turn `rotate2d` and `rotate3d` the same way, clockwise, against the specification's
 words. moya follows the implementations, so `place2d` turns textures as other renderers do. An
-input given no value reads the geometric property its definition names, so a checkerboard with no
-texture coordinates reads `st`.
+input of a node the program runs given no value reads the geometric property its definition
+names, so a ramp with no texture coordinates reads `st`.
 
 ### Step 18 — A ray's footprint
 
