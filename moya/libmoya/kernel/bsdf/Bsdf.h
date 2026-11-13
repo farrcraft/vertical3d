@@ -199,6 +199,7 @@ struct Bsdf {
         }
         out.incoming = frame.toWorld(drawn);
         out.lobe = closure.lobe(drawn.z * local.z < 0.0F);
+        out.roughness = closure.spread();
         if (agrees(outgoing, out.incoming, local, drawn)) {
             out.value = valueAt(local, drawn);
             out.density = densityAt(local, drawn);

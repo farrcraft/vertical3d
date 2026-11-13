@@ -13,6 +13,8 @@
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 
+#include <cmath>
+
 #include <glm/vec2.hpp>
 
 namespace v3d::moya::kernel::bsdf {
@@ -72,6 +74,29 @@ struct Closure {
                 break;
         }
         return false;
+    }
+
+    /**
+     * How rough a lobe it is, to widen a ray's cone by: its GGX alpha, the geometric mean of an
+     * anisotropic lobe's two, one for a diffuse lobe, and zero for a singular one.
+     **/
+    MOYA_KERNEL float spread() const {
+        if (singular()) {
+            return 0.0F;
+        }
+        switch (model) {
+            case Model::Conductor:
+            case Model::Specular:
+            case Model::Dielectric:
+                return std::sqrt(alpha.x * alpha.y);
+            case Model::Mirror:
+                return 0.0F;
+            case Model::Diffuse:
+            case Model::OrenNayar:
+            case Model::Fuzz:
+                break;
+        }
+        return 1.0F;
     }
 
     /** The kind of bounce its sample makes: one that crosses the surface is a transmission. **/

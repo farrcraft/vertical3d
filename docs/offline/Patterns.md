@@ -130,8 +130,8 @@ Worley noise is Steven Worley's cellular noise, from *A Cellular Texture Basis F
 - **`splitlr`** gives `valuel` where u is below `center`, and `valuer` where it is not.
   `splittb` gives `valueb` where v is below `center`, and `valuet` where it is not.
 
-MaterialX's implementations smooth a split's step over the width of a pixel. A shading point has
-no footprint, so moya's step is sharp.
+MaterialX's implementations smooth a split's step over a pixel, by the screen derivatives of
+the coordinate the split reads. The program carries no derivatives, so moya's step is sharp.
 
 ## Rotations
 

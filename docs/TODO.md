@@ -91,6 +91,13 @@ feeds gives that node's default and is reported. Camera rays see the light's rad
 program's. Emission that varies needs the light to take its radiance from the program at each
 point it is seen, and its triangles' power from the program's mean over each.
 
+[] **A split's step is sharp.** `splitlr` and `splittb` give one value below their center and
+the other from it on. MaterialX's implementations smooth the step over a pixel, by the screen
+derivatives of the coordinate the split reads. The coordinate is any value a node gives, so the
+shading point's footprint in `st` measures it only when the split reads `st` itself. Smoothing
+the step needs the program to carry each value's change across the footprint, or to run again
+at the footprint's edges. [Patterns.md](offline/Patterns.md#ramps-and-splits) states the rule.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the

@@ -38,6 +38,9 @@ time. The time is held to the shutter, as a traversal holds a ray's.
 - **`toWorld` and `time`** are the transformation from the geometry's own space into the world,
   and the time it was composed at, which a program's geometric nodes read.
 - **`front`** says whether the ray met the side the geometric normal faces.
+- **`footprint`** is where the path's cone met the surface, as
+  [Integrator.md](Integrator.md#a-rays-footprint) says. A point no path reached has a footprint of
+  no area.
 - **`weights`** are the triangle's corners' weights at the position, which a primvar read at its
   corners is interpolated by.
 - **`face`** is the face of its mesh, the curve of its segment, the point it met, or 0 for a
@@ -57,6 +60,18 @@ tangent and bitangent nodes read.
 - **The bitangent** is the normal's cross product with the tangent, turned to the side `t`
   increases on.
 - **A point with neither keeps its frame**, as does one where the tangent lies along the normal.
+
+### The footprint
+
+- **`Surfaces::textureFootprint(point)`** gives the footprint's two axes as changes in `s` and
+  `t`. Each axis is written as a sum of the directions the point moves in as `s` and as `t`
+  increase, the nearest such sum, on a triangle whose corners each hold `st`. A point with no
+  `st` that varies across its triangle gives a footprint of no area.
+- **`Surfaces::curvature(point)`** gives a triangle's mean curvature at the point, as one over a
+  radius, from the normals its corners hold. It averages how the normal turns along the frame's
+  tangent and bitangent. It is above zero where the surface is convex on the side the ray met,
+  and below where it is concave. A triangle without normals at its corners is flat, and so is
+  any other primitive.
 
 ## Leaving a smooth surface
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Cone.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
@@ -20,7 +21,8 @@
  * Stage code reaches a field through MOYA_PATH, which each layout defines, so it reads either.
  *
  * - pixel and sample name the camera sample the path is for.
- * - ray is the ray the path traces next.
+ * - ray is the ray the path traces next, and cone how wide the area its camera sample covers is
+ *   along that ray.
  * - throughput is what the path carries back to the camera from where it is.
  * - radiance is the light it has gathered so far.
  * - wavelengths are the four it carries, and weight is its pixel filter's weight.
@@ -34,6 +36,7 @@
     FIELD(glm::uvec2, pixel)                                   \
     FIELD(std::uint32_t, sample)                               \
     FIELD(::v3d::moya::kernel::geometry::Ray, ray)             \
+    FIELD(::v3d::moya::kernel::geometry::Cone, cone)           \
     FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, throughput) \
     FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, radiance)   \
     FIELD(::v3d::moya::kernel::spectrum::SampledWavelengths, wavelengths) \

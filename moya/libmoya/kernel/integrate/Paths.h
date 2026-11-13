@@ -34,6 +34,7 @@
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
+#include <moya/libmoya/kernel/surface/Footprint.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
 
@@ -79,7 +80,8 @@ struct Paths {
 /**
  * The generate stage: a camera sample's state. Its place in the pixel is drawn from the pixel
  * filter, with the filter's weight, and its point on the lens, its time and its wavelengths are
- * drawn after it. It carries a throughput of one and has gathered no light.
+ * drawn after it. It carries a throughput of one and has gathered no light, and its cone is the
+ * camera's for its ray.
  **/
 template <geometry::Traversal T>
 MOYA_KERNEL void generate(const Paths<T> & paths, const glm::uvec2 & pixel, std::uint32_t sample, PathState & state) {
@@ -88,6 +90,7 @@ MOYA_KERNEL void generate(const Paths<T> & paths, const glm::uvec2 & pixel, std:
     MOYA_PATH(state, pixel) = pixel;
     MOYA_PATH(state, sample) = sample;
     MOYA_PATH(state, ray) = paths.camera.ray(raster, paths.sampler.get2D(pixel, sample, kLens), paths.sampler.get1D(pixel, sample, kTime));
+    MOYA_PATH(state, cone) = paths.camera.cone(MOYA_PATH(state, ray));
     MOYA_PATH(state, wavelengths) = spectrum::SampledWavelengths::visible(paths.sampler.get1D(pixel, sample, kWavelengths));
     MOYA_PATH(state, weight) = placed.weight;
     MOYA_PATH(state, throughput) = spectrum::SampledSpectrum(1.0F);
@@ -349,6 +352,9 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
  * its density. A specular sample's value holds no cosine, so it is multiplied by its value over
  * its density alone, and the path marks the sample specular.
  *
+ * The cone that leaves starts as wide as the footprint it arrived with, and spreads as the
+ * surface's curvature and the sampled lobe's roughness spread it.
+ *
  * From the settings' roulette depth on, a path survives with the chance of its largest throughput,
  * held to one, and a survivor's throughput is divided by that chance.
  **/
@@ -375,6 +381,9 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
     MOYA_PATH(state, specular) = drawn.specular ? 1U : 0U;
     MOYA_PATH(state, from) = point.position;
     MOYA_PATH(state, normal) = point.shading;
+    const bool crossed = drawn.lobe == bsdf::Lobe::Transmission;
+    MOYA_PATH(state, cone) =
+        surface::bounced(MOYA_PATH(state, cone), point.footprint.width(), crossed ? 0.0F : paths.surfaces.curvature(point), drawn.roughness, crossed);
     MOYA_PATH(state, bounces) = bounce + 1U;
     if (bounce + 1U >= paths.settings.rouletteDepth) {
         const float survival = std::fmin(1.0F, MOYA_PATH(state, throughput).maximum());
@@ -458,7 +467,8 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geom
 
 /**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
- * accumulate stages run back to back. At each shading point a path gathers its share of what
+ * accumulate stages run back to back. Each shading point holds the footprint the path's cone
+ * makes there. At each shading point a path gathers its share of what
  * each mesh light emits there, a mesh light's and its material's both. It then takes a light
  * sample of its set of linked lights, before it scatters. A path that leaves the scene gathers
  * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
@@ -483,10 +493,13 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
             }
             return;
         }
-        const surface::ShadingPoint point = paths.surfaces.at(hit, ray);
+        surface::ShadingPoint point = paths.surfaces.at(hit, ray);
         if (!point.found()) {
             return;
         }
+        // a hit's distance is in the ray's lengths, and the cone's in world units
+        const float length = glm::length(ray.direction);
+        point.footprint = surface::footprintOf(MOYA_PATH(state, cone).widthAt(hit.distance * length), ray.direction / length, point.shading);
         for (std::uint32_t glowing = paths.lights.emitting(hit); glowing != geometry::kNoPrimitive && point.front;
              glowing = paths.lights.emitting(hit, glowing)) {
             const float share = metShare(paths, glowing, hit.primitive, paths.surfaces.held(hit.time), point.position, state);

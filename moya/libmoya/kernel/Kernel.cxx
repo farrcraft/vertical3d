@@ -34,6 +34,7 @@
 #include <moya/libmoya/kernel/film/Pixels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Between.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/BruteForce.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/geometry/Cone.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Hit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Key.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Motion.h>  // IWYU pragma: keep
@@ -100,6 +101,7 @@
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Visible.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/surface/Footprint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Frame.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Geometry.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Instance.h>  // IWYU pragma: keep
@@ -109,5 +111,6 @@
 #include <moya/libmoya/kernel/surface/Primvar.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Surfaces.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/surface/TextureFootprint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitChannels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitView.h>  // IWYU pragma: keep

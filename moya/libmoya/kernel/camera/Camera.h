@@ -5,11 +5,13 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/geometry/Cone.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cmath>
 
+#include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -83,6 +85,31 @@ struct Camera {
         out.start = near;
         out.end = far;
         out.time = open + (time * (close - open));
+        return out;
+    }
+
+    /**
+     * The cone of a ray this camera gave, as wide as a pixel where the ray meets the screen's
+     * depth. A pinhole's cone starts at no width and spreads by a pixel's width over a unit of
+     * depth. A lens's starts as wide as the lens and narrows to a pixel's width at the depth in
+     * focus. An orthographic camera's is a pixel wide and does not spread. A pixel's width is the
+     * screen window's over the image's width in pixels.
+     **/
+    MOYA_KERNEL geometry::Cone cone(const geometry::Ray & ray) const {
+        const float scale = glm::length(glm::vec3(toWorld[0]));
+        const float pixel = (screen.y - screen.x) / resolution.x * scale;
+        geometry::Cone out;
+        if (!perspective) {
+            out.width = pixel;
+            return out;
+        }
+        // a direction has a depth of one in camera space, so its length is distance per depth
+        const float length = glm::length(ray.direction);
+        out.spread = pixel * tanHalfFov / length;
+        if (lensRadius > 0.0F) {
+            out.width = 2.0F * lensRadius * scale;
+            out.spread -= out.width / (focalDistance * length);
+        }
         return out;
     }
 

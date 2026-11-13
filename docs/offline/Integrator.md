@@ -17,11 +17,11 @@ A path's state is what one stage hands the next. Its fields are declared once, i
   the same stage reads either.
 - **A field is added to the list**, and every layout gains it.
 
-The state holds the pixel and the sample, the ray traced next, the throughput and the light
-gathered so far. It also holds the wavelengths, the pixel filter's weight, and the count of
-bounces in all and of each kind. Last, it holds the last BSDF sample's density and whether it was
-specular, and the shading point it was drawn at with its shading normal and its set of linked
-lights.
+The state holds the pixel and the sample, the ray traced next and its cone, the throughput and
+the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
+count of bounces in all and of each kind. Last, it holds the last BSDF sample's density and
+whether it was specular, and the shading point it was drawn at with its shading normal and its
+set of linked lights.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -44,25 +44,59 @@ the pass, from `first`, it runs the stages back to back on one thread, and adds 
 pixel in index order.
 
 - **Generate** draws the sample's place in the pixel from the pixel filter, with the filter's
-  weight, and its point on the lens, its time and its wavelengths. Its ray is the camera's.
+  weight, and its point on the lens, its time and its wavelengths. Its ray and its cone are the
+  camera's.
 - **Intersect** traces the ray through the traversal the launch was built with.
-- **Shade** turns the hit into a shading point. A path whose ray leaves the scene gathers its share
-  of the dome lights and the distant lights it meets, as [Lights](#lights) says, times its
-  throughput. A path whose ray meets a light's shape gathers its share of the radiance the light
-  sends back along it, times its throughput, and ends there. A path whose ray meets a geometry a
-  mesh light makes emit gathers its share of what the light emits, and goes on to scatter there. At
-  a shading point, a path gathers a light sample, as [Lights](#lights) says.
+- **Shade** turns the hit into a shading point, with the footprint the path's cone makes there.
+  A path whose ray leaves the scene gathers its share of the dome lights and the distant lights
+  it meets, as [Lights](#lights) says, times its throughput. A path whose ray meets a light's
+  shape gathers its share of the radiance the light sends back along it, times its throughput,
+  and ends there. A path whose ray meets a geometry a mesh light makes emit gathers its share of
+  what the light emits, and goes on to scatter there. At a shading point, a path gathers a light
+  sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
   the BSDF's value and the cosine to the shading normal, over the density. A specular sample's
   value holds no cosine, so the throughput is multiplied by its value over its density alone, and
   the path marks the sample specular. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
   and from the shading point on the other side, offset off the surface as
-  [Traversal.md](Traversal.md#leaving-a-surface) says. It is an indirect ray.
+  [Traversal.md](Traversal.md#leaving-a-surface) says. It is an indirect ray, and its cone is the
+  one [A ray's footprint](#a-rays-footprint) says leaves.
 - **Accumulate** adds the light the path gathered to its pixel, with the filter's weight.
 
 A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
 refuses a sample, or by Russian roulette.
+
+## A ray's footprint
+
+A path carries a cone, `geometry::Cone`: how wide the area its camera sample covers is where its
+ray starts, and how much wider it grows over each unit of distance along the ray. A texture
+lookup filters over the area the cone covers where it meets a surface.
+
+- **A pinhole camera's cone** starts with no width, and spreads by a pixel's width over each unit
+  of depth. A pixel's width is the screen window's width over the image's width in pixels, at a
+  depth of one. A plane square to the camera therefore takes a footprint a pixel wide at every
+  pixel.
+- **A lens's cone** starts as wide as the lens, and narrows to a pixel's width at the depth in
+  focus. It widens again beyond, as a defocused point's blur does.
+- **An orthographic camera's cone** is a pixel wide and does not spread.
+- **At a hit** the cone's width there is projected onto the plane of the shading normal, as an
+  ellipse. Its minor axis lies across the ray and is the cone's width. Its major axis lies along
+  the ray as the surface sees it, and is the width over the cosine between the ray and the normal.
+  The cosine is held to at least `kLeastCosine`, so a grazing footprint is at most a hundred
+  times longer than wide.
+- **The cone that leaves a bounce** starts as wide as the footprint. Its spread grows by the
+  arctangent of the sampled lobe's roughness, a tuned rule, so a diffuse bounce adds an eighth of
+  a turn. A reflection's spread also grows by twice the surface's curvature times the width, so a
+  convex surface spreads it and a concave one focuses it. A transmission keeps the curvature out.
+- **A lobe's roughness** is its GGX alpha, or the geometric mean of an anisotropic lobe's two. It
+  is one for a diffuse, Oren-Nayar or fuzz lobe, and zero for a specular sample.
+
+The cone is round, so a pixel stretched along one axis gains its stretch only where the cone is
+projected. A shading point holds its footprint in the world, and
+[Surfaces.md](Surfaces.md#the-footprint) says how it is given in texture coordinates.
+
+Background: [ADR-0224](../adr/offline/0224-offline-a-rays-footprint-is-a-cone.md)
 
 ## Lights
 

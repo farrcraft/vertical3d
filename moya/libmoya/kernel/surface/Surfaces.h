@@ -16,11 +16,13 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
+#include <moya/libmoya/kernel/surface/Footprint.h>
 #include <moya/libmoya/kernel/surface/Geometry.h>
 #include <moya/libmoya/kernel/surface/Instance.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
+#include <moya/libmoya/kernel/surface/TextureFootprint.h>
 
 #include <cmath>
 #include <cstdint>
@@ -262,6 +264,82 @@ struct Surfaces {
     }
 
     /**
+     * A shading point's footprint in its texture coordinates: each axis as the change in `s` and
+     * `t` along it, from how a triangle's point moves as `s` and `t` increase. A point with no
+     * `st` that varies across its triangle gives a footprint of no area.
+     **/
+    MOYA_KERNEL TextureFootprint textureFootprint(const ShadingPoint & point) const {
+        TextureFootprint out;
+        glm::vec3 alongS { 0.0F };
+        glm::vec3 alongT { 0.0F };
+        if (!point.found() || !textureDerivatives(point, alongS, alongT)) {
+            return out;
+        }
+        const float ss = glm::dot(alongS, alongS);
+        const float st = glm::dot(alongS, alongT);
+        const float tt = glm::dot(alongT, alongT);
+        const float determinant = (ss * tt) - (st * st);
+        if (!(std::fabs(determinant) > kLeastTangent)) {
+            return out;
+        }
+        out.major = inTexture(point.footprint.major, alongS, alongT, ss, st, tt, determinant);
+        out.minor = inTexture(point.footprint.minor, alongS, alongT, ss, st, tt, determinant);
+        return out;
+    }
+
+    /**
+     * A triangle's mean curvature at a shading point, from the normals its corners hold, as one
+     * over a radius. It is above zero where the surface is convex on the side the ray met it, and
+     * below where it is concave. A triangle without normals at its corners is flat, and so is any
+     * other primitive.
+     **/
+    MOYA_KERNEL float curvature(const ShadingPoint & point) const {
+        if (!point.found() || geometries[point.geometry].form != geometry::primitive::Form::Triangles) {
+            return 0.0F;
+        }
+        const Primvar * found = primvar(point.geometry, kNormal);
+        if (found == nullptr || found->components != 3U || found->perPrimitive != 3U) {
+            return 0.0F;
+        }
+        glm::vec3 corner[3];
+        corners(point.geometry, point.primitive, point.time, corner);
+        const glm::mat3 turn { point.toWorld };
+        // a normal moves by the inverse transpose of the transformation to the world
+        const glm::mat3 normalTurn = glm::transpose(glm::inverse(turn));
+        glm::vec3 normal[3];
+        glm::vec3 sum { 0.0F };
+        for (std::uint32_t at = 0; at < 3U; ++at) {
+            const std::uint32_t from = found->first + (((point.primitive * 3U) + at) * 3U);
+            const glm::vec3 turned = normalTurn * glm::vec3 { values[from], values[from + 1U], values[from + 2U] };
+            normal[at] = glm::dot(turned, turned) > 0.0F ? glm::normalize(turned) : turned;
+            sum += normal[at];
+        }
+        const glm::vec3 edge1 = turn * (corner[1] - corner[0]);
+        const glm::vec3 edge2 = turn * (corner[2] - corner[0]);
+        const float e11 = glm::dot(edge1, edge1);
+        const float e12 = glm::dot(edge1, edge2);
+        const float e22 = glm::dot(edge2, edge2);
+        const float determinant = (e11 * e22) - (e12 * e12);
+        if (!(std::fabs(determinant) > kLeastTangent)) {
+            return 0.0F;
+        }
+        // how the normal turns along two directions in the surface, each as a sum of the two edges
+        const glm::vec3 directions[2] = { point.frame.tangent, point.frame.bitangent };
+        float bending = 0.0F;
+        for (const glm::vec3 & direction : directions) {
+            const float onFirst = glm::dot(direction, edge1);
+            const float onSecond = glm::dot(direction, edge2);
+            const float first = ((onFirst * e22) - (onSecond * e12)) / determinant;
+            const float second = ((onSecond * e11) - (onFirst * e12)) / determinant;
+            bending += glm::dot(((normal[1] - normal[0]) * first) + ((normal[2] - normal[0]) * second), direction);
+        }
+        // the corners' normals face the side the geometric normal does, or the other
+        const bool facing = glm::dot(sum, point.geometric) >= 0.0F;
+        const float mean = bending / 2.0F;
+        return facing == point.front ? mean : -mean;
+    }
+
+    /**
      * The transformation into the world, at a time, of an instance in the world by its index in
      * the scene. False for an instance the surfaces do not hold.
      **/
@@ -313,6 +391,18 @@ struct Surfaces {
     }
 
  private:
+    /**
+     * A vector in a surface as its changes in `s` and `t`: the sum of the directions the point
+     * moves in as `s` and `t` increase that comes nearest it, solved from their dot products.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the vector, then the directions
+    MOYA_KERNEL static glm::vec2 inTexture(const glm::vec3 & vector, const glm::vec3 & alongS, const glm::vec3 & alongT, float ss, float st, float tt,
+        float determinant) {
+        const float onS = glm::dot(vector, alongS);
+        const float onT = glm::dot(vector, alongT);
+        return { ((onS * tt) - (onT * st)) / determinant, ((onT * ss) - (onS * st)) / determinant };
+    }
+
     /**
      * How a triangle's point moves in the world as `s` and as `t` increase, from the `st` its
      * corners hold. False for a point not on such a triangle, or where `st` does not vary.

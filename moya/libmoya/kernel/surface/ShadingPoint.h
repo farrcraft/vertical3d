@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/surface/Footprint.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 
@@ -44,6 +45,12 @@ struct ShadingPoint {
 
     /** The frame around the shading normal. **/
     Frame frame;
+
+    /**
+     * Where the path's cone met the surface, in the plane of the shading normal. A point no path
+     * reached, such as one a test makes, has a footprint of no area.
+     **/
+    Footprint footprint;
 
     /** The transformation from the geometry's own space into the world, at the hit's time. **/
     glm::mat4 toWorld { 1.0F };

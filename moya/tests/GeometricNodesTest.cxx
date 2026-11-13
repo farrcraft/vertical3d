@@ -15,7 +15,9 @@
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
+#include <moya/libmoya/kernel/surface/Footprint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/kernel/surface/TextureFootprint.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -25,6 +27,7 @@
 #include <moya/libmoya/view/Tracing.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -370,6 +373,62 @@ BOOST_AUTO_TEST_CASE(moya_geometric_a_noise_reads_its_position_in_object_space_t
     const float read = readBack(shadedAt(scene, downAt(5.3F, 0.4F)).layers)[0];
     BOOST_TEST(read == kernel::program::perlin<3>(glm::vec3 { 0.3F, 0.4F, 0.0F }, 1U).x, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(read != kernel::program::perlin<3>(glm::vec3 { 5.3F, 0.4F, 0.0F }, 1U).x, boost::test_tools::tolerance(1.0e-3F));
+}
+
+// a footprint in the world is given as its changes in s and t across the surface. A square two
+// units wide whose st runs from zero to one halves it, and one whose s runs to four doubles it
+BOOST_AUTO_TEST_CASE(moya_geometric_a_footprint_is_given_in_texture_coordinates_test) {
+    const auto footprintAt = [](const std::vector<float> & st) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle mesh = square(scene);
+        primvar(scene, mesh, "st", scene::Interpolation::Vertex, scene::Value::floats(st), 2);
+        place(scene, mesh, node(scene, "surface", kOpenPbr, {}), glm::mat4(1.0F));
+        const geometry::Prototypes prototypes = geometry::gather(scene, {});
+        v3d::moya::device::CpuDevice device;
+        const kernel::geometry::Ray ray = downAt(0.3F, -0.4F);
+        const view::Traced traced = view::trace(device, prototypes, { ray }, view::Tracer::Hierarchy);
+        const geometry::Surfaces surfaces(device, prototypes, colour::Config());
+        const kernel::surface::Surfaces held = surfaces.view();
+        kernel::surface::ShadingPoint point = held.at(traced.nearest.front(), ray);
+        // a cone 0.2 wide meeting the square at an angle along x, so its footprint is 0.4 long
+        point.footprint = kernel::surface::footprintOf(0.2F, glm::normalize(glm::vec3 { std::sqrt(3.0F), 0.0F, -1.0F }), point.shading);
+        return held.textureFootprint(point);
+    };
+    const kernel::surface::TextureFootprint unit = footprintAt({ 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F });
+    BOOST_TEST(std::fabs(unit.major.x) == 0.2F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(unit.major.y == 0.0F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(std::fabs(unit.minor.y) == 0.1F, boost::test_tools::tolerance(1.0e-4F));
+    const kernel::surface::TextureFootprint stretched = footprintAt({ 0.0F, 0.0F, 4.0F, 0.0F, 4.0F, 1.0F, 0.0F, 1.0F });
+    BOOST_TEST(std::fabs(stretched.major.x) == 0.8F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(std::fabs(stretched.minor.y) == 0.1F, boost::test_tools::tolerance(1.0e-4F));
+}
+
+// a square whose corner normals lean outward curves like a dome: convex seen from above, concave
+// from below, and flat without its normals
+BOOST_AUTO_TEST_CASE(moya_geometric_corner_normals_give_a_curvature_test) {
+    const auto curvatureFrom = [](bool normals, float height) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle mesh = square(scene);
+        if (normals) {
+            primvar(scene, mesh, "N", scene::Interpolation::Vertex,
+                scene::Value::normals({ { -0.5F, -0.5F, 1.0F }, { 0.5F, -0.5F, 1.0F }, { 0.5F, 0.5F, 1.0F }, { -0.5F, 0.5F, 1.0F } }), 1);
+        }
+        place(scene, mesh, node(scene, "surface", kOpenPbr, {}), glm::mat4(1.0F));
+        kernel::geometry::Ray ray;
+        ray.origin = glm::vec3 { 0.2F, -0.3F, height };
+        ray.direction = glm::vec3 { 0.0F, 0.0F, height > 0.0F ? -1.0F : 1.0F };
+        const geometry::Prototypes prototypes = geometry::gather(scene, {});
+        v3d::moya::device::CpuDevice device;
+        const view::Traced traced = view::trace(device, prototypes, { ray }, view::Tracer::Hierarchy);
+        const geometry::Surfaces surfaces(device, prototypes, colour::Config());
+        const kernel::surface::Surfaces held = surfaces.view();
+        return held.curvature(held.at(traced.nearest.front(), ray));
+    };
+    // each normal turns by 2 / sqrt(6) of a unit across the square's two units, along x and along y
+    const float expected = 1.0F / std::sqrt(6.0F);
+    BOOST_TEST(curvatureFrom(true, 3.0F) == expected, boost::test_tools::tolerance(0.05F));
+    BOOST_TEST(curvatureFrom(true, -3.0F) == -expected, boost::test_tools::tolerance(0.05F));
+    BOOST_TEST(curvatureFrom(false, 3.0F) == 0.0F);
 }
 
 };  // namespace

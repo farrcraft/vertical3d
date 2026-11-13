@@ -148,7 +148,7 @@ among the options before the record is drafted.
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | done |
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | done |
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | done |
-| [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | open |
+| [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | done |
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | open |
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225 | open |
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | open |
@@ -622,12 +622,21 @@ names, so a ramp with no texture coordinates reads `st`.
   and the pixel filter.
 * **Each bounce carries it on**, widened by the lobe's roughness.
 * **A shading point gives its footprint** in its texture coordinates, which a lookup filters over.
-* **`splitlr` and `splittb` smooth their step** over the footprint, as MaterialX's implementations
-  smooth it over a pixel.
 
 **Tests:** a plane square to the camera gives a footprint of one pixel at each pixel. A plane at an
 angle gives the footprint a closed form gives. A rough bounce's footprint is wider than a smooth
 one's.
+
+**Done.** A path carries a `geometry::Cone` in its state, which `Camera::cone()` sets. A pinhole's
+spreads by a pixel's width per unit of depth, a lens's narrows to a pixel's width at its focus,
+and an orthographic camera's is a pixel wide. The cone is a pixel wide, not the pixel filter's
+width, because the filter already places the samples across its width. Each shading point holds
+the ellipse the cone makes on it, `surface::Footprint`, and `Surfaces::textureFootprint()` gives
+it in `st`. A bounce widens the spread by the arctangent of the lobe's roughness, which
+`bsdf::Sample` now carries. A reflection also widens it by twice the curvature times the width, and
+`Surfaces::curvature()` reads the curvature from a triangle's corner normals. Smoothing a split's
+step needs the derivatives of the value the split reads, not the footprint, and is an entry in
+[TODO.md](../TODO.md#offline-rendering).
 
 ### Step 19 — The texture maker
 

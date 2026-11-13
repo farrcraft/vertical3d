@@ -21,12 +21,17 @@ namespace v3d::moya::kernel::bsdf {
  * the share of light that closure carries along incoming, with no cosine, and its density is the
  * chance the closure was picked. No other strategy can draw its direction, so nothing weighs it
  * against one.
+ *
+ * Its roughness is that of the closure it was drawn from, which widens a ray's cone. It is a
+ * microfacet lobe's GGX alpha, or the geometric mean of an anisotropic lobe's two, one for a
+ * diffuse lobe, and zero for a specular sample.
  **/
 struct Sample {
     glm::vec3 incoming { 0.0F, 0.0F, 1.0F };
     spectrum::SampledSpectrum value { 0.0F };
     float density { 0.0F };
     Lobe lobe { Lobe::Diffuse };
+    float roughness { 0.0F };
     bool specular { false };
 
     MOYA_KERNEL bool found() const {
