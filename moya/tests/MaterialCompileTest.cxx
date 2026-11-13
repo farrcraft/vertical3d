@@ -5,6 +5,8 @@
 
 #include <moya/libmoya/Executable.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/program/Instruction.h>
+#include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/material/Compile.h>
@@ -32,6 +34,7 @@
 
 namespace {
 
+namespace kernel = v3d::moya::kernel;
 namespace material = v3d::moya::material;
 namespace scene = v3d::moya::scene;
 namespace mx = MaterialX;
@@ -183,7 +186,7 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_a_node_graph_flattens_as_materialx_fl
 // many inputs it feeds
 BOOST_AUTO_TEST_CASE(moya_material_compile_a_node_not_compiled_gives_its_default_and_is_reported_once_test) {
     scene::Scene scene(scene::kinds());
-    const scene::Handle image = node(scene, "grid", "ND_image_color3");
+    const scene::Handle image = node(scene, "grid", "ND_hextiledimage_color3");
     const scene::Handle surface = node(scene, "plastic", kOpenPbr);
     connect(scene, image, surface, "base_color");
     connect(scene, image, surface, "coat_color");
@@ -195,7 +198,42 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_a_node_not_compiled_gives_its_default
     BOOST_TEST((compiled.material.surface.baseColour == glm::vec3 { 0.0F }));
     BOOST_TEST((compiled.material.surface.coatColour == glm::vec3 { 0.0F }));
     BOOST_TEST(compiled.reports.size() == 1U);
-    BOOST_TEST(mentioning(compiled.reports, "ND_image_color3") == 1U);
+    BOOST_TEST(mentioning(compiled.reports, "ND_hextiledimage_color3") == 1U);
+}
+
+// a heighttonormal node that feeds another one's height gives its default and is reported once,
+// and the outer one shifts the point along each axis of its footprint and back
+BOOST_AUTO_TEST_CASE(moya_material_compile_a_height_within_a_height_is_reported_test) {
+    scene::Scene scene(scene::kinds());
+    // each connection named for the node it feeds, as three of them feed an input named in
+    const auto feed = [&scene](const scene::Handle & from, const scene::Handle & to, const std::string & input, const std::string & name) {
+        const scene::Handle out = scene.create("connection", name + "." + input);
+        scene.set(out, "from", scene::Value::handle(from));
+        scene.set(out, "to", scene::Value::handle(to));
+        scene.set(out, "input", scene::Value::string(input));
+    };
+    const scene::Handle inner = node(scene, "inner", "ND_heighttonormal_vector3");
+    const scene::Handle tilt = node(scene, "tilt", "ND_extract_vector3");
+    feed(inner, tilt, "in", "tilt");
+    const scene::Handle outer = node(scene, "outer", "ND_heighttonormal_vector3");
+    feed(tilt, outer, "in", "outer");
+    const scene::Handle map = node(scene, "map", "ND_normalmap_float");
+    feed(outer, map, "in", "map");
+    const scene::Handle surface = node(scene, "plastic", kOpenPbr);
+    feed(map, surface, "geometry_normal", "plastic");
+    const scene::Handle held = materialOf(scene, "bumped", surface);
+    apply(scene);
+
+    const material::Compiled compiled = compileOf(scene, held);
+    BOOST_TEST(compiled.reports.size() == 1U);
+    BOOST_TEST(mentioning(compiled.reports, "node inner of ND_heighttonormal_vector3") == 1U);
+    std::vector<std::uint32_t> shifts;
+    for (const kernel::program::Instruction & instruction : compiled.instructions) {
+        if (instruction.op == kernel::program::Op::Shift) {
+            shifts.push_back(instruction.in[0]);
+        }
+    }
+    BOOST_TEST(shifts == (std::vector<std::uint32_t> { 1U, 2U, 0U }), boost::test_tools::per_element());
 }
 
 // a node that names no definition is left out and reported once, and the inputs it feeds keep

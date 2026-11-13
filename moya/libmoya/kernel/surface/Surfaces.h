@@ -40,6 +40,9 @@ namespace v3d::moya::kernel::surface {
 /** The least a tangent may hold, squared, before it is taken as none. **/
 inline constexpr float kLeastTangent = 1.0e-12F;
 
+/** How far in `s` and `t` a point with a footprint of no area is shifted along each axis. **/
+inline constexpr float kShiftStep = 1.0F / 1024.0F;
+
 /**
  * Every geometry the scene's instances place, each in its own space at each of its samples, with
  * the instances that place them and the primvars shading reads. A hit names a chain of instances
@@ -284,6 +287,56 @@ struct Surfaces {
         }
         out.major = inTexture(point.footprint.major, alongS, alongT, ss, st, tt, determinant);
         out.minor = inTexture(point.footprint.minor, alongS, alongT, ss, st, tt, determinant);
+        return out;
+    }
+
+    /**
+     * A shading point moved by a step along an axis of its footprint, as a program's Shift moves
+     * it: the first axis for one, the second for two, and not at all for any other. Each step is
+     * the axis's whole length, so the point moves across the area its footprint covers. A point
+     * whose footprint has no area steps kShiftStep along `s` for the first axis and along `t`
+     * for the second, where it lies on a triangle whose `st` varies, and otherwise stays.
+     *
+     * The point's position moves by the step. On a triangle its corners' weights and its `uv`
+     * move too, as the step's nearest sum of the triangle's edges says, so every primvar reads as
+     * it would where the point moved to. Its normals, frame and footprint stay as they were.
+     **/
+    MOYA_KERNEL ShadingPoint shifted(const ShadingPoint & point, std::uint32_t axis) const {
+        if (!point.found() || (axis != 1U && axis != 2U)) {
+            return point;
+        }
+        glm::vec3 step = axis == 1U ? point.footprint.major : point.footprint.minor;
+        if (!(point.footprint.width() > 0.0F) || !(glm::dot(step, step) > 0.0F)) {
+            glm::vec3 alongS { 0.0F };
+            glm::vec3 alongT { 0.0F };
+            if (!textureDerivatives(point, alongS, alongT)) {
+                return point;
+            }
+            step = (axis == 1U ? alongS : alongT) * kShiftStep;
+        }
+        ShadingPoint out = point;
+        out.position += step;
+        if (geometries[point.geometry].form != geometry::primitive::Form::Triangles) {
+            return out;
+        }
+        glm::vec3 corner[3];
+        corners(point.geometry, point.primitive, point.time, corner);
+        const glm::mat3 turn { point.toWorld };
+        const glm::vec3 edge1 = turn * (corner[1] - corner[0]);
+        const glm::vec3 edge2 = turn * (corner[2] - corner[0]);
+        const float e11 = glm::dot(edge1, edge1);
+        const float e12 = glm::dot(edge1, edge2);
+        const float e22 = glm::dot(edge2, edge2);
+        const float determinant = (e11 * e22) - (e12 * e12);
+        if (!(std::fabs(determinant) > kLeastTangent)) {
+            return out;
+        }
+        const float onFirst = glm::dot(step, edge1);
+        const float onSecond = glm::dot(step, edge2);
+        const float first = ((onFirst * e22) - (onSecond * e12)) / determinant;
+        const float second = ((onSecond * e11) - (onFirst * e12)) / determinant;
+        out.weights += glm::vec3 { -first - second, first, second };
+        out.uv += glm::vec2 { first, second };
         return out;
     }
 

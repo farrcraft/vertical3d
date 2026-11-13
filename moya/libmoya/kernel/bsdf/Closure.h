@@ -31,7 +31,8 @@ inline constexpr float kLeastBend = 1.0e-3F;
  * colour and its transmission by its transmitted colour. A specular reflection reads its index
  * and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness, and
  * fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel factor
- * is mixed towards a thin film's by the film's weight.
+ * is mixed towards a thin film's by the film's weight. A coated closure is the coat, which works in
+ * the coat's frame.
  **/
 struct Closure {
     Model model { Model::Diffuse };
@@ -46,6 +47,7 @@ struct Closure {
     float roughness { 0.0F };
     scattering::ThinFilm film;
     float filmWeight { 0.0F };
+    bool coated { false };
 
     /** Whether a thin film changes its Fresnel factor. **/
     MOYA_KERNEL bool filmed() const {

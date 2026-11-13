@@ -46,11 +46,14 @@ inline constexpr float kLeastDarkening = 1.0e-6F;
 struct Layering {
     /**
      * Adds the closures of OpenPBR's parameters to a BSDF whose albedo tables are set, for light
-     * leaving at a cosine to the shading normal. Colours become spectra through the table.
+     * leaving at a cosine to the shading frame's normal and at another to the coat frame's.
+     * Colours become spectra through the table. The coat's albedo and the darkening it gives
+     * are taken at the coat's cosine, and every other layer's at the shading frame's.
      *
      * - **The fuzz**, of its weight, tinted by its colour, lies over everything. What lies below
      *   takes one less its weight times its albedo, untinted.
-     * - **The coat**, of its weight, is a specular reflection of its own roughness and index. What
+     * - **The coat**, of its weight, is a specular reflection of its own roughness and index, in
+     *   the coat's frame. What
      *   lies below takes one less its weight, and its weight times one less its albedo, its colour
      *   and its darkening.
      * - **The coat roughens the layers below it.** Their roughness becomes the fourth root of its
@@ -69,8 +72,9 @@ struct Layering {
      *   layer takes one less its albedo times its film's reflectance over its bare Fresnel factor,
      *   at outgoing's cosine and each wavelength.
      **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the frame's cosine, then the coat's
     MOYA_KERNEL static void add(Bsdf & bsdf, const surface::OpenPbr & surface, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths,
-        float cosine) {
+        float cosine, float coatCosine) {
         const float coat = unit(surface.coatWeight);
         const float metal = unit(surface.baseMetalness);
         const float transmission = unit(surface.transmissionWeight);
@@ -101,14 +105,15 @@ struct Layering {
             layer.weight = spectrum::SampledSpectrum(coat);
             layer.alpha = scattering::Ggx::alphas(unit(surface.coatRoughness), unit(surface.coatAnisotropy));
             layer.ior = coatIor;
+            layer.coated = true;
             bsdf.add(layer);
             const float coatRoughness = unit(surface.coatRoughness);
             const float roughened = std::fmin(1.0F, std::pow(std::pow(roughness, 4.0F) + (2.0F * std::pow(coatRoughness, 4.0F)), 0.25F));
             roughness += (roughened - roughness) * coat;
-            const float reflected = scattering::Specular::albedo(bsdf.albedos, cosine, std::sqrt(layer.alpha.x * layer.alpha.y), coatIor);
+            const float reflected = scattering::Specular::albedo(bsdf.albedos, coatCosine, std::sqrt(layer.alpha.x * layer.alpha.y), coatIor);
             const spectrum::SampledSpectrum lowest = mix(diffuse * (1.0F - transmission), metallic, metal);
             const float baseRoughness = roughness + ((1.0F - roughness) * (1.0F - metal) * (1.0F - transmission));
-            const spectrum::SampledSpectrum darkened = darkening(bsdf.albedos, lowest, coatIor, baseRoughness, cosine, unit(surface.coatDarkening));
+            const spectrum::SampledSpectrum darkened = darkening(bsdf.albedos, lowest, coatIor, baseRoughness, coatCosine, unit(surface.coatDarkening));
             below *= spectrum::SampledSpectrum(1.0F - coat) + (spectrum::reflectance(table, surface.coatColour, wavelengths) * darkened * (coat * (1.0F - reflected)));
         }
         const glm::vec2 alpha = scattering::Ggx::alphas(roughness, unit(surface.specularAnisotropy));
@@ -152,6 +157,12 @@ struct Layering {
         lambertian.colour = diffuse;
         lambertian.roughness = unit(surface.baseDiffuseRoughness);
         bsdf.add(lambertian);
+    }
+
+    /** OpenPBR's closures, for light leaving at one cosine to both frames' normals. **/
+    MOYA_KERNEL static void add(Bsdf & bsdf, const surface::OpenPbr & surface, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths,
+        float cosine) {
+        add(bsdf, surface, table, wavelengths, cosine, cosine);
     }
 
     /**

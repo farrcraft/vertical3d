@@ -16,7 +16,8 @@ namespace v3d::moya::kernel::program {
 
 /**
  * The first register of each of OpenPBR's parameters that a program gives, in the order
- * surface::OpenPbr holds them. A colour takes three registers, and every other parameter one.
+ * surface::OpenPbr holds them. A colour and a direction take three registers, and every other
+ * parameter one.
  **/
 inline constexpr std::uint32_t kBaseWeight = 0;
 inline constexpr std::uint32_t kBaseColour = 1;
@@ -45,11 +46,15 @@ inline constexpr std::uint32_t kThinFilmThickness = 35;
 inline constexpr std::uint32_t kThinFilmIor = 36;
 inline constexpr std::uint32_t kEmissionLuminance = 37;
 inline constexpr std::uint32_t kEmissionColour = 38;
+inline constexpr std::uint32_t kGeometryNormal = 41;
+inline constexpr std::uint32_t kGeometryTangent = 44;
+inline constexpr std::uint32_t kGeometryCoatNormal = 47;
+inline constexpr std::uint32_t kGeometryCoatTangent = 50;
 
 /** The registers the parameters take, which every program's values begin with. **/
-inline constexpr std::uint32_t kParameterRegisters = 41;
+inline constexpr std::uint32_t kParameterRegisters = 53;
 
-/** A colour held in three registers from a first. **/
+/** A colour or a direction held in three registers from a first. **/
 MOYA_KERNEL inline glm::vec3 colourAt(const float * registers, std::uint32_t first) {
     return glm::vec3 { registers[first], registers[first + 1U], registers[first + 2U] };
 }
@@ -84,6 +89,10 @@ MOYA_KERNEL inline surface::OpenPbr parameters(const float * registers) {
     out.thinFilmIor = registers[kThinFilmIor];
     out.emissionLuminance = registers[kEmissionLuminance];
     out.emissionColour = colourAt(registers, kEmissionColour);
+    out.geometryNormal = colourAt(registers, kGeometryNormal);
+    out.geometryTangent = colourAt(registers, kGeometryTangent);
+    out.geometryCoatNormal = colourAt(registers, kGeometryCoatNormal);
+    out.geometryCoatTangent = colourAt(registers, kGeometryCoatTangent);
     return out;
 }
 

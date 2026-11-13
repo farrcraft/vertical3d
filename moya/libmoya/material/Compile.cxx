@@ -245,7 +245,7 @@ void fill(internal::Emitter & emitter, Network & network, bool compiling) {
     const mx::NodePtr & surface = network.surface;
     const mx::NodeDefPtr def = surface->getNodeDef();
     for (const OpenPbrInput & parameter : internal::kOpenPbrInputs) {
-        const std::uint32_t width = parameter.colour ? 3U : 1U;
+        const std::uint32_t width = parameter.width;
         const mx::InputPtr input = surface->getInput(parameter.name);
         const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
         if (from) {

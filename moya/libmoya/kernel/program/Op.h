@@ -22,10 +22,18 @@ namespace v3d::moya::kernel::program {
  * direction or a position is given in. The transforms read their vector from the first operand,
  * and take the spaces they turn it from and to as their second and third.
  *
+ * NormalMap and HeightToNormal take their operands whole. HeightToNormal reads three heights, at
+ * the shading point and a step along each of its footprint's axes, its scale, and the texture
+ * coordinates at the same three places, six components after one another.
+ *
  * Image reads a texture at a coordinate, its first operand, and gives its second where it reads
  * nothing. Its third operand is the image's number in the catalog, its fourth u's address mode
  * and four times v's, and its fifth how it filters, each as a number in the order MaterialX's
  * enumerations give.
+ *
+ * Shift moves the shading point that the instructions after it read. Its first operand is one
+ * for a step along the first axis of its footprint, and two for the second. Zero moves it back to
+ * where it lies. It has no output.
  **/
 enum class Op : std::uint8_t {
     Copy,        /**< the first operand: dot, constant and convert **/
@@ -103,6 +111,8 @@ enum class Op : std::uint8_t {
     Matte,       /**< fg's colour by its alpha over bg's, and fg's alpha over bg's, from fg, bg, then mix **/
     Out,         /**< fg times one less bg's alpha, from fg, bg, then mix **/
     DisjointOver,  /**< fg and bg added, bg scaled to fill what fg's alpha leaves where their alphas pass one, from fg, bg, then mix **/
+    NormalMap,   /**< a normal from a tangent-space value, from in, scale, normal, tangent, then bitangent **/
+    HeightToNormal,  /**< a tangent-space value from the differences of a height, from heights, scale, then texture coordinates **/
     Primvar,     /**< the primvar the first operand numbers, or the second operand where there is none **/
     Position,    /**< the shading point's position **/
     Normal,      /**< its shading normal **/
@@ -111,7 +121,8 @@ enum class Op : std::uint8_t {
     TransformPoint,  /**< a position from one space to another **/
     TransformVector, /**< a direction from one space to another **/
     TransformNormal, /**< a normal from one space to another, of unit length **/
-    Image        /**< an image's texels at a coordinate, filtered over the shading point's footprint **/
+    Image,       /**< an image's texels at a coordinate, filtered over the shading point's footprint **/
+    Shift        /**< moves the shading point the instructions after it read **/
 };
 
 /** The space a geometric operation gives its value in: the geometry's own, or the world. **/

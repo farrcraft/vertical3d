@@ -55,9 +55,8 @@ pixel in index order.
   what the light emits, and goes on to scatter there. At a shading point, a path gathers a light
   sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
-  the BSDF's value and the cosine to the shading normal, over the density. A specular sample's
-  value holds no cosine, so the throughput is multiplied by its value over its density alone, and
-  the path marks the sample specular. The ray that leaves
+  the sample's projected value over its density. A specular sample's holds no cosine, and the
+  path marks the sample specular. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
   and from the shading point on the other side, offset off the surface as
   [Traversal.md](Traversal.md#leaving-a-surface) says. It is an indirect ray, and its cone is the
@@ -114,8 +113,8 @@ met where a ray that leaves the scene lies inside its cone. The options'
   the shading point towards the point says whether anything lies between. It stops short of the
   point by `kShadowShort` of its length, and a light's shape never stops one. A shadow ray
   towards a distant light runs on past everything in the scene. The sample gathers the BSDF's
-  value times what the light sends to the shading point and the cosine to the shading normal,
-  over the chance of the light times the point's density.
+  projected value times what the light sends to the shading point, over the chance of the light
+  times the point's density.
 - **A point and a distant light of no angle are found by light samples alone**, since no
   direction a BSDF draws meets them. A light whose shadow link leaves an instance out is found by
   light samples alone too. A light sample of any of them takes its whole weight whatever the

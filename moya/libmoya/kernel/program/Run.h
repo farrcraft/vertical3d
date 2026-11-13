@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/surface/Normal.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
@@ -29,6 +30,7 @@
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -58,6 +60,12 @@ inline constexpr float kLeastAlpha = 1.0e-8F;
 
 /** The number of address modes, by which Image's fourth operand holds v's above u's. **/
 inline constexpr std::uint32_t kAddressModes = 4;
+
+/** The share of a height's differences heighttonormal takes, as MaterialX's matches a Sobel's. **/
+inline constexpr float kSobelScale = 1.0F / 16.0F;
+
+/** The least squared length heighttonormal's normal has before it is flat: M_FLOAT_EPS squared. **/
+inline constexpr float kLeastHeightNormal = 1.0e-16F;
 
 /** A boolean as a program holds it: one for true, and zero for false. **/
 MOYA_KERNEL inline float truth(bool held) {
@@ -381,6 +389,58 @@ MOYA_KERNEL inline void compositeOf(const Instruction & instruction, const float
     }
 }
 
+/** Three components from a first register. **/
+MOYA_KERNEL inline glm::vec3 vectorAt(const float * registers, std::uint32_t first) {
+    return glm::vec3 { registers[first], registers[first + 1U], registers[first + 2U] };
+}
+
+/**
+ * A normal from a value in tangent space, as MaterialX's OSL normalmap gives it. The value runs
+ * from zero to one on each axis, and is taken to run from minus one to one. Its first two
+ * components are scaled by the scale, of one component or two, along the tangent and the
+ * bitangent, which are first laid flat against the normal and against each other. A value of no
+ * length, or one that gives no direction, gives the normal.
+ **/
+MOYA_KERNEL inline glm::vec3 normalMapOf(const Instruction & instruction, const float * registers) {
+    const glm::vec3 value = vectorAt(registers, instruction.in[0]);
+    const float * scale = registers + instruction.in[1];
+    const glm::vec2 scaled { scale[0], instruction.widths[1] > 1U ? scale[1] : scale[0] };
+    const glm::vec3 normal = vectorAt(registers, instruction.in[2]);
+    const glm::vec3 tangent = vectorAt(registers, instruction.in[3]);
+    const glm::vec3 bitangent = vectorAt(registers, instruction.in[4]);
+    if (value.x == 0.0F && value.y == 0.0F && value.z == 0.0F) {
+        return normal;
+    }
+    const glm::vec3 within = (value * 2.0F) - 1.0F;
+    const glm::vec3 along = surface::unitOrNone(tangent - (normal * glm::dot(tangent, normal)));
+    const glm::vec3 across = surface::unitOrNone(bitangent - (normal * glm::dot(bitangent, normal)) - (along * glm::dot(bitangent, along)));
+    const glm::vec3 out = surface::unitOrNone((along * (within.x * scaled.x)) + (across * (within.y * scaled.y)) + (normal * within.z));
+    return glm::dot(out, out) > 0.0F ? out : normal;
+}
+
+/**
+ * A value in tangent space from a height's differences, as MaterialX's heighttonormal gives it.
+ * Each difference is the height a step along one axis less the height at the point, times the
+ * scale and kSobelScale, beside the texture coordinates' differences along the same axis. The
+ * normal is the cross product of the two steps in s, t and height, turned to face up. Steps that
+ * give no direction give a flat normal. The normal, of unit length, is taken from minus one to one
+ * onto zero to one.
+ **/
+MOYA_KERNEL inline glm::vec3 heightToNormalOf(const Instruction & instruction, const float * registers) {
+    const float * heights = registers + instruction.in[0];
+    const float scale = registers[instruction.in[1]] * kSobelScale;
+    const float * coordinates = registers + instruction.in[2];
+    const glm::vec3 first { coordinates[2] - coordinates[0], coordinates[3] - coordinates[1], (heights[1] - heights[0]) * scale };
+    const glm::vec3 second { coordinates[4] - coordinates[0], coordinates[5] - coordinates[1], (heights[2] - heights[0]) * scale };
+    glm::vec3 normal = glm::cross(first, second);
+    if (glm::dot(normal, normal) < kLeastHeightNormal) {
+        normal = glm::vec3 { 0.0F, 0.0F, 1.0F };
+    } else if (normal.z < 0.0F) {
+        normal = -normal;
+    }
+    return (glm::normalize(normal) * 0.5F) + 0.5F;
+}
+
 /** A vector operation: normalize, magnitude, dotproduct, crossproduct, luminance or a hue's. **/
 MOYA_KERNEL inline void vectorOf(const Instruction & instruction, const float * first, const float * second, float * out) {
     const std::uint32_t width = instruction.widths[0];
@@ -500,6 +560,14 @@ MOYA_KERNEL inline void whole(const Instruction & instruction, const float * reg
         case Op::Transform:
             transformed(instruction, first, second, out);
             return;
+        case Op::NormalMap:
+        case Op::HeightToNormal: {
+            const glm::vec3 made = instruction.op == Op::NormalMap ? normalMapOf(instruction, registers) : heightToNormalOf(instruction, registers);
+            out[0] = made.x;
+            out[1] = made.y;
+            out[2] = made.z;
+            return;
+        }
         default:
             vectorOf(instruction, first, second, out);
             return;
@@ -624,8 +692,8 @@ MOYA_KERNEL void execute(const Instruction & instruction, float * registers, con
 /**
  * Runs a program at a shading point, from the values its registers hold before it, and gives the
  * surface's parameters its registers hold after it. The surfaces hold the program's instructions
- * and values, and its images are read through a device's texture access. The surface is not
- * thin-walled.
+ * and values, and its images are read through a device's texture access. Each instruction after a
+ * Shift reads the shading point it moved to. The surface is not thin-walled.
  **/
 template <texture::Texels X>
 MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program) {
@@ -633,8 +701,14 @@ MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const 
     for (std::uint32_t i = 0; i < program.size && i < kRegisters; ++i) {
         registers[i] = surfaces.programValues[program.values + i];
     }
+    surface::ShadingPoint at = point;
     for (std::uint32_t i = 0; i < program.count; ++i) {
-        execute(surfaces.instructions[program.instructions + i], registers, surfaces, textures, point);
+        const Instruction & instruction = surfaces.instructions[program.instructions + i];
+        if (instruction.op == Op::Shift) {
+            at = surfaces.shifted(point, instruction.in[0]);
+            continue;
+        }
+        execute(instruction, registers, surfaces, textures, at);
     }
     return parameters(registers);
 }

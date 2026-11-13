@@ -107,6 +107,7 @@
 #include <moya/libmoya/kernel/surface/Instance.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Material.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/surface/Normal.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/OpenPbr.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Primvar.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>  // IWYU pragma: keep

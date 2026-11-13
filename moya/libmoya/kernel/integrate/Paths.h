@@ -322,7 +322,7 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
     if (!drawn.found()) {
         return none;
     }
-    const spectrum::SampledSpectrum value = scattering.evaluate(outgoing, drawn.incoming);
+    const spectrum::SampledSpectrum value = scattering.projected(outgoing, drawn.incoming);
     if (value.black()) {
         return none;
     }
@@ -342,7 +342,7 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
     const float density = chance * drawn.density;
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
     const float weight = weighed ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
-    return value * emitted * (std::fabs(glm::dot(drawn.incoming, point.shading)) * weight / density);
+    return value * emitted * (weight / density);
 }
 
 /**
@@ -350,9 +350,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
  * along it, and the ray that leaves. False when the path ends there: at a depth limit, for a
  * sample the BSDF refused, or by Russian roulette.
  *
- * The throughput is multiplied by the sample's value and the cosine to the shading normal, over
- * its density. A specular sample's value holds no cosine, so it is multiplied by its value over
- * its density alone, and the path marks the sample specular.
+ * The throughput is multiplied by the sample's projected value over its density. A specular
+ * sample's holds no cosine, and the path marks the sample specular.
  *
  * The cone that leaves starts as wide as the footprint it arrived with, and spreads as the
  * surface's curvature and the sampled lobe's roughness spread it.
@@ -374,11 +373,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     if (!drawn.found() || !counted(paths.settings, drawn.lobe, state)) {
         return false;
     }
-    if (drawn.specular) {
-        MOYA_PATH(state, throughput) *= drawn.value / drawn.density;
-    } else {
-        MOYA_PATH(state, throughput) *= drawn.value * (std::fabs(glm::dot(drawn.incoming, point.shading)) / drawn.density);
-    }
+    MOYA_PATH(state, throughput) *= drawn.projected / drawn.density;
     MOYA_PATH(state, density) = drawn.density;
     MOYA_PATH(state, specular) = drawn.specular ? 1U : 0U;
     MOYA_PATH(state, from) = point.position;

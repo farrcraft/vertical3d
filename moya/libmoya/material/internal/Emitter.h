@@ -24,7 +24,8 @@ namespace v3d::moya::material::internal {
  * Compiles the nodes that feed a material's surface into a program's instructions and the values
  * its registers start from. The values begin with the surface's parameters, laid out as
  * kernel::program gives them, and each constant and each node's output takes registers of its
- * own after them. A node is compiled once, however many inputs it feeds.
+ * own after them. A node is compiled once, however many inputs it feeds, for each place a
+ * heighttonormal node reads it at.
  **/
 class Emitter final {
  public:
@@ -112,6 +113,28 @@ class Emitter final {
      **/
     std::optional<kernel::program::Instruction> image(const MaterialX::NodePtr & node, std::uint32_t width);
 
+    /**
+     * The instruction a heighttonormal node compiles to, or nothing when its inputs are not the
+     * shapes it reads or it feeds another one's height or texture coordinates. Its height and
+     * texture coordinates are compiled three times: after a Shift along each axis of the
+     * footprint, and after a Shift back to the shading point, which every instruction after it
+     * reads. Each node they read is compiled again for them, apart from the same node read
+     * anywhere else.
+     **/
+    std::optional<kernel::program::Instruction> heightToNormal(const MaterialX::NodePtr & node);
+
+    /** Adds a Shift along an axis, which the nodes compiled after it read. **/
+    void shift(std::uint32_t axis);
+
+    /** The first register of three values of a width, combined one after another. **/
+    std::uint32_t combined(const std::uint32_t (&from)[3], std::uint32_t width);
+
+    /**
+     * What each output's name is kept under: the axis the point is shifted along, whether it is
+     * read for a heighttonormal node's differences, then the name.
+     **/
+    std::string keyed(const std::string & name) const;
+
     /** The value a node's input holds, or its definition's, as text. **/
     static std::string textOf(const MaterialX::NodePtr & node, const std::string & name);
 
@@ -131,6 +154,12 @@ class Emitter final {
 
     /** The nodes whose operands are being compiled. **/
     std::set<std::string> visiting_;
+
+    /** The axis the nodes being compiled read the shading point shifted along, or zero. **/
+    std::uint32_t shift_ { 0 };
+
+    /** Whether the nodes being compiled feed a heighttonormal node's differences. **/
+    bool measuring_ { false };
 
     bool overflowed_ { false };
 };

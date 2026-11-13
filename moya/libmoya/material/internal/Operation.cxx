@@ -104,6 +104,7 @@ std::optional<Operation> Operation::of(const std::string & category) {
         { "splittb", { Op::SplitTopBottom, { "valuet", "valueb", "center", "texcoord" } } },
         { "rotate2d", { Op::Rotate2d, { "in", "amount" } } },
         { "rotate3d", { Op::Rotate3d, { "in", "amount", "axis" } } },
+        { "normalmap", { Op::NormalMap, { "in", "scale", "normal", "tangent", "bitangent" } } },
     };
     const auto found = operations.find(category);
     if (found == operations.end()) {

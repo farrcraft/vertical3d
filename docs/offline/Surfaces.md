@@ -51,8 +51,8 @@ point whose `found()` is false.
 
 ### The tangent frame
 
-`Surfaces::tangentFrame(point)` gives the frame a layered BSDF is built in, and a program's
-tangent and bitangent nodes read.
+`Surfaces::tangentFrame(point)` gives the frame a layered BSDF builds its frames from, and the
+frame a program's tangent and bitangent nodes read.
 
 - **The tangent** is the geometry's `tangent` primvar, turned into the world, where it has one.
   Otherwise it is the direction the point moves in as `s` increases, on a triangle whose corners
@@ -60,6 +60,36 @@ tangent and bitangent nodes read.
 - **The bitangent** is the normal's cross product with the tangent, turned to the side `t`
   increases on.
 - **A point with neither keeps its frame**, as does one where the tangent lies along the normal.
+
+### A material's normals
+
+OpenPBR's `geometry_normal` and `geometry_tangent` give the frame every closure but the coat
+works in, and `geometry_coat_normal` and `geometry_coat_tangent` the coat's. Each is a direction
+in world space that the program gives. `surface::frameAbout()` makes each frame from the tangent
+frame.
+
+- **A direction of no length is the shading point's own**, so an input that is not connected
+  changes nothing. A material that gives neither a normal nor a tangent keeps the tangent frame.
+- **A tangent is laid flat against the normal**, or is the frame's own around the normal where it
+  lies along it. The bitangent is the normal's cross product with the tangent, turned to the
+  tangent frame's bitangent's side.
+- **A normal is bent back where it faces away.** `surface::visible()` turns a normal towards the
+  geometric normal, in the plane the two share. It turns just far enough that outgoing's mirror
+  about it keeps a cosine to the geometric normal of `kLeastRise`. Where outgoing grazes, the
+  mirror keeps `kRiseShare` of outgoing's own cosine instead, where that is less. A normal whose
+  mirror keeps that cosine is left as it is. The normal sought solves a quadratic in the square
+  of its cosine to the geometric normal, as Cycles bends a normal-mapped one, so a bumped surface
+  shows no black.
+
+`Surfaces::shifted(point, axis)` moves a shading point by a step along an axis of its footprint,
+which a program's height differences read.
+
+- **Each step is the axis's whole length**, so the differences are taken across the area the
+  footprint covers. A point whose footprint has no area steps `kShiftStep` along `s` and along
+  `t`, on a triangle whose `st` varies, and otherwise does not move.
+- **The position moves by the step.** On a triangle the corners' weights and `uv` move by the
+  step's nearest sum of its edges, so every primvar reads as it would where the point moved to.
+  The normals, the frame and the footprint stay as they were.
 
 ### The footprint
 
@@ -173,7 +203,9 @@ The gather appends each material's instructions and values after the one before.
   OpenPBR's parameters, at the offsets `kernel/program/Parameters.h` names. Each constant and each
   node's output takes registers of its own after them. A value of n components takes n registers.
 - **Each input of the surface that is not connected is a constant** in its parameter's
-  registers: the value its node holds, or the definition's default.
+  registers: the value its node holds, or the definition's default. A geometry normal or tangent
+  given no value is zero, the shading point's own, as [A material's normals](#a-materials-normals)
+  says.
 - **Each input that a node feeds is compiled from that node**, and from every node it reads,
   each once. The node's instruction writes its output's registers, and a copy moves them into the
   parameter's.
@@ -214,6 +246,21 @@ The gather appends each material's instructions and values after the one before.
   operand is its texture coordinate and its second its default. Its third is the image's number,
   its fourth u's address mode and four times v's, and its fifth how it filters, each a number. A
   node with no file reads nothing, and gives its default.
+- **normalmap gives a normal from a value in tangent space**, as MaterialX's OSL implementation
+  does. The value is taken from zero to one onto minus one to one. Its first two components are
+  scaled along the tangent and the bitangent, which are first laid flat against the normal and
+  each other. A value of no length, or one that gives no direction, gives the normal.
+- **heighttonormal gives a value in tangent space from a height's differences**, as MaterialX's
+  implementations give it from a height's screen-space derivatives. Its height and texture
+  coordinates are compiled three times, as Cycles' SVM compiles a bump's. Two follow a `Shift`
+  along each axis of the footprint, and the third a `Shift` back to the point, which every
+  instruction after it reads. Each difference is a step's height less the point's, times its
+  scale and a sixteenth. The normal is the cross product of the two steps in `s`, `t` and height,
+  turned to face up, or flat where they give no direction. bump flattens to heighttonormal and
+  normalmap.
+- **A heighttonormal that feeds another's height or texture coordinates gives its default**, and
+  is reported, since a height's differences are taken once. The nodes the height reads are
+  compiled again for it, apart from the same nodes read anywhere else.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
 - **An emission input that a node feeds gives that default too**, because a material's light is
@@ -238,9 +285,12 @@ comes from.
   weight. A closure of no albedo is left out. A full BSDF replaces its closure of the smallest
   albedo with a larger one, and keeps its closures when the new one is smaller.
 - **It evaluates, gives a density and samples**, each at a path's four wavelengths. A sample
-  holds the incoming direction, the value, the density it was drawn with, and its `Lobe`:
-  diffuse, glossy, specular or transmission. A density of zero is no sample.
+  holds the incoming direction, the value, the projected value, the density it was drawn with,
+  and its `Lobe`: diffuse, glossy, specular or transmission. A density of zero is no sample.
 - **Its value is the sum of its closures' values**, each times its weight.
+- **Its projected value** is the sum of each closure's value times the cosine of the incoming
+  direction to the normal of that closure's frame. It is what the integrator multiplies light by,
+  so each closure takes the cosine to its own normal.
 - **A sample picks one closure by its share of the albedo** and draws a direction from it. The
   first random number picks the closure, and is then stretched over the closure's share so the
   closure draws from it again. A BSDF of one closure draws from the same numbers as that closure
@@ -248,16 +298,20 @@ comes from.
 - **The density of a direction** is each closure's density times the chance it is picked, summed.
 - **A closure that scatters into a single direction is singular**, or into one of two for a
   dielectric. It has no value and no density for any direction it is given, so a light sample
-  gathers nothing through it. Its sample is marked `specular`: its value is the share of light
-  the closure carries along the direction, times its weight, with no cosine. Its density is the
+  gathers nothing through it. Its sample is marked `specular`: its value and its projected
+  value are the share of light the closure carries along the direction, times its weight, with no
+  cosine. Its density is the
   chance the closure was picked, times the chance of that direction among the closure's.
 - **Kernel code has no virtual call**, so each closure switches over its `Model`. Each model, and
   the GGX distribution and Fresnel factors they share, is in `kernel/bsdf/scattering/`, in the
   namespace `bsdf::scattering`.
-- **Every closure works in the frame around the shading normal.**
-- **The geometric surface and the shading normal have to agree** on whether two directions lie on
-  one side or cross the surface. Where they disagree, the pair has no value, no density and no
-  sample, so a reflection never crosses the geometric surface and a transmission always does.
+- **Each closure works in a frame around a normal.** A coated closure, the coat, works in the
+  BSDF's `coatFrame`, and every other closure in its `frame`. A sample is drawn in the picked
+  closure's frame, and its value, projected value and density are the whole BSDF's.
+- **The geometric surface and a closure's frame have to agree** on whether two directions lie
+  on one side or cross the surface. Where they disagree, the closure gives the pair no value, no
+  density and no sample, so a reflection never crosses the geometric surface and a transmission
+  always does.
 - **A sample that crosses the surface is a transmission.** One that stays on its side is
   specular from a singular closure, glossy from a microfacet lobe and diffuse from a diffuse one.
 
@@ -430,16 +484,18 @@ Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-
 ## Layering
 
 `bsdf::Layering::add()` adds the closures of a `surface::OpenPbr` to a BSDF, top down, for light
-leaving at a cosine to the shading normal. Each parameter has OpenPBR's name and default, and its
-colours are in ACEScg. Each layer scales what lies below it by one less its albedo at that
-cosine, as a white one reflects it, so a white surface keeps its energy. The whole is not
+leaving at a cosine to the BSDF's frame's normal and at another to its coat frame's. Each
+parameter has OpenPBR's name and default, and its colours are in ACEScg. Each layer scales what
+lies below it by one less its albedo at its cosine, as a white one reflects it, so a white
+surface keeps its energy. The whole is not
 reciprocal, though each lobe but fuzz is.
 
 - **The fuzz**, of its weight, tinted by its colour, lies over everything. What lies below takes
   one less its weight times its albedo, untinted.
 - **The coat**, of its weight, is a `Specular` reflection of its own roughness, anisotropy and
-  index. What lies below takes one less the coat's weight, plus its weight times one less its
-  albedo, times the coat's colour and its darkening.
+  index, in the coat's frame. What lies below takes one less the coat's weight, plus its weight
+  times one less its albedo, times the coat's colour and its darkening. Its albedo and its
+  darkening are taken at the coat's cosine, and every other layer's at the frame's.
 - **The coat roughens the layers below it.** Their roughness becomes the fourth root of its fourth
   power plus twice the coat's, at most one, mixed in by the coat's weight.
 - **The coat darkens the base** as OpenPBR gives it: one less K, over one less the base's albedo
@@ -465,6 +521,7 @@ reciprocal, though each lobe but fuzz is.
   The layer below the specular layer takes one less its albedo times the film's reflectance over
   the bare Fresnel factor, at outgoing's cosine and each wavelength.
 
-Specular anisotropy follows the shading frame's tangent, with no rotation. A layered material's
+Specular anisotropy follows its frame's tangent, and the coat's the coat frame's, with no
+rotation. A layered material's
 emission is no closure: it makes the material's geometry a light of the light tree, as
 [Lights.md](Lights.md#mesh-lights) says.

@@ -154,6 +154,13 @@ bool patternShaped(const Instruction & instruction) {
     }
 }
 
+/** Whether a normalmap's operands are a vector3, a scale of one or two, then three vector3. **/
+bool normalMapShaped(const Instruction & instruction) {
+    const std::uint32_t * widths = instruction.widths;
+    const bool scale = widths[1] == 1U || widths[1] == 2U;
+    return instruction.width == 3U && widths[0] == 3U && scale && widths[2] == 3U && widths[3] == 3U && widths[4] == 3U;
+}
+
 /** Whether an instruction's operands have the shapes its operation reads. **/
 bool shaped(const Instruction & instruction, std::size_t operands) {
     const std::uint32_t width = instruction.width;
@@ -197,6 +204,8 @@ bool shaped(const Instruction & instruction, std::size_t operands) {
         case Op::Transform:
         case Op::Rows:
             return matrixShaped(instruction);
+        case Op::NormalMap:
+            return normalMapShaped(instruction);
         case Op::Combine: {
             std::uint32_t sum = 0;
             for (std::size_t i = 0; i < operands; ++i) {
@@ -251,8 +260,12 @@ void Emitter::copyValue(std::uint32_t from, std::uint32_t to, std::uint32_t widt
     instructions_.push_back(out);
 }
 
+std::string Emitter::keyed(const std::string & name) const {
+    return std::to_string(shift_) + (measuring_ ? " measured " : " ") + name;
+}
+
 std::uint32_t Emitter::output(const mx::NodePtr & node, const std::string & name) {
-    const std::string key = node->getName() + "." + name;
+    const std::string key = keyed(node->getName() + "." + name);
     const auto found = outputs_.find(key);
     if (found != outputs_.end()) {
         return found->second;
@@ -329,7 +342,7 @@ std::uint32_t Emitter::primvar(const std::string & name) {
 
 std::optional<std::uint32_t> Emitter::geomprop(const mx::InputPtr & declared) {
     const std::string & name = declared->getDefaultGeomPropString();
-    const std::string key = "geomprop " + name;
+    const std::string key = keyed("geomprop " + name);
     const auto found = outputs_.find(key);
     if (found != outputs_.end()) {
         return found->second;
@@ -474,6 +487,59 @@ std::optional<Instruction> Emitter::image(const mx::NodePtr & node, std::uint32_
     return out;
 }
 
+void Emitter::shift(std::uint32_t axis) {
+    Instruction out;
+    out.op = Op::Shift;
+    out.width = 0;
+    out.in[0] = axis;
+    instructions_.push_back(out);
+    shift_ = axis;
+}
+
+std::uint32_t Emitter::combined(const std::uint32_t (&from)[3], std::uint32_t width) {
+    Instruction out;
+    out.op = Op::Combine;
+    out.width = 3U * width;
+    for (std::size_t i = 0; i < 3U; ++i) {
+        out.in[i] = from[i];
+        out.widths[i] = width;
+    }
+    out.out = allocate(out.width);
+    instructions_.push_back(out);
+    return out.out;
+}
+
+std::optional<Instruction> Emitter::heightToNormal(const mx::NodePtr & node) {
+    const mx::NodeDefPtr def = node->getNodeDef();
+    const mx::InputPtr height = def->getActiveInput("in");
+    const mx::InputPtr scale = def->getActiveInput("scale");
+    const mx::InputPtr coordinate = def->getActiveInput("texcoord");
+    if (measuring_ || !height || !scale || !coordinate || widthOf(height->getType()) != 1U || widthOf(scale->getType()) != 1U ||
+        widthOf(coordinate->getType()) != 2U) {
+        return std::nullopt;
+    }
+    std::uint32_t heights[3] {};
+    std::uint32_t coordinates[3] {};
+    // each axis in turn, then back at the point, where the program carries on
+    measuring_ = true;
+    for (const std::uint32_t axis : { 1U, 2U, 0U }) {
+        shift(axis);
+        heights[axis] = operand(node, height);
+        coordinates[axis] = operand(node, coordinate);
+    }
+    measuring_ = false;
+    Instruction out;
+    out.op = Op::HeightToNormal;
+    out.width = 3;
+    out.in[0] = combined(heights, 1U);
+    out.widths[0] = 3;
+    out.in[1] = operand(node, scale);
+    out.widths[1] = 1;
+    out.in[2] = combined(coordinates, 2U);
+    out.widths[2] = 3U * 2U;  // three coordinates of two components
+    return out;
+}
+
 std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     const mx::NodeDefPtr def = node->getNodeDef();
     const mx::OutputPtr output = outputOf(def, std::string());
@@ -486,6 +552,9 @@ std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     }
     if (node->getCategory() == "image") {
         return image(node, widthOf(output->getType()));
+    }
+    if (node->getCategory() == "heighttonormal") {
+        return heightToNormal(node);
     }
     std::optional<Operation> operation = Operation::of(node->getCategory());
     if (node->getCategory() == "creatematrix") {

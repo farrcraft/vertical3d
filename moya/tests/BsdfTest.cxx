@@ -10,6 +10,7 @@
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/kernel/bsdf/AtSurface.h>
 #include <moya/libmoya/kernel/bsdf/Bsdf.h>
+#include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/Sample.h>
@@ -63,6 +64,7 @@ constexpr float kPi = 3.14159265F;
 bsdf::Bsdf emptyAbout(const glm::vec3 & shading, const glm::vec3 & geometric) {
     bsdf::Bsdf out;
     out.frame = kernel::surface::Frame::around(glm::normalize(shading));
+    out.coatFrame = out.frame;
     out.geometric = glm::normalize(geometric);
     return out;
 }
@@ -292,6 +294,37 @@ BOOST_AUTO_TEST_CASE(moya_bsdf_two_halves_of_a_diffuse_lobe_scatter_as_one_test)
     const Fit fit = densityFit(halves, outgoing, 200000, 23);
     BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
     BOOST_TEST(furnace(halves, outgoing, 20000, 25) == 0.6F, boost::test_tools::tolerance(1.0e-4F));
+}
+
+// a coated closure works in the coat's frame, and the projected value takes each closure's value
+// times the cosine to its own frame's normal, as its samples are weighed
+BOOST_AUTO_TEST_CASE(moya_bsdf_a_coated_closure_works_in_the_coats_frame_test) {
+    const glm::vec3 up { 0.0F, 0.0F, 1.0F };
+    const glm::vec3 tilted = glm::normalize(glm::vec3 { 0.4F, -0.2F, 1.0F });
+    bsdf::Bsdf layered = emptyAbout(up, up);
+    layered.coatFrame = kernel::surface::Frame::around(tilted);
+    layered.add(bsdf::Model::Diffuse, flat(0.4F));
+    bsdf::Closure coat;
+    coat.model = bsdf::Model::Diffuse;
+    coat.weight = flat(0.5F);
+    coat.coated = true;
+    layered.add(coat);
+    BOOST_TEST_REQUIRE(layered.count == 2U);
+    const glm::vec3 outgoing = glm::normalize(glm::vec3 { -0.3F, 0.4F, 1.0F });
+    std::uint32_t seed = 27;
+    for (int i = 0; i < 200; ++i) {
+        const glm::vec3 incoming = glm::normalize(glm::vec3 { next(seed) - 0.5F, next(seed) - 0.5F, next(seed) + 0.2F });
+        const float onUp = glm::dot(incoming, up);
+        const float onTilted = glm::dot(incoming, tilted);
+        const float below = onUp > 0.0F ? 0.4F / kPi : 0.0F;
+        const float coated = onTilted > 0.0F ? 0.5F / kPi : 0.0F;
+        BOOST_TEST(layered.evaluate(outgoing, incoming)[0] == below + coated, boost::test_tools::tolerance(1.0e-5F));
+        BOOST_TEST(layered.projected(outgoing, incoming)[0] == (below * onUp) + (coated * onTilted), boost::test_tools::tolerance(1.0e-5F));
+        const float density = ((onUp > 0.0F ? 0.4F * onUp : 0.0F) + (onTilted > 0.0F ? 0.5F * onTilted : 0.0F)) / (0.9F * kPi);
+        BOOST_TEST(layered.density(outgoing, incoming) == density, boost::test_tools::tolerance(1.0e-5F));
+    }
+    const Fit fit = densityFit(layered, outgoing, 200000, 29);
+    BOOST_TEST(fit.passes(), "chi-squared " << fit.statistic << " over " << fit.freedom);
 }
 
 // a mirror sends light from one direction alone, the reflection of outgoing about the shading

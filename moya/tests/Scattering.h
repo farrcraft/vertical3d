@@ -117,10 +117,11 @@ inline Fit densityFit(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoin
 }
 
 /**
- * The mean weight of a BSDF's samples for outgoing, at the first wavelength: the share of light
- * from a white furnace it sends back along outgoing, as the integrator's scatter stage weighs each
- * sample. A sample that crosses the surface is multiplied by crossing, so a dielectric's
- * transmission can be counted by the energy it carries rather than its radiance.
+ * The mean weight of a BSDF's samples for outgoing, at the first wavelength. That is the share of
+ * light from a white furnace it sends back along outgoing, as the integrator's scatter stage
+ * weighs each sample by its projected value over its density. A sample that crosses the surface is
+ * multiplied by crossing, so a dielectric's transmission can be counted by the energy it carries
+ * rather than its radiance.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count drawn, the seed, then the factor
 inline float furnace(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoing, std::size_t drawn, std::uint32_t seed, float crossing = 1.0F) {
@@ -131,9 +132,8 @@ inline float furnace(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoing
         if (!sample.found()) {
             continue;
         }
-        const float cosine = sample.specular ? 1.0F : std::fabs(glm::dot(sample.incoming, bsdf.frame.normal));
         const bool crossed = glm::dot(sample.incoming, bsdf.geometric) * glm::dot(outgoing, bsdf.geometric) < 0.0F;
-        sum += static_cast<double>(sample.value[0] * cosine * (crossed ? crossing : 1.0F) / sample.density);
+        sum += static_cast<double>(sample.projected[0] * (crossed ? crossing : 1.0F) / sample.density);
     }
     return static_cast<float>(sum / static_cast<double>(drawn));
 }

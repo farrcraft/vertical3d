@@ -20,6 +20,7 @@
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>
+#include <moya/libmoya/kernel/surface/Normal.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
@@ -48,9 +49,11 @@ namespace v3d::moya::kernel::bsdf {
  * tables.
  *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
- * outgoing, of the parameters its program gives, in the tangent frame Surfaces gives the point.
- * The geometry's `Cs` primvar overrides its base colour. The program reads its images through
- * a device's texture access.
+ * outgoing, of the parameters its program gives. The geometry's `Cs` primvar overrides its base
+ * colour. The program reads its images through a device's texture access. The coat works in the
+ * frame about the coat's normal and tangent, and every other closure in the frame about the
+ * surface's, each as surface::frameAbout() makes it from the tangent frame Surfaces gives the
+ * point.
  **/
 template <texture::Texels X>
 MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
@@ -69,9 +72,9 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
     out.albedos = albedos;
     out.wavelengths = wavelengths;
     out.frame = point.frame;
+    out.coatFrame = point.frame;
     out.geometric = point.geometric;
     if (material.layered != 0U) {
-        out.frame = surfaces.tangentFrame(point);
         surface::OpenPbr layers = material.surface;
         if (material.program.count != 0U) {
             layers = program::evaluate(surfaces, textures, point, material.program);
@@ -80,7 +83,10 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
         if (painted) {
             layers.baseColour = colour;
         }
-        Layering::add(out, layers, table, wavelengths, std::fabs(glm::dot(outgoing, point.shading)));
+        const surface::Frame tangents = surfaces.tangentFrame(point);
+        out.frame = surface::frameAbout(tangents, layers.geometryNormal, layers.geometryTangent, point.geometric, outgoing);
+        out.coatFrame = surface::frameAbout(tangents, layers.geometryCoatNormal, layers.geometryCoatTangent, point.geometric, outgoing);
+        Layering::add(out, layers, table, wavelengths, std::fabs(glm::dot(outgoing, out.frame.normal)), std::fabs(glm::dot(outgoing, out.coatFrame.normal)));
         return out;
     }
     const spectrum::SampledSpectrum reflectance = spectrum::reflectance(table, colour, wavelengths);

@@ -151,7 +151,7 @@ among the options before the record is drafted.
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | done |
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | done |
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225, 0229 | done |
-| [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | open |
+| [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | done |
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | open |
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | open |
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | open |
@@ -699,6 +699,21 @@ names documents from RIB, since a material made of scene nodes is named by no fi
 
 **Tests:** a flat normal map changes nothing. A tilted one turns the shading normal by its angle.
 A bump of a constant height changes nothing.
+
+**Done.** OpenPBR gives its coat a normal of its own, so a BSDF holds two frames: the coat works
+in `coatFrame` and every other closure in `frame`. The integrator's cosine moved into the BSDF
+to allow it. `Bsdf::projected()` sums each closure's value times the cosine to its own frame's
+normal, a sample carries that projected value, and the scatter stage and light samples
+multiply by it. Every reference render stays within its errors. The program gives
+`geometry_normal`, `geometry_tangent` and the coat's two in registers of their own, zero where an
+input is not connected, and `surface::frameAbout()` builds each frame from them. A normal that
+would mirror outgoing below the surface is bent back by `surface::visible()`, as Cycles bends one.
+normalmap compiles as MaterialX's OSL implementation gives it. heighttonormal compiles its
+height three times, after a `Shift` along each axis of the footprint and back, as Cycles' SVM
+compiles a bump, and bump flattens to the two. A point with no footprint steps a 1024th along
+`s` and `t`. A heighttonormal inside another's height gives its default and is reported. Step 20
+left two cases stale, the scene description's texture options and a node the program no longer
+leaves out, and both were brought up to date.
 
 ### Step 22 — Displacement from the material
 
