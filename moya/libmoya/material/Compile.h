@@ -56,7 +56,8 @@ struct Compiled {
  * compile gives the default of its output, and is reported. An emission input that is connected
  * gives that default too, because a material's light is made before rendering. A program that
  * needs more registers than a shading point holds is reported, and each connected input then
- * gives its default. The surface holds the parameters before the program runs.
+ * gives its default. The surface holds the parameters before the program runs. The material's
+ * program gives its opacity when a node feeds `geometry_opacity` and the program holds it.
  *
  * A surface of any other definition is reported, and leaves the material diffuse.
  *

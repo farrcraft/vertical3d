@@ -32,10 +32,12 @@ using Triangle = std::array<glm::vec3, 3>;
 struct Complete {
     geometry::Hit answer;
 
-    geometry::Hit nearest(const geometry::Ray & /*ray*/) const {
+    template <typename F>
+    geometry::Hit nearest(const geometry::Ray & /*ray*/, F & /*filter*/) const {
         return answer;
     }
-    bool any(const geometry::Ray & /*ray*/) const {
+    template <typename F>
+    bool any(const geometry::Ray & /*ray*/, F & /*filter*/) const {
         return answer.found();
     }
 };
@@ -44,7 +46,8 @@ struct Complete {
 struct NearestOnly {
     geometry::Hit answer;
 
-    geometry::Hit nearest(const geometry::Ray & /*ray*/) const {
+    template <typename F>
+    geometry::Hit nearest(const geometry::Ray & /*ray*/, F & /*filter*/) const {
         return answer;
     }
 };

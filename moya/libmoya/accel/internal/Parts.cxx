@@ -25,10 +25,13 @@
 #include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <set>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <glm/mat4x4.hpp>
@@ -108,9 +111,9 @@ Part movingPart(const MovingHierarchy & hierarchy) {
     return Part { .moving = true, .nodes = {}, .motionNodes = hierarchy.nodes, .references = hierarchy.references, .bounds = hierarchy.bounds };
 }
 
-};  // namespace
-
-Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Geometry & geometry) {
+/** A geometry's hierarchy: a still mesh split in space unless it is cut out, the rest unsplit. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then whether it is cut out
+Part shapePart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Geometry & geometry, bool cutOut) {
     Options unsplit;
     unsplit.spatial = false;
     if (geometry.moves()) {
@@ -119,7 +122,9 @@ Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & proto
     if (geometry.form == kernel::geometry::primitive::Form::Triangles) {
         const auto first = static_cast<std::ptrdiff_t>(geometry.points.first);
         const std::vector<glm::vec3> points(prototypes.points.begin() + first, prototypes.points.begin() + first + geometry.points.count);
-        return stillPart(build(device, triangleBounds(points), triangleClip(points)));
+        Options options;
+        options.spatial = !cutOut;
+        return stillPart(build(device, triangleBounds(points), triangleClip(points), options));
     }
     const Sweep sweep = sweepOf(prototypes, geometry);
     std::vector<Box> boxes;
@@ -131,6 +136,14 @@ Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & proto
         return boxes[primitive].within(within);
     };
     return stillPart(build(device, boxes, clip, unsplit));
+}
+
+};  // namespace
+
+Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Geometry & geometry, bool cutOut) {
+    Part out = shapePart(device, prototypes, geometry, cutOut);
+    out.cutOut = cutOut;
+    return out;
 }
 
 bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group & members, Assembly & out) {
@@ -146,6 +159,9 @@ bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group
         placed.geometry = shape ? instance.prototype : device::cpu::kGroup;
         placed.id = instance.id;
         placed.visibility = instance.visibility;
+        if (instance.material < prototypes.materials.size()) {
+            placed.cut = prototypes.materials[instance.material].cutOut() ? device::cpu::Cut::Out : device::cpu::Cut::Solid;
+        }
         if (instance.moves()) {
             placed.keys = static_cast<std::uint32_t>(out.keys.size());
             placed.keyCount = static_cast<std::uint32_t>(instance.keys.size());
@@ -154,6 +170,29 @@ bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group
         moving = moving || root.moving || instance.moves();
     }
     return moving;
+}
+
+std::vector<bool> cutOutGeometries(const geometry::Prototypes & prototypes) {
+    std::vector<bool> out(prototypes.geometries.size(), false);
+    // each group is visited once inside a chain that is cut out and once inside one that is not
+    std::set<std::pair<std::uint32_t, bool>> visited;
+    std::vector<std::pair<const geometry::Group *, bool>> pending { { &prototypes.world, false } };
+    while (!pending.empty()) {
+        const auto [group, inherited] = pending.back();
+        pending.pop_back();
+        for (const std::uint32_t index : group->instances) {
+            const geometry::Instance & instance = prototypes.instances[index];
+            const bool cut = instance.material < prototypes.materials.size() ? prototypes.materials[instance.material].cutOut() : inherited;
+            if (instance.kind == geometry::Prototype::Geometry) {
+                if (instance.prototype < out.size() && cut) {
+                    out[instance.prototype] = true;
+                }
+            } else if (instance.prototype < prototypes.groups.size() && visited.insert({ instance.prototype, cut }).second) {
+                pending.emplace_back(&prototypes.groups[instance.prototype], cut);
+            }
+        }
+    }
+    return out;
 }
 
 Part groupPart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Group & members, bool moving,

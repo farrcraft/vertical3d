@@ -33,7 +33,9 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
   and the wavelengths.
 - **Each bounce has a block of `kBounceDraws` dimensions**, and each draw has a fixed place in it.
   The draws are the BSDF's direction, Russian roulette, the light a light sample draws, the point
-  on it, a mesh light's triangle, and the BSDF's choice between reflecting and transmitting.
+  on it, a mesh light's triangle, and the BSDF's choice between reflecting and transmitting. The
+  last decides what the bounce's ray passes through where surfaces are cut out, and the camera's
+  ray takes the first bounce's.
 - **`bounceDimension(bounce, place)`** gives a draw's dimension. Any stage then draws its numbers
   from the pixel, the sample, the bounce and the place alone.
 
@@ -46,7 +48,8 @@ pixel in index order.
 - **Generate** draws the sample's place in the pixel from the pixel filter, with the filter's
   weight, and its point on the lens, its time and its wavelengths. Its ray and its cone are the
   camera's.
-- **Intersect** traces the ray through the traversal the launch was built with.
+- **Intersect** traces the ray through the traversal the launch was built with, passing through
+  what is cut out as [Surfaces that are cut out](#surfaces-that-are-cut-out) says.
 - **Shade** turns the hit into a shading point, with the footprint the path's cone makes there.
   A path whose ray leaves the scene gathers its share of the dome lights and the distant lights
   it meets, as [Lights](#lights) says, times its throughput. A path whose ray meets a light's
@@ -107,14 +110,14 @@ met where a ray that leaves the scene lies inside its cone. The options'
 
 - **A light sample** draws one light that lights the shading point, as
   [Lights.md](Lights.md#light-linking) says. It draws by the light tree or in proportion to its
-  power as the options' `lightPicking` says, then a point on it, as [Lights.md](Lights.md#drawing-a-light)
-  and [Lights.md](Lights.md#sampling-a-light) say. The tree draws by the shading point and its
-  shading normal, which the path keeps for a BSDF sample that meets a light. A shadow ray from
-  the shading point towards the point says whether anything lies between. It stops short of the
-  point by `kShadowShort` of its length, and a light's shape never stops one. A shadow ray
-  towards a distant light runs on past everything in the scene. The sample gathers the BSDF's
-  projected value times what the light sends to the shading point, over the chance of the light
-  times the point's density.
+  power as the options' `lightPicking` says, then a point on it, as
+  [Lights.md](Lights.md#drawing-a-light) and [Lights.md](Lights.md#sampling-a-light) say. The tree
+  draws by the shading point and its shading normal, which the path keeps for a BSDF sample that
+  meets a light. A shadow ray from the shading point towards the point says how much of the light
+  passes what lies between. It stops short of the point by `kShadowShort` of its length, and a
+  light's shape never stops one. A shadow ray towards a distant light runs on past everything in the
+  scene. The sample gathers the BSDF's projected value times what the light sends to the shading
+  point, over the chance of the light times the point's density.
 - **A point and a distant light of no angle are found by light samples alone**, since no
   direction a BSDF draws meets them. A light whose shadow link leaves an instance out is found by
   light samples alone too. A light sample of any of them takes its whole weight whatever the
@@ -144,6 +147,30 @@ met where a ray that leaves the scene lies inside its cone. The options'
   sample is drawn by its image's compensated way under `mis`, and by its other way under
   `light`, as [Lights.md](Lights.md#dome-lights) says, so each strategy draws by the density it
   weighs by.
+
+## Surfaces that are cut out
+
+A surface whose material is cut out lets a ray through where its opacity is less than one, as
+OpenPBR's `geometry_opacity` says. Each device's traversal asks the integrator's filter about a
+hit on such a surface, as [Traversal.md](Traversal.md#the-traversal-a-stage-takes) says, so a ray
+passes any number of them in one traversal, with no limit on how many.
+
+- **The opacity at a hit** is what the material's program gives there, read with its images at
+  their finest level, held to between zero and one. A material whose program does not give it
+  holds a constant one. A surface whose material is not cut out is opaque. `opacityAt()` gives it.
+- **A camera or an indirect ray keeps a hit with a chance of its opacity**, and passes through
+  it otherwise. `Keeping` decides by a number hashed from the bounce's own draw, the primitive and
+  its chain of instances. Each surface along a ray takes a number apart from the others, and the
+  picture is the same on every run. A kept hit is shaded in full, so on average the surface shows
+  in the share its opacity gives.
+- **A shadow ray carries one minus the opacity of each surface it meets.** `Passing` multiplies
+  them, and stops the traversal once nothing passes. The light sample gathers what passes, so a
+  shadow through a half-opaque surface is smooth rather than drawn at random.
+- **A light with a shadow link** passes through what casts none of its shadows, as
+  [Lights.md](Lights.md#light-linking) says, and carries one minus the opacity of each surface
+  that does. A ray from such a light meets each surface by a traversal of its own.
+
+Background: [ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md)
 
 ## Depth limits and Russian roulette
 

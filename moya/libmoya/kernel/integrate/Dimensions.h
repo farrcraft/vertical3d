@@ -28,8 +28,10 @@ inline constexpr std::uint32_t kCameraDraws = 4;
 /**
  * A bounce's draws. They are the BSDF's direction, whether Russian roulette ends the path, the
  * light it samples, the point on that light, and the triangle of a mesh light drawn by power. The
- * last is the BSDF's choice between reflecting and transmitting. The light tree draws a mesh
- * light's triangle from the light's own random number.
+ * next is the BSDF's choice between reflecting and transmitting. The last decides what the ray a
+ * bounce traces passes through where surfaces are cut out, and the camera's ray takes the first
+ * bounce's. The light tree draws a mesh light's triangle from
+ * the light's own random number.
  **/
 inline constexpr std::uint32_t kScatter = 0;
 inline constexpr std::uint32_t kRoulette = 1;
@@ -37,9 +39,10 @@ inline constexpr std::uint32_t kLightPick = 2;
 inline constexpr std::uint32_t kLightPoint = 3;
 inline constexpr std::uint32_t kLightTriangle = 4;
 inline constexpr std::uint32_t kScatterChoice = 5;
+inline constexpr std::uint32_t kOpacity = 6;
 
 /** The places each bounce's block holds. **/
-inline constexpr std::uint32_t kBounceDraws = 6;
+inline constexpr std::uint32_t kBounceDraws = 7;
 
 /** The dimension of a draw at a place in a bounce's block. **/
 MOYA_KERNEL constexpr std::uint32_t bounceDimension(std::uint32_t bounce, std::uint32_t place) {

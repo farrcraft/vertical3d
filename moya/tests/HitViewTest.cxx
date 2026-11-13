@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/geometry/BruteForce.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/geometry/Traversal.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -216,16 +217,17 @@ BOOST_AUTO_TEST_CASE(moya_hitview_the_brute_force_traversal_finds_the_nearest_hi
     const kernel::geometry::BruteForce traversal { .placed = world.view() };
     kernel::geometry::Ray ray;
     ray.direction = glm::vec3 { 0.0F, 0.0F, 1.0F };
-    const kernel::geometry::Hit hit = traversal.nearest(ray);
+    kernel::geometry::EveryHit every;
+    const kernel::geometry::Hit hit = traversal.nearest(ray, every);
     BOOST_TEST(hit.found());
     BOOST_TEST(hit.distance == 3.0F);
     BOOST_TEST(hit.depth == 1U);
     BOOST_TEST(hit.instances[0] == nearer.index);
-    BOOST_TEST(traversal.any(ray));
+    BOOST_TEST(traversal.any(ray, every));
 
     ray.end = 2.0F;
-    BOOST_TEST(!traversal.nearest(ray).found());
-    BOOST_TEST(!traversal.any(ray));
+    BOOST_TEST(!traversal.nearest(ray, every).found());
+    BOOST_TEST(!traversal.any(ray, every));
 }
 
 // a group placed twice places its mesh at both of its instances' transformations, each a chain

@@ -10,10 +10,10 @@
 #include <moya/libmoya/accel/Root.h>
 #include <moya/libmoya/accel/Sweep.h>
 #include <moya/libmoya/device/CpuDevice.h>
-#include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -24,8 +24,9 @@ Assembly assemble(device::CpuDevice & device, const geometry::Prototypes & proto
     out.instances.resize(prototypes.instances.size());
     std::vector<LinearBox> geometryBounds;
     geometryBounds.reserve(prototypes.geometries.size());
-    for (const geometry::Geometry & geometry : prototypes.geometries) {
-        const internal::Part part = internal::geometryPart(device, prototypes, geometry);
+    const std::vector<bool> cutOut = internal::cutOutGeometries(prototypes);
+    for (std::size_t index = 0; index < prototypes.geometries.size(); ++index) {
+        const internal::Part part = internal::geometryPart(device, prototypes, prototypes.geometries[index], cutOut[index]);
         geometryBounds.push_back(part.bounds);
         out.geometries.push_back(internal::appendPart(out, part, nullptr));
     }

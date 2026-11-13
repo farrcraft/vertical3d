@@ -42,6 +42,7 @@ inline constexpr std::array kOpenPbrInputs {
     TerminalInput { .name = "thin_film_thickness", .at = kernel::program::kThinFilmThickness },
     TerminalInput { .name = "thin_film_ior", .at = kernel::program::kThinFilmIor },
     TerminalInput { .name = "emission_luminance", .at = kernel::program::kEmissionLuminance },
+    TerminalInput { .name = "geometry_opacity", .at = kernel::program::kGeometryOpacity },
     TerminalInput { .name = "base_color", .at = kernel::program::kBaseColour, .width = 3 },
     TerminalInput { .name = "specular_color", .at = kernel::program::kSpecularColour, .width = 3 },
     TerminalInput { .name = "transmission_color", .at = kernel::program::kTransmissionColour, .width = 3 },

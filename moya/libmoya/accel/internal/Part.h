@@ -23,6 +23,9 @@ namespace v3d::moya::accel::internal {
 struct Part {
     bool moving { false };
 
+    /** Whether it was built as a geometry that is cut out. **/
+    bool cutOut { false };
+
     /** A still hierarchy's nodes, or a moving one's. **/
     std::vector<device::cpu::Node> nodes;
     std::vector<device::cpu::MotionNode> motionNodes;

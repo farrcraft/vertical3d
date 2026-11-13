@@ -18,7 +18,7 @@
 #include <moya/libmoya/device/cpu/Textures.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/device/cpu/internal/Boxes.h>
-#include <moya/libmoya/device/cpu/internal/Nearest.h>
+#include <moya/libmoya/device/cpu/internal/Search.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Motion.h>
@@ -192,10 +192,28 @@ const Node & nodeAt(const Traversal & traversal, std::uint32_t index, bool movin
     return scratch;
 }
 
-void nearestFrom(internal::Nearest & search, const Instance & entered, const kernel::geometry::Ray & ray);
+/** Enters an instance: the chain gains it, and its surfaces are cut out as its material says. **/
+template <typename F>
+bool enter(internal::Search<F> & search, const Instance & instance) {
+    const bool around = search.chain.cutOut;
+    search.chain.instances[search.chain.depth++] = instance.id;
+    search.chain.cutOut = instance.cut == Cut::Inherited ? around : instance.cut == Cut::Out;
+    return around;
+}
 
-/** Tests the primitives of a geometry's leaf, keeping the nearest hit before the closest yet. **/
-void nearestInGeometry(internal::Nearest & search, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
+/** Leaves the instance entered last, and gives the chain back whether it was cut out. **/
+template <typename F>
+void leave(internal::Search<F> & search, bool around) {
+    search.chain.instances[--search.chain.depth] = 0;
+    search.chain.cutOut = around;
+}
+
+template <typename F>
+void nearestFrom(internal::Search<F> & search, const Instance & entered, const kernel::geometry::Ray & ray);
+
+/** Tests a geometry leaf's primitives, keeping the nearest counted hit before the closest. **/
+template <typename F>
+void nearestInGeometry(internal::Search<F> & search, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
     std::uint32_t geometry, const Node & node, std::uint32_t slot) {
     const std::uint32_t leaf = node.child[slot] & ~kLeaf;
     for (std::uint32_t index = 0; index < node.count[slot]; ++index) {
@@ -204,37 +222,37 @@ void nearestInGeometry(internal::Nearest & search, const kernel::geometry::primi
         if (!meets(search.traversal, shear, geometry, primitive, ray, search.closest, hit)) {
             continue;
         }
-        search.closest = hit.distance;
-        search.hit.distance = hit.distance;
-        search.hit.uv = hit.uv;
-        search.hit.primitive = primitive;
-        search.hit.depth = search.chain.depth;
-        for (std::uint32_t level = 0; level < kernel::geometry::kInstanceDepth; ++level) {
-            search.hit.instances[level] = search.chain.instances[level];
+        const kernel::geometry::Hit candidate = search.hitOn(primitive, hit.distance, hit.uv);
+        if (!search.counts(candidate)) {
+            continue;
         }
+        search.closest = hit.distance;
+        search.hit = candidate;
     }
 }
 
 /** Enters each instance of a group's leaf that the ray may enter, and searches its prototype. **/
-void nearestInGroup(internal::Nearest & search, const kernel::geometry::Ray & ray, const Node & node, std::uint32_t slot) {
+template <typename F>
+void nearestInGroup(internal::Search<F> & search, const kernel::geometry::Ray & ray, const Node & node, std::uint32_t slot) {
     const std::uint32_t leaf = node.child[slot] & ~kLeaf;
     for (std::uint32_t index = 0; index < node.count[slot]; ++index) {
         const Instance & instance = search.traversal.instances[search.traversal.references[leaf + index]];
         if (!enters(instance, ray, search.chain.depth)) {
             continue;
         }
-        search.chain.instances[search.chain.depth++] = instance.id;
+        const bool around = enter(search, instance);
         nearestFrom(search, instance, into(search.traversal, instance, ray));
-        search.chain.instances[--search.chain.depth] = 0;
+        leave(search, around);
     }
 }
 
 /**
  * Searches the hierarchy of the prototype an instance placed, from its root, for the nearest hit
- * before the closest so far. A geometry's leaves hold its primitives, and a group's instances. The
- * ray is in the prototype's own space.
+ * the filter counts before the closest so far. A geometry's leaves hold its primitives, and a
+ * group's instances. The ray is in the prototype's own space.
  **/
-void nearestFrom(internal::Nearest & search, const Instance & entered, const kernel::geometry::Ray & ray) {
+template <typename F>
+void nearestFrom(internal::Search<F> & search, const Instance & entered, const kernel::geometry::Ray & ray) {
     const internal::Reach reach = internal::Reach::of(ray);
     const kernel::geometry::primitive::Shear shear = kernel::geometry::primitive::Shear::of(ray);
     const bool moving = entered.moving != 0U;
@@ -274,26 +292,34 @@ void nearestFrom(internal::Nearest & search, const Instance & entered, const ker
     }
 }
 
-bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel::geometry::Ray & ray, std::uint32_t chain);
+template <typename F>
+bool anyFrom(internal::Search<F> & search, const Instance & entered, const kernel::geometry::Ray & ray);
 
 /**
- * Whether anything in a leaf lies on a ray within its interval: a primitive of a geometry's leaf or
- * anything inside an instance of a group's leaf that the ray may enter.
+ * Whether a hit the filter counts lies on a ray within its interval in a leaf. It may be on a
+ * primitive of a geometry's leaf, or inside an instance of a group's leaf that the ray may enter.
  **/
-bool anyInLeaf(const Traversal & traversal, const Instance & entered, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
-    std::uint32_t chain, const Node & node, std::uint32_t slot) {
+template <typename F>
+bool anyInLeaf(internal::Search<F> & search, const Instance & entered, const kernel::geometry::primitive::Shear & shear, const kernel::geometry::Ray & ray,
+    const Node & node, std::uint32_t slot) {
     const std::uint32_t leaf = node.child[slot] & ~kLeaf;
     for (std::uint32_t index = 0; index < node.count[slot]; ++index) {
-        const std::uint32_t reference = traversal.references[leaf + index];
+        const std::uint32_t reference = search.traversal.references[leaf + index];
         if (entered.geometry != kGroup) {
             kernel::geometry::primitive::ShapeHit hit;
-            if (meets(traversal, shear, entered.geometry, reference, ray, ray.end, hit)) {
+            if (meets(search.traversal, shear, entered.geometry, reference, ray, ray.end, hit) && search.counts(search.hitOn(reference, hit.distance, hit.uv))) {
                 return true;
             }
             continue;
         }
-        const Instance & instance = traversal.instances[reference];
-        if (enters(instance, ray, chain) && anyFrom(traversal, instance, into(traversal, instance, ray), chain + 1)) {
+        const Instance & instance = search.traversal.instances[reference];
+        if (!enters(instance, ray, search.chain.depth)) {
+            continue;
+        }
+        const bool around = enter(search, instance);
+        const bool found = anyFrom(search, instance, into(search.traversal, instance, ray));
+        leave(search, around);
+        if (found) {
             return true;
         }
     }
@@ -301,10 +327,11 @@ bool anyInLeaf(const Traversal & traversal, const Instance & entered, const kern
 }
 
 /**
- * Whether anything lies on a ray within its interval in the hierarchy of the prototype an instance
- * placed, read as nearestFrom() reads it, inside a chain of instances of a depth.
+ * Whether a hit the filter counts lies on a ray within its interval in the hierarchy of the
+ * prototype an instance placed, read as nearestFrom() reads it.
  **/
-bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel::geometry::Ray & ray, std::uint32_t chain) {
+template <typename F>
+bool anyFrom(internal::Search<F> & search, const Instance & entered, const kernel::geometry::Ray & ray) {
     const internal::Reach reach = internal::Reach::of(ray);
     const kernel::geometry::primitive::Shear shear = kernel::geometry::primitive::Shear::of(ray);
     const bool moving = entered.moving != 0U;
@@ -314,14 +341,14 @@ bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel
     Node scratch;
     while (depth > 0) {
         --depth;
-        const Node & node = nodeAt(traversal, stack[depth], moving, ray.time, scratch);
+        const Node & node = nodeAt(search.traversal, stack[depth], moving, ray.time, scratch);
         Entered children[kWidth];
         const std::uint32_t count = reached(node, reach, ray.start, ray.end, children);
         for (std::uint32_t i = 0; i < count; ++i) {
             const std::uint32_t slot = slotOf(children[i]);
             const std::uint32_t child = node.child[slot];
             if ((child & kLeaf) != 0) {
-                if (anyInLeaf(traversal, entered, shear, ray, chain, node, slot)) {
+                if (anyInLeaf(search, entered, shear, ray, node, slot)) {
                     return true;
                 }
             } else if (depth < kStack) {
@@ -373,28 +400,33 @@ kernel::geometry::Ray Traversal::held(const Traversal & traversal, const kernel:
     return out;
 }
 
-kernel::geometry::Hit Traversal::nearest(const kernel::geometry::Ray & ray) const {
-    internal::Nearest search { .traversal = *this, .chain = {}, .closest = ray.end, .hit = {} };
+template <typename F>
+kernel::geometry::Hit Traversal::nearest(const kernel::geometry::Ray & ray, F & filter) const {
+    internal::Search<F> search { .traversal = *this, .filter = filter, .chain = {}, .time = ray.time, .closest = ray.end, .hit = {} };
     search.hit.time = ray.time;
     nearestFrom(search, worldOf(*this), held(*this, ray));
     return search.hit;
 }
 
-bool Traversal::any(const kernel::geometry::Ray & ray) const {
-    return anyFrom(*this, worldOf(*this), held(*this, ray), 0);
+template <typename F>
+bool Traversal::any(const kernel::geometry::Ray & ray, F & filter) const {
+    internal::Search<F> search { .traversal = *this, .filter = filter, .chain = {}, .time = ray.time, .closest = ray.end, .hit = {} };
+    return anyFrom(search, worldOf(*this), held(*this, ray));
 }
 
-kernel::geometry::Hit Profiled::nearest(const kernel::geometry::Ray & ray) const {
+template <typename F>
+kernel::geometry::Hit Profiled::nearest(const kernel::geometry::Ray & ray, F & filter) const {
     const std::uint64_t start = __rdtsc();
-    const kernel::geometry::Hit out = traversal.nearest(ray);
+    const kernel::geometry::Hit out = traversal.nearest(ray, filter);
     tally->traversing += __rdtsc() - start;
     ++tally->nearest;
     return out;
 }
 
-bool Profiled::any(const kernel::geometry::Ray & ray) const {
+template <typename F>
+bool Profiled::any(const kernel::geometry::Ray & ray, F & filter) const {
     const std::uint64_t start = __rdtsc();
-    const bool out = traversal.any(ray);
+    const bool out = traversal.any(ray, filter);
     tally->traversing += __rdtsc() - start;
     ++tally->any;
     return out;

@@ -25,27 +25,56 @@ namespace v3d::moya::kernel::geometry {
 /**
  * The traversal that tests every placed primitive for every ray. It is slow, and it is the
  * reference every other traversal is compared with. A run hidden from the ray's kind is passed
- * over.
+ * over. It asks the filter about every hit, and each primitive is tested once.
  **/
 struct BruteForce {
     Placed placed;
 
-    MOYA_KERNEL Hit nearest(const Ray & ray) const {
+    template <typename F>
+    MOYA_KERNEL Hit nearest(const Ray & ray, F & filter) const {
         Hit out;
         out.time = ray.time;
-        const primitive::Shear shear = primitive::Shear::of(ray);
         float end = ray.end;
-        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the primitive, then the distance
-        const auto keep = [&](const Placement & placement, std::uint32_t primitive, float distance, const glm::vec2 & uv) {
-            end = distance;
-            out.distance = distance;
-            out.primitive = primitive;
-            out.uv = uv;
-            out.depth = placement.depth;
-            for (std::uint32_t level = 0; level < kInstanceDepth; ++level) {
-                out.instances[level] = placement.instances[level];
+        visit(ray, [&](const Hit & hit) {
+            if (hit.distance < end && filter.counts(hit)) {
+                end = hit.distance;
+                out = hit;
             }
-        };
+            return false;
+        });
+        return out;
+    }
+
+    template <typename F>
+    MOYA_KERNEL bool any(const Ray & ray, F & filter) const {
+        return visit(ray, [&](const Hit & hit) {
+            return filter.counts(hit);
+        });
+    }
+
+ private:
+    /** A hit on a primitive of a run, at a distance and a position on the primitive. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the primitive, then the distance
+    MOYA_KERNEL static Hit hitOn(const Placement & placement, std::uint32_t primitive, float distance, const glm::vec2 & uv, float time) {
+        Hit out;
+        out.distance = distance;
+        out.primitive = primitive;
+        out.uv = uv;
+        out.time = time;
+        out.depth = placement.depth;
+        for (std::uint32_t level = 0; level < kInstanceDepth; ++level) {
+            out.instances[level] = placement.instances[level];
+        }
+        return out;
+    }
+
+    /**
+     * Offers each hit within the ray's whole interval to a visitor, in the order the runs hold
+     * them, until the visitor says to stop. Whether it stopped.
+     **/
+    template <typename V>
+    MOYA_KERNEL bool visit(const Ray & ray, V && visitor) const {
+        const primitive::Shear shear = primitive::Shear::of(ray);
         for (std::uint32_t run = 0; run < placed.placements.size; ++run) {
             const Placement & placement = placed.placements[run];
             if ((placement.visibility & ray.kind) == 0U) {
@@ -55,38 +84,8 @@ struct BruteForce {
                 const std::uint32_t at = placement.first + i;
                 primitive::TriangleHit hit;
                 if (primitive::intersectTriangle(shear, placed.points[at * 3U], placed.points[(at * 3U) + 1U], placed.points[(at * 3U) + 2U],
-                        ray.start, end, hit)) {
-                    keep(placement, i, hit.distance, hit.uv);
-                }
-            }
-        }
-        for (std::uint32_t run = 0; run < placed.shapes.size; ++run) {
-            const PlacedShapes & shapes = placed.shapes[run];
-            if ((shapes.placement.visibility & ray.kind) == 0U) {
-                continue;
-            }
-            const Ray local = shapes.into(ray);
-            for (std::uint32_t i = 0; i < shapes.placement.count; ++i) {
-                primitive::ShapeHit hit;
-                if (placed.meetsShape(shapes, i, local, ray.start, end, hit)) {
-                    keep(shapes.placement, i, hit.distance, hit.uv);
-                }
-            }
-        }
-        return out;
-    }
-
-    MOYA_KERNEL bool any(const Ray & ray) const {
-        const primitive::Shear shear = primitive::Shear::of(ray);
-        for (std::uint32_t run = 0; run < placed.placements.size; ++run) {
-            const Placement & placement = placed.placements[run];
-            if ((placement.visibility & ray.kind) == 0U) {
-                continue;
-            }
-            for (std::uint32_t at = placement.first; at < placement.first + placement.count; ++at) {
-                primitive::TriangleHit hit;
-                if (primitive::intersectTriangle(shear, placed.points[at * 3U], placed.points[(at * 3U) + 1U], placed.points[(at * 3U) + 2U],
-                        ray.start, ray.end, hit)) {
+                        ray.start, ray.end, hit) &&
+                    visitor(hitOn(placement, i, hit.distance, hit.uv, ray.time))) {
                     return true;
                 }
             }
@@ -99,7 +98,7 @@ struct BruteForce {
             const Ray local = shapes.into(ray);
             for (std::uint32_t i = 0; i < shapes.placement.count; ++i) {
                 primitive::ShapeHit hit;
-                if (placed.meetsShape(shapes, i, local, ray.start, ray.end, hit)) {
+                if (placed.meetsShape(shapes, i, local, ray.start, ray.end, hit) && visitor(hitOn(shapes.placement, i, hit.distance, hit.uv, ray.time))) {
                     return true;
                 }
             }

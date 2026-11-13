@@ -50,9 +50,10 @@ inline constexpr std::uint32_t kGeometryNormal = 41;
 inline constexpr std::uint32_t kGeometryTangent = 44;
 inline constexpr std::uint32_t kGeometryCoatNormal = 47;
 inline constexpr std::uint32_t kGeometryCoatTangent = 50;
+inline constexpr std::uint32_t kGeometryOpacity = 53;
 
 /** The registers the parameters take, which every program's values begin with. **/
-inline constexpr std::uint32_t kParameterRegisters = 53;
+inline constexpr std::uint32_t kParameterRegisters = 54;
 
 /** A colour or a direction held in three registers from a first. **/
 MOYA_KERNEL inline glm::vec3 colourAt(const float * registers, std::uint32_t first) {
@@ -93,6 +94,7 @@ MOYA_KERNEL inline surface::OpenPbr parameters(const float * registers) {
     out.geometryTangent = colourAt(registers, kGeometryTangent);
     out.geometryCoatNormal = colourAt(registers, kGeometryCoatNormal);
     out.geometryCoatTangent = colourAt(registers, kGeometryCoatTangent);
+    out.geometryOpacity = registers[kGeometryOpacity];
     return out;
 }
 

@@ -44,7 +44,8 @@ struct HitView {
 };
 
 /**
- * One pixel of the hit view: a ray through the pixel's centre and the lens's, and what it hit.
+ * One pixel of the hit view: a ray through the pixel's centre and the lens's, and what it hit. A
+ * surface whose material is cut out is as solid to it as any other.
  *
  * The beauty is black. The channels hold the hit's depth, its geometric normal, its innermost
  * instance, the face of its mesh, and a coverage of one. A pixel whose ray met nothing holds an
@@ -54,7 +55,8 @@ template <geometry::Traversal T>
 MOYA_KERNEL void hits(const HitView<T> & view, Item item) {
     const glm::vec2 centre = glm::vec2 { static_cast<float>(item.x), static_cast<float>(item.y) } + 0.5F;
     const geometry::Ray ray = view.camera.ray(centre, glm::vec2 { 0.5F }, view.time);
-    const geometry::Hit hit = view.traversal.nearest(ray);
+    geometry::EveryHit every;
+    const geometry::Hit hit = view.traversal.nearest(ray, every);
 
     view.pixels.add(item, 1.0F, spectrum::SampledSpectrum(0.0F), spectrum::SampledWavelengths::visible(0.5F));
     if (!hit.found()) {

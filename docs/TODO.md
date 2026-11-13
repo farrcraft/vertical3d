@@ -91,6 +91,14 @@ feeds gives that node's default and is reported. Camera rays see the light's rad
 program's. Emission that varies needs the light to take its radiance from the program at each
 point it is seen, and its triangles' power from the program's mean over each.
 
+[] **A mesh light's cut-away parts still light the scene.** A camera or indirect ray passes
+through where an emitting material is cut out, but a light sample draws a point anywhere on the
+light's triangles and gathers its whole radiance there. The light's power, and the light tree's
+bounds, count the cut-away area too. A light sample needs to carry the opacity at the point it
+draws, and a light's power to come from its opacity over each triangle, as emission that varies
+needs from the program. [Integrator.md](offline/Integrator.md#surfaces-that-are-cut-out) states
+the rule for every other ray.
+
 [] **A split's step is sharp.** `splitlr` and `splittb` give one value below their center and
 the other from it on. MaterialX's implementations smooth the step over a pixel, by the screen
 derivatives of the coordinate the split reads. The coordinate is any value a node gives, so the

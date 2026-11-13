@@ -17,6 +17,7 @@ namespace v3d::moya::kernel::surface {
  * a roughness, a metalness and the darkening run from zero to one, an anisotropy from zero up to
  * one, and an index from one up. A thin film's thickness is in micrometres, and the emission's
  * luminance in nits. Subsurface scatters as the diffuse base, its colour mixed in by its weight.
+ * The opacity runs from zero, where the surface is cut away, to one.
  *
  * The coat works about its own normal and tangent, and every other layer about the surface's.
  * Each is a direction in world space, and one of no length is the shading point's own.
@@ -61,6 +62,7 @@ struct OpenPbr {
     glm::vec3 geometryTangent { 0.0F };
     glm::vec3 geometryCoatNormal { 0.0F };
     glm::vec3 geometryCoatTangent { 0.0F };
+    float geometryOpacity { 1.0F };
 
     /** One when the surface is a thin wall, with the same medium on both sides. **/
     std::uint32_t thinWalled { 0 };

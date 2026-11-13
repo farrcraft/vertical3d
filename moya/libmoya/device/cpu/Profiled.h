@@ -22,8 +22,11 @@ struct Profiled {
     Traversal traversal;
     Tally * tally { nullptr };
 
-    kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray) const;
-    bool any(const kernel::geometry::Ray & ray) const;
+    template <typename F>
+    kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray, F & filter) const;
+
+    template <typename F>
+    bool any(const kernel::geometry::Ray & ray, F & filter) const;
 };
 
 };  // namespace v3d::moya::device::cpu

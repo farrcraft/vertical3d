@@ -16,6 +16,16 @@ namespace v3d::moya::device::cpu {
 inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max();
 
 /**
+ * Whether the surfaces an instance places are cut out. An instance that names no material leaves
+ * them as the chain around it has them, and one that names a material makes them its material's.
+ **/
+enum class Cut : std::uint8_t {
+    Inherited,
+    Solid,
+    Out
+};
+
+/**
  * An instance as the CPU traverses it. A leaf of a group's hierarchy holds instances, and a ray
  * that reaches one is moved into its prototype's space and traverses the prototype's hierarchy
  * from its root.
@@ -44,6 +54,8 @@ struct Instance {
 
     /** The kinds of ray the instance is visible to. **/
     std::uint32_t visibility { 0 };
+
+    Cut cut { Cut::Inherited };
 };
 
 };  // namespace v3d::moya::device::cpu

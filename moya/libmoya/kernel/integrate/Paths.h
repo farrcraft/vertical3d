@@ -19,6 +19,9 @@
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Traversal.h>
 #include <moya/libmoya/kernel/integrate/Dimensions.h>
+#include <moya/libmoya/kernel/integrate/Keeping.h>
+#include <moya/libmoya/kernel/integrate/Opacity.h>
+#include <moya/libmoya/kernel/integrate/Passing.h>
 #include <moya/libmoya/kernel/integrate/PathState.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
@@ -53,7 +56,7 @@ namespace v3d::moya::kernel::integrate {
 /** How far short of a light's point a shadow ray stops, as a share of its length. **/
 inline constexpr float kShadowShort = 1.0e-4F;
 
-/** The most instances a shadow ray passes through that cast none of its light's shadows. **/
+/** The most surfaces a shadow ray from a light with a shadow link meets before it is blocked. **/
 inline constexpr std::uint32_t kMostPassed = 256;
 
 /**
@@ -262,33 +265,42 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T, X> & paths, st
 }
 
 /**
- * Whether anything casts a light's shadow along a shadow ray. A ray from a light whose shadow link
- * leaves instances out passes through each of those, from just past where it met it. One that
- * passes through more than kMostPassed is taken as blocked.
+ * The share of a light that passes along a shadow ray, past everything that casts its shadows.
+ * Each surface it meets lets one minus its opacity through, so a solid one lets none through.
+ *
+ * A ray from a light whose shadow link leaves instances out passes through each of those, from
+ * just past where it met it. One that meets more than kMostPassed surfaces, left out or cut out,
+ * is taken as blocked.
  **/
 template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL bool blocked(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow) {
+MOYA_KERNEL float passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow) {
     if (!light.shadowLinked) {
-        return paths.traversal.any(shadow);
+        Passing<X> filter { .surfaces = paths.surfaces, .textures = paths.textures, .ray = shadow };
+        return paths.traversal.any(shadow, filter) ? 0.0F : filter.passing;
     }
+    geometry::EveryHit every;
+    float through = 1.0F;
     for (std::uint32_t passed = 0; passed < kMostPassed; ++passed) {
-        const geometry::Hit hit = paths.traversal.nearest(shadow);
+        const geometry::Hit hit = paths.traversal.nearest(shadow, every);
         if (!hit.found()) {
-            return false;
+            return through;
         }
         if (paths.lights.links.casts(light, hit)) {
-            return true;
+            through *= 1.0F - opacityAt(paths.surfaces, paths.textures, hit, shadow);
+            if (!(through > 0.0F)) {
+                return 0.0F;
+            }
         }
         shadow.start = std::fmax(hit.distance * (1.0F + kShadowShort), hit.distance + std::numeric_limits<float>::min());
     }
-    return true;
+    return 0.0F;
 }
 
 /**
  * Next event estimation at a shading point: the light a light sample brings in, weighed against
  * the BSDF's sample by the power heuristic. A light is drawn by pickLight(), then a point on it,
- * and a shadow ray towards the point says whether anything lies between. A bounce that a depth
- * limit refuses samples no light, since the BSDF's sample there ends the path.
+ * and a shadow ray towards the point says how much of its light passes what lies between. A
+ * bounce that a depth limit refuses samples no light, since the BSDF's sample there ends the path.
  *
  * A light that only a light sample finds takes the whole weight, and is sampled whatever the
  * strategy. It lies at one point or along one direction, or its shadow link leaves an instance
@@ -336,13 +348,14 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
         shadow.direction = drawn.point - shadow.origin;
         shadow.end = 1.0F - kShadowShort;
     }
-    if (blocked(paths, chosen, shadow)) {
+    const float through = passing(paths, chosen, shadow);
+    if (!(through > 0.0F)) {
         return none;
     }
     const float density = chance * drawn.density;
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
     const float weight = weighed ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
-    return value * emitted * (weight / density);
+    return value * emitted * (through * weight / density);
 }
 
 /**
@@ -469,13 +482,21 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
  * each mesh light emits there, a mesh light's and its material's both. It then takes a light
  * sample of its set of linked lights, before it scatters. A path that leaves the scene gathers
  * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
- * the light emits towards it, and ends there.
+ * the light emits towards it, and ends there. A ray passes through a surface that is cut out
+ * with a chance of one minus its opacity, drawn from the bounce's own draw.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
     for (;;) {
         const geometry::Ray & ray = MOYA_PATH(state, ray);
-        const geometry::Hit hit = paths.traversal.nearest(ray);
+        const Keeping<X> filter { .surfaces = paths.surfaces,
+            .textures = paths.textures,
+            .ray = ray,
+            .sampler = paths.sampler,
+            .pixel = MOYA_PATH(state, pixel),
+            .sample = MOYA_PATH(state, sample),
+            .dimension = bounceDimension(MOYA_PATH(state, bounces), kOpacity) };
+        const geometry::Hit hit = paths.traversal.nearest(ray, filter);
         if (!hit.found()) {
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;

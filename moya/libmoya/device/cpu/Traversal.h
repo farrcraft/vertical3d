@@ -33,7 +33,8 @@ namespace v3d::moya::device::cpu {
  * interpolated at that time, and a moving node's boxes too.
  *
  * A ray enters an instance only when the instance is visible to its kind and the chain it is
- * inside has room for one more. A hit's chain is the instances it entered, outermost first.
+ * inside has room for one more. A hit's chain is the instances it entered, outermost first. The
+ * filter is asked about a hit only when the chain's material is cut out.
  *
  * Only the CPU's libraries define nearest() and any(), each for its own instruction set. libmoya
  * fills the arrays and passes the traversal to a library's entry point, and never calls either.
@@ -83,8 +84,11 @@ struct Traversal {
     float open { 0.0F };
     float close { 0.0F };
 
-    kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray) const;
-    bool any(const kernel::geometry::Ray & ray) const;
+    template <typename F>
+    kernel::geometry::Hit nearest(const kernel::geometry::Ray & ray, F & filter) const;
+
+    template <typename F>
+    bool any(const kernel::geometry::Ray & ray, F & filter) const;
 
  private:
     /** The world as an instance that places it. **/

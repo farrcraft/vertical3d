@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-11
 **Tags**: offline, shaders
-**Documented in**: [plans/MoyaMaterials.md](../../plans/MoyaMaterials.md)
+**Documented in**: [offline/Integrator.md](../../offline/Integrator.md)
 
 ## Context
 

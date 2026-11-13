@@ -153,7 +153,7 @@ among the options before the record is drafted.
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225, 0229 | done |
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | done |
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | done |
-| [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | open |
+| [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | done |
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | open |
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | open |
 | [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | open |
@@ -746,6 +746,19 @@ takes its height from a material and is hit where it was.
 
 **Tests:** a plane of opacity zero leaves the picture as it was without it. A plane of half opacity
 shows the expected mix, within its errors. A leaf cut out by a texture casts the leaf's shadow.
+
+**Done.** `geometry_opacity` compiles into a register of its own, and a layered material is cut
+out when a node feeds it or its constant is below one. A traversal now takes a filter: `nearest()`
+keeps the nearest hit it counts and `any()` stops at the first, and
+`kernel::geometry::EveryHit` counts them all. The CPU asks the filter only on a chain whose
+material is cut out, which each instance records, so a solid scene traverses as before. A mesh
+placed by a cut-out chain is built without spatial splits, as OptiX promises a single any-hit
+call, so a primitive is asked about once per ray. A camera or indirect ray keeps a hit by a hash
+of a new per-bounce draw, the primitive and its chain, and a shadow ray multiplies one minus each
+opacity, as the record decides. A light with a shadow link attenuates by the opacity of what casts
+its shadows, still meeting each surface by a traversal of its own. The hit view sees cut-out
+surfaces as solid. A light sample of a cut-out mesh light still sees its whole surface, which
+[TODO.md](../TODO.md) holds.
 
 ### Step 24 — Other surface shaders
 

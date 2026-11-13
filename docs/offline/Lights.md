@@ -338,8 +338,10 @@ shadow linking does. While `shadowIncludeRoot` is 1, every instance casts them. 
 only what a chain places through an instance `shadowInstances` names does.
 
 - **A shadow ray from such a light passes through what casts none of its shadows.** It goes on
-  from just past each point it meets, until it meets what casts its shadow or nothing.
-  `kernel::integrate::kMostPassed` is the most it passes through, past which it is blocked.
+  from just past each point it meets, until it meets what casts its shadow or nothing. A surface
+  that casts its shadow and is cut out lets one minus its opacity through, and the ray goes on
+  past it too. `kernel::integrate::kMostPassed` is the most surfaces it meets, past which it is
+  blocked.
 - **Such a light is found by light samples alone**, as a point is, and its light sample takes
   the whole weight. A BSDF's direction towards it would stop at what the shadow ray passes
   through.

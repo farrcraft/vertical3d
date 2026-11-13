@@ -295,6 +295,8 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
             out.material.surface = kernel::program::parameters(out.values.data());
             const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
             out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
+            const mx::InputPtr opacity = held.terminal->getInput("geometry_opacity");
+            out.material.programmedOpacity = opacity && opacity->getConnectedNode() && !compiled.overflowed() ? 1U : 0U;
             out.material.layered = 1;
         }
     }

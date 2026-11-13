@@ -18,6 +18,7 @@
 #include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <set>
@@ -49,10 +50,13 @@ void Assembler::update(const scene::Scene & scene) {
     std::map<std::uint32_t, internal::Part> geometryParts;
     std::vector<bool> geometryBuilt;
     std::vector<LinearBox> geometryBounds;
-    for (const geometry::Geometry & geometry : prototypes_.geometries) {
+    const std::vector<bool> cutOut = internal::cutOutGeometries(prototypes_);
+    for (std::size_t index = 0; index < prototypes_.geometries.size(); ++index) {
+        const geometry::Geometry & geometry = prototypes_.geometries[index];
         const auto held = geometryParts_.find(geometry.id);
-        const bool build = held == geometryParts_.end() || cache_.made().contains(geometry.id);
-        const internal::Part part = build ? internal::geometryPart(device_, prototypes_, geometry) : held->second;
+        // a still mesh is built again when whether it is cut out changed, which decides its splits
+        const bool build = held == geometryParts_.end() || cache_.made().contains(geometry.id) || held->second.cutOut != cutOut[index];
+        const internal::Part part = build ? internal::geometryPart(device_, prototypes_, geometry, cutOut[index]) : held->second;
         if (build) {
             builtGeometries_.push_back(geometry.id);
         }

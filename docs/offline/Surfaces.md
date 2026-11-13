@@ -187,6 +187,10 @@ libraries `material::Library::installed()` reads once from beside the executable
 - **A surface of `open_pbr_surface` makes the material layered**, and its program gives OpenPBR's
   parameters, as [The node program](#the-node-program) says. `geometry_thin_walled` sets
   `thinWalled`, and is read as a constant.
+- **A layered material is cut out** when its opacity may be less than one. That is when a node
+  feeds `geometry_opacity` and the program gives it, which sets `programmedOpacity`, or when the
+  constant it holds is less than one. `Material::cutOut()` says which. A traversal asks about a hit
+  on such a material, as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
 - **A surface of any other definition is reported**, and the material stays diffuse.
 - **Without the libraries**, a MaterialX material is diffuse, and the reason is reported.
 

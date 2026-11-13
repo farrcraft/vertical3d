@@ -35,6 +35,7 @@ v3d_add_test(moya
 	"MaterialLibraryTest.cxx"
 	"MotionTest.cxx"
 	"NormalMapTest.cxx"
+	"OpacityTest.cxx"
 	"PathsReferenceTest.cxx"
 	"PathsTest.cxx"
 	"MicroPolygonGridTest.cxx"

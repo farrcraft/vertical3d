@@ -18,7 +18,8 @@ namespace v3d::moya::kernel::geometry {
 
 /**
  * What tracing a list of rays reads and writes. The rays are laid over an image of a width, so a
- * launch reaches each. Each ray gets its nearest hit, and whether anything lies on it.
+ * launch reaches each. Each ray gets its nearest hit, and whether anything lies on it, with every
+ * surface solid.
  **/
 template <Traversal T>
 struct TraceRays {
@@ -36,8 +37,9 @@ MOYA_KERNEL void traceRays(const TraceRays<T> & params, Item item) {
     if (at >= params.rays.size) {
         return;
     }
-    params.nearest[at] = params.traversal.nearest(params.rays[at]);
-    params.any[at] = params.traversal.any(params.rays[at]) ? 1U : 0U;
+    EveryHit every;
+    params.nearest[at] = params.traversal.nearest(params.rays[at], every);
+    params.any[at] = params.traversal.any(params.rays[at], every) ? 1U : 0U;
 }
 
 };  // namespace v3d::moya::kernel::geometry

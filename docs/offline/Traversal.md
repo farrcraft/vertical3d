@@ -41,13 +41,24 @@ primitive, once, rather than for every hit a nearer one replaces.
 A stage that traces rays takes its traversal as a template parameter, and each device
 instantiates the stages with its own. The concept `Traversal` names what one provides:
 
-- **`nearest(ray)`**: the hit nearest the ray's start within its interval, or a hit that found
-  nothing.
-- **`any(ray)`**: whether anything lies within the interval. It may stop at the first primitive
-  it meets, as a shadow ray needs.
+- **`nearest(ray, filter)`**: the hit nearest the ray's start within its interval that the
+  filter counts, or a hit that found nothing.
+- **`any(ray, filter)`**: whether a hit the filter counts lies within the interval. It stops at
+  the first, as a shadow ray needs.
 
 Both are `const`, since a launch traces from every pixel at once. Kernel code names no device,
 so a test runs the same stages over any traversal.
+
+A filter decides whether a hit counts. Its `counts(hit)` is given the hit whole, with its
+distance, primitive, position on the primitive, time and chain of instances, and may change the
+filter, as a shadow ray's gathers the light that passes. `kernel::geometry::EveryHit` counts every
+hit, for a search of the geometry alone. The integrator's filters decide by a surface's opacity,
+as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
+
+- **A traversal asks the filter about every hit on a surface whose material is cut out.** It
+  counts every other hit without asking, and may ask about those too.
+- **A traversal asks about a primitive at most once for each ray**, so a filter that gathers sees
+  each surface once.
 
 Background: [ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md)
 
@@ -281,9 +292,10 @@ gathers.
 
 `kernel::geometry::BruteForce` tests every placed primitive for every ray, moving the ray into each
 run of points, quadrics or curves. It is slow, and it is the reference every other traversal is
-compared with. Its `nearest()` keeps the nearest hit within the ray's interval, and its `any()`
-stops at the first. A run hidden from the ray's kind is passed over. It traces the triangles as they
-were placed, so it is right for a ray at the time they were placed at.
+compared with. Its `nearest()` keeps the nearest hit within the ray's interval that the filter
+counts, and its `any()` stops at the first the filter counts. It asks the filter about every hit,
+and tests each primitive once. A run hidden from the ray's kind is passed over. It traces the
+triangles as they were placed, so it is right for a ray at the time they were placed at.
 
 ## The hit view
 
@@ -386,6 +398,10 @@ one's root, and whether it moves.
 - **A geometry's hierarchy is built once**, however many instances place it, and its leaves hold
   the indices of its primitives within it. One that holds still is built as `build()` builds one:
   a mesh over its triangles with spatial splits, and points and curves over their boxes without.
+  A mesh placed by a chain of instances whose material is cut out is built without spatial
+  splits, so each triangle lies in one leaf and a ray meets it once. A chain's material is the
+  one its innermost instance that names a material names. `accel::Assembler` builds a mesh again
+  when whether it is cut out changes.
   One that moves is built as `buildMoving()` does, over the shutter.
 - **A point is bounded** by its centre and half its width, which `accel::pointSweep()` bounds
   over a time range as a moving triangle's points are bounded.
@@ -454,7 +470,11 @@ children at once: as one AVX register for AVX2 and AVX-512, and as two SSE regis
   lost to rounding.
 - **`nearest()` tests the leaves it reaches nearest first**, and pushes the nodes it reaches
   farthest first, so the nearest is visited next. A node entered beyond the closest hit so far is
-  passed over. `any()` stops at the first primitive it meets.
+  passed over. `any()` stops at the first hit the filter counts.
+- **The filter is asked about a hit only on a chain whose material is cut out.** Each instance
+  holds whether the material it names is cut out, or that it names none. The ray carries the
+  answer of the innermost instance that names one as it enters instances, so a solid surface
+  costs no more than before.
 - **A leaf of a geometry's hierarchy tests each primitive by the geometry's form**: a triangle,
   a round or flat point, the quadric, or a segment of curves, as it stands at the ray's time.
 - **A leaf of a group's hierarchy enters each of its instances.** The ray is moved into the

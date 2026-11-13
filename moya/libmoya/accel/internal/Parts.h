@@ -20,12 +20,23 @@
 /** The steps of assemble(), which accel::Assembler takes too, keeping each prototype's part. **/
 namespace v3d::moya::accel::internal {
 
-/** A geometry's hierarchy, as assemble() builds it. **/
-Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Geometry & geometry);
+/**
+ * A geometry's hierarchy, as assemble() builds it. A geometry that is cut out is built with no
+ * spatial splits, so that each of its primitives lies in one leaf and a ray meets it once.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then whether it is cut out
+Part geometryPart(device::CpuDevice & device, const geometry::Prototypes & prototypes, const geometry::Geometry & geometry, bool cutOut);
+
+/**
+ * Whether each geometry is placed by a chain of instances whose material is cut out. A chain's
+ * material is the one its innermost instance that names a material names.
+ **/
+std::vector<bool> cutOutGeometries(const geometry::Prototypes & prototypes);
 
 /**
  * Fills the CPU's record of each instance a group holds, from the roots the assembly holds for
- * their prototypes, and gives whether the group moves.
+ * their prototypes and whether the material each names is cut out, and gives whether the group
+ * moves.
  **/
 bool placeMembers(const geometry::Prototypes & prototypes, const geometry::Group & members, Assembly & out);
 
