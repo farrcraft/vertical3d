@@ -99,14 +99,27 @@ hierarchy is built, so every device sees the same triangles.
   is the one that brings the box of its first sample's points, grown by its displacement bound,
   nearest the camera's position. Every placement down a chain of instances a traversal follows is
   weighed. A surface is measured at its first sample, and its other samples share the cut.
-- **A surface is displaced by its `displacement` primvar**, a float of any interpolation, as a
-  height along its limit surface's normal in its own space. A positive height moves it toward the
-  side its faces are wound counterclockwise from. Each sample is displaced along its own normals,
-  and the points of shared places are shared again after it.
-- **A height is held within the surface's `displacementBound`**, in its own space, which is 0
-  until a client sets it, as RI's displacement bound is. A height beyond it is held to it, and
-  reported. A displacement that is not a float, or not of the count its interpolation gives, is
-  reported, and the surface lies on its limit.
+- **A surface is displaced by its material's displacement**, the material of the placement it
+  is cut for. A displacement whose node is a MaterialX node compiles to a program of its own, as
+  [Surfaces.md](Surfaces.md#compiling-a-displacement) says. A surface whose material has no
+  such displacement lies on its limit.
+- **The program runs on the host, once at each place.** `internal::liftsOf()` gathers the cut,
+  undisplaced surface as prototypes of its own and views them through a CPU device. Each place is
+  shaded where it first lies among the triangles' corners, at the first sample, where the
+  placement puts it, with its limit normal as its shading and geometric normal. Its tangent frame
+  is the one `Surfaces::tangentFrame()` gives it, from its `tangent` or its `st`, and it has
+  no footprint. Its images are read through a texture cache of the scene's texture options, and
+  colours are converted by the default colour configuration.
+- **A displacement moves a place along its tangent, its bitangent and its normal**, in the
+  surface's own space. A positive height along the normal moves it toward the side its faces are
+  wound counterclockwise from. Each sample moves along its own limit normals, with the first
+  sample's tangent laid flat against them, and the points of shared places are shared again after
+  it. A displaced surface shades with its own normals.
+- **A displacement is held within the surface's `displacementBound`**, in its own space, which
+  is 0 until a client sets it, as RI's displacement bound is. A displacement longer than it is
+  held to it along its own direction, and reported.
+- **A cut kept in the cache is placed again** only when its displacement compiled to the same
+  instructions, values and images.
 - **The hierarchy bounds the displaced triangles themselves**, so its boxes are not grown by the
   bound.
 

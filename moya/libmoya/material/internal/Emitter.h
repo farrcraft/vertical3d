@@ -21,8 +21,8 @@
 namespace v3d::moya::material::internal {
 
 /**
- * Compiles the nodes that feed a material's surface into a program's instructions and the values
- * its registers start from. The values begin with the surface's parameters, laid out as
+ * Compiles the nodes that feed a material's terminal into a program's instructions and the values
+ * its registers start from. The values begin with the terminal's parameters, laid out as
  * kernel::program gives them, and each constant and each node's output takes registers of its
  * own after them. A node is compiled once, however many inputs it feeds, for each place a
  * heighttonormal node reads it at.
@@ -32,8 +32,9 @@ class Emitter final {
     /**
      * @param primvars the name of each primvar a program reads, by its number, to which a name read
      *        first is added
+     * @param parameters the registers the terminal's parameters take, before every other
      **/
-    Emitter(Network & network, std::vector<std::string> & primvars);
+    Emitter(Network & network, std::vector<std::string> & primvars, std::uint32_t parameters);
 
     /** Holds a constant in registers from a first. A colour's first is kept with its space. **/
     void constant(std::uint32_t at, const MaterialX::ConstValuePtr & value, const std::string & type, const std::string & space);

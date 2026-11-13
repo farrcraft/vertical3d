@@ -152,7 +152,7 @@ among the options before the record is drafted.
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | done |
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225, 0229 | done |
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | done |
-| [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | open |
+| [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | done |
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | open |
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | open |
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | open |
@@ -725,6 +725,18 @@ leaves out, and both were brought up to date.
 
 **Tests:** every displaced reference scene renders as it did, its height now from a material. A
 textured displacement moves the points the texture says.
+
+**Done.** `material::compileDisplacement()` compiles a material's displacement terminal of
+`ND_displacement_float` or `ND_displacement_vector3` into a program whose first four registers
+hold the displacement's vector and scale, and `program::run()` gives a program's registers apart
+from OpenPBR's parameters. A subdivision surface takes the displacement of the material of the
+placement it is cut for. The gather views the cut surface alone through a CPU device, and runs
+the program once at each place with a texture cache of the scene's options. Each sample's points
+move along its tangent, bitangent and normal, held within the bound. The `displacement` primvar is
+no longer read. The cached cut is placed again only when the displacement compiled alike.
+`texture::optionsOf()` reads the scene's texture options for the gather and the render. The
+displaced RIB scenes are the old hiders' and render as before. The new core's displaced cube now
+takes its height from a material and is hit where it was.
 
 ### Step 23 — Opacity
 

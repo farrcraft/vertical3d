@@ -543,13 +543,21 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_no_edge_is_cut_on_one_side_alone_test) {
     }
 }
 
-/** The cube's subdivision surface, displaced by one height and held within a bound. **/
-scene::Handle displaced(scene::Scene & scene, float height, float bound) {
-    const scene::Handle out = subdivision(scene, "cage", cube(), cubePoints());
-    scene.declare(out, scene::Declaration { .name = "displacement", .type = scene::Type::Float, .fallback = scene::Value::number(0.0F) });
-    scene.set(out, "displacement", scene::Value::number(height));
-    scene.set(out, "displacementBound", scene::Value::number(bound));
-    return out;
+/**
+ * The cube's subdivision surface placed with a material that displaces it by one height, held
+ * within a bound.
+ **/
+void displaced(scene::Scene & scene, float height, float bound) {
+    const scene::Handle cage = subdivision(scene, "cage", cube(), cubePoints());
+    scene.set(cage, "displacementBound", scene::Value::number(bound));
+    const scene::Handle shader = scene.create("shader", "raise");
+    scene.set(shader, "shader", scene::Value::string("ND_displacement_float"));
+    scene.declare(shader, scene::Declaration { .name = "displacement", .type = scene::Type::Float, .fallback = scene::Value::number(0.0F) });
+    scene.set(shader, "displacement", scene::Value::number(height));
+    const scene::Handle material = scene.create("material", "raised");
+    scene.set(material, "displacement", scene::Value::handle(shader));
+    const scene::Handle placed = instanced(scene, "cage", cage, {}, glm::mat4(1.0F));
+    scene.set(placed, "material", scene::Value::handle(material));
 }
 
 /** Rays from the cube's centre through the middle of each face and through each corner. **/
@@ -574,9 +582,9 @@ std::vector<kernel::geometry::Ray> outward() {
     return out;
 }
 
-// rays from the cube's centre meet its limit raised by its height along the normal: 68/81 out
-// through each face's middle, and half the diagonal through each corner. A height beyond the
-// bound is held to the bound, and reported
+// rays from the cube's centre meet its limit raised by its material's height along the normal:
+// 68/81 out through each face's middle, and half the diagonal through each corner. A height
+// beyond the bound is held to the bound, and reported
 BOOST_AUTO_TEST_CASE(moya_subdivision_a_displaced_surface_is_hit_at_its_height_test) {
     for (const std::pair<float, float> & displacement : { std::pair { 0.25F, 0.5F }, std::pair { -0.125F, 0.5F }, std::pair { 1.0F, 0.25F } }) {
         const float height = displacement.first;
@@ -584,7 +592,7 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_displaced_surface_is_hit_at_its_height_t
         scene::Scene scene(scene::kinds());
         const scene::Handle options = scene.create("options", "options");
         scene.set(options, "edgeLength", scene::Value::number(0.0F));
-        instanced(scene, "cage", displaced(scene, height, bound), {}, glm::mat4(1.0F));
+        displaced(scene, height, bound);
         scene.commit();
         scene.apply();
         const geometry::Prototypes prototypes = geometry::gather(scene, {});
@@ -600,33 +608,6 @@ BOOST_AUTO_TEST_CASE(moya_subdivision_a_displaced_surface_is_hit_at_its_height_t
             }
         });
     }
-}
-
-// a height of no float, or of another count than its interpolation gives, is reported and leaves
-// the surface where its limit lies
-BOOST_AUTO_TEST_CASE(moya_subdivision_a_displacement_that_does_not_fit_is_reported_test) {
-    scene::Scene scene(scene::kinds());
-    const scene::Handle cage = displaced(scene, 0.25F, 0.5F);
-    scene.declare(cage, scene::Declaration { .name = "displacement",
-        .type = scene::Type::Float,
-        .count = scene::Declaration::kAny,
-        .fallback = scene::Value::floats({}),
-        .interpolation = scene::Interpolation::Vertex });
-    scene.set(cage, "displacement", scene::Value::floats({ 0.25F, 0.25F }));
-    const scene::Handle coloured = subdivision(scene, "coloured", cube(), cubePoints());
-    scene.declare(coloured, scene::Declaration { .name = "displacement", .type = scene::Type::Colour, .fallback = scene::Value::colour(glm::vec3(1.0F)) });
-    instanced(scene, "cage", cage, {}, glm::mat4(1.0F));
-    instanced(scene, "coloured", coloured, {}, glm::mat4(1.0F));
-    scene.commit();
-    scene.apply();
-    const geometry::Prototypes prototypes = geometry::gather(scene, {});
-    BOOST_TEST(reported(prototypes, "subdivision cage is not displaced, because a primvar of 2 floats is not 8 values"));
-    BOOST_TEST(reported(prototypes, "subdivision coloured's displacement is not a float, and it is not displaced"));
-    float farthest = 0.0F;
-    for (const glm::vec3 & point : prototypes.points) {
-        farthest = std::max(farthest, glm::length(point));
-    }
-    BOOST_TEST(farthest < std::sqrt(0.75F) + 1.0e-5F);
 }
 
 };  // namespace

@@ -71,6 +71,20 @@ struct Compiled {
  **/
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
 
+/**
+ * Compiles a scene's material whose displacement terminal is a node of language `materialx`, as
+ * compile() compiles its surface. The network is the displacement node and every node that feeds
+ * it, flattened as compile() flattens a surface's.
+ *
+ * A displacement of ND_displacement_float or ND_displacement_vector3 gives a program whose values
+ * begin with a displacement's, as kernel/program/Displacement.h lays them out. A float is a
+ * displacement along the normal, and a vector3 one along the tangent, the bitangent and the
+ * normal, each times the scale. Its inputs are compiled as a surface's are, and a node the
+ * program does not compile is reported and gives its default. A displacement of any other
+ * definition is reported, and gives a material that does not displace, of no values.
+ **/
+Compiled compileDisplacement(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
+
 /** The flattened MaterialX document that compile() reads a material's surface from, as XML. **/
 std::string flattened(const Library & library, const scene::Scene & scene, const scene::Handle & material);
 

@@ -13,6 +13,7 @@
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Group.h>
 #include <moya/libmoya/geometry/Instance.h>
+#include <moya/libmoya/geometry/internal/Displace.h>
 #include <moya/libmoya/geometry/internal/LightShapes.h>
 #include <moya/libmoya/geometry/internal/Piece.h>
 #include <moya/libmoya/geometry/internal/Primvars.h>
@@ -32,12 +33,14 @@
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
+#include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/texture/Options.h>
 
 #include <algorithm>
 #include <cmath>
@@ -135,30 +138,6 @@ subdivision::Topology topologyOf(const scene::Scene & scene, const scene::Handle
         out.boundary = subdivision::Boundary::Edges;
     } else if (boundary == "edges-and-corners") {
         out.boundary = subdivision::Boundary::EdgesAndCorners;
-    }
-    return out;
-}
-
-/**
- * The points of a tessellation's places on a surface's limit through points, three floats each,
- * each raised along the limit's normal by its height when there are heights.
- **/
-std::vector<float> displaced(const subdivision::Surface & surface, const std::vector<float> & points, const subdivision::Tessellation & tessellation,
-    const std::vector<float> & heights) {
-    std::vector<float> out = surface.at(points, 3, scene::Interpolation::Vertex, tessellation);
-    if (heights.empty()) {
-        return out;
-    }
-    const std::vector<float> normals = surface.normals(points, tessellation);
-    for (std::size_t place = 0; place < heights.size(); ++place) {
-        for (std::size_t axis = 0; axis < 3; ++axis) {
-            out[(place * 3) + axis] += heights[place] * normals[(place * 3) + axis];
-        }
-    }
-    // a place on a shared edge takes its shared place's point, as the limit's points do
-    for (std::size_t place = 0; place < tessellation.shared.size(); ++place) {
-        const std::size_t from = static_cast<std::size_t>(tessellation.shared[place]) * 3;
-        std::copy_n(out.begin() + static_cast<std::ptrdiff_t>(from), 3, out.begin() + static_cast<std::ptrdiff_t>(place * 3));
     }
     return out;
 }
@@ -369,6 +348,7 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     prototypes_.materials.push_back(out);
     prototypes_.materialSpaces.push_back(space);
     materialIndex_.emplace(handle.index, index);
+    materialHandles_.push_back(handle);
     return index;
 }
 
@@ -669,24 +649,25 @@ void Walk::cutSurfaces() {
     }
     const kernel::camera::Camera camera = camera::dicingFromScene(scene_);
     const float edgeLength = option(scene_, "edgeLength").floatArray().front();
-    const std::map<std::uint32_t, glm::mat4> placements = nearest(camera);
+    const std::map<std::uint32_t, Placement> placements = nearest(camera);
     for (const Uncut & uncut : uncut_) {
         const auto placed = placements.find(uncut.index);
-        const glm::mat4 placement = placed == placements.end() ? glm::mat4(1.0F) : placed->second;
-        const std::vector<float> measure = dicingOf(camera, edgeLength, placement);
+        const Placement placement = placed == placements.end() ? Placement {} : placed->second;
+        const material::Compiled * displacement = displacementOf(placement.material);
+        const std::vector<float> measure = dicingOf(camera, edgeLength, placement.transform);
+        const std::string print = fingerprintOf(displacement);
         if (cache_ != nullptr) {
             const auto held = cache_->pieces_.find(uncut.handle.index);
-            if (held != cache_->pieces_.end() && held->second.made && held->second.dicing == measure) {
+            if (held != cache_->pieces_.end() && held->second.made && held->second.dicing == measure && held->second.displaced == print) {
                 prototypes_.geometries[uncut.index] = place(held->second);
                 continue;
             }
         }
         const Mark mark = marked();
-        const subdivision::Dicing dicing(camera, edgeLength, placement);
+        const subdivision::Dicing dicing(camera, edgeLength, placement.transform);
         const scene::Samples & samples = scene_.samples(uncut.handle, "P");
         // the surface is measured at its first sample's points, and every sample shares the cut
         const subdivision::Tessellation tessellation = uncut.surface.cut(floatsOf(samples.values.front()), dicing);
-        const std::vector<float> raised = heights(uncut.handle, uncut.surface, tessellation);
         Geometry & mesh = prototypes_.geometries[uncut.index];
         mesh.form = kernel::geometry::primitive::Form::Triangles;
         mesh.first = static_cast<std::uint32_t>(prototypes_.faces.size());
@@ -694,7 +675,7 @@ void Walk::cutSurfaces() {
         mesh.points = sampled(prototypes_.points.size(), tessellation.corners.size(), samples.times);
         // every sample's points are evaluated on the one surface, whose patches its topology fixes
         for (const scene::Value & sample : samples.values) {
-            const std::vector<float> limit = displaced(uncut.surface, floatsOf(sample), tessellation, raised);
+            const std::vector<float> limit = uncut.surface.at(floatsOf(sample), 3, scene::Interpolation::Vertex, tessellation);
             for (const std::uint32_t corner : tessellation.corners) {
                 const std::size_t at = static_cast<std::size_t>(corner) * 3U;
                 prototypes_.points.emplace_back(limit[at], limit[at + 1U], limit[at + 2U]);
@@ -702,7 +683,7 @@ void Walk::cutSurfaces() {
         }
         prototypes_.faces.insert(prototypes_.faces.end(), tessellation.faces.begin(), tessellation.faces.end());
         // an undisplaced surface shades with its limit normals, a displaced one with its own
-        if (raised.empty()) {
+        if (displacement == nullptr) {
             const std::vector<float> normals = uncut.surface.normals(floatsOf(samples.values.front()), tessellation);
             Spread spread { .perPrimitive = 3, .values = {} };
             spread.values.reserve(tessellation.corners.size() * 3U);
@@ -715,17 +696,21 @@ void Walk::cutSurfaces() {
         addPrimvars(uncut.handle, mesh, [&](scene::Interpolation interpolation, const std::vector<float> & values, std::size_t width) {
             return spreadOverSurface(interpolation, values, width, uncut.surface, tessellation);
         });
+        if (displacement != nullptr) {
+            displace(uncut, tessellation, *displacement, placement.transform, mark);
+        }
         if (cache_ != nullptr) {
             Piece piece = pieceOf(uncut.index, mark);
             piece.surface = uncut.surface;
             piece.dicing = measure;
+            piece.displaced = print;
             cache_->pieces_.insert_or_assign(uncut.handle.index, std::move(piece));
             cache_->made_.insert(uncut.handle.index);
         }
     }
 }
 
-std::map<std::uint32_t, glm::mat4> Walk::nearest(const kernel::camera::Camera & camera) const {
+std::map<std::uint32_t, Walk::Placement> Walk::nearest(const kernel::camera::Camera & camera) const {
     // each surface's box, grown by its bound, by its index among the geometries
     std::map<std::uint32_t, std::pair<glm::vec3, glm::vec3>> boxes;
     for (const Uncut & uncut : uncut_) {
@@ -740,17 +725,20 @@ std::map<std::uint32_t, glm::mat4> Walk::nearest(const kernel::camera::Camera & 
         boxes.emplace(uncut.index, std::make_pair(low - bound, high + bound));
     }
     const glm::vec3 eye { camera.toWorld * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F) };
-    std::map<std::uint32_t, std::pair<float, glm::mat4>> best;
-    // every placement of every surface, down the chains of instances a traversal follows
-    const auto place = [&](const auto & self, const Group & group, const glm::mat4 & above, std::uint32_t depth) -> void {
+    std::map<std::uint32_t, std::pair<float, Placement>> best;
+    // every placement of every surface, down the chains of instances a traversal follows. The
+    // innermost instance of a chain that names a material gives it
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain's material, then its depth
+    const auto place = [&](const auto & self, const Group & group, const glm::mat4 & above, std::uint32_t named, std::uint32_t depth) -> void {
         if (depth == kernel::geometry::kInstanceDepth) {
             return;
         }
         for (const std::uint32_t index : group.instances) {
             const Instance & instance = prototypes_.instances[index];
             const glm::mat4 placement = above * instance.transform;
+            const std::uint32_t material = instance.material != kernel::surface::kNoMaterial ? instance.material : named;
             if (instance.kind == Prototype::Group) {
-                self(self, prototypes_.groups[instance.prototype], placement, depth + 1);
+                self(self, prototypes_.groups[instance.prototype], placement, material, depth + 1);
                 continue;
             }
             const auto box = boxes.find(instance.prototype);
@@ -760,50 +748,49 @@ std::map<std::uint32_t, glm::mat4> Walk::nearest(const kernel::camera::Camera & 
             const float distance = distanceTo(eye, box->second, placement);
             const auto held = best.find(instance.prototype);
             if (held == best.end() || distance < held->second.first) {
-                best[instance.prototype] = std::make_pair(distance, placement);
+                best[instance.prototype] = std::make_pair(distance, Placement { .transform = placement, .material = material });
             }
         }
     };
-    place(place, prototypes_.world, glm::mat4(1.0F), 0);
-    std::map<std::uint32_t, glm::mat4> out;
+    place(place, prototypes_.world, glm::mat4(1.0F), kernel::surface::kNoMaterial, 0);
+    std::map<std::uint32_t, Placement> out;
     for (const auto & [index, held] : best) {
         out.emplace(index, held.second);
     }
     return out;
 }
 
-std::vector<float> Walk::heights(const scene::Handle & handle, const subdivision::Surface & surface, const subdivision::Tessellation & tessellation) {
-    const std::vector<scene::Declaration> & primvars = scene_.primvars(handle);
-    const auto declared = std::ranges::find_if(primvars, [](const scene::Declaration & primvar) { return primvar.name == "displacement"; });
-    if (declared == primvars.end()) {
-        return {};
+const material::Compiled * Walk::displacementOf(std::uint32_t material) {
+    if (material >= materialHandles_.size()) {
+        return nullptr;
     }
-    const std::string name = "subdivision " + scene_.name(handle);
-    if (declared->type != scene::Type::Float) {
-        report(name + "'s displacement is not a float, and it is not displaced");
-        return {};
+    const material::Compiled * out = programs_.displacement(materialHandles_[material].index);
+    if (out == nullptr) {
+        return nullptr;
     }
-    std::vector<float> out;
-    try {
-        out = surface.at(scene_.value(handle, "displacement").floatArray(), 1, declared->interpolation, tessellation);
-    } catch (const std::invalid_argument & refused) {
-        report(name + " is not displaced, because " + refused.what());
-        return {};
+    for (const std::string & message : out->reports) {
+        report(message);
     }
-    const float bound = std::max(scene_.value(handle, "displacementBound").floatArray().front(), 0.0F);
-    bool beyond = false;
-    for (float & height : out) {
-        if (std::fabs(height) > bound) {
-            beyond = true;
-            height = std::clamp(height, -bound, bound);
-        }
-    }
-    if (beyond) {
+    return out->values.empty() ? nullptr : out;
+}
+
+void Walk::displace(const Uncut & uncut, const subdivision::Tessellation & tessellation, const material::Compiled & displacement, const glm::mat4 & placement,
+    const Mark & mark) {
+    const scene::Samples & samples = scene_.samples(uncut.handle, "P");
+    const std::vector<float> normals = uncut.surface.normals(floatsOf(samples.values.front()), tessellation);
+    std::vector<Lift> lifts = liftsOf(pieceOf(uncut.index, mark), displacement, tessellation.corners, normals, placement, texture::optionsOf(scene_), logger_);
+    const float bound = std::max(scene_.value(uncut.handle, "displacementBound").floatArray().front(), 0.0F);
+    if (heldWithin(lifts, bound)) {
         std::ostringstream message;
-        message << name << " is displaced beyond its bound of " << bound << ", and is held to it";
+        message << "subdivision " << scene_.name(uncut.handle) << " is displaced beyond its bound of " << bound << ", and is held to it";
         report(message.str());
     }
-    return out;
+    const Geometry & mesh = prototypes_.geometries[uncut.index];
+    const std::size_t count = tessellation.corners.size();
+    for (std::size_t sample = 0; sample < samples.values.size(); ++sample) {
+        const std::vector<glm::vec3> moved = raised(uncut.surface, tessellation, floatsOf(samples.values[sample]), lifts);
+        std::copy(moved.begin(), moved.end(), prototypes_.points.begin() + static_cast<std::ptrdiff_t>(mesh.points.first + (sample * count)));
+    }
 }
 
 std::optional<std::uint32_t> Walk::curves(const scene::Handle & handle) {

@@ -25,6 +25,16 @@ namespace v3d::moya::geometry::internal {
 
 Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", "st" } {
     for (const scene::Handle & handle : scene.objects("material")) {
+        const scene::Handle displacement = scene.value(handle, "displacement").handleArray().front();
+        if (displacement.valid() && scene.contains(displacement) && scene.value(displacement, "language").stringArray().front() == "materialx") {
+            try {
+                displacements_.emplace(handle.index, material::compileDisplacement(material::Library::installed(), scene, handle, names_));
+            } catch (const std::runtime_error & refused) {
+                material::Compiled none;
+                none.reports.push_back("material " + scene.name(handle) + " does not displace, because " + refused.what());
+                displacements_.emplace(handle.index, std::move(none));
+            }
+        }
         const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
         if (!surface.valid() || !scene.contains(surface) || scene.value(surface, "language").stringArray().front() != "materialx") {
             continue;
@@ -42,6 +52,10 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
 kernel::surface::Material Programs::place(std::uint32_t material, Prototypes & prototypes, std::vector<std::string> & reports) const {
     const material::Compiled & held = compiled_.at(material);
     reports.insert(reports.end(), held.reports.begin(), held.reports.end());
+    return append(held, prototypes);
+}
+
+kernel::surface::Material Programs::append(const material::Compiled & held, Prototypes & prototypes) {
     // the program's instructions and values follow every other material's
     kernel::surface::Material out = held.material;
     const auto values = static_cast<std::uint32_t>(prototypes.programValues.size());

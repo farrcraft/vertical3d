@@ -50,6 +50,9 @@ struct Piece {
     /** What a subdivision surface was measured from to be cut, which a later cut has to match. **/
     std::vector<float> dicing;
 
+    /** What a subdivision surface's displacement compiled to, which a later cut has to match. **/
+    std::string displaced;
+
     /** Whether the piece holds a geometry, which a subdivision surface does once it is cut. **/
     bool made { false };
 };

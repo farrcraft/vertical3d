@@ -6,12 +6,13 @@
 #include <moya/libmoya/material/Compile.h>
 
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/program/Displacement.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/material/internal/Definitions.h>
 #include <moya/libmoya/material/internal/Emitter.h>
 #include <moya/libmoya/material/internal/Network.h>
-#include <moya/libmoya/material/internal/OpenPbrInput.h>
+#include <moya/libmoya/material/internal/TerminalInput.h>
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -33,6 +34,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -44,9 +46,11 @@ namespace {
 
 namespace mx = MaterialX;
 using internal::Network;
-using internal::OpenPbrInput;
+using internal::TerminalInput;
 
 constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
+constexpr const char * kDisplacementFloat = "ND_displacement_float";
+constexpr const char * kDisplacementVector = "ND_displacement_vector3";
 
 /** Whether a node is a shader, a closure or a material, whose inputs feed moya's BSDF library. **/
 bool shading(const mx::NodePtr & node) {
@@ -176,14 +180,15 @@ void connect(Network & network, const scene::Scene & scene, const scene::Handle 
 }
 
 /**
- * The network of a material's surface terminal: every node that feeds the surface node through
- * the scene's connections, read into a MaterialX document and flattened.
+ * The network of one of a material's terminals, its surface or its displacement: every node that
+ * feeds the terminal's node through the scene's connections, read into a MaterialX document and
+ * flattened.
  **/
-Network network(const Library & library, const scene::Scene & scene, const scene::Handle & material) {
+Network network(const Library & library, const scene::Scene & scene, const scene::Handle & material, const std::string & terminal) {
     Network out;
     out.document = mx::createDocument();
     out.document->setDataLibrary(library.definitions().get());
-    const scene::Handle surface = firstHandle(scene, material, "surface");
+    const scene::Handle surface = firstHandle(scene, material, terminal);
     if (!surface.valid() || !scene.contains(surface)) {
         return out;
     }
@@ -217,16 +222,16 @@ Network network(const Library & library, const scene::Scene & scene, const scene
                 connect(out, scene, at->second, nodes);
             }
         }
-        out.surface = nodes.at(surface.index);
-        if (out.surface) {
-            out.document->addMaterialNode(out.document->createValidChildName(scene.name(material)), out.surface);
+        out.terminal = nodes.at(surface.index);
+        if (out.terminal) {
+            out.document->addMaterialNode(out.document->createValidChildName(scene.name(material)), out.terminal);
         }
         out.document->flattenSubgraphs(mx::EMPTY_STRING, [](const mx::NodePtr & node) {
             return !shading(node);
         });
     } catch (const mx::Exception & error) {
         out.report("material " + scene.name(material) + " is not a valid MaterialX network: " + error.what());
-        out.surface = nullptr;
+        out.terminal = nullptr;
     }
     return out;
 }
@@ -237,14 +242,14 @@ bool emits(const std::string & name) {
 }
 
 /**
- * Compiles the inputs of a surface of open_pbr_surface into the registers of its parameters. An
- * input a node feeds is compiled from that node while compiling, and otherwise gives the default
- * of the output that feeds it. An emission input a node feeds always gives that default.
+ * Compiles the inputs of a terminal's node into the registers of its parameters. An input a node
+ * feeds is compiled from that node while compiling, and otherwise gives the default of the output
+ * that feeds it. An emission input a node feeds always gives that default.
  **/
-void fill(internal::Emitter & emitter, Network & network, bool compiling) {
-    const mx::NodePtr & surface = network.surface;
+void fill(internal::Emitter & emitter, Network & network, bool compiling, std::span<const TerminalInput> inputs) {
+    const mx::NodePtr & surface = network.terminal;
     const mx::NodeDefPtr def = surface->getNodeDef();
-    for (const OpenPbrInput & parameter : internal::kOpenPbrInputs) {
+    for (const TerminalInput & parameter : inputs) {
         const std::uint32_t width = parameter.width;
         const mx::InputPtr input = surface->getInput(parameter.name);
         const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
@@ -263,19 +268,19 @@ void fill(internal::Emitter & emitter, Network & network, bool compiling) {
 };  // namespace
 
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
-    Network held = network(library, scene, material);
+    Network held = network(library, scene, material, "surface");
     Compiled out;
-    if (held.surface) {
-        const std::string definition = held.surface->getNodeDefString();
+    if (held.terminal) {
+        const std::string definition = held.terminal->getNodeDefString();
         if (definition != kOpenPbr) {
             held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it is diffuse");
         } else {
-            internal::Emitter compiled(held, primvars);
-            fill(compiled, held, true);
-            internal::Emitter constants(held, primvars);
+            internal::Emitter compiled(held, primvars, kernel::program::kParameterRegisters);
+            fill(compiled, held, true, internal::kOpenPbrInputs);
+            internal::Emitter constants(held, primvars, kernel::program::kParameterRegisters);
             if (compiled.overflowed()) {
                 held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
-                fill(constants, held, false);
+                fill(constants, held, false, internal::kOpenPbrInputs);
             }
             const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
             out.instructions = emitter.instructions();
@@ -288,7 +293,7 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
                 .values = 0,
                 .size = static_cast<std::uint32_t>(out.values.size()) };
             out.material.surface = kernel::program::parameters(out.values.data());
-            const mx::ValuePtr thin = held.surface->getInputValue("geometry_thin_walled");
+            const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
             out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
             out.material.layered = 1;
         }
@@ -297,8 +302,42 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
     return out;
 }
 
+Compiled compileDisplacement(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
+    Network held = network(library, scene, material, "displacement");
+    Compiled out;
+    if (held.terminal) {
+        const std::string definition = held.terminal->getNodeDefString();
+        const bool vector = definition == kDisplacementVector;
+        if (definition != kDisplacementFloat && !vector) {
+            held.report("material " + scene.name(material) + "'s displacement is " + definition + ", which moya does not displace by, so it is not displaced");
+        } else {
+            const std::span<const TerminalInput> inputs = vector ? std::span<const TerminalInput>(internal::kDisplacementVectorInputs)
+                                                                 : std::span<const TerminalInput>(internal::kDisplacementFloatInputs);
+            internal::Emitter compiled(held, primvars, kernel::program::kDisplacementRegisters);
+            fill(compiled, held, true, inputs);
+            internal::Emitter constants(held, primvars, kernel::program::kDisplacementRegisters);
+            if (compiled.overflowed()) {
+                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its displacement gives its default");
+                fill(constants, held, false, inputs);
+            }
+            const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
+            out.instructions = emitter.instructions();
+            out.values = emitter.values();
+            out.colours = emitter.colours();
+            out.spaces = emitter.spaces();
+            out.images = emitter.images();
+            out.material.program = kernel::program::Program { .instructions = 0,
+                .count = static_cast<std::uint32_t>(out.instructions.size()),
+                .values = 0,
+                .size = static_cast<std::uint32_t>(out.values.size()) };
+        }
+    }
+    out.reports = std::move(held.reports);
+    return out;
+}
+
 std::string flattened(const Library & library, const scene::Scene & scene, const scene::Handle & material) {
-    return mx::writeToXmlString(network(library, scene, material).document);
+    return mx::writeToXmlString(network(library, scene, material, "surface").document);
 }
 
 };  // namespace v3d::moya::material

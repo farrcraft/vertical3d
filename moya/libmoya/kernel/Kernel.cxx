@@ -78,6 +78,7 @@
 #include <moya/libmoya/kernel/light/SphericalTriangle.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Tree.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Displacement.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Instruction.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Noise.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Op.h>  // IWYU pragma: keep

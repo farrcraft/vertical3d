@@ -690,14 +690,13 @@ MOYA_KERNEL void execute(const Instruction & instruction, float * registers, con
 }
 
 /**
- * Runs a program at a shading point, from the values its registers hold before it, and gives the
- * surface's parameters its registers hold after it. The surfaces hold the program's instructions
- * and values, and its images are read through a device's texture access. Each instruction after a
- * Shift reads the shading point it moved to. The surface is not thin-walled.
+ * Runs a program at a shading point, from the values its registers hold before it, leaving in
+ * registers what they hold after it. The surfaces hold the program's instructions and values, and
+ * its images are read through a device's texture access. Each instruction after a Shift reads the
+ * shading point it moved to.
  **/
 template <texture::Texels X>
-MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program) {
-    float registers[kRegisters] {};
+MOYA_KERNEL void run(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program, float * registers) {
     for (std::uint32_t i = 0; i < program.size && i < kRegisters; ++i) {
         registers[i] = surfaces.programValues[program.values + i];
     }
@@ -710,6 +709,16 @@ MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const 
         }
         execute(instruction, registers, surfaces, textures, at);
     }
+}
+
+/**
+ * Runs a surface's program at a shading point, and gives the parameters its registers hold after
+ * it, as run() leaves them. The surface is not thin-walled.
+ **/
+template <texture::Texels X>
+MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program) {
+    float registers[kRegisters] {};
+    run(surfaces, textures, point, program, registers);
     return parameters(registers);
 }
 

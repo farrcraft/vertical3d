@@ -9,7 +9,14 @@
 #include <string>
 #include <vector>
 
+namespace v3d::moya::scene {
+class Scene;
+};  // namespace v3d::moya::scene
+
 namespace v3d::moya::texture {
+
+/** The bytes in a kilobyte, which RI's texturememory limit is given in. **/
+inline constexpr std::size_t kKilobyte = 1024;
 
 /** The most bytes of tiles a render holds when nothing names a limit: 1 GiB. **/
 inline constexpr std::size_t kDefaultMemory = std::size_t { 1024 } * 1024 * 1024;
@@ -28,5 +35,11 @@ struct Options {
     std::size_t memory { kDefaultMemory };
     std::string directory;
 };
+
+/**
+ * The options a scene's options give: `textureSearchPath` as directories, `textureMemory` in
+ * kilobytes, and `textureDirectory`, or their fallbacks while the scene has no options.
+ **/
+Options optionsOf(const scene::Scene & scene);
 
 };  // namespace v3d::moya::texture

@@ -18,8 +18,8 @@ namespace v3d::moya::material::internal {
 struct Network {
     MaterialX::DocumentPtr document;
 
-    /** The node of the material's surface terminal, or none. **/
-    MaterialX::NodePtr surface;
+    /** The node of the material's terminal being compiled, or none. **/
+    MaterialX::NodePtr terminal;
 
     std::vector<std::string> reports;
 

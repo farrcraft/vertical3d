@@ -7,7 +7,6 @@
 
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/program/Op.h>
-#include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/program/Run.h>
@@ -232,8 +231,8 @@ mx::OutputPtr outputOf(const mx::NodeDefPtr & def, const std::string & name) {
 
 };  // namespace
 
-Emitter::Emitter(Network & network, std::vector<std::string> & primvars) :
-    network_(network), primvars_(primvars), values_(kernel::program::kParameterRegisters, 0.0F) {
+Emitter::Emitter(Network & network, std::vector<std::string> & primvars, std::uint32_t parameters) :
+    network_(network), primvars_(primvars), values_(parameters, 0.0F) {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the type, then the space

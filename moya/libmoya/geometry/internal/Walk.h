@@ -16,6 +16,7 @@
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -70,6 +71,13 @@ class Walk final {
         std::size_t primvars { 0 };
         std::size_t primvarValues { 0 };
         std::size_t reports { 0 };
+    };
+
+    /** A subdivision surface waiting to be cut, and its index among the geometries. **/
+    struct Uncut {
+        scene::Handle handle;
+        std::uint32_t index;
+        subdivision::Surface surface;
     };
 
     /**
@@ -145,17 +153,31 @@ class Walk final {
     /** Cuts every subdivision surface the instances reach, each where it is nearest the camera. **/
     void cutSurfaces();
 
+    /** Where a subdivision surface is placed, and the material its chain names there. **/
+    struct Placement {
+        glm::mat4 transform { 1.0F };
+        std::uint32_t material { kernel::surface::kNoMaterial };
+    };
+
     /**
      * Each subdivision surface's placement nearest a camera, by its index among the geometries:
      * the one that brings its points' box, grown by its displacement bound, nearest the camera.
      **/
-    std::map<std::uint32_t, glm::mat4> nearest(const kernel::camera::Camera & camera) const;
+    std::map<std::uint32_t, Placement> nearest(const kernel::camera::Camera & camera) const;
+
+    /** The displacement of a material among the prototypes', when it displaces, or none. **/
+    const material::Compiled * displacementOf(std::uint32_t material);
 
     /**
-     * Each place's height above a subdivision surface, from its displacement primvar and held
-     * within its bound, or none for a surface that is not displaced.
+     * Moves the points a subdivision surface was cut into, at every sample, by a displacement run
+     * at each place, as Displace.h says. Each sample moves along its own limit normals, and its
+     * tangent at the first sample laid flat against them. A displacement longer than the
+     * surface's bound is held to it, and reported.
+     *
+     * @param mark where the surface's values begin among the prototypes'
      **/
-    std::vector<float> heights(const scene::Handle & handle, const subdivision::Surface & surface, const subdivision::Tessellation & tessellation);
+    void displace(const Uncut & uncut, const subdivision::Tessellation & tessellation, const material::Compiled & displacement, const glm::mat4 & placement,
+        const Mark & mark);
 
     /**
      * The index of curves among the geometries, cut once, or nothing when they cannot be cut into
@@ -193,19 +215,15 @@ class Walk final {
     std::map<std::uint32_t, std::uint32_t> groupIndex_;
     std::map<std::uint32_t, std::uint32_t> geometryIndex_;
     std::map<std::uint32_t, std::uint32_t> materialIndex_;
+
+    /** The scene's handle of each material among the prototypes', by its index there. **/
+    std::vector<scene::Handle> materialHandles_;
     std::map<std::uint32_t, std::set<std::uint32_t>> held_;
     std::set<std::pair<std::uint32_t, std::uint32_t>> deepened_;
     std::set<std::string> reported_;
 
     /** Each gathered instance's handle, by its index among the instances. **/
     std::vector<scene::Handle> handles_;
-
-    /** A subdivision surface waiting to be cut, and its index among the geometries. **/
-    struct Uncut {
-        scene::Handle handle;
-        std::uint32_t index;
-        subdivision::Surface surface;
-    };
 
     std::vector<Uncut> uncut_;
 

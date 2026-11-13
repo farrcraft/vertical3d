@@ -192,6 +192,22 @@ libraries `material::Library::installed()` reads once from beside the executable
 
 Each report is given once, with the gather's others.
 
+### Compiling a displacement
+
+`material::compileDisplacement()` compiles a material's `displacement` terminal whose node is
+a MaterialX node, as `compile()` compiles its surface. Its network is flattened alike, and its
+reports follow the same rules.
+
+- **A displacement of `ND_displacement_float` or `ND_displacement_vector3`** gives a program
+  whose values begin with `kDisplacementRegisters`, laid out as `kernel/program/Displacement.h`
+  says. A float is a displacement along the normal, and a vector3 one along the tangent, the
+  bitangent and the normal, as MaterialX gives it. `program::displacement()` gives either times
+  its scale.
+- **A displacement of any other definition is reported**, and does not displace.
+- **The gather compiles each such displacement** with the materials' programs, numbering the
+  primvars it reads with theirs, and runs it as [Geometry.md](Geometry.md#tessellation-and-displacement)
+  says.
+
 ### The node program
 
 A layered material's program is a list of `kernel::program::Instruction` over a store of
