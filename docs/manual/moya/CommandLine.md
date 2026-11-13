@@ -6,6 +6,8 @@ moya.exe --file <scene.rib> [--output <image>] [--width <n> --height <n>]
 moya.exe --file <scene.rib> --scene
 moya.exe --file <scene.rib> --hits [--output <image.exr>]
 moya.exe --file <scene.rib> --paths [--output <image.exr>] [--checkpoint <file> [--checkpoint-interval <seconds>] [--resume]]
+moya.exe --maketexture <image> <texture> [--swrap <mode>] [--twrap <mode>] [--filter <name>]
+         [--swidth <n>] [--twidth <n>] [--colorspace <space>]
 moya.exe --help
 moya.exe --version
 ```
@@ -36,6 +38,11 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--checkpoint <file>` | With `--paths`, write a checkpoint of the render to the file after each pass, as an EXR file, so a render that is stopped can continue. A file of several frames leaves the last frame's |
 | `--checkpoint-interval <seconds>` | Write the checkpoint at most once in the given seconds, in place of after every pass. The last pass is always written. Needs `--checkpoint` |
 | `--resume` | Continue the render the `--checkpoint` file holds, at the pass after its last, and write the same picture a render that never stopped writes. A checkpoint of another scene, or of the same scene changed, is refused. In a file of several frames the first frame resumes, and the frames after it start afresh. Needs `--checkpoint` |
+| `--maketexture <image> <texture>` | Make a texture from an image, in place of rendering, and write it to the texture file as a tiled, mipmapped EXR file. The image is an `.exr`, `.png`, `.jpg`, `.jpeg`, `.tga` or `.bmp` file. A colour image is converted into ACEScg |
+| `--swrap <mode>` `--twrap <mode>` | How the texture is read beyond its edge along s and along t: `black`, `clamp` or `periodic`. Default `black` |
+| `--filter <name>` | The filter each smaller level of the texture is made with: `box`, `triangle`, `catmull-rom`, `gaussian` or `sinc`. Default `box` |
+| `--swidth <n>` `--twidth <n>` | The filter's width along s and along t, in texels of the level being made, above zero and at most 64. Default 1, which with the box averages two by two texels |
+| `--colorspace <space>` | The colour space the image is read in, by its name in the ACES configuration, such as `Raw` for an image that holds data and is not converted. By default an EXR file is in the space its chromaticities name, and any other image is in sRGB |
 | `--help` | Print the options and exit |
 | `--version` | Print the version and Pixar's RenderMan copyright notice, and exit |
 
@@ -52,6 +59,13 @@ the directories on a search path. Give full paths to work with files elsewhere.
   interval and `--resume` are refused without `--checkpoint`, and an interval below zero is
   refused. A `--resume` whose checkpoint is missing or belongs to another scene prints `error:`
   and the reason, and moya exits with failure.
+- `--maketexture` is refused with `--file`, `--output` and every option that renders, and has to
+  name two files. `--swrap`, `--twrap`, `--filter`, `--swidth`, `--twidth` and `--colorspace` are
+  refused without it, and so is a wrap mode or filter not in its list, or a width that is not
+  above zero and at most 64. moya prints a line that says which, and exits with failure. A
+  texture that cannot be made, from an image that does not read or in a colour space the
+  configuration lacks, prints `error making the texture - ` and the reason, and moya exits with
+  failure.
 - An option moya does not recognise, or one with a value that is not a number where a number is
   needed, prints `error:` and the reason, and moya exits with failure.
 
@@ -86,5 +100,6 @@ expect.
 
 ## Exit status
 
-moya exits with 0 when it read the whole scene and wrote every picture. It exits with 1 when the
-scene could not be read or parsed, a picture could not be written, or the command line was wrong.
+moya exits with 0 when it read the whole scene and wrote every picture, or made the texture
+`--maketexture` names. It exits with 1 when the scene could not be read or parsed, a picture could
+not be written, a texture could not be made, or the command line was wrong.

@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstddef>
+#include <string>
 
 namespace v3d::moya::output {
 
@@ -27,7 +29,31 @@ inline constexpr float kLinearPrimaries[kLinearSpaces][4][2] = {
     { { 0.64F, 0.33F }, { 0.21F, 0.71F }, { 0.15F, 0.06F }, { 0.3127F, 0.3290F } },
 };
 
+/** The place among kLinearIds of ACEScg, whose primaries are AP1. **/
+inline constexpr std::size_t kAp1 = 1;
+
 /** The place among kLinearIds of linear Rec. 709, which a header with none is taken to be in. **/
 inline constexpr std::size_t kRec709 = 2;
+
+/**
+ * The ID among kLinearIds whose chromaticities a header's are, each within 0.001, or empty for
+ * chromaticities of any other space.
+ *
+ * @param given x and y of the red, green and blue primaries, then of white
+ **/
+inline std::string linearIdOf(const float (&given)[4][2]) {
+    constexpr float near = 1.0e-3F;
+    for (std::size_t i = 0; i < kLinearSpaces; ++i) {
+        bool same = true;
+        for (std::size_t point = 0; point < 4; ++point) {
+            same = same && std::fabs(given[point][0] - kLinearPrimaries[i][point][0]) <= near &&
+                std::fabs(given[point][1] - kLinearPrimaries[i][point][1]) <= near;
+        }
+        if (same) {
+            return kLinearIds[i];
+        }
+    }
+    return {};
+}
 
 };  // namespace v3d::moya::output

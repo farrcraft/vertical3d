@@ -10,6 +10,7 @@
 #include <moya/libmoya/colour/internal/Processor.h>
 #include <OpenColorIO/OpenColorIO.h>
 
+#include <stdexcept>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -62,6 +63,14 @@ std::string Config::spaceOf(const std::string & interopId) const {
         }
     }
     return {};
+}
+
+bool Config::data(const std::string & space) const {
+    const ocio::ConstColorSpaceRcPtr found = config_->get()->getColorSpace(space.c_str());
+    if (!found) {
+        throw std::runtime_error("the colour configuration has no colour space " + space);
+    }
+    return found->isData();
 }
 
 Transform Config::input(const std::string & space) const {

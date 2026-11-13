@@ -18,6 +18,7 @@
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/texture/Maker.h>
 #include <moya/libmoya/view/Hits.h>
 
 #include <algorithm>
@@ -28,10 +29,13 @@
 #include <initializer_list>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
+
+#include <glm/vec2.hpp>
 
 namespace {
 
@@ -73,6 +77,34 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::
             handler->context().pinBucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
         }
     }
+}
+
+/**
+ * Why the options of --maketexture cannot be used together, or empty when they can.
+ *
+ * --maketexture reads no scene, so every option that reads or renders one is refused with it,
+ * and it names two files. --swrap, --twrap, --filter, --swidth, --twidth and --colorspace say how
+ * a texture is made, so each is refused without it.
+ **/
+std::string textureConflict(const boost::program_options::variables_map& var_map) {
+    if (var_map.count("maketexture") == 0) {
+        for (const char* const option : { "swrap", "twrap", "filter", "swidth", "twidth", "colorspace" }) {
+            if (var_map.count(option) > 0) {
+                return "--" + std::string(option) + " can only be given with --maketexture";
+            }
+        }
+        return {};
+    }
+    for (const char* const option : { "file", "output", "width", "height", "scene", "hits", "paths", "checkpoint", "checkpoint-interval", "resume",
+             "grid", "bucket" }) {
+        if (var_map.count(option) > 0) {
+            return "--" + std::string(option) + " cannot be given with --maketexture, which reads no scene";
+        }
+    }
+    if (var_map["maketexture"].as<std::vector<std::string>>().size() != 2) {
+        return "--maketexture names two files, the image and the texture made from it";
+    }
+    return {};
 }
 
 /**
@@ -204,6 +236,47 @@ int renderPaths(const std::string & infile, const std::string & outfile, const v
     return EXIT_SUCCESS;
 }
 
+/**
+ * Make the texture file --maketexture names from its image, with the wrap modes, filter, widths and
+ * colour space the options give. Without them a texture is black beyond its edges, made with a box
+ * of width one, and read in the image's own colour space.
+ **/
+int makeTexture(const boost::program_options::variables_map& var_map) {
+    const std::vector<std::string> files = var_map["maketexture"].as<std::vector<std::string>>();
+    v3d::moya::texture::Making making;
+    for (const auto& [option, wrap] : { std::pair { "swrap", &making.swrap }, std::pair { "twrap", &making.twrap } }) {
+        if (var_map.count(option) > 0 && !v3d::moya::texture::wrapNamed(var_map[option].as<std::string>(), wrap)) {
+            std::cout << "--" << option << " has to be black, clamp or periodic" << "\n";
+            return EXIT_FAILURE;
+        }
+    }
+    if (var_map.count("filter") > 0 && !v3d::render::offline::film::filterNamed(var_map["filter"].as<std::string>(), &making.filter)) {
+        std::cout << "--filter has to be box, triangle, catmull-rom, gaussian or sinc" << "\n";
+        return EXIT_FAILURE;
+    }
+    if (var_map.count("swidth") > 0) {
+        making.width.x = var_map["swidth"].as<float>();
+    }
+    if (var_map.count("twidth") > 0) {
+        making.width.y = var_map["twidth"].as<float>();
+    }
+    if (!v3d::moya::texture::widthAllowed(making.width)) {
+        std::cout << "--swidth and --twidth have to be above zero and at most 64" << "\n";
+        return EXIT_FAILURE;
+    }
+    if (var_map.count("colorspace") > 0) {
+        making.colourSpace = var_map["colorspace"].as<std::string>();
+    }
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    try {
+        v3d::moya::texture::make(files[0], files[1], making, v3d::moya::colour::Config(), logger);
+    } catch (const std::exception& error) {
+        std::cout << "error making the texture - " << error.what() << "\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 /** The checkpoints --checkpoint, --checkpoint-interval and --resume name. **/
 v3d::moya::integrate::Checkpoints checkpointsOf(const boost::program_options::variables_map& var_map) {
     v3d::moya::integrate::Checkpoints out;
@@ -241,7 +314,17 @@ boost::program_options::options_description optionsOf() {
         ("grid", boost::program_options::value<int>(),
             "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
         ("bucket", boost::program_options::value<int>(),
-            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths");
+            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
+        ("maketexture", boost::program_options::value<std::vector<std::string>>()->multitoken(),
+            "make a texture from an image: the image, then the texture, a tiled EXR file; not with --file")
+        ("swrap", boost::program_options::value<std::string>(), "the texture's wrap mode along s: black, clamp or periodic; default black; needs --maketexture")
+        ("twrap", boost::program_options::value<std::string>(), "the texture's wrap mode along t: black, clamp or periodic; default black; needs --maketexture")
+        ("filter", boost::program_options::value<std::string>(),
+            "the filter each level is made with: box, triangle, catmull-rom, gaussian or sinc; default box; needs --maketexture")
+        ("swidth", boost::program_options::value<float>(), "the filter's width along s, in texels of the level made; default 1; needs --maketexture")
+        ("twidth", boost::program_options::value<float>(), "the filter's width along t, in texels of the level made; default 1; needs --maketexture")
+        ("colorspace", boost::program_options::value<std::string>(),
+            "the colour space the image is read in, such as Raw for data; default the image's own; needs --maketexture");
     return opts_desc;
 }
 
@@ -273,6 +356,15 @@ int run(int argc, char *argv[]) {
     }
     if (var_map.count("output") != 0) {
         outfile = var_map["output"].as<std::string>();
+    }
+
+    const std::string textureRefused = textureConflict(var_map);
+    if (!textureRefused.empty()) {
+        std::cout << textureRefused << "\n";
+        return EXIT_FAILURE;
+    }
+    if (var_map.count("maketexture") != 0) {
+        return makeTexture(var_map);
     }
 
     if (infile.empty()) {

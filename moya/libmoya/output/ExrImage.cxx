@@ -7,7 +7,6 @@
 
 #include <moya/libmoya/output/Chromaticities.h>
 #include <Imath/ImathBox.h>
-#include <Imath/ImathVec.h>
 #include <OpenEXR/ImfChannelList.h>
 #include <OpenEXR/ImfChromaticities.h>
 #include <OpenEXR/ImfEnvmap.h>
@@ -17,7 +16,6 @@
 #include <OpenEXR/ImfPixelType.h>
 #include <OpenEXR/ImfStandardAttributes.h>
 
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -29,27 +27,16 @@ namespace v3d::moya::output {
 
 namespace {
 
-/** How far apart two chromaticities may lie and name one space. **/
-constexpr float kNear = 1.0e-3F;
-
-/** Whether a point of chromaticity lies near another, given as x and y. **/
-bool near(const Imath::V2f & point, const float (&xy)[2]) {
-    return std::fabs(point.x - xy[0]) <= kNear && std::fabs(point.y - xy[1]) <= kNear;
-}
-
 /** The ID of the linear space a header's chromaticities name, or empty for any other. **/
 std::string interopOf(const Imf::Header & header) {
     if (!Imf::hasChromaticities(header)) {
         return kLinearIds[kRec709];
     }
     const Imf::Chromaticities & given = Imf::chromaticities(header);
-    for (std::size_t i = 0; i < kLinearSpaces; ++i) {
-        const auto & xy = kLinearPrimaries[i];
-        if (near(given.red, xy[0]) && near(given.green, xy[1]) && near(given.blue, xy[2]) && near(given.white, xy[3])) {
-            return kLinearIds[i];
-        }
-    }
-    return {};
+    const float xy[4][2] = {
+        { given.red.x, given.red.y }, { given.green.x, given.green.y }, { given.blue.x, given.blue.y }, { given.white.x, given.white.y },
+    };
+    return linearIdOf(xy);
 }
 
 };  // namespace

@@ -185,6 +185,11 @@ add_library("v3dlib_moya"
 	"state/Shading.h"
 	"state/Transforms.h" "state/Transforms.cxx"
 
+	"texture/Level.h"
+	"texture/Maker.h" "texture/Maker.cxx"
+	"texture/internal/Picture.h"
+	"texture/internal/Taps.h"
+
 	"view/Hits.h" "view/Hits.cxx"
 	"view/Traced.h"
 	"view/Tracing.h" "view/Tracing.cxx"
@@ -222,8 +227,9 @@ endif()
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
 # header includes the log's. moya's headers name glm types, and the device's headers name kernel
 # types. The CPU device's header names the instruction sets its libraries are built for.
-# PRIVATE: only Display writes an image, encoding it with image and writing the file through
-# asset. Only the CPU device's source includes TBB, and only the EXR writer's source includes
+# PRIVATE: Display and the PNG writer encode an image with image and write the file through
+# asset, and the texture maker reads one with image. Only the CPU device's and the texture
+# maker's sources include TBB, and only the EXR files' sources and the texture maker's include
 # OpenEXR and Imath. Only the colour configuration's source and its internal headers include
 # OpenColorIO, only the subdivision surface's OpenSubdiv, and only the material library's source
 # and its internal header MaterialX. OpenSubdiv is linked static on every platform, as vcpkg builds

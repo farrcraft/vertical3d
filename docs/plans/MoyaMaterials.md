@@ -149,7 +149,7 @@ among the options before the record is drafted.
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | done |
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | done |
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | done |
-| [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | open |
+| [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | done |
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225 | open |
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | open |
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | open |
@@ -648,6 +648,16 @@ step needs the derivatives of the value the split reads, not the footprint, and 
 
 **Tests:** a texture made from an image holds its levels, each the box filter of the level above.
 Wrap modes and a texture of one texel hold at their edges.
+
+**Done.** `texture::make()` reads an EXR file's R, G, B and A or Y and A, or a PNG, JPEG, TGA or
+BMP file through api/image. It writes a tiled EXR file of 64-texel tiles and every level, rounded
+down as OpenEXR's mipmaps are. A colour image is converted into ACEScg from the space
+named, its chromaticities' or sRGB, before `texture::mipmap()` filters each level from the one
+above with RI's filters, widths in texels of the level made. A space that holds data, as Raw does,
+keeps the values. The wrap modes are the `wrapmodes` attribute OpenImageIO reads, and they find a
+texel the filter reaches past the edge. `moya --maketexture` and the scene client's `MakeTexture`
+run it, the colour space named by `--colorspace` or `"string colorspace"`. A path is read as given,
+until step 20 finds it. [Textures.md](../offline/Textures.md) is the reference page.
 
 ### Step 20 — The texture cache
 

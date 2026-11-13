@@ -166,4 +166,46 @@ BOOST_AUTO_TEST_CASE(moya_command_line_hits_writes_an_exr_named_in_any_case_test
     boost::filesystem::remove(written, ignored);
 }
 
+// --maketexture makes a tiled texture from an image, with the wrap modes and filter it is given
+BOOST_AUTO_TEST_CASE(moya_command_line_maketexture_makes_a_texture_test) {
+    const boost::filesystem::path made = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_texture.tx";
+    boost::system::error_code ignored;
+    boost::filesystem::remove(made, ignored);
+    const Run run = moya("--maketexture data/blocks.png \"" + made.string() + "\" --swrap periodic --twrap clamp --filter gaussian --swidth 2 --twidth 2");
+    BOOST_TEST(run.succeeded, run.printed);
+    BOOST_TEST((boost::filesystem::exists(made) && boost::filesystem::file_size(made) > 0U));
+    boost::filesystem::remove(made, ignored);
+
+    const Run absent = moya("--maketexture data/absent.png \"" + made.string() + "\"");
+    BOOST_TEST(!absent.succeeded);
+    BOOST_TEST(absent.printed.find("error making the texture - ") != std::string::npos, absent.printed);
+}
+
+// --maketexture reads no scene, names two files, and is the only mode its options go with
+BOOST_AUTO_TEST_CASE(moya_command_line_refuses_maketexture_options_it_cannot_use_test) {
+    const Run file = moya(std::string(kScene) + " --maketexture a.png a.tx");
+    BOOST_TEST(!file.succeeded);
+    BOOST_TEST(file.printed.find("--file cannot be given with --maketexture") != std::string::npos, file.printed);
+
+    const Run one = moya("--maketexture a.png");
+    BOOST_TEST(!one.succeeded);
+    BOOST_TEST(one.printed.find("--maketexture names two files") != std::string::npos, one.printed);
+
+    for (const std::string option : { "--swrap clamp", "--twrap clamp", "--filter box", "--swidth 1", "--twidth 1", "--colorspace Raw" }) {
+        const Run run = moya(std::string(kScene) + " " + option);
+        BOOST_TEST(!run.succeeded, option);
+        BOOST_TEST(run.printed.find("can only be given with --maketexture") != std::string::npos, option << ": " << run.printed);
+    }
+
+    const Run wrap = moya("--maketexture a.png a.tx --swrap mirror");
+    BOOST_TEST(!wrap.succeeded);
+    BOOST_TEST(wrap.printed.find("--swrap has to be black, clamp or periodic") != std::string::npos, wrap.printed);
+    const Run filter = moya("--maketexture a.png a.tx --filter mitchell");
+    BOOST_TEST(!filter.succeeded);
+    BOOST_TEST(filter.printed.find("--filter has to be box") != std::string::npos, filter.printed);
+    const Run width = moya("--maketexture a.png a.tx --swidth 0");
+    BOOST_TEST(!width.succeeded);
+    BOOST_TEST(width.printed.find("--swidth and --twidth have to be above zero and at most 64") != std::string::npos, width.printed);
+}
+
 };  // namespace

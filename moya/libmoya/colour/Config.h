@@ -55,6 +55,15 @@ class Config final {
     std::string spaceOf(const std::string & interopId) const;
 
     /**
+     * Whether a colour space holds data rather than colour, as Raw does, so no conversion
+     * touches its values.
+     *
+     * @param space a colour space's name or role
+     * @throws std::runtime_error when the configuration has no such space
+     **/
+    bool data(const std::string & space) const;
+
+    /**
      * Converts a colour named in a space into ACEScg, for the spectrum table. A colour that names
      * no space is in the working space.
      *

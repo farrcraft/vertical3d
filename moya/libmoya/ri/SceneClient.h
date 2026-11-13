@@ -21,6 +21,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
@@ -28,6 +29,7 @@
 #include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/rib/requests/SubdivisionMesh.h>
 #include <api/render/offline/rib/requests/Torus.h>
+#include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/ri/internal/Deforming.h>
 #include <moya/libmoya/ri/internal/Lights.h>
 #include <moya/libmoya/ri/internal/Objects.h>
@@ -136,6 +138,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * Any other mode adds a channel of that source, named after it.
      **/
     void display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+
+    /**
+     * Makes the texture file at once, as texture::make() does, in the colour space the
+     * parameter `"string colorspace"` names, or the image's own. A wrap mode or filter RI does
+     * not name is logged, and the texture is made with black or the box. A texture that cannot
+     * be made is logged, and the file reads on.
+     **/
+    void makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void frameBegin(int frame) override;
     void worldBegin() override;
@@ -271,6 +281,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::function<void()> committed_;
     internal::Warnings warnings_;
+
+    /** The built-in colour configuration textures are made in, made with the first texture. **/
+    std::optional<colour::Config> colours_;
 
     scene::Handle options_;
     scene::Handle camera_;

@@ -22,6 +22,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/MakeTexture.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
@@ -39,10 +40,12 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/texture/Maker.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <set>
 #include <string>
@@ -176,6 +179,30 @@ void SceneClient::display(const v3d::render::offline::rib::requests::Display & r
         channels.push_back(channels_[request.mode]);
     }
     scene_.set(made, "channels", scene::Value::handles(channels));
+}
+
+void SceneClient::makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    texture::Making making;
+    for (const auto & [given, wrap] : { std::pair { &request.swrap, &making.swrap }, std::pair { &request.twrap, &making.twrap } }) {
+        if (!texture::wrapNamed(*given, wrap)) {
+            logger_->get()->warn("MakeTexture's wrap mode {} is not one RI names, so {} is made with black", *given, request.texture);
+        }
+    }
+    if (!v3d::render::offline::film::filterNamed(request.filter, &making.filter)) {
+        logger_->get()->warn("MakeTexture's filter {} is not one RI names, so {} is made with the box", request.filter, request.texture);
+    }
+    making.width = glm::vec2(request.swidth, request.twidth);
+    if (parameters.has("colorspace")) {
+        making.colourSpace = parameters.string("colorspace");
+    }
+    try {
+        if (!colours_) {
+            colours_.emplace();
+        }
+        texture::make(request.picture, request.texture, making, *colours_, logger_);
+    } catch (const std::exception & error) {
+        logger_->get()->error("the texture {} cannot be made from {}: {}", request.texture, request.picture, error.what());
+    }
 }
 
 void SceneClient::frameBegin(int frame) {
