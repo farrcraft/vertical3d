@@ -38,6 +38,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -77,6 +78,138 @@ struct Case {
     const char * type;
     std::vector<Given> inputs;
     std::vector<float> expected;
+};
+
+/** The points the noises are read at: two components in two dimensions, and three in three. **/
+constexpr float kNoiseAt[8][3] = {
+    { 0.3F, 0.7F, 0.2F }, { -1.25F, 2.5F, 1.1F }, { 3.7F, -0.4F, -2.6F }, { 12.1F, 7.9F, 4.4F },
+    { -5.55F, -3.33F, -0.9F }, { 0.5F, 0.5F, 0.5F }, { 100.25F, -42.75F, 13.3F }, { 2.0F, 3.0F, 1.0F },
+};
+
+/**
+ * What Open Shading Language gives for MaterialX's OSL implementation of each noise at each of
+ * kNoiseAt's points, in up to three channels. A fractal is of three octaves, of lacunarity two and
+ * diminish one half, and a Worley noise is of jitter one unless its row says otherwise. A
+ * vector4's fourth channel has a row of its own.
+ **/
+constexpr float kOsl[25][8][3] = {
+    // noise2d float
+    { { 0.0407435894F, 0.0F, 0.0F }, { -0.499107361F, 0.0F, 0.0F }, { 0.630442381F, 0.0F, 0.0F },
+        { -0.0651625395F, 0.0F, 0.0F }, { 0.210897923F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F },
+        { -0.312010288F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // noise2d vector3
+    { { 0.0407435894F, 0.651012182F, -0.302390337F }, { -0.499107361F, 0.00290751457F, -0.071231842F }, { 0.630442381F, -0.191021562F, -0.50041914F },
+        { -0.0651625395F, -0.173716664F, -0.179331541F }, { 0.210897923F, -0.222375393F, -0.462750435F }, { 0.0F, 0.496200085F, -0.496199965F },
+        { -0.312010288F, 0.414739132F, 0.0660076141F }, { 0.0F, 0.0F, 0.0F } },
+    // noise2d vector4's fourth
+    { { -0.302966118F, 0.0F, 0.0F }, { 0.153931856F, 0.0F, 0.0F }, { -0.668620348F, 0.0F, 0.0F },
+        { -0.0851155519F, 0.0F, 0.0F }, { -0.590751886F, 0.0F, 0.0F }, { -0.165400028F, 0.0F, 0.0F },
+        { -0.373406887F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // noise3d float
+    { { 0.27371192F, 0.0F, 0.0F }, { 0.0719721317F, 0.0F, 0.0F }, { -0.0150185823F, 0.0F, 0.0F },
+        { -0.167988539F, 0.0F, 0.0F }, { -0.0455275774F, 0.0F, 0.0F }, { 0.122750044F, 0.0F, 0.0F },
+        { 0.0764818192F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // noise3d vector3
+    { { 0.27371192F, -0.188334584F, 0.40486145F }, { 0.0719721317F, -0.180252671F, 0.246733665F }, { -0.0150185823F, 0.0107300282F, -0.22443223F },
+        { -0.167988539F, 0.353503466F, 0.327341795F }, { -0.0455275774F, 0.104173422F, -0.430725217F }, { 0.122750044F, -0.490999937F, 0.0F },
+        { 0.0764818192F, 0.265670538F, -0.348931789F }, { 0.0F, 0.0F, 0.0F } },
+    // noise3d vector4's fourth
+    { { -0.255386353F, 0.0F, 0.0F }, { -0.198020458F, 0.0F, 0.0F }, { 0.0132875443F, 0.0F, 0.0F },
+        { 0.18484664F, 0.0F, 0.0F }, { 0.138915062F, 0.0F, 0.0F }, { -0.122750044F, 0.0F, 0.0F },
+        { 0.0433413982F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal2d float
+    { { -0.259577274F, 0.0F, 0.0F }, { -0.581807375F, 0.0F, 0.0F }, { 0.471781254F, 0.0F, 0.0F },
+        { 0.0718681812F, 0.0F, 0.0F }, { -0.167786479F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F },
+        { -0.0639102459F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal2d vector3
+    { { -0.259577274F, 1.00612545F, -0.112889051F }, { -0.581807375F, 0.333707333F, 0.0941681862F }, { 0.471781254F, -0.563123703F, -0.715952754F },
+        { 0.0718681812F, -0.0792484283F, 0.0337328911F }, { -0.167786479F, -0.215806365F, -0.480300665F }, { 0.0F, 0.496200085F, -0.496199965F },
+        { -0.0639102459F, 0.58013916F, -0.0993924141F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal2d vector2
+    { { -0.259577274F, -0.0493656397F, 0.0F }, { -0.581807375F, -0.17105329F, 0.0F }, { 0.471781254F, 0.413965464F, 0.0F },
+        { 0.0718681812F, -0.275231957F, 0.0F }, { -0.167786479F, -0.156863689F, 0.0F }, { 0.0F, -0.330800056F, 0.0F },
+        { -0.0639102459F, 0.303646326F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal3d float
+    { { 0.481799364F, 0.0F, 0.0F }, { -0.168201566F, 0.0F, 0.0F }, { 0.286825895F, 0.0F, 0.0F },
+        { -0.400015831F, 0.0F, 0.0F }, { -0.221166492F, 0.0F, 0.0F }, { 0.122750044F, 0.0F, 0.0F },
+        { 0.154884577F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal3d vector3
+    { { 0.481799364F, -0.357825518F, 0.537834644F }, { -0.168201566F, -0.23640728F, 0.377096176F }, { 0.286825895F, -0.0643101931F, -0.286612034F },
+        { -0.400015831F, 0.297890186F, 0.265385628F }, { -0.221166492F, 0.199474812F, -0.592388272F }, { 0.122750044F, -0.490999937F, 0.0F },
+        { 0.154884577F, 0.43628335F, -0.359804749F }, { 0.0F, 0.0F, 0.0F } },
+    // fractal3d vector2
+    { { 0.481799364F, 0.22406292F, 0.0F }, { -0.168201566F, -0.0914875269F, 0.0F }, { 0.286825895F, 0.238572598F, 0.0F },
+        { -0.400015831F, -0.729433417F, 0.0F }, { -0.221166492F, -0.0516735315F, 0.0F }, { 0.122750044F, 0.0F, 0.0F },
+        { 0.154884577F, -0.184043646F, 0.0F }, { 0.0F, 0.0F, 0.0F } },
+    // cellnoise2d
+    { { 0.8603127F, 0.0F, 0.0F }, { 0.562888145F, 0.0F, 0.0F }, { 0.184155464F, 0.0F, 0.0F },
+        { 0.866723061F, 0.0F, 0.0F }, { 0.0881152153F, 0.0F, 0.0F }, { 0.8603127F, 0.0F, 0.0F },
+        { 0.29191494F, 0.0F, 0.0F }, { 0.278959751F, 0.0F, 0.0F } },
+    // cellnoise3d
+    { { 0.611067772F, 0.0F, 0.0F }, { 0.74732852F, 0.0F, 0.0F }, { 0.576941729F, 0.0F, 0.0F },
+        { 0.831706524F, 0.0F, 0.0F }, { 0.74227047F, 0.0F, 0.0F }, { 0.611067772F, 0.0F, 0.0F },
+        { 0.287952423F, 0.0F, 0.0F }, { 0.778586388F, 0.0F, 0.0F } },
+    // worleynoise2d float
+    { { 0.600949287F, 0.0F, 0.0F }, { 0.303687572F, 0.0F, 0.0F }, { 0.384389877F, 0.0F, 0.0F },
+        { 0.71036911F, 0.0F, 0.0F }, { 0.217931986F, 0.0F, 0.0F }, { 0.333230734F, 0.0F, 0.0F },
+        { 0.401967049F, 0.0F, 0.0F }, { 0.685223103F, 0.0F, 0.0F } },
+    // worleynoise2d vector2
+    { { 0.600949287F, 0.632518768F, 0.0F }, { 0.303687572F, 1.04166651F, 0.0F }, { 0.384389877F, 0.577874184F, 0.0F },
+        { 0.71036911F, 0.891442299F, 0.0F }, { 0.217931986F, 0.903532267F, 0.0F }, { 0.333230734F, 0.634211779F, 0.0F },
+        { 0.401967049F, 0.476498127F, 0.0F }, { 0.685223103F, 0.787909269F, 0.0F } },
+    // worleynoise2d vector3
+    { { 0.600949287F, 0.632518768F, 1.04592466F }, { 0.303687572F, 1.04166651F, 1.05521822F }, { 0.384389877F, 0.577874184F, 0.664094925F },
+        { 0.71036911F, 0.891442299F, 0.915683985F }, { 0.217931986F, 0.903532267F, 1.06353331F }, { 0.333230734F, 0.634211779F, 0.960628033F },
+        { 0.401967049F, 0.476498127F, 0.966191053F }, { 0.685223103F, 0.787909269F, 0.894831657F } },
+    // worleynoise2d vector3, solid
+    { { 0.611067772F, 0.185823679F, 0.0413060188F }, { 0.926223755F, 0.74732852F, 0.419894695F }, { 0.665347576F, 0.982824802F, 0.623441935F },
+        { 0.898266315F, 0.218877554F, 0.538591623F }, { 0.352422237F, 0.475133657F, 0.416588783F }, { 0.611067772F, 0.185823679F, 0.0413060188F },
+        { 0.23568821F, 0.848287582F, 0.507417679F }, { 0.447178125F, 0.595131397F, 0.369781971F } },
+    // worleynoise2d float, solid
+    { { 0.8603127F, 0.0F, 0.0F }, { 0.562888145F, 0.0F, 0.0F }, { 0.184155464F, 0.0F, 0.0F },
+        { 0.132465363F, 0.0F, 0.0F }, { 0.0881152153F, 0.0F, 0.0F }, { 0.8603127F, 0.0F, 0.0F },
+        { 0.239515066F, 0.0F, 0.0F }, { 0.0633513927F, 0.0F, 0.0F } },
+    // worleynoise2d vector3, of jitter one half
+    { { 0.439100742F, 0.677565575F, 0.926589012F }, { 0.129048824F, 0.88742733F, 1.04508543F }, { 0.183746815F, 0.650243998F, 0.79209733F },
+        { 0.672979355F, 0.736699343F, 0.803319693F }, { 0.183977604F, 0.862887144F, 1.05063725F }, { 0.166615248F, 0.787507296F, 0.973730564F },
+        { 0.345474243F, 0.587790489F, 0.942138672F }, { 0.694121838F, 0.741831779F, 0.793782473F } },
+    // worleynoise3d float
+    { { 0.442312241F, 0.0F, 0.0F }, { 0.603684902F, 0.0F, 0.0F }, { 0.347927094F, 0.0F, 0.0F },
+        { 0.77880621F, 0.0F, 0.0F }, { 0.331601143F, 0.0F, 0.0F }, { 0.455063105F, 0.0F, 0.0F },
+        { 0.568959236F, 0.0F, 0.0F }, { 0.705655813F, 0.0F, 0.0F } },
+    // worleynoise3d vector3
+    { { 0.442312241F, 0.794862747F, 0.826275587F }, { 0.603684902F, 0.740559578F, 0.799864769F }, { 0.347927094F, 0.747966528F, 0.802135468F },
+        { 0.77880621F, 0.943584442F, 1.02414632F }, { 0.331601143F, 0.663108587F, 0.830126524F }, { 0.455063105F, 0.961633682F, 1.00126219F },
+        { 0.568959236F, 0.928432226F, 0.965764999F }, { 0.705655813F, 0.813497543F, 0.950254202F } },
+    // worleynoise3d vector3, solid
+    { { 0.111572981F, 0.325099945F, 0.339947224F }, { 0.657385111F, 0.0756552219F, 0.943542004F }, { 0.757106781F, 0.318773985F, 0.59673357F },
+        { 0.701638222F, 0.50442481F, 0.68725872F }, { 0.496435642F, 0.356380701F, 0.197190285F }, { 0.111572981F, 0.325099945F, 0.339947224F },
+        { 0.454321146F, 0.141566753F, 0.819817305F }, { 0.738009691F, 0.552100897F, 0.521776676F } },
+    // worleynoise3d float, solid
+    { { 0.611067772F, 0.0F, 0.0F }, { 0.812466145F, 0.0F, 0.0F }, { 0.576941729F, 0.0F, 0.0F },
+        { 0.659110785F, 0.0F, 0.0F }, { 0.74227047F, 0.0F, 0.0F }, { 0.611067772F, 0.0F, 0.0F },
+        { 0.287952423F, 0.0F, 0.0F }, { 0.447178125F, 0.0F, 0.0F } },
+    // worleynoise3d vector2, solid
+    { { 0.111572981F, 0.325099945F, 0.0F }, { 0.657385111F, 0.0756552219F, 0.0F }, { 0.757106781F, 0.318773985F, 0.0F },
+        { 0.701638222F, 0.50442481F, 0.0F }, { 0.496435642F, 0.356380701F, 0.0F }, { 0.111572981F, 0.325099945F, 0.0F },
+        { 0.454321146F, 0.141566753F, 0.0F }, { 0.738009691F, 0.552100897F, 0.0F } },
+};
+
+/** A row of kOsl and a channel of it. **/
+using Channel = std::pair<std::size_t, std::size_t>;
+
+/**
+ * A noise's definition, its output's type, its inputs other than its position, and where each of
+ * its output's components lies in kOsl. The expected value is scaled and offset, as a noise's
+ * amplitude and pivot scale and offset it.
+ **/
+struct NoiseCase {
+    const char * definition;
+    const char * type;
+    std::vector<Given> inputs;
+    std::vector<Channel> channels;
+    float scale { 1.0F };
+    float offset { 0.0F };
 };
 
 /** A material compiled through the installed libraries, numbering primvars as the gather does. **/
@@ -359,6 +492,135 @@ BOOST_AUTO_TEST_CASE(moya_program_matrix_nodes_give_what_materialx_gives_test) {
     });
     // a direction ignores the translation a position takes
     BOOST_TEST(turned[0] != placed[0]);
+}
+
+/** A row's channels, from its first, as many as are asked for. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the row, then how many of its channels
+std::vector<Channel> row(std::size_t at, std::size_t channels) {
+    std::vector<Channel> out;
+    out.reserve(channels);
+    for (std::size_t i = 0; i < channels; ++i) {
+        out.emplace_back(at, i);
+    }
+    return out;
+}
+
+/** A row's three channels and then another row's channel, as a vector4 noise's are. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the two rows, then the channel
+std::vector<Channel> fourOf(std::size_t three, std::size_t fourth, std::size_t channel) {
+    std::vector<Channel> out = row(three, 3);
+    out.emplace_back(fourth, channel);
+    return out;
+}
+
+// each noise gives what MaterialX's OSL implementation gives in OSL, at points about the origin,
+// far from it, and at a lattice point, where Perlin noise is zero
+BOOST_AUTO_TEST_CASE(moya_program_noises_give_what_materialx_gives_in_osl_test) {
+    const std::vector<Given> fractal { { "octaves", scene::Value::integer(3) }, { "lacunarity", number(2.0F) }, { "diminish", number(0.5F) } };
+    const std::vector<Given> solid { { "style", scene::Value::integer(1) } };
+    const std::vector<NoiseCase> cases {
+        { "ND_noise2d_float", "float", {}, row(0, 1) },
+        { "ND_noise2d_float", "float", { { "amplitude", number(2.0F) }, { "pivot", number(0.5F) } }, row(0, 1), 2.0F, 0.5F },
+        { "ND_noise2d_vector2", "vector2", {}, row(1, 2) },
+        { "ND_noise2d_vector3", "vector3", {}, row(1, 3) },
+        { "ND_noise2d_vector4", "vector4", {}, fourOf(1, 2, 0) },
+        { "ND_noise3d_float", "float", {}, row(3, 1) },
+        { "ND_noise3d_vector2", "vector2", {}, row(4, 2) },
+        { "ND_noise3d_vector3", "vector3", {}, row(4, 3) },
+        { "ND_noise3d_vector4", "vector4", {}, fourOf(4, 5, 0) },
+        { "ND_fractal2d_float", "float", fractal, row(6, 1) },
+        { "ND_fractal2d_vector2", "vector2", fractal, row(8, 2) },
+        { "ND_fractal2d_vector3", "vector3", fractal, row(7, 3) },
+        { "ND_fractal2d_vector4", "vector4", fractal, fourOf(7, 8, 1) },
+        { "ND_fractal3d_float", "float", fractal, row(9, 1) },
+        { "ND_fractal3d_float", "float", { { "amplitude", number(3.0F) }, { "octaves", scene::Value::integer(3) } }, row(9, 1), 3.0F },
+        { "ND_fractal3d_vector2", "vector2", fractal, row(11, 2) },
+        { "ND_fractal3d_vector3", "vector3", fractal, row(10, 3) },
+        { "ND_fractal3d_vector4", "vector4", fractal, fourOf(10, 11, 1) },
+        { "ND_cellnoise2d_float", "float", {}, row(12, 1) },
+        { "ND_cellnoise3d_float", "float", {}, row(13, 1) },
+        { "ND_worleynoise2d_float", "float", {}, row(14, 1) },
+        { "ND_worleynoise2d_vector2", "vector2", {}, row(15, 2) },
+        { "ND_worleynoise2d_vector3", "vector3", {}, row(16, 3) },
+        { "ND_worleynoise2d_vector3", "vector3", solid, row(17, 3) },
+        { "ND_worleynoise2d_float", "float", solid, row(18, 1) },
+        { "ND_worleynoise2d_vector3", "vector3", { { "jitter", number(0.5F) } }, row(19, 3) },
+        { "ND_worleynoise3d_float", "float", {}, row(20, 1) },
+        { "ND_worleynoise3d_vector3", "vector3", {}, row(21, 3) },
+        { "ND_worleynoise3d_vector3", "vector3", solid, row(22, 3) },
+        { "ND_worleynoise3d_float", "float", solid, row(23, 1) },
+        { "ND_worleynoise3d_vector2", "vector2", solid, row(24, 2) },
+    };
+    for (const NoiseCase & each : cases) {
+        const bool flat = std::string(each.definition).find("2d") != std::string::npos;
+        for (std::size_t point = 0; point < 8U; ++point) {
+            BOOST_TEST_CONTEXT(each.definition << " at point " << point) {
+                const float * at = kNoiseAt[point];
+                std::vector<Given> inputs = each.inputs;
+                inputs.push_back(flat ? Given { "texcoord", scene::Value::floats({ at[0], at[1] }) } : Given { "position", vector(at[0], at[1], at[2]) });
+                const std::vector<float> got = outputOf(each.definition, each.type, inputs);
+                BOOST_TEST_REQUIRE(got.size() == each.channels.size());
+                for (std::size_t i = 0; i < got.size(); ++i) {
+                    const float expected = (kOsl[each.channels[i].first][point][each.channels[i].second] * each.scale) + each.offset;
+                    BOOST_TEST(std::fabs(got[i] - expected) <= 1.0e-5F, "channel " << i << " gives " << got[i] << " for " << expected);
+                }
+            }
+        }
+    }
+}
+
+// a ramp mixes across its texture coordinate held to [0, 1], and a split steps at its center
+BOOST_AUTO_TEST_CASE(moya_program_ramps_and_splits_give_what_materialx_defines_test) {
+    const auto at = [](float u, float v) {
+        return scene::Value::floats({ u, v });
+    };
+    const auto across = [&](float u, float v) {
+        return std::vector<Given> { { "valuel", number(0.2F) }, { "valuer", number(0.8F) }, { "center", number(0.5F) }, { "texcoord", at(u, v) } };
+    };
+    const auto upward = [&](float u, float v) {
+        return std::vector<Given> { { "valuet", number(1.0F) }, { "valueb", number(0.0F) }, { "center", number(0.3F) }, { "texcoord", at(u, v) } };
+    };
+    check({
+        { "ND_ramplr_float", "float", { { "valuel", number(0.2F) }, { "valuer", number(0.8F) }, { "texcoord", at(0.25F, 0.9F) } }, { 0.35F } },
+        { "ND_ramplr_float", "float", { { "valuel", number(0.2F) }, { "valuer", number(0.8F) }, { "texcoord", at(1.5F, 0.0F) } }, { 0.8F } },
+        { "ND_ramptb_vector3", "vector3", { { "valuet", vector(1.0F, 0.0F, 0.0F) }, { "valueb", vector(0.0F, 0.0F, 1.0F) }, { "texcoord", at(0.1F, 0.75F) } },
+            { 0.75F, 0.0F, 0.25F } },
+        { "ND_splitlr_float", "float", across(0.4F, 0.9F), { 0.2F } },
+        { "ND_splitlr_float", "float", across(0.6F, 0.1F), { 0.8F } },
+        { "ND_splittb_float", "float", upward(0.9F, 0.2F), { 0.0F } },
+        { "ND_splittb_float", "float", upward(0.0F, 0.4F), { 1.0F } },
+        { "ND_ramp4_float", "float",
+            { { "valuetl", number(1.0F) }, { "valuetr", number(2.0F) }, { "valuebl", number(3.0F) }, { "valuebr", number(4.0F) }, { "texcoord", at(0.25F, 0.5F) } },
+            { 2.25F } },
+    });
+}
+
+// rotate2d and rotate3d turn as MaterialX's GLSL and OSL implementations do: clockwise with v
+// upward, and clockwise about an axis as seen from its tip, however long the axis is
+BOOST_AUTO_TEST_CASE(moya_program_rotations_turn_as_materialx_implements_them_test) {
+    check({
+        { "ND_rotate2d_vector2", "vector2", { { "in", scene::Value::floats({ 1.0F, 0.0F }) }, { "amount", number(90.0F) } }, { 0.0F, -1.0F } },
+        { "ND_rotate2d_vector2", "vector2", { { "in", scene::Value::floats({ 0.0F, 2.0F }) }, { "amount", number(30.0F) } }, { 1.0F, std::sqrt(3.0F) } },
+        { "ND_rotate3d_vector3", "vector3", { { "in", vector(1.0F, 0.0F, 0.0F) }, { "amount", number(90.0F) } }, { 0.0F, 0.0F, 1.0F } },
+        { "ND_rotate3d_vector3", "vector3", { { "in", vector(0.0F, 1.0F, 0.0F) }, { "amount", number(90.0F) }, { "axis", vector(2.0F, 0.0F, 0.0F) } },
+            { 0.0F, 0.0F, -1.0F } },
+        { "ND_place2d_vector2", "vector2", { { "texcoord", scene::Value::floats({ 1.0F, 0.0F }) }, { "rotate", number(90.0F) } }, { 0.0F, -1.0F } },
+    });
+}
+
+// a checkerboard gives its first colour on the squares whose corners sum to an odd number, and its
+// second on the others, at its tiling
+BOOST_AUTO_TEST_CASE(moya_program_a_checkerboard_alternates_its_colours_test) {
+    const auto at = [](float u, float v) {
+        return std::vector<Given> { { "color1", colour3(1.0F, 0.0F, 0.0F) }, { "color2", colour3(0.0F, 0.0F, 1.0F) }, { "uvtiling", scene::Value::floats({ 2.0F, 2.0F }) },
+            { "texcoord", scene::Value::floats({ u, v }) } };
+    };
+    check({
+        { "ND_checkerboard_color3", "color3", at(0.25F, 0.25F), { 0.0F, 0.0F, 1.0F } },
+        { "ND_checkerboard_color3", "color3", at(0.75F, 0.25F), { 1.0F, 0.0F, 0.0F } },
+        { "ND_checkerboard_color3", "color3", at(0.25F, 0.75F), { 1.0F, 0.0F, 0.0F } },
+        { "ND_checkerboard_color3", "color3", at(0.75F, 0.75F), { 0.0F, 0.0F, 1.0F } },
+    });
 }
 
 // a node feeding two inputs is compiled once, and a constant material runs no instructions

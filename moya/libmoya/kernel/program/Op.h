@@ -80,6 +80,16 @@ enum class Op : std::uint8_t {
     Inverse,
     Transform,   /**< in as a row times mat, a vector2 or vector3 taken with a last one before a larger matrix **/
     Rows,        /**< a matrix44 of three rows from in1 to in3 and a translation from in4 **/
+    Noise,       /**< Perlin noise times amplitude plus pivot, from amplitude, pivot, then a position of two or three **/
+    Fractal,     /**< fractal noise times amplitude, from amplitude, octaves, lacunarity, diminish, then a position **/
+    CellNoise,   /**< from zero to one for the unit cell a position of two or three lies in **/
+    Worley,      /**< Worley noise from a position, jitter, then style: distances when it is zero, and cell noise when one **/
+    RampLeftRight,  /**< valuel to valuer as u goes from zero to one, from valuel, valuer, then texcoord **/
+    RampTopBottom,  /**< valueb to valuet as v goes from zero to one, from valuet, valueb, then texcoord **/
+    SplitLeftRight, /**< valuel where u is below center, and valuer where it is not, from valuel, valuer, center, then texcoord **/
+    SplitTopBottom, /**< valueb where v is below center, and valuet where it is not, from valuet, valueb, center, then texcoord **/
+    Rotate2d,    /**< in turned clockwise about the origin by amount in degrees, with v upward **/
+    Rotate3d,    /**< in turned about axis by amount in degrees, clockwise as seen from the axis's tip **/
     Primvar,     /**< the primvar the first operand numbers, or the second operand where there is none **/
     Position,    /**< the shading point's position **/
     Normal,      /**< its shading normal **/

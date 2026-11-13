@@ -9,6 +9,7 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/program/Noise.h>
 #include <moya/libmoya/kernel/program/Run.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
@@ -342,6 +343,42 @@ BOOST_AUTO_TEST_CASE(moya_geometric_a_cached_geometry_gains_a_primvar_a_material
     scene.apply();
     assembler.update(scene);
     BOOST_TEST(holds("weight"));
+}
+
+// a pattern given no texture coordinates reads st, so a checkerboard's squares lie where st puts
+// them across the surface
+BOOST_AUTO_TEST_CASE(moya_geometric_a_checkerboard_reads_st_where_given_none_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle mesh = square(scene);
+    // s and t run from zero to one across the square, along x and y
+    primvar(scene, mesh, "st", scene::Interpolation::Vertex, scene::Value::floats({ 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F }), 2);
+    const scene::Handle surface = node(scene, "surface", kOpenPbr, {});
+    const scene::Handle board = node(scene, "board", "ND_checkerboard_color3",
+        { { "color1", scene::Value::colour(glm::vec3 { 1.0F }) }, { "color2", scene::Value::colour(glm::vec3 { 0.0F }) }, { "uvtiling", scene::Value::floats({ 4.0F, 4.0F }) } });
+    readInto(scene, board, "color3", 1, surface, 0);
+    place(scene, mesh, surface, glm::mat4(1.0F));
+
+    // four squares across the square's width of two, so each is half a unit wide
+    const auto at = [&](float x, float y) {
+        return readBack(shadedAt(scene, downAt(x, y)).layers)[0];
+    };
+    BOOST_TEST(at(-0.75F, -0.75F) == 0.0F);
+    BOOST_TEST(at(-0.25F, -0.75F) == 1.0F);
+    BOOST_TEST(at(-0.75F, -0.25F) == 1.0F);
+    BOOST_TEST(at(0.25F, 0.75F) == 1.0F);
+    BOOST_TEST(at(0.75F, 0.75F) == 0.0F);
+}
+
+// a noise given no position reads the shading point's position in the geometry's own space
+BOOST_AUTO_TEST_CASE(moya_geometric_a_noise_reads_its_position_in_object_space_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle surface = node(scene, "surface", kOpenPbr, {});
+    readInto(scene, node(scene, "noise", "ND_noise3d_float", {}), "float", 1, surface, 0);
+    place(scene, square(scene), surface, glm::translate(glm::mat4(1.0F), glm::vec3 { 5.0F, 0.0F, 0.0F }));
+
+    const float read = readBack(shadedAt(scene, downAt(5.3F, 0.4F)).layers)[0];
+    BOOST_TEST(read == kernel::program::perlin<3>(glm::vec3 { 0.3F, 0.4F, 0.0F }, 1U).x, boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(read != kernel::program::perlin<3>(glm::vec3 { 5.3F, 0.4F, 0.0F }, 1U).x, boost::test_tools::tolerance(1.0e-3F));
 }
 
 };  // namespace

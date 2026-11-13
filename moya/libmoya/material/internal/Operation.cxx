@@ -82,6 +82,20 @@ std::optional<Operation> Operation::of(const std::string & category) {
         { "determinant", { Op::Determinant, one } },
         { "invertmatrix", { Op::Inverse, one } },
         { "transformmatrix", { Op::Transform, { "in", "mat" } } },
+        { "noise2d", { Op::Noise, { "amplitude", "pivot", "texcoord" } } },
+        { "noise3d", { Op::Noise, { "amplitude", "pivot", "position" } } },
+        { "fractal2d", { Op::Fractal, { "amplitude", "octaves", "lacunarity", "diminish", "texcoord" } } },
+        { "fractal3d", { Op::Fractal, { "amplitude", "octaves", "lacunarity", "diminish", "position" } } },
+        { "cellnoise2d", { Op::CellNoise, { "texcoord" } } },
+        { "cellnoise3d", { Op::CellNoise, { "position" } } },
+        { "worleynoise2d", { Op::Worley, { "texcoord", "jitter", "style" } } },
+        { "worleynoise3d", { Op::Worley, { "position", "jitter", "style" } } },
+        { "ramplr", { Op::RampLeftRight, { "valuel", "valuer", "texcoord" } } },
+        { "ramptb", { Op::RampTopBottom, { "valuet", "valueb", "texcoord" } } },
+        { "splitlr", { Op::SplitLeftRight, { "valuel", "valuer", "center", "texcoord" } } },
+        { "splittb", { Op::SplitTopBottom, { "valuet", "valueb", "center", "texcoord" } } },
+        { "rotate2d", { Op::Rotate2d, { "in", "amount" } } },
+        { "rotate3d", { Op::Rotate3d, { "in", "amount", "axis" } } },
     };
     const auto found = operations.find(category);
     if (found == operations.end()) {

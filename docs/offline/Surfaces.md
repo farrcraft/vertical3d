@@ -189,6 +189,9 @@ The gather appends each material's instructions and values after the one before.
 - **transformpoint, transformvector and transformnormal** carry a vector between the geometry's
   own space and the world, by the shading point's transformation. A normal moves by the inverse
   transpose and is of unit length. `object`, `model` and an empty space are the geometry's own.
+- **The procedural nodes** are the noises, ramps, splits and rotations, each giving what
+  MaterialX's implementations give. [Patterns.md](Patterns.md) states their algorithms. An input
+  given no value reads the geometry its definition names, such as `st` for `UV0`.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
 - **An emission input that a node feeds gives that default too**, because a material's light is

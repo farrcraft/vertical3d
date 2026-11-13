@@ -23,6 +23,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
 | [Integrator.md](Integrator.md) | Change how the new core builds paths, samples lights, stops a pixel and resumes a render |
 | [Lights.md](Lights.md) | Change the new core's lights, how a path meets and samples them, the light tree and linking |
+| [Patterns.md](Patterns.md) | Change the new core's noises, ramps, splits and rotations, which a material's program runs |
 | [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
 | [Colour.md](Colour.md) | Change how the new core converts between colour spaces and shows a picture on a display |
 

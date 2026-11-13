@@ -9,6 +9,7 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
+#include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
@@ -44,17 +45,6 @@ inline constexpr float kBlueSector = 4.0F;
 
 /** The least saturation a colour has a hue at. **/
 inline constexpr float kLeastSaturation = 1.0e-4F;
-
-/** An operand's component, or its last component where it has fewer, so one component spreads. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the operand, then the component
-MOYA_KERNEL inline float operand(const float * registers, const Instruction & instruction, std::uint32_t index, std::uint32_t component) {
-    const std::uint32_t width = instruction.widths[index];
-    std::uint32_t at = component;
-    if (width <= component) {
-        at = width > 0U ? width - 1U : 0U;
-    }
-    return registers[instruction.in[index] + at];
-}
 
 /** A boolean as a program holds it: one for true, and zero for false. **/
 MOYA_KERNEL inline float truth(bool held) {
@@ -405,6 +395,10 @@ MOYA_KERNEL inline void channelsOf(const Instruction & instruction, const float 
 MOYA_KERNEL inline void whole(const Instruction & instruction, const float * registers, float * out) {
     const float * first = registers + instruction.in[0];
     const float * second = registers + instruction.in[1];
+    if (patterned(instruction.op)) {
+        patternOf(instruction, registers, out);
+        return;
+    }
     switch (instruction.op) {
         case Op::Extract:
         case Op::Rows:

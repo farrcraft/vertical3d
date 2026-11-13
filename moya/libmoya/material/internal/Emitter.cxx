@@ -8,11 +8,14 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
+#include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/program/Run.h>
 #include <moya/libmoya/material/internal/Network.h>
 #include <moya/libmoya/material/internal/Operation.h>
 #include <MaterialXCore/Definition.h>
+#include <MaterialXCore/Document.h>
+#include <MaterialXCore/Geom.h>
 #include <MaterialXCore/Interface.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXCore/Value.h>
@@ -115,10 +118,46 @@ bool matrixShaped(const Instruction & instruction) {
     }
 }
 
+/** Whether a pattern's operands have the shapes it reads. **/
+bool patternShaped(const Instruction & instruction) {
+    const std::uint32_t width = instruction.width;
+    const std::uint32_t * widths = instruction.widths;
+    // a position of two components or of three, and a value of one to four
+    const auto placed = [](std::uint32_t components) {
+        return components == 2U || components == 3U;
+    };
+    const bool value = width >= 1U && width <= 4U;
+    switch (instruction.op) {
+        case Op::Noise:
+            return value && (widths[0] == width || widths[0] == 1U) && widths[1] == 1U && placed(widths[2]);
+        case Op::Fractal:
+            return value && (widths[0] == width || widths[0] == 1U) && widths[1] == 1U && widths[2] == 1U && widths[3] == 1U && placed(widths[4]);
+        case Op::CellNoise:
+            return width == 1U && placed(widths[0]);
+        case Op::Worley:
+            return width <= 3U && placed(widths[0]) && widths[1] == 1U && widths[2] == 1U;
+        case Op::RampLeftRight:
+        case Op::RampTopBottom:
+            return value && widths[0] == width && widths[1] == width && widths[2] == 2U;
+        case Op::SplitLeftRight:
+        case Op::SplitTopBottom:
+            return value && widths[0] == width && widths[1] == width && widths[2] == 1U && widths[3] == 2U;
+        case Op::Rotate2d:
+            return width == 2U && widths[0] == 2U && widths[1] == 1U;
+        case Op::Rotate3d:
+            return width == 3U && widths[0] == 3U && widths[1] == 1U && widths[2] == 3U;
+        default:
+            return false;
+    }
+}
+
 /** Whether an instruction's operands have the shapes its operation reads. **/
 bool shaped(const Instruction & instruction, std::size_t operands) {
     const std::uint32_t width = instruction.width;
     const std::uint32_t first = instruction.widths[0];
+    if (kernel::program::patterned(instruction.op)) {
+        return patternShaped(instruction);
+    }
     if (kernel::program::componentwise(instruction.op)) {
         for (std::size_t i = 0; i < operands; ++i) {
             if (instruction.widths[i] != width && instruction.widths[i] != 1U) {
@@ -258,6 +297,12 @@ std::uint32_t Emitter::operand(const mx::NodePtr & node, const mx::InputPtr & de
     if (from) {
         return output(from, input->getOutputString());
     }
+    if (!node->getInputValue(name) && declared->hasDefaultGeomPropString()) {
+        const std::optional<std::uint32_t> read = geomprop(declared);
+        if (read) {
+            return *read;
+        }
+    }
     const std::string & type = declared->getType();
     const std::uint32_t at = allocate(widthOf(type));
     constant(at, node->getInputValue(name), type, (input ? input : declared)->getActiveColorSpace());
@@ -272,6 +317,41 @@ std::uint32_t Emitter::primvar(const std::string & name) {
     }
     primvars_.push_back(name);
     return static_cast<std::uint32_t>(primvars_.size() - 1U);
+}
+
+std::optional<std::uint32_t> Emitter::geomprop(const mx::InputPtr & declared) {
+    const std::string & name = declared->getDefaultGeomPropString();
+    const std::string key = "geomprop " + name;
+    const auto found = outputs_.find(key);
+    if (found != outputs_.end()) {
+        return found->second;
+    }
+    const mx::GeomPropDefPtr def = declared->getDocument()->getGeomPropDef(name);
+    const std::uint32_t width = widthOf(declared->getType());
+    if (!def) {
+        return std::nullopt;
+    }
+    const std::string & property = def->getGeomProp();
+    Instruction out;
+    out.width = width;
+    const std::map<std::string, Op> directions { { "position", Op::Position }, { "normal", Op::Normal }, { "tangent", Op::Tangent }, { "bitangent", Op::Bitangent } };
+    const auto direction = directions.find(property);
+    if (property == "texcoord" && width == 2U) {
+        const std::string & index = def->getIndex();
+        out.op = Op::Primvar;
+        out.in[0] = primvar(index.empty() || index == "0" ? "st" : "st" + index);
+        out.in[1] = allocate(width);
+        out.widths[1] = width;
+    } else if (direction != directions.end() && width == 3U) {
+        out.op = direction->second;
+        out.in[0] = spaceOf(def->getSpace());
+    } else {
+        return std::nullopt;
+    }
+    out.out = allocate(width);
+    instructions_.push_back(out);
+    outputs_.insert_or_assign(key, out.out);
+    return out.out;
 }
 
 std::optional<Instruction> Emitter::geometric(const mx::NodePtr & node, std::uint32_t width) {

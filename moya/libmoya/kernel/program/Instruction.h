@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/program/Op.h>
+#include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cstdint>
 
@@ -30,5 +31,16 @@ struct Instruction {
     std::uint32_t in[kMostOperands] {};
     std::uint32_t widths[kMostOperands] {};
 };
+
+/** An operand's component, or its last component where it has fewer, so one component spreads. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the operand, then the component
+MOYA_KERNEL inline float operand(const float * registers, const Instruction & instruction, std::uint32_t index, std::uint32_t component) {
+    const std::uint32_t width = instruction.widths[index];
+    std::uint32_t at = component;
+    if (width <= component) {
+        at = width > 0U ? width - 1U : 0U;
+    }
+    return registers[instruction.in[index] + at];
+}
 
 };  // namespace v3d::moya::kernel::program

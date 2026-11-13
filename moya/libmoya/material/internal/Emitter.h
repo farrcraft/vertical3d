@@ -93,6 +93,13 @@ class Emitter final {
      **/
     std::optional<kernel::program::Instruction> geometric(const MaterialX::NodePtr & node, std::uint32_t width);
 
+    /**
+     * The first register of the geometric property an input reads when it is given no value, such
+     * as UV0 or Pobject, read once however many inputs read it. Nothing when the property is not
+     * one a program reads.
+     **/
+    std::optional<std::uint32_t> geomprop(const MaterialX::InputPtr & declared);
+
     /** The number of a primvar's name, given it the first time it is read. **/
     std::uint32_t primvar(const std::string & name);
 

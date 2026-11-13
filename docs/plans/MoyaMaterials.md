@@ -147,7 +147,7 @@ among the options before the record is drafted.
 | [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | done |
 | [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | done |
 | [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | done |
-| [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | open |
+| [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | done |
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | open |
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | open |
 | [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225 | open |
@@ -604,12 +604,26 @@ checked against MaterialX's own matrices.
 **Tests:** each noise against MaterialX's definition at sample points, and a checkerboard's
 squares where its frequency puts them.
 
+**Done.** `kernel/program/Noise.h` holds the noises and `Pattern.h` the instructions from
+`Op::Noise` to `Op::Rotate3d`: noise, fractal, cell and Worley noise in two and three dimensions,
+the ramps and splits, and the rotations. MaterialX's specification does not define the noises'
+algorithms, so [Patterns.md](../offline/Patterns.md) states them, from Perlin's improved noise,
+Jenkins' lookup3 and Worley's cellular noise, with the constants MaterialX's implementations add.
+The code is written from that page. `ProgramTest` checks every noise against what OSL gives for
+MaterialX's OSL implementation, rendered through Cycles, at eight points. MaterialX 1.39.5's GLSL
+and OSL turn `rotate2d` and `rotate3d` the same way, clockwise, against the specification's
+words. moya follows the implementations, so `place2d` turns textures as other renderers do. An
+input given no value reads the geometric property its definition names, so a checkerboard with no
+texture coordinates reads `st`.
+
 ### Step 18 — A ray's footprint
 
 * **Camera rays carry a footprint** as the record of step 3 decides, from the camera's projection
   and the pixel filter.
 * **Each bounce carries it on**, widened by the lobe's roughness.
 * **A shading point gives its footprint** in its texture coordinates, which a lookup filters over.
+* **`splitlr` and `splittb` smooth their step** over the footprint, as MaterialX's implementations
+  smooth it over a pixel.
 
 **Tests:** a plane square to the camera gives a footprint of one pixel at each pixel. A plane at an
 angle gives the footprint a closed form gives. A rough bounce's footprint is wider than a smooth

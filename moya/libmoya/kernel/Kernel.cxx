@@ -78,8 +78,10 @@
 #include <moya/libmoya/kernel/light/Tree.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Instruction.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Noise.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Op.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Parameters.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Pattern.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Program.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Run.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Qualifiers.h>  // IWYU pragma: keep
