@@ -7,12 +7,14 @@
 
 #include <moya/libmoya/Executable.h>
 #include <moya/libmoya/material/internal/Definitions.h>
+#include <moya/libmoya/material/internal/TranslationGraphs.h>
 #include <MaterialXCore/Definition.h>
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Exception.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/File.h>
 #include <MaterialXFormat/Util.h>
+#include <MaterialXFormat/XmlIo.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -64,6 +66,10 @@ Library::Library(const boost::filesystem::path & directory) {
             throw std::runtime_error(file.string() + " is not a valid MaterialX document: " + error.what());
         }
     }
+    // moya's own translations, for the surface shaders MaterialX ships none of onto OpenPBR
+    const mx::DocumentPtr translations = mx::createDocument();
+    mx::readFromXmlString(translations, internal::translationGraphs());
+    document->importLibrary(translations);
     definitions_ = boost::make_shared<const internal::Definitions>(document);
 }
 

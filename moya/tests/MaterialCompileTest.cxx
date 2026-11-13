@@ -256,16 +256,19 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_an_unknown_node_is_reported_once_test
     BOOST_TEST(mentioning(compiled.reports, "ND_no_such_node") == 1U);
 }
 
-// a surface shader moya does not render is reported, and leaves the material diffuse
-BOOST_AUTO_TEST_CASE(moya_material_compile_another_surface_shader_is_diffuse_and_reported_test) {
+// a surface shader moya neither renders nor translates is reported, and the material takes
+// OpenPBR's defaults
+BOOST_AUTO_TEST_CASE(moya_material_compile_another_surface_shader_takes_openpbrs_defaults_test) {
     scene::Scene scene(scene::kinds());
-    const scene::Handle surface = node(scene, "standard", "ND_standard_surface_surfaceshader");
-    const scene::Handle held = materialOf(scene, "standard", surface);
+    const scene::Handle surface = node(scene, "principled", "ND_disney_principled");
+    const scene::Handle held = materialOf(scene, "principled", surface);
     apply(scene);
 
     const material::Compiled compiled = compileOf(scene, held);
-    BOOST_TEST(compiled.material.layered == 0U);
-    BOOST_TEST(mentioning(compiled.reports, "ND_standard_surface_surfaceshader") == 1U);
+    BOOST_TEST(compiled.material.layered == 1U);
+    BOOST_TEST(compiled.material.program.count == 0U);
+    BOOST_TEST((compiled.material.surface.baseColour == kernel::surface::OpenPbr {}.baseColour));
+    BOOST_TEST(mentioning(compiled.reports, "ND_disney_principled") == 1U);
 }
 
 // an input that is not the definition's, or not of its type, is left out and reported

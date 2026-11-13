@@ -184,14 +184,53 @@ libraries `material::Library::installed()` reads once from beside the executable
 - **Every node a node graph implements is flattened** into the nodes of its graph, as MaterialX's
   own flattening does. Shader, closure and material nodes are not flattened, because their inputs
   feed moya's BSDF library. `material::flattened()` gives the flattened document as XML.
+- **A surface of Standard Surface, UsdPreviewSurface or glTF PBR is translated onto
+  `open_pbr_surface`** before the network is flattened, as
+  [Other surface shaders](#other-surface-shaders) says.
 - **A surface of `open_pbr_surface` makes the material layered**, and its program gives OpenPBR's
   parameters, as [The node program](#the-node-program) says. `geometry_thin_walled` sets
   `thinWalled`, and is read as a constant.
-- **A layered material is cut out** when its opacity may be less than one. That is when a node
-  feeds `geometry_opacity` and the program gives it, which sets `programmedOpacity`, or when the
-  constant it holds is less than one. `Material::cutOut()` says which. A traversal asks about a hit
-  on such a material, as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
-- **A surface of any other definition is reported**, and the material stays diffuse.
+- **A layered material is cut out** when its opacity may be less than one. That is when its
+  opacity varies over the surface and the program gives it, which sets `programmedOpacity`, or
+  when the constant it holds is less than one. `Material::cutOut()` says which. A traversal asks
+  about a hit on such a material, as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
+- **A surface of any other definition is reported**, and the material is layered with OpenPBR's
+  defaults.
+- **The material holds its parameters as `material::fold()` folds its program.** A register is
+  constant when it starts from a value and every instruction writing it reads only constant
+  registers. An instruction that reads the shading point or an image varies. The constant
+  registers are run on the host, so a parameter a chain of constant nodes feeds holds its value,
+  and only a parameter that varies over the surface needs the program. The gather folds each
+  program again once its colours are converted.
+
+### Other surface shaders
+
+Standard Surface, UsdPreviewSurface and glTF PBR render as OpenPBR Surface. `internal::translated()`
+replaces a surface node of one of them by a translation node and an `open_pbr_surface` node
+that each of the translation's outputs feeds. The translation of a shader is the node definition
+`ND_<shader>_to_open_pbr_surface`, whose outputs are OpenPBR's inputs, each with `_out` after its
+name, and a node graph implements it.
+
+- **MaterialX ships Standard Surface's translation**, and moya's own translations of
+  UsdPreviewSurface and glTF PBR are read with the libraries, as `material::Library` says.
+- **The translation node takes every input of the surface's definition**, with the value or the
+  connection the surface gives it, or its definition's default. An input the translation does not
+  take, such as an occlusion, is left out.
+- **A normal, a tangent and a coat normal in world space pass to OpenPBR's directly** when a node
+  feeds them, which are Standard Surface's and glTF PBR's. Standard Surface's `thin_walled`
+  passes as it is.
+- **UsdPreviewSurface maps by name in its metallic workflow.** In its specular workflow, the
+  largest component m of `specularColor` sets the index whose reflectance at normal incidence is
+  m, and the colour over m tints it, so the reflectance at normal incidence is `specularColor`.
+  An `opacityThreshold` above zero cuts the surface out where the opacity falls below it, in
+  either opacity mode. Its tangent-space `normal` is read as a normal map. It has no
+  transmission, and its clearcoat's index is a fixed 1.5.
+- **glTF PBR maps by name.** A sheen of any colour is a fuzz of weight one in that colour. The
+  iridescence's thickness is in nanometres and the thin film's in micrometres. An `alpha_mode`
+  of MASK cuts the surface out by `alpha_cutoff`, BLEND takes `alpha` as the opacity, and
+  OPAQUE is opaque. Its volume, occlusion and dispersion have no counterpart, and its
+  clearcoat's index is a fixed 1.5.
+- **A translation missing from the libraries is reported**, and the surface is left as it was.
 - **Without the libraries**, a MaterialX material is diffuse, and the reason is reported.
 
 Each report is given once, with the gather's others.
@@ -283,8 +322,9 @@ The gather appends each material's instructions and values after the one before.
   compiled again for it, apart from the same nodes read anywhere else.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
-- **An emission input that a node feeds gives that default too**, because a material's light is
-  made on the host before rendering.
+- **An emission input that varies over the surface gives that default too**, because a
+  material's light is made on the host before rendering. It is reported. Emission that a chain of
+  constant nodes feeds, as a translation's does, holds its value.
 - **A program that needs more than `kRegisters` registers is reported**, and every input a node
   feeds then gives the default of that node's output.
 - **Each colour constant is converted into ACEScg** from the space its primvar names, or the space

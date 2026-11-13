@@ -86,10 +86,10 @@ render about a fifth faster. [Traversal.md](offline/Traversal.md#speed) has the
 figures, and `moya/bench/Baseline.md` the run to measure a change against.
 
 [] **A material's emission cannot vary over its surface.** An emitting material makes a light of
-its geometry on the host, from its emission inputs as constants, so an emission input that a node
-feeds gives that node's default and is reported. Camera rays see the light's radiance, not the
-program's. Emission that varies needs the light to take its radiance from the program at each
-point it is seen, and its triangles' power from the program's mean over each.
+its geometry on the host, from its emission inputs as constants, so an emission input that
+varies over the surface gives its node's default and is reported. Camera rays see the light's
+radiance, not the program's. Emission that varies needs the light to take its radiance from the
+program at each point it is seen, and its triangles' power from the program's mean over each.
 
 [] **A mesh light's cut-away parts still light the scene.** A camera or indirect ray passes
 through where an emitting material is cut out, but a light sample draws a point anywhere on the

@@ -9,10 +9,12 @@
 #include <moya/libmoya/kernel/program/Displacement.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Program.h>
+#include <moya/libmoya/material/Fold.h>
 #include <moya/libmoya/material/internal/Definitions.h>
 #include <moya/libmoya/material/internal/Emitter.h>
 #include <moya/libmoya/material/internal/Network.h>
 #include <moya/libmoya/material/internal/TerminalInput.h>
+#include <moya/libmoya/material/internal/Translate.h>
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -223,6 +225,9 @@ Network network(const Library & library, const scene::Scene & scene, const scene
             }
         }
         out.terminal = nodes.at(surface.index);
+        if (out.terminal && terminal == "surface") {
+            out.terminal = internal::translated(out, out.terminal);
+        }
         if (out.terminal) {
             out.document->addMaterialNode(out.document->createValidChildName(scene.name(material)), out.terminal);
         }
@@ -244,9 +249,10 @@ bool emits(const std::string & name) {
 /**
  * Compiles the inputs of a terminal's node into the registers of its parameters. An input a node
  * feeds is compiled from that node while compiling, and otherwise gives the default of the output
- * that feeds it. An emission input a node feeds always gives that default.
+ * that feeds it. An emission input a node feeds gives that default too unless emitting.
  **/
-void fill(internal::Emitter & emitter, Network & network, bool compiling, std::span<const TerminalInput> inputs) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - whether compiling, then whether emitting
+void fill(internal::Emitter & emitter, Network & network, bool compiling, bool emitting, std::span<const TerminalInput> inputs) {
     const mx::NodePtr & surface = network.terminal;
     const mx::NodeDefPtr def = surface->getNodeDef();
     for (const TerminalInput & parameter : inputs) {
@@ -255,7 +261,7 @@ void fill(internal::Emitter & emitter, Network & network, bool compiling, std::s
         const mx::NodePtr from = input ? input->getConnectedNode() : nullptr;
         if (from) {
             const std::string & output = input->getOutputString();
-            const bool compiled = compiling && !emits(parameter.name);
+            const bool compiled = compiling && (emitting || !emits(parameter.name));
             emitter.copyValue(compiled ? emitter.output(from, output) : emitter.uncompiled(from, output), parameter.at, width);
             continue;
         }
@@ -273,16 +279,27 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
     if (held.terminal) {
         const std::string definition = held.terminal->getNodeDefString();
         if (definition != kOpenPbr) {
-            held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it is diffuse");
+            held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it takes OpenPBR's defaults");
+            out.material.layered = 1;
         } else {
             internal::Emitter compiled(held, primvars, kernel::program::kParameterRegisters);
-            fill(compiled, held, true, internal::kOpenPbrInputs);
-            internal::Emitter constants(held, primvars, kernel::program::kParameterRegisters);
-            if (compiled.overflowed()) {
-                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
-                fill(constants, held, false, internal::kOpenPbrInputs);
+            fill(compiled, held, true, true, internal::kOpenPbrInputs);
+            // a light's emission is made before rendering, so emission that varies is a default
+            const Folded emitted = fold(compiled.instructions(), compiled.values());
+            const bool varies = !compiled.overflowed() &&
+                !(emitted.constantFrom(kernel::program::kEmissionLuminance, 1U) && emitted.constantFrom(kernel::program::kEmissionColour, 3U));
+            internal::Emitter steady(held, primvars, kernel::program::kParameterRegisters);
+            if (varies) {
+                held.report("material " + scene.name(material) + "'s emission varies over its surface, so each node feeding it gives its default");
+                fill(steady, held, true, false, internal::kOpenPbrInputs);
             }
-            const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
+            const internal::Emitter & chosen = varies ? steady : compiled;
+            internal::Emitter constants(held, primvars, kernel::program::kParameterRegisters);
+            if (chosen.overflowed()) {
+                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
+                fill(constants, held, false, false, internal::kOpenPbrInputs);
+            }
+            const internal::Emitter & emitter = chosen.overflowed() ? constants : chosen;
             out.instructions = emitter.instructions();
             out.values = emitter.values();
             out.colours = emitter.colours();
@@ -292,11 +309,11 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
                 .count = static_cast<std::uint32_t>(out.instructions.size()),
                 .values = 0,
                 .size = static_cast<std::uint32_t>(out.values.size()) };
-            out.material.surface = kernel::program::parameters(out.values.data());
+            const Folded folded = fold(out.instructions, out.values);
+            out.material.surface = kernel::program::parameters(folded.values.data());
             const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
             out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
-            const mx::InputPtr opacity = held.terminal->getInput("geometry_opacity");
-            out.material.programmedOpacity = opacity && opacity->getConnectedNode() && !compiled.overflowed() ? 1U : 0U;
+            out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
             out.material.layered = 1;
         }
     }
@@ -316,11 +333,11 @@ Compiled compileDisplacement(const Library & library, const scene::Scene & scene
             const std::span<const TerminalInput> inputs = vector ? std::span<const TerminalInput>(internal::kDisplacementVectorInputs)
                                                                  : std::span<const TerminalInput>(internal::kDisplacementFloatInputs);
             internal::Emitter compiled(held, primvars, kernel::program::kDisplacementRegisters);
-            fill(compiled, held, true, inputs);
+            fill(compiled, held, true, true, inputs);
             internal::Emitter constants(held, primvars, kernel::program::kDisplacementRegisters);
             if (compiled.overflowed()) {
                 held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its displacement gives its default");
-                fill(constants, held, false, inputs);
+                fill(constants, held, false, false, inputs);
             }
             const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
             out.instructions = emitter.instructions();

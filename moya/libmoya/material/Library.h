@@ -22,7 +22,8 @@ class Definitions;
  *
  * The libraries are installed in a directory beside moya, holding MaterialX's own folders such as
  * stdlib, pbrlib and bxdf. Every .mtlx file under it is read, so the definitions do not depend on
- * a MaterialX install or on MaterialX's search path in the environment.
+ * a MaterialX install or on MaterialX's search path in the environment. moya's own translations of
+ * UsdPreviewSurface and glTF PBR onto OpenPBR Surface are read after them.
  **/
 class Library final {
  public:

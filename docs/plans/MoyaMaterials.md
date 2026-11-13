@@ -154,7 +154,7 @@ among the options before the record is drafted.
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | done |
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | done |
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | done |
-| [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | open |
+| [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | done |
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | open |
 | [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | open |
@@ -768,6 +768,19 @@ surfaces as solid. A light sample of a cut-out mesh light still sees its whole s
 
 **Tests:** each shader's documented defaults render as OpenPBR's equivalent material. A metal and a
 glass of each render as the OpenPBR ones do, within their errors.
+
+**Done.** `internal::translated()` replaces a surface of Standard Surface, UsdPreviewSurface or
+glTF PBR with a translation node feeding `open_pbr_surface`, before flattening. MaterialX ships
+only Standard Surface's translation onto OpenPBR, so moya's own of the other two are a document
+`material::Library` reads with the libraries. Normals in world space pass to OpenPBR directly,
+since the shipped translation drops them. Translation feeds every OpenPBR input from a node, so
+`material::fold()` now runs a program's constant registers on the host. A material's emission
+and opacity are constants wherever they are the same at every point, and only opacity that
+varies cuts a surface out by its program. Another surface shader now takes OpenPBR's defaults
+rather than a diffuse closure. The defaults are checked parameter by parameter, Standard
+Surface's at its version 1.0.1, whose base is one and base colour 0.8. A metal of each and a glass
+of Standard Surface and glTF PBR render as the OpenPBR ones within five errors. UsdPreviewSurface
+has no transmission, so it makes no glass.
 
 ### Step 25 — Materials from RIB
 

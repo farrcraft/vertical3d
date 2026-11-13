@@ -173,8 +173,8 @@ bool sameBytes(const film::Snapshot & one, const film::Snapshot & other) {
         std::memcmp(one.values.data(), other.values.data(), one.values.size() * sizeof(float)) == 0;
 }
 
-// geometry_opacity compiles: a constant below one cuts the material out, and a node that feeds it
-// makes the program give it
+// geometry_opacity compiles: a constant below one cuts the material out, a node that gives it the
+// same everywhere folds into the constant it gives, and one that varies makes the program give it
 BOOST_AUTO_TEST_CASE(moya_opacity_a_material_is_cut_out_by_its_opacity_test) {
     scene::Scene scene(scene::kinds());
     framed(scene, 1);
@@ -182,22 +182,30 @@ BOOST_AUTO_TEST_CASE(moya_opacity_a_material_is_cut_out_by_its_opacity_test) {
     const scene::Handle half = materialOf(scene, "half", blackSurface(scene, "half", 0.25F));
     const scene::Handle fed = blackSurface(scene, "fed", 1.0F);
     connect(scene, node(scene, "level", "ND_constant_float", { { "value", scene::Value::number(0.5F) } }), fed, "geometry_opacity");
-    const scene::Handle programmed = materialOf(scene, "programmed", fed);
+    const scene::Handle folded = materialOf(scene, "folded", fed);
+    const scene::Handle varied = blackSurface(scene, "varied", 1.0F);
+    const scene::Handle across = node(scene, "across", "ND_extract_vector2", { { "index", scene::Value::integer(0) } });
+    connect(scene, node(scene, "st", "ND_texcoord_vector2", {}), across, "in");
+    connect(scene, across, varied, "geometry_opacity");
+    const scene::Handle programmed = materialOf(scene, "programmed", varied);
     float x = 0.0F;
-    for (const auto & [name, material] : { std::pair { "solid", solid }, std::pair { "half", half }, std::pair { "programmed", programmed } }) {
+    for (const auto & [name, material] : { std::pair { "solid", solid }, std::pair { "half", half }, std::pair { "folded", folded }, std::pair { "programmed", programmed } }) {
         card(scene, name, square(scene, name, 1.0F, x), material, true);
         x += 1.0F;
     }
     scene.commit();
     scene.apply();
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
-    BOOST_TEST_REQUIRE(prototypes.materials.size() == 3U);
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 4U);
     BOOST_TEST(!prototypes.materials[0].cutOut());
     BOOST_TEST(prototypes.materials[1].cutOut());
     BOOST_TEST(prototypes.materials[1].surface.geometryOpacity == 0.25F);
     BOOST_TEST(prototypes.materials[1].programmedOpacity == 0U);
     BOOST_TEST(prototypes.materials[2].cutOut());
-    BOOST_TEST(prototypes.materials[2].programmedOpacity == 1U);
+    BOOST_TEST(prototypes.materials[2].programmedOpacity == 0U);
+    BOOST_TEST(prototypes.materials[2].surface.geometryOpacity == 0.5F);
+    BOOST_TEST(prototypes.materials[3].cutOut());
+    BOOST_TEST(prototypes.materials[3].programmedOpacity == 1U);
 }
 
 // a card of no opacity in front of the camera leaves every byte of the picture as it was

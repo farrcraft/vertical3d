@@ -49,17 +49,23 @@ struct Compiled {
  * nodes of the graph, as MaterialX flattens it. Shader, closure and material nodes are not
  * flattened, because their inputs feed moya's BSDF library.
  *
+ * A surface of Standard Surface, UsdPreviewSurface or glTF PBR is first translated onto
+ * `open_pbr_surface`, as internal::translated() says, before the network is flattened.
+ *
  * A surface of `open_pbr_surface` makes the material layered, and its program gives OpenPBR's
  * parameters. Each input that is not connected gives the value its node holds, or its
  * definition's default, as a constant. Each input that is connected is compiled from the node
  * that feeds it, and from every node that one reads, each once. A node the program does not
  * compile gives the default of its output, and is reported. An emission input that is connected
- * gives that default too, because a material's light is made before rendering. A program that
+ * gives its value only while the program gives it the same at every shading point, because a
+ * material's light is made before rendering. Emission that varies is reported, and each node
+ * feeding it gives its default. A program that
  * needs more registers than a shading point holds is reported, and each connected input then
- * gives its default. The surface holds the parameters before the program runs. The material's
- * program gives its opacity when a node feeds `geometry_opacity` and the program holds it.
+ * gives its default. The surface holds the parameters as material::fold() folds the program. The
+ * material's program gives its opacity when the opacity varies over the surface.
  *
- * A surface of any other definition is reported, and leaves the material diffuse.
+ * A surface of any other definition is reported, and the material is layered with OpenPBR's
+ * defaults.
  *
  * A colour constant is in the space its primvar names, or the space its document names for it.
  *

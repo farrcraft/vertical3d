@@ -10,10 +10,12 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/material/Fold.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -47,7 +49,9 @@ ConvertedMaterials ConvertedMaterials::of(const Prototypes & prototypes, const c
     for (kernel::surface::Material & material : out.materials) {
         if (material.layered != 0U && material.program.size != 0U) {
             const std::uint32_t thinWalled = material.surface.thinWalled;
-            material.surface = kernel::program::parameters(values.data() + material.program.values);
+            const material::Folded folded = material::fold(std::span(prototypes.instructions).subspan(material.program.instructions, material.program.count),
+                std::span<const float>(values).subspan(material.program.values, material.program.size));
+            material.surface = kernel::program::parameters(folded.values.data());
             material.surface.thinWalled = thinWalled;
         }
     }
