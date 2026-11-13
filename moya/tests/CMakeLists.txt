@@ -71,6 +71,8 @@ v3d_add_test(moya
 	"SpectrumTest.cxx"
 	"SubdivisionTest.cxx"
 	"SurfacesTest.cxx"
+	"TextureCacheTest.cxx"
+	"TextureLookupTest.cxx"
 	"TextureMakerTest.cxx"
 	"VertexTest.cxx"
 	"ZSobolTest.cxx")

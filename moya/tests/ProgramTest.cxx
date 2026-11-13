@@ -408,6 +408,26 @@ BOOST_AUTO_TEST_CASE(moya_program_colour_nodes_give_what_materialx_defines_test)
     });
 }
 
+// colours with alpha composite as MaterialX's implementations composite them
+BOOST_AUTO_TEST_CASE(moya_program_compositing_nodes_give_what_materialx_gives_test) {
+    const scene::Value fg = scene::Value::floats({ 0.4F, 0.2F, 0.1F, 0.5F });
+    const scene::Value bg = scene::Value::floats({ 0.2F, 0.6F, 0.8F, 0.75F });
+    check({
+        { "ND_premult_color4", "color4", { { "in", fg } }, { 0.2F, 0.1F, 0.05F, 0.5F } },
+        { "ND_unpremult_color4", "color4", { { "in", fg } }, { 0.8F, 0.4F, 0.2F, 0.5F } },
+        { "ND_over_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.5F, 0.5F, 0.5F, 0.875F } },
+        { "ND_over_color4", "color4", { { "fg", fg }, { "bg", bg }, { "mix", number(0.5F) } }, { 0.35F, 0.55F, 0.65F, 0.8125F } },
+        { "ND_in_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.3F, 0.15F, 0.075F, 0.375F } },
+        { "ND_mask_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.1F, 0.3F, 0.4F, 0.375F } },
+        { "ND_matte_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.3F, 0.4F, 0.45F, 0.875F } },
+        { "ND_out_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.1F, 0.05F, 0.025F, 0.125F } },
+        // alphas that pass one scale bg to fill what fg's leaves, and ones that do not add
+        { "ND_disjointover_color4", "color4", { { "fg", fg }, { "bg", bg } }, { 0.4F + (0.2F / 1.5F), 0.6F, 0.1F + (0.8F / 1.5F), 1.0F } },
+        { "ND_disjointover_color4", "color4",
+            { { "fg", scene::Value::floats({ 0.4F, 0.2F, 0.1F, 0.25F }) }, { "bg", scene::Value::floats({ 0.2F, 0.6F, 0.8F, 0.5F }) } }, { 0.6F, 0.8F, 0.9F, 0.75F } },
+    });
+}
+
 BOOST_AUTO_TEST_CASE(moya_program_logic_nodes_give_what_materialx_defines_test) {
     check({
         { "ND_ifgreater_float", "float", { { "value1", number(2.0F) }, { "value2", number(1.0F) }, { "in1", number(5.0F) }, { "in2", number(7.0F) } }, { 5.0F } },

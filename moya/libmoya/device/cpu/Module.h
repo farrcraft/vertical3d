@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/cpu/ProfileParams.h>
+#include <moya/libmoya/device/cpu/Textures.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
@@ -24,10 +25,10 @@ using HitParams = kernel::view::HitView<Traversal>;
 using TraceParams = kernel::geometry::TraceRays<Traversal>;
 
 /** What the integrator's entry point reads. **/
-using PathParams = kernel::integrate::Paths<Traversal>;
+using PathParams = kernel::integrate::Paths<Traversal, Textures>;
 
 /** The version of the table below. A library of another version is refused. **/
-inline constexpr std::uint32_t kModuleVersion = 15;
+inline constexpr std::uint32_t kModuleVersion = 16;
 
 /** The name of the function each library exports, which gives its table. **/
 inline constexpr const char * kModuleEntry = "moya_cpu_module";

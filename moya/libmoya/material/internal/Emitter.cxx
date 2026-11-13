@@ -11,8 +11,11 @@
 #include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/program/Run.h>
+#include <moya/libmoya/kernel/texture/Filtering.h>
+#include <moya/libmoya/kernel/texture/Texture.h>
 #include <moya/libmoya/material/internal/Network.h>
 #include <moya/libmoya/material/internal/Operation.h>
+#include <moya/libmoya/texture/Request.h>
 #include <MaterialXCore/Definition.h>
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Geom.h>
@@ -157,6 +160,11 @@ bool shaped(const Instruction & instruction, std::size_t operands) {
     const std::uint32_t first = instruction.widths[0];
     if (kernel::program::patterned(instruction.op)) {
         return patternShaped(instruction);
+    }
+    if (kernel::program::composited(instruction.op)) {
+        // colours with alpha, and a mix of one component after two of them
+        const bool single = instruction.op == Op::Premult || instruction.op == Op::Unpremult;
+        return width == 4U && first == 4U && (single || (instruction.widths[1] == 4U && instruction.widths[2] == 1U));
     }
     if (kernel::program::componentwise(instruction.op)) {
         for (std::size_t i = 0; i < operands; ++i) {
@@ -405,6 +413,67 @@ std::optional<Instruction> Emitter::geometric(const mx::NodePtr & node, std::uin
     return out;
 }
 
+std::string Emitter::textOf(const mx::NodePtr & node, const std::string & name) {
+    const mx::InputPtr given = node->getInput(name);
+    if (given && given->hasValue()) {
+        return given->getValueString();
+    }
+    const mx::InputPtr declared = node->getNodeDef()->getActiveInput(name);
+    return declared ? declared->getValueString() : std::string();
+}
+
+std::optional<Instruction> Emitter::image(const mx::NodePtr & node, std::uint32_t width) {
+    const mx::NodeDefPtr def = node->getNodeDef();
+    const mx::InputPtr coordinate = def->getActiveInput("texcoord");
+    const mx::InputPtr fallback = def->getActiveInput("default");
+    if (width < 1U || width > 4U || !coordinate || widthOf(coordinate->getType()) != 2U || !fallback || widthOf(fallback->getType()) != width) {
+        return std::nullopt;
+    }
+    Instruction out;
+    out.op = Op::Image;
+    out.width = width;
+    out.widths[0] = 2U;
+    out.widths[1] = width;
+    const auto mode = [](const std::string & name) -> std::uint32_t {
+        const std::vector<std::string> modes { "constant", "clamp", "periodic", "mirror" };
+        for (std::size_t i = 0; i < modes.size(); ++i) {
+            if (modes[i] == name) {
+                return static_cast<std::uint32_t>(i);
+            }
+        }
+        return 2U;
+    };
+    out.in[3] = mode(textOf(node, "uaddressmode")) + (kernel::program::kAddressModes * mode(textOf(node, "vaddressmode")));
+    const std::string filter = textOf(node, "filtertype");
+    out.in[4] = static_cast<std::uint32_t>(kernel::texture::Filtering::Linear);
+    if (filter == "closest") {
+        out.in[4] = static_cast<std::uint32_t>(kernel::texture::Filtering::Closest);
+    } else if (filter == "cubic") {
+        out.in[4] = static_cast<std::uint32_t>(kernel::texture::Filtering::Cubic);
+    }
+
+    const mx::InputPtr file = node->getInput("file");
+    const std::string path = file ? file->getResolvedValueString() : std::string();
+    out.in[2] = kernel::texture::kNoTexture;
+    if (!path.empty()) {
+        const std::string type = node->getType();
+        const texture::Request request { .file = path,
+            .colourSpace = (file ? file : def->getActiveInput("file"))->getActiveColorSpace(),
+            .colour = type == "color3" || type == "color4" };
+        std::size_t at = 0;
+        while (at < images_.size() && !(images_[at] == request)) {
+            ++at;
+        }
+        if (at == images_.size()) {
+            images_.push_back(request);
+        }
+        out.in[2] = static_cast<std::uint32_t>(at);
+    }
+    out.in[0] = operand(node, coordinate);
+    out.in[1] = operand(node, fallback);
+    return out;
+}
+
 std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     const mx::NodeDefPtr def = node->getNodeDef();
     const mx::OutputPtr output = outputOf(def, std::string());
@@ -414,6 +483,9 @@ std::optional<Instruction> Emitter::instruction(const mx::NodePtr & node) {
     const std::optional<Instruction> reading = geometric(node, widthOf(output->getType()));
     if (reading) {
         return reading;
+    }
+    if (node->getCategory() == "image") {
+        return image(node, widthOf(output->getType()));
     }
     std::optional<Operation> operation = Operation::of(node->getCategory());
     if (node->getCategory() == "creatematrix") {

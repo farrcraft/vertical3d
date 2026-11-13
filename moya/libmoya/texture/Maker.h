@@ -57,6 +57,7 @@ std::string wrapName(Wrap wrap);
  * - colourSpace is a colour space's name or role in the configuration. Empty reads the image in
  *   its own space: an EXR file's chromaticities, linear Rec. 709 for an EXR file with none, and
  *   sRGB for any other image. A space that holds data, as Raw does, keeps the image's values.
+ * - data keeps the image's values whatever colourSpace names.
  **/
 struct Making {
     Wrap swrap { Wrap::Black };
@@ -64,6 +65,7 @@ struct Making {
     render::offline::film::Filter filter { render::offline::film::Filter::Box };
     glm::vec2 width { 1.0F };
     std::string colourSpace;
+    bool data { false };
 };
 
 /** The widest a filter may be along each axis, in texels of the level being made. **/

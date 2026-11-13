@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/material/internal/Network.h>
+#include <moya/libmoya/texture/Request.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXCore/Value.h>
 
@@ -74,6 +75,11 @@ class Emitter final {
         return spaces_;
     }
 
+    /** Each image an image node reads, by the number its instruction names it with. **/
+    const std::vector<texture::Request> & images() const {
+        return images_;
+    }
+
  private:
     /** The first of a number of new registers. **/
     std::uint32_t allocate(std::uint32_t width);
@@ -100,6 +106,15 @@ class Emitter final {
      **/
     std::optional<std::uint32_t> geomprop(const MaterialX::InputPtr & declared);
 
+    /**
+     * The instruction an image node compiles to, or nothing when its output or texture coordinate
+     * is not a shape the program reads. A node with no file reads no image, and gives its default.
+     **/
+    std::optional<kernel::program::Instruction> image(const MaterialX::NodePtr & node, std::uint32_t width);
+
+    /** The value a node's input holds, or its definition's, as text. **/
+    static std::string textOf(const MaterialX::NodePtr & node, const std::string & name);
+
     /** The number of a primvar's name, given it the first time it is read. **/
     std::uint32_t primvar(const std::string & name);
 
@@ -109,6 +124,7 @@ class Emitter final {
     std::vector<float> values_;
     std::vector<std::uint32_t> colours_;
     std::vector<std::string> spaces_;
+    std::vector<texture::Request> images_;
 
     /** The first register of each output compiled, by its node's name and the output's. **/
     std::map<std::string, std::uint32_t> outputs_;

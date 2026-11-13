@@ -55,6 +55,10 @@ then derived as RI derives it.
   `lightSampling` is how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
   [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its
   light: `tree`, the fallback, or `power`, as [Lights.md](Lights.md#drawing-a-light) says.
+  `textureSearchPath` holds the directories a texture's relative path is looked for in.
+  `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
+  it. `textureDirectory` is where an image that is not a texture is made into one, as
+  [Textures.md](Textures.md#finding-a-texture) says.
 - **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
   The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the

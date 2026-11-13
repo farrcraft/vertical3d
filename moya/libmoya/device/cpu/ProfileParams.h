@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/device/cpu/Tally.h>
+#include <moya/libmoya/device/cpu/Textures.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/integrate/Paths.h>
@@ -17,7 +18,7 @@ namespace v3d::moya::device::cpu {
  * each pixel, row by row, that its rays and ticks are added to.
  **/
 struct ProfileParams {
-    kernel::integrate::Paths<Traversal> paths;
+    kernel::integrate::Paths<Traversal, Textures> paths;
     kernel::Array<Tally> tallies;
 };
 

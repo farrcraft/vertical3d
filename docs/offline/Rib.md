@@ -212,6 +212,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **A block the world opened ends with it.** An `AttributeBegin` or `ObjectBegin` still open at
   `WorldEnd` is closed there, with a warning, so the next world's geometry names no object the
   new world removed.
+- **`Option "searchpath" "texture"` sets the options' `textureSearchPath`**, each `&` in it
+  standing for the path before, as RI says. `Option "limits" "texturememory"` sets
+  `textureMemory`, in kilobytes, and a limit below one or above what an integer holds is logged
+  and changes nothing.
 - **`MakeTexture` makes the texture file at once**, as [Textures.md](Textures.md#making-a-texture)
   says, with the request's wrap modes, filter and widths and its `"string colorspace"`. A
   texture that cannot be made is logged, and the file reads on.

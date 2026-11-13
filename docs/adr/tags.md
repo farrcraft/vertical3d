@@ -149,6 +149,7 @@ reported, so the table lists only tags in use.
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
 | [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
 | [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
 
 ### colour
 
@@ -382,6 +383,7 @@ reported, so the table lists only tags in use.
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 | [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
 
 ### particles
 
@@ -514,6 +516,7 @@ reported, so the table lists only tags in use.
 | [0109](rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot |
 | [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
 | [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
 
 ### tooling
 

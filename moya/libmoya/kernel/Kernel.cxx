@@ -112,5 +112,15 @@
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Surfaces.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/TextureFootprint.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Address.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Catalog.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Filtering.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Image.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Lookup.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Resident.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Sampling.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Texels.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Texture.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/texture/Untextured.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitChannels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitView.h>  // IWYU pragma: keep

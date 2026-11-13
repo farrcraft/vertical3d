@@ -1,8 +1,11 @@
 # Textures
 
 The new core reads a texture from a tiled, mipmapped OpenEXR file, which the texture maker writes
-from an image. `moya --maketexture` and RIB's `MakeTexture` both run the maker. The code is
-`moya/libmoya/texture/Maker.h`.
+from images. `moya --maketexture` and RIB's `MakeTexture` both run the maker, and a render makes
+any image a material reads that is not yet a texture. A render holds the tiles it reads in a
+cache, within a limit of memory, and a material's image node looks a texture up over the shading
+point's footprint. The code is `moya/libmoya/texture/` on the host, and
+`moya/libmoya/kernel/texture/` for the lookup.
 
 ## The texture file
 
@@ -71,3 +74,86 @@ Each level is made from the level above it, not from the image.
   wrap mode or filter RI does not name is logged, and the texture is made with `black` or the box.
   A texture that cannot be made is logged, and the file reads on.
 - **A path is read as given**, relative to the folder moya runs from.
+
+## Finding a texture
+
+`texture::Textures` turns the images every material's program reads into textures, when the
+surfaces are made for a render. Each image node names an image by its file, the colour space its
+file input names, and whether its output is a colour.
+
+- **A file is found** as given when it is absolute. A relative file is looked for in each
+  directory of the options' `textureSearchPath` in turn, or in the folder moya runs from when the
+  path is empty. Directories are separated by a colon or a semicolon, and a colon after a single
+  letter at a directory's start belongs to a drive, as in `C:/maps`.
+- **A UDIM image** holds `<UDIM>` in its file. Each tile from 1001 to 1100 that is found is read,
+  ten to a row of v, so tile 1012 is the second column of the second row. The image's grid has as
+  many rows as the last row with a tile, and a tile not found reads as nothing. A UDIM image of no
+  tile is logged.
+- **A file that is a texture already is read as it is**: a tiled EXR file of every level rounded
+  down, read as data, or with ACEScg's chromaticities. Any other image is made into one, by the
+  maker with a box of width 1, black wrap modes, and the image node's colour space, or as data.
+- **A texture an image is made into lies in the options' `textureDirectory`**, or in
+  `moya-textures` in the system's temporary directory. Its name is a hash of the image's bytes,
+  its colour space and whether it is data. A texture made before from the same image is read
+  again, and a changed image is made afresh.
+- **An image not found, or one that cannot be made or opened, is logged**, and reads as nothing,
+  so its node gives its default.
+- **Images of one file read in one way share a texture.**
+
+## The cache
+
+`texture::Cache` holds the tiles a render reads, within the options' `textureMemory`, which RI's
+`Option "limits" "texturememory"` gives in kilobytes, 1 GiB until a client sets it.
+
+- **A texel's tile is loaded when the cache does not hold it**, and the tile used longest ago is
+  dropped when the tiles held pass the limit. The tile just loaded is never dropped, so a limit
+  below one tile holds one tile.
+- **A tile is held as four floats for each texel**: grey as red, green and blue, an alpha of one
+  where the file has none, and two channels as grey and alpha. The limit counts those floats.
+- **A texel's value never depends on what the cache holds**, so a render gives the same picture
+  with any limit.
+- **Any number of threads read at once.** A thread loading a tile holds only its file's lock while
+  it reads, and the cache's own lock while it finds or adds a tile.
+- **A texel that cannot be read is zero**, and the render logs each file that failed once it
+  ends.
+
+## Looking up a texture
+
+`kernel::texture::lookup()` reads an image at a texture coordinate, over the shading point's
+footprint in `st`, with the image node's address modes and filter.
+
+- **v runs up the texture**, as MaterialX places it, so a v of zero reads the bottom row.
+- **A UDIM image reads the tile its coordinate's whole parts name**, at the coordinate's
+  fractions. A coordinate outside the grid, or on a tile not found, gives the node's default.
+- **The address modes are MaterialX's.** `constant` gives the default for a coordinate outside
+  zero to one along its axis, and clamps a texel that a filter reaches past the edge. `clamp`
+  reads the nearest edge texel, `periodic` repeats the texture, and `mirror` repeats it with
+  every other copy reflected. They replace the file's `wrapmodes`.
+- **`closest` reads the first level's texel the coordinate lies in.** `linear` and `cubic` both
+  filter over the footprint.
+- **The footprint's minor axis chooses the level**: its length in texels of the first level,
+  as a power of two, between the two levels it falls between. Probes spread evenly along the
+  major axis, as many as the axes' ratio, at most eight, and each is the two levels' bilinear
+  values mixed. A footprint more than eight times as long as it is wide is read at the coarser
+  level its major axis over eight gives. A point with no footprint reads the first level.
+- **The footprint is the shading point's in `st`**, whatever coordinate the node reads, so a
+  node whose coordinate is scaled, as a tiledimage's is, filters over the footprint of the
+  unscaled coordinate.
+
+## The texture access
+
+Each stage that runs a material's program takes the device's texture access as a template
+parameter, beside its traversal. The access holds the catalog of images, each image's grid of
+textures and each texture's size, and gives one texel of a texture's level. The concept
+`kernel::texture::Texels` names what it gives.
+
+- **The CPU's access is `device::cpu::Textures`.** It reads each texel through a host function in
+  libmoya, `texture::Cache::fetch()`, which loads the tile when the cache does not hold it. The
+  CPU's libraries call it by its address and compile none of it.
+- **`kernel::texture::Resident` holds every level of every texture in device memory.** It is the
+  oracle every device's access is checked against.
+- **`kernel::texture::Untextured` holds no image**, so every lookup gives its default. A caller
+  that runs a program without textures uses it.
+
+Background: [ADR-0225](../adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md),
+[ADR-0229](../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)

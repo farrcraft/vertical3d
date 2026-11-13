@@ -60,6 +60,9 @@ options "options"
     rouletteDepth integer = 3
     samples integer = 1
     specularDepth integer = 12
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
     transmissionDepth integer = 12
 shader "lift"
     amount float = -0.08

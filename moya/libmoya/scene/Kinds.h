@@ -17,7 +17,8 @@ namespace v3d::moya::scene {
  *   space is RI's: x to the right, y up, looking down z.
  * - **options**: the picture's resolution and aspect, the crop window, samples per pixel and the
  *   noise they may stop at, and the pixel filter. Also the frame number the sampler is seeded
- *   by, and the camera the render looks through.
+ *   by, and the camera the render looks through. Where textures are found and made, and how
+ *   much of them a render holds.
  * - **channel**: what a film channel holds, and how many floats.
  * - **output**: a file, its format, the channels it writes beside the beauty, their precision and
  *   their compression.

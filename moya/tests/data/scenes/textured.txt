@@ -48,6 +48,9 @@ options "options"
     rouletteDepth integer = 3
     samples integer = 1
     specularDepth integer = 12
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = "data:"
     transmissionDepth integer = 12
 shader "paintedplastic"
     Cs colour = (1, 1, 1)

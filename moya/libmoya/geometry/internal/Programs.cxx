@@ -6,7 +6,10 @@
 #include <moya/libmoya/geometry/internal/Programs.h>
 
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/program/Instruction.h>
+#include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/texture/Texture.h>
 #include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -44,7 +47,15 @@ kernel::surface::Material Programs::place(std::uint32_t material, Prototypes & p
     const auto values = static_cast<std::uint32_t>(prototypes.programValues.size());
     out.program.instructions = static_cast<std::uint32_t>(prototypes.instructions.size());
     out.program.values = values;
-    prototypes.instructions.insert(prototypes.instructions.end(), held.instructions.begin(), held.instructions.end());
+    // an image's number follows every other material's images
+    const auto images = static_cast<std::uint32_t>(prototypes.images.size());
+    for (kernel::program::Instruction instruction : held.instructions) {
+        if (instruction.op == kernel::program::Op::Image && instruction.in[2] != kernel::texture::kNoTexture) {
+            instruction.in[2] += images;
+        }
+        prototypes.instructions.push_back(instruction);
+    }
+    prototypes.images.insert(prototypes.images.end(), held.images.begin(), held.images.end());
     prototypes.programValues.insert(prototypes.programValues.end(), held.values.begin(), held.values.end());
     for (const std::uint32_t at : held.colours) {
         prototypes.programColours.push_back(values + at);

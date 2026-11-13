@@ -15,6 +15,13 @@
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/kernel/surface/TextureFootprint.h>
+#include <moya/libmoya/kernel/texture/Address.h>
+#include <moya/libmoya/kernel/texture/Filtering.h>
+#include <moya/libmoya/kernel/texture/Lookup.h>
+#include <moya/libmoya/kernel/texture/Sampling.h>
+#include <moya/libmoya/kernel/texture/Texels.h>
+#include <moya/libmoya/kernel/texture/Untextured.h>
 
 #include <cmath>
 #include <cstdint>
@@ -45,6 +52,12 @@ inline constexpr float kBlueSector = 4.0F;
 
 /** The least saturation a colour has a hue at. **/
 inline constexpr float kLeastSaturation = 1.0e-4F;
+
+/** How small bg's alpha may be before disjointover gives no colour, as MaterialX's M_FLOAT_EPS. **/
+inline constexpr float kLeastAlpha = 1.0e-8F;
+
+/** The number of address modes, by which Image's fourth operand holds v's above u's. **/
+inline constexpr std::uint32_t kAddressModes = 4;
 
 /** A boolean as a program holds it: one for true, and zero for false. **/
 MOYA_KERNEL inline float truth(bool held) {
@@ -300,6 +313,74 @@ MOYA_KERNEL inline void transformed(const Instruction & instruction, const float
     }
 }
 
+/** Whether an operation composites colours with alpha, which compositeOf() computes. **/
+MOYA_KERNEL inline bool composited(Op op) {
+    return static_cast<std::uint32_t>(op) >= static_cast<std::uint32_t>(Op::Premult) && static_cast<std::uint32_t>(op) <= static_cast<std::uint32_t>(Op::DisjointOver);
+}
+
+/** One component of over, in, mask or out, before its mix. **/
+MOYA_KERNEL inline float layeredOf(Op op, const float * fg, const float * bg, std::uint32_t component) {
+    switch (op) {
+        case Op::Over:
+            return fg[component] + (bg[component] * (1.0F - fg[3]));
+        case Op::In:
+            return fg[component] * bg[3];
+        case Op::Mask:
+            return bg[component] * fg[3];
+        default:
+            return fg[component] * (1.0F - bg[3]);
+    }
+}
+
+/** disjointover before its mix: fg plus bg, scaled to fit where their alphas pass one. **/
+MOYA_KERNEL inline void disjointOf(const float * fg, const float * bg, float * made) {
+    const float summed = fg[3] + bg[3];
+    const bool over = summed > 1.0F;
+    const bool none = over && std::fabs(bg[3]) < kLeastAlpha;
+    const float scale = over && !none ? (1.0F - fg[3]) / bg[3] : 1.0F;
+    for (std::uint32_t component = 0; component < 3U; ++component) {
+        made[component] = none ? 0.0F : fg[component] + (bg[component] * scale);
+    }
+    made[3] = std::fmin(summed, 1.0F);
+}
+
+/**
+ * A compositing operation of colours with alpha, as MaterialX's OSL implementations compute it.
+ * Each but premult and unpremult is mixed with bg by mix, bg where mix is zero.
+ **/
+MOYA_KERNEL inline void compositeOf(const Instruction & instruction, const float * registers, float * out) {
+    const float * fg = registers + instruction.in[0];
+    const float * bg = registers + instruction.in[1];
+    const float mix = registers[instruction.in[2]];
+    float made[4] {};
+    switch (instruction.op) {
+        case Op::Premult:
+        case Op::Unpremult:
+            for (std::uint32_t component = 0; component < 3U; ++component) {
+                out[component] = instruction.op == Op::Premult ? fg[component] * fg[3] : fg[component] / fg[3];
+            }
+            out[3] = fg[3];
+            return;
+        case Op::Matte:
+            for (std::uint32_t component = 0; component < 3U; ++component) {
+                made[component] = (fg[component] * fg[3]) + (bg[component] * (1.0F - fg[3]));
+            }
+            made[3] = fg[3] + (bg[3] * (1.0F - fg[3]));
+            break;
+        case Op::DisjointOver:
+            disjointOf(fg, bg, made);
+            break;
+        default:
+            for (std::uint32_t component = 0; component < 4U; ++component) {
+                made[component] = layeredOf(instruction.op, fg, bg, component);
+            }
+            break;
+    }
+    for (std::uint32_t component = 0; component < 4U; ++component) {
+        out[component] = (made[component] * mix) + ((1.0F - mix) * bg[component]);
+    }
+}
+
 /** A vector operation: normalize, magnitude, dotproduct, crossproduct, luminance or a hue's. **/
 MOYA_KERNEL inline void vectorOf(const Instruction & instruction, const float * first, const float * second, float * out) {
     const std::uint32_t width = instruction.widths[0];
@@ -399,6 +480,10 @@ MOYA_KERNEL inline void whole(const Instruction & instruction, const float * reg
         patternOf(instruction, registers, out);
         return;
     }
+    if (composited(instruction.op)) {
+        compositeOf(instruction, registers, out);
+        return;
+    }
     switch (instruction.op) {
         case Op::Extract:
         case Op::Rows:
@@ -491,10 +576,34 @@ MOYA_KERNEL inline void geometric(const Instruction & instruction, const float *
     out[2] = value.z;
 }
 
-/** Runs one instruction over the registers, at a shading point. **/
-MOYA_KERNEL inline void execute(const Instruction & instruction, float * registers, const surface::Surfaces & surfaces, const surface::ShadingPoint & point) {
+/** An image read at an Image instruction's coordinate, over the point's footprint, into out. **/
+template <texture::Texels X>
+MOYA_KERNEL void imageOf(const Instruction & instruction, const float * registers, const surface::Surfaces & surfaces, const X & textures,
+    const surface::ShadingPoint & point, float * out) {
+    const float * coordinate = registers + instruction.in[0];
+    const float * given = registers + instruction.in[1];
+    glm::vec4 fallback { 0.0F };
+    for (std::uint32_t component = 0; component < instruction.widths[1] && component < 4U; ++component) {
+        fallback[static_cast<int>(component)] = given[component];
+    }
+    const texture::Sampling sampling { .s = static_cast<texture::Address>(instruction.in[3] % kAddressModes),
+        .t = static_cast<texture::Address>((instruction.in[3] / kAddressModes) % kAddressModes),
+        .filtering = static_cast<texture::Filtering>(instruction.in[4] % 3U) };
+    const surface::TextureFootprint footprint = surfaces.textureFootprint(point);
+    const glm::vec4 read = texture::lookup(textures, instruction.in[2], glm::vec2 { coordinate[0], coordinate[1] }, footprint, sampling, fallback);
+    for (std::uint32_t component = 0; component < instruction.width && component < 4U; ++component) {
+        out[component] = read[static_cast<int>(component)];
+    }
+}
+
+/** Runs one instruction over the registers at a shading point, through a texture access. **/
+template <texture::Texels X>
+MOYA_KERNEL void execute(const Instruction & instruction, float * registers, const surface::Surfaces & surfaces, const X & textures,
+    const surface::ShadingPoint & point) {
     float out[kMostComponents] {};
-    if (static_cast<std::uint32_t>(instruction.op) >= static_cast<std::uint32_t>(Op::Primvar)) {
+    if (instruction.op == Op::Image) {
+        imageOf(instruction, registers, surfaces, textures, point, out);
+    } else if (static_cast<std::uint32_t>(instruction.op) >= static_cast<std::uint32_t>(Op::Primvar)) {
         geometric(instruction, registers, surfaces, point, out);
     } else if (componentwise(instruction.op)) {
         for (std::uint32_t component = 0; component < instruction.width && component < kMostComponents; ++component) {
@@ -515,17 +624,24 @@ MOYA_KERNEL inline void execute(const Instruction & instruction, float * registe
 /**
  * Runs a program at a shading point, from the values its registers hold before it, and gives the
  * surface's parameters its registers hold after it. The surfaces hold the program's instructions
- * and values. The surface is not thin-walled.
+ * and values, and its images are read through a device's texture access. The surface is not
+ * thin-walled.
  **/
-MOYA_KERNEL inline surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const Program & program) {
+template <texture::Texels X>
+MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program) {
     float registers[kRegisters] {};
     for (std::uint32_t i = 0; i < program.size && i < kRegisters; ++i) {
         registers[i] = surfaces.programValues[program.values + i];
     }
     for (std::uint32_t i = 0; i < program.count; ++i) {
-        execute(surfaces.instructions[program.instructions + i], registers, surfaces, point);
+        execute(surfaces.instructions[program.instructions + i], registers, surfaces, textures, point);
     }
     return parameters(registers);
+}
+
+/** A program run with no textures, so each image gives its default. **/
+MOYA_KERNEL inline surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const Program & program) {
+    return evaluate(surfaces, texture::Untextured {}, point, program);
 }
 
 };  // namespace v3d::moya::kernel::program

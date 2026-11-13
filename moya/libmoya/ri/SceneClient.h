@@ -132,6 +132,12 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     /**
+     * `Option "searchpath" "texture"` sets the options' textureSearchPath, each `&` in it standing
+     * for the path before, as RI says. `Option "limits" "texturememory"` sets textureMemory, in
+     * kilobytes. A limit below one or above what an integer holds is logged, and changes nothing.
+     **/
+    void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
      * A display whose name starts with `+` adds an output. Any other replaces every output
      * before it, as RI says. A file ending in `.png` is written as PNG, and any other as EXR,
      * unless the type is `"framebuffer"`. A mode of `"rgb"` or `"rgba"` writes the beauty alone.
@@ -281,6 +287,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::function<void()> committed_;
     internal::Warnings warnings_;
+
+    /** The texture search path the options hold, which a new one's `&` stands for. **/
+    std::string textureSearchPath_;
 
     /** The built-in colour configuration textures are made in, made with the first texture. **/
     std::optional<colour::Config> colours_;

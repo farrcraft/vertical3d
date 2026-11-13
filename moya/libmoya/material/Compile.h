@@ -8,6 +8,7 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/texture/Request.h>
 
 #include <cstdint>
 #include <string>
@@ -33,6 +34,7 @@ struct Compiled {
     std::vector<float> values;
     std::vector<std::uint32_t> colours;
     std::vector<std::string> spaces;
+    std::vector<texture::Request> images;
     std::vector<std::string> reports;
 };
 
@@ -60,6 +62,9 @@ struct Compiled {
  *
  * A colour constant is in the space its primvar names, or the space its document names for it.
  *
+ * An image node reads the image images holds at the number its instruction names, its file as the
+ * node gives it, the colour space its file input names, and whether its output is a colour. A
+ * node with no file reads nothing.
  * A node that reads a primvar names it by its number in primvars, which holds the name of each
  * primvar by its number. A name read first is added at the end. texcoord reads `st`, and
  * geomcolor reads `Cs`.

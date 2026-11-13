@@ -15,6 +15,7 @@
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/texture/Request.h>
 
 #include <cstdint>
 #include <optional>
@@ -95,6 +96,9 @@ struct Prototypes {
     std::vector<float> programValues;
     std::vector<std::uint32_t> programColours;
     std::vector<std::string> programSpaces;
+
+    /** Every image the programs read, by the number an Image instruction names it with. **/
+    std::vector<texture::Request> images;
 
     std::vector<Geometry> geometries;
     std::vector<Group> groups;

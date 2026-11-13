@@ -120,6 +120,9 @@ options "options"
     rouletteDepth integer = 3
     samples integer = 4
     specularDepth integer = 12
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
     transmissionDepth integer = 12
 shader "defaultsurface"
     Cs colour = (1, 1, 1)

@@ -187,8 +187,10 @@ The gather appends each material's instructions and values after the one before.
   absval, floor, ceil, round, power, the trigonometric functions and atan2, sqrt, ln, exp, sign,
   clamp, min, max, normalize, magnitude, dotproduct and crossproduct. It is remap, smoothstep,
   luminance, rgbtohsv and hsvtorgb. It is mix, plus, minus, difference, burn, dodge, screen,
-  inside and outside. It is ifgreater, ifgreatereq, ifequal, and, or and not, and it is constant,
-  dot, convert, extract and combine.
+  inside and outside, and on colours with alpha it is premult, unpremult, over, in, mask, matte,
+  out and disjointover, each as MaterialX's OSL implementations compute it. unpremult divides by
+  the alpha whatever it is. It is ifgreater, ifgreatereq, ifequal, and, or and not, and it is
+  constant, dot, convert, extract and combine.
 - **The geometric nodes read the shading point.** geompropvalue reads the primvar it names, of up
   to four floats, and gives its `default` where the geometry has none. texcoord reads `st`, or
   `st1` and on for a later index, and geomcolor reads `Cs`, each giving zero where there is none.
@@ -207,6 +209,11 @@ The gather appends each material's instructions and values after the one before.
 - **The procedural nodes** are the noises, ramps, splits and rotations, each giving what
   MaterialX's implementations give. [Patterns.md](Patterns.md) states their algorithms. An input
   given no value reads the geometry its definition names, such as `st` for `UV0`.
+- **The image node reads a texture** through the device's texture access, as
+  [Textures.md](Textures.md#looking-up-a-texture) says, and tiledimage flattens to it. Its first
+  operand is its texture coordinate and its second its default. Its third is the image's number,
+  its fourth u's address mode and four times v's, and its fifth how it filters, each a number. A
+  node with no file reads nothing, and gives its default.
 - **Any other node gives its output's default**, and is reported. An output with no default
   gives zero, and so does a node that reads its own output.
 - **An emission input that a node feeds gives that default too**, because a material's light is
@@ -217,7 +224,8 @@ The gather appends each material's instructions and values after the one before.
   its document names for it, when the surfaces are made. `geometry::ConvertedMaterials` converts
   them, and the material's lights read the same conversion.
 - **A program of no instructions is not run.** Its material's `surface` holds its parameters.
-  Otherwise `bsdf::atSurface()` runs it through `program::evaluate()` before the BSDF is built.
+  Otherwise `bsdf::atSurface()` runs it through `program::evaluate()` before the BSDF is built,
+  with the texture access the stage was given.
 
 ## The BSDF
 

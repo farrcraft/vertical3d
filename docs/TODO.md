@@ -98,6 +98,13 @@ shading point's footprint in `st` measures it only when the split reads `st` its
 the step needs the program to carry each value's change across the footprint, or to run again
 at the footprint's edges. [Patterns.md](offline/Patterns.md#ramps-and-splits) states the rule.
 
+[] **An image read at a scaled coordinate filters over the wrong footprint.** A lookup filters
+over the shading point's footprint in `st`, whatever coordinate its image node reads. A
+tiledimage, or any node that scales its coordinate, reads more texels than that footprint covers,
+and aliases by the scale. The fix is the one a split's step needs: the program carrying each
+value's change across the footprint, or running again at its edges.
+[Textures.md](offline/Textures.md#looking-up-a-texture) states the rule.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the

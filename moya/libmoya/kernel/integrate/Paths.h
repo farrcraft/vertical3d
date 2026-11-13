@@ -37,6 +37,7 @@
 #include <moya/libmoya/kernel/surface/Footprint.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/kernel/texture/Texels.h>
 
 #include <cmath>
 #include <cstdint>
@@ -57,17 +58,18 @@ inline constexpr std::uint32_t kMostPassed = 256;
 
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
- * sampler, a traversal, the scene's surfaces and lights, the RGB-to-spectrum table, the albedo
- * table that energy compensation reads, and the settings. A pass adds the samples from first,
- * count of them, to each pixel.
+ * sampler, a traversal and a texture access. Then the scene's surfaces and lights, the
+ * RGB-to-spectrum table, the albedo table that energy compensation reads, and the settings. A
+ * pass adds the samples from first, count of them, to each pixel.
  **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 struct Paths {
     film::Pixels pixels;
     film::PixelFilter filter;
     camera::Camera camera;
     sample::ZSobol sampler;
     T traversal;
+    X textures;
     surface::Surfaces surfaces;
     light::Lights lights;
     spectrum::RgbTable table;
@@ -83,8 +85,8 @@ struct Paths {
  * drawn after it. It carries a throughput of one and has gathered no light, and its cone is the
  * camera's for its ray.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL void generate(const Paths<T> & paths, const glm::uvec2 & pixel, std::uint32_t sample, PathState & state) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, std::uint32_t sample, PathState & state) {
     const film::FilterSample placed = paths.filter.sample(paths.sampler.get2D(pixel, sample, kFilter));
     const glm::vec2 raster = glm::vec2 { static_cast<float>(pixel.x), static_cast<float>(pixel.y) } + 0.5F + placed.offset;
     MOYA_PATH(state, pixel) = pixel;
@@ -155,8 +157,8 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
  * light's triangle then drawn in proportion to its area. Its chance holds the triangle's. A light
  * drawn by power that does not light the set draws nothing.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::ShadingPoint & point, float time, const PathState & state) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL light::Picked pickLight(const Paths<T, X> & paths, const surface::ShadingPoint & point, float time, const PathState & state) {
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
@@ -182,9 +184,9 @@ MOYA_KERNEL light::Picked pickLight(const Paths<T> & paths, const surface::Shadi
  * It is drawn at a shading point of a set of linked lights with a normal, at a time within the
  * shutter.
  **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the place, then the time
-MOYA_KERNEL float pickChance(const Paths<T> & paths, std::uint32_t set, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from,
+MOYA_KERNEL float pickChance(const Paths<T, X> & paths, std::uint32_t set, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from,
     const glm::vec3 & normal, float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     if (paths.settings.picking == Picking::Tree) {
         return paths.lights.chanceByTree(paths.surfaces, set, place, primitive, from, normal, time);
@@ -199,9 +201,9 @@ MOYA_KERNEL float pickChance(const Paths<T> & paths, std::uint32_t set, std::uin
  * multiple importance sampling, and by its other way under light samples alone, where nothing else
  * finds what compensation leaves out.
  **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
-MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, float time,
+MOYA_KERNEL light::LightSample drawLight(const Paths<T, X> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, float time,
     const glm::vec2 & u) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & chosen = paths.lights.lights[place];
     if (chosen.shape == light::Shape::Dome) {
@@ -223,9 +225,9 @@ MOYA_KERNEL light::LightSample drawLight(const Paths<T> & paths, std::uint32_t p
  * time within the shutter, under multiple importance sampling. A mesh light's point lies on one of
  * its triangles, which a hit names, and its density is on that triangle.
  **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the triangle
-MOYA_KERNEL float lightDensity(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & met,
+MOYA_KERNEL float lightDensity(const Paths<T, X> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & met,
     float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & light = paths.lights.lights[place];
     if (light.shape == light::Shape::Dome) {
@@ -243,9 +245,9 @@ MOYA_KERNEL float lightDensity(const Paths<T> & paths, std::uint32_t place, std:
 }
 
 /** What the light at a place sends to a point from a point drawn on it, at a time. **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
-MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::uint32_t place, float time, const glm::vec3 & from,
+MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T, X> & paths, std::uint32_t place, float time, const glm::vec3 & from,
     const light::LightSample & drawn, const spectrum::SampledWavelengths & wavelengths) {
     const light::Light & chosen = paths.lights.lights[place];
     if (chosen.shape == light::Shape::Mesh) {
@@ -264,8 +266,8 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T> & paths, std::
  * leaves instances out passes through each of those, from just past where it met it. One that
  * passes through more than kMostPassed is taken as blocked.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL bool blocked(const Paths<T> & paths, const light::Light & light, geometry::Ray shadow) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL bool blocked(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow) {
     if (!light.shadowLinked) {
         return paths.traversal.any(shadow);
     }
@@ -292,8 +294,8 @@ MOYA_KERNEL bool blocked(const Paths<T> & paths, const light::Light & light, geo
  * strategy. It lies at one point or along one direction, or its shadow link leaves an instance
  * out. While the BSDF alone finds the lights, a light sample of any other light gathers nothing.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
     const glm::vec3 & outgoing, const PathState & state) {
     const spectrum::SampledSpectrum none(0.0F);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
@@ -358,8 +360,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T> & paths, const surfa
  * From the settings' roulette depth on, a path survives with the chance of its largest throughput,
  * held to one, and a survivor's throughput is divided by that chance.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering, const glm::vec3 & outgoing,
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering, const glm::vec3 & outgoing,
     PathState & state) {
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
     if (bounce >= paths.settings.maxDepth) {
@@ -406,9 +408,9 @@ MOYA_KERNEL bool scatter(const Paths<T> & paths, const surface::ShadingPoint & p
  * it carries the power heuristic's weight of the BSDF's sample against the light's: all of it
  * when the BSDF alone finds lights, and none when light samples alone do.
  **/
-template <geometry::Traversal T>
+template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the light, the triangle, then the time
-MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uint32_t primitive, float time, const glm::vec3 & met,
+MOYA_KERNEL float metShare(const Paths<T, X> & paths, std::uint32_t place, std::uint32_t primitive, float time, const glm::vec3 & met,
     const PathState & state) {
     if (MOYA_PATH(state, bounces) == 0U) {
         const light::Light & light = paths.lights.lights[place];
@@ -434,8 +436,8 @@ MOYA_KERNEL float metShare(const Paths<T> & paths, std::uint32_t place, std::uin
  * each distant light with an angle whose cone holds the ray. A camera ray sees the dome lights
  * and no distant light.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geometry::Ray & ray, const PathState & state) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const geometry::Ray & ray, const PathState & state) {
     const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
     spectrum::SampledSpectrum out(0.0F);
     const float time = paths.surfaces.held(ray.time);
@@ -474,8 +476,8 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T> & paths, const geom
  * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
  * the light emits towards it, and ends there.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
     for (;;) {
         const geometry::Ray & ray = MOYA_PATH(state, ray);
         const geometry::Hit hit = paths.traversal.nearest(ray);
@@ -509,7 +511,7 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
         }
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
-        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing);
+        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
         if (!scatter(paths, point, scattering, outgoing, state)) {
             return;
@@ -522,8 +524,8 @@ MOYA_KERNEL void trace(const Paths<T> & paths, PathState & state) {
  * first half of the pass's samples, which are stratified as a whole run is, go to the half beauty
  * too. A pixel that has stopped takes none.
  **/
-template <geometry::Traversal T>
-MOYA_KERNEL void paths(const Paths<T> & params, Item item) {
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
     if (params.pixels.done(item)) {
         return;
     }

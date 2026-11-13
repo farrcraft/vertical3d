@@ -150,7 +150,7 @@ among the options before the record is drafted.
 | [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | done |
 | [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | done |
 | [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | done |
-| [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225 | open |
+| [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225, 0229 | done |
 | [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | open |
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | open |
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | open |
@@ -672,6 +672,22 @@ until step 20 finds it. [Textures.md](../offline/Textures.md) is the reference p
 **Tests:** a texture far from the camera reads a coarser level than one near it. A render with a
 cache of one tile gives the same picture as one with room for every tile. A UDIM tile is read for
 the coordinates it covers.
+
+**Done.** [ADR-0229](../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)
+gives the stages that shade the device's texture access as a template parameter, beside its
+traversal. The CPU's, `device::cpu::Textures`, reads each texel through `texture::Cache::fetch()`
+in libmoya, which loads its tile and drops the one used longest ago past `textureMemory`.
+`kernel::texture::Resident` holds every level in memory, and is the oracle the CPU's lookups
+match exactly. `texture::Textures` finds each image along `textureSearchPath`, reads a tiled EXR
+of every level as it is, and makes any other image into `textureDirectory` under a hash of its
+bytes and how it is read. A `<UDIM>` path reads tiles 1001 to 1100, ten to a row. The image node
+compiles to `Op::Image`. Its lookup chooses the level by the footprint's minor axis and probes
+along its major axis, with MaterialX's address modes, v up the texture. The footprint is the
+shading point's in `st`, so a scaled coordinate filters over the wrong one, an entry in
+[TODO.md](../TODO.md#offline-rendering). The eight compositing nodes of colours with alpha
+compute as MaterialX's OSL does. RIB's `Option "searchpath" "texture"` and `Option "limits"
+"texturememory"` set the options. A path is found along the search path alone until step 25
+names documents from RIB, since a material made of scene nodes is named by no file.
 
 ### Step 21 — Bump and normal maps
 

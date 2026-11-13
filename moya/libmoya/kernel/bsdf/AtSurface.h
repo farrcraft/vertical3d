@@ -24,6 +24,8 @@
 #include <moya/libmoya/kernel/surface/Primvar.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/kernel/texture/Texels.h>
+#include <moya/libmoya/kernel/texture/Untextured.h>
 
 #include <cmath>
 #include <cstdint>
@@ -47,9 +49,11 @@ namespace v3d::moya::kernel::bsdf {
  *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
  * outgoing, of the parameters its program gives, in the tangent frame Surfaces gives the point.
- * The geometry's `Cs` primvar overrides its base colour.
+ * The geometry's `Cs` primvar overrides its base colour. The program reads its images through
+ * a device's texture access.
  **/
-MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
+template <texture::Texels X>
+MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
     const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
     const surface::Material none;
     const surface::Material & material = point.material != surface::kNoMaterial ? surfaces.materials[point.material] : none;
@@ -70,7 +74,7 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
         out.frame = surfaces.tangentFrame(point);
         surface::OpenPbr layers = material.surface;
         if (material.program.count != 0U) {
-            layers = program::evaluate(surfaces, point, material.program);
+            layers = program::evaluate(surfaces, textures, point, material.program);
             layers.thinWalled = material.surface.thinWalled;
         }
         if (painted) {
@@ -102,6 +106,12 @@ MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surf
         out.add(closure);
     }
     return out;
+}
+
+/** The BSDF at a shading point with no textures, so each image gives its default. **/
+MOYA_KERNEL inline Bsdf atSurface(const surface::Surfaces & surfaces, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
+    const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
+    return atSurface(surfaces, texture::Untextured {}, point, table, albedos, wavelengths, outgoing);
 }
 
 };  // namespace v3d::moya::kernel::bsdf

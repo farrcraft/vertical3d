@@ -282,6 +282,7 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
             out.values = emitter.values();
             out.colours = emitter.colours();
             out.spaces = emitter.spaces();
+            out.images = emitter.images();
             out.material.program = kernel::program::Program { .instructions = 0,
                 .count = static_cast<std::uint32_t>(out.instructions.size()),
                 .values = 0,

@@ -142,6 +142,9 @@ internal::Picture readOtherPicture(const std::string & path, const boost::shared
  **/
 std::string spaceOf(const internal::Picture & picture, const std::string & path, const Making & making, const colour::Config & config,
     const boost::shared_ptr<log::Logger> & logger) {
+    if (making.data) {
+        return {};
+    }
     if (!making.colourSpace.empty()) {
         return config.data(making.colourSpace) ? std::string() : making.colourSpace;
     }

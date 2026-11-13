@@ -94,6 +94,9 @@ options "options"
     rouletteDepth integer = 3
     samples integer = 64
     specularDepth integer = 12
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
     transmissionDepth integer = 12
 rectLight "light rect"
     camera integer = 0

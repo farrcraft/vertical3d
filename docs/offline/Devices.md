@@ -48,6 +48,10 @@ many threads run them.
   libmoya links it PRIVATE.
 - **An image with no pixels runs nothing.**
 
+**A texture lookup calls the host.** The CPU's texture access reads each texel through a function
+of libmoya's, which loads the texel's tile into the texture cache when the cache does not hold it,
+as [Textures.md](Textures.md#the-texture-access) says.
+
 **Host work runs on the same threads.** `CpuDevice::each(count, task)` runs a task once for
 each index below a count, in any order and on any thread, and returns when all have run. A task
 may call `each()` again, and its work joins the same threads. Each task writes only what is its

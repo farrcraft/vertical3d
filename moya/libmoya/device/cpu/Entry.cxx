@@ -15,6 +15,7 @@
 #include <moya/libmoya/device/cpu/ProfileParams.h>
 #include <moya/libmoya/device/cpu/Profiled.h>
 #include <moya/libmoya/device/cpu/Tally.h>
+#include <moya/libmoya/device/cpu/Textures.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
 #include <moya/libmoya/device/cpu/internal/Boxes.h>
 #include <moya/libmoya/device/cpu/internal/Nearest.h>
@@ -338,11 +339,12 @@ bool anyFrom(const Traversal & traversal, const Instance & entered, const kernel
 void profiledPaths(const ProfileParams & params, kernel::Item item) {
     const PathParams & from = params.paths;
     Tally & tally = params.tallies[(item.y * from.pixels.width) + item.x];
-    const kernel::integrate::Paths<Profiled> paths { .pixels = from.pixels,
+    const kernel::integrate::Paths<Profiled, Textures> paths { .pixels = from.pixels,
         .filter = from.filter,
         .camera = from.camera,
         .sampler = from.sampler,
         .traversal = Profiled { .traversal = from.traversal, .tally = &tally },
+        .textures = from.textures,
         .surfaces = from.surfaces,
         .lights = from.lights,
         .table = from.table,
@@ -406,7 +408,7 @@ MOYA_CPU_EXPORT const v3d::moya::device::cpu::Module * moya_cpu_module() {
         .isa = MOYA_CPU_ISA,
         .hits = &v3d::moya::kernel::view::hits<v3d::moya::device::cpu::Traversal>,
         .trace = &v3d::moya::kernel::geometry::traceRays<v3d::moya::device::cpu::Traversal>,
-        .paths = &v3d::moya::kernel::integrate::paths<v3d::moya::device::cpu::Traversal>,
+        .paths = &v3d::moya::kernel::integrate::paths<v3d::moya::device::cpu::Traversal, v3d::moya::device::cpu::Textures>,
         .profiled = &v3d::moya::device::cpu::profiledPaths };
     return &module;
 }

@@ -23,6 +23,14 @@ std::optional<Operation> Operation::of(const std::string & category) {
     static const Inputs conditional { "value1", "value2", "in1", "in2" };
     static const std::map<std::string, Operation> operations {
         { "constant", { Op::Copy, { "value" } } },
+        { "premult", { Op::Premult, one } },
+        { "unpremult", { Op::Unpremult, one } },
+        { "over", { Op::Over, composite } },
+        { "in", { Op::In, composite } },
+        { "mask", { Op::Mask, composite } },
+        { "matte", { Op::Matte, composite } },
+        { "out", { Op::Out, composite } },
+        { "disjointover", { Op::DisjointOver, composite } },
         { "dot", { Op::Copy, one } },
         { "convert", { Op::Copy, one } },
         { "add", { Op::Add, two } },

@@ -47,6 +47,7 @@
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <limits>
 #include <set>
 #include <string>
 #include <utility>
@@ -179,6 +180,27 @@ void SceneClient::display(const v3d::render::offline::rib::requests::Display & r
         channels.push_back(channels_[request.mode]);
     }
     scene_.set(made, "channels", scene::Value::handles(channels));
+}
+
+void SceneClient::option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name == "searchpath" && parameters.has("texture")) {
+        const std::string given = parameters.string("texture");
+        std::string path;
+        for (const char letter : given) {
+            path += letter == '&' ? textureSearchPath_ : std::string(1, letter);
+        }
+        textureSearchPath_ = path;
+        scene_.set(options_, "textureSearchPath", scene::Value::string(path));
+    }
+    if (name == "limits" && parameters.has("texturememory")) {
+        const float kilobytes = parameters.number("texturememory", 0.0F);
+        if (!(kilobytes >= 1.0F) || !(kilobytes <= static_cast<float>(std::numeric_limits<std::int32_t>::max()))) {
+            warnings_.once("texturememory", "Option \"limits\" \"texturememory\" has to be from 1 to the most an integer holds, so it changes nothing");
+            return;
+        }
+        // checked: within an integer's range, as the test above holds it
+        scene_.set(options_, "textureMemory", scene::Value::integer(static_cast<std::int32_t>(kilobytes)));
+    }
 }
 
 void SceneClient::makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) {

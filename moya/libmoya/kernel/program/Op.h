@@ -21,6 +21,11 @@ namespace v3d::moya::kernel::program {
  * Bitangent is not a register but a number: a primvar's, or kObject or kWorld for the space a
  * direction or a position is given in. The transforms read their vector from the first operand,
  * and take the spaces they turn it from and to as their second and third.
+ *
+ * Image reads a texture at a coordinate, its first operand, and gives its second where it reads
+ * nothing. Its third operand is the image's number in the catalog, its fourth u's address mode
+ * and four times v's, and its fifth how it filters, each as a number in the order MaterialX's
+ * enumerations give.
  **/
 enum class Op : std::uint8_t {
     Copy,        /**< the first operand: dot, constant and convert **/
@@ -90,6 +95,14 @@ enum class Op : std::uint8_t {
     SplitTopBottom, /**< valueb where v is below center, and valuet where it is not, from valuet, valueb, center, then texcoord **/
     Rotate2d,    /**< in turned clockwise about the origin by amount in degrees, with v upward **/
     Rotate3d,    /**< in turned about axis by amount in degrees, clockwise as seen from the axis's tip **/
+    Premult,     /**< in's colour times its alpha, and its alpha **/
+    Unpremult,   /**< in's colour over its alpha, and its alpha **/
+    Over,        /**< fg plus bg times one less fg's alpha, from fg, bg, then mix **/
+    In,          /**< fg times bg's alpha, from fg, bg, then mix **/
+    Mask,        /**< bg times fg's alpha, from fg, bg, then mix **/
+    Matte,       /**< fg's colour by its alpha over bg's, and fg's alpha over bg's, from fg, bg, then mix **/
+    Out,         /**< fg times one less bg's alpha, from fg, bg, then mix **/
+    DisjointOver,  /**< fg and bg added, bg scaled to fill what fg's alpha leaves where their alphas pass one, from fg, bg, then mix **/
     Primvar,     /**< the primvar the first operand numbers, or the second operand where there is none **/
     Position,    /**< the shading point's position **/
     Normal,      /**< its shading normal **/
@@ -97,7 +110,8 @@ enum class Op : std::uint8_t {
     Bitangent,   /**< its tangent frame's bitangent **/
     TransformPoint,  /**< a position from one space to another **/
     TransformVector, /**< a direction from one space to another **/
-    TransformNormal  /**< a normal from one space to another, of unit length **/
+    TransformNormal, /**< a normal from one space to another, of unit length **/
+    Image        /**< an image's texels at a coordinate, filtered over the shading point's footprint **/
 };
 
 /** The space a geometric operation gives its value in: the geometry's own, or the world. **/

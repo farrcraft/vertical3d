@@ -39,9 +39,13 @@
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/view/Tracing.h>
+#include <moya/libmoya/texture/Options.h>
+#include <moya/libmoya/texture/SearchPath.h>
+#include <moya/libmoya/texture/Textures.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -57,6 +61,9 @@
 namespace v3d::moya::integrate {
 
 namespace {
+
+/** The bytes in a kilobyte, which RI's texturememory limit is given in. **/
+constexpr std::size_t kKilobyte = 1024;
 
 /** FNV-1a's 64-bit offset basis and prime. **/
 constexpr std::uint64_t kFnvOffset = 0xCBF29CE484222325ULL;
@@ -94,6 +101,15 @@ float reach(const accel::LinearBox & bounds) {
     accel::Box all = bounds.start;
     all.grow(bounds.end);
     return all.empty() ? 0.0F : 0.5F * glm::length(all.upper - all.lower);
+}
+
+/** Where the scene's textures are found and made, and how much of them is held. **/
+texture::Options texturesOf(const scene::Scene & scene) {
+    texture::Options out;
+    out.searchPath = texture::directoriesOf(option(scene, "textureSearchPath").stringArray().front());
+    out.memory = static_cast<std::size_t>(count(scene, "textureMemory")) * kKilobyte;
+    out.directory = option(scene, "textureDirectory").stringArray().front();
+    return out;
 }
 
 };  // namespace
@@ -135,6 +151,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const accel::Assembly assembly = accel::assemble(device, prototypes);
     const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);
+    const texture::Textures textures(device, prototypes.images, texturesOf(scene), config, logger);
     const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds), logger);
 
     render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
@@ -182,6 +199,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .camera = camera,
                 .sampler = sampler,
                 .traversal = tracing.hierarchy(),
+                .textures = textures.view(),
                 .surfaces = surfaces.view(),
                 .lights = lights.view(),
                 .table = colour::acescgTable(),
@@ -213,6 +231,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
             tallies->into(*profile);
         }
     }
+    textures.report();
     return picture.snapshot();
 }
 

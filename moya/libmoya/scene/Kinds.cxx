@@ -42,6 +42,9 @@ constexpr int kDiffuseDepth = 4;
 constexpr int kGlossyDepth = 4;
 constexpr int kRouletteDepth = 3;
 
+/** The most kilobytes of texture tiles a render holds, as RI's texturememory gives it: 1 GiB. **/
+constexpr int kTextureMemory = 1048576;
+
 /** A film channel's floats, from 1 to 4, and the three of a colour. **/
 constexpr int kColourComponents = 3;
 
@@ -109,7 +112,10 @@ Kind options() {
             Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
             Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } },
-            Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } } } };
+            Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } },
+            Declaration { .name = "textureSearchPath", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "textureMemory", .type = Type::Integer, .fallback = Value::integer(kTextureMemory) },
+            Declaration { .name = "textureDirectory", .type = Type::String, .fallback = Value::string("") } } };
 }
 
 Kind channel() {

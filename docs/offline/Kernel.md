@@ -47,6 +47,17 @@ names. [Traversal.md](Traversal.md#the-traversal-a-stage-takes) states the rules
 
 Background: [ADR-0204](../adr/offline/0204-offline-stages-take-their-traversal-as-a-type.md)
 
+## Reaching textures
+
+Kernel code names no device's texture access either. A stage that runs a material's program takes
+the access as a second template parameter, after its traversal. A device instantiates the stage
+with its own: the CPU's is `device::cpu::Textures`, and `kernel::texture::Resident` is the oracle
+every access is checked against. An access gives a texel of a texture's level, which the
+concept `kernel::texture::Texels` names. [Textures.md](Textures.md#the-texture-access) states the
+rules.
+
+Background: [ADR-0229](../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)
+
 ## The kernel target
 
 `v3dlib_moya_kernel` is a static library built from `moya/libmoya/kernel/CMakeLists.txt`.
