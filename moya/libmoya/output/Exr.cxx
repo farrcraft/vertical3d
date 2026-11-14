@@ -53,6 +53,20 @@ constexpr std::uint32_t kCounted = std::numeric_limits<std::uint32_t>::max();
 constexpr const char * const kComponents[4] = { "R", "G", "B", "A" };
 
 /**
+ * Where a snapshot holds the channel of a name.
+ *
+ * @throws std::invalid_argument when it holds none of that name
+ **/
+std::size_t indexOf(const film::Snapshot & snapshot, const std::string & output) {
+    for (std::size_t index = 0; index < snapshot.channels.size(); ++index) {
+        if (snapshot.channels[index].name == output) {
+            return index;
+        }
+    }
+    throw std::invalid_argument("an EXR part names " + output + ", which is not one of the film's outputs");
+}
+
+/**
  * The channels a part holds, in the order its outputs name them. OpenEXR keeps one channel of a
  * name, so two outputs that give the same name in the file are refused.
  **/
@@ -89,13 +103,7 @@ FileChannels channelsOf(const film::Snapshot & snapshot, const ExrPart & part) {
             add(std::string(kSampleCount), kCounted);
             continue;
         }
-        std::size_t index = 0;
-        while (index < snapshot.channels.size() && snapshot.channels[index].name != output) {
-            ++index;
-        }
-        if (index == snapshot.channels.size()) {
-            throw std::invalid_argument("an EXR part names " + output + ", which is not one of the film's outputs");
-        }
+        const std::size_t index = indexOf(snapshot, output);
         const film::Channel & channel = snapshot.channels[index];
         const std::uint32_t first = snapshot.offsets.at(index);
         if (channel.components == 1) {

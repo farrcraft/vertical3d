@@ -131,7 +131,7 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
 std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Channel> & channels) {
     std::string text = scene::describe(scene);
     for (const film::Channel & channel : channels) {
-        text += "channel " + channel.name + " " + std::to_string(channel.components) + "\n";
+        text += "channel " + channel.name + " " + std::to_string(channel.components) + " " + std::to_string(static_cast<std::uint32_t>(channel.combine)) + "\n";
     }
     text += "samplesPerPass " + std::to_string(kSamplesPerPass) + "\n";
     std::uint64_t hash = kFnvOffset;

@@ -25,6 +25,7 @@ v3d_add_test(moya
 	"DenoiserTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"
+	"FilmCombineTest.cxx"
 	"FilmTest.cxx"
 	"GridShaderTest.cxx"
 	"HitTest.cxx"

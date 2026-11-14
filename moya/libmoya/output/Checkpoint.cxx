@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/State.h>
+#include <moya/libmoya/kernel/film/Combine.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <Imath/ImathBox.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -70,10 +71,12 @@ std::vector<std::string> namesOf(const std::vector<film::Channel> & channels) {
     for (const film::Channel & channel : channels) {
         if (channel.components == 1) {
             out.push_back(channel.name);
-            continue;
         }
-        for (std::uint32_t i = 0; i < channel.components && i < 4; ++i) {
+        for (std::uint32_t i = 0; channel.components > 1 && i < channel.components && i < 4; ++i) {
             out.push_back(channel.name + "." + kComponents[i]);
+        }
+        if (channel.combine == kernel::film::Combine::Closest) {
+            out.push_back("moya.key." + channel.name);
         }
     }
     out.insert(out.end(), std::begin(kTail), std::end(kTail));

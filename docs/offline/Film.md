@@ -46,8 +46,8 @@ reads.
   [the next section](#a-pixels-noise) describes, and the half beauty decides when the pixel
   stops, as [Stopping a pixel](#stopping-a-pixel) does. The beauty is ACEScg's red, green and
   blue, then its alpha.
-  The channels are those the film was made with, each a name and 1 to 4 floats, in the order
-  given. `offset(name)` is where a channel's first float sits.
+  The channels are those the film was made with, each a name, 1 to 4 components and a combine,
+  in the order given. `offset(name)` is where a channel's first float sits.
 - **Each pixel holds weighted sums, and one sum of weights.** `kernel::film::Pixels::add()` adds
   a sample's radiance, converted to ACEScg through the observer, and adds its weight. It adds one
   to the pixel's count of samples.
@@ -58,11 +58,22 @@ reads.
   is given.
   `addChannel()` adds the same sample's value to a channel, with the same weight, and does not
   add the weight again.
+- **A channel's combine says how its samples make its pixel.** `Pixels::keep()` adds a sample by
+  it, as `kernel::film::Combine` names them:
+  - `Mean` adds the value times the sample's weight, as `addChannel()` does, and is the default.
+  - `Sum` adds the value alone.
+  - `Closest` keeps the sample of the least key, the depth along its camera ray. It holds the key
+    in one more float after its components. Of samples at the same depth it keeps the first
+    taken, which is the one of the lowest index, since a pixel takes its samples in index order.
+  - `Least` and `Most` keep each component's least and greatest.
+
+  A new pixel holds zero, but a least channel starts at infinity, a most channel at minus
+  infinity, and a closest channel's key at NaN, which any key replaces.
 - **A pixel's samples are added in index order**, by the one work item that owns the pixel. Its
   sums are then the same under any thread count.
 - **The sums are floats**, as a GPU adds them.
 - **A film with no pixels, a channel with no name or a repeated one, and a channel of more than
-  4 floats** throw `std::invalid_argument`. `offset()` of a name the film lacks throws
+  4 components** throw `std::invalid_argument`. `offset()` of a name the film lacks throws
   `std::out_of_range`.
 
 ## A pixel's noise
@@ -117,9 +128,11 @@ uses it.
   adds each pixel's next samples, and returns when every pixel has run.
 - **`snapshot()` can be called from any thread at any time.** It waits for a pass in progress to
   end, so a snapshot holds every sample of the passes before it, and none of the next.
-- **A snapshot is resolved.** Each sum is divided by its pixel's weight, and a pixel no sample
-  reached is zero. `passes` says how many passes it holds. `at(x, y, offset)` reads a float, at
-  0 to 2 for the beauty or at a channel's offset. `error(x, y)` reads a pixel's standard error.
+- **A snapshot is resolved.** The beauty's sums and each mean channel's are divided by the
+  pixel's weight. The other combines are kept as they are, and a closest channel keeps its key.
+  A pixel no sample reached is zero in every float. `passes` says how many passes it holds.
+  `at(x, y, offset)` reads a float, at 0 to 3 for the beauty and its alpha or at a channel's
+  offset. `error(x, y)` reads a pixel's standard error.
 - **A snapshot describes itself.** It holds the film's channels and their offsets, so
   `offset(name)` finds a channel without the film, and a writer needs only the snapshot.
 
@@ -136,7 +149,8 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
 - **`output::writeCheckpoint(path, state, fingerprint)` writes a state as an EXR file** of one part,
   of floats, ZIP compressed, so any EXR reader opens it. The beauty's weighted sums are `R`, `G`,
   `B` and `A`, so a reader shows the picture scaled by each pixel's weight. A channel is named as
-  the picture's writer names it. The floats after the channels are `moya.half.R`, `moya.half.G`,
+  the picture's writer names it, and a closest channel's key is `moya.key.` followed by its
+  name. The floats after the channels are `moya.half.R`, `moya.half.G`,
   `moya.half.B`, `moya.half.weight`, `moya.sampleCount`, `moya.moment.Y2`, `moya.moment.Y`,
   `moya.moment.weight2` and `moya.weight`. Each pixel's stop flag is `moya.stopped`, of unsigned
   integers. The header's `moya/passes` holds the count of passes, and `moya/fingerprint` the
@@ -148,8 +162,9 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
   channels given. A file that is not a checkpoint, a fingerprint that differs, or a missing
   channel throws `output::Refused`.
 - **The fingerprint names the scene and the film.** `integrate::fingerprint(scene, channels)` is
-  a 64-bit FNV-1a hash of the scene's description, the film's channels and `kSamplesPerPass`. A
-  change to any object, parameter or channel changes it, and a resume against it is refused. The
+  a 64-bit FNV-1a hash of the scene's description, the film's channels with their combines, and
+  `kSamplesPerPass`. A change to any object, parameter or channel changes it, and a resume
+  against it is refused. The
   description writes a float to six digits, so a change smaller than that keeps the fingerprint.
   A file a parameter names, such as a texture, is in the description by its name alone.
 

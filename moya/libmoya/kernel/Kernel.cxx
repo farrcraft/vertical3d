@@ -29,6 +29,7 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Specular.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/ThinFilm.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/camera/Camera.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/film/Combine.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/FilterSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/PixelFilter.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/film/Pixels.h>  // IWYU pragma: keep

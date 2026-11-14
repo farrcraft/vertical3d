@@ -10,6 +10,7 @@
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/film/State.h>
+#include <moya/libmoya/kernel/film/Combine.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 
@@ -47,14 +48,18 @@ Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::ve
             }
         }
         offsets_.push_back(stride_);
-        stride_ += channel.components;
+        stride_ += kernel::film::floatsOf(channel.combine, channel.components);
     }
 
     // the moments and the weight follow the channels
     const std::size_t floats = static_cast<std::size_t>(resolution.x) * resolution.y * stored();
-    const std::vector<float> zeros(floats, 0.0F);
+    const std::vector<float> empty = emptyPixel();
+    std::vector<float> start(floats);
+    for (std::size_t i = 0; i < floats; i += empty.size()) {
+        std::copy(empty.begin(), empty.end(), start.begin() + static_cast<std::ptrdiff_t>(i));
+    }
     pixels_ = device_.allocate(floats * sizeof(float));
-    device_.upload(*pixels_, zeros.data(), floats * sizeof(float));
+    device_.upload(*pixels_, start.data(), floats * sizeof(float));
 
     stops_.assign(static_cast<std::size_t>(resolution.x) * resolution.y, 0U);
     stopped_ = device_.allocate(stops_.size() * sizeof(std::uint32_t));
@@ -147,11 +152,12 @@ Snapshot Film::snapshot() const {
         const float * const from = &sums[pixel * stored];
         const float weight = from[stored - 1U];
         float * const to = &out.values[pixel * stride_];
-        for (std::uint32_t i = 0; i < stride_; ++i) {
+        out.samples[pixel] = static_cast<std::uint32_t>(from[stride_ + kernel::film::kHalfFloats]);
+        for (std::uint32_t i = 0; i < kernel::film::kBeautyFloats; ++i) {
             to[i] = weight != 0.0F ? from[i] / weight : 0.0F;
         }
+        resolveChannels(from, to, weight, out.samples[pixel] != 0U);
         const float * const moments = from + (stored - 1U - kernel::film::kMomentFloats);
-        out.samples[pixel] = static_cast<std::uint32_t>(from[stride_ + kernel::film::kHalfFloats]);
         out.errors[pixel] = standardError(weight, moments, kernel::spectrum::acescgToXyz(glm::vec3(to[0], to[1], to[2])).y);
     }
     return out;
@@ -171,7 +177,8 @@ void Film::restore(const State & state) {
     }
     bool same = state.channels.size() == channels_.size();
     for (std::size_t i = 0; same && i < channels_.size(); ++i) {
-        same = state.channels[i].name == channels_[i].name && state.channels[i].components == channels_[i].components;
+        same = state.channels[i].name == channels_[i].name && state.channels[i].components == channels_[i].components &&
+               state.channels[i].combine == channels_[i].combine;
     }
     if (!same) {
         throw std::invalid_argument("a film state of other channels");
@@ -184,6 +191,43 @@ void Film::restore(const State & state) {
     stops_ = state.stopped;
     device_.upload(*stopped_, stops_.data(), stops_.size() * sizeof(std::uint32_t));
     passes_ = state.passes;
+}
+
+void Film::resolveChannels(const float * from, float * to, float weight, bool reached) const {
+    for (std::size_t i = 0; i < channels_.size(); ++i) {
+        const Channel & channel = channels_[i];
+        const bool mean = channel.combine == kernel::film::Combine::Mean;
+        for (std::uint32_t j = offsets_[i]; j < offsets_[i] + kernel::film::floatsOf(channel.combine, channel.components); ++j) {
+            if (mean) {
+                to[j] = weight != 0.0F ? from[j] / weight : 0.0F;
+            } else {
+                to[j] = reached ? from[j] : 0.0F;
+            }
+        }
+    }
+}
+
+std::vector<float> Film::emptyPixel() const {
+    std::vector<float> out(stored(), 0.0F);
+    for (std::size_t i = 0; i < channels_.size(); ++i) {
+        const Channel & channel = channels_[i];
+        float * const first = &out[offsets_[i]];
+        switch (channel.combine) {
+        case kernel::film::Combine::Mean:
+        case kernel::film::Combine::Sum:
+            break;
+        case kernel::film::Combine::Closest:
+            first[channel.components] = std::numeric_limits<float>::quiet_NaN();
+            break;
+        case kernel::film::Combine::Least:
+            std::fill(first, first + channel.components, std::numeric_limits<float>::infinity());
+            break;
+        case kernel::film::Combine::Most:
+            std::fill(first, first + channel.components, -std::numeric_limits<float>::infinity());
+            break;
+        }
+    }
+    return out;
 }
 
 std::uint32_t Film::stored() const {

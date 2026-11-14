@@ -102,6 +102,19 @@ class Film final {
     static float noise(const float * sums, std::uint32_t stride);
 
  private:
+    /**
+     * A pixel no sample has reached. Its floats are zero, but for three. A least channel's
+     * components are infinite, and a most channel's are minus infinity. A closest channel's key
+     * is NaN.
+     **/
+    std::vector<float> emptyPixel() const;
+
+    /**
+     * A pixel's channels resolved from its sums: a mean's divided by the pixel's weight, and any
+     * other kept as it is. Every float of a pixel no sample reached is zero.
+     **/
+    void resolveChannels(const float * from, float * to, float weight, bool reached) const;
+
     /** The floats each pixel holds on the device: the snapshot's, the moments and the weight. **/
     std::uint32_t stored() const;
 

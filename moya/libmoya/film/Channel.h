@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/film/Combine.h>
+
 #include <cstdint>
 #include <string>
 
@@ -14,8 +16,11 @@ namespace v3d::moya::film {
 struct Channel {
     std::string name;
 
-    /** Its floats per pixel, from 1 to 4. **/
+    /** Its components, from 1 to 4. **/
     std::uint32_t components { 1 };
+
+    /** How its samples are combined into its pixel. **/
+    kernel::film::Combine combine { kernel::film::Combine::Mean };
 };
 
 };  // namespace v3d::moya::film

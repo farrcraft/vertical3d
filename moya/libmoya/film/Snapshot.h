@@ -25,7 +25,10 @@ struct Snapshot {
     /** The passes it holds the samples of. **/
     std::uint32_t passes { 0 };
 
-    /** The floats each pixel holds: the beauty's three and its alpha, then each channel's. **/
+    /**
+     * The floats each pixel holds: the beauty's three and its alpha, then each channel's. A
+     * channel that keeps its closest sample holds that sample's depth after its components.
+     **/
     std::uint32_t stride { 0 };
 
     /** The film's channels, in order, and where each one's first float sits in a pixel. **/

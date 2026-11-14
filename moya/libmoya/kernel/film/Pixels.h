@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/Array.h>
+#include <moya/libmoya/kernel/film/Combine.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
@@ -129,6 +130,48 @@ struct Pixels {
         float * const out = at(pixel) + offset;
         for (glm::length_t i = 0; i < N; ++i) {
             out[i] += weight * value[i];
+        }
+    }
+
+    /**
+     * Adds a sample's value to a channel by the channel's combine. A mean adds it times the
+     * sample's filter weight, and a sum adds it alone. A closest takes it when the sample's key is
+     * less than the one it holds, and holds the key in the float after its components. A least or
+     * a most takes each component that is less or greater than its own.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the weight, then the key
+    MOYA_KERNEL void keep(Item pixel, std::uint32_t offset, Combine combine, float weight, float key, const float * value, std::uint32_t components) const {
+        float * const out = at(pixel) + offset;
+        switch (combine) {
+        case Combine::Mean:
+            for (std::uint32_t i = 0; i < components; ++i) {
+                out[i] += weight * value[i];
+            }
+            return;
+        case Combine::Sum:
+            for (std::uint32_t i = 0; i < components; ++i) {
+                out[i] += value[i];
+            }
+            return;
+        case Combine::Closest:
+            // a channel no sample has reached holds a key of NaN, which every key passes
+            if (!(key >= out[components])) {
+                for (std::uint32_t i = 0; i < components; ++i) {
+                    out[i] = value[i];
+                }
+                out[components] = key;
+            }
+            return;
+        case Combine::Least:
+            for (std::uint32_t i = 0; i < components; ++i) {
+                out[i] = value[i] < out[i] ? value[i] : out[i];
+            }
+            return;
+        case Combine::Most:
+            for (std::uint32_t i = 0; i < components; ++i) {
+                out[i] = value[i] > out[i] ? value[i] : out[i];
+            }
+            return;
         }
     }
 };
