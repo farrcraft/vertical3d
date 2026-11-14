@@ -233,6 +233,13 @@ the scene. Each is added to its channel by the channel's combine, as
 - **A primvar channel** reads the primvar its `sourceName` names, of the channel's components,
   and zero on a surface without it. The gather reads the primvar for the channel, though no
   material reads it.
+- **A denoiser's `albedo` and `denoisingNormal`**, of three components each, are read where
+  the path first meets a surface whose singular closures hold less than half of its estimated
+  albedo. A path passes mirrors and smooth glass by, and the albedo it then gives is the
+  surface's times what they let through. It gives nothing once it leaves a surface through a lobe
+  that is not singular, or meets no surface. The albedo is that of the surface's closures that
+  are not singular, under ACES white, so a white surface's is one. The normal is the surface's
+  shading normal.
 - **Any other channel holds zero, and is reported**: a raw name not in the table, a raw value of
   other components than its channel's, and a light path expression.
 

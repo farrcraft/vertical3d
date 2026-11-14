@@ -23,6 +23,9 @@ namespace v3d::moya::kernel::integrate {
  *   places.
  * - Face is the face or curve of the mesh the hit's primitive was cut from.
  * - Primvar is a primvar's value by its number, zero where the surface has none.
+ * - Albedo and DenoisingNormal are what a denoiser reads, as Paths.h's features() says. They are
+ *   read where a path first meets a surface that is not mostly a mirror or smooth glass, which
+ *   may be past the first hit.
  *
  * A light's shape the ray meets has its depth and position, and reads zero or -1 for the others.
  **/
@@ -34,6 +37,8 @@ enum class Reading : std::uint8_t {
     Instance,
     Face,
     Primvar,
+    Albedo,
+    DenoisingNormal,
 };
 
 /** A channel the path tracer fills at each camera ray's first hit, and what it reads there. **/

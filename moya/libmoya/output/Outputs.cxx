@@ -86,7 +86,8 @@ std::optional<kernel::integrate::Reading> readingNamed(const std::string & name)
     const std::map<std::string, kernel::integrate::Reading> named { { "depth", kernel::integrate::Reading::Depth },
         { "position", kernel::integrate::Reading::Position }, { "normal", kernel::integrate::Reading::Normal },
         { "st", kernel::integrate::Reading::Texture }, { "instance", kernel::integrate::Reading::Instance },
-        { "face", kernel::integrate::Reading::Face } };
+        { "face", kernel::integrate::Reading::Face }, { "albedo", kernel::integrate::Reading::Albedo },
+        { "denoisingNormal", kernel::integrate::Reading::DenoisingNormal } };
     const auto found = named.find(name);
     return found == named.end() ? std::nullopt : std::optional<kernel::integrate::Reading>(found->second);
 }

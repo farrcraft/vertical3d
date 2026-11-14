@@ -70,6 +70,9 @@ MOYA_KERNEL inline void readAt(const FirstHit & wanted, const surface::Surfaces 
             surfaces.read(point, wanted.primvar, out, wanted.components);
         }
         return;
+    case Reading::Albedo:
+    case Reading::DenoisingNormal:
+        return;
     }
 }
 
@@ -86,6 +89,20 @@ MOYA_KERNEL inline void readFirstHit(const film::Pixels & pixels, Item pixel, fl
         float value[4];
         readAt(wanted[i], surfaces, hit, ray, point, value);
         pixels.keep(pixel, wanted[i].offset, wanted[i].combine, weight, key, value, wanted[i].components);
+    }
+}
+
+/**
+ * Adds a camera sample's albedo and normal to each channel a denoiser reads, by each one's
+ * combine. A closest channel keeps the sample whose surface was nearest along its last ray.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the pixel, then the sample's weight
+MOYA_KERNEL inline void readFeatures(const film::Pixels & pixels, Item pixel, float weight, const Array<FirstHit> & wanted, float depth,
+    const glm::vec3 & albedo, const glm::vec3 & normal) {
+    for (std::uint32_t i = 0; i < wanted.size; ++i) {
+        const glm::vec3 & read = wanted[i].reading == Reading::Albedo ? albedo : normal;
+        const float value[3] = { read.x, read.y, read.z };
+        pixels.keep(pixel, wanted[i].offset, wanted[i].combine, weight, depth, value, 3U);
     }
 }
 

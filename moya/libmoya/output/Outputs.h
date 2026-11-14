@@ -23,8 +23,9 @@
 namespace v3d::moya::output {
 
 /**
- * What a raw channel's source name reads at a camera ray's first hit: `depth`, `position`,
- * `normal`, `st`, `instance` or `face`. None for any other name.
+ * What a raw channel's source name reads where its path meets the scene: `depth`, `position`,
+ * `normal`, `st`, `instance` or `face` at the first hit, and `albedo` or `denoisingNormal`
+ * for a denoiser. None for any other name.
  **/
 std::optional<kernel::integrate::Reading> readingNamed(const std::string & name);
 

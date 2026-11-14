@@ -242,7 +242,52 @@ struct Bsdf {
         return out;
     }
 
+    /** The share of the closures' estimated albedos that its singular closures hold, or zero. **/
+    MOYA_KERNEL float singularShare() const {
+        float all = 0.0F;
+        float singular = 0.0F;
+        for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
+            all += closures[i].albedo;
+            singular += closures[i].singular() ? closures[i].albedo : 0.0F;
+        }
+        return all > 0.0F ? singular / all : 0.0F;
+    }
+
+    /**
+     * The albedo of its closures that are not singular, at each wavelength: each one's weight
+     * times what its model reflects, as add() estimates them but at each wavelength apart.
+     **/
+    MOYA_KERNEL spectrum::SampledSpectrum spreadAlbedo() const {
+        spectrum::SampledSpectrum out(0.0F);
+        for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
+            if (!closures[i].singular()) {
+                out += closures[i].weight * reflects(closures[i]);
+            }
+        }
+        return out;
+    }
+
  private:
+    /** What a closure's model reflects at each wavelength, by the estimates add() averages. **/
+    MOYA_KERNEL spectrum::SampledSpectrum reflects(const Closure & closure) const {
+        switch (closure.model) {
+            case Model::Conductor:
+                return closure.fresnel.average();
+            case Model::OrenNayar:
+                return closure.colour;
+            case Model::Specular:
+                return closure.colour * (1.0F - albedos.transmittedAt(std::fmax(closure.ior, 1.0F)));
+            case Model::Dielectric:
+                return closure.colour.average() >= closure.transmitted.average() ? closure.colour : closure.transmitted;
+            case Model::Fuzz:
+                return closure.colour * scattering::Fuzz::albedo(0.5F, closure.roughness);
+            case Model::Diffuse:
+            case Model::Mirror:
+                break;
+        }
+        return spectrum::SampledSpectrum(1.0F);
+    }
+
     /** Two directions in a frame, and whether it and the geometric surface agree on them. **/
     struct Directions {
         glm::vec3 outgoing { 0.0F };

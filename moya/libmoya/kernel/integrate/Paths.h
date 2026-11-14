@@ -35,6 +35,8 @@
 #include <moya/libmoya/kernel/light/SphericalTriangle.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
+#include <moya/libmoya/kernel/spectrum/Acescg.h>
+#include <moya/libmoya/kernel/spectrum/Colorimetry.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
@@ -58,6 +60,12 @@ namespace v3d::moya::kernel::integrate {
 /** How far short of a light's point a shadow ray stops, as a share of its length. **/
 inline constexpr float kShadowShort = 1.0e-4F;
 
+/**
+ * The share of a surface's estimated albedo its singular closures hold, at or above which a path
+ * passes the surface by for a denoiser's albedo and normal.
+ **/
+inline constexpr float kFeaturedShare = 0.5F;
+
 /** The most surfaces a shadow ray from a light with a shadow link meets before it is blocked. **/
 inline constexpr std::uint32_t kMostPassed = 256;
 
@@ -66,7 +74,7 @@ inline constexpr std::uint32_t kMostPassed = 256;
  * sampler, a traversal and a texture access. Then the scene's surfaces and lights, the
  * RGB-to-spectrum table, the albedo table that energy compensation reads, and the settings. A
  * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
- * each camera ray fills where it first meets the scene.
+ * each camera ray fills where it first meets the scene, and features those a denoiser reads.
  **/
 template <geometry::Traversal T, texture::Texels X>
 struct Paths {
@@ -84,7 +92,29 @@ struct Paths {
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
     Array<FirstHit> firstHits;
+    Array<FirstHit> features;
 };
+
+/**
+ * Adds the albedo and the shading normal a denoiser reads, at the first surface a path meets whose
+ * singular closures hold less than kFeaturedShare of its albedo. A surface it reaches through
+ * mirrors and smooth glass alone gives its albedo times what they let through, which is the
+ * path's throughput. The albedo is the surface's closures that are not singular, under ACES
+ * white, so a white surface's is one.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void features(const Paths<T, X> & paths, PathState & state, const bsdf::Bsdf & scattering, const surface::ShadingPoint & point,
+    float depth) {
+    if (MOYA_PATH(state, featured) != 0U || paths.features.size == 0U || scattering.singularShare() >= kFeaturedShare) {
+        return;
+    }
+    MOYA_PATH(state, featured) = 1U;
+    const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
+    const spectrum::SampledSpectrum albedo = MOYA_PATH(state, throughput) * scattering.spreadAlbedo() * spectrum::acesWhite(wavelengths);
+    const glm::vec3 rgb = spectrum::acescgFromXyz(spectrum::toXyz(albedo, wavelengths));
+    const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
+    readFeatures(paths.pixels, Item { .x = pixel.x, .y = pixel.y }, MOYA_PATH(state, weight), paths.features, depth, rgb, point.shading);
+}
 
 /** Adds a camera ray's first hit to the channels that read it, and nothing for a later ray. **/
 template <geometry::Traversal T, texture::Texels X>
@@ -550,9 +580,14 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
         const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing);
+        features(paths, state, scattering, point, hit.distance * length);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
         if (!scatter(paths, point, scattering, outgoing, state)) {
             return;
+        }
+        // a path that leaves through a lobe that is not singular gives a denoiser nothing past it
+        if (MOYA_PATH(state, specular) == 0U) {
+            MOYA_PATH(state, featured) = 1U;
         }
     }
 }

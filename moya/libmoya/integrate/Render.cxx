@@ -198,7 +198,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .settings = settings,
                 .first = first,
                 .count = samples,
-                .firstHits = firstHits.view() };
+                .firstHits = firstHits.view(),
+                .features = firstHits.features() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;
