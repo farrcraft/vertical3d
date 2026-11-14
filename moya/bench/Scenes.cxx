@@ -7,7 +7,6 @@
 
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/output/Exr.h>
-#include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -373,6 +372,7 @@ boost::shared_ptr<scene::Scene> room(float scale, std::uint32_t side, std::uint3
 }
 
 /** A shader node of language materialx, of a node definition and its constant inputs. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the node's name, then its definition
 scene::Handle node(scene::Scene & scene, const std::string & name, const std::string & definition, const std::vector<std::pair<std::string, scene::Value>> & inputs) {
     const scene::Handle out = scene.create("shader", name);
     scene.set(out, "shader", scene::Value::string(definition));

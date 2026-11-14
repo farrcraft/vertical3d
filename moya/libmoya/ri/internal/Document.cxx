@@ -9,7 +9,6 @@
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/ri/internal/DocumentReader.h>
 #include <moya/libmoya/ri/internal/Objects.h>
-#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Interface.h>

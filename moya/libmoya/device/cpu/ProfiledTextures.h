@@ -32,7 +32,7 @@ struct ProfiledTextures {
         return textures.texel(texture, level, column, row);
     }
 
-    std::uint64_t started() const;
+    static std::uint64_t started();
     void finished(kernel::texture::Work work, std::uint64_t mark) const;
 };
 

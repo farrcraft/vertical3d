@@ -33,6 +33,7 @@
 #include <moya/libmoya/kernel/geometry/Trace.h>
 #include <moya/libmoya/kernel/integrate/Paths.h>
 #include <moya/libmoya/kernel/Launch.h>
+#include <moya/libmoya/kernel/texture/Texels.h>
 #include <moya/libmoya/kernel/view/HitView.h>
 
 #include <bit>
@@ -433,7 +434,7 @@ bool Profiled::any(const kernel::geometry::Ray & ray, F & filter) const {
     return out;
 }
 
-std::uint64_t ProfiledTextures::started() const {
+std::uint64_t ProfiledTextures::started() {
     return __rdtsc();
 }
 
