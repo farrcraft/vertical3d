@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!-- a tangent-space normal map of noise, tilting the normal by up to a third along each axis -->
+  <nodegraph name="bumps">
+    <position name="where" type="vector3" />
+    <multiply name="finer" type="vector3">
+      <input name="in1" type="vector3" nodename="where" />
+      <input name="in2" type="float" value="6" />
+    </multiply>
+    <noise3d name="wobble" type="vector3">
+      <input name="amplitude" type="vector3" value="0.35, 0.35, 0" />
+      <input name="position" type="vector3" nodename="finer" />
+    </noise3d>
+    <add name="tilt" type="vector3">
+      <input name="in1" type="vector3" nodename="wobble" />
+      <input name="in2" type="vector3" value="0.5, 0.5, 1" />
+    </add>
+    <normalmap name="map" type="vector3">
+      <input name="in" type="vector3" nodename="tilt" />
+    </normalmap>
+    <output name="normal" type="vector3" nodename="map" />
+  </nodegraph>
+  <open_pbr_surface name="bumpy" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.8, 0.3, 0.2" />
+    <input name="specular_roughness" type="float" value="0.25" />
+    <input name="geometry_normal" type="vector3" nodegraph="bumps" output="normal" />
+  </open_pbr_surface>
+  <surfacematerial name="bumped" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="bumpy" />
+  </surfacematerial>
+
+  <!-- a card of four by four cells, each kept or cut out whole by its cell noise -->
+  <nodegraph name="cells">
+    <texcoord name="st" type="vector2" />
+    <multiply name="tiles" type="vector2">
+      <input name="in1" type="vector2" nodename="st" />
+      <input name="in2" type="float" value="4" />
+    </multiply>
+    <cellnoise2d name="cell" type="float">
+      <input name="texcoord" type="vector2" nodename="tiles" />
+    </cellnoise2d>
+    <ifgreater name="kept" type="float">
+      <input name="value1" type="float" nodename="cell" />
+      <input name="value2" type="float" value="0.4" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <output name="opacity" type="float" nodename="kept" />
+  </nodegraph>
+  <open_pbr_surface name="card" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.2, 0.6, 0.3" />
+    <input name="geometry_opacity" type="float" nodegraph="cells" output="opacity" />
+  </open_pbr_surface>
+  <surfacematerial name="cut" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="card" />
+  </surfacematerial>
+
+  <!-- a height of three octaves of fractal noise, scaled by a quarter -->
+  <nodegraph name="ridges">
+    <position name="where" type="vector3" />
+    <multiply name="finer" type="vector3">
+      <input name="in1" type="vector3" nodename="where" />
+      <input name="in2" type="float" value="3" />
+    </multiply>
+    <fractal3d name="ridged" type="float">
+      <input name="octaves" type="integer" value="3" />
+      <input name="position" type="vector3" nodename="finer" />
+    </fractal3d>
+    <output name="height" type="float" nodename="ridged" />
+  </nodegraph>
+  <displacement name="raise" type="displacementshader">
+    <input name="displacement" type="float" nodegraph="ridges" output="height" />
+    <input name="scale" type="float" value="0.25" />
+  </displacement>
+  <open_pbr_surface name="stone" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.7, 0.65, 0.6" />
+    <input name="specular_roughness" type="float" value="0.5" />
+  </open_pbr_surface>
+  <surfacematerial name="rough" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="stone" />
+    <input name="displacementshader" type="displacementshader" nodename="raise" />
+  </surfacematerial>
+</materialx>

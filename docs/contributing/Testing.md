@@ -456,6 +456,11 @@ The moya suite renders scenes on the CPU and compares them with committed PNGs i
   RI's standard lights, mesh lights, lights that `Illuminate` links, and a light that
   `paths.ies` shapes. Each holds the beauty as `R`, `G` and `B` floats and the standard error of
   each pixel's luminance as `error`.
+- `materials-*.exr` are rendered the same way, from scenes whose every surface is OpenPBR's. One
+  puts a sphere of each of OpenPBR's lobes in a white furnace. One holds a metal, a glass, a
+  coated, a fuzzed and a thin-filmed sphere. The others hold a textured quad, a normal-mapped
+  sphere, a cut-out card, and a subdivision surface its material displaces.
+  `materials-patterns.mtlx` holds the materials they read from a document.
 
 The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
 differences between compilers. It reports the worst pixel and by how much. A failing case, or a
@@ -500,7 +505,8 @@ so a case over every pixel allows more than one over a region's mean.
   five standard errors. The same samples are drawn on every run, so a render lies far less than
   an error from its reference unless its light changed. Rounding between compilers stays inside
   the bound. A second case renders each scene with every light twice as bright and checks that
-  the comparison fails it.
+  the comparison fails it. A third renders each material scene with every surface's base at half
+  its weight, and checks that the comparison fails it too.
 - **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
   commit and a PNG to look at. Copy the EXR over the reference to change it on purpose.
 - **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone

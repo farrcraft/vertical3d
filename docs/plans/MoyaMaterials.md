@@ -156,7 +156,7 @@ among the options before the record is drafted.
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | done |
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | done |
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | done |
-| [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | done |
 | [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | open |
 | [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | open |
 
@@ -811,6 +811,21 @@ data holds an inline network and a document's material, with its description and
 
 **Tests:** the committed renders, and a case that renders each with a material input changed and
 checks that the comparison fails.
+
+**Done.** Four scenes hold the set, rendered by the path tracer and committed as `materials-*.exr`
+beside their RIB files, each with its description and hit view. `materials-furnace` puts a sphere
+of each of OpenPBR's lobes under a white dome. The diffuse base, the metal, the coat, the fuzz and
+the thin film vanish into it, and the rough glass darkens at its rim. `materials-lobes` sets a
+gold, a glass, a coated, a fuzzed and a thin-filmed sphere on a floor. `materials-surfaces` holds
+a quad textured by `blocks.png` through an inline network, a sphere normal-mapped by noise and a
+card cut out by cell noise, which casts its cells' shadow. `materials-displaced` is a
+subdivision cube its material displaces by fractal noise. The procedural materials are a
+document, `materials-patterns.mtlx`. A third reference case halves every surface's
+`base_weight` and checks that each material scene then fails its comparison. A RIB scene could
+not displace by a material before this step, so two gaps were closed. A `Bxdf` of type
+`materialx` now gives its material's `displacementshader` as the material's displacement, and
+the scene client reads `Attribute "displacementbound"` into object space onto each subdivision
+surface after it, which it had left at zero.
 
 ### Step 27 — Speed
 

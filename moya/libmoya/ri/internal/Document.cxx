@@ -26,7 +26,7 @@ namespace v3d::moya::ri::internal {
 namespace mx = MaterialX;
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file, then the material in it
-std::optional<scene::Handle> documentMaterial(scene::Scene & scene, Objects & made, const std::string & file, const std::string & material,
+std::optional<Terminals> documentMaterial(scene::Scene & scene, Objects & made, const std::string & file, const std::string & material,
     std::string & reason) {
     mx::DocumentPtr document;
     try {
@@ -53,7 +53,13 @@ std::optional<scene::Handle> documentMaterial(scene::Scene & scene, Objects & ma
         return std::nullopt;
     }
     DocumentReader reader(scene, made, boost::filesystem::path(file).parent_path());
-    return reader.nodeOf(shader);
+    Terminals out { .surface = reader.nodeOf(shader), .displacement = std::nullopt };
+    const mx::InputPtr displacement = chosen->getInput("displacementshader");
+    const mx::NodePtr displacer = displacement ? displacement->getConnectedNode() : nullptr;
+    if (displacer) {
+        out.displacement = reader.nodeOf(displacer);
+    }
+    return out;
 }
 
 };  // namespace v3d::moya::ri::internal

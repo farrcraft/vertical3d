@@ -12,6 +12,7 @@
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/ri/SceneClient.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -44,7 +45,10 @@ namespace {
 namespace film = v3d::moya::film;
 namespace scene = v3d::moya::scene;
 
-/** The scenes made for the path tracer, each a RIB file in data/ with its render beside it. **/
+/**
+ * The scenes made for the path tracer and its materials, each a RIB file in data/ with its
+ * render beside it.
+ **/
 constexpr const char * kScenes[] = {
     "paths-furnace",
     "paths-room",
@@ -53,6 +57,18 @@ constexpr const char * kScenes[] = {
     "paths-mesh",
     "paths-linked",
     "paths-ies",
+    "materials-furnace",
+    "materials-lobes",
+    "materials-surfaces",
+    "materials-displaced",
+};
+
+/** The scenes made for materials, each of whose surfaces is OpenPBR's. **/
+constexpr const char * kMaterialScenes[] = {
+    "materials-furnace",
+    "materials-lobes",
+    "materials-surfaces",
+    "materials-displaced",
 };
 
 /**
@@ -185,6 +201,25 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_a_brighter_light_fails_the_comparison
                 }
             });
             BOOST_TEST(film::furthest(brighter, readReference("data/" + std::string(name) + ".exr")).sigmas > kAllowed);
+        }
+    }
+}
+
+// a base of half the weight fails the comparison in every material scene, so the comparison sees
+// a change of material and not only a change of light
+BOOST_AUTO_TEST_CASE(moya_paths_references_a_changed_material_fails_the_comparison_test) {
+    for (const char * name : kMaterialScenes) {
+        BOOST_TEST_CONTEXT(name) {
+            const film::Snapshot halved = rendered(name, [](scene::Scene & scene) {
+                for (const scene::Handle & node : scene.objects("shader")) {
+                    if (scene.value(node, "shader").stringArray().front() != "ND_open_pbr_surface_surfaceshader") {
+                        continue;
+                    }
+                    scene.declare(node, scene::Declaration { .name = "base_weight", .fallback = scene::Value::number(1.0F) });
+                    scene.set(node, "base_weight", scene::Value::number(0.5F));
+                }
+            });
+            BOOST_TEST(film::furthest(halved, readReference("data/" + std::string(name) + ".exr")).sigmas > kAllowed);
         }
     }
 }

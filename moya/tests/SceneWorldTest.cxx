@@ -369,6 +369,17 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_subdivision_meshs_tags_become_its_parame
     BOOST_TEST(read.heard("does not read"));
 }
 
+// a displacement bound is held by the subdivision surfaces after it in its attribute block, in
+// object space: a bound given in world space under a scale of two is half as long
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_displacement_bound_is_held_in_object_space_test) {
+    const std::string mesh = "SubdivisionMesh \"catmull-clark\" [4] [0 1 2 3] [] [] [] [] \"P\" [0 0 0 1 0 0 1 1 0 0 1 0]\n";
+    const Read read(world("AttributeBegin\nAttribute \"displacementbound\" \"float sphere\" [0.3]\n" + mesh +
+        "Scale 2 2 2\nAttribute \"displacementbound\" \"float sphere\" [0.4] \"string coordinatesystem\" [\"world\"]\n" + mesh + "AttributeEnd\n" + mesh));
+    BOOST_TEST(read.value("subdivision", "SubdivisionMesh 1", "displacementBound").floatArray().front() == 0.3F);
+    BOOST_TEST(read.value("subdivision", "SubdivisionMesh 2", "displacementBound").floatArray().front() == 0.2F);
+    BOOST_TEST(read.value("subdivision", "SubdivisionMesh 3", "displacementBound").floatArray().front() == 0.0F);
+}
+
 /**
  * Each quadric's request becomes its kind's parameters, each from its own argument. The values
  * differ from each other and from each kind's defaults.
@@ -581,7 +592,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_every_test_scene_reads_as_committed_test) 
         BOOST_TEST(read.described() == expected, entry.path().filename().string());
         scenes++;
     }
-    BOOST_TEST(scenes == 30U);
+    BOOST_TEST(scenes == 34U);
 }
 
 };  // namespace

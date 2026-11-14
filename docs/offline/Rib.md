@@ -164,6 +164,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   parameters as inputs, and the colour and opacity are the surface node's `Cs` and `Os`. The
   instances made under one attribute state share it. With no `Surface`, the surface is
   `defaultsurface`.
+- **`Attribute "displacementbound"` bounds the subdivision surfaces after it** in its attribute
+  block, as their `displacementBound`. Its `sphere` is taken into object space from the
+  `coordinatesystem` it names, at the largest stretch of that space's axes, and a space no
+  request named is logged and taken as object space.
 - **RenderMan's `Pattern` and `Bxdf` make a material of MaterialX nodes.** Each adds a node of
   language `materialx` to the attribute state's network, of the node definition its type names,
   such as `ND_image_color3`, and the network is saved and restored with the attribute state. Each
@@ -173,14 +177,17 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   leaves its input as it was.
 - **The last `Bxdf` is the material's surface**, and the material holds it and every node it
   reads. The later of a `Surface` and a `Bxdf` shades what follows, because a `Surface` clears
-  the network. The attribute state's `Displacement` stays RI's.
+  the network. The attribute state's `Displacement` stays RI's, unless a document's material
+  gives one.
 - **A `Bxdf` of type `materialx` reads a material from a MaterialX document.** Its `file` names
   the document, as a path from the working directory, and its `material` the material node, or
   the document's first when it gives none. The material's `surfaceshader` and every node it
   reads, through node graphs and their interface inputs, become the scene's nodes, each of the
   definition MaterialX's libraries resolve it to. A colour keeps its document's space, and a
   relative filename is taken from the document's directory. The `Bxdf`'s other parameters then
-  override the surface node's inputs, and its references connect them to the network's nodes. A
+  override the surface node's inputs, and its references connect them to the network's nodes.
+  When the material's `displacementshader` names a node, that node and every node it reads
+  become the material's displacement, in place of the attribute state's `Displacement`. A
   document that cannot be read, or holds no such material, is logged, and the surface is the
   attribute state's `Surface`.
 - **An object is a group.** `ObjectBegin` saves the attribute state and resets the

@@ -158,6 +158,27 @@ BOOST_AUTO_TEST_CASE(moya_scenematerials_a_materialx_bxdf_reads_a_document_test)
     BOOST_TEST((read.scene().value(tint, "value").floatArray() == std::vector<float> { 0.2F, 0.4F, 0.6F }));
 }
 
+// a document's material with a displacement shader gives the material that displacement, in
+// place of the attribute state's Displacement, and one without keeps it
+BOOST_AUTO_TEST_CASE(moya_scenematerials_a_document_gives_its_displacement_test) {
+    const Read displaced("Displacement \"bumpy\"\nBxdf \"materialx\" \"rough\" \"string file\" [\"data/materials-patterns.mtlx\"] \"string material\" [\"rough\"]\n"
+                         "Sphere 1 -1 1 360\n");
+    const std::vector<scene::Handle> instances = displaced.scene().objects("instance");
+    BOOST_TEST_REQUIRE(instances.size() == 1U);
+    const scene::Handle material = displaced.scene().value(instances.front(), "material").handleArray().front();
+    const scene::Handle displacement = displaced.scene().value(material, "displacement").handleArray().front();
+    BOOST_TEST(displaced.text(displacement, "language") == "materialx");
+    BOOST_TEST(displaced.text(displacement, "shader") == "ND_displacement_float");
+    BOOST_TEST(displaced.feeding(displacement, "displacement").has_value());
+
+    const Read kept("Displacement \"bumpy\"\nBxdf \"materialx\" \"bumped\" \"string file\" [\"data/materials-patterns.mtlx\"] \"string material\" [\"bumped\"]\n"
+                    "Sphere 1 -1 1 360\n");
+    const scene::Handle held = kept.scene().value(kept.scene().objects("instance").front(), "material").handleArray().front();
+    const scene::Handle ri = kept.scene().value(held, "displacement").handleArray().front();
+    BOOST_TEST(kept.text(ri, "language") == "ri");
+    BOOST_TEST(kept.text(ri, "shader") == "bumpy");
+}
+
 // a document that cannot be read is heard, and the surface is RI's in force
 BOOST_AUTO_TEST_CASE(moya_scenematerials_a_document_that_cannot_be_read_is_heard_test) {
     const Read read("Bxdf \"materialx\" \"none\" \"string file\" [\"no_such_document.mtlx\"]\nSphere 1 -1 1 360\n", "gives no material");

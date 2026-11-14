@@ -45,6 +45,7 @@
 #include <moya/libmoya/texture/Maker.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -60,6 +61,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
@@ -373,6 +376,35 @@ void SceneClient::attribute(const std::string & name, const v3d::render::offline
     if (name == "identifier" && parameters.has("name")) {
         current_.name = parameters.string("name");
     }
+    if (name == "displacementbound" && parameters.has("sphere")) {
+        displacementBound(parameters);
+    }
+}
+
+void SceneClient::displacementBound(const v3d::render::offline::rib::ParameterList & parameters) {
+    const float radius = parameters.number("sphere", 0.0F);
+    if (!std::isfinite(radius) || radius < 0.0F) {
+        warnings_.once("bound " + std::to_string(radius), "a displacement bound of " + std::to_string(radius) + " is not a distance, and is not used");
+        return;
+    }
+    // the bound is stated in object space or the space it names, and a subdivision surface holds
+    // it in object space. A scale that differs between axes is taken at its largest, so the
+    // bound still holds the surface
+    const std::vector<std::string> & named = parameters.strings("coordinatesystem");
+    const std::string space = named.empty() ? std::string("object") : named.front();
+    glm::mat4 toWorld = current_.transformation.matrices.front();
+    if (space == "world") {
+        toWorld = glm::mat4(1.0F);
+    } else if (space != "object") {
+        const auto found = spaces_.find(space);
+        if (found == spaces_.end()) {
+            warnings_.once("bound space " + space, "the displacement bound's space \"" + space + "\" was not named, so object space is used");
+        } else {
+            toWorld = found->second.matrices.front();
+        }
+    }
+    const glm::mat3 linear(glm::inverse(current_.transformation.matrices.front()) * toWorld);
+    current_.displacementBound = radius * std::max({ glm::length(linear[0]), glm::length(linear[1]), glm::length(linear[2]) });
 }
 
 std::string SceneClient::nameFor(const std::string & kind, const std::string & request) {
@@ -387,6 +419,9 @@ void SceneClient::place(const internal::Shape & shape) {
     const scene::Handle prototype = made_.make(shape.kind, nameFor(shape.kind, shape.request));
     for (const auto & [name, value] : shape.parameters) {
         scene_.set(prototype, name, value);
+    }
+    if (shape.kind == "subdivision") {
+        scene_.set(prototype, "displacementBound", scene::Value::number(current_.displacementBound));
     }
 
     // the request's other parameters are primvars, unless the kind holds one of the name
@@ -434,7 +469,7 @@ scene::Handle SceneClient::shaderNode(const Shader & shader, const std::string &
     return node;
 }
 
-std::optional<scene::Handle> SceneClient::networkSurface() {
+std::optional<internal::Terminals> SceneClient::networkTerminals() {
     const std::vector<Node> & network = current_.network;
     std::size_t last = network.size();
     for (std::size_t place = network.size(); place > 0; --place) {
@@ -446,19 +481,19 @@ std::optional<scene::Handle> SceneClient::networkSurface() {
     std::map<std::size_t, scene::Handle> made;
     const Node & surface = network[last];
     if (surface.request.type != "materialx") {
-        return networkNode(last, made);
+        return internal::Terminals { .surface = networkNode(last, made), .displacement = std::nullopt };
     }
     const std::optional<scene::Value> file = internal::valueOf(surface.parameters, "file");
     const std::optional<scene::Value> named = internal::valueOf(surface.parameters, "material");
     const std::string path = file && !file->stringArray().empty() ? file->stringArray().front() : std::string();
     const std::string chosen = named && !named->stringArray().empty() ? named->stringArray().front() : std::string();
     std::string reason;
-    const std::optional<scene::Handle> read = internal::documentMaterial(scene_, made_, path, chosen, reason);
+    const std::optional<internal::Terminals> read = internal::documentMaterial(scene_, made_, path, chosen, reason);
     if (!read) {
         warnings_.once("document " + path, "the MaterialX document \"" + path + "\" gives no material, because " + reason + ", so the surface is " + current_.surface.name);
         return std::nullopt;
     }
-    inputsOf(*read, surface.request.handle, surface, last, made, { "file", "material" });
+    inputsOf(read->surface, surface.request.handle, surface, last, made, { "file", "material" });
     return read;
 }
 
@@ -525,11 +560,13 @@ scene::Handle SceneClient::material() {
     const bool networked = std::ranges::any_of(current_.network, [](const Node & node) {
         return node.bxdf;
     });
-    const std::optional<scene::Handle> networkMade = networked ? networkSurface() : std::nullopt;
+    const std::optional<internal::Terminals> networkMade = networked ? networkTerminals() : std::nullopt;
     if (networkMade) {
         const scene::Handle made = made_.make("material", made_.unique("material", "material"));
-        scene_.set(made, "surface", scene::Value::handle(*networkMade));
-        if (!current_.displacement.name.empty()) {
+        scene_.set(made, "surface", scene::Value::handle(networkMade->surface));
+        if (networkMade->displacement) {
+            scene_.set(made, "displacement", scene::Value::handle(*networkMade->displacement));
+        } else if (!current_.displacement.name.empty()) {
             scene_.set(made, "displacement", scene::Value::handle(shaderNode(current_.displacement, made_.unique("shader", current_.displacement.name))));
         }
         *current_.material = made;

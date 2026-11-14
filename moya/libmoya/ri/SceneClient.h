@@ -32,6 +32,7 @@
 #include <api/render/offline/rib/requests/Torus.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/ri/internal/Deforming.h>
+#include <moya/libmoya/ri/internal/Document.h>
 #include <moya/libmoya/ri/internal/Lights.h>
 #include <moya/libmoya/ri/internal/Objects.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
@@ -181,7 +182,11 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     void motionBegin(const std::vector<float> & times) override;
     void motionEnd() override;
 
-    /** `"identifier"`'s `"name"` names the objects made after it in the attribute block. **/
+    /**
+     * `"identifier"`'s `"name"` names the objects made after it in the attribute block, and
+     * `"displacementbound"`'s `"sphere"` bounds the displacement of the subdivision surfaces
+     * made after it.
+     **/
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
@@ -261,6 +266,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         Shader surface { .name = "defaultsurface" };
         Shader displacement{};
 
+        /** How far a displacement may move a subdivision surface's points, in object space. **/
+        float displacementBound { 0.0F };
+
         /** The Pattern and Bxdf requests in force, in the order they came. **/
         std::vector<Node> network{};
 
@@ -290,6 +298,13 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** An instance of a prototype at the current state, lit by the lights that are on. **/
     scene::Handle instance(const scene::Handle & prototype, const std::string & name, bool lit);
 
+    /**
+     * Keep a displacement bound in the attribute state, taken into object space from the
+     * `"coordinatesystem"` it names. A bound that is not a distance, or a space no request named,
+     * is logged.
+     **/
+    void displacementBound(const v3d::render::offline::rib::ParameterList & parameters);
+
     /** The material of the current attribute state, made when there is none. **/
     scene::Handle material();
 
@@ -297,10 +312,11 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     scene::Handle shaderNode(const Shader & shader, const std::string & name);
 
     /**
-     * The surface node of the material the attribute state's network makes, with every node it
-     * reads, or nothing when a document it names cannot be read.
+     * The terminal nodes of the material the attribute state's network makes, with every node
+     * they read, or nothing when a document it names cannot be read. Only a document gives a
+     * displacement.
      **/
-    std::optional<scene::Handle> networkSurface();
+    std::optional<internal::Terminals> networkTerminals();
 
     /**
      * The shader node of the network's node at a place, made with the nodes it reads, each once
