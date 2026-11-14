@@ -113,11 +113,11 @@ among the options before the record is drafted.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--the-record-what-a-channel-collects) | The record: what a channel collects | `docs/adr` | **0230** | open |
-| [2](#step-2--the-record-light-path-expressions) | The record: light path expressions | `docs/adr` | **0231** | open |
-| [3](#step-3--the-record-cryptomatte-coverage) | The record: Cryptomatte coverage | `docs/adr` | **0232** | open |
-| [4](#step-4--the-record-deep-samples) | The record: deep samples | `docs/adr` | **0233** | open |
-| [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | open |
+| [1](#step-1--the-record-what-a-channel-collects) | The record: what a channel collects | `docs/adr` | **0230** | accepted |
+| [2](#step-2--the-record-light-path-expressions) | The record: light path expressions | `docs/adr` | **0231** | accepted |
+| [3](#step-3--the-record-cryptomatte-coverage) | The record: Cryptomatte coverage | `docs/adr` | **0232** | accepted |
+| [4](#step-4--the-record-deep-samples) | The record: deep samples | `docs/adr` | **0233** | accepted |
+| [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | accepted |
 | [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | open |
 | [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | open |
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | open |
@@ -205,6 +205,14 @@ normal, albedo and motion. It settles how a channel's samples are combined into 
 be averaged by the pixel filter, or kept as the nearest, least or most, as RenderMan's channel
 `filter` and Arnold's AOV filters keep depth and IDs.
 
+**Drafted** as [ADR-0230](../adr/offline/0230-offline-channels-follow-usds-render-vars.md): a
+channel names a kind of source and a name, as UsdRender's `RenderVar` does: a value the renderer
+computes, a primvar or a light path expression. Each channel names how its samples are combined:
+the filtered mean, the closest, the least, the most or the sum. Depth, position and IDs default
+to the closest, by a tie-break of sample index, and every other value to the filtered mean. The
+values the renderer computes are step 9's: the common set of depth, position, normal, albedo, the
+texture coordinates, motion and the IDs.
+
 ### Step 2 — The record: light path expressions
 
 **The question.** How a channel that names a light path expression collects only the light of
@@ -228,6 +236,15 @@ takes. It settles how a light sample is matched, since its light has not yet bee
 settles how a light group is named: as a label in an expression, as OSL's grammar writes one, or
 as an attribute of the light, as Cycles' and RenderMan's `lightGroup` is.
 
+**Drafted** as
+[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md): every
+expression of a render compiles on the host into one deterministic automaton, as OSL's `accum`
+library builds one, whose accepting states name the channels they add to. A path carries one
+state, and a light sample is matched by stepping a copy of it, as OSL's `test()` does. A light
+names its group as a string, read as a label on its event, `<L.'key'>`, as Arnold, RenderMan and
+Karma read one. The host refuses a set whose automaton grows past a limit, which step 11 sets.
+Fixed splits by lobe are expressions written in advance.
+
 ### Step 3 — The record: Cryptomatte coverage
 
 **The question.** How a pixel's coverage by each object and material ID is kept while samples
@@ -250,6 +267,15 @@ The record also settles how many ranks a layer writes, and the names a layer tak
 as the specification's object, material and asset layers do. It settles how coverage meets a
 surface that is cut out or seen through glass.
 
+**Drafted** as
+[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md): each
+camera sample records its IDs and filter weight in a buffer of the pass. After each pass, the host
+merges each pixel's records in sample order into an exact list, as Arnold keeps one. A camera
+sample keeps one surface, so a cut-out surface needs no rule of its own, and glass takes its own
+ID. A layer writes six ranks unless it asks for more, as the specification suggests. Its IDs come
+from the instance's name, the material's name, and the name of the outermost group that places
+it.
+
 ### Step 4 — The record: deep samples
 
 **The question.** How a pixel's samples along depth are kept and merged, so that a deep file
@@ -268,6 +294,14 @@ fixes the file, and not how a renderer builds its lists.
 
 The record also settles what a sample's back depth is, and the channels a deep file holds beside
 depth and alpha. It settles whether a surface seen through glass or a cut-out card adds samples.
+
+**Drafted** as [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md): each
+camera sample records its depth and radiance beside the records of ADR-0232, and the host merges
+each pixel's records in sample order into a list. Samples are joined when their IDs agree and
+their depths lie within a tolerance, as Arnold, RenderMan and Redshift join them. A surface is a
+point sample, its back depth its depth, and its alpha its weight over the weight that reached its
+depth. A cut-out card is a sample of its own, and a surface behind glass is part of the glass's
+sample. IDs are OpenEXR's Deep IDs with an `idmanifest`, and the file is written tidy.
 
 ### Step 5 — The record: denoising
 
@@ -288,12 +322,22 @@ as its `cleanAux` allows, and in what space the normal is given. It settles whet
 while sampling is denoised. Last, it settles whether OIDN on the CPU gives the same bytes under any
 thread count, and what moya does if it does not.
 
+**Drafted** as
+[ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md): OIDN denoises
+the beauty and any expression channel or light group a scene marks, each into a channel beside
+its noisy original. One albedo and normal, filtered first by OIDN with `cleanAux` set, guide every
+channel, and moya gives `inputScale` from its own sum. A denoised channel is held to one picture
+on every run, and OIDN runs on a fixed count of threads of its own if its output depends on its
+count. The normal is in world space, which OIDN accepts. Pictures shown while sampling are not
+denoised until section 9.
+
 ### Step 6 — OIDN
 
 * **OIDN joins the `moya` feature** in `vcpkg.json`, on its CPU device alone. Its GPU devices wait
   for sections 10 and 11.
-* **The port is checked**: its version, that it builds against the tree's oneTBB, and the ISPC
-  it needs. An overlay port in `ports/` is added only if the baseline's will not build.
+* **Overlay ports in `ports/` build it.** vcpkg's registry holds no port for OIDN or for the ISPC
+  compiler its CPU device needs. An overlay port builds OIDN 2.5 against the tree's oneTBB, and
+  ISPC 1.30 or newer comes from a port or a host tool of its own.
 * **Its weights are installed beside moya**, if the port keeps them apart from the library.
 * **The Flatpak builds it** as a module.
 * **[Dependencies.md](../contributing/Dependencies.md)** names the port and why.

@@ -19,6 +19,7 @@ reported, so the table lists only tags in use.
 | `camera` | projection, handedness and camera profiles |
 | `ci` | the continuous integration jobs |
 | `code` | rules for C++ code |
+| `compositing` | what a renderer writes for a compositor: channels, light paths, IDs and deep pixels |
 | `colour` | colour spaces, and the swapchain's format |
 | `docs` | the documentation site |
 | `ecs` | the entity component system |
@@ -159,6 +160,16 @@ reported, so the table lists only tags in use.
 | [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
 | [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
 
+### compositing
+
+| ADR | Decision |
+|---|---|
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
+| [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+
 ### docs
 
 | ADR | Decision |
@@ -271,6 +282,7 @@ reported, so the table lists only tags in use.
 | [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
 | [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
 
 ### lighting
 
@@ -283,6 +295,7 @@ reported, so the table lists only tags in use.
 | [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
 
 ### lit
 
@@ -384,6 +397,11 @@ reported, so the table lists only tags in use.
 | [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
 | [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
+| [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
 
 ### particles
 
@@ -492,6 +510,7 @@ reported, so the table lists only tags in use.
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
 | [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
 
 ### text
 
