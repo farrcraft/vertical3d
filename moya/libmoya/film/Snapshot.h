@@ -25,7 +25,7 @@ struct Snapshot {
     /** The passes it holds the samples of. **/
     std::uint32_t passes { 0 };
 
-    /** The floats each pixel holds: the beauty's three, then each channel's, in order. **/
+    /** The floats each pixel holds: the beauty's three and its alpha, then each channel's. **/
     std::uint32_t stride { 0 };
 
     /** The film's channels, in order, and where each one's first float sits in a pixel. **/
@@ -51,7 +51,7 @@ struct Snapshot {
     /** A pixel's count of samples. **/
     std::uint32_t count(std::uint32_t x, std::uint32_t y) const;
 
-    /** A pixel's float at an offset: 0 to 2 for the beauty, or offset() for a channel. **/
+    /** A pixel's float at an offset: 0 to 3 for the beauty and alpha, or a channel's offset(). **/
     float at(std::uint32_t x, std::uint32_t y, std::uint32_t offset) const;
 
     /**

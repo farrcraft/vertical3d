@@ -21,7 +21,7 @@ The state holds the pixel and the sample, the ray traced next and its cone, the 
 the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
 count of bounces in all and of each kind. Last, it holds the last BSDF sample's density and
 whether it was specular, and the shading point it was drawn at with its shading normal and its
-set of linked lights.
+set of linked lights. Its coverage is one once the camera ray has met something.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -64,7 +64,8 @@ pixel in index order.
   and from the shading point on the other side, offset off the surface as
   [Traversal.md](Traversal.md#leaving-a-surface) says. It is an indirect ray, and its cone is the
   one [A ray's footprint](#a-rays-footprint) says leaves.
-- **Accumulate** adds the light the path gathered to its pixel, with the filter's weight.
+- **Accumulate** adds the light the path gathered to its pixel, with the filter's weight, and its
+  coverage to the pixel's alpha.
 
 A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
 refuses a sample, or by Russian roulette.

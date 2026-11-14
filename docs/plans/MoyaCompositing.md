@@ -120,7 +120,7 @@ among the options before the record is drafted.
 | [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | accepted |
 | [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | done |
 | [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | done |
-| [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | open |
+| [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | done |
 | [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
 | [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | open |
 | [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | open |
@@ -392,6 +392,15 @@ combine rule ADR-0230 names joins the channel at step 9, where a value is first 
 
 **Tests:** a sphere's coverage is one inside it, zero outside, and its share of the pixel at its
 edge, within errors. A card of half opacity has a coverage of a half, within errors.
+
+**Done.** The beauty is four floats, `kernel::film::kBeautyFloats`: ACEScg's red, green and blue,
+then the alpha. A path carries a `coverage`, one once its camera ray meets anything, and
+`Pixels::add()` adds it with the sample's weight, one when a caller gives none. The EXR writer and
+checkpoints write the beauty as R, G, B and A. The committed references read the beauty's first
+three floats and stay as they were. A square shows an alpha of one inside it and zero beyond it,
+and the picture's mean alpha is the square's share of the screen, which checks the edge pixels
+together. A card of half opacity has an alpha of a half. The cases use a square rather than a
+sphere, as the opacity cases' scenes are built of squares.
 
 ### Step 9 — Values at the first hit
 

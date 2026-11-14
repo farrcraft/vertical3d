@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/output/Chromaticities.h>
 #include <moya/libmoya/output/ExrMetadata.h>
 #include <moya/libmoya/output/ExrPart.h>
@@ -73,7 +74,10 @@ FileChannels channelsOf(const film::Snapshot & snapshot, const ExrPart & part) {
             throw std::invalid_argument("an EXR part holds " + output + " twice");
         }
         if (output == kBeauty) {
-            for (std::uint32_t i = 0; i < 3; ++i) {
+            if (snapshot.stride < kernel::film::kBeautyFloats) {
+                throw std::invalid_argument("an EXR part names the beauty, which a snapshot of fewer floats than its four does not hold");
+            }
+            for (std::uint32_t i = 0; i < kernel::film::kBeautyFloats; ++i) {
                 add(kComponents[i], i);
             }
             continue;

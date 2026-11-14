@@ -28,8 +28,8 @@ struct State {
     std::vector<Channel> channels;
 
     /**
-     * The floats each pixel holds: the beauty's three, each channel's, then the floats that
-     * kernel::film::Pixels lays after the channels.
+     * The floats each pixel holds: the beauty's three and its alpha, each channel's, then the
+     * floats that kernel::film::Pixels lays after the channels.
      **/
     std::uint32_t stored { 0 };
 

@@ -83,10 +83,10 @@ class Sandbox {
 
 /** A snapshot with a depth and an albedo channel, every float a different one with a fraction. **/
 film::Snapshot snapshot() {
-    film::Snapshot out { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 7,
-        .channels = { { .name = "depth", .components = 1 }, { .name = "albedo", .components = 3 } }, .offsets = { 3, 4 },
+    film::Snapshot out { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 8,
+        .channels = { { .name = "depth", .components = 1 }, { .name = "albedo", .components = 3 } }, .offsets = { 4, 5 },
         .values = {}, .errors = {} };
-    for (std::size_t i = 0; i < static_cast<std::size_t>(kWidth) * kHeight * 7; ++i) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(kWidth) * kHeight * 8; ++i) {
         out.values.push_back((std::sin(static_cast<float>(i) * 0.37F) * 40.0F) + 0.123456F);
     }
     return out;
@@ -135,10 +135,10 @@ BOOST_AUTO_TEST_CASE(moya_exr_a_float_part_holds_the_snapshots_values_exactly_te
     Imf::InputFile file(path.c_str());
     BOOST_TEST(!file.header().hasName());
     const std::vector<std::string> names = namesOf(file.header());
-    BOOST_TEST(names == std::vector<std::string>({ "B", "G", "R", "albedo.B", "albedo.G", "albedo.R", "depth" }),
+    BOOST_TEST(names == std::vector<std::string>({ "A", "B", "G", "R", "albedo.B", "albedo.G", "albedo.R", "depth" }),
         boost::test_tools::per_element());
-    const std::vector<std::pair<std::string, std::uint32_t>> channels = { { "R", 0 }, { "G", 1 }, { "B", 2 }, { "depth", 3 },
-        { "albedo.R", 4 }, { "albedo.G", 5 }, { "albedo.B", 6 } };
+    const std::vector<std::pair<std::string, std::uint32_t>> channels = { { "R", 0 }, { "G", 1 }, { "B", 2 }, { "A", 3 }, { "depth", 4 },
+        { "albedo.R", 5 }, { "albedo.G", 6 }, { "albedo.B", 7 } };
     for (const auto & [name, offset] : channels) {
         BOOST_TEST_CONTEXT(name) {
             BOOST_TEST(file.header().channels().find(name).channel().type == Imf::FLOAT);
@@ -200,14 +200,14 @@ BOOST_AUTO_TEST_CASE(moya_exr_each_part_holds_its_own_channels_and_no_others_tes
     Imf::MultiPartInputFile file(path.c_str());
     BOOST_TEST(file.parts() == 2);
     BOOST_TEST(file.header(0).name() == "rgba");
-    BOOST_TEST(namesOf(file.header(0)) == std::vector<std::string>({ "B", "G", "R" }), boost::test_tools::per_element());
+    BOOST_TEST(namesOf(file.header(0)) == std::vector<std::string>({ "A", "B", "G", "R" }), boost::test_tools::per_element());
     BOOST_TEST(file.header(1).name() == "aovs");
     BOOST_TEST(namesOf(file.header(1)) == std::vector<std::string>({ "albedo.B", "albedo.G", "albedo.R", "depth" }),
         boost::test_tools::per_element());
     BOOST_TEST(file.header(1).compression() == Imf::NO_COMPRESSION);
 
     Imf::InputPart aovs(file, 1);
-    BOOST_TEST(channelOf(file.header(1), "depth", aovs) == expected(written, 3), boost::test_tools::per_element());
+    BOOST_TEST(channelOf(file.header(1), "depth", aovs) == expected(written, 4), boost::test_tools::per_element());
 }
 
 // the matrices are written as glm holds them, so each float reads back at the same indices
@@ -290,6 +290,10 @@ BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {
         std::invalid_argument);
     BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "beauty" } }, { .name = "b", .outputs = { "depth" } } }, {}),
         std::invalid_argument);
+    // a snapshot of three floats a pixel holds no alpha, so it holds no beauty to write
+    const film::Snapshot narrow { .resolution = { 1, 1 }, .passes = 1, .stride = 3, .channels = {}, .offsets = {},
+        .values = { 1.0F, 1.0F, 1.0F }, .errors = {} };
+    BOOST_CHECK_THROW(output::writeExr(path, narrow, { { .name = "", .outputs = { "beauty" } } }, {}), std::invalid_argument);
     BOOST_TEST(!boost::filesystem::exists(path));
 }
 
@@ -298,10 +302,10 @@ BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {
 BOOST_AUTO_TEST_CASE(moya_exr_refuses_two_channels_of_one_name_in_a_part_test) {
     const Sandbox sandbox("clash");
     const std::string path = sandbox.file("clash.exr");
-    film::Snapshot written { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 8,
+    film::Snapshot written { .resolution = { kWidth, kHeight }, .passes = 1, .stride = 9,
         .channels = { { .name = "R", .components = 1 }, { .name = "albedo.R", .components = 1 }, { .name = "albedo", .components = 3 } },
-        .offsets = { 3, 4, 5 }, .values = {}, .errors = {} };
-    written.values.assign(static_cast<std::size_t>(kWidth) * kHeight * 8, 0.5F);
+        .offsets = { 4, 5, 6 }, .values = {}, .errors = {} };
+    written.values.assign(static_cast<std::size_t>(kWidth) * kHeight * 9, 0.5F);
 
     BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "beauty", "R" } } }, {}), std::invalid_argument);
     BOOST_CHECK_THROW(output::writeExr(path, written, { { .name = "", .outputs = { "albedo.R", "albedo" } } }, {}), std::invalid_argument);
@@ -350,7 +354,7 @@ BOOST_AUTO_TEST_CASE(moya_exr_a_hit_view_reads_back_from_its_file_test) {
 
     Imf::InputFile file(path.c_str());
     const std::vector<std::string> names = namesOf(file.header());
-    BOOST_TEST(names == std::vector<std::string>({ "B", "G", "R", "coverage", "depth", "face", "instance", "normal.B", "normal.G", "normal.R" }),
+    BOOST_TEST(names == std::vector<std::string>({ "A", "B", "G", "R", "coverage", "depth", "face", "instance", "normal.B", "normal.G", "normal.R" }),
         boost::test_tools::per_element());
     for (const std::string & name : names) {
         BOOST_TEST_CONTEXT(name) {

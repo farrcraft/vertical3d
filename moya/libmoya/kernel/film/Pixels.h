@@ -22,6 +22,9 @@ namespace v3d::moya::kernel::film {
 /** The components of the beauty, ACEScg's red, green and blue, which start each pixel. **/
 inline constexpr std::uint32_t kBeautyComponents = 3;
 
+/** The floats of the beauty: its red, green and blue, then its coverage, which is its alpha. **/
+inline constexpr std::uint32_t kBeautyFloats = kBeautyComponents + 1U;
+
 /**
  * The floats between the channels and the weight that measure a pixel's noise. Each is a sum over
  * the pixel's samples of the squared weight: times the squared luminance, times the luminance,
@@ -43,10 +46,10 @@ inline constexpr std::uint32_t kTailFloats = kHalfFloats + 1U + kMomentFloats + 
 
 /**
  * A film's pixels in device memory, which kernel code adds samples to. Each pixel holds, in
- * order, the beauty's weighted sums, each channel's weighted sums, the half beauty's, the count
- * of its samples, the beauty's moments, and the sum of its samples' weights. The host divides the
- * sums by the weights when it reads them, and gives the standard error of the beauty's luminance
- * from the moments.
+ * order, the beauty's weighted sums and its coverage's, each channel's weighted sums, the half
+ * beauty's, the count of its samples, the beauty's moments, and the sum of its samples' weights.
+ * The host divides the sums by the weights when it reads them, and gives the standard error of
+ * the beauty's luminance from the moments.
  *
  * The half beauty holds the samples a pass marks as the first half of its run. Its distance from
  * the beauty measures the pixel's noise, which decides when the pixel stops.
@@ -80,16 +83,20 @@ struct Pixels {
      * Adds a camera sample's radiance, with its filter weight, to the beauty, its luminance to the
      * beauty's moments, and the weight to the pixel's sum of weights. The radiance is converted to
      * ACEScg through the observer. A sample of the first half of its pass's run is added to the
-     * half beauty as well. Every sample adds one to the pixel's count.
+     * half beauty as well. Every sample adds one to the pixel's count. The coverage, one for a
+     * sample whose camera ray met something and zero for one that left the scene, is added with
+     * the same weight, and becomes the beauty's alpha.
      **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the half flag, then the coverage
     MOYA_KERNEL void add(Item pixel, float weight, const spectrum::SampledSpectrum & radiance,
-        const spectrum::SampledWavelengths & wavelengths, bool half = false) const {
+        const spectrum::SampledWavelengths & wavelengths, bool half = false, float coverage = 1.0F) const {
         const glm::vec3 xyz = spectrum::toXyz(radiance, wavelengths);
         const glm::vec3 rgb = spectrum::acescgFromXyz(xyz);
         float * const out = at(pixel);
         for (std::uint32_t i = 0; i < kBeautyComponents; ++i) {
             out[i] += weight * rgb[static_cast<glm::length_t>(i)];
         }
+        out[kBeautyComponents] += weight * coverage;
         float * const tail = out + (stride - kTailFloats);
         if (half) {
             for (std::uint32_t i = 0; i < kBeautyComponents; ++i) {

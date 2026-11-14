@@ -238,6 +238,49 @@ BOOST_AUTO_TEST_CASE(moya_opacity_a_half_opaque_card_shows_half_of_what_lies_beh
     BOOST_TEST(film::sigmas(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)), 0.6F) > 10.0F);
 }
 
+/** The mean alpha of the pixels from one corner to the other, the second left out. **/
+float meanAlpha(const film::Snapshot & snapshot, std::uint32_t from, std::uint32_t to) {
+    double sum = 0.0;
+    for (std::uint32_t y = from; y < to; ++y) {
+        for (std::uint32_t x = from; x < to; ++x) {
+            sum += snapshot.at(x, y, 3);
+        }
+    }
+    return static_cast<float>(sum / static_cast<double>((to - from) * (to - from)));
+}
+
+// a camera ray that meets a surface covers its sample, and one that leaves for the dome does not.
+// The alpha is then one where every sample meets the square, and zero where none does
+BOOST_AUTO_TEST_CASE(moya_opacity_alpha_is_the_share_of_samples_that_meet_something_test) {
+    scene::Scene scene(scene::kinds());
+    framed(scene, 16);
+    card(scene, "card", square(scene, "card", 0.5F, 0.0F), materialOf(scene, "solid", blackSurface(scene, "solid", 1.0F)), true);
+    scene.commit();
+    scene.apply();
+    CpuDevice device;
+    const film::Snapshot snapshot = integrate::render(device, scene, {}, v3d::moya::colour::Config());
+    BOOST_TEST(snapshot.at(kSide / 2, kSide / 2, 3) == 1.0F);
+    BOOST_TEST(snapshot.at(0, 0, 3) == 0.0F);
+    BOOST_TEST(snapshot.at(0, 0, 0) > 0.0F);
+    // the edge pixels hold the square's share of each, so the alpha's mean over the picture is the
+    // square's share of the screen. The camera keeps the orthographic projection the scene falls
+    // back to, whose screen runs from -1 to 1, so a square of side one covers a quarter of it
+    BOOST_TEST(meanAlpha(snapshot, 0, kSide) == 0.25F, boost::test_tools::tolerance(0.02F));
+}
+
+// a camera ray passes a half-opaque card half the time, so the card's alpha is a half
+BOOST_AUTO_TEST_CASE(moya_opacity_a_half_opaque_card_has_half_alpha_test) {
+    scene::Scene scene(scene::kinds());
+    framed(scene, 64);
+    card(scene, "card", square(scene, "card", 3.0F, 0.0F), materialOf(scene, "half", blackSurface(scene, "half", 0.5F)), true);
+    scene.commit();
+    scene.apply();
+    CpuDevice device;
+    const film::Snapshot snapshot = integrate::render(device, scene, {}, v3d::moya::colour::Config());
+    // 576 pixels of 64 samples each give a standard error near a thousandth
+    BOOST_TEST(meanAlpha(snapshot, kInsideFrom, kInsideTo) == 0.5F, boost::test_tools::tolerance(0.1F));
+}
+
 // a black card of half opacity over a white floor lets half of the dome's light through, whether
 // light samples meet it, rays drawn from the floor's BSDF do, or both under multiple importance
 BOOST_AUTO_TEST_CASE(moya_opacity_a_half_opaque_card_lets_half_of_the_light_through_test) {

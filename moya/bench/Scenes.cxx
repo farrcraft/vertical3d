@@ -401,8 +401,8 @@ void connect(scene::Scene & scene, const std::string & name, const scene::Handle
 void writeImage(const std::string & path, std::uint32_t side) {
     film::Snapshot image;
     image.resolution = glm::uvec2 { side };
-    image.stride = 3;
-    image.values.reserve(static_cast<std::size_t>(side) * side * 3U);
+    image.stride = 4;
+    image.values.reserve(static_cast<std::size_t>(side) * side * 4U);
     for (std::uint32_t y = 0; y < side; ++y) {
         for (std::uint32_t x = 0; x < side; ++x) {
             const float u = static_cast<float>(x) / static_cast<float>(side);
@@ -412,7 +412,7 @@ void writeImage(const std::string & path, std::uint32_t side) {
             const glm::vec3 & colour = ((tileU + tileV) % 2U) == 0U ? kImageLight : kImageDark;
             const float ring = std::sin(kImageRings * glm::length(glm::fract(glm::vec2 { u, v } * kImageTiles) - 0.5F));
             const glm::vec3 shaded = colour * (kImageShade + ((1.0F - kImageShade) * ring * ring));
-            image.values.insert(image.values.end(), { shaded.x, shaded.y, shaded.z });
+            image.values.insert(image.values.end(), { shaded.x, shaded.y, shaded.z, 1.0F });
         }
     }
     output::writeExr(path, image, { { .name = "", .outputs = { std::string(output::kBeauty) } } }, {});

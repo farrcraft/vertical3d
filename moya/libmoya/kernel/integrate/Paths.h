@@ -483,7 +483,8 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
  * sample of its set of linked lights, before it scatters. A path that leaves the scene gathers
  * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
  * the light emits towards it, and ends there. A ray passes through a surface that is cut out
- * with a chance of one minus its opacity, drawn from the bounce's own draw.
+ * with a chance of one minus its opacity, drawn from the bounce's own draw. A camera ray that
+ * meets anything covers its sample, and one that leaves the scene does not.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
@@ -500,6 +501,9 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         if (!hit.found()) {
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
+        }
+        if (MOYA_PATH(state, bounces) == 0U) {
+            MOYA_PATH(state, coverage) = 1.0F;
         }
         const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
@@ -551,7 +555,7 @@ MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
         generate(params, pixel, sample, state);
         trace(params, state);
         const bool half = (sample - params.first) < (params.count / 2U);
-        params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths), half);
+        params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths), half, MOYA_PATH(state, coverage));
     }
 }
 

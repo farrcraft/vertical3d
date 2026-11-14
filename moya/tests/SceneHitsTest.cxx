@@ -123,11 +123,12 @@ Picture pictureOf(const v3d::moya::film::Snapshot & snapshot) {
     Picture out;
     out.width = snapshot.resolution.x;
     out.height = snapshot.resolution.y;
+    const std::uint32_t first = snapshot.offset("depth");
     for (std::size_t channel = 0; channel < kChannels.size(); ++channel) {
         std::vector<float> & values = out.channels[kChannels[channel]];
         for (std::uint32_t y = 0; y < out.height; ++y) {
             for (std::uint32_t x = 0; x < out.width; ++x) {
-                values.push_back(snapshot.at(x, y, 3 + static_cast<std::uint32_t>(channel)));
+                values.push_back(snapshot.at(x, y, first + static_cast<std::uint32_t>(channel)));
             }
         }
     }

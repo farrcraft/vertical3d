@@ -45,12 +45,17 @@ reads.
   moments and a weight.** The moments give the pixel's standard error, as
   [the next section](#a-pixels-noise) describes, and the half beauty decides when the pixel
   stops, as [Stopping a pixel](#stopping-a-pixel) does. The beauty is ACEScg's red, green and
-  blue.
+  blue, then its alpha.
   The channels are those the film was made with, each a name and 1 to 4 floats, in the order
   given. `offset(name)` is where a channel's first float sits.
 - **Each pixel holds weighted sums, and one sum of weights.** `kernel::film::Pixels::add()` adds
   a sample's radiance, converted to ACEScg through the observer, and adds its weight. It adds one
   to the pixel's count of samples.
+- **The alpha is the sample's coverage**, added with the sample's weight. A sample covers its
+  pixel when its camera ray met geometry or a light's shape, and does not when the ray left the
+  scene, so a dome light the camera sees leaves its pixels clear. A camera ray that passes a
+  cut-out surface counts only the surface it kept. `add()` takes the coverage, and one unless it
+  is given.
   `addChannel()` adds the same sample's value to a channel, with the same weight, and does not
   add the weight again.
 - **A pixel's samples are added in index order**, by the one work item that owns the pixel. Its
@@ -128,9 +133,9 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
   stopped, and the count of passes, as a `film::State`. `restore(state)` puts them back, and the
   next pass continues from them. A state of another resolution, other channels, or too few
   floats or flags throws `std::invalid_argument`.
-- **`output::writeCheckpoint(path, state, fingerprint)` writes a state as an EXR file** of one
-  part, of floats, ZIP compressed, so any EXR reader opens it. The beauty's weighted sums are `R`,
-  `G` and `B`, so a reader shows the picture scaled by each pixel's weight. A channel is named as
+- **`output::writeCheckpoint(path, state, fingerprint)` writes a state as an EXR file** of one part,
+  of floats, ZIP compressed, so any EXR reader opens it. The beauty's weighted sums are `R`, `G`,
+  `B` and `A`, so a reader shows the picture scaled by each pixel's weight. A channel is named as
   the picture's writer names it. The floats after the channels are `moya.half.R`, `moya.half.G`,
   `moya.half.B`, `moya.half.weight`, `moya.sampleCount`, `moya.moment.Y2`, `moya.moment.Y`,
   `moya.moment.weight2` and `moya.weight`. Each pixel's stop flag is `moya.stopped`, of unsigned

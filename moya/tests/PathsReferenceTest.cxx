@@ -135,14 +135,14 @@ film::Snapshot readReference(const std::string & path) {
     const Imath::Box2i & window = file.header().dataWindow();
     film::Snapshot out;
     out.resolution = glm::uvec2 { static_cast<std::uint32_t>(window.max.x - window.min.x + 1), static_cast<std::uint32_t>(window.max.y - window.min.y + 1) };
-    out.stride = 3;
+    out.stride = 4;
     const std::size_t pixels = static_cast<std::size_t>(out.resolution.x) * out.resolution.y;
-    out.values.assign(pixels * 3U, 0.0F);
+    out.values.assign(pixels * 4U, 1.0F);
     out.errors.assign(pixels, 0.0F);
     Imf::FrameBuffer frame;
     for (std::size_t i = 0; i < 3; ++i) {
-        frame.insert(kChannels[i], Imf::Slice(Imf::FLOAT, reinterpret_cast<char *>(out.values.data()) + (i * sizeof(float)), sizeof(float) * 3U,
-                                      sizeof(float) * 3U * out.resolution.x));
+        frame.insert(kChannels[i], Imf::Slice(Imf::FLOAT, reinterpret_cast<char *>(out.values.data()) + (i * sizeof(float)), sizeof(float) * 4U,
+                                      sizeof(float) * 4U * out.resolution.x));
     }
     frame.insert(kChannels[3], Imf::Slice(Imf::FLOAT, reinterpret_cast<char *>(out.errors.data()), sizeof(float), sizeof(float) * out.resolution.x));
     file.setFrameBuffer(frame);

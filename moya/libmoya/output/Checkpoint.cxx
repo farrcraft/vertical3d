@@ -66,7 +66,7 @@ constexpr const char * const kComponents[4] = { "R", "G", "B", "A" };
  * channel of a name, so two floats of one name are refused.
  **/
 std::vector<std::string> namesOf(const std::vector<film::Channel> & channels) {
-    std::vector<std::string> out { "R", "G", "B" };
+    std::vector<std::string> out { "R", "G", "B", "A" };
     for (const film::Channel & channel : channels) {
         if (channel.components == 1) {
             out.push_back(channel.name);

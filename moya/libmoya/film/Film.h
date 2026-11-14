@@ -115,7 +115,7 @@ class Film final {
     glm::uvec2 resolution_;
     std::vector<Channel> channels_;
     std::vector<std::uint32_t> offsets_;
-    std::uint32_t stride_ { kernel::film::kBeautyComponents };
+    std::uint32_t stride_ { kernel::film::kBeautyFloats };
     boost::shared_ptr<device::Buffer> pixels_;
     std::uint32_t passes_ { 0 };
 

@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(moya_film_a_pixel_is_the_weighted_mean_of_its_samples_test)
     film.pass([&](const kernel::film::Pixels & pixels) { device.launch(5, 3, paramsFor(film, pixels), &weighted); });
     const film::Snapshot snapshot = film.snapshot();
     BOOST_TEST(snapshot.passes == 1U);
-    BOOST_TEST(snapshot.stride == 7U);
+    BOOST_TEST(snapshot.stride == 8U);
 
     const float total = kWeights[0] + kWeights[1] + kWeights[2];
     for (std::uint32_t y = 0; y < 3; ++y) {

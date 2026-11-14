@@ -47,7 +47,8 @@ UTF-8.
 
 ## Channel names
 
-- **The beauty is R, G and B.** The film has no coverage yet, so there is no A.
+- **The beauty is R, G, B and A**, its alpha the share of its samples that met something, as
+  [Film.md](Film.md#the-films-pixels) says.
 - **The count of samples is `sampleCount`**, as a float.
 - **A channel of one float** keeps the channel's name, such as `depth`.
 - **A channel of several floats** is the channel's name followed by `.R`, `.G`, `.B` and `.A` in

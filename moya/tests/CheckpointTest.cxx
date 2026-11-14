@@ -68,7 +68,7 @@ std::vector<film::Channel> channels() {
  * and by float and include a negative zero and a denormal, and whose middle column has stopped.
  **/
 film::State stateOf() {
-    film::State out { .resolution = { 3, 2 }, .passes = 5, .channels = channels(), .stored = 3U + 4U + kernel::film::kTailFloats };
+    film::State out { .resolution = { 3, 2 }, .passes = 5, .channels = channels(), .stored = kernel::film::kBeautyFloats + 4U + kernel::film::kTailFloats };
     for (std::uint32_t pixel = 0; pixel < 6; ++pixel) {
         for (std::uint32_t i = 0; i < out.stored; ++i) {
             out.sums.push_back((static_cast<float>(pixel) / 3.0F) + (static_cast<float>(i) * 0.1F));
@@ -135,8 +135,8 @@ BOOST_AUTO_TEST_CASE(moya_checkpoint_refuses_what_it_cannot_resume_test) {
     BOOST_CHECK_THROW(output::readCheckpoint(path, more, kFingerprint), output::Refused);
 
     const std::string picture = sandbox.file("render.exr");
-    const film::Snapshot snapshot { .resolution = { 1, 1 }, .passes = 1, .stride = 3, .channels = {}, .offsets = {},
-        .values = { 1.0F, 1.0F, 1.0F }, .errors = { 0.0F }, .samples = { 1U } };
+    const film::Snapshot snapshot { .resolution = { 1, 1 }, .passes = 1, .stride = 4, .channels = {}, .offsets = {},
+        .values = { 1.0F, 1.0F, 1.0F, 1.0F }, .errors = { 0.0F }, .samples = { 1U } };
     output::writeExr(picture, snapshot, { { .name = "", .outputs = { std::string(output::kBeauty) } } }, {});
     BOOST_CHECK_THROW(output::readCheckpoint(picture, {}, kFingerprint), output::Refused);
 }

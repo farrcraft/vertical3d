@@ -50,7 +50,8 @@
     FIELD(glm::vec3, from)                                     \
     FIELD(glm::vec3, normal)                                   \
     FIELD(std::uint32_t, linked)                               \
-    FIELD(std::uint32_t, specular)
+    FIELD(std::uint32_t, specular)                             \
+    FIELD(float, coverage)
 
 namespace v3d::moya::kernel::integrate {
 

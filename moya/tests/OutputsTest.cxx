@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(moya_outputs_an_exr_output_holds_the_beauty_and_its_channel
     }
     boost::filesystem::remove(file);
     // OpenEXR lists a file's channels by name
-    BOOST_TEST(names == (std::vector<std::string> { "B", "G", "R", "depth", "diffuse.B", "diffuse.G", "diffuse.R" }), boost::test_tools::per_element());
+    BOOST_TEST(names == (std::vector<std::string> { "A", "B", "G", "R", "depth", "diffuse.B", "diffuse.G", "diffuse.R" }), boost::test_tools::per_element());
 }
 
 // a checkpoint holds the film's channels, so a render stopped and resumed gives the bytes of one
