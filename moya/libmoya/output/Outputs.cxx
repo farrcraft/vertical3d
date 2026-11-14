@@ -9,6 +9,8 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/kernel/film/Combine.h>
+#include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/output/ExrPart.h>
@@ -21,6 +23,7 @@
 #include <cctype>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -44,6 +47,20 @@ Source sourceNamed(const std::string & name) {
     return Source::Raw;
 }
 
+/** A channel's combine, by its filter, or by its source when the filter is the default. **/
+kernel::film::Combine combineOf(const std::string & filter, Source source, const std::string & sourceName) {
+    const std::map<std::string, kernel::film::Combine> named { { "mean", kernel::film::Combine::Mean }, { "sum", kernel::film::Combine::Sum },
+        { "closest", kernel::film::Combine::Closest }, { "min", kernel::film::Combine::Least }, { "max", kernel::film::Combine::Most } };
+    const auto found = named.find(filter);
+    if (found != named.end()) {
+        return found->second;
+    }
+    const std::optional<kernel::integrate::Reading> reading = source == Source::Raw ? readingNamed(sourceName) : std::nullopt;
+    const bool nearest = reading == kernel::integrate::Reading::Depth || reading == kernel::integrate::Reading::Position ||
+        reading == kernel::integrate::Reading::Instance || reading == kernel::integrate::Reading::Face;
+    return nearest ? kernel::film::Combine::Closest : kernel::film::Combine::Mean;
+}
+
 Format formatNamed(const std::string & name) {
     if (name == "png") {
         return Format::Png;
@@ -65,6 +82,15 @@ Compression compressionNamed(const std::string & name) {
 
 };  // namespace
 
+std::optional<kernel::integrate::Reading> readingNamed(const std::string & name) {
+    const std::map<std::string, kernel::integrate::Reading> named { { "depth", kernel::integrate::Reading::Depth },
+        { "position", kernel::integrate::Reading::Position }, { "normal", kernel::integrate::Reading::Normal },
+        { "st", kernel::integrate::Reading::Texture }, { "instance", kernel::integrate::Reading::Instance },
+        { "face", kernel::integrate::Reading::Face } };
+    const auto found = named.find(name);
+    return found == named.end() ? std::nullopt : std::optional<kernel::integrate::Reading>(found->second);
+}
+
 std::vector<Channel> channelsOf(const scene::Scene & scene) {
     std::vector<Channel> channels;
     std::vector<scene::Handle> seen;
@@ -77,10 +103,13 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
                 continue;
             }
             seen.push_back(channel);
+            const Source source = sourceNamed(stringOf(scene, channel, "sourceType"));
+            const std::string & sourceName = stringOf(scene, channel, "sourceName");
             channels.push_back(Channel { .film = { .name = scene.name(channel),
-                                             .components = static_cast<std::uint32_t>(scene.value(channel, "components").integerArray().front()) },
-                .source = sourceNamed(stringOf(scene, channel, "sourceType")),
-                .sourceName = stringOf(scene, channel, "sourceName") });
+                                             .components = static_cast<std::uint32_t>(scene.value(channel, "components").integerArray().front()),
+                                             .combine = combineOf(stringOf(scene, channel, "filter"), source, sourceName) },
+                .source = source,
+                .sourceName = sourceName });
         }
     }
     return channels;

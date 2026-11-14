@@ -205,11 +205,36 @@ can change what was gathered, such as a material's closures, before it renders.
   that bounds its hierarchy.
 - **Adaptive sampling** stops each pixel at the options' `noiseThreshold`, as
   [the next section](#adaptive-sampling) says.
+- **A channel that reads the first hit** is filled where each camera ray first meets the scene,
+  past any surface it passes as cut out, as [the next section](#values-at-the-first-hit) says.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
 - **`moya --paths`** reads a RIB file through the scene client and writes each of the scene's
   outputs, as [Output.md](Output.md#a-scenes-outputs) says.
   [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
+
+## Values at the first hit
+
+A raw channel names a value by its `sourceName`, which a camera ray reads where it first meets
+the scene. Each is added to its channel by the channel's combine, as
+[Film.md](Film.md#the-films-pixels) says. A closest channel keeps the sample of the least depth.
+
+| Name | Components | Value | Where the ray meets nothing |
+|---|---|---|---|
+| `depth` | 1 | the hit's depth along the camera's view | infinity |
+| `position` | 3 | the hit's point in the world | zero |
+| `normal` | 3 | the shading normal in the world, on the geometric normal's side | zero |
+| `st` | 2 | the `st` primvar, or the hit's place on its primitive without one | zero |
+| `instance` | 1 | the innermost instance that placed the hit, or -1 for none | -1 |
+| `face` | 1 | the face or curve of the mesh the hit's primitive was cut from | -1 |
+
+- **A light's shape the ray meets** has its depth and position, a zero normal and `st`, and an
+  instance and a face of -1.
+- **A primvar channel** reads the primvar its `sourceName` names, of the channel's components,
+  and zero on a surface without it. The gather reads the primvar for the channel, though no
+  material reads it.
+- **Any other channel holds zero, and is reported**: a raw name not in the table, a raw value of
+  other components than its channel's, and a light path expression.
 
 ## Adaptive sampling
 

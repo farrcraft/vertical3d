@@ -62,8 +62,10 @@ then derived as RI derives it.
 - **`channel`**: what a film channel collects, as UsdRender's `RenderVar` names it.
   `sourceType` is `raw`, the fallback, for a value the renderer computes, `primvar` for a
   primvar of the geometry, or `lpe` for the light of a light path expression. `sourceName` is the
-  value's, the primvar's or the expression's name. `components` is its floats per pixel. The
-  channel's name is the object's.
+  value's, the primvar's or the expression's name. `components` is its floats per pixel.
+  `filter` is how its samples make a pixel: `mean`, `sum`, `closest`, `min` or `max`, or
+  `default`, the fallback, which is `closest` for a raw depth, position, instance or face and
+  `mean` for any other. The channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
   channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
   or `float`, and `compression`, one of OpenEXR's.

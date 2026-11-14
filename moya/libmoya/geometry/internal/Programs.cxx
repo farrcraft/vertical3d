@@ -15,6 +15,7 @@
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -45,6 +46,15 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
             material::Compiled diffuse;
             diffuse.reports.push_back("material " + scene.name(handle) + " is diffuse, because " + refused.what());
             compiled_.emplace(handle.index, std::move(diffuse));
+        }
+    }
+    // a channel can read a primvar that no program reads
+    for (const scene::Handle & output : scene.objects("output")) {
+        for (const scene::Handle & channel : scene.value(output, "channels").handleArray()) {
+            const std::string & name = scene.value(channel, "sourceName").stringArray().front();
+            if (scene.value(channel, "sourceType").stringArray().front() == "primvar" && !name.empty() && std::ranges::find(names_, name) == names_.end()) {
+                names_.push_back(name);
+            }
         }
     }
 }

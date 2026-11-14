@@ -29,7 +29,8 @@ namespace v3d::moya::geometry::internal {
  * compiled too, and the names of the primvars the programs read are kept. The names
  * begin with `N`, `Cs`, `tangent` and `st`, at the numbers kernel::surface gives them, which
  * shading reads whatever a program does. Each other name follows in the order a program first
- * reads it.
+ * reads it, and then each primvar a scene's output names a channel of, in the order the outputs
+ * name them.
  **/
 class Programs final {
  public:

@@ -15,7 +15,7 @@ snapshot, which [The film](Film.md) describes.
   rendered.
 - **The render's film holds those channels.** `integrate::render()` makes its film from
   `filmChannelsOf(scene)`. A channel whose source the path tracer does not fill is reported, and
-  holds zero.
+  holds zero, as [Integrator.md](Integrator.md#values-at-the-first-hit) says.
 - **`outputsOf(scene)` gives the outputs**, in the order the scene holds them, with each one's
   file, format, channels, precision and compression.
 - **`write(output, snapshot, config, logger)` writes one.** An EXR output is one part of the

@@ -14,6 +14,7 @@
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 #include <moya/libmoya/output/Checkpoint.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -22,8 +23,6 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/test/unit_test.hpp>
-
-#include <glm/vec2.hpp>
 
 namespace {
 
@@ -64,7 +63,7 @@ std::vector<film::Channel> channels() {
  * A sample's value: the second component is the first negated, so a least and a most differ in
  * which sample each component keeps.
  **/
-glm::vec2 valueOf(const Params & params, int sample) {
+std::array<float, 2> valueOf(const Params & params, int sample) {
     const float first = kValues[sample] + params.offset;
     return { first, -first };
 }
@@ -76,10 +75,10 @@ void combined(const Params & params, kernel::Item item) {
     }
     for (int sample = 0; sample < kSamples; ++sample) {
         params.pixels.add(item, kWeights[sample], kernel::spectrum::SampledSpectrum(0.0F), kernel::spectrum::SampledWavelengths::visible(0.5F));
-        const glm::vec2 value = valueOf(params, sample);
-        params.pixels.keep(item, params.offsets[0], Combine::Mean, kWeights[sample], kDepths[sample], &value.x, 1);
+        const std::array<float, 2> value = valueOf(params, sample);
+        params.pixels.keep(item, params.offsets[0], Combine::Mean, kWeights[sample], kDepths[sample], value.data(), 1);
         for (std::size_t channel = 1; channel < kChannels; ++channel) {
-            params.pixels.keep(item, params.offsets[channel], kCombines[channel], kWeights[sample], kDepths[sample], &value.x, 2);
+            params.pixels.keep(item, params.offsets[channel], kCombines[channel], kWeights[sample], kDepths[sample], value.data(), 2);
         }
     }
 }

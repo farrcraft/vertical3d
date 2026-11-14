@@ -123,6 +123,10 @@ Kind channel() {
         .parameters = {
             Declaration { .name = "sourceType", .type = Type::String, .fallback = Value::string("raw"), .choices = { "raw", "primvar", "lpe" } },
             Declaration { .name = "sourceName", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "filter",
+                .type = Type::String,
+                .fallback = Value::string("default"),
+                .choices = { "default", "mean", "sum", "closest", "min", "max" } },
             Declaration { .name = "components", .type = Type::Integer, .fallback = Value::integer(kColourComponents) } } };
 }
 

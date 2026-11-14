@@ -19,10 +19,12 @@
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Traversal.h>
 #include <moya/libmoya/kernel/integrate/Dimensions.h>
+#include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/kernel/integrate/Keeping.h>
 #include <moya/libmoya/kernel/integrate/Opacity.h>
 #include <moya/libmoya/kernel/integrate/Passing.h>
 #include <moya/libmoya/kernel/integrate/PathState.h>
+#include <moya/libmoya/kernel/integrate/Readings.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/light/Dome.h>
@@ -63,7 +65,8 @@ inline constexpr std::uint32_t kMostPassed = 256;
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
  * sampler, a traversal and a texture access. Then the scene's surfaces and lights, the
  * RGB-to-spectrum table, the albedo table that energy compensation reads, and the settings. A
- * pass adds the samples from first, count of them, to each pixel.
+ * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
+ * each camera ray fills where it first meets the scene.
  **/
 template <geometry::Traversal T, texture::Texels X>
 struct Paths {
@@ -80,7 +83,19 @@ struct Paths {
     Settings settings;
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
+    Array<FirstHit> firstHits;
 };
+
+/** Adds a camera ray's first hit to the channels that read it, and nothing for a later ray. **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void firstHit(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, const geometry::Ray & ray,
+    const surface::ShadingPoint & point) {
+    if (MOYA_PATH(state, bounces) != 0U || paths.firstHits.size == 0U) {
+        return;
+    }
+    const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
+    readFirstHit(paths.pixels, Item { .x = pixel.x, .y = pixel.y }, MOYA_PATH(state, weight), paths.firstHits, paths.surfaces, hit, ray, point);
+}
 
 /**
  * The generate stage: a camera sample's state. Its place in the pixel is drawn from the pixel
@@ -499,6 +514,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             .dimension = bounceDimension(MOYA_PATH(state, bounces), kOpacity) };
         const geometry::Hit hit = paths.traversal.nearest(ray, filter);
         if (!hit.found()) {
+            firstHit(paths, state, hit, ray, surface::ShadingPoint {});
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
         }
@@ -507,6 +523,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         }
         const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
+            firstHit(paths, state, hit, ray, surface::ShadingPoint {});
             const float time = paths.surfaces.held(hit.time);
             const float share = metShare(paths, met, geometry::kNoPrimitive, time, ray.at(hit.distance), state);
             if (share > 0.0F) {
@@ -516,6 +533,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             return;
         }
         surface::ShadingPoint point = paths.surfaces.at(hit, ray);
+        firstHit(paths, state, hit, ray, point);
         if (!point.found()) {
             return;
         }

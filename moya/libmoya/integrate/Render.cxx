@@ -24,6 +24,7 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/integrate/Profile.h>
+#include <moya/libmoya/integrate/internal/FirstHits.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
@@ -33,7 +34,6 @@
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/output/Checkpoint.h>
-#include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
@@ -46,7 +46,6 @@
 #include <moya/libmoya/texture/Textures.h>
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -103,18 +102,6 @@ float reach(const accel::LinearBox & bounds) {
     return all.empty() ? 0.0F : 0.5F * glm::length(all.upper - all.lower);
 }
 
-/** Reports each channel whose source the render does not fill, which then holds zero. **/
-void reportUnfilled(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) {
-    if (!logger) {
-        return;
-    }
-    const std::array<const char *, 3> kinds { "raw value", "primvar", "light path expression" };
-    for (const output::Channel & channel : output::channelsOf(scene)) {
-        logger->get()->warn("channel {} collects the {} {}, which the path tracer does not fill, so it holds zero", channel.film.name,
-            kinds.at(static_cast<std::size_t>(channel.source)), channel.sourceName);
-    }
-}
-
 };  // namespace
 
 kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
@@ -168,8 +155,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const float threshold = option(scene, "noiseThreshold").floatArray().front();
     const std::uint32_t least = count(scene, "minSamples");
     const std::vector<film::Channel> channels = output::filmChannelsOf(scene);
-    reportUnfilled(scene, logger);
     film::Film picture(device, resolution, channels);
+    const internal::FirstHits firstHits(device, output::channelsOf(scene), picture, prototypes.primvarNames, logger);
     const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
     std::uint32_t done = 0;
     if (checkpoints.resume) {
@@ -210,7 +197,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .albedos = material::ggxAlbedos(),
                 .settings = settings,
                 .first = first,
-                .count = samples };
+                .count = samples,
+                .firstHits = firstHits.view() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;

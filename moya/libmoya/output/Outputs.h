@@ -9,10 +9,12 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -21,8 +23,17 @@
 namespace v3d::moya::output {
 
 /**
+ * What a raw channel's source name reads at a camera ray's first hit: `depth`, `position`,
+ * `normal`, `st`, `instance` or `face`. None for any other name.
+ **/
+std::optional<kernel::integrate::Reading> readingNamed(const std::string & name);
+
+/**
  * Every channel a scene's outputs name, each once, in the order the outputs name them. A channel
  * no output names is not rendered.
+ *
+ * A channel's filter names its combine: `mean`, `sum`, `closest`, `min` or `max`. Its
+ * default is the closest for a raw depth, position, instance or face, and the mean for any other.
  **/
 std::vector<Channel> channelsOf(const scene::Scene & scene);
 
