@@ -109,6 +109,25 @@ std::string textureConflict(const boost::program_options::variables_map& var_map
 }
 
 /**
+ * Why --hits or --paths cannot write the --output named, or empty when it can. --hits writes an
+ * EXR file, and --paths an EXR or a PNG file, named in any case.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the mode, then the file it writes
+std::string outputConflict(const std::string & mode, std::string name) {
+    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
+    const auto ends = [&name](const std::string & extension) {
+        return name.size() >= extension.size() && name.compare(name.size() - extension.size(), extension.size(), extension) == 0;
+    };
+    if (mode == "--paths" && !ends(".exr") && !ends(".png")) {
+        return "--output has to name an .exr or a .png file with --paths, which writes an EXR or a PNG file";
+    }
+    if (mode == "--hits" && !ends(".exr")) {
+        return "--output has to name an .exr file with --hits, which writes an EXR file";
+    }
+    return {};
+}
+
+/**
  * Why the options cannot be used together, or empty when they can.
  *
  * --scene, --hits and --paths each read the scene into the new core in place of rendering it
@@ -159,17 +178,7 @@ std::string conflict(const boost::program_options::variables_map& var_map) {
         return "--output cannot be given with --scene, which prints the scene and writes no file";
     }
     if (!scene && var_map.count("output") > 0) {
-        std::string name = var_map["output"].as<std::string>();
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
-        const auto ends = [&name](const std::string & extension) {
-            return name.size() >= extension.size() && name.compare(name.size() - extension.size(), extension.size(), extension) == 0;
-        };
-        if (mode == "--paths" && !ends(".exr") && !ends(".png")) {
-            return "--output has to name an .exr or a .png file with --paths, which writes an EXR or a PNG file";
-        }
-        if (mode == "--hits" && !ends(".exr")) {
-            return "--output has to name an .exr file with --hits, which writes an EXR file";
-        }
+        return outputConflict(mode, var_map["output"].as<std::string>());
     }
     return {};
 }

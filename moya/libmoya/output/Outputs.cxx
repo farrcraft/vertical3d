@@ -70,7 +70,10 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
     std::vector<scene::Handle> seen;
     for (const scene::Handle & output : scene.objects("output")) {
         for (const scene::Handle & channel : scene.value(output, "channels").handleArray()) {
-            if (std::find(seen.begin(), seen.end(), channel) != seen.end()) {
+            const auto same = [&channel](const scene::Handle & held) {
+                return held == channel;
+            };
+            if (std::any_of(seen.begin(), seen.end(), same)) {
                 continue;
             }
             seen.push_back(channel);

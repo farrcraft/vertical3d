@@ -8,7 +8,6 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/output/Channel.h>
-#include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
@@ -73,6 +72,7 @@ struct Outputs {
         made.apply();
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the name, then what it collects
     scene::Handle channel(const std::string & name, const std::string & type, const std::string & source, std::int32_t components) {
         const scene::Handle object = made.create("channel", name);
         made.set(object, "sourceType", scene::Value::string(type));
@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(moya_outputs_an_exr_output_holds_the_beauty_and_its_channel
 
     std::vector<std::string> names;
     {
-        Imf::InputFile read(file.string().c_str());
+        const Imf::InputFile read(file.string().c_str());
         for (auto channel = read.header().channels().begin(); channel != read.header().channels().end(); ++channel) {
             names.emplace_back(channel.name());
             BOOST_TEST((channel.channel().type == Imf::FLOAT), channel.name());

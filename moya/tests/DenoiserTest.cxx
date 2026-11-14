@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(moya_denoiser_a_constant_picture_denoises_to_itself_test) {
     double sum = 0.0;
     for (std::size_t y = 0; y < kSize; ++y) {
         for (std::size_t x = 0; x < kSize; ++x) {
-            const float value = output[(y * kSize + x) * 3];
+            const float value = output[((y * kSize) + x) * 3];
             sum += value;
             if (x >= kBorder && y >= kBorder && x < kSize - kBorder && y < kSize - kBorder) {
                 furthest = std::fmax(furthest, std::fabs(value - kGrey));
