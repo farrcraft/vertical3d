@@ -363,6 +363,7 @@
     - [ADR-0184: Tooling: TypeScript is linted by oxlint and formatted by oxfmt](adr/project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md)
 - [Plans](plans/README.md)
   - [Editor Scripting](plans/EditorScripting.md)
+  - [Moya Compositing](plans/MoyaCompositing.md)
 - [Roadmaps](roadmap/README.md)
   - [Editor Scripting](roadmap/EditorScripting.md)
   - [Moya Rebuild](roadmap/MoyaRebuild.md)

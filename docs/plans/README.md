@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaCompositing](MoyaCompositing.md) | Offline rendering | The rebuilt moya's outputs for compositing: the scene's outputs in the render, alpha, values at the first hit, light path expressions, light groups, Cryptomatte, deep EXR and denoising through OIDN, all named in RIB |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans
