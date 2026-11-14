@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
     const scene::Handle albedo = scene.create("channel", "albedo");
     const scene::Handle output = scene.create("output", "beauty");
     const scene::Handle options = scene.create("options", "render");
-    scene.set(albedo, "source", scene::Value::string("albedo"));
+    scene.set(albedo, "sourceName", scene::Value::string("albedo"));
     scene.set(output, "file", scene::Value::string("frame.exr"));
     scene.set(output, "channels", scene::Value::handles({ albedo }));
     scene.set(options, "camera", scene::Value::handle(camera));
@@ -93,7 +93,8 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]\n"
         "channel \"albedo\"\n"
         "    components integer = 3\n"
-        "    source string = \"albedo\"\n"
+        "    sourceName string = \"albedo\"\n"
+        "    sourceType string = \"raw\"\n"
         "options \"render\"\n"
         "    camera handle = camera \"main\"\n"
         "    crop float[4] = 0 1 0 1\n"

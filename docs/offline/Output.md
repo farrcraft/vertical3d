@@ -5,6 +5,27 @@ them on a display. The code is
 host code, in `moya/libmoya/output/` and the namespace `v3d::moya::output`. It writes a film's
 snapshot, which [The film](Film.md) describes.
 
+## A scene's outputs
+
+`output/Outputs.h` reads what a scene's `output` and `channel` objects ask for, which
+[Scene.md](Scene.md) describes, and writes it.
+
+- **`channelsOf(scene)` gives every channel an output names**, each once, in the order the outputs
+  name them. A channel two outputs name is one film channel. A channel no output names is not
+  rendered.
+- **The render's film holds those channels.** `integrate::render()` makes its film from
+  `filmChannelsOf(scene)`. A channel whose source the path tracer does not fill is reported, and
+  holds zero.
+- **`outputsOf(scene)` gives the outputs**, in the order the scene holds them, with each one's
+  file, format, channels, precision and compression.
+- **`write(output, snapshot, config, logger)` writes one.** An EXR output is one part of the
+  beauty followed by its channels, at its precision and compression. A PNG output is the beauty
+  through the configuration's default display and view. A framebuffer is logged and not written,
+  since moya has no window.
+- **`moya --paths` writes every output after each frame.** Its `--output` replaces the first
+  output's file, and the file's name gives its format. A scene with no output writes its beauty
+  to `--output` or `paths.exr`, in floats.
+
 ## EXR files
 
 `writeExr(path, snapshot, parts, metadata)` writes a snapshot to an OpenEXR file. The path is

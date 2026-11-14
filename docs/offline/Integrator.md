@@ -206,8 +206,9 @@ can change what was gathered, such as a material's closures, before it renders.
   [the next section](#adaptive-sampling) says.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
-- **`moya --paths`** reads a RIB file through the scene client and writes the picture as an EXR
-  file. [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
+- **`moya --paths`** reads a RIB file through the scene client and writes each of the scene's
+  outputs, as [Output.md](Output.md#a-scenes-outputs) says.
+  [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
 
 ## Adaptive sampling
 

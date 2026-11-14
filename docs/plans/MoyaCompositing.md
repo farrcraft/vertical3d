@@ -119,7 +119,7 @@ among the options before the record is drafted.
 | [4](#step-4--the-record-deep-samples) | The record: deep samples | `docs/adr` | **0233** | accepted |
 | [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | accepted |
 | [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | done |
-| [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | open |
+| [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | done |
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | open |
 | [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
 | [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | open |
@@ -369,6 +369,16 @@ picture's mean holds within 0.1%.
 **Tests:** a scene of two outputs writes two files, with the channels each names. A scene with
 no output writes what it writes now. A checkpoint of a render with channels resumes to the same
 bytes.
+
+**Done.** A `channel` now holds `sourceType`, `raw`, `primvar` or `lpe`, and `sourceName`, as
+UsdRender's `RenderVar` does, in place of its `source`. The RIB client reads a `Display` mode after
+`lpe:` as an expression, and any other as a raw value. `output/Outputs.h` reads the scene's channels
+and outputs, and writes an output. An EXR output is a part of the beauty and its channels at its
+precision and compression. A PNG goes through the default display and view, and a framebuffer is
+logged as not written. `integrate::render()` makes its film from the channels the outputs name, each
+once, and reports each one, since no source is filled until step 9. `moya --paths` writes every
+output after each frame. Its `--output` replaces the first one's file and may now end in `.png`. The
+combine rule ADR-0230 names joins the channel at step 9, where a value is first filled.
 
 ### Step 8 — Alpha
 

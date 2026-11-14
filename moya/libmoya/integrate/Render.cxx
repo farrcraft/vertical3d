@@ -5,6 +5,7 @@
 
 #include <moya/libmoya/integrate/Render.h>
 
+#include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
 #include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/accel/Box.h>
@@ -32,6 +33,8 @@
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/output/Checkpoint.h>
+#include <moya/libmoya/output/Channel.h>
+#include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -43,6 +46,7 @@
 #include <moya/libmoya/texture/Textures.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -99,6 +103,18 @@ float reach(const accel::LinearBox & bounds) {
     return all.empty() ? 0.0F : 0.5F * glm::length(all.upper - all.lower);
 }
 
+/** Reports each channel whose source the render does not fill, which then holds zero. **/
+void reportUnfilled(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger) {
+    if (!logger) {
+        return;
+    }
+    const std::array<const char *, 3> kinds { "raw value", "primvar", "light path expression" };
+    for (const output::Channel & channel : output::channelsOf(scene)) {
+        logger->get()->warn("channel {} collects the {} {}, which the path tracer does not fill, so it holds zero", channel.film.name,
+            kinds.at(static_cast<std::size_t>(channel.source)), channel.sourceName);
+    }
+}
+
 };  // namespace
 
 kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
@@ -151,7 +167,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const kernel::Function<device::cpu::PathParams> entry = device.module().paths;
     const float threshold = option(scene, "noiseThreshold").floatArray().front();
     const std::uint32_t least = count(scene, "minSamples");
-    const std::vector<film::Channel> channels;
+    const std::vector<film::Channel> channels = output::filmChannelsOf(scene);
+    reportUnfilled(scene, logger);
     film::Film picture(device, resolution, channels);
     const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
     std::uint32_t done = 0;

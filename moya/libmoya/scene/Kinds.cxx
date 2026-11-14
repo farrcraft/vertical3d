@@ -121,7 +121,8 @@ Kind options() {
 Kind channel() {
     return Kind { .name = "channel",
         .parameters = {
-            Declaration { .name = "source", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "sourceType", .type = Type::String, .fallback = Value::string("raw"), .choices = { "raw", "primvar", "lpe" } },
+            Declaration { .name = "sourceName", .type = Type::String, .fallback = Value::string("") },
             Declaration { .name = "components", .type = Type::Integer, .fallback = Value::integer(kColourComponents) } } };
 }
 

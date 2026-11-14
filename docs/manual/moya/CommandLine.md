@@ -5,7 +5,7 @@ moya.exe --file <scene.rib> [--output <image>] [--width <n> --height <n>]
          [--grid <n>] [--bucket <n>] [--silent]
 moya.exe --file <scene.rib> --scene
 moya.exe --file <scene.rib> --hits [--output <image.exr>]
-moya.exe --file <scene.rib> --paths [--output <image.exr>] [--checkpoint <file> [--checkpoint-interval <seconds>] [--resume]]
+moya.exe --file <scene.rib> --paths [--output <image>] [--checkpoint <file> [--checkpoint-interval <seconds>] [--resume]]
 moya.exe --maketexture <image> <texture> [--swrap <mode>] [--twrap <mode>] [--filter <name>]
          [--swidth <n>] [--twidth <n>] [--colorspace <space>]
 moya.exe --help
@@ -34,7 +34,7 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--silent` | Print no progress line |
 | `--scene` | Read the scene into moya's new core and print what it holds, in place of rendering. It prints after each frame the file describes |
 | `--hits` | Read the scene into moya's new core and write what its rays hit, in place of rendering, to the `--output` file or to `hits.exr`. The `--output` file has to end in `.exr`. The EXR holds each pixel's `depth`, its surface's `normal`, its `instance`, its `face` and its `coverage`. It is written after each frame, so a file of several frames leaves the last |
-| `--paths` | Read the scene into moya's new core and render it with its path tracer, in place of rendering with the hiders, to the `--output` file or to `paths.exr`. The `--output` file has to end in `.exr`. The EXR holds the beauty in ACEScg, as floats. It is written after each frame, so a file of several frames leaves the last. Every surface is diffuse, and lit by the scene's lights |
+| `--paths` | Read the scene into moya's new core and render it with its path tracer, in place of rendering with the hiders. It writes every file the scene's `Display` requests name, each as its name says: a `.png` file through the display, and any other as EXR, which holds the beauty in ACEScg with the channels its mode names. `--output` replaces the first `Display`'s file, and has to end in `.exr` or `.png`. A scene that names no `Display` writes its beauty to the `--output` file or to `paths.exr`, as floats. The files are written after each frame, so a file of several frames leaves the last |
 | `--checkpoint <file>` | With `--paths`, write a checkpoint of the render to the file after each pass, as an EXR file, so a render that is stopped can continue. A file of several frames leaves the last frame's |
 | `--checkpoint-interval <seconds>` | Write the checkpoint at most once in the given seconds, in place of after every pass. The last pass is always written. Needs `--checkpoint` |
 | `--resume` | Continue the render the `--checkpoint` file holds, at the pass after its last, and write the same picture a render that never stopped writes. A checkpoint of another scene, or of the same scene changed, is refused. In a file of several frames the first frame resumes, and the frames after it start afresh. Needs `--checkpoint` |
@@ -53,7 +53,8 @@ the directories on a search path. Give full paths to work with files elsewhere.
 - `--scene`, `--hits` and `--paths` are refused together. `--width`, `--height`, `--grid` and
   `--bucket` are refused with any of them. Each takes its size from the scene's `Format`, and none
   renders in grids or buckets. `--output` is refused with `--scene`, which writes no file. With
-  `--hits` or `--paths`, an `--output` that does not end in `.exr` is refused. moya prints a line
+  `--hits`, an `--output` that does not end in `.exr` is refused, and with `--paths` one that
+  ends in neither `.exr` nor `.png`. moya prints a line
   that says which option was refused, and exits with failure.
 - `--checkpoint`, `--checkpoint-interval` and `--resume` are refused without `--paths`. The
   interval and `--resume` are refused without `--checkpoint`, and an interval below zero is

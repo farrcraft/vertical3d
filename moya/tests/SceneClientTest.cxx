@@ -140,14 +140,19 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_displays_add_and_replace_outputs_test) {
         "Display \"first.exr\" \"file\" \"rgba\"\n"
         "Display \"+depth.png\" \"file\" \"z\"\n"
         "Display \"+view\" \"framebuffer\" \"rgb\"\n"
+        "Display \"+diffuse.exr\" \"file\" \"lpe:C<RD>L\"\n"
         "WorldBegin\nWorldEnd\n");
     const scene::Scene & made = read.scene();
-    BOOST_TEST(made.objects("output").size() == 3U);
+    BOOST_TEST(made.objects("output").size() == 4U);
     BOOST_TEST((read.value("output", "first.exr", "format") == scene::Value::string("exr")));
     BOOST_TEST((read.value("output", "first.exr", "channels") == scene::Value::handles({})));
     BOOST_TEST((read.value("output", "depth.png", "format") == scene::Value::string("png")));
     BOOST_TEST((read.value("output", "depth.png", "channels") == scene::Value::handles({ *made.find("channel", "z") })));
-    BOOST_TEST((read.value("channel", "z", "source") == scene::Value::string("z")));
+    // a mode names a value the renderer computes, or a light path expression after lpe:
+    BOOST_TEST((read.value("channel", "z", "sourceType") == scene::Value::string("raw")));
+    BOOST_TEST((read.value("channel", "z", "sourceName") == scene::Value::string("z")));
+    BOOST_TEST((read.value("channel", "lpe:C<RD>L", "sourceType") == scene::Value::string("lpe")));
+    BOOST_TEST((read.value("channel", "lpe:C<RD>L", "sourceName") == scene::Value::string("C<RD>L")));
     BOOST_TEST((read.value("output", "view", "format") == scene::Value::string("framebuffer")));
 
     // a display with no + replaces every one before it

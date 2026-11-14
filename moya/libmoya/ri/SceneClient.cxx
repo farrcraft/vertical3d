@@ -181,7 +181,10 @@ void SceneClient::display(const v3d::render::offline::rib::requests::Display & r
         const auto held = channels_.find(request.mode);
         if (held == channels_.end()) {
             const scene::Handle channel = scene_.create("channel", request.mode);
-            scene_.set(channel, "source", scene::Value::string(request.mode));
+            const std::string lpe = "lpe:";
+            const bool expression = request.mode.starts_with(lpe);
+            scene_.set(channel, "sourceType", scene::Value::string(expression ? "lpe" : "raw"));
+            scene_.set(channel, "sourceName", scene::Value::string(expression ? request.mode.substr(lpe.size()) : request.mode));
             channels_[request.mode] = channel;
         }
         channels.push_back(channels_[request.mode]);

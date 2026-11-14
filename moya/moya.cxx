@@ -11,8 +11,9 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
-#include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/output/ExrPart.h>
+#include <moya/libmoya/output/Output.h>
+#include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Description.h>
@@ -114,7 +115,8 @@ std::string textureConflict(const boost::program_options::variables_map& var_map
  * with the hiders, so only one of them can be given. Each takes the picture's size from the
  * scene's Format, and none renders in grids or buckets. --width, --height, --grid and --bucket
  * are refused with any of them. --scene writes no file, so --output is refused with it. --hits
- * and --paths write an EXR file, so their --output has to end in .exr, in any case.
+ * writes an EXR file, so its --output has to end in .exr, in any case. --paths writes an EXR or a
+ * PNG file, so its --output has to end in .exr or .png.
  *
  * Only the path tracer keeps a checkpoint, so --checkpoint, --checkpoint-interval and --resume
  * are refused without --paths. The interval and --resume each need --checkpoint, which names
@@ -159,9 +161,14 @@ std::string conflict(const boost::program_options::variables_map& var_map) {
     if (!scene && var_map.count("output") > 0) {
         std::string name = var_map["output"].as<std::string>();
         std::transform(name.begin(), name.end(), name.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
-        const std::string extension = ".exr";
-        if (name.size() < extension.size() || name.compare(name.size() - extension.size(), extension.size(), extension) != 0) {
-            return "--output has to name an .exr file with " + mode + ", which writes an EXR file";
+        const auto ends = [&name](const std::string & extension) {
+            return name.size() >= extension.size() && name.compare(name.size() - extension.size(), extension.size(), extension) == 0;
+        };
+        if (mode == "--paths" && !ends(".exr") && !ends(".png")) {
+            return "--output has to name an .exr or a .png file with --paths, which writes an EXR or a PNG file";
+        }
+        if (mode == "--hits" && !ends(".exr")) {
+            return "--output has to name an .exr file with --hits, which writes an EXR file";
         }
     }
     return {};
@@ -208,10 +215,32 @@ int showHits(const std::string & infile, const std::string & outfile, const boos
 }
 
 /**
- * Read a file into the new core's scene, and write the picture its integrator renders after each
- * frame the file commits, in place of rendering it with the hiders. A file of several frames leaves
- * the last frame's. A checkpoint holds one frame, so a resume continues the first frame, and each
- * frame after it starts afresh and writes its checkpoint over the one before.
+ * The outputs a frame writes: the scene's, with the first one's file replaced by outfile when it
+ * is given. A scene with no output writes its beauty to outfile, or to paths.exr, in floats.
+ **/
+std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Scene & scene, const std::string & outfile) {
+    std::vector<v3d::moya::output::Output> outputs = v3d::moya::output::outputsOf(scene);
+    if (outputs.empty()) {
+        outputs.push_back({ .file = outfile.empty() ? std::string("paths.exr") : outfile,
+            .format = v3d::moya::output::Format::Exr,
+            .channels = {},
+            .precision = v3d::moya::output::Precision::Float,
+            .compression = v3d::moya::output::Compression::Zip });
+    } else if (!outfile.empty()) {
+        outputs.front().file = outfile;
+    }
+    if (!outfile.empty()) {
+        outputs.front().format = v3d::moya::output::formatOfFile(outfile);
+    }
+    return outputs;
+}
+
+/**
+ * Read a file into the new core's scene, and write the outputs it names from the picture its
+ * integrator renders after each frame the file commits, in place of rendering it with the hiders.
+ * A file of several frames leaves the last frame's. A checkpoint holds one frame, so a resume
+ * continues the first frame, and each frame after it starts afresh and writes its checkpoint over
+ * the one before.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
 int renderPaths(const std::string & infile, const std::string & outfile, const v3d::moya::integrate::Checkpoints & checkpoints,
@@ -225,8 +254,9 @@ int renderPaths(const std::string & infile, const std::string & outfile, const v
         scene.apply();
         const v3d::moya::film::Snapshot picture = v3d::moya::integrate::render(device, scene, logger, config, kept);
         kept.resume = false;
-        v3d::moya::output::writeExr(outfile, picture,
-            { { .name = "", .outputs = { std::string(v3d::moya::output::kBeauty) }, .precision = v3d::moya::output::Precision::Float } }, {});
+        for (const v3d::moya::output::Output & output : outputsWritten(scene, outfile)) {
+            v3d::moya::output::write(output, picture, config, logger);
+        }
     });
     v3d::render::offline::rib::Reader reader(logger);
     if (!reader.read(infile, &client)) {
@@ -304,8 +334,9 @@ boost::program_options::options_description optionsOf() {
         ("scene", "print the scene the new core reads from the file, in place of rendering it; not with --hits or --paths")
         ("hits", "write what the new core's rays hit to --output, which has to end in .exr, or to hits.exr, as an EXR file, "
             "in place of rendering it; not with --scene or --paths")
-        ("paths", "write the picture the new core's path tracer renders to --output, which has to end in .exr, or to paths.exr, "
-            "as an EXR file, in place of rendering it; not with --scene or --hits")
+        ("paths", "write the outputs the scene names from the picture the new core's path tracer renders, in place of rendering it; "
+            "--output, which has to end in .exr or .png, replaces the first one's file, and a scene that names none writes paths.exr; "
+            "not with --scene or --hits")
         ("checkpoint", boost::program_options::value<std::string>(),
             "a checkpoint the path tracer writes after each pass, as an EXR file, and reads with --resume; only with --paths")
         ("checkpoint-interval", boost::program_options::value<double>(),
@@ -387,7 +418,7 @@ int run(int argc, char *argv[]) {
         return describe(infile, logger);
     }
     if (var_map.count("paths") != 0) {
-        return renderPaths(infile, outfile.empty() ? std::string("paths.exr") : outfile, checkpointsOf(var_map), logger);
+        return renderPaths(infile, outfile, checkpointsOf(var_map), logger);
     }
     v3d::moya::ri::RIBHandler handler;
 

@@ -59,8 +59,11 @@ then derived as RI derives it.
   `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
   it. `textureDirectory` is where an image that is not a texture is made into one, as
   [Textures.md](Textures.md#finding-a-texture) says.
-- **`channel`**: `source`, what the film channel holds, and `components`, its floats per pixel.
-  The channel's name is the object's.
+- **`channel`**: what a film channel collects, as UsdRender's `RenderVar` names it.
+  `sourceType` is `raw`, the fallback, for a value the renderer computes, `primvar` for a
+  primvar of the geometry, or `lpe` for the light of a light path expression. `sourceName` is the
+  value's, the primvar's or the expression's name. `components` is its floats per pixel. The
+  channel's name is the object's.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
   channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
   or `float`, and `compression`, one of OpenEXR's.
@@ -115,6 +118,8 @@ then derived as RI derives it.
   `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights) says.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
+
+Background: [ADR-0230](../adr/offline/0230-offline-channels-follow-usds-render-vars.md)
 
 ## Values
 

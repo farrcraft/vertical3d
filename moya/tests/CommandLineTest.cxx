@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_render_options_with_scene_or_hits
     }
 }
 
-// --scene prints and writes no file, so an --output is refused. --hits and --paths write an EXR
-// file, so an output of another kind is refused
+// --scene prints and writes no file, so an --output is refused. --hits writes an EXR file and
+// --paths an EXR or a PNG file, so an output of another kind is refused
 BOOST_AUTO_TEST_CASE(moya_command_line_refuses_an_output_the_mode_cannot_write_test) {
     const Run scene = moya(std::string(kScene) + " --scene --output picture.exr");
     BOOST_TEST(!scene.succeeded);
@@ -80,9 +80,59 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_an_output_the_mode_cannot_write_t
     BOOST_TEST(!hits.succeeded);
     BOOST_TEST(hits.printed.find("--output has to name an .exr file with --hits") != std::string::npos, hits.printed);
 
-    const Run paths = moya(std::string(kScene) + " --paths --output paths.png");
+    const Run paths = moya(std::string(kScene) + " --paths --output paths.tif");
     BOOST_TEST(!paths.succeeded);
-    BOOST_TEST(paths.printed.find("--output has to name an .exr file with --paths") != std::string::npos, paths.printed);
+    BOOST_TEST(paths.printed.find("--output has to name an .exr or a .png file with --paths") != std::string::npos, paths.printed);
+}
+
+/** The command line's scene with displays before it, in the system's temporary directory. **/
+boost::filesystem::path sceneDisplaying(const std::string & displays) {
+    std::ifstream original("data/raytrace-spheres.rib", std::ios::binary);
+    const std::string body((std::istreambuf_iterator<char>(original)), std::istreambuf_iterator<char>());
+    const boost::filesystem::path made = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_displays.rib";
+    std::ofstream written(made.string(), std::ios::binary);
+    written << displays << body;
+    return made;
+}
+
+/** Whether a file starts with the eight bytes every PNG file starts with. **/
+bool isPng(const boost::filesystem::path & file) {
+    std::ifstream stream(file.string(), std::ios::binary);
+    std::string start(8, '\0');
+    stream.read(start.data(), static_cast<std::streamsize>(start.size()));
+    return stream.good() && start == "\x89PNG\r\n\x1a\n";
+}
+
+// --paths writes every output the scene names, each in its own format, and --output replaces the
+// first one's file
+BOOST_AUTO_TEST_CASE(moya_command_line_paths_writes_every_output_the_scene_names_test) {
+    const boost::filesystem::path directory = boost::filesystem::temp_directory_path();
+    const boost::filesystem::path first = directory / "v3d_moya_command_line_first.exr";
+    const boost::filesystem::path second = directory / "v3d_moya_command_line_second.png";
+    const boost::filesystem::path replaced = directory / "v3d_moya_command_line_replaced.png";
+    boost::system::error_code ignored;
+    for (const boost::filesystem::path & file : { first, second, replaced }) {
+        boost::filesystem::remove(file, ignored);
+    }
+    const boost::filesystem::path scene = sceneDisplaying("Display \"" + first.generic_string() + "\" \"file\" \"rgba\"\n" + "Display \"+" +
+        second.generic_string() + "\" \"file\" \"rgb\"\n");
+
+    const Run both = moya("--file \"" + scene.string() + "\" --paths");
+    BOOST_TEST(both.succeeded, both.printed);
+    BOOST_TEST((boost::filesystem::exists(first) && boost::filesystem::file_size(first) > 0U));
+    BOOST_TEST(isPng(second));
+
+    boost::filesystem::remove(first, ignored);
+    boost::filesystem::remove(second, ignored);
+    const Run output = moya("--file \"" + scene.string() + "\" --paths --output \"" + replaced.string() + "\"");
+    BOOST_TEST(output.succeeded, output.printed);
+    BOOST_TEST(!boost::filesystem::exists(first));
+    BOOST_TEST(isPng(replaced));
+    BOOST_TEST(isPng(second));
+
+    for (const boost::filesystem::path & file : { first, second, replaced, scene }) {
+        boost::filesystem::remove(file, ignored);
+    }
 }
 
 // --paths replaces the render as --scene and --hits do, so it is refused with either

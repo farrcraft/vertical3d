@@ -134,7 +134,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **A display becomes an output named after its file.** A name starting with `+` adds an output,
   and any other replaces every output before it. A `.png` file is written as PNG, and any other
   as EXR, unless the type is `"framebuffer"`. A mode of `"rgb"` or `"rgba"` writes the beauty
-  alone, and any other mode adds a channel of that source, named after it.
+  alone, and any other mode adds a channel named after the mode. A mode after `lpe:` is the
+  channel's light path expression, and any other is the name of a value the renderer computes.
 - **A projection other than perspective or orthographic** is logged and changes nothing.
 - **`WorldEnd` commits the frame**, and calls the function the client's `frame()` was given, where
   the scene's owner applies the batch. A file of several frames is a scene that changes between
