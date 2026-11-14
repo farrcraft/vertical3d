@@ -8,10 +8,12 @@
  * it takes to gather and to build, and the memory its hierarchies take for each primitive. It
  * gives how many coherent and incoherent rays a second the traversal traces, at each instruction
  * set the processor runs. It prints that as one Markdown table. A second table times the
- * integrator over a lit room. It gives the samples a second, the rays a second over the paths,
- * and the share of the time in traversal.
+ * integrator over a lit room, and over the same room with a material of textures. It gives the
+ * samples a second, the rays a second over the paths, and the shares of the time in traversal, in
+ * materials' programs and in texture lookups.
  */
 
+#include <api/log/Logger.h>
 #include <moya/bench/Rays.h>
 #include <moya/bench/Scenes.h>
 #include <moya/libmoya/accel/Assembly.h>
@@ -54,6 +56,9 @@
 #include <utility>
 #include <vector>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -184,38 +189,39 @@ std::vector<cpu::Isa> isasOf(const std::string & named) {
 }
 
 /**
- * Times the integrator over the lit room at each instruction set, and prints a second table. The
- * room is rendered some times, timed, and the fastest gives the samples a second. It is rendered
- * once more, counted, for its rays and the share of its time in traversal. The counted render
- * times every ray, so its own time is not used. The rays a second are the counted render's rays
- * over the fastest timed render's time.
+ * Times the integrator over a lit scene at each instruction set, and prints a row of the second
+ * table for each. The scene is rendered some times, timed, and the fastest gives the samples a
+ * second. It is rendered once more, counted, for its rays and the shares of its time in
+ * traversal, programs and texture lookups. The counted render times every ray, program and
+ * lookup, so its own time is not used. The rays a second are the counted render's rays over the
+ * fastest timed render's time.
  **/
-void lit(const std::vector<cpu::Isa> & isas, bool quick, std::uint32_t repeats) {
-    const std::uint32_t side = quick ? kQuickPixels : kPixels;
-    const std::uint32_t samples = quick ? kQuickSamples : kSamples;
-    const boost::shared_ptr<scene::Scene> room = litRoom(quick ? 1.0F / kQuickShrink : 1.0F, side, samples);
-    const std::size_t primitives = primitivesOf(geometry::gather(*room, {}));
-    std::cout << "\n| lit scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % |\n";
-    std::cout << "|---|---|---:|---:|---:|---:|---:|---:|---:|\n";
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the samples per pixel
+void lit(const std::string & name, const scene::Scene & room, const std::vector<cpu::Isa> & isas, std::uint32_t side, std::uint32_t samples,
+    std::uint32_t repeats) {
+    // what a render reports, such as a texture it cannot read, goes to the log
+    const boost::shared_ptr<log::Logger> logger = boost::make_shared<log::Logger>();
+    const std::size_t primitives = primitivesOf(geometry::gather(room, logger));
     for (const cpu::Isa isa : isas) {
         device::CpuDevice device(0, isa);
         integrate::Profile timed { .seconds = std::numeric_limits<double>::infinity() };
         film::Snapshot picture;
         for (std::uint32_t repeat = 0; repeat < repeats; ++repeat) {
             integrate::Profile once;
-            picture = integrate::render(device, *room, {}, colour::Config(), {}, &once);
+            picture = integrate::render(device, room, logger, colour::Config(), {}, &once);
             timed.seconds = std::min(timed.seconds, once.seconds);
         }
         integrate::Profile counted { .counted = true };
-        integrate::render(device, *room, {}, colour::Config(), {}, &counted);
+        integrate::render(device, room, logger, colour::Config(), {}, &counted);
         std::uint64_t taken = 0;
         for (const std::uint32_t count : picture.samples) {
             taken += count;
         }
         const auto rays = static_cast<double>(counted.nearest + counted.any);
-        std::cout << "| lit room | " << device::isaName(isa) << " | " << primitives << " | " << (side * side) << " | " << samples << " | "
+        std::cout << "| " << name << " | " << device::isaName(isa) << " | " << primitives << " | " << (side * side) << " | " << samples << " | "
                   << fixed(static_cast<double>(taken) / timed.seconds / kMillion, 3) << " | " << fixed(rays / timed.seconds / kMillion, 3) << " | "
-                  << fixed(rays / static_cast<double>(taken), 2) << " | " << fixed(100.0 * counted.traversal, 1) << " |\n";
+                  << fixed(rays / static_cast<double>(taken), 2) << " | " << fixed(100.0 * counted.traversal, 1) << " | "
+                  << fixed(100.0 * counted.programs, 1) << " | " << fixed(100.0 * counted.lookups, 1) << " |\n";
     }
 }
 
@@ -265,7 +271,15 @@ int run(int argc, char * argv[]) {
                       << " |\n";
         }
     }
-    lit(isas, quick, repeats);
+    const std::uint32_t pixels = quick ? kQuickPixels : kPixels;
+    const std::uint32_t samples = quick ? kQuickSamples : kSamples;
+    std::cout << "\n| lit scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % | program % | "
+                 "texture % |\n";
+    std::cout << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n";
+    lit("lit room", *litRoom(scale, pixels, samples), isas, pixels, samples, repeats);
+    // the textured room's image is written where the system keeps temporary files
+    const std::string image = (boost::filesystem::temp_directory_path() / "moya_bench_image.exr").string();
+    lit("textured room", *texturedRoom(scale, pixels, samples, image), isas, pixels, samples, repeats);
     return EXIT_SUCCESS;
 }
 

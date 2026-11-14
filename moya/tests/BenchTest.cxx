@@ -109,6 +109,25 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_lit_room_test) {
     BOOST_TEST(std::stod(cells[9]) < 100.0);
 }
 
+// a short pass times the integrator over the textured room too. Its materials' programs and its
+// texture lookups each take a share of the time, and the lookups' share lies within the
+// programs', since a program's time holds the lookups it makes
+BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_textured_room_test) {
+    const Run run = bench("--quick --isa sse42");
+    BOOST_TEST_REQUIRE(run.succeeded, run.printed);
+    const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "textured room");
+    BOOST_TEST_REQUIRE(rows.size() == 1U);
+    // the cells after the leading bar: as the lit room's, then the shares in programs and in
+    // texture lookups
+    const std::vector<std::string> & cells = rows.front();
+    BOOST_TEST_REQUIRE(cells.size() >= 12U);
+    BOOST_TEST(std::stod(cells[6]) > 0.0);
+    BOOST_TEST(std::stod(cells[10]) > 0.0);
+    BOOST_TEST(std::stod(cells[10]) < 100.0);
+    BOOST_TEST(std::stod(cells[11]) > 0.0);
+    BOOST_TEST(std::stod(cells[11]) < std::stod(cells[10]));
+}
+
 // an instruction set the processor does not run, or one that has no such name, is refused
 BOOST_AUTO_TEST_CASE(moya_bench_refuses_an_instruction_set_it_cannot_run_test) {
     const Run run = bench("--quick --isa mmx");

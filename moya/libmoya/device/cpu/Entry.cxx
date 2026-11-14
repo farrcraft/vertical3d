@@ -14,6 +14,7 @@
 #include <moya/libmoya/device/cpu/Node.h>
 #include <moya/libmoya/device/cpu/ProfileParams.h>
 #include <moya/libmoya/device/cpu/Profiled.h>
+#include <moya/libmoya/device/cpu/ProfiledTextures.h>
 #include <moya/libmoya/device/cpu/Tally.h>
 #include <moya/libmoya/device/cpu/Textures.h>
 #include <moya/libmoya/device/cpu/Traversal.h>
@@ -366,12 +367,12 @@ bool anyFrom(internal::Search<F> & search, const Instance & entered, const kerne
 void profiledPaths(const ProfileParams & params, kernel::Item item) {
     const PathParams & from = params.paths;
     Tally & tally = params.tallies[(item.y * from.pixels.width) + item.x];
-    const kernel::integrate::Paths<Profiled, Textures> paths { .pixels = from.pixels,
+    const kernel::integrate::Paths<Profiled, ProfiledTextures> paths { .pixels = from.pixels,
         .filter = from.filter,
         .camera = from.camera,
         .sampler = from.sampler,
         .traversal = Profiled { .traversal = from.traversal, .tally = &tally },
-        .textures = from.textures,
+        .textures = ProfiledTextures { .catalog = from.textures.catalog, .textures = from.textures, .tally = &tally },
         .surfaces = from.surfaces,
         .lights = from.lights,
         .table = from.table,
@@ -430,6 +431,19 @@ bool Profiled::any(const kernel::geometry::Ray & ray, F & filter) const {
     tally->traversing += __rdtsc() - start;
     ++tally->any;
     return out;
+}
+
+std::uint64_t ProfiledTextures::started() const {
+    return __rdtsc();
+}
+
+void ProfiledTextures::finished(kernel::texture::Work work, std::uint64_t mark) const {
+    const std::uint64_t ticks = __rdtsc() - mark;
+    if (work == kernel::texture::Work::Program) {
+        tally->programs += ticks;
+    } else {
+        tally->lookups += ticks;
+    }
 }
 
 };  // namespace v3d::moya::device::cpu

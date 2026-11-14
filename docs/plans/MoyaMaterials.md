@@ -157,7 +157,7 @@ among the options before the record is drafted.
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | done |
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | done |
 | [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | done |
-| [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | open |
+| [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | done |
 | [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | open |
 
 ## What blocks what
@@ -835,6 +835,18 @@ surface after it, which it had left at zero.
 * **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
 
 **Tests:** the benchmark's short pass times the textured scene.
+
+**Done.** `moya_bench`'s second table times a textured room beside the lit room: every surface
+is OpenPBR's base under a coat, whose colour and specular roughness are an image the benchmark
+writes. The table gains the shares of the time in materials' programs and in texture lookups. A
+profiled render wraps the textures in `device::cpu::ProfiledTextures`, and the kernel tells a
+texture access when a program and a lookup start and end, through `kernel::texture::started()`
+and `finished()`. Only an access that defines both is told, so an ordinary render reads no
+counter. The benchmark now gives its renders a logger, which a texture access needs, and finds
+MaterialX's libraries beside itself. The baseline was run again. The textured room runs at under
+a fifth of the lit room's samples a second, with three quarters of its time in texture lookups.
+The lit room runs a sixth slower than the baseline before this plan, with its traversal as fast
+as it was. [TODO.md](../TODO.md) holds both.
 
 ### Step 28 — The documents
 

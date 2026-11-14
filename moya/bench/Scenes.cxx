@@ -5,6 +5,10 @@
 
 #include <moya/bench/Scenes.h>
 
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/ExrPart.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -16,14 +20,18 @@
 #include <cstdint>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <glm/common.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::bench {
@@ -94,6 +102,24 @@ constexpr float kHalfTurn = 180.0F;
 
 /** Where the rect, disk and sphere lights hang over the floor, as x and y. **/
 constexpr float kLightsAt[3][2] = { { 0.4F, 0.4F }, { -0.4F, 0.5F }, { -0.5F, -0.3F } };
+
+/** How many times the textured room's image runs across its floor along x and along y. **/
+constexpr float kTextureRepeats = 4.0F;
+
+/**
+ * The textured room's image. Its texels to a side, in a full run and in a short pass. Its tiles to
+ * a side and their two colours. How many rings shade a tile, and the darkest a ring makes it.
+ **/
+constexpr std::uint32_t kImageSide = 1024;
+constexpr std::uint32_t kQuickImageSide = 64;
+constexpr float kImageTiles = 8.0F;
+constexpr glm::vec3 kImageLight { 0.8F, 0.7F, 0.5F };
+constexpr glm::vec3 kImageDark { 0.25F, 0.3F, 0.4F };
+constexpr float kImageRings = 12.0F;
+constexpr float kImageShade = 0.6F;
+
+/** The roughness of the textured room's coat. **/
+constexpr float kCoatRoughness = 0.1F;
 
 /** How many cells a side of a grid has at a scale, at least two. **/
 std::int32_t cellsAt(std::int32_t full, float scale) {
@@ -285,10 +311,12 @@ Fixed motion(float scale) {
     return out;
 }
 
-};  // namespace
-
+/**
+ * The lit room, uncommitted: its floor, walls, lights and camera, with no material. The floor's
+ * st runs over it kTextureRepeats times along x and along y.
+ **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
-boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+boost::shared_ptr<scene::Scene> room(float scale, std::uint32_t side, std::uint32_t samples) {
     const boost::shared_ptr<scene::Scene> out = boost::make_shared<scene::Scene>(scene::kinds());
     scene::Scene & made = *out;
     const scene::Handle options = made.create("options", "options");
@@ -301,7 +329,20 @@ boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::ui
     made.set(camera, "transform",
         scene::Value::matrix(glm::rotate(glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, 0.0F, kRoomEye }), glm::radians(kHalfTurn), glm::vec3 { 1.0F, 0.0F, 0.0F })));
 
-    place(made, "floor", grid(made, "floor", cellsAt(kSmallCells, scale), kGroundRipple, { 0.0F }), {}, { glm::mat4(1.0F) });
+    const std::int32_t cells = cellsAt(kSmallCells, scale);
+    const scene::Handle floor = grid(made, "floor", cells, kGroundRipple, { 0.0F });
+    std::vector<float> st;
+    for (std::int32_t row = 0; row <= cells; ++row) {
+        for (std::int32_t column = 0; column <= cells; ++column) {
+            st.push_back(kTextureRepeats * static_cast<float>(column) / static_cast<float>(cells));
+            st.push_back(kTextureRepeats * static_cast<float>(row) / static_cast<float>(cells));
+        }
+    }
+    const scene::Value spread = scene::Value::floats(st);
+    made.declare(floor, scene::Declaration { .name = "st", .type = spread.type(), .count = scene::Declaration::kAny, .width = 2, .fallback = spread,
+                            .interpolation = scene::Interpolation::Vertex });
+    made.set(floor, "st", spread);
+    place(made, "floor", floor, {}, { glm::mat4(1.0F) });
     // four walls of a quad each, from the floor to kWallHeight around its edges
     const std::vector<glm::vec3> corners { { -1.0F, -1.0F, 0.0F }, { 1.0F, -1.0F, 0.0F }, { 1.0F, 1.0F, 0.0F }, { -1.0F, 1.0F, 0.0F } };
     std::vector<glm::vec3> points;
@@ -328,6 +369,84 @@ boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::ui
     const scene::Handle sphere = made.create("sphereLight", "sphere");
     made.set(sphere, "radius", scene::Value::number(kSphereRadius));
     made.set(sphere, "transform", scene::Value::matrix(placed({ kLightsAt[2][0], kLightsAt[2][1], kSphereHeight }, 1.0F)));
+    return out;
+}
+
+/** A shader node of language materialx, of a node definition and its constant inputs. **/
+scene::Handle node(scene::Scene & scene, const std::string & name, const std::string & definition, const std::vector<std::pair<std::string, scene::Value>> & inputs) {
+    const scene::Handle out = scene.create("shader", name);
+    scene.set(out, "shader", scene::Value::string(definition));
+    scene.set(out, "language", scene::Value::string("materialx"));
+    for (const auto & [input, value] : inputs) {
+        scene.declare(out, scene::Declaration { .name = input, .type = value.type(), .count = static_cast<std::uint32_t>(value.size()), .fallback = value });
+        scene.set(out, input, value);
+    }
+    return out;
+}
+
+/** A connection, by a name of its own, from a node's only output to an input of another. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the connection's name, then the input
+void connect(scene::Scene & scene, const std::string & name, const scene::Handle & from, const scene::Handle & to, const std::string & input) {
+    const scene::Handle out = scene.create("connection", name);
+    scene.set(out, "from", scene::Value::handle(from));
+    scene.set(out, "to", scene::Value::handle(to));
+    scene.set(out, "input", scene::Value::string(input));
+}
+
+/**
+ * Writes the textured room's image: tiles of two colours, kImageTiles to a side, each shaded by a
+ * ring that rises and falls across it. Its red runs from a fifth to four fifths, and is the
+ * floor's roughness.
+ **/
+void writeImage(const std::string & path, std::uint32_t side) {
+    film::Snapshot image;
+    image.resolution = glm::uvec2 { side };
+    image.stride = 3;
+    image.values.reserve(static_cast<std::size_t>(side) * side * 3U);
+    for (std::uint32_t y = 0; y < side; ++y) {
+        for (std::uint32_t x = 0; x < side; ++x) {
+            const float u = static_cast<float>(x) / static_cast<float>(side);
+            const float v = static_cast<float>(y) / static_cast<float>(side);
+            const auto tileU = static_cast<std::uint32_t>(u * kImageTiles);
+            const auto tileV = static_cast<std::uint32_t>(v * kImageTiles);
+            const glm::vec3 & colour = ((tileU + tileV) % 2U) == 0U ? kImageLight : kImageDark;
+            const float ring = std::sin(kImageRings * glm::length(glm::fract(glm::vec2 { u, v } * kImageTiles) - 0.5F));
+            const glm::vec3 shaded = colour * (kImageShade + ((1.0F - kImageShade) * ring * ring));
+            image.values.insert(image.values.end(), { shaded.x, shaded.y, shaded.z });
+        }
+    }
+    output::writeExr(path, image, { { .name = "", .outputs = { std::string(output::kBeauty) } } }, {});
+}
+
+};  // namespace
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    out->commit();
+    out->apply();
+    return out;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> texturedRoom(float scale, std::uint32_t side, std::uint32_t samples, const std::string & image) {
+    writeImage(image, scale < 1.0F ? kQuickImageSide : kImageSide);
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    scene::Scene & made = *out;
+    const scene::Handle colour = node(made, "colour", "ND_image_color3", { { "file", scene::Value::string(image) } });
+    const scene::Handle rough = node(made, "rough", "ND_image_float", { { "file", scene::Value::string(image) } });
+    const scene::Handle surface = node(made, "surface", "ND_open_pbr_surface_surfaceshader",
+        { { "coat_weight", scene::Value::number(1.0F) }, { "coat_roughness", scene::Value::number(kCoatRoughness) } });
+    connect(made, "colour to base_color", colour, surface, "base_color");
+    connect(made, "rough to specular_roughness", rough, surface, "specular_roughness");
+    const scene::Handle material = made.create("material", "textured");
+    made.set(material, "surface", scene::Value::handle(surface));
+    // the room's instances are listed once it is applied
+    made.commit();
+    made.apply();
+    for (const scene::Handle & instance : made.objects("instance")) {
+        made.set(instance, "material", scene::Value::handle(material));
+    }
     made.commit();
     made.apply();
     return out;

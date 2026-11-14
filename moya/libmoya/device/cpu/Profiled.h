@@ -10,6 +10,7 @@
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 
+
 namespace v3d::moya::device::cpu {
 
 /**

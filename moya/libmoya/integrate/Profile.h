@@ -16,7 +16,7 @@ namespace v3d::moya::integrate {
  * own.
  **/
 struct Profile {
-    /** Whether to count the rays and the time in traversal. **/
+    /** Whether to count the rays, and the time in traversal, programs and texture lookups. **/
     bool counted { false };
 
     /** The seconds the passes took, summed, without the noise checks and checkpoints between. **/
@@ -28,6 +28,13 @@ struct Profile {
 
     /** The share of the passes' time on every thread that traversal took, from 0 to 1. **/
     double traversal { 0.0 };
+
+    /**
+     * The shares of the passes' time on every thread that materials' programs and texture
+     * lookups took, from 0 to 1. A program's share holds the lookups it makes.
+     **/
+    double programs { 0.0 };
+    double lookups { 0.0 };
 };
 
 };  // namespace v3d::moya::integrate

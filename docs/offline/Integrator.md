@@ -254,12 +254,17 @@ fallback, a render keeps no checkpoint.
   place of `paths`. It wraps the traversal in `device::cpu::Profiled`, which counts each ray into
   its pixel's `device::cpu::Tally` and reads the processor's time-stamp counter around it, and the
   whole pixel's time around that. Each pixel has a tally of its own, so no two threads write one.
+- **The textures are wrapped too**, in `device::cpu::ProfiledTextures`. The kernel tells a texture
+  access when a material's program and a texture lookup start and end, through
+  `kernel::texture::started()` and `finished()`. Only a texture access that defines both is told,
+  so an ordinary render reads no counter.
 - **The counts are the rays traced** for their nearest hit, `nearest`, and for whether they meet
   anything, `any`. `traversal` is the share of every thread's time in the passes that traversal
-  took, from 0 to 1.
+  took, from 0 to 1. `programs` and `lookups` are the shares that materials' programs and
+  texture lookups took. A program's share holds the lookups it makes.
 - **A counted render gives the same picture** as one that is not counted. Reading the counter
   around every ray makes it slower, so its `seconds` is not the render's speed. A benchmark times
   one render and counts another.
 
-`moya_bench` times the integrator this way over a lit room, as
+`moya_bench` times the integrator this way over a lit room and a textured one, as
 [Traversal.md](Traversal.md#speed) describes.

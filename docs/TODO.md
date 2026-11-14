@@ -81,9 +81,24 @@ path tracer a traversal runs at the rate the benchmark measures, about 20 millio
 cost is therefore in the traversal itself, not in the launch or the copies of the rays and hits.
 Profile a traversal to find where its cost goes, and then the build. ADR-0193's cost is that
 this traversal reaches Embree's speed. In the path tracer over a lit room of a million
-triangles, traversal takes 35 to 38 percent of the time, so a traversal twice as fast makes that
+triangles, traversal takes 31 to 33 percent of the time, so a traversal twice as fast makes that
 render about a fifth faster. [Traversal.md](offline/Traversal.md#speed) has the
 figures, and `moya/bench/Baseline.md` the run to measure a change against.
+
+[] **Texture lookups take three quarters of a textured render.** `moya_bench`'s textured room
+has a coated OpenPBR surface whose colour and roughness are one image. It renders at under a
+fifth of the lit room's samples a second, and 75 percent of its time is in texture lookups. The
+material reads the image twice at each shading point, and a filtered lookup reads each of its
+texels through the host's tile cache by a function call. Profile a lookup to find where its cost
+goes: the call, the cache's search, or the texels a filter reads. `moya/bench/Baseline.md` holds
+the run to measure a change against.
+
+[] **The lit room's samples come a sixth slower than before materials.** `moya_bench`'s lit room
+ran at 1.97 to 2.07 million samples a second before the materials plan, and runs at 1.64 to 1.71
+after it, beyond a run's noise of a tenth. Its traversal runs at the rate it did, so the time is
+in the integrator's other stages. Every surface there is diffuse, so the layered BSDF and the
+specular samples the plan added are the place to look. Bisect the plan's commits with the
+benchmark to find the one that slowed it.
 
 [] **A material's emission cannot vary over its surface.** An emitting material makes a light of
 its geometry on the host, from its emission inputs as constants, so an emission input that

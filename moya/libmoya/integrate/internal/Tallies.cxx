@@ -34,14 +34,23 @@ void Tallies::into(Profile & profile) const {
     std::vector<device::cpu::Tally> tallies(count_);
     device_.download(*buffer_, tallies.data(), count_ * sizeof(device::cpu::Tally));
     std::uint64_t traversing = 0;
+    std::uint64_t programs = 0;
+    std::uint64_t lookups = 0;
     std::uint64_t whole = 0;
     for (const device::cpu::Tally & tally : tallies) {
         profile.nearest += tally.nearest;
         profile.any += tally.any;
         traversing += tally.traversing;
+        programs += tally.programs;
+        lookups += tally.lookups;
         whole += tally.whole;
     }
-    profile.traversal = whole == 0 ? 0.0 : static_cast<double>(traversing) / static_cast<double>(whole);
+    const auto share = [whole](std::uint64_t part) {
+        return whole == 0 ? 0.0 : static_cast<double>(part) / static_cast<double>(whole);
+    };
+    profile.traversal = share(traversing);
+    profile.programs = share(programs);
+    profile.lookups = share(lookups);
 }
 
 };  // namespace v3d::moya::integrate::internal

@@ -530,11 +530,17 @@ out/build/x64-Release/moya/bench/moya_bench.exe --isa avx2 # one
   triangles, with four walls and no ceiling. A white dome lights it, and a rect, a disk and a
   sphere light hang inside. Every surface is diffuse. It renders 256 by 256 pixels at 16 samples,
   at each instruction set. It gives the samples a second, the rays a second over the paths, the
-  rays a sample, and the share of the time in traversal. The rates are of the passes alone,
-  without the gather and the build. The room is timed three times and the fastest kept, then
-  counted once, as [Integrator.md](Integrator.md#profiling-a-render) describes.
+  rays a sample, and the shares of the time in traversal, in materials' programs and in texture
+  lookups. The rates are of the passes alone, without the gather and the build. The room is timed
+  three times and the fastest kept, then counted once, as
+  [Integrator.md](Integrator.md#profiling-a-render) describes.
+- **The same table times a textured room**: the lit room with one material on every surface,
+  OpenPBR's base under a coat. Its base colour is an image of 1024 by 1024 texels the benchmark
+  writes, and its specular roughness is the image's red. The floor's `st` runs over the image
+  four times each way.
 - **`--quick` is a short pass**, the scenes 256 times smaller and 1024 rays of each kind traced
-  once, and the lit room at 16 by 16 pixels and 4 samples. moya's suite runs it in every build so
+  once, and both rooms at 16 by 16 pixels and 4 samples. The textured room's image is then 64
+  texels to a side. moya's suite runs it in every build so
   the benchmark does not rot.
 - **`moya/bench/Baseline.md` holds a run** on one machine, so a later change is measured against
   it on the same machine. Two runs differ by up to a tenth in their rates.
@@ -550,7 +556,7 @@ bound the gap rather than measure it. moya's are the baseline's, on an 8-core Ry
 |---|---|---|
 | Coherent rays, about a million triangles | 11 to 12.5 Mrays/s, two traversals each | 38 to 59 Mrays/s with simple shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
 | Incoherent rays, about a million triangles | 10 to 11 Mrays/s, two traversals each | 12 to 20 Mrays/s path traced with full shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
-| Path traced, about a million triangles | 7.9 to 8.3 Mrays/s over the lit room's paths, diffuse, spectral, four lights, 35 to 38% of the time in traversal | 12 to 20 Mrays/s path traced with full shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
+| Path traced, about a million triangles | 6.5 to 6.8 Mrays/s over the lit room's paths, diffuse, spectral, four lights, 31 to 33% of the time in traversal | 12 to 20 Mrays/s path traced with full shading, single rays, 4-core i7-4770, Embree 2.2 [1] |
 | Build with spatial splits | 1.35 s for 1.05M triangles | 0.2 s for 0.8M triangles, with the scene's setup, 16 cores of two E5-2690s, Embree 2.2 [1] |
 | Build by binned surface area, no spatial splits | not timed apart | 142 ms for 0.8M triangles, 4-core i7-4770, Embree 2.2 [1] |
 | Memory | 57.5 bytes a triangle for the hierarchy, and 40 for its points and face | 68 to 76 bytes a triangle in all for the fastest BVH8, 35 to 38 for the smallest, Embree 3.0 [2] |
@@ -565,7 +571,7 @@ bound the gap rather than measure it. moya's are the baseline's, on an 8-core Ry
   Embree's times that also take in the scene's setup.
 - **Its memory is above Embree's**: about 98 bytes a triangle in all, against 68 to 76 for
   Embree's fastest BVH8.
-- **In the path tracer, traversal takes 35 to 38 percent of the time.** Traversal alone there
+- **In the path tracer, traversal takes 31 to 33 percent of the time.** Traversal alone there
   runs about 20 million traversals a second, as the benchmark's incoherent rays do at two
   traversals each. The integrator's other stages take the rest, so a traversal twice as fast
   makes the lit room about a fifth faster.

@@ -9,6 +9,7 @@ add_library("v3dlib_moya_cpu" INTERFACE
 	"MotionNode.h"
 	"Node.h"
 	"Profiled.h"
+	"ProfiledTextures.h"
 	"ProfileParams.h"
 	"Tally.h"
 	"Textures.h"

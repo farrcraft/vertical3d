@@ -143,17 +143,9 @@ MOYA_KERNEL glm::vec4 filtered(const X & texels, std::uint32_t texture, const gl
     return sum / static_cast<float>(probes);
 }
 
-/**
- * An image read at a texture coordinate over a footprint, or the fallback where it reads nothing.
- *
- * A UDIM image reads the tile its coordinate's whole parts name, at the coordinate's fractions,
- * and a coordinate outside its grid or on a missing tile gives the fallback. An address mode of
- * Constant gives the fallback for a coordinate outside zero to one along its axis. v runs up the
- * texture, so a v of zero reads its bottom row. Closest reads the first level's texel the
- * coordinate lies in.
- **/
+/** What lookup() reads, without telling the texture access the lookup's time. **/
 template <Texels X>
-MOYA_KERNEL glm::vec4 lookup(const X & texels, std::uint32_t image, glm::vec2 uv, const surface::TextureFootprint & footprint, const Sampling & sampling,
+MOYA_KERNEL glm::vec4 readAt(const X & texels, std::uint32_t image, glm::vec2 uv, const surface::TextureFootprint & footprint, const Sampling & sampling,
     const glm::vec4 & fallback) {
     if (image >= texels.catalog.images.size || !std::isfinite(uv.x) || !std::isfinite(uv.y)) {
         return fallback;
@@ -187,6 +179,24 @@ MOYA_KERNEL glm::vec4 lookup(const X & texels, std::uint32_t image, glm::vec2 uv
         return texels.texel(texture, 0U, addressed(column, held.width, sampling.s), addressed(row, held.height, sampling.t));
     }
     return filtered(texels, texture, place, footprint, sampling);
+}
+
+/**
+ * An image read at a texture coordinate over a footprint, or the fallback where it reads nothing.
+ *
+ * A UDIM image reads the tile its coordinate's whole parts name, at the coordinate's fractions,
+ * and a coordinate outside its grid or on a missing tile gives the fallback. An address mode of
+ * Constant gives the fallback for a coordinate outside zero to one along its axis. v runs up the
+ * texture, so a v of zero reads its bottom row. Closest reads the first level's texel the
+ * coordinate lies in.
+ **/
+template <Texels X>
+MOYA_KERNEL glm::vec4 lookup(const X & texels, std::uint32_t image, glm::vec2 uv, const surface::TextureFootprint & footprint, const Sampling & sampling,
+    const glm::vec4 & fallback) {
+    const std::uint64_t mark = started(texels);
+    const glm::vec4 out = readAt(texels, image, uv, footprint, sampling, fallback);
+    finished(texels, Work::Lookup, mark);
+    return out;
 }
 
 };  // namespace v3d::moya::kernel::texture

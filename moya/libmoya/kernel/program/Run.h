@@ -718,7 +718,9 @@ MOYA_KERNEL void run(const surface::Surfaces & surfaces, const X & textures, con
 template <texture::Texels X>
 MOYA_KERNEL surface::OpenPbr evaluate(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const Program & program) {
     float registers[kRegisters] {};
+    const std::uint64_t mark = texture::started(textures);
     run(surfaces, textures, point, program, registers);
+    texture::finished(textures, texture::Work::Program, mark);
     return parameters(registers);
 }
 

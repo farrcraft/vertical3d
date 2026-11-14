@@ -27,6 +27,35 @@ concept Texels = requires(const X & texels, std::uint32_t texture, std::uint32_t
     requires std::is_same_v<decltype(texels.texel(texture, level, column, row)), glm::vec4>;
 };
 
+/** The work a device's texture access may time, for a profiled render. **/
+enum class Work : std::uint8_t {
+    /** A material's program, with the texture lookups it makes. **/
+    Program,
+    /** One texture lookup. **/
+    Lookup,
+};
+
+/**
+ * A mark at the start of some work, from a texture access that times its work, or zero from one
+ * that does not. finished() is given the mark back when the work ends.
+ **/
+template <Texels X>
+MOYA_KERNEL std::uint64_t started(const X & texels) {
+    if constexpr (requires { texels.started(); }) {
+        return texels.started();
+    } else {
+        return 0;
+    }
+}
+
+/** Tells a texture access that times its work that some work begun at a mark has ended. **/
+template <Texels X>
+MOYA_KERNEL void finished(const X & texels, Work work, std::uint64_t mark) {
+    if constexpr (requires { texels.finished(work, mark); }) {
+        texels.finished(work, mark);
+    }
+}
+
 /**
  * A texel of one to four channels as four: grey as red, green and blue, and an alpha of one where
  * it has none. Two channels are grey and alpha.

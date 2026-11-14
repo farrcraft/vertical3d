@@ -228,8 +228,8 @@ changes a picture the hiders make.
 - **A pixel stops at a noise threshold**, measured from two halves of its samples. A render keeps
   a checkpoint it resumes from, and gives the same picture as one that never stopped.
   [Integrator.md](Integrator.md#adaptive-sampling)
-- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room,
-  against a committed baseline. [Traversal.md](Traversal.md#speed)
+- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room
+  and a textured one, against a committed baseline. [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
