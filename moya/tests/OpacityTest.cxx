@@ -268,17 +268,18 @@ BOOST_AUTO_TEST_CASE(moya_opacity_alpha_is_the_share_of_samples_that_meet_someth
     BOOST_TEST(meanAlpha(snapshot, 0, kSide) == 0.25F, boost::test_tools::tolerance(0.02F));
 }
 
-// a camera ray passes a half-opaque card half the time, so the card's alpha is a half
-BOOST_AUTO_TEST_CASE(moya_opacity_a_half_opaque_card_has_half_alpha_test) {
+// a camera ray passes a card a quarter opaque three times in four, so the card's alpha is a
+// quarter
+BOOST_AUTO_TEST_CASE(moya_opacity_a_quarter_opaque_card_has_a_quarter_alpha_test) {
     scene::Scene scene(scene::kinds());
     framed(scene, 64);
-    card(scene, "card", square(scene, "card", 3.0F, 0.0F), materialOf(scene, "half", blackSurface(scene, "half", 0.5F)), true);
+    card(scene, "card", square(scene, "card", 3.0F, 0.0F), materialOf(scene, "quarter", blackSurface(scene, "quarter", 0.25F)), true);
     scene.commit();
     scene.apply();
     CpuDevice device;
     const film::Snapshot snapshot = integrate::render(device, scene, {}, v3d::moya::colour::Config());
-    // 576 pixels of 64 samples each give a standard error near a thousandth
-    BOOST_TEST(meanAlpha(snapshot, kInsideFrom, kInsideTo) == 0.5F, boost::test_tools::tolerance(0.1F));
+    // 576 pixels of 64 samples each give a standard error near two thousandths
+    BOOST_TEST(meanAlpha(snapshot, kInsideFrom, kInsideTo) == 0.25F, boost::test_tools::tolerance(0.05F));
 }
 
 // a black card of half opacity over a white floor lets half of the dome's light through, whether

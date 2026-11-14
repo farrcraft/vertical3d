@@ -399,7 +399,8 @@ then the alpha. A path carries a `coverage`, one once its camera ray meets anyth
 checkpoints write the beauty as R, G, B and A. The committed references read the beauty's first
 three floats and stay as they were. A square shows an alpha of one inside it and zero beyond it,
 and the picture's mean alpha is the square's share of the screen, which checks the edge pixels
-together. A card of half opacity has an alpha of a half. The cases use a square rather than a
+together. A card a quarter opaque has an alpha of a quarter, which a half would not tell from
+the red of the dome behind it. The cases use a square rather than a
 sphere, as the opacity cases' scenes are built of squares.
 
 ### Step 9 — Values at the first hit
