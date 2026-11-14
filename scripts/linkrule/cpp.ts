@@ -28,6 +28,7 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['OpenColorIO::OpenColorIO', /^OpenColorIO\//],
     ['MaterialXCore', /^MaterialXCore\//],
     ['MaterialXFormat', /^MaterialXFormat\//],
+    ['OpenImageDenoise', /^OpenImageDenoise\//],
 ];
 
 /**

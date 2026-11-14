@@ -326,6 +326,42 @@ modules:
         url: https://github.com/AcademySoftwareFoundation/MaterialX/archive/refs/tags/v1.39.5.tar.gz
         sha256: c0d739b70a36f6f72888a0e8e66db5c83ae87c40737cc9b51c108166804f3a3b
 
+  # The ISPC compiler that OIDN's CPU device is compiled with, from its release, as vcpkg's tool
+  # port takes it. It runs while building and ships in nothing
+  - name: ispc
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/tools/ispc
+      - cp -r bin include lib /app/tools/ispc/
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/ispc/ispc/releases/download/v1.32.0/ispc-v1.32.0-linux.tar.gz
+        sha256: faf266bda2b702d68976ffd26bbd36c1ddba43424cc3c44f25b092cd1aa1f64a
+        only-arches:
+          - x86_64
+
+  # OIDN with its CPU device alone, static as the tree's overlay port builds it, from the
+  # release's source archive, which holds the trained weights
+  - name: oidn
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DOIDN_STATIC_LIB=ON
+      - -DOIDN_DEVICE_CPU=ON
+      - -DOIDN_FILTER_RT=ON
+      - -DOIDN_FILTER_RTLIGHTMAP=OFF
+      - -DOIDN_APPS=OFF
+      - -DISPC_EXECUTABLE=/app/tools/ispc/bin/ispc
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/RenderKit/oidn/releases/download/v2.5.1/oidn-2.5.1.src.tar.gz
+        sha256: e71fd043a70f1cc80e301d1b90df6c1f536098c4dd94baa612742f6db3369c36
+
   - name: openusd
     buildsystem: cmake-ninja
     config-opts:

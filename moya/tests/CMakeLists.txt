@@ -22,6 +22,7 @@ v3d_add_test(moya
 	"LayeringTest.cxx"
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"
+	"DenoiserTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"
 	"FilmTest.cxx"
@@ -90,9 +91,10 @@ v3d_add_test(moya
 # and its main waits for TBB's threads, which libmoya links PRIVATE. It reads back the EXR files
 # libmoya writes through OpenEXR and Imath, and checks colour conversions against OpenColorIO's own,
 # which libmoya links PRIVATE too. It flattens MaterialX documents through MaterialX itself, to
-# check the materials libmoya flattens against MaterialX's own.
+# check the materials libmoya flattens against MaterialX's own. It denoises through OIDN, which
+# libmoya does not link yet.
 target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
-	v3dlib_type Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR TBB::tbb)
+	v3dlib_type Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise TBB::tbb)
 
 # The command line cases run the moya executable itself, and the benchmark's case runs
 # moya_bench, each by its path in the build tree, so both are built before the suite.

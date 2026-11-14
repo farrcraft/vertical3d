@@ -30,7 +30,7 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 builds TBB and OpenUSD from source, which takes a long time.
 
 What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
-Imath, OpenColorIO, OpenSubdiv and MaterialX. No api library
+Imath, OpenColorIO, OpenSubdiv, MaterialX and OIDN. No api library
 uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
 only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
 names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
@@ -49,6 +49,7 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | libpng | |
 | materialx | MaterialX, in the `moya` feature, with none of its features, so no shader generator or renderer of its own. moya reads material documents through it, as the `MaterialXCore` and `MaterialXFormat` targets, linked PRIVATE because only the material library's source and its internal header include it. Its standard libraries of node definitions are copied into `materialx/` beside moya and its suite, and installed there, without the shader generators' `gen*` folders and `targets`. moya reads them from there alone, not from MaterialX's install or its search path in the environment. Its `open_pbr_surface` is OpenPBR Surface 1.1.1. The Flatpak builds it as a module |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
+| oidn | Intel Open Image Denoise, in the `moya` feature, with its CPU device alone. It comes from the tree's [overlay port](#the-oidn-and-ispc-overlay-ports), which builds it static. It is the `OpenImageDenoise` target of the `OpenImageDenoise` config package. The Flatpak builds it as a module |
 | opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
 | opensubdiv | OpenSubdiv, in the `moya` feature, with none of its features, so it has no OpenGL or GPU backend. moya evaluates subdivision surfaces through it. vcpkg builds it static on Windows, and it is linked as the `OpenSubdiv::osdCPU_static` target on every platform, PRIVATE because only the subdivision surface's source includes it. Its scheme headers use `M_PI`, so that source is compiled with `_USE_MATH_DEFINES` on MSVC. The Flatpak builds it as a module |
 | openexr | OpenEXR, in the `moya` feature. moya writes its pictures through it. It is the `OpenEXR::OpenEXR` target. It brings libdeflate and OpenJPH, which the Flatpak builds as modules, and zstd, which it takes from the runtime |
@@ -60,6 +61,7 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | tbb | oneTBB, in the `moya` feature. moya's CPU device schedules its work on it, through the `TBB::tbb` target, linked PRIVATE by `v3dlib_moya` because only the device's source includes it. OpenUSD needs it too, and the Flatpak builds it as a module for both |
 | thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
+| vcpkg-tool-ispc | The ISPC compiler, a host tool OIDN's port compiles its CPU device with. It comes from the tree's [overlay port](#the-oidn-and-ispc-overlay-ports), and nothing ships it |
 | vulkan | |
 | vulkan-loader | Linux only. On Windows the loader comes with the GPU driver. **It must have its `wayland`, `xcb` and `xlib` features.** Without them the loader has no surface for a window, and no app can present |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
@@ -123,6 +125,25 @@ Clang cannot build the editor's USD reader. MSVC and GCC accept it.
 - When the baseline moves OpenUSD to a new version, copy the new port over `ports/usd/`, add the
   patch to its `PATCHES` again, and remake it if the header has changed. Drop the port once
   OpenUSD's release holds the fix.
+
+### The OIDN and ISPC overlay ports
+
+vcpkg's registry holds no port for OIDN or for ISPC, the compiler OIDN's CPU device is written
+for.
+
+- [ports/vcpkg-tool-ispc/](../../ports/vcpkg-tool-ispc/) installs ISPC's own release for Windows
+  or Linux on x64, as vcpkg's other tool ports install a tool's release. ISPC builds with its own
+  LLVM, which no port provides. The port keeps the release's `bin`, `include` and `lib` folders
+  under `tools/vcpkg-tool-ispc`, since the compiler finds its standard headers and, on Linux, its
+  libraries beside its own folder.
+- [ports/oidn/](../../ports/oidn/) builds OIDN from its release's source archive, which holds the
+  trained weights that GitHub's archive of a tag leaves out. It builds the CPU device alone and
+  the RT filter's weights, against the tree's oneTBB, with ISPC from the tool port.
+- **OIDN is built static.** A shared OIDN loads its CPU device from a module beside its own
+  library while running, a file an executable's imports do not name, so vcpkg would not copy it
+  beside moya. A static OIDN links the device in.
+- To update either, change the port's `version` and the hashes of its archives. vcpkg prints the
+  hash it found when one does not match. Change the Flatpak's two modules to the same archives.
 
 Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),

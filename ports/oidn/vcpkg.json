@@ -1,0 +1,23 @@
+{
+  "name": "oidn",
+  "version": "2.5.1",
+  "description": "Intel Open Image Denoise, with its CPU device alone, built as a static library",
+  "homepage": "https://www.openimagedenoise.org",
+  "license": "Apache-2.0",
+  "supports": "x64 & (windows | linux) & !uwp",
+  "dependencies": [
+    "tbb",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    },
+    {
+      "name": "vcpkg-tool-ispc",
+      "host": true
+    }
+  ]
+}
