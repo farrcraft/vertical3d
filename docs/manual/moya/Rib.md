@@ -28,7 +28,9 @@ as `"intensity" [0.5]`.
 - A type in the name is a storage class, which may be left out, then a type. The classes are
   `constant`, `uniform`, `varying`, `vertex` and `facevarying`. The types are `float`,
   `integer` (or `int`), `string`, `color`, `point`, `vector`, `normal`, `hpoint` and `matrix`. A
-  type may end with a count in brackets, such as `float[2]`.
+  type may end with a count in brackets, such as `float[2]`. RenderMan's `reference` may come
+  before the type, as in `"reference color base_color" ["tint:out"]`, and its value names another
+  node's output.
 - **Bracket the values of a varying, vertex or facevarying parameter**, such as `"P"`. moya
   finds the number of vertices of a polygon from the length of `"P"`, so an unbracketed value
   there ends the request's parameters.
@@ -165,6 +167,8 @@ again.
 | `AreaLightSource "name" handle params` | Creates an area light. The polygons and spheres after it in the same block are its geometry |
 | `Illuminate handle on` | Switches a light on (1) or off (0) for the primitives that follow |
 | `Light "name" handle params` | One of RenderMan's lights, such as `PxrRectLight`. Read, and not drawn by the reyes and ray-trace hiders. The first a scene names is logged |
+| `Pattern "type" handle params` | A MaterialX node of the shading network, such as `ND_constant_color3`. Read by `--scene`, `--hits` and `--paths`, and not drawn by the reyes and ray-trace hiders. The first a scene names is logged |
+| `Bxdf "type" handle params` | The surface node of the shading network, such as `ND_open_pbr_surface_surfaceshader`, or `materialx` with a `file` and a `material` to read one from a document. Read as `Pattern` is |
 | `MakeTexture ...` | Nothing. A shader reads the image file itself. See [Textures.md](Textures.md) |
 
 - A handle is a number or a string.

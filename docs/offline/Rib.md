@@ -50,6 +50,9 @@ the reader and the handler.
   element. A varying or vertex one holds an element per vertex. A facevarying one holds an
   element per corner of each face, which for a mesh is the length of its indices, and for any
   other primitive is its vertex count.
+- **RenderMan's `reference` may come before a declaration's type**, as in
+  `"reference color base_color"`. A reference names another node's output in place of a value, so
+  its values are strings whatever its type, and it is written back as `uniform reference color`.
 - **The C interface counts a facevarying array by its faces' corners.** `RiPointsPolygons` and
   `RiSubdivisionMesh` read one element per index of their faces, and their varying and vertex
   arrays one element per point the faces index.
@@ -161,6 +164,25 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   parameters as inputs, and the colour and opacity are the surface node's `Cs` and `Os`. The
   instances made under one attribute state share it. With no `Surface`, the surface is
   `defaultsurface`.
+- **RenderMan's `Pattern` and `Bxdf` make a material of MaterialX nodes.** Each adds a node of
+  language `materialx` to the attribute state's network, of the node definition its type names,
+  such as `ND_image_color3`, and the network is saved and restored with the attribute state. Each
+  parameter is a constant input, but a `reference`, which connects its input to the output of the
+  node whose handle its value names, written `handle:output`, or `handle` for a node's only output.
+  A reference reads a node that came before it, and one that names no such node is logged and
+  leaves its input as it was.
+- **The last `Bxdf` is the material's surface**, and the material holds it and every node it
+  reads. The later of a `Surface` and a `Bxdf` shades what follows, because a `Surface` clears
+  the network. The attribute state's `Displacement` stays RI's.
+- **A `Bxdf` of type `materialx` reads a material from a MaterialX document.** Its `file` names
+  the document, as a path from the working directory, and its `material` the material node, or
+  the document's first when it gives none. The material's `surfaceshader` and every node it
+  reads, through node graphs and their interface inputs, become the scene's nodes, each of the
+  definition MaterialX's libraries resolve it to. A colour keeps its document's space, and a
+  relative filename is taken from the document's directory. The `Bxdf`'s other parameters then
+  override the surface node's inputs, and its references connect them to the network's nodes. A
+  document that cannot be read, or holds no such material, is logged, and the surface is the
+  attribute state's `Surface`.
 - **An object is a group.** `ObjectBegin` saves the attribute state and resets the
   transformation, so the object's geometry is placed in its own space, and its instances name
   the group and no material. `ObjectInstance` places the group at the current state. An

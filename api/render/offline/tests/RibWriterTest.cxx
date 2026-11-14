@@ -107,6 +107,10 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->lightSource({.shader = "pointlight", .handle = "1"}, one("intensity", UNIFORM_FLOAT, { 2 }));
     to->areaLightSource({.shader = "arealight", .handle = "lamp"}, none);
     to->light({.shader = "PxrRectLight", .handle = "key"}, one("intensity", UNIFORM_FLOAT, { 3 }));
+    to->pattern({ .type = "ND_constant_color3", .handle = "tint" },
+        one("value", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1), { 0.9F, 0.6F, 0.2F }));
+    to->bxdf({ .type = "ND_open_pbr_surface_surfaceshader", .handle = "gold" },
+        one("base_color", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1, true), {}, { "tint:out" }));
     to->illuminate("1", false);
     to->illuminate("lamp", true);
     to->makeTexture({.picture = "a.png", .texture = "a.tx", .swrap = "periodic", .twrap = "clamp", .filter = "box", .swidth = 2, .twidth = 2}, none);

@@ -40,11 +40,16 @@ class Declaration final {
     };
 
     Declaration() noexcept;
-    Declaration(Storage storage, Type type, unsigned int count) noexcept;
+    /**
+     * @param reference whether the parameter is RenderMan's reference, which names another
+     *        node's output of the type in place of a value
+     **/
+    Declaration(Storage storage, Type type, unsigned int count, bool reference = false) noexcept;
 
     /**
      * Read a declaration - "uniform point", "varying float", "float[3]", "point". An
-     * omitted class is uniform, the standard's default.
+     * omitted class is uniform, the standard's default. RenderMan's "reference" may come
+     * before the type, as in "reference color".
      *
      * @return false when no type word was found, leaving the result untouched
      **/
@@ -58,9 +63,15 @@ class Declaration final {
      **/
     unsigned int count() const;
 
+    /** Whether the parameter is a reference, whose values are the outputs it names. **/
+    bool reference() const;
+
+    /** Whether the parameter's values are strings: a string's, or a reference's. **/
+    bool textual() const;
+
     /**
-     * How many floats one element of this type is, per RI table 5.1. A string is none -
-     * it is counted in strings.
+     * How many floats one element of this type is, per RI table 5.1. A string or a reference
+     * is none - it is counted in strings.
      **/
     unsigned int floats() const;
 
@@ -82,7 +93,7 @@ class Declaration final {
 
     /**
      * The declaration as parse() reads it, with its storage class always given, such as
-     * "varying color" or "uniform float[2]".
+     * "varying color", "uniform float[2]" or "uniform reference color".
      **/
     std::string text() const;
 
@@ -101,6 +112,7 @@ class Declaration final {
     Storage storage_ = Storage::UNIFORM;
     Type type_ = Type::FLOAT;
     unsigned int count_ = 1;
+    bool reference_ = false;
 };
 
 };  // namespace v3d::render::offline::rib

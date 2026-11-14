@@ -69,10 +69,11 @@ unsigned int Declaration::arrayCount(std::string * word) {
 Declaration::Declaration() noexcept {
 }
 
-Declaration::Declaration(Storage storage, Type type, unsigned int count) noexcept :
+Declaration::Declaration(Storage storage, Type type, unsigned int count, bool reference) noexcept :
     storage_(storage),
     type_(type),
-    count_(count) {
+    count_(count),
+    reference_(reference) {
 }
 
 bool Declaration::parse(const std::string & text, Declaration * declaration) {
@@ -86,6 +87,10 @@ bool Declaration::parse(const std::string & text, Declaration * declaration) {
     if (storageWord(parts[0], &storage)) {
         index = 1;
     }
+    const bool reference = index < parts.size() && parts[index] == "reference";
+    if (reference) {
+        ++index;
+    }
     if (index >= parts.size()) {
         return false;
     }
@@ -97,7 +102,7 @@ bool Declaration::parse(const std::string & text, Declaration * declaration) {
         return false;
     }
 
-    *declaration = Declaration(storage, type, count);
+    *declaration = Declaration(storage, type, count, reference);
     return true;
 }
 
@@ -113,7 +118,18 @@ unsigned int Declaration::count() const {
     return count_;
 }
 
+bool Declaration::reference() const {
+    return reference_;
+}
+
+bool Declaration::textual() const {
+    return reference_ || type_ == Type::STRING;
+}
+
 unsigned int Declaration::floats() const {
+    if (reference_) {
+        return 0;
+    }
     switch (type_) {
         case Type::STRING:
             return 0;
@@ -157,11 +173,11 @@ std::string Declaration::text() const {
     if (count_ != 1) {
         type += "[" + std::to_string(count_) + "]";
     }
-    return storage + " " + type;
+    return storage + (reference_ ? " reference " : " ") + type;
 }
 
 bool Declaration::operator==(const Declaration & other) const {
-    return storage_ == other.storage_ && type_ == other.type_ && count_ == other.count_;
+    return storage_ == other.storage_ && type_ == other.type_ && count_ == other.count_ && reference_ == other.reference_;
 }
 
 unsigned int Declaration::elements(unsigned int vertices) const {

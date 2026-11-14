@@ -20,6 +20,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
@@ -126,6 +127,11 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         const v3d::render::offline::rib::ParameterList & parameters) override;
     /** RenderMan's lights are the new core's alone, so the hiders log the first and draw none. **/
     void light(const v3d::render::offline::rib::requests::LightSource & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
+    /** RenderMan's shading networks are the new core's alone, so the hiders log the first. **/
+    void pattern(const v3d::render::offline::rib::requests::ShadingNode & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
+    void bxdf(const v3d::render::offline::rib::requests::ShadingNode & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
     void imager(const std::string & name,

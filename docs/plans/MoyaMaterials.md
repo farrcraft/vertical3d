@@ -155,7 +155,7 @@ among the options before the record is drafted.
 | [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | done |
 | [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | done |
 | [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | done |
-| [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | open |
+| [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | done |
 | [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | open |
 | [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | open |
@@ -790,6 +790,16 @@ has no transmission, so it makes no glass.
 
 **Tests:** a RIB file naming a material gives the scene the nodes MaterialX's document holds. An
 input overridden from RIB reaches the node.
+
+**Done.** The RIB reader takes `Pattern` and `Bxdf` as `requests::ShadingNode`, a type and a
+handle, and RenderMan's `reference` qualifier, whose values are strings, through every handler,
+the recorder and the writer. The scene client keeps a network in the attribute state, and makes
+the last `Bxdf` and every node it reads into shader nodes of language `materialx`, with a
+connection for each reference. A node's type is the MaterialX node definition it names. A `Bxdf`
+of type `materialx` reads its `file`'s `material` through node graphs, and its other parameters
+override the surface's inputs. A later `Surface` clears the network, so the later of the two
+shades. The reyes and ray hiders log the first of either. `materials-network.rib` in the test
+data holds an inline network and a document's material, with its description and hit view.
 
 ### Step 26 — The reference renders
 

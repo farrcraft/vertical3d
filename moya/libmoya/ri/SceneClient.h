@@ -25,6 +25,7 @@
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/Shutter.h>
 #include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/rib/requests/SubdivisionMesh.h>
@@ -84,6 +85,16 @@ namespace v3d::moya::ri {
  * **Shaders.** The attribute state's surface and displacement shaders become a material of RI
  * shader nodes, made when the first geometry after a change needs one, so the instances under
  * one attribute state share it. Its colour and opacity are the surface node's `Cs` and `Os`.
+ *
+ * **Materials.** RenderMan's `Pattern` and `Bxdf` add MaterialX nodes to the attribute state's
+ * network, each of the node definition its type names, such as `ND_image_color3`. A `reference`
+ * parameter connects its input to the output of the node of the handle its value names, written
+ * `handle:output`, or `handle` alone for a node's only output. Each other parameter is a constant
+ * input. The last `Bxdf` is the surface of the material the network makes, and the material holds
+ * that node and every node it reads. A `Bxdf` of type `materialx` reads the network of the
+ * material its `material` names, or the first, from the MaterialX document its `file` names, and
+ * its other parameters override the surface node's inputs. A `Surface` request clears the
+ * network, and the later of the two shades what follows.
  *
  * **Lights.** RI's `pointlight`, `distantlight` and `spotlight` become a sphere light of radius
  * zero, a distant light and a sphere light of radius zero shaped by a cone. Each points down its
@@ -185,6 +196,8 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** The basis a cubic curve takes. A basis RI does not name is logged, and Bezier is used. **/
     void basis(const v3d::render::offline::rib::requests::Basis & request) override;
     void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void pattern(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
@@ -232,6 +245,13 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         std::string light{};
     };
 
+    /** A Pattern or a Bxdf request: its node, its parameters, and whether it is a Bxdf. **/
+    struct Node {
+        v3d::render::offline::rib::requests::ShadingNode request{};
+        v3d::render::offline::rib::ParameterList parameters{};
+        bool bxdf { false };
+    };
+
     /** What AttributeBegin saves and AttributeEnd restores. **/
     struct Attributes {
         internal::Sampled transformation{};
@@ -240,6 +260,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         glm::vec3 opacity { 1.0F };
         Shader surface { .name = "defaultsurface" };
         Shader displacement{};
+
+        /** The Pattern and Bxdf requests in force, in the order they came. **/
+        std::vector<Node> network{};
 
         /**
          * The material the state above makes, or none until a geometry needs it. AttributeBegin
@@ -272,6 +295,25 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     /** A shader node of a request's shader, language and parameters. **/
     scene::Handle shaderNode(const Shader & shader, const std::string & name);
+
+    /**
+     * The surface node of the material the attribute state's network makes, with every node it
+     * reads, or nothing when a document it names cannot be read.
+     **/
+    std::optional<scene::Handle> networkSurface();
+
+    /**
+     * The shader node of the network's node at a place, made with the nodes it reads, each once
+     * by its place.
+     **/
+    scene::Handle networkNode(std::size_t place, std::map<std::size_t, scene::Handle> & made);
+
+    /**
+     * Sets a node's inputs from a request's parameters but those named, and connects each
+     * reference to the node of the handle it names, among the network's nodes before a place.
+     **/
+    void inputsOf(const scene::Handle & node, const std::string & name, const Node & request, std::size_t place,
+        std::map<std::size_t, scene::Handle> & made, const std::set<std::string> & except);
 
     /** A name for a new object of a kind: the attribute state's, or the request's and a count. **/
     std::string nameFor(const std::string & kind, const std::string & request);

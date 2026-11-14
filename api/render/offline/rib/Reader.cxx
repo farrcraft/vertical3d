@@ -440,6 +440,27 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
 }
 
 /**
+ * Reads RenderMan's nodes of a shading network: a Pattern or a Bxdf, of a type and a handle.
+ **/
+Reader::Result Reader::networkRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    if (name != "Pattern" && name != "Bxdf") {
+        return Result::Unhandled;
+    }
+    std::string type;
+    std::string handle;
+    ParameterList list;
+    if (!operands_.text(lexer, &type) || !operands_.handle(lexer, &handle) || !operands_.parameters(lexer, 1, &list)) {
+        return Result::Failed;
+    }
+    if (name == "Pattern") {
+        handler->pattern({ .type = type, .handle = handle }, list);
+    } else {
+        handler->bxdf({ .type = type, .handle = handle }, list);
+    }
+    return Result::Handled;
+}
+
+/**
  * Reads the shaders a surface and a light are shaded by.
  **/
 Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -525,7 +546,7 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
     static const Group groups[] = {
         &Reader::namedRequest, &Reader::optionRequest, &Reader::cameraRequest, &Reader::displayRequest,
         &Reader::lensRequest, &Reader::sampleRequest, &Reader::blockRequest, &Reader::transformRequest,
-        &Reader::attributeRequest, &Reader::shaderRequest, &Reader::motionRequest, &Reader::objectRequest
+        &Reader::attributeRequest, &Reader::shaderRequest, &Reader::networkRequest, &Reader::motionRequest, &Reader::objectRequest
     };
     Result result = Result::Unhandled;
     for (const Group group : groups) {

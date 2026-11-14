@@ -19,6 +19,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/MakeTexture.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
@@ -134,7 +135,7 @@ Writer & Writer::parameters(const ParameterList & list) {
         Declaration inForce;
         const bool declared = declarations_.resolve(name, &known, &inForce) && inForce == declaration;
         text(declared ? name : declaration.text() + " " + name);
-        if (declaration.type() == Declaration::Type::STRING) {
+        if (declaration.textual()) {
             *stream_ << " [";
             for (const std::string & value : list.strings(name)) {
                 text(value);
@@ -335,6 +336,14 @@ void Writer::surface(const std::string & name, const ParameterList & parameters)
 
 void Writer::displacement(const std::string & name, const ParameterList & parameters) {
     start("Displacement").text(name).parameters(parameters).end();
+}
+
+void Writer::pattern(const requests::ShadingNode & request, const ParameterList & parameters) {
+    start("Pattern").text(request.type).text(request.handle).parameters(parameters).end();
+}
+
+void Writer::bxdf(const requests::ShadingNode & request, const ParameterList & parameters) {
+    start("Bxdf").text(request.type).text(request.handle).parameters(parameters).end();
 }
 
 void Writer::lightSource(const requests::LightSource & request, const ParameterList & parameters) {

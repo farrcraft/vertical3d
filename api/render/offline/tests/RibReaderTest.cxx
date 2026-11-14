@@ -6,6 +6,7 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Bases.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
@@ -19,6 +20,7 @@
 #include <api/render/offline/rib/requests/LightSource.h>
 #include <api/render/offline/rib/requests/MakeTexture.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/Shutter.h>
 #include <api/render/offline/rib/requests/Sphere.h>
 
@@ -304,6 +306,21 @@ class CapableHandler final : public v3d::render::offline::rib::Handler {
     unsigned int lights_ = 0;
     std::vector<unsigned int> vertices_;
     Later later_;
+};
+
+/** A handler that keeps the Pattern and Bxdf requests it is given, and their parameters. **/
+class NetworkHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void pattern(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        nodes_.push_back("Pattern|" + request.type + "|" + request.handle + "|" + std::to_string(parameters.floats("value").size()));
+    }
+    void bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        const v3d::render::offline::rib::Declaration * declared = parameters.declaration("base_color");
+        nodes_.push_back("Bxdf|" + request.type + "|" + request.handle + "|" + (declared != nullptr && declared->reference() ? "reference " : "") +
+            parameters.strings("base_color").front());
+    }
+
+    std::vector<std::string> nodes_;
 };
 
 bool read(const std::string & source, v3d::render::offline::rib::Handler * handler, v3d::render::offline::rib::Reader * reader) {
@@ -767,6 +784,27 @@ BOOST_AUTO_TEST_CASE(ribreader_renderman_light_test) {
     v3d::render::offline::rib::Reader other(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(read(source, &counting, &other));
     BOOST_TEST(counting.lights_.empty());
+    BOOST_TEST(other.unrecognised().empty());
+}
+
+/**
+ * RenderMan's Pattern and Bxdf reach pattern() and bxdf() with their type, their handle and their
+ * parameters. A reference parameter holds the output it names as a string. A handler that does
+ * not override them ignores them, and the reader still recognises them.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_renderman_shading_nodes_test) {
+    const std::string source = "Pattern \"ND_constant_color3\" \"tint\" \"color value\" [0.9 0.6 0.2]\n"
+                               "Bxdf \"ND_open_pbr_surface_surfaceshader\" \"gold\" \"reference color base_color\" [\"tint:out\"]\n";
+    NetworkHandler network;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(source, &network, &reader));
+    BOOST_REQUIRE_EQUAL(network.nodes_.size(), 2U);
+    BOOST_CHECK_EQUAL(network.nodes_[0], "Pattern|ND_constant_color3|tint|3");
+    BOOST_CHECK_EQUAL(network.nodes_[1], "Bxdf|ND_open_pbr_surface_surfaceshader|gold|reference tint:out");
+
+    CountingHandler counting;
+    v3d::render::offline::rib::Reader other(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(source, &counting, &other));
     BOOST_TEST(other.unrecognised().empty());
 }
 

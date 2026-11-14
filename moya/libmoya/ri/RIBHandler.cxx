@@ -20,6 +20,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
@@ -173,6 +174,20 @@ void RIBHandler::light(const v3d::render::offline::rib::requests::LightSource & 
         return;
     }
     unsupported("Light");
+}
+
+void RIBHandler::pattern(const v3d::render::offline::rib::requests::ShadingNode & request, const ParameterList & parameters) {
+    (void)parameters;
+    if (!request.type.empty()) {
+        unsupported("Pattern");
+    }
+}
+
+void RIBHandler::bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const ParameterList & parameters) {
+    (void)parameters;
+    if (!request.type.empty()) {
+        unsupported("Bxdf");
+    }
 }
 
 void RIBHandler::illuminate(const std::string & handle, bool on) {

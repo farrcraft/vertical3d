@@ -196,7 +196,7 @@ bool Operands::values(Lexer * lexer, const Declaration & declaration, unsigned i
             lexer->peek());
     }
     const unsigned int wanted = elements * declaration.count();
-    if (declaration.type() == Declaration::Type::STRING) {
+    if (declaration.textual()) {
         for (unsigned int i = 0; i < wanted; i++) {
             std::string value;
             if (!text(lexer, &value)) {
@@ -234,7 +234,7 @@ bool Operands::parameters(Lexer * lexer, unsigned int vertices, ParameterList * 
 
         // check the length when it is known: an array that disagrees with its declaration
         // is an error in the scene
-        if (declaration.elements(vertices) != 0 && declaration.type() != Declaration::Type::STRING) {
+        if (declaration.elements(vertices) != 0 && !declaration.textual()) {
             const std::size_t expected = static_cast<std::size_t>(declaration.elements(vertices)) *
                 declaration.count() * declaration.floats();
             if (floats.size() != expected && reported_.insert("length " + name).second) {

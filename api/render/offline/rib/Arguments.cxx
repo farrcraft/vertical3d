@@ -61,7 +61,7 @@ void arguments(const Declarations & declarations, int count,
         const unsigned int elements = declaration.elements(vertices, corners) * declaration.count();
         std::vector<float> floats;
         std::vector<std::string> strings;
-        if (declaration.type() == Declaration::Type::STRING) {
+        if (declaration.textual()) {
             // a string parameter's array is an array of pointers to characters, as RtString is
             const char* const* text = static_cast<const char* const*>(values[i]);
             for (unsigned int element = 0; element < elements; element++) {

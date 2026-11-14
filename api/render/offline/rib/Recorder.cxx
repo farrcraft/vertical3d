@@ -19,6 +19,7 @@
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/MakeTexture.h>
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
@@ -212,6 +213,14 @@ void Recorder::surface(const std::string & name, const ParameterList & parameter
 
 void Recorder::displacement(const std::string & name, const ParameterList & parameters) {
     requests_.emplace_back([name, parameters](Handler & to) { to.displacement(name, parameters); });
+}
+
+void Recorder::pattern(const requests::ShadingNode & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.pattern(request, parameters); });
+}
+
+void Recorder::bxdf(const requests::ShadingNode & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.bxdf(request, parameters); });
 }
 
 void Recorder::lightSource(const requests::LightSource & request, const ParameterList & parameters) {

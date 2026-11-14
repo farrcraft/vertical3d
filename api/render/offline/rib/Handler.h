@@ -23,6 +23,7 @@
 #include <api/render/offline/rib/requests/Paraboloid.h>
 #include <api/render/offline/rib/requests/PointsPolygons.h>
 #include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/render/offline/rib/requests/ShadingNode.h>
 #include <api/render/offline/rib/requests/Shutter.h>
 #include <api/render/offline/rib/requests/Sphere.h>
 #include <api/render/offline/rib/requests/SubdivisionMesh.h>
@@ -163,6 +164,22 @@ class Handler {
     }
     virtual void displacement(const std::string & name, const ParameterList & parameters) {
         (void)name;
+        (void)parameters;
+    }
+    /**
+     * RenderMan's `Pattern`: a node of a shading network, whose outputs a later node's reference
+     * parameters read. RI's shading language has no such node, so the default body ignores it.
+     **/
+    virtual void pattern(const requests::ShadingNode & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    /**
+     * RenderMan's `Bxdf`: the node of a shading network that gives a surface's scattering. The
+     * default body ignores it, as it does a Pattern.
+     **/
+    virtual void bxdf(const requests::ShadingNode & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
     virtual void lightSource(const requests::LightSource & request, const ParameterList & parameters) {

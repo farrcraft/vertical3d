@@ -44,6 +44,7 @@ v3d_add_api_library(render_offline
 	"rib/requests/Paraboloid.h"
 	"rib/requests/PointsPolygons.h"
 	"rib/requests/ScreenWindow.h"
+	"rib/requests/ShadingNode.h"
 	"rib/requests/Shutter.h"
 	"rib/requests/Sphere.h"
 	"rib/requests/SubdivisionMesh.h"

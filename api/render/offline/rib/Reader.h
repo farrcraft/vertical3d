@@ -101,6 +101,7 @@ class Reader final {
     Result motionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result networkRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result objectRequest(const std::string & name, Lexer * lexer, Handler * handler);
     /** The geometric primitives, which internal::Primitives reads. **/
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);

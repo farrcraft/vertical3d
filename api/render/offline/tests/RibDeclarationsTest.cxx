@@ -43,6 +43,29 @@ BOOST_AUTO_TEST_CASE(ribdeclaration_float_counts_test) {
 }
 
 /**
+ * RenderMan's reference names an output of the type in place of a value, so its values are
+ * strings whatever the type, and it is written back as it was read.
+ **/
+BOOST_AUTO_TEST_CASE(ribdeclaration_a_reference_holds_strings_test) {
+    Declaration declaration;
+    BOOST_REQUIRE(Declaration::parse("reference color", &declaration));
+    BOOST_TEST(declaration.reference());
+    BOOST_TEST(declaration.textual());
+    BOOST_TEST((declaration.type() == Declaration::Type::COLOR));
+    BOOST_CHECK_EQUAL(declaration.floats(), 0U);
+    BOOST_CHECK_EQUAL(declaration.text(), "uniform reference color");
+
+    Declaration again;
+    BOOST_REQUIRE(Declaration::parse(declaration.text(), &again));
+    BOOST_TEST((again == declaration));
+
+    Declaration plain;
+    BOOST_REQUIRE(Declaration::parse("color", &plain));
+    BOOST_TEST(!plain.reference());
+    BOOST_TEST(!(plain == declaration));
+}
+
+/**
  * The class gives how many elements a primitive carries, so "P" on a quad is twelve floats
  * and "roughness" on the same quad is one.
  **/

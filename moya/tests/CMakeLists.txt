@@ -67,6 +67,7 @@ v3d_add_test(moya
 	"SceneGeometryTest.cxx"
 	"SceneHitsTest.cxx"
 	"SceneKindsTest.cxx"
+	"SceneMaterialsTest.cxx"
 	"SceneShadingTest.cxx"
 	"SceneTest.cxx"
 	"SceneWorldTest.cxx"
