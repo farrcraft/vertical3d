@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-06
 **Tags**: offline, shaders, interchange
-**Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
+**Documented in**: [offline/Materials.md](../../offline/Materials.md)
 
 ## Context
 

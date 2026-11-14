@@ -4,7 +4,7 @@ A material's program compiles MaterialX's procedural nodes: its noises, its ramp
 its rotations. Each gives what MaterialX's own implementations give, so a MaterialX document shows
 the same pattern in moya as in any renderer built on them. MaterialX's specification names each
 noise but not its algorithm, so this page states the algorithms in full. The kernel code is
-`kernel/program/Noise.h` and `kernel/program/Pattern.h`, and [Surfaces.md](Surfaces.md#the-node-program)
+`kernel/program/Noise.h` and `kernel/program/Pattern.h`, and [Materials.md](Materials.md#the-node-program)
 says how a program runs.
 
 ## The nodes

@@ -178,22 +178,23 @@ a whole.
 
 ## Working beside the moya rebuild
 
-The rebuild has no open plan. Its sections up to the path tracer are closed, the last by
-[MoyaPathTracer](completed/MoyaPathTracer.md). Its later sections reach the editor: materials
-(section 5), output for compositing (section 6), the retirement of the old hiders (section 7)
-and interactive rendering (section 9).
+The rebuild has no open plan. Its sections up to materials are closed, the last by
+[MoyaMaterials](completed/MoyaMaterials.md), which left the editor's surfaces on RI's `matte`.
+Its later sections reach the editor: output for compositing (section 6), the retirement of the
+old hiders (section 7) and interactive rendering (section 9). Giving the editor materials is
+work for a plan of its own.
 
 **Where the two meet:**
 
 | Shared ground | The rebuild changes it in | This plan changes it in |
 |---|---|---|
-| `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Each light step's parameters; section 5's materials; section 7 | Step 10 |
+| `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Section 7, and the plan that gives the editor materials | Step 10 |
 | `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the new core | Steps 14 and 17 |
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
-| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer's step 20 added `--checkpoint`, `--checkpoint-interval` and `--resume` | Step 16 |
-| The scene document's schema and kind versions | Section 5, if it brings materials into the document | Step 8 |
+| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer added `--checkpoint`, `--checkpoint-interval` and `--resume`, and MoyaMaterials `--maketexture` | Step 16 |
+| The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
 | `src/scene/RenderSettings.h` and its codec | Sections 6 and 7: the hider list and the AOVs | Nothing |
-| `docs/editor/Rendering.md` | Sections 5, 7 and 9 | Steps 14, 17 and 19 |
+| `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
 | ADR numbers | The rebuild's next plan | 0217 to 0221 |
 
 **The rules:**
@@ -211,7 +212,7 @@ and interactive rendering (section 9).
   processes and threads hold for either core.
 * **This plan takes schema version 6 and version 2 of every kind.** A rebuild plan that brings
   materials into the document starts from them.
-* **This plan takes ADR-0217 to ADR-0221.** The rebuild's next plan numbers from 0222. A record
+* **This plan takes ADR-0217 to ADR-0221.** The rebuild's next plan numbers from 0230. A record
   this plan does not need is listed as a number with no record, as the ADR index requires.
 * **Each commit names its paths.** The rebuild's work is often staged while it is in progress,
   so a commit of this plan's work is made with `git commit -- <paths>` and takes nothing else.

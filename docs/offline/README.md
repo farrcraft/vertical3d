@@ -23,6 +23,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
 | [Integrator.md](Integrator.md) | Change how the new core builds paths, samples lights, stops a pixel and resumes a render |
 | [Lights.md](Lights.md) | Change the new core's lights, how a path meets and samples them, the light tree and linking |
+| [Materials.md](Materials.md) | Change how the new core compiles a material into a program, and the BSDF library it feeds |
 | [Patterns.md](Patterns.md) | Change the new core's noises, ramps, splits and rotations, which a material's program runs |
 | [Textures.md](Textures.md) | Change the texture files the new core reads, and the maker that writes them from images |
 | [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
@@ -211,6 +212,14 @@ changes a picture the hiders make.
 - **A hit becomes a shading point** through the scene's surfaces, which are held apart from any
   traversal: its position, normals and frame at the hit's time, with the primvars shading reads.
   [Surfaces.md](Surfaces.md)
+- **A surface is shaded by its material.** A material is a MaterialX graph, compiled into a node
+  program every device runs, which feeds a BSDF library arranged as OpenPBR Surface arranges its
+  layers. Standard Surface, UsdPreviewSurface and glTF PBR are translated onto OpenPBR. A
+  material's displacement moves a subdivision surface's points, and its opacity cuts a surface
+  out. [Materials.md](Materials.md)
+- **Patterns read textures** through a cache of tiles of mipmapped EXR files, filtered by the
+  footprint of the cone a ray carries. The texture maker writes those files from images.
+  [Textures.md](Textures.md)
 - **The integrator builds paths in stages** over a path state declared once, with depth limits
   and Russian roulette. Each bounce samples a light and the BSDF, and weighs the two by multiple
   importance sampling. `moya --paths` renders a RIB file through it. [Integrator.md](Integrator.md)
@@ -233,7 +242,8 @@ changes a picture the hiders make.
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
-all of it, and `PathsReferenceTest.cxx` holds seven lit scenes to their committed renders.
+all of it, and `PathsReferenceTest.cxx` holds seven lit scenes and four of materials to their
+committed renders.
 
 Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
 

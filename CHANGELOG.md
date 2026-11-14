@@ -13,7 +13,7 @@ that section to its version, and the section becomes the release's notes.
 ### Added
 
 - `moya --paths` renders a RIB file through moya's new path tracer and writes the picture as an
-  EXR file. Every surface is diffuse for now. It lights a scene by RI's standard and area lights,
+  EXR file. It lights a scene by RI's standard and area lights,
   and by RenderMan's `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
   `PxrDistantLight`, `PxrDomeLight` and `PxrMeshLight` through the `Light` request, with cones
   and IES profiles. `Illuminate` links a light to the objects it lights.
@@ -21,6 +21,14 @@ that section to its version, and the section becomes the release's notes.
 - `moya --paths --checkpoint <file>` writes a checkpoint after each pass, or at most once in the
   seconds `--checkpoint-interval` gives. `--resume` continues a stopped render from it, and gives
   the same picture as a render that never stopped.
+- A `--paths` render shades each surface by its material. RenderMan's `Pattern` and `Bxdf`
+  name MaterialX nodes in RIB, and a `Bxdf` of type `materialx` reads a material from a
+  MaterialX document. OpenPBR Surface, Standard Surface, UsdPreviewSurface and glTF PBR render,
+  with MaterialX's pattern, image, normal map and bump nodes, and a material's displacement and
+  opacity.
+- `moya --maketexture` and RIB's `MakeTexture` make a tiled, mipmapped EXR texture from an
+  image. A `--paths` render makes any other image a material reads into one, and finds it along
+  RIB's texture search path.
 
 ### Fixed
 

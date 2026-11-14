@@ -4,7 +4,7 @@
 **Date**: 2026-11-11
 **Tags**: offline, shaders, lighting
 **Amended by**: ADR-0228
-**Documented in**: [plans/MoyaMaterials.md](../../plans/MoyaMaterials.md)
+**Documented in**: [offline/Materials.md](../../offline/Materials.md)
 
 ## Context
 

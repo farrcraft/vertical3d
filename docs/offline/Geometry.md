@@ -101,7 +101,7 @@ hierarchy is built, so every device sees the same triangles.
   weighed. A surface is measured at its first sample, and its other samples share the cut.
 - **A surface is displaced by its material's displacement**, the material of the placement it
   is cut for. A displacement whose node is a MaterialX node compiles to a program of its own, as
-  [Surfaces.md](Surfaces.md#compiling-a-displacement) says. A surface whose material has no
+  [Materials.md](Materials.md#compiling-a-displacement) says. A surface whose material has no
   such displacement lies on its limit.
 - **The program runs on the host, once at each place.** `internal::liftsOf()` gathers the cut,
   undisplaced surface as prototypes of its own and views them through a CPU device. Each place is

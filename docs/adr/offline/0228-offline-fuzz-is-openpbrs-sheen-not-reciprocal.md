@@ -4,7 +4,7 @@
 **Date**: 2026-11-12
 **Tags**: offline, shaders, lighting
 **Amends**: ADR-0222
-**Documented in**: [offline/Surfaces.md](../../offline/Surfaces.md)
+**Documented in**: [offline/Materials.md](../../offline/Materials.md)
 
 ## Context
 

@@ -1,7 +1,7 @@
 # Moya Materials — The BSDF Library, the Node Program and Textures
 
 Drafted 2026-11-11 against `2bbe0def`. This plan takes up section 5 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core shades a
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core shades a
 surface by its material. A material is a MaterialX graph, compiled into a node program that every
 device runs, and it feeds a BSDF library of moya's own that arranges its lobes as OpenPBR Surface
 does. Patterns read textures through a cache of tiles, filtered by the footprint a ray carries. A
@@ -12,19 +12,19 @@ picture they make changes.
 The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its first four plans are
 ADR-0195 to ADR-0216, all accepted. This plan follows five of them:
 
-* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
   moya implements its own scattering models, node program and texture cache. MaterialX reads
   material documents, and OpenEXR reads texture files.
-* [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a BSDF is
+* [ADR-0189](../../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a BSDF is
   evaluated at a path's four wavelengths, and a colour becomes a spectrum through the
   RGB-to-spectrum table.
-* [ADR-0190](../adr/offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md):
+* [ADR-0190](../../adr/offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md):
   materials are moya's BSDF library fed by MaterialX graphs, compiled into a node program every
   device runs.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
   gives one picture on every run, so a texture lookup gives the same value whatever its cache
   holds.
-* [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+* [ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
   what a ray's footprint adds to a path is declared once in the path state.
 
 The plan keeps the roadmap's order, with five changes:
@@ -54,13 +54,13 @@ The tree was read at `2bbe0def`.
 **The BSDF and the integrator:**
 
 * **A BSDF has one model, the diffuse lobe**
-  ([Surfaces.md](../offline/Surfaces.md#the-bsdf)). `kernel::bsdf::Bsdf` is a tagged type that
+  ([Surfaces.md](../../offline/Surfaces.md#the-bsdf)). `kernel::bsdf::Bsdf` is a tagged type that
   switches over its `Model`, since kernel code has no virtual call. It evaluates, gives a density
   and samples in the frame around the shading normal, and refuses a reflection that crosses the
   geometric surface.
 * **A sample names its lobe**: diffuse, glossy, specular or transmission. The integrator keeps a
   depth limit for each
-  ([Integrator.md](../offline/Integrator.md#depth-limits-and-russian-roulette)).
+  ([Integrator.md](../../offline/Integrator.md#depth-limits-and-russian-roulette)).
 * **Every BSDF sample is weighed by its density.** The scatter stage divides the throughput by the
   density and keeps it for MIS. Nothing marks a sample of a perfectly specular lobe, whose density
   is not a number MIS can weigh.
@@ -72,22 +72,22 @@ The tree was read at `2bbe0def`.
 **The material and the shading point:**
 
 * **A material is a network of nodes**, whose shaders the scene does not read
-  ([Scene.md](../offline/Scene.md)). A `shader` node names its shader and its language,
+  ([Scene.md](../../offline/Scene.md)). A `shader` node names its shader and its language,
   `materialx`, `osl` or `ri`. A `material` names a `surface` and a `displacement` terminal.
-* **A material on the device is a colour** ([Surfaces.md](../offline/Surfaces.md#materials)).
+* **A material on the device is a colour** ([Surfaces.md](../../offline/Surfaces.md#materials)).
   `kernel::surface::Material` holds its surface node's `Cs`, and whether it gives one.
 * **Two primvars reach the device**, `N` and `Cs`, each of three floats
-  ([Surfaces.md](../offline/Surfaces.md#primvars)). No texture coordinate, tangent or primvar of
+  ([Surfaces.md](../../offline/Surfaces.md#primvars)). No texture coordinate, tangent or primvar of
   another width does.
 * **A shading point holds its position, normals, frame, `uv` and corner weights**, but no
   differential. A ray carries no footprint.
 * **A surface is displaced by its `displacement` primvar** when it is tessellated, within its
-  `displacementBound` ([Geometry.md](../offline/Geometry.md#tessellation-and-displacement)).
+  `displacementBound` ([Geometry.md](../../offline/Geometry.md#tessellation-and-displacement)).
 
 **Images and textures:**
 
 * **A light's image is an EXR read whole**, through `output::readExr()`, converted into ACEScg by
-  its chromaticities ([Lights.md](../offline/Lights.md#images)). A lookup reads the texel that
+  its chromaticities ([Lights.md](../../offline/Lights.md#images)). A lookup reads the texel that
   holds a place, with no filtering. A dome light's sampling needs the whole image.
 * **The scene holds no search path.** A light's image and an IES profile are opened relative to
   the working directory.
@@ -97,7 +97,7 @@ The tree was read at `2bbe0def`.
 **The clients:**
 
 * **The RIB client makes a node of language `ri` for `Surface`**, with the attribute state's
-  colour as `Cs` ([Rib.md](../offline/Rib.md#the-scene-client)). RI's built-in shaders become
+  colour as `Cs` ([Rib.md](../../offline/Rib.md#the-scene-client)). RI's built-in shaders become
   OpenPBR materials in section 7.
 * **The editor gives every surface one material**, RI's `matte`, through `SceneTranslator`.
 * **The importers read no material.** The glTF and USD readers leave materials and shaders out.
@@ -107,7 +107,7 @@ The tree was read at `2bbe0def`.
 
 **The tests:** moya's suite has 29 RIB scenes, each with a committed description and hit view,
 and 7 reference renders of the path tracer held within five standard errors
-([Testing.md](../contributing/Testing.md#moya-references)).
+([Testing.md](../../contributing/Testing.md#moya-references)).
 
 ---
 
@@ -158,7 +158,7 @@ among the options before the record is drafted.
 | [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | done |
 | [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | done |
 | [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | done |
-| [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | open |
+| [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | done |
 
 ## What blocks what
 
@@ -234,7 +234,7 @@ picked for a sample, and whether a material's emission is found by light samples
 alone.
 
 **Drafted** as
-[ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): a bounded list
+[ADR-0222](../../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): a bounded list
 of weighted closures, which `open_pbr_surface` and MaterialX's `layer` node weight by the albedo
 of the layers above, as Cycles' layered Principled BSDF does. A sample picks a closure by its
 estimated albedo. Kulla and Conty's compensation lobe restores a microfacet lobe's energy, and an
@@ -262,7 +262,7 @@ which nodes the program implements, and how a program reads primvars, textures a
 point.
 
 **Drafted** as
-[ADR-0223](../adr/offline/0223-offline-a-material-is-an-interpreted-node-program.md): a program of
+[ADR-0223](../../adr/offline/0223-offline-a-material-is-an-interpreted-node-program.md): a program of
 instructions over a store of registers, compiled on the host and run by one interpreter on every
 device, as Cycles' SVM runs. Compiling flattens every node with a graph implementation into
 standard nodes, and stops at surface shader and BSDF nodes, which build the closure list. An
@@ -288,7 +288,7 @@ the area a pixel's sample covers. A path state's size is ADR-0212's concern on e
 The record also settles how a rough bounce widens the footprint, and whether a lookup filters
 trilinearly or over an anisotropic footprint.
 
-**Drafted** as [ADR-0224](../adr/offline/0224-offline-a-rays-footprint-is-a-cone.md): a ray cone,
+**Drafted** as [ADR-0224](../../adr/offline/0224-offline-a-rays-footprint-is-a-cone.md): a ray cone,
 a width and a spread angle, carried through reflection and refraction. At each hit it grows by
 the surface's curvature, its spread widens by the lobe's roughness, and it is projected onto the
 surface as an ellipse. A lookup takes a bounded number of trilinear probes along the ellipse's
@@ -315,7 +315,7 @@ run, so a lookup cannot read a coarser level because a tile was absent.
 The record also settles which file formats a texture is read from, when an image is converted
 into ACEScg, and how a texture's path is found.
 
-**Drafted** as [ADR-0225](../adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md):
+**Drafted** as [ADR-0225](../../adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md):
 tiled, mipmapped OpenEXR files, cached tile by tile, as Cycles' texture cache holds `.tx` files. A
 missed lookup runs again once its tile is loaded, never at a coarser level. A colour texture is
 converted into ACEScg when it is made, and a data texture keeps its values. Any other image is made
@@ -342,7 +342,7 @@ The record also settles the request's name and parameters, and how a material's 
 overridden from RIB.
 
 **Drafted** as
-[ADR-0226](../adr/offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md):
+[ADR-0226](../../adr/offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md):
 RenderMan's `Pattern` and `Bxdf` requests make MaterialX nodes of the types they name, connected
 by RenderMan's `reference` parameters, and the last `Bxdf` is the surface terminal. A `Bxdf` of
 type `materialx` names a document and a material in it, and its other parameters override the
@@ -366,7 +366,7 @@ The record also settles whether a shadow ray is attenuated by a transparency or 
 and the most surfaces a ray passes through.
 
 **Drafted** as
-[ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md): each device's
+[ADR-0227](../../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md): each device's
 traversal tests a hit on geometry whose material has an opacity, as pbrt-v4 tests alpha and as
 OptiX's any-hit programs and HIP RT's filters run. A shadow ray is attenuated by one minus the
 opacity. A camera or indirect ray keeps a hit with a probability of its opacity, drawn from a
@@ -381,7 +381,7 @@ hash of the sample's draw and the primitive. No limit is set on the surfaces a r
   release that defines 1.1.
 * **The standard libraries are installed beside moya**, so a document's node definitions resolve
   without a MaterialX install.
-* **[Dependencies.md](../contributing/Dependencies.md)** names the port and why.
+* **[Dependencies.md](../../contributing/Dependencies.md)** names the port and why.
 
 **Tests:** a document of the standard library loads, and `open_pbr_surface` resolves to its node
 graph.
@@ -497,7 +497,7 @@ follows the tangent without rotation until tangents arrive in step 16.
 nothing. A film's reflectance at a wavelength matches the closed form for one layer.
 
 **Done.** Fuzz is Zeltner, Burley and Chiang's sheen, which OpenPBR names. It is not reciprocal,
-so [ADR-0228](../adr/offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) amends
+so [ADR-0228](../../adr/offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) amends
 ADR-0222, and fuzz is checked by chi-squared and by its closed-form albedo in place of
 reciprocity. Its fitted albedo dips just below zero at low roughness, so it is held to [0, 1]. A
 `ThinFilm` gives Airy's reflectance at each of a path's wavelengths, over a dielectric or over a
@@ -564,7 +564,7 @@ conditional, logical and channel nodes on values of up to four components.
 `geometry::ConvertedMaterials` converts each colour constant into ACEScg for the surfaces and
 the lights. Steps 16, 17 and 20 now name the transform and matrix nodes, the rotations, and the
 compositing nodes of colours with alpha. Emission that a node feeds is an entry in
-[TODO.md](../TODO.md#offline-rendering).
+[TODO.md](../../TODO.md#offline-rendering).
 
 ### Step 16 — Primvars by name and tangents
 
@@ -607,7 +607,7 @@ squares where its frequency puts them.
 **Done.** `kernel/program/Noise.h` holds the noises and `Pattern.h` the instructions from
 `Op::Noise` to `Op::Rotate3d`: noise, fractal, cell and Worley noise in two and three dimensions,
 the ramps and splits, and the rotations. MaterialX's specification does not define the noises'
-algorithms, so [Patterns.md](../offline/Patterns.md) states them, from Perlin's improved noise,
+algorithms, so [Patterns.md](../../offline/Patterns.md) states them, from Perlin's improved noise,
 Jenkins' lookup3 and Worley's cellular noise, with the constants MaterialX's implementations add.
 The code is written from that page. `ProgramTest` checks every noise against what OSL gives for
 MaterialX's OSL implementation, rendered through Cycles, at eight points. MaterialX 1.39.5's GLSL
@@ -636,7 +636,7 @@ it in `st`. A bounce widens the spread by the arctangent of the lobe's roughness
 `bsdf::Sample` now carries. A reflection also widens it by twice the curvature times the width, and
 `Surfaces::curvature()` reads the curvature from a triangle's corner normals. Smoothing a split's
 step needs the derivatives of the value the split reads, not the footprint, and is an entry in
-[TODO.md](../TODO.md#offline-rendering).
+[TODO.md](../../TODO.md#offline-rendering).
 
 ### Step 19 — The texture maker
 
@@ -657,7 +657,7 @@ above with RI's filters, widths in texels of the level made. A space that holds 
 keeps the values. The wrap modes are the `wrapmodes` attribute OpenImageIO reads, and they find a
 texel the filter reaches past the edge. `moya --maketexture` and the scene client's `MakeTexture`
 run it, the colour space named by `--colorspace` or `"string colorspace"`. A path is read as given,
-until step 20 finds it. [Textures.md](../offline/Textures.md) is the reference page.
+until step 20 finds it. [Textures.md](../../offline/Textures.md) is the reference page.
 
 ### Step 20 — The texture cache
 
@@ -673,7 +673,7 @@ until step 20 finds it. [Textures.md](../offline/Textures.md) is the reference p
 cache of one tile gives the same picture as one with room for every tile. A UDIM tile is read for
 the coordinates it covers.
 
-**Done.** [ADR-0229](../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)
+**Done.** [ADR-0229](../../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)
 gives the stages that shade the device's texture access as a template parameter, beside its
 traversal. The CPU's, `device::cpu::Textures`, reads each texel through `texture::Cache::fetch()`
 in libmoya, which loads its tile and drops the one used longest ago past `textureMemory`.
@@ -684,7 +684,7 @@ bytes and how it is read. A `<UDIM>` path reads tiles 1001 to 1100, ten to a row
 compiles to `Op::Image`. Its lookup chooses the level by the footprint's minor axis and probes
 along its major axis, with MaterialX's address modes, v up the texture. The footprint is the
 shading point's in `st`, so a scaled coordinate filters over the wrong one, an entry in
-[TODO.md](../TODO.md#offline-rendering). The eight compositing nodes of colours with alpha
+[TODO.md](../../TODO.md#offline-rendering). The eight compositing nodes of colours with alpha
 compute as MaterialX's OSL does. RIB's `Option "searchpath" "texture"` and `Option "limits"
 "texturememory"` set the options. A path is found along the search path alone until step 25
 names documents from RIB, since a material made of scene nodes is named by no file.
@@ -758,7 +758,7 @@ of a new per-bounce draw, the primitive and its chain, and a shadow ray multipli
 opacity, as the record decides. A light with a shadow link attenuates by the opacity of what casts
 its shadows, still meeting each surface by a traversal of its own. The hit view sees cut-out
 surfaces as solid. A light sample of a cut-out mesh light still sees its whole surface, which
-[TODO.md](../TODO.md) holds.
+[TODO.md](../../TODO.md) holds.
 
 ### Step 24 — Other surface shaders
 
@@ -846,32 +846,104 @@ counter. The benchmark now gives its renders a logger, which a texture access ne
 MaterialX's libraries beside itself. The baseline was run again. The textured room runs at under
 a fifth of the lit room's samples a second, with three quarters of its time in texture lookups.
 The lit room runs a sixth slower than the baseline before this plan, with its traversal as fast
-as it was. [TODO.md](../TODO.md) holds both.
+as it was. [TODO.md](../../TODO.md) holds both.
 
 ### Step 28 — The documents
 
 * **New reference pages**: `docs/offline/Materials.md` for the BSDF library, its lobes and the
   node program, and `docs/offline/Textures.md` for the maker, the cache, filtering and UDIM. The
   docs site's summary lists them.
-* **[Surfaces.md](../offline/Surfaces.md)** names the primvars by name, tangents and the material
+* **[Surfaces.md](../../offline/Surfaces.md)** names the primvars by name, tangents and the material
   on the device.
-* **[Integrator.md](../offline/Integrator.md)** names specular samples and a ray's footprint.
-* **[Geometry.md](../offline/Geometry.md)** names displacement from the material.
-* **[Scene.md](../offline/Scene.md)** names the options' texture search path and memory limit.
-* **[Rib.md](../offline/Rib.md)** names how a material is named and `MakeTexture`.
-* **[The offline README](../offline/README.md)**'s section on the new core says it shades by
+* **[Integrator.md](../../offline/Integrator.md)** names specular samples and a ray's footprint.
+* **[Geometry.md](../../offline/Geometry.md)** names displacement from the material.
+* **[Scene.md](../../offline/Scene.md)** names the options' texture search path and memory limit.
+* **[Rib.md](../../offline/Rib.md)** names how a material is named and `MakeTexture`.
+* **[The offline README](../../offline/README.md)**'s section on the new core says it shades by
   materials.
-* **The moya manual's [CommandLine.md](../manual/moya/CommandLine.md)** names `--maketexture`.
-* **[Testing.md](../contributing/Testing.md)** names the lobes' checks and the material references.
+* **The moya manual's [CommandLine.md](../../manual/moya/CommandLine.md)** names `--maketexture`.
+* **[Testing.md](../../contributing/Testing.md)** names the lobes' checks and the material references.
 * **Each record's `Documented in` line** names the reference page that states its rule, and
   ADR-0190's names Materials.md.
 * **The roadmap's section 5** links here, and says so when this plan closes.
+
+**Done.** `Materials.md` holds what `Surfaces.md` held of materials: the gathered material,
+compiling a material and a displacement, other surface shaders, the node program, the BSDF and
+its lobes, and layering. `Surfaces.md` keeps the shading point, its frames, its footprint and
+its primvars. `Textures.md` was written at step 19 and grew at step 20. The other pages named
+here were brought up to date by the steps that changed them, and read as a whole. The offline
+README names `Materials.md`, and its section on the new core says it shades by materials and
+reads textures. ADR-0190, 0222, 0223 and 0228 are documented in `Materials.md`, ADR-0224 in
+`Integrator.md` and ADR-0225 in `Textures.md`.
+
+---
+
+## Outcome
+
+Closed 2026-11-13. moya's new core shades a surface by its material. A material is a MaterialX
+graph, compiled into a node program every device runs, which feeds a BSDF library arranged as
+OpenPBR Surface arranges its layers. Standard Surface, UsdPreviewSurface and glTF PBR render as
+OpenPBR. Patterns read textures through a cache of tiles, filtered by the footprint of the cone a
+path carries, and the texture maker writes those files from images. A material's displacement
+moves a subdivision surface's points, and its opacity cuts a surface out. RIB names a material
+through RenderMan's `Pattern` and `Bxdf`. No picture the reyes and ray hiders make changed.
+
+**Delivered:**
+
+- How the BSDF library holds OpenPBR's layers (ADR-0222), how a material runs on every device
+  (ADR-0223), a ray's footprint (ADR-0224), the texture cache (ADR-0225), materials in RIB
+  (ADR-0226) and opacity (ADR-0227). Two more came of the work: fuzz is not reciprocal
+  (ADR-0228), and a stage takes its texture access as a type (ADR-0229).
+- MaterialX as a dependency, its standard libraries installed beside moya.
+- A BSDF of weighted closures with singular samples, and its lobes: the conductor, the
+  dielectric, Oren-Nayar, the specular layer, fuzz and thin film, each checked by chi-squared,
+  reciprocity and a white furnace.
+- OpenPBR's layering, emission from a material, and the translations of Standard Surface,
+  UsdPreviewSurface and glTF PBR.
+- The node program: MaterialX's math, geometric, matrix, procedural, image, normal map and bump
+  nodes, with primvars by name and tangents.
+- A path's cone and a shading point's footprint, the texture maker and `moya --maketexture`, the
+  texture cache, filtered lookups and UDIM.
+- Displacement and opacity from the material.
+- Materials from RIB, inline or from a MaterialX document, with a document's displacement.
+- Four reference renders of materials, and a textured room in `moya_bench` that times programs
+  and texture lookups.
+- `Materials.md` and `Textures.md`, and the surfaces, integrator, geometry, scene, RIB, testing
+  and offline pages brought up to date.
+
+**Different from the plan:**
+
+- A BSDF holds two frames, since OpenPBR's coat has a normal of its own, and the integrator's
+  cosine moved into the BSDF's projected value.
+- The `displacement` primvar is no longer read. A material's displacement replaced it.
+- Translation feeds every OpenPBR input from a node, so the host folds a program's constant
+  registers, and only what varies over a surface runs on the device.
+- MaterialX ships only Standard Surface's translation onto OpenPBR. moya's own translations of
+  the other two are a document read with the libraries.
+- The noises follow MaterialX's implementations, whose rotations turn against the
+  specification's words.
+- The reference scenes are four, each holding several of the cases the plan names. Making them
+  closed two gaps: a document's material gives its displacement, and the scene client reads
+  `displacementbound`.
+- A profiled render times programs and lookups through hooks a texture access defines, which an
+  ordinary render compiles away.
+
+**Left open**, each an entry in [TODO.md](../../TODO.md#offline-rendering):
+
+- Texture lookups take three quarters of the textured room's time.
+- The lit room runs a sixth slower than before this plan, with its traversal as fast as it was.
+- A material's emission cannot vary over its surface.
+- A mesh light's cut-away parts still light the scene.
+- A split's step is sharp, and an image read at a scaled coordinate filters over the wrong
+  footprint.
+- The editor's surfaces keep RI's `matte`. Giving the editor materials is work for a plan of
+  its own.
 
 ---
 
 ## Working beside the editor scripting plan
 
-[EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, so this plan's
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, so this plan's
 records start at 0222. Its step 16 adds an option to `moya/moya.cxx` and
 `docs/manual/moya/CommandLine.md`, where step 19 adds `--maketexture`. Each lands as a commit of
 its own. This plan changes nothing the editor sends moya: the editor's surfaces keep RI's `matte`,
