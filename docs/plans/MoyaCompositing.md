@@ -118,7 +118,7 @@ among the options before the record is drafted.
 | [3](#step-3--the-record-cryptomatte-coverage) | The record: Cryptomatte coverage | `docs/adr` | **0232** | accepted |
 | [4](#step-4--the-record-deep-samples) | The record: deep samples | `docs/adr` | **0233** | accepted |
 | [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | accepted |
-| [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | open |
+| [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | done |
 | [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | open |
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | open |
 | [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
@@ -343,6 +343,17 @@ denoised until section 9.
 * **[Dependencies.md](../contributing/Dependencies.md)** names the port and why.
 
 **Tests:** a filter of OIDN's denoises a constant image to the same constant.
+
+**Done.** `ports/vcpkg-tool-ispc` installs ISPC 1.32's own release as a host tool, keeping its
+`bin`, `include` and `lib` folders, since the compiler reads its standard headers from beside
+itself. `ports/oidn` builds OIDN 2.5.1 from its release's source archive, which holds the
+weights, with the CPU device and the RT filter alone. It builds static, since a shared OIDN
+loads its CPU device from a module no executable's imports name, so the weights and the device
+are linked into whatever links OIDN. The Flatpak builds both as modules, ISPC for the build
+alone. libmoya does not link OIDN until step 16 uses it, so the moya suite links it for
+`DenoiserTest.cxx`. The default device is the CPU's, and a constant grey comes back within 1% of
+itself everywhere but the outermost four pixels, which the filter reads fewer neighbours for. The
+picture's mean holds within 0.1%.
 
 ### Step 7 — The scene's outputs reach the render
 
