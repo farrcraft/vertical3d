@@ -436,6 +436,51 @@ struct Surfaces {
 
     /** A triangle's corners at a time, in its geometry's own space. **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then the triangle
+    /**
+     * Where a hit's shading point lies in the world at another time, held to the shutter, as its
+     * geometry and the instances that place it stand then. A triangle's point is its corners'
+     * then, by its weights. A point or a curve's point moves in its geometry's own space as its
+     * primitive's first point or control does, and a quadric's does not. A point that found
+     * nothing stays where it is.
+     **/
+    MOYA_KERNEL glm::vec3 positionAt(const ShadingPoint & point, const geometry::Hit & hit, float time) const {
+        const float then = held(time);
+        glm::mat4 toWorld { 1.0F };
+        std::uint32_t placed = kGroup;
+        std::uint32_t material = kNoMaterial;
+        if (!point.found() || !placing(hit, then, toWorld, placed, material)) {
+            return point.position;
+        }
+        const Geometry & shape = geometries[placed];
+        glm::vec3 local = glm::vec3(glm::inverse(point.toWorld) * glm::vec4(point.position, 1.0F));
+        switch (shape.form) {
+            case geometry::primitive::Form::Triangles: {
+                glm::vec3 corner[3];
+                corners(placed, hit.primitive, then, corner);
+                local = (point.weights.x * corner[0]) + (point.weights.y * corner[1]) + (point.weights.z * corner[2]);
+                break;
+            }
+            case geometry::primitive::Form::RoundPoints:
+            case geometry::primitive::Form::FlatPoints:
+                local += geometry::sampleAt(shape.points, points.data, times.data, hit.primitive, then) -
+                    geometry::sampleAt(shape.points, points.data, times.data, hit.primitive, point.time);
+                break;
+            case geometry::primitive::Form::RoundLinearCurves:
+            case geometry::primitive::Form::FlatLinearCurves:
+            case geometry::primitive::Form::RoundCubicCurves:
+            case geometry::primitive::Form::FlatCubicCurves: {
+                const std::uint32_t first = hit.primitive * geometry::primitive::controlsOf(shape.form);
+                local += glm::vec3(geometry::sampleAt(shape.controls, controls.data, times.data, first, then) -
+                    geometry::sampleAt(shape.controls, controls.data, times.data, first, point.time));
+                break;
+            }
+            case geometry::primitive::Form::Quadric:
+                break;
+        }
+        return glm::vec3(toWorld * glm::vec4(local, 1.0F));
+    }
+
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the geometry, then its primitive
     MOYA_KERNEL void corners(std::uint32_t placed, std::uint32_t primitive, float time, glm::vec3 (&out)[3]) const {
         const Geometry & shape = geometries[placed];
         for (std::uint32_t corner = 0; corner < 3U; ++corner) {

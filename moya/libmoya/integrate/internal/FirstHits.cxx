@@ -37,6 +37,7 @@ std::uint32_t componentsOf(kernel::integrate::Reading reading) {
     case kernel::integrate::Reading::DenoisingNormal:
         return 3U;
     case kernel::integrate::Reading::Texture:
+    case kernel::integrate::Reading::Motion:
         return 2U;
     case kernel::integrate::Reading::Depth:
     case kernel::integrate::Reading::Instance:

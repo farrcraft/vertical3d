@@ -14,6 +14,7 @@
 #include <moya/libmoya/scene/Value.h>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <set>
@@ -53,19 +54,21 @@ constexpr float kMask = 0.75F;
  * under a dome. The camera keeps the orthographic projection the scene falls back to, whose
  * screen runs from -1 to 1. The square covers the picture's middle half on each axis, and its
  * edge crosses the pixels of the thirteenth column. The square's st runs from zero at
- * its bottom left to one at its top right, and its primvar mask is kMask throughout.
+ * its bottom left to one at its top right, and its primvar mask is kMask throughout. The camera's
+ * shutter is open from zero to one, and the square moves along x by its drift over it.
  **/
 struct Squared {
     scene::Scene made { scene::kinds() };
     std::vector<scene::Handle> channels;
 
-    Squared() {
+    explicit Squared(float drift = 0.0F) {
         const scene::Handle options = made.create("options", "options");
         const scene::Handle camera = made.create("camera", "camera");
         made.set(options, "camera", scene::Value::handle(camera));
         made.set(options, "resolution", scene::Value::integers({ kSide, kSide }));
         made.set(options, "samples", scene::Value::integer(16));
         made.set(camera, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -5.0F)));
+        made.set(camera, "shutter", scene::Value::floats({ 0.0F, 1.0F }));
         made.create("domeLight", "sky");
 
         const scene::Handle mesh = made.create("mesh", "square");
@@ -80,7 +83,7 @@ struct Squared {
         made.declare(mesh,
             scene::Declaration { .name = "mask", .type = mask.type(), .count = scene::Declaration::kAny, .fallback = mask, .interpolation = scene::Interpolation::Constant });
         made.set(mesh, "mask", mask);
-        instanced(made, "placed", mesh, {}, glm::mat4(1.0F));
+        instanced(made, "placed", mesh, {}, { 0.0F, 1.0F }, { glm::mat4(1.0F), moved(drift, 0.0F, 0.0F) });
     }
 
     /** A channel of what it collects, combined by its filter. **/
@@ -195,6 +198,46 @@ BOOST_AUTO_TEST_CASE(moya_firsthit_a_primvar_of_a_constant_reads_back_the_consta
     const film::Snapshot picture = squared.render();
     BOOST_TEST(at(picture, "mask", kInside, kInside) == kMask, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(at(picture, "mask", kCorner, kCorner) == 0.0F);
+}
+
+// the square moves a quarter of a unit along x while the shutter is open, which is two of the
+// picture's pixels, so every pixel inside it moves two pixels right. One that holds still does not
+// move, and nor does a pixel that sees only the dome
+BOOST_AUTO_TEST_CASE(moya_firsthit_a_moving_square_moves_across_the_picture_test) {
+    Squared moving(0.25F);
+    moving.channel("motion", "raw", "motion", 2);
+    const film::Snapshot picture = moving.render();
+    BOOST_TEST(at(picture, "motion", kInside, kInside, 0) == 2.0F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(at(picture, "motion", kInside, kInside, 1) == 0.0F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(at(picture, "motion", kCorner, kCorner, 0) == 0.0F);
+
+    Squared still;
+    still.channel("motion", "raw", "motion", 2);
+    BOOST_TEST(at(still.render(), "motion", kInside, kInside, 0) == 0.0F, boost::test_tools::tolerance(1.0e-4F));
+}
+
+// a mesh whose own points rise a quarter of a unit while the shutter is open moves two pixels up
+// the picture, which is minus two in raster y
+BOOST_AUTO_TEST_CASE(moya_firsthit_a_deforming_mesh_moves_as_its_points_do_test) {
+    Squared squared;
+    const std::vector<glm::vec3> low { { -0.5F, -0.5F, 0.0F }, { 0.5F, -0.5F, 0.0F }, { 0.5F, 0.5F, 0.0F }, { -0.5F, -0.5F, 0.0F }, { 0.5F, 0.5F, 0.0F },
+        { -0.5F, 0.5F, 0.0F } };
+    std::vector<glm::vec3> high = low;
+    for (glm::vec3 & point : high) {
+        point.y += 0.25F;
+    }
+    // a second square, in front of the first, that the camera sees in its place
+    std::vector<glm::vec3> nearer = low;
+    std::vector<glm::vec3> nearerHigh = high;
+    for (std::size_t i = 0; i < nearer.size(); ++i) {
+        nearer[i].z = -1.0F;
+        nearerHigh[i].z = -1.0F;
+    }
+    instanced(squared.made, "rising", mesh(squared.made, "rises", { 0.0F, 1.0F }, { nearer, nearerHigh }), {}, glm::mat4(1.0F));
+    squared.channel("motion", "raw", "motion", 2);
+    const film::Snapshot picture = squared.render();
+    BOOST_TEST(at(picture, "motion", kInside, kInside, 0) == 0.0F, boost::test_tools::tolerance(1.0e-4F));
+    BOOST_TEST(at(picture, "motion", kInside, kInside, 1) == -2.0F, boost::test_tools::tolerance(1.0e-4F));
 }
 
 // a raw value the path tracer does not compute, a value of other components than its channel's,

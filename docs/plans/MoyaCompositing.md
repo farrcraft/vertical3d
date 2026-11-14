@@ -417,6 +417,20 @@ sphere, as the opacity cases' scenes are built of squares.
 mirror in front of a red wall gives the wall's albedo. A primvar of a constant reads back as
 the constant.
 
+**Done.** Each film channel has a combine, `kernel::film::Combine`: the filtered mean, the sum,
+the closest, the least or the most. A closest channel keeps its sample's depth in one more float,
+so a resumed render keeps the same sample, and a tie keeps the lower sample index. The scene's
+channel names it as its `filter`, whose default is the closest for a depth, a position or an ID
+and the mean for any other. The path tracer fills `depth`, `position`, `normal`, `st`,
+`instance`, `face` and `motion` at each camera ray's first hit, and a primvar by its name,
+which the gather then reads though no material does. A denoiser's `albedo` and
+`denoisingNormal` come from the first surface whose singular closures hold less than half its
+estimated albedo, tinted by the mirrors and glass a path passed. The albedo is the closures'
+estimate kept at each wavelength, under ACES white, rather than one taken at the outgoing
+direction. The ADR's IDs are the instance and the face. A saturated ACEScg red comes back from its
+reflectance spectrum a few percent darker, so the mirror case compares the wall seen through the
+mirror with the wall seen face on.
+
 ### Step 10 — The events of a path
 
 * **Each bounce reports its event** as the record of step 2 decides: the camera, a reflection or

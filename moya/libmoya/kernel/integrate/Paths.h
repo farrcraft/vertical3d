@@ -124,7 +124,7 @@ MOYA_KERNEL void firstHit(const Paths<T, X> & paths, const PathState & state, co
         return;
     }
     const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
-    readFirstHit(paths.pixels, Item { .x = pixel.x, .y = pixel.y }, MOYA_PATH(state, weight), paths.firstHits, paths.surfaces, hit, ray, point);
+    readFirstHit(paths.pixels, Item { .x = pixel.x, .y = pixel.y }, MOYA_PATH(state, weight), paths.firstHits, paths.camera, paths.surfaces, hit, ray, point);
 }
 
 /**

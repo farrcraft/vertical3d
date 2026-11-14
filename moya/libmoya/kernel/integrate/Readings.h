@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/Array.h>
+#include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
@@ -19,6 +20,7 @@
 #include <cstdint>
 #include <limits>
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::kernel::integrate {
@@ -29,8 +31,8 @@ namespace v3d::moya::kernel::integrate {
  * nothing.
  **/
 // NOLINTNEXTLINE(readability-function-cognitive-complexity) - one case for each reading
-MOYA_KERNEL inline void readAt(const FirstHit & wanted, const surface::Surfaces & surfaces, const geometry::Hit & hit, const geometry::Ray & ray,
-    const surface::ShadingPoint & point, float * out) {
+MOYA_KERNEL inline void readAt(const FirstHit & wanted, const camera::Camera & camera, const surface::Surfaces & surfaces, const geometry::Hit & hit,
+    const geometry::Ray & ray, const surface::ShadingPoint & point, float * out) {
     for (std::uint32_t i = 0; i < 4U; ++i) {
         out[i] = 0.0F;
     }
@@ -70,6 +72,13 @@ MOYA_KERNEL inline void readAt(const FirstHit & wanted, const surface::Surfaces 
             surfaces.read(point, wanted.primvar, out, wanted.components);
         }
         return;
+    case Reading::Motion:
+        if (point.found()) {
+            const glm::vec2 moved = camera.raster(surfaces.positionAt(point, hit, camera.close)) - camera.raster(surfaces.positionAt(point, hit, camera.open));
+            out[0] = moved.x;
+            out[1] = moved.y;
+        }
+        return;
     case Reading::Albedo:
     case Reading::DenoisingNormal:
         return;
@@ -82,12 +91,12 @@ MOYA_KERNEL inline void readAt(const FirstHit & wanted, const surface::Surfaces 
  * the furthest.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the pixel, then the sample's weight
-MOYA_KERNEL inline void readFirstHit(const film::Pixels & pixels, Item pixel, float weight, const Array<FirstHit> & wanted,
+MOYA_KERNEL inline void readFirstHit(const film::Pixels & pixels, Item pixel, float weight, const Array<FirstHit> & wanted, const camera::Camera & camera,
     const surface::Surfaces & surfaces, const geometry::Hit & hit, const geometry::Ray & ray, const surface::ShadingPoint & point) {
     const float key = hit.found() ? hit.distance : std::numeric_limits<float>::infinity();
     for (std::uint32_t i = 0; i < wanted.size; ++i) {
         float value[4];
-        readAt(wanted[i], surfaces, hit, ray, point, value);
+        readAt(wanted[i], camera, surfaces, hit, ray, point, value);
         pixels.keep(pixel, wanted[i].offset, wanted[i].combine, weight, key, value, wanted[i].components);
     }
 }

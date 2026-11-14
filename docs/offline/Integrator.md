@@ -227,9 +227,14 @@ the scene. Each is added to its channel by the channel's combine, as
 | `st` | 2 | the `st` primvar, or the hit's place on its primitive without one | zero |
 | `instance` | 1 | the innermost instance that placed the hit, or -1 for none | -1 |
 | `face` | 1 | the face or curve of the mesh the hit's primitive was cut from | -1 |
+| `motion` | 2 | how far the hit moves across the picture while the shutter is open, in pixels | zero |
 
-- **A light's shape the ray meets** has its depth and position, a zero normal and `st`, and an
-  instance and a face of -1.
+- **A light's shape the ray meets** has its depth and position, a zero normal, `st` and motion,
+  and an instance and a face of -1.
+- **A motion** is the hit's raster position as the shutter closes less its position as it opens,
+  with y down the picture. The hit is found again at each time, as its geometry and its instances
+  stand then. A triangle's hit follows its corners. A point's or a curve's follows its primitive's
+  first point or control. A quadric's own motion is not followed.
 - **A primvar channel** reads the primvar its `sourceName` names, of the channel's components,
   and zero on a surface without it. The gather reads the primvar for the channel, though no
   material reads it.

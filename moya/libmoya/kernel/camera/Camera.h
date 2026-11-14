@@ -13,6 +13,7 @@
 
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -86,6 +87,24 @@ struct Camera {
         out.end = far;
         out.time = open + (time * (close - open));
         return out;
+    }
+
+    /**
+     * The raster position a point in the world is seen at, the inverse of ray()'s through a
+     * pinhole. A point at a depth of zero or behind a perspective camera has no such position, and
+     * gives the screen window's centre.
+     **/
+    MOYA_KERNEL glm::vec2 raster(const glm::vec3 & world) const {
+        const glm::vec3 seen = glm::vec3(glm::inverse(toWorld) * glm::vec4(world, 1.0F));
+        glm::vec2 onScreen { seen.x, seen.y };
+        if (perspective) {
+            if (!(seen.z > 0.0F)) {
+                onScreen = glm::vec2 { (screen.x + screen.y) * 0.5F, (screen.z + screen.w) * 0.5F };
+            } else {
+                onScreen /= seen.z * tanHalfFov;
+            }
+        }
+        return glm::vec2 { ((onScreen.x - screen.x) / (screen.y - screen.x)) * resolution.x, ((screen.w - onScreen.y) / (screen.w - screen.z)) * resolution.y };
     }
 
     /**

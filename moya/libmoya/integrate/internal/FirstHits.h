@@ -25,9 +25,10 @@ namespace v3d::moya::integrate::internal {
  * device outlives them.
  *
  * A raw channel fills when output::readingNamed() knows its source name and its components are
- * the value's: one for a depth, an instance or a face, two for `st`, and three for a position, a
- * normal, or a denoiser's albedo or normal. A primvar channel fills from the primvar of its
- * source name, which the gather reads for it. Each other channel is reported, and holds zero.
+ * the value's: one for a depth, an instance or a face, two for `st` or a motion, and three for a
+ * position, a normal, or a denoiser's albedo or normal. A primvar channel fills from the primvar
+ * of its source name, which the gather reads for it. Each other channel is reported, and holds
+ * zero.
  **/
 class FirstHits final {
  public:

@@ -23,11 +23,14 @@ namespace v3d::moya::kernel::integrate {
  *   places.
  * - Face is the face or curve of the mesh the hit's primitive was cut from.
  * - Primvar is a primvar's value by its number, zero where the surface has none.
+ * - Motion is how far the hit moves across the picture while the shutter is open, in pixels: its
+ *   raster position as the shutter closes less its position as it opens, with y down.
  * - Albedo and DenoisingNormal are what a denoiser reads, as Paths.h's features() says. They are
  *   read where a path first meets a surface that is not mostly a mirror or smooth glass, which
  *   may be past the first hit.
  *
- * A light's shape the ray meets has its depth and position, and reads zero or -1 for the others.
+ * A light's shape the ray meets has its depth and position, and reads zero or -1 for the others,
+ * its motion too.
  **/
 enum class Reading : std::uint8_t {
     Depth,
@@ -37,6 +40,7 @@ enum class Reading : std::uint8_t {
     Instance,
     Face,
     Primvar,
+    Motion,
     Albedo,
     DenoisingNormal,
 };
