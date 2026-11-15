@@ -493,6 +493,9 @@ to a temporary.
   excluded from both static analysers.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
+- **LNK1235 naming a static library the build has just written** is not a corrupt library.
+  The library on disk is sound, and building again links it, so build again before deleting
+  anything. It comes after a build that recompiles much of a large library.
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
   build again. If the same object fails again at the same section number, the corrupt object is
   another one that defines the same symbol. Run `dumpbin /headers` on the named object and read
