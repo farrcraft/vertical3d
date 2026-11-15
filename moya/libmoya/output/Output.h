@@ -8,8 +8,11 @@
 #include <moya/libmoya/output/ExrPart.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::moya::output {
 
@@ -40,6 +43,13 @@ struct Output {
     std::vector<std::string> cryptomattes;
     Precision precision { Precision::Half };
     Compression compression { Compression::Zip };
+
+    /**
+     * The colour the beauty is composited over when it is written, in the colour space named
+     * beside it, or none. The beauty's alpha becomes one where it is.
+     **/
+    std::optional<glm::vec3> background;
+    std::string backgroundSpace;
 };
 
 };  // namespace v3d::moya::output

@@ -93,6 +93,8 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->display({.name = "out.tif", .type = "file", .mode = "rgba"}, none);
     to->displayChannel({ .declaration = "varying color diffuse" }, one("source", UNIFORM_STRING, {}, { "color lpe:C<RD>L" }));
     to->sampleFilter({ .type = "PxrCryptomatte", .handle = "ids" }, one("layer", UNIFORM_STRING, {}, { "Material" }));
+    to->displayFilter({ .type = "PxrBackgroundDisplayFilter", .handle = "plate" },
+        one("backgroundColor", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1), { 0.1F, 0.2F, 0.3F }));
     to->frameBegin(7);
     to->transform(glm::mat4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));  // NOLINT(build/include_what_you_use)
     to->worldBegin();

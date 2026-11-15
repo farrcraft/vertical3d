@@ -117,6 +117,12 @@ bool Lights::source(const v3d::render::offline::rib::requests::LightSource & req
     } else if (request.shader == "distantlight") {
         made = light("distantLight", objects_->unique("distantLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F), transformation);
         scene_->set(made, "angle", scene::Value::number(0.0F));
+    } else if (request.shader == "ambientlight") {
+        // RI's ambient light lights every point alike: a dome of its colour that shadows nothing
+        // and the camera does not see
+        made = light("domeLight", objects_->unique("domeLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F), transformation);
+        scene_->set(made, "shadowIncludeRoot", scene::Value::integer(0));
+        scene_->set(made, "camera", scene::Value::integer(0));
     } else if (request.shader == "spotlight") {
         made = light("sphereLight", objects_->unique("sphereLight", name), parameters, glm::vec3(0.0F, 0.0F, 1.0F), transformation);
         asPoint(scene_, made, parameters);

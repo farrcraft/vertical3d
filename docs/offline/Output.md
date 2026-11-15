@@ -107,6 +107,23 @@ Background:
 A Cryptomatte layer's channels and header, and a deep file, are written as
 [Compositing.md](Compositing.md) describes.
 
+## A background
+
+`composited(snapshot, background)` gives a snapshot whose beauty is composited over a colour in
+ACEScg. An output whose scene's options name a `background` is written from that snapshot, and
+`output::Output` holds the colour, with the colour space it is in.
+
+- **Each pixel's beauty gains the background times one less its alpha**, and its alpha becomes
+  one.
+- **A denoised beauty is composited the same way**, by the beauty's alpha, after denoising, so the
+  denoiser never sees the background.
+- **Nothing else changes.** The film, a checkpoint, every other channel, the Cryptomatte layers
+  and the deep samples are the render's, so a compositor still takes coverage from them. The
+  background lights nothing and is seen in no reflection.
+- **A PNG is written from the composited snapshot too.**
+
+Background: [ADR-0238](../adr/offline/0238-offline-a-background-is-composited-when-an-output-is-written.md)
+
 ## 8-bit pictures
 
 `displayed(snapshot, display)` gives a snapshot's beauty as a display shows it, for a PNG or the

@@ -123,6 +123,7 @@ Kind options() {
             Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } },
             Declaration { .name = "textureSearchPath", .type = Type::String, .fallback = Value::string("") },
             Declaration { .name = "shaderSearchPath", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "background", .type = Type::Colour, .count = Declaration::kAny, .fallback = Value::colours({}) },
             Declaration { .name = "textureMemory", .type = Type::Integer, .fallback = Value::integer(kTextureMemory) },
             Declaration { .name = "textureDirectory", .type = Type::String, .fallback = Value::string("") } } };
 }
@@ -394,6 +395,7 @@ std::vector<Kind> lights() {
         Kind { .name = "distantLight", .parameters = farLight({ size("angle", kSunAngle) }) },
         Kind { .name = "domeLight",
             .parameters = farLight({ texture(),
+                Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(1) },
                 Declaration { .name = "format",
                     .type = Type::String,
                     .fallback = Value::string("automatic"),

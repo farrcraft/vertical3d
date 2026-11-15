@@ -181,6 +181,27 @@ std::vector<film::Channel> filmChannelsOf(const scene::Scene & scene) {
     return film;
 }
 
+film::Snapshot composited(const film::Snapshot & snapshot, const glm::vec3 & background) {
+    film::Snapshot out = snapshot;
+    const std::string denoised = denoisedOf(std::string(kBeauty));
+    const bool cleaned = std::any_of(out.channels.begin(), out.channels.end(), [&denoised](const film::Channel & channel) { return channel.name == denoised; });
+    const std::uint32_t cleanAt = cleaned ? out.offset(denoised) : 0U;
+    const std::size_t pixels = static_cast<std::size_t>(out.resolution.x) * out.resolution.y;
+    for (std::size_t pixel = 0; pixel < pixels && out.stride >= 4U; ++pixel) {
+        const std::size_t first = pixel * out.stride;
+        const float uncovered = 1.0F - out.values[first + 3U];
+        for (std::size_t i = 0; i < 3U; ++i) {
+            const float added = uncovered * background[static_cast<glm::length_t>(i)];
+            out.values[first + i] += added;
+            if (cleaned) {
+                out.values[first + cleanAt + i] += added;
+            }
+        }
+        out.values[first + 3U] = 1.0F;
+    }
+    return out;
+}
+
 std::vector<Output> outputsOf(const scene::Scene & scene) {
     std::vector<Output> outputs;
     for (const scene::Handle & made : scene.objects("output")) {
@@ -208,6 +229,15 @@ std::vector<Output> outputsOf(const scene::Scene & scene) {
         if (denoisesBeauty(scene) && output.format == Format::Exr) {
             output.channels.insert(output.channels.begin(), denoisedOf(std::string(kBeauty)));
         }
+        const std::vector<scene::Handle> options = scene.objects("options");
+        if (!options.empty()) {
+            const scene::Value & background = scene.value(options.front(), "background");
+            const std::vector<float> & floats = background.floatArray();
+            if (floats.size() >= 3U) {
+                output.background = glm::vec3 { floats[0], floats[1], floats[2] };
+                output.backgroundSpace = background.space();
+            }
+        }
         outputs.push_back(output);
     }
     return outputs;
@@ -223,7 +253,8 @@ Format formatOfFile(const std::string & file) {
     return ending == png ? Format::Png : Format::Exr;
 }
 
-void write(const Output & output, const film::Snapshot & snapshot, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger) {
+void write(const Output & output, const film::Snapshot & given, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger) {
+    const film::Snapshot snapshot = output.background ? composited(given, config.input(output.backgroundSpace).apply(*output.background)) : given;
     switch (output.format) {
     case Format::Exr: {
         ExrPart part { .name = "", .outputs = { std::string(kBeauty) }, .precision = output.precision, .compression = output.compression, .floats = output.floats };

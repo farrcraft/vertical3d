@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::moya::output {
 
@@ -71,9 +72,17 @@ std::vector<Output> outputsOf(const scene::Scene & scene);
 Format formatOfFile(const std::string & file);
 
 /**
+ * A snapshot whose beauty, and its denoised beauty where it holds one, is composited over a colour
+ * in ACEScg by the beauty's alpha, and whose alpha is then one. Every other channel, coverage and
+ * deep sample is the snapshot's.
+ **/
+film::Snapshot composited(const film::Snapshot & snapshot, const glm::vec3 & background);
+
+/**
  * Writes an output from a snapshot. An EXR file holds the beauty and the output's channels, in
  * one part of its precision and compression. A PNG file holds the beauty through the
- * configuration's default display and view. A framebuffer writes nothing, which is logged.
+ * configuration's default display and view. A framebuffer writes nothing, which is logged. An
+ * output with a background writes the snapshot composited over it.
  *
  * @throws std::invalid_argument when the output names a channel the snapshot lacks
  * @throws std::runtime_error when a PNG cannot be encoded or written

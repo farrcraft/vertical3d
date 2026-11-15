@@ -59,7 +59,9 @@ then derived as RI derives it.
   the first, and still join in a deep file, as [Compositing.md](Compositing.md#deep-lists) says.
   `denoise` is 1 to write the beauty denoised beside it, as
   [Output.md](Output.md#denoised-channels) says.
-  `textureSearchPath` holds the directories a texture's relative path is looked for in, and
+  `background` holds the colour each output is composited over, or none, the fallback, as
+  [Output.md](Output.md#a-background) says. `textureSearchPath` holds the directories a texture's
+  relative path is looked for in, and
   `shaderSearchPath` those an RI shader's document is looked for in, as
   [Materials.md](Materials.md#ris-built-in-surfaces) says.
   `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
@@ -128,7 +130,8 @@ then derived as RI derives it.
   cylinder light its `radius` and `length`. A sphere light also holds `treatAsPoint`, which is 1 for
   a light that is a point. A distant light holds its `angle` in degrees, and a dome light its
   `texture` and its `format`, UsdLux's `texture:format`: `automatic`, the fallback, `latlong`,
-  `mirroredBall`, `angular` or `cubeMapVerticalCross`. A mesh light makes the geometry prototype its
+  `mirroredBall`, `angular` or `cubeMapVerticalCross`. A dome light also holds `camera`, which is 1,
+  the fallback, for a dome camera rays see. A mesh light makes the geometry prototype its
   `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights) says.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.

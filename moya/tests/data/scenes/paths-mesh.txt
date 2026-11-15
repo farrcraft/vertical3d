@@ -104,6 +104,7 @@ meshLight "light glow"
     shadowInstances handle[0] =
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

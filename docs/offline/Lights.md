@@ -174,6 +174,8 @@ image where it has one. `normalize` is not read, as UsdLux says of a dome.
   the light emits nothing.
 - **A dome with no image** emits its colour from every direction, and is drawn uniformly over the
   sphere.
+- **Camera rays see a dome while its `camera` is 1**, which it is unless a client sets it. A dome
+  of `camera` 0 still lights the scene and is seen by every other ray.
 - **A texel is drawn in proportion to its luminance times the solid angle it covers**: a row by
   the sums of its texels, then a texel along it, then a place within it uniformly. A place covers
   2 pi^2 times the cosine of its latitude for each unit of the image's area, so its density by

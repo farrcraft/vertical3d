@@ -23,6 +23,22 @@ distantLight "light 1"
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =
     transform matrix = [-0.83205 0 0.5547 0 0.449921 0.584898 0.674882 0 -0.324443 0.811107 -0.486664 0 0 0 0 1]
+domeLight "light 0"
+    camera integer = 0
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    format string = "automatic"
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 0.2
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 0
+    shadowInstances handle[0] =
+    texture string = ""
+    transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
     group handle = none
@@ -84,6 +100,7 @@ mesh "Polygon 2"
     indices integer[4] = 0 1 2 3
     vertices integer[1] = 4
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

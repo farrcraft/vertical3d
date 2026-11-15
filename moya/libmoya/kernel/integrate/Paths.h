@@ -609,7 +609,10 @@ MOYA_KERNEL float metShare(const Paths<T, X> & paths, std::uint32_t place, std::
     const PathState & state) {
     if (MOYA_PATH(state, bounces) == 0U) {
         const light::Light & light = paths.lights.lights[place];
-        return light.shape != light::Shape::Mesh || light.camera ? 1.0F : 0.0F;
+        // a light with a shape is hidden from the camera by its instance, and a mesh light and a
+        // dome by their own flag
+        const bool flagged = light.shape == light::Shape::Mesh || light.shape == light::Shape::Dome;
+        return !flagged || light.camera ? 1.0F : 0.0F;
     }
     const std::uint32_t set = MOYA_PATH(state, linked);
     if (!paths.lights.links.lights(set, place) || light::sampledAlone(paths.lights.lights[place])) {

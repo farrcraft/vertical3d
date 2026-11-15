@@ -8,6 +8,7 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/output/Channel.h>
+#include <moya/libmoya/output/ExrImage.h>
 #include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
@@ -27,6 +28,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -183,6 +186,45 @@ BOOST_AUTO_TEST_CASE(moya_outputs_a_checkpoint_resumes_the_channels_test) {
     BOOST_TEST(resumed.channels.size() == 3U);
     BOOST_TEST(resumed.passes == whole.passes);
     BOOST_TEST(resumed.values == whole.values, boost::test_tools::per_element());
+}
+
+// a background is added to the beauty by what its alpha leaves uncovered, and the alpha becomes
+// one. A pixel the beauty covers keeps its colour, and a channel keeps its values
+BOOST_AUTO_TEST_CASE(moya_outputs_a_beauty_is_composited_over_a_background_test) {
+    const film::Snapshot snapshot { .resolution = { 2, 1 }, .passes = 1, .stride = 5, .channels = { { .name = "depth", .components = 1 } }, .offsets = { 4 },
+        .values = { 0.1F, 0.2F, 0.3F, 0.25F, 7.0F, 0.4F, 0.5F, 0.6F, 1.0F, 8.0F }, .errors = {} };
+    const film::Snapshot out = output::composited(snapshot, glm::vec3 { 1.0F, 0.0F, 0.5F });
+    BOOST_TEST(out.at(0, 0, 0) == 0.85F, boost::test_tools::tolerance(1.0e-6F));
+    BOOST_TEST(out.at(0, 0, 1) == 0.2F, boost::test_tools::tolerance(1.0e-6F));
+    BOOST_TEST(out.at(0, 0, 2) == 0.675F, boost::test_tools::tolerance(1.0e-6F));
+    BOOST_TEST(out.at(0, 0, 3) == 1.0F);
+    BOOST_TEST(out.at(0, 0, 4) == 7.0F);
+    BOOST_TEST(out.at(1, 0, 0) == 0.4F);
+    BOOST_TEST(out.at(1, 0, 3) == 1.0F);
+}
+
+// an output takes the options' background, and writes its beauty composited over it
+BOOST_AUTO_TEST_CASE(moya_outputs_an_output_writes_over_the_options_background_test) {
+    Outputs outputs;
+    outputs.made.set(*outputs.made.find("options", "options"), "background", scene::Value::colours({ glm::vec3 { 0.0F, 1.0F, 0.0F } }));
+    outputs.made.remove(*outputs.made.find("domeLight", "sky"));
+    outputs.made.commit();
+    outputs.made.apply();
+    output::Output second = output::outputsOf(outputs.made)[1];
+    BOOST_TEST_REQUIRE(second.background.has_value());
+    BOOST_TEST((*second.background == glm::vec3 { 0.0F, 1.0F, 0.0F }));
+
+    v3d::moya::device::CpuDevice device;
+    const film::Snapshot picture = integrate::render(device, outputs.made, {}, colour::Config());
+    const boost::filesystem::path file = boost::filesystem::temp_directory_path() / "v3d_moya_outputs_background.exr";
+    second.file = file.string();
+    output::write(second, picture, colour::Config(), {});
+    const output::ExrImage image = output::readExr(file.string());
+    boost::filesystem::remove(file);
+    // the scene is empty and unlit, so every pixel is the background
+    BOOST_TEST_REQUIRE(image.texels.size() == static_cast<std::size_t>(kSide) * kSide);
+    BOOST_TEST((image.texels.front() == glm::vec3 { 0.0F, 1.0F, 0.0F }));
+    BOOST_TEST((image.texels.back() == glm::vec3 { 0.0F, 1.0F, 0.0F }));
 }
 
 };  // namespace

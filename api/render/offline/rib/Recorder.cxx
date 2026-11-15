@@ -124,6 +124,10 @@ void Recorder::sampleFilter(const requests::ShadingNode & request, const Paramet
     requests_.emplace_back([request, parameters](Handler & to) { to.sampleFilter(request, parameters); });
 }
 
+void Recorder::displayFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.displayFilter(request, parameters); });
+}
+
 void Recorder::frameBegin(int frame) {
     requests_.emplace_back([frame](Handler & to) { to.frameBegin(frame); });
 }

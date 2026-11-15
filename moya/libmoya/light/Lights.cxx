@@ -377,13 +377,15 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
 }
 
 /**
- * A dome light, whose image is read in latitude and longitude. A format of another layout, or a
- * file that says it is a cube map, is reported, and the light emits nothing.
+ * A dome light, whose image is read in latitude and longitude, and which camera rays see while its
+ * camera is 1. A format of another layout, or a file that says it is a cube map, is reported, and
+ * the light emits nothing.
  **/
 kernel::light::Light domeOf(const scene::Scene & scene, const scene::Handle & handle, const colour::Config & config, internal::Textures & textures) {
     kernel::light::Light out = emitter(scene, handle, config);
     out.id = kernel::geometry::kNoPrimitive;
     out.shape = kernel::light::Shape::Dome;
+    out.camera = scene.value(handle, "camera").integerArray().front() != 0;
     const std::string & path = scene.value(handle, "texture").stringArray().front();
     if (path.empty()) {
         return out;

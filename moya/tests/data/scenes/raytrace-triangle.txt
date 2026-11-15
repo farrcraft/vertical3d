@@ -27,6 +27,7 @@ mesh "Polygon 1"
     indices integer[3] = 0 1 2
     vertices integer[1] = 3
 options "options"
+    background colour[1] = (0.15, 0.25, 0.45)
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

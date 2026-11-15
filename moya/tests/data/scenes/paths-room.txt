@@ -10,6 +10,7 @@ camera "camera"
     shutter float[2] = 0 0
     transform matrix = [1 0 0 0 0 0.866025 0.5 0 0 -0.5 0.866025 0 0 2.5 -4.33013 1]
 domeLight "light sky"
+    camera integer = 1
     colorTemperature float = 6500
     colour colour = (1, 1, 1)
     enableColorTemperature integer = 0
@@ -78,6 +79,7 @@ mesh "Polygon 4"
     indices integer[4] = 0 1 2 3
     vertices integer[1] = 4
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

@@ -233,6 +233,10 @@ void Writer::sampleFilter(const requests::ShadingNode & request, const Parameter
     start("SampleFilter").text(request.type).text(request.handle).parameters(parameters).end();
 }
 
+void Writer::displayFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
+    start("DisplayFilter").text(request.type).text(request.handle).parameters(parameters).end();
+}
+
 void Writer::frameBegin(int frame) {
     *stream_ << "FrameBegin " << frame;
     end();

@@ -75,7 +75,8 @@ enum class Shape : std::uint8_t {
  *   see what it emits. Its transform, axis and cone are not read.
  * - image is the place among the lights' images of the image a rect light's texture or a dome
  *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
- *   exposure, a radiance, and its transform turns its image into the world.
+ *   exposure, a radiance, and its transform turns its image into the world. Its camera is whether
+ *   camera rays see it.
  * - profile is the place among the lights' profiles of the IES profile that shapes what it emits,
  *   or kNoPrimitive for none.
  * - shadowLinked is whether only some instances cast its shadows: those held among the links'

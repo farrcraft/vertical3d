@@ -91,6 +91,7 @@ class Recorder final : public Handler {
     void display(const requests::Display & request, const ParameterList & parameters) override;
     void displayChannel(const requests::DisplayChannel & request, const ParameterList & parameters) override;
     void sampleFilter(const requests::ShadingNode & request, const ParameterList & parameters) override;
+    void displayFilter(const requests::ShadingNode & request, const ParameterList & parameters) override;
 
     void frameBegin(int frame) override;
     void frameEnd() override;

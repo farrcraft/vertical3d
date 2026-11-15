@@ -192,6 +192,16 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * named CryptoObject, CryptoMaterial or CryptoAsset. Any other sample filter is reported.
      **/
     void sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * RenderMan's `PxrBackgroundDisplayFilter` sets the options' background to its
+     * `"color backgroundColor"`, black by default. Any other display filter is logged once by name.
+     **/
+    void displayFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * RI's `background` imager sets the options' background to its `"color background"`, black by
+     * default. Any other imager is logged once by name.
+     **/
+    void imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * Makes the texture file at once, as texture::make() does, in the colour space the
@@ -246,6 +256,10 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     void bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * RI's `arealight` makes a mesh light of each geometry after it in its attribute block. Another
+     * shader is logged once, and makes no light.
+     **/
     void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
@@ -277,6 +291,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** RI's default picture, which a side of zero in a Format asks for. **/
     static constexpr int kWidth = 320;
     static constexpr int kHeight = 240;
+
+    /** Sets the options' background to a colour parameter, black when it is not given. **/
+    void background(const v3d::render::offline::rib::ParameterList & parameters, const std::string & colour);
 
     /** Whether a file name ends with a suffix, compared exactly. **/
     static bool endsWith(const std::string & text, const std::string & suffix);

@@ -224,9 +224,17 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   names the instances made while it was on, so a light that was off for every instance lights
   none.
   `Illuminate` turns a light on and off in the attribute state, and `AttributeEnd` restores it.
+- **RI's `ambientlight` is a dome light** of its `lightcolor` and `intensity`, whose shadow link
+  names no instance and whose `camera` is 0. It lights every point by its albedo times the light,
+  as RI's ambient term does, and the camera does not see it.
 - **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
   its `intensity` and `lightcolor`. The mesh light names the geometry's prototype, so the
-  instance that places it emits.
+  instance that places it emits. A shader other than `arealight` is logged once, and makes no
+  light.
+- **RI's `background` imager and RenderMan's `PxrBackgroundDisplayFilter` set the options'
+  `background`**, to the imager's `"color background"` or the filter's `"color backgroundColor"`,
+  black when neither is given. An output is composited over it when it is written, as
+  [Output.md](Output.md#a-background) says. Another imager or display filter is logged once by name.
 - **RenderMan's lights become UsdLux's.** `Light` makes a rect, disk, sphere, cylinder, distant
   or dome light of `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
   `PxrDistantLight` and `PxrDomeLight`. Each is on as a `LightSource` is, and `Illuminate` and

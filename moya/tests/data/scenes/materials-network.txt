@@ -60,6 +60,7 @@ material "material 2"
     surface handle = shader "shading"
     surfaceOutput string = "out"
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

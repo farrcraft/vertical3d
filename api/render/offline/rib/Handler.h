@@ -115,6 +115,15 @@ class Handler {
         (void)request;
         (void)parameters;
     }
+    /**
+     * RenderMan's `DisplayFilter`: a filter of a type and a handle that the finished pixels pass
+     * through before they are written, such as `PxrBackgroundDisplayFilter`. RI has no such
+     * request, so the default body ignores it.
+     **/
+    virtual void displayFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
 
     // block structure
     virtual void frameBegin(int frame) { (void)frame; }

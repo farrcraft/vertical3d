@@ -74,6 +74,7 @@ distantLight "light 1"
     shadowInstances handle[0] =
     transform matrix = [-0.8 0 0.6 0 0.424264 0.707107 0.565685 0 -0.424264 0.707107 -0.565685 0 0 0 0 1]
 domeLight "light sky"
+    camera integer = 1
     colorTemperature float = 6500
     colour colour = (1, 1, 1)
     enableColorTemperature integer = 0
@@ -155,6 +156,7 @@ mesh "Polygon 3"
     st float2[4] varying = 0 1 1 1 1 0 0 0
     vertices integer[1] = 4
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

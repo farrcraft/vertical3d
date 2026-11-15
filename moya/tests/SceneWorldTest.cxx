@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_names_the_instances_it_lit_test) {
         "Sphere 2 -2 2 360\n"
         "Illuminate 1 0\n"
         "Sphere 3 -3 3 360\n"
-        "LightSource \"ambientlight\" 3\nIlluminate 3 0\n"));
+        "LightSource \"glowlight\" 3\nIlluminate 3 0\n"));
     BOOST_TEST((read.value("sphereLight", "light 1", "instances") == scene::Value::handles({ read.handle("instance", "Sphere 2") })));
     BOOST_TEST((read.value("distantLight", "light 2", "instances") ==
         scene::Value::handles({ read.handle("instance", "Sphere 2"), read.handle("instance", "Sphere 3") })));

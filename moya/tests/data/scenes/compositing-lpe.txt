@@ -38,6 +38,7 @@ channel "specular"
     sourceName string = "C<.S>.*"
     sourceType string = "lpe"
 domeLight "light sky"
+    camera integer = 1
     colorTemperature float = 6500
     colour colour = (1, 1, 1)
     enableColorTemperature integer = 0
@@ -108,6 +109,7 @@ mesh "Polygon 2"
     indices integer[4] = 0 1 2 3
     vertices integer[1] = 4
 options "options"
+    background colour[0] =
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001

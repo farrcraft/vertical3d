@@ -193,6 +193,13 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         handler->sampleFilter({ .type = first, .handle = second }, list);
         return Result::Handled;
     }
+    if (name == "DisplayFilter") {
+        if (!operands_.text(lexer, &first) || !operands_.handle(lexer, &second) || !operands_.parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        handler->displayFilter({ .type = first, .handle = second }, list);
+        return Result::Handled;
+    }
     if (name == "FrameBegin") {
         if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;

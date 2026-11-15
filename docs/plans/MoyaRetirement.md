@@ -159,7 +159,7 @@ chooses among the options before the record is drafted.
 | [3](#step-3--the-record-ris-c-interface) | The record: RI's C interface | `docs/adr` | **0239** | accepted |
 | [4](#step-4--the-record-the-offline-library) | The record: the offline library | `docs/adr` | **0240** | accepted |
 | [5](#step-5--ris-surfaces-become-materials) | RI's surfaces become materials | `moya/libmoya/ri`, `material` | 0236 | done |
-| [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | open |
+| [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | done |
 | [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
 | [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | — | open |
 | [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | open |
@@ -385,6 +385,18 @@ a document on the search path is not built, and is in [TODO.md](../TODO.md#offli
 **Tests:** a scene lit by an ambient light alone, and one with a background, each give the
 expected value at a pixel within errors, or the report the record names. The spot light's
 falloff at its default delta matches the built-in's within errors.
+
+**Done.** `ambientlight` is a dome light of its colour and intensity, whose shadow link names no
+instance, and a dome gained `camera`, 1 unless a client sets it, which the ambient dome sets to 0.
+A diffuse wall under it shows its albedo times the light beside a card that hides half its sky.
+RenderMan's `DisplayFilter` is a request of the RIB reader, writer and recorder now. Its
+`PxrBackgroundDisplayFilter` and RI's `background` imager set the options' new `background`,
+and `output::composited()` composites an output's beauty, and its denoised beauty, over it when
+the output is written. Any other imager, display filter or area light shader is reported once.
+The spot light keeps the scene client's default delta of five degrees, which is the RI
+specification's. The shading language's built-in used four, so the plan's bullet was wrong. Each
+scene that names an ambient light or a background describes them now. The hit views of the
+twelve with an ambient light were made again, since the dome shifts every later object's index.
 
 ### Step 7 — Every request the old handler read
 

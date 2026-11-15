@@ -99,6 +99,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    sourceName string = \"albedo\"\n"
         "    sourceType string = \"raw\"\n"
         "options \"render\"\n"
+        "    background colour[0] =\n"
         "    camera handle = camera \"main\"\n"
         "    crop float[4] = 0 1 0 1\n"
         "    deepTolerance float = 0.001\n"

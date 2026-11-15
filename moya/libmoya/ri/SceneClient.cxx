@@ -271,6 +271,34 @@ void SceneClient::displayChannel(const v3d::render::offline::rib::requests::Disp
     channels_[name] = channel;
 }
 
+void SceneClient::displayFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (request.type != "PxrBackgroundDisplayFilter") {
+        warnings_.once("display filter " + request.type, "moya runs no display filter " + request.type + ", so it changes nothing");
+        return;
+    }
+    background(parameters, "backgroundColor");
+}
+
+void SceneClient::imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    if (name != "background") {
+        warnings_.once("imager " + name, "moya runs no imager " + name + ", so it changes nothing");
+        return;
+    }
+    background(parameters, "background");
+}
+
+void SceneClient::background(const v3d::render::offline::rib::ParameterList & parameters, const std::string & colour) {
+    glm::vec3 given(0.0F);
+    if (parameters.has(colour) && parameters.floats(colour).size() >= 3U) {
+        const std::vector<float> & floats = parameters.floats(colour);
+        given = glm::vec3 { floats[0], floats[1], floats[2] };
+    }
+    scene_.set(options_, "background", scene::Value::colours({ given }));
+}
+
 void SceneClient::sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
     if (request.type != "PxrCryptomatte") {
         warnings_.once("sample filter " + request.type, "the sample filter " + request.type + " is not one moya reads, so it changes nothing");
@@ -814,6 +842,12 @@ void SceneClient::lightSource(const v3d::render::offline::rib::requests::LightSo
 
 void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
     if (request.shader.empty()) {
+        current_.area.reset();
+        return;
+    }
+    if (request.shader != "arealight") {
+        // another area light is a shader written for RI, which moya does not run
+        warnings_.once("area light " + request.shader, "moya runs no area light shader \"" + request.shader + "\", so it changes nothing");
         current_.area.reset();
         return;
     }

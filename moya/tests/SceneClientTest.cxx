@@ -7,6 +7,7 @@
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/film/Compare.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/ri/SceneClient.h>
@@ -324,6 +325,60 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_attributes_moya_does_not_read_are_reported
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_displays_parameters_are_reported_test) {
     BOOST_TEST(!Read("Display \"out.exr\" \"openexr\" \"rgba\"\nWorldBegin\nWorldEnd\n").warned());
     BOOST_TEST(Read("Display \"out.exr\" \"openexr\" \"rgba\" \"string compression\" [\"zip\"]\nWorldBegin\nWorldEnd\n").warned());
+}
+
+// RI's ambient light is a dome of its colour and intensity that shadows nothing and the camera
+// does not see
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_ambient_light_is_an_unshadowed_dome_test) {
+    const Read read("WorldBegin\nLightSource \"ambientlight\" 1 \"intensity\" [0.5] \"lightcolor\" [1 0.5 0.25]\nWorldEnd\n");
+    BOOST_TEST(!read.warned());
+    BOOST_TEST((read.value("domeLight", "light 1", "intensity") == scene::Value::number(0.5F)));
+    BOOST_TEST((read.value("domeLight", "light 1", "colour") == scene::Value::colour(glm::vec3(1.0F, 0.5F, 0.25F))));
+    BOOST_TEST((read.value("domeLight", "light 1", "shadowIncludeRoot") == scene::Value::integer(0)));
+    BOOST_TEST(read.value("domeLight", "light 1", "shadowInstances").handleArray().empty());
+    BOOST_TEST((read.value("domeLight", "light 1", "camera") == scene::Value::integer(0)));
+}
+
+// a diffuse wall under an ambient light alone shows its albedo times the light everywhere, even
+// beside a black card that hides half its sky, and the camera sees nothing past it
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_ambient_light_lights_without_shadows_test) {
+    const Read read(
+        "Format 32 32 1\nPixelSamples 8 8\nProjection \"perspective\" \"fov\" [60]\nTranslate 0 0 3\nWorldBegin\n"
+        "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+        "Surface \"matte\"\nColor 0.6 0.6 0.6\n"
+        "Polygon \"P\" [-1 -1 0  0 -1 0  0 1 0  -1 1 0]\n"
+        "AttributeBegin\nColor 0 0 0\nPolygon \"P\" [0 -1 0  0 -1 -1  0 1 -1  0 1 0]\nAttributeEnd\n"
+        "WorldEnd\n");
+    v3d::moya::device::CpuDevice device;
+    const v3d::moya::film::Snapshot picture = v3d::moya::integrate::render(device, read.scene(), {}, v3d::moya::colour::Config());
+    // the wall's pixels lie left of the middle, and the card's edge on is at the middle
+    const v3d::moya::film::Estimate wall = v3d::moya::film::mean(picture, { 8, 10 }, { 15, 22 });
+    BOOST_TEST(v3d::moya::film::sigmas(wall, 0.3F) < 3.0F);
+    BOOST_TEST(picture.at(30, 2, 0) == 0.0F);
+    BOOST_TEST(picture.at(30, 2, 3) == 0.0F);
+}
+
+// RI's background imager and RenderMan's background display filter each set the options'
+// background, black unless they give a colour. Another imager or display filter changes nothing
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_background_is_the_options_test) {
+    const Read imaged("Imager \"background\" \"color background\" [0.2 0.4 0.6]\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((imaged.value("options", "options", "background") == scene::Value::colours({ glm::vec3(0.2F, 0.4F, 0.6F) })));
+    const Read black("Imager \"background\"\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((black.value("options", "options", "background") == scene::Value::colours({ glm::vec3(0.0F) })));
+    const Read filtered("DisplayFilter \"PxrBackgroundDisplayFilter\" \"plate\" \"color backgroundColor\" [1 0 0]\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((filtered.value("options", "options", "background") == scene::Value::colours({ glm::vec3(1.0F, 0.0F, 0.0F) })));
+    BOOST_TEST(!filtered.warned());
+
+    const Read other("Imager \"sepia\"\nDisplayFilter \"PxrEdgeFilter\" \"edges\"\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST(other.value("options", "options", "background").floatArray().empty());
+    BOOST_TEST(other.warned());
+}
+
+// an area light of a shader other than RI's arealight makes no light, and is reported
+BOOST_AUTO_TEST_CASE(moya_sceneclient_another_area_light_shader_makes_no_light_test) {
+    const Read read("WorldBegin\nAttributeBegin\nAreaLightSource \"glowball\" 1\nSphere 1 -1 1 360\nAttributeEnd\nWorldEnd\n");
+    BOOST_TEST(read.scene().objects("meshLight").empty());
+    BOOST_TEST(read.warned());
 }
 
 };  // namespace
