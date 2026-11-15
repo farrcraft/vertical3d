@@ -102,10 +102,6 @@ void SceneClient::hider(const std::string & name, const v3d::render::offline::ri
     unread("Hider", name, parameters, {});
 }
 
-void SceneClient::shadingRate(float size) {
-    (void)size;
-}
-
 void SceneClient::frame(const std::function<void()> & committed) {
     committed_ = committed;
 }

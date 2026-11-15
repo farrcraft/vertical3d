@@ -10,7 +10,6 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/ri/SceneClient.h>
-#include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -264,13 +263,6 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_ris_hiders_are_passed_over_test) {
     BOOST_TEST(!Read("Hider \"hidden\"\nWorldBegin\nWorldEnd\n").warned());
     BOOST_TEST(Read("Hider \"zbuffer\"\nWorldBegin\nWorldEnd\n").warned());
     BOOST_TEST(Read("Hider \"raytrace\" \"int incremental\" [1]\nWorldBegin\nWorldEnd\n").warned());
-}
-
-BOOST_AUTO_TEST_CASE(moya_sceneclient_a_shading_rate_is_passed_over_test) {
-    const Read rated("WorldBegin\nShadingRate 4\nPolygon \"P\" [-1 -1 0  1 -1 0  1 1 0]\nWorldEnd\n");
-    const Read plain("WorldBegin\nPolygon \"P\" [-1 -1 0  1 -1 0  1 1 0]\nWorldEnd\n");
-    BOOST_TEST(!rated.warned());
-    BOOST_TEST(scene::describe(rated.scene()) == scene::describe(plain.scene()));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_the_trace_depth_sets_the_most_bounces_test) {

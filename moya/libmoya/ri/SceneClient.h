@@ -160,8 +160,6 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * by its name, and changes nothing.
      **/
     void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    /** Passed over. A surface is tessellated to the options' edgeLength, in pixels. **/
-    void shadingRate(float size) override;
     /**
      * A display whose name starts with `+` adds an output. Any other replaces every output
      * before it, as RI says. A file ending in `.png` is written as PNG, and any other as EXR,
