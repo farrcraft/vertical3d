@@ -94,6 +94,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "channel \"albedo\"\n"
         "    components integer = 3\n"
         "    filter string = \"default\"\n"
+        "    ranks integer = 6\n"
         "    sourceName string = \"albedo\"\n"
         "    sourceType string = \"raw\"\n"
         "options \"render\"\n"

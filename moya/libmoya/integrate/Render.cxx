@@ -25,6 +25,7 @@
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Trails.h>
+#include <moya/libmoya/integrate/internal/Coverage.h>
 #include <moya/libmoya/integrate/internal/FirstHits.h>
 #include <moya/libmoya/integrate/internal/LightPaths.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
@@ -99,6 +100,49 @@ kernel::integrate::Strategy strategyNamed(const std::string & name) {
     return name == "bsdf" ? kernel::integrate::Strategy::Bsdf : kernel::integrate::Strategy::Mis;
 }
 
+/** The pixel filter the scene's options name, of the width they give. **/
+film::Filter filterOf(device::CpuDevice & device, const scene::Scene & scene) {
+    render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
+    render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);
+    const std::vector<float> & width = option(scene, "filterWidth").floatArray();
+    return film::Filter(device, kind, glm::vec2 { width[0], width[1] });
+}
+
+/** Restores a film and its coverage from a checkpoint, and gives the passes it held. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path, then the fingerprint
+std::uint32_t resumed(const std::string & path, const std::vector<film::Channel> & channels, std::uint64_t print, film::Film & picture,
+    internal::Coverage & coverage) {
+    const film::State state = output::readCheckpoint(path, channels, print);
+    picture.restore(state);
+    coverage.restore(state);
+    return state.passes;
+}
+
+/** Fills a profile with the seconds the passes took and, for a counted render, its tallies. **/
+void profiled(Profile * profile, double seconds, const std::optional<internal::Tallies> & tallies) {
+    if (profile == nullptr) {
+        return;
+    }
+    profile->seconds = seconds;
+    if (tallies) {
+        tallies->into(*profile);
+    }
+}
+
+/** A film's snapshot, with each Cryptomatte layer's ranks and manifest. **/
+film::Snapshot finished(const film::Film & picture, const internal::Coverage & coverage) {
+    film::Snapshot out = picture.snapshot();
+    coverage.into(out);
+    return out;
+}
+
+/** A film's state for a checkpoint, with every pixel's Cryptomatte coverage. **/
+film::State stateOf(const film::Film & picture, const internal::Coverage & coverage) {
+    film::State out = picture.state();
+    coverage.into(out);
+    return out;
+}
+
 /** The radius of a sphere about the box that bounds the world over the shutter, or zero. **/
 float reach(const accel::LinearBox & bounds) {
     accel::Box all = bounds.start;
@@ -149,10 +193,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const texture::Textures textures(device, prototypes.images, texture::optionsOf(scene), config, logger);
     const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds), logger);
 
-    render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
-    render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);
-    const std::vector<float> & width = option(scene, "filterWidth").floatArray();
-    const film::Filter filter(device, kind, glm::vec2 { width[0], width[1] });
+    const film::Filter filter = filterOf(device, scene);
 
     const kernel::sample::ZSobol sampler(std::max(count(scene, "samples"), 1U), resolution, 0, count(scene, "frame"));
     const kernel::integrate::Settings settings = settingsOf(scene);
@@ -164,13 +205,9 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const std::vector<output::Channel> outputs = output::channelsOf(scene);
     const internal::FirstHits firstHits(device, outputs, picture, prototypes.primvarNames, logger);
     const internal::LightPaths lightPaths(device, outputs, picture, lights.labels(), logger);
+    internal::Coverage coverage(device, resolution, kSamplesPerPass, outputs, scene, prototypes);
     const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
-    std::uint32_t done = 0;
-    if (checkpoints.resume) {
-        const film::State state = output::readCheckpoint(checkpoints.path, channels, print);
-        picture.restore(state);
-        done = state.passes;
-    }
+    std::uint32_t done = checkpoints.resume ? resumed(checkpoints.path, channels, print, picture, coverage) : 0U;
     std::uint32_t written = done;
     std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
     std::optional<internal::Tallies> tallies;
@@ -209,36 +246,33 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .firstHits = firstHits.view(),
                 .features = firstHits.features(),
                 .trail = trail.view(),
-                .expressions = lightPaths.view() };
+                .expressions = lightPaths.view(),
+                .covered = coverage.view() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;
             }
             device.launch(resolution.x, resolution.y, params, entry);
         });
+        coverage.add(samples);
         ++done;
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         passing += std::chrono::duration<double>(now - began).count();
         if (!checkpoints.path.empty() && std::chrono::duration<double>(now - last).count() >= checkpoints.interval) {
-            output::writeCheckpoint(checkpoints.path, picture.state(), print);
+            output::writeCheckpoint(checkpoints.path, stateOf(picture, coverage), print);
             written = done;
             last = now;
         }
     }
     if (!checkpoints.path.empty() && written != done) {
-        output::writeCheckpoint(checkpoints.path, picture.state(), print);
+        output::writeCheckpoint(checkpoints.path, stateOf(picture, coverage), print);
     }
-    if (profile != nullptr) {
-        profile->seconds = passing;
-        if (tallies) {
-            tallies->into(*profile);
-        }
-    }
+    profiled(profile, passing, tallies);
     if (trails != nullptr) {
         trail.into(*trails, lights.labels());
     }
     textures.report();
-    return picture.snapshot();
+    return finished(picture, coverage);
 }
 
 };  // namespace v3d::moya::integrate

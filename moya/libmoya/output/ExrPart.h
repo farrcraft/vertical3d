@@ -43,6 +43,9 @@ struct ExrPart {
 
     Precision precision { Precision::Half };
     Compression compression { Compression::Zip };
+
+    /** The film channels among its outputs written as 32-bit floats whatever its precision. **/
+    std::vector<std::string> floats;
 };
 
 };  // namespace v3d::moya::output

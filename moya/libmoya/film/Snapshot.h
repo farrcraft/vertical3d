@@ -8,6 +8,7 @@
 #include <moya/libmoya/film/Channel.h>
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,9 @@ struct Snapshot {
 
     /** Every pixel's count of samples, row by row from the top left. **/
     std::vector<std::uint32_t> samples;
+
+    /** Each Cryptomatte layer's manifest, as JSON, by the layer's name. **/
+    std::map<std::string, std::string> manifests;
 
     /** A pixel's standard error. **/
     float error(std::uint32_t x, std::uint32_t y) const;

@@ -18,6 +18,7 @@
 #include <moya/libmoya/kernel/geometry/Offset.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Traversal.h>
+#include <moya/libmoya/kernel/integrate/Covered.h>
 #include <moya/libmoya/kernel/integrate/Dimensions.h>
 #include <moya/libmoya/kernel/integrate/Event.h>
 #include <moya/libmoya/kernel/integrate/Expressions.h>
@@ -79,7 +80,9 @@ inline constexpr std::uint32_t kMostPassed = 256;
  * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
  * each camera ray fills where it first meets the scene, and features those a denoiser reads.
  * trail holds kTrailSteps steps for each pixel, row by row, where sample zero records its events,
- * or is empty to record none. expressions are the render's light path expressions.
+ * or is empty to record none. expressions are the render's light path expressions. covered holds
+ * count records for each pixel, row by row, where each camera sample of the pass records what it
+ * covers, or is empty to record none.
  **/
 template <geometry::Traversal T, texture::Texels X>
 struct Paths {
@@ -100,7 +103,35 @@ struct Paths {
     Array<FirstHit> features;
     Array<Step> trail;
     Expressions expressions;
+    Array<Covered> covered;
 };
+
+/** The first of a pixel's records of what its samples cover in a pass. **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL std::uint32_t coveredFrom(const Paths<T, X> & paths, std::uint32_t x, std::uint32_t y) {
+    return ((y * paths.pixels.width) + x) * paths.count;
+}
+
+/**
+ * Records what a camera ray covers where it first meets the scene: the instances of a surface it
+ * met and the surface's material. A ray that met no surface, or met a light's shape, covers
+ * nothing. A later ray records nothing.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, std::uint32_t material) {
+    if (paths.covered.size == 0U || MOYA_PATH(state, bounces) != 0U) {
+        return;
+    }
+    const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
+    Covered out;
+    out.weight = MOYA_PATH(state, weight);
+    if (hit.found() && hit.depth != 0U) {
+        out.object = hit.instances[hit.depth - 1U];
+        out.asset = hit.instances[0];
+        out.material = material == surface::kNoMaterial ? kUncovered : material;
+    }
+    paths.covered[coveredFrom(paths, pixel.x, pixel.y) + (MOYA_PATH(state, sample) - paths.first)] = out;
+}
 
 /**
  * Records an event of a path in its pixel's trail, after the events before it, when the path is
@@ -657,6 +688,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         const geometry::Hit hit = paths.traversal.nearest(ray, filter);
         if (!hit.found()) {
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
+            cover(paths, state, hit, surface::kNoMaterial);
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
         }
@@ -666,6 +698,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
+            cover(paths, state, geometry::Hit {}, surface::kNoMaterial);
             const float time = paths.surfaces.held(hit.time);
             const float share = metShare(paths, met, geometry::kNoPrimitive, time, ray.at(hit.distance), state);
             if (share > 0.0F) {
@@ -678,6 +711,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         }
         surface::ShadingPoint point = paths.surfaces.at(hit, ray);
         firstHit(paths, state, hit, ray, point);
+        cover(paths, state, hit, point.material);
         if (!point.found()) {
             return;
         }
@@ -711,11 +745,14 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
 /**
  * One pixel of a pass: each of its samples traced, and added to the pixel in index order. The
  * first half of the pass's samples, which are stratified as a whole run is, go to the half beauty
- * too. A pixel that has stopped takes none.
+ * too. A pixel that has stopped takes none, and its records of what samples cover are empty.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
     if (params.pixels.done(item)) {
+        for (std::uint32_t i = 0; params.covered.size != 0U && i < params.count; ++i) {
+            params.covered[coveredFrom(params, item.x, item.y) + i] = Covered {};
+        }
         return;
     }
     const glm::uvec2 pixel { item.x, item.y };

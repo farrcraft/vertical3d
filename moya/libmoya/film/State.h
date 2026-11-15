@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/film/Channel.h>
+#include <moya/libmoya/film/Covering.h>
 
 #include <cstdint>
 #include <vector>
@@ -38,6 +39,12 @@ struct State {
 
     /** Every pixel's flag, row by row from the top left, which is not zero once it has stopped. **/
     std::vector<std::uint32_t> stopped;
+
+    /**
+     * Every pixel's Cryptomatte coverage, row by row from the top left, or none for a render of no
+     * Cryptomatte layer.
+     **/
+    std::vector<std::vector<Covering>> coverage;
 };
 
 };  // namespace v3d::moya::film

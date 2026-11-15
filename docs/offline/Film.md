@@ -136,6 +136,34 @@ uses it.
 - **A snapshot describes itself.** It holds the film's channels and their offsets, so
   `offset(name)` finds a channel without the film, and a writer needs only the snapshot.
 
+## Cryptomatte coverage
+
+A Cryptomatte layer gives each pixel the IDs of the objects, materials or assets its samples met,
+each with its share of the pixel. It is a raw channel of the source name `crypto_object`,
+`crypto_material` or `crypto_asset`, as [Scene.md](Scene.md) says.
+
+- **An ID names what a camera sample first met.** An object's ID is the name of the innermost
+  instance that placed the surface, and a material's the name of the surface's material. An
+  asset's is the name of the group the outermost instance places, or of that instance when it
+  places a geometry. A sample that met nothing, or a light's shape, covers no ID.
+- **A camera sample keeps one surface**, so a surface that is cut out is covered by the samples
+  it stops, and glass takes its own ID.
+- **Each camera sample records what it covers and its filter weight** in a buffer of the pass,
+  `kernel::integrate::Covered`. A stopped pixel's records are empty.
+- **After each pass, the host adds each pixel's records in sample order**, in
+  `integrate::internal::Coverage`. Each ID's weights are summed, and so is the weight of every
+  sample the pixel took. An ID's coverage is its weight over that whole weight. Nothing is lost
+  however many IDs a pixel holds.
+- **A layer keeps each pixel's IDs of the most coverage**, `ranks` of them, the lower ID first in
+  a tie. They are written to the film channels `<layer>00`, `<layer>01` and on, two ranks to a
+  channel of four floats: an ID, its coverage, an ID, its coverage. A rank of no ID is zero. Each
+  ID is the float whose bits are its hash, as [Output.md](Output.md#cryptomatte) says.
+- **A snapshot holds each layer's manifest**, a JSON object of every name its IDs hold in the
+  picture and each one's ID, by the layer's name in `manifests`.
+
+Background:
+[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md)
+
 ## Checkpoints
 
 A checkpoint is the film as its device holds it, written so that a stopped render can continue
@@ -155,6 +183,11 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
   `moya.moment.weight2` and `moya.weight`. Each pixel's stop flag is `moya.stopped`, of unsigned
   integers. The header's `moya/passes` holds the count of passes, and `moya/fingerprint` the
   fingerprint as sixteen hexadecimal digits.
+- **A render of Cryptomatte layers keeps their coverage in its checkpoint.** The film's floats
+  are then the scanline part `moya.film`, and every pixel's coverage the deep part
+  `moya.coverage`. Each entry is a sample of unsigned channels: `layer`, `id`, and `weight.high`
+  and `weight.low`, the halves of the weight's 64 bits, so a resumed render sums the same
+  weights. An entry of the layer `0xFFFFFFFF` holds the pixel's whole weight.
 - **A checkpoint is written whole or not at all.** It is written to the path with `.partial`
   added, then renamed over the path, so a render stopped while it writes keeps the checkpoint
   before.

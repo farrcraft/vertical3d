@@ -57,6 +57,7 @@
 #include <moya/libmoya/kernel/geometry/Sampled.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Trace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Traversal.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Covered.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Dimensions.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Event.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Expressions.h>  // IWYU pragma: keep

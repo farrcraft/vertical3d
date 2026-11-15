@@ -25,8 +25,17 @@ enum class Format : std::uint8_t {
 struct Output {
     std::string file;
     Format format { Format::Exr };
-    /** The film channels' names, in the order the output names them. **/
+    /**
+     * The film channels' names, in the order the output names them. A Cryptomatte layer is the
+     * film channels of its ranks.
+     **/
     std::vector<std::string> channels;
+
+    /** The film channels written as 32-bit floats whatever the precision: a layer's ranks. **/
+    std::vector<std::string> floats;
+
+    /** The names of the Cryptomatte layers it holds, whose manifests its header carries. **/
+    std::vector<std::string> cryptomattes;
     Precision precision { Precision::Half };
     Compression compression { Compression::Zip };
 };

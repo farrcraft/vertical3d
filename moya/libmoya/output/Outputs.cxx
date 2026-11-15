@@ -17,6 +17,8 @@
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/output/Cryptomatte.h>
+#include <moya/libmoya/output/ExrMetadata.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <algorithm>
@@ -110,7 +112,8 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
                                              .components = static_cast<std::uint32_t>(scene.value(channel, "components").integerArray().front()),
                                              .combine = combineOf(stringOf(scene, channel, "filter"), source, sourceName) },
                 .source = source,
-                .sourceName = sourceName });
+                .sourceName = sourceName,
+                .ranks = static_cast<std::uint32_t>(std::max(scene.value(channel, "ranks").integerArray().front(), 1)) });
         }
     }
     return channels;
@@ -119,7 +122,14 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
 std::vector<film::Channel> filmChannelsOf(const scene::Scene & scene) {
     std::vector<film::Channel> film;
     for (const Channel & channel : channelsOf(scene)) {
-        film.push_back(channel.film);
+        const std::optional<Cryptomatte> layer = cryptomatteOf(channel);
+        if (!layer) {
+            film.push_back(channel.film);
+            continue;
+        }
+        for (const std::string & ranked : rankChannelsOf(*layer)) {
+            film.push_back(film::Channel { .name = ranked, .components = 2U * kRanksPerChannel, .combine = kernel::film::Combine::Sum });
+        }
     }
     return film;
 }
@@ -132,8 +142,18 @@ std::vector<Output> outputsOf(const scene::Scene & scene) {
             .channels = {},
             .precision = stringOf(scene, made, "precision") == "float" ? Precision::Float : Precision::Half,
             .compression = compressionNamed(stringOf(scene, made, "compression")) };
+        const std::vector<Channel> every = channelsOf(scene);
         for (const scene::Handle & channel : scene.value(made, "channels").handleArray()) {
-            output.channels.push_back(scene.name(channel));
+            const auto named = std::find_if(every.begin(), every.end(), [&](const Channel & held) { return held.film.name == scene.name(channel); });
+            const std::optional<Cryptomatte> layer = named == every.end() ? std::nullopt : cryptomatteOf(*named);
+            if (!layer) {
+                output.channels.push_back(scene.name(channel));
+                continue;
+            }
+            const std::vector<std::string> ranked = rankChannelsOf(*layer);
+            output.channels.insert(output.channels.end(), ranked.begin(), ranked.end());
+            output.floats.insert(output.floats.end(), ranked.begin(), ranked.end());
+            output.cryptomattes.push_back(layer->name);
         }
         outputs.push_back(output);
     }
@@ -153,9 +173,18 @@ Format formatOfFile(const std::string & file) {
 void write(const Output & output, const film::Snapshot & snapshot, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger) {
     switch (output.format) {
     case Format::Exr: {
-        ExrPart part { .name = "", .outputs = { std::string(kBeauty) }, .precision = output.precision, .compression = output.compression };
+        ExrPart part { .name = "", .outputs = { std::string(kBeauty) }, .precision = output.precision, .compression = output.compression, .floats = output.floats };
         part.outputs.insert(part.outputs.end(), output.channels.begin(), output.channels.end());
-        writeExr(output.file, snapshot, { part }, {});
+        ExrMetadata metadata;
+        for (const std::string & layer : output.cryptomattes) {
+            const std::string prefix = "cryptomatte/" + keyOf(layer) + "/";
+            const auto manifest = snapshot.manifests.find(layer);
+            metadata.strings.emplace_back(prefix + "name", layer);
+            metadata.strings.emplace_back(prefix + "hash", "MurmurHash3_32");
+            metadata.strings.emplace_back(prefix + "conversion", "uint32_to_float32");
+            metadata.strings.emplace_back(prefix + "manifest", manifest == snapshot.manifests.end() ? std::string("{}") : manifest->second);
+        }
+        writeExr(output.file, snapshot, { part }, metadata);
         return;
     }
     case Format::Png: {

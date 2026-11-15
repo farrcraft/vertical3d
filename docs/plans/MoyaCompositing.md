@@ -129,7 +129,7 @@ among the options before the record is drafted.
 | [12](#step-12--the-record-a-bounces-lobe) | The record: a bounce's lobe | `docs/adr` | **0235** | accepted |
 | [13](#step-13--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231, 0235 | done |
 | [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | done |
-| [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | open |
+| [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | done |
 | [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | open |
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | open |
 | [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
@@ -564,6 +564,17 @@ has no USD client, and the RIB client's `lightGroup` is step 18's.
 **Tests:** a pixel inside one object holds its ID at a coverage of one. A pixel on the edge
 between two holds both, with the shares their areas give, within errors. The manifest names every
 object in the picture, and each hash matches the specification's examples.
+
+**Done.** A raw channel of the source name `crypto_object`, `crypto_material` or `crypto_asset`
+is a layer, and the channel's `ranks` asks for more than six. Each camera sample records its first
+hit's innermost and outermost instance, its material and its filter weight, and the host adds
+each pixel's records after the pass in `integrate::internal::Coverage`. The film holds each
+layer's ranks as channels of four floats, which the EXR writer keeps in 32-bit floats beside a
+beauty of halves, and the header carries each layer's manifest. A checkpoint holds the coverage
+as a deep part with each weight's 64 bits, so a resumed render's ranks are the same bit for bit.
+The hash is checked against MurmurHash3's published values, since the specification's own
+examples could not be reached. The records take sixteen bytes for each sample of a pass, which a
+buffer of a band of rows would bound for large pictures.
 
 ### Step 16 — Deep EXR
 

@@ -18,6 +18,7 @@
 #include <OpenEXR/ImfChromaticities.h>
 #include <OpenEXR/ImfCompression.h>
 #include <OpenEXR/ImfFloatAttribute.h>
+#include <OpenEXR/ImfStringAttribute.h>
 #include <OpenEXR/ImfFrameBuffer.h>
 #include <OpenEXR/ImfHeader.h>
 #include <OpenEXR/ImfMultiPartOutputFile.h>
@@ -27,6 +28,7 @@
 #include <OpenEXR/ImfPixelType.h>
 #include <OpenEXR/ImfStandardAttributes.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -64,6 +66,15 @@ std::size_t indexOf(const film::Snapshot & snapshot, const std::string & output)
         }
     }
     throw std::invalid_argument("an EXR part names " + output + ", which is not one of the film's outputs");
+}
+
+/**
+ * Whether a channel in the file is written as 32-bit floats whatever the part's precision: one of
+ * a film channel the part names among its floats, by the film channel's name before its dot.
+ **/
+bool floated(const ExrPart & part, const std::string & name) {
+    const std::string channel = name.substr(0, name.rfind('.'));
+    return std::find(part.floats.begin(), part.floats.end(), channel) != part.floats.end();
 }
 
 /**
@@ -165,9 +176,8 @@ Imath::M44f matrixOf(const glm::mat4 & matrix) {
 Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, const FileChannels & channels, const ExrMetadata & metadata) {
     Imf::Header header(static_cast<int>(snapshot.resolution.x), static_cast<int>(snapshot.resolution.y));
     header.compression() = compressionOf(part.compression);
-    const Imf::PixelType type = part.precision == Precision::Half ? Imf::HALF : Imf::FLOAT;
     for (const auto & [name, offset] : channels) {
-        header.channels().insert(name, Imf::Channel(type));
+        header.channels().insert(name, Imf::Channel(part.precision == Precision::Float || floated(part, name) ? Imf::FLOAT : Imf::HALF));
     }
     if (!part.name.empty()) {
         header.setName(part.name);
@@ -193,6 +203,9 @@ Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, cons
     if (metadata.renderSeconds) {
         header.insert("moya/renderTime", Imf::FloatAttribute(*metadata.renderSeconds));
     }
+    for (const auto & [name, value] : metadata.strings) {
+        header.insert(name, Imf::StringAttribute(value));
+    }
     return header;
 }
 
@@ -201,10 +214,10 @@ Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, cons
  * place. A half part reads halves, converted into the storage given first, because OpenEXR
  * converts between pixel types only when it reads a file.
  **/
-Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & channels, Precision precision,
+Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & channels, const ExrPart & part,
     const std::vector<float> & counts, std::vector<half> & halves) {
     Imf::FrameBuffer out;
-    if (precision == Precision::Float) {
+    if (part.precision == Precision::Float) {
         // OpenEXR reads through a pointer that is not const, and writing a file reads nothing back
         char * const base = const_cast<char *>(reinterpret_cast<const char *>(snapshot.values.data()));
         const std::size_t across = sizeof(float) * snapshot.stride;
@@ -232,7 +245,15 @@ Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & c
     char * const base = reinterpret_cast<char *>(halves.data());
     const std::size_t across = sizeof(half) * count;
     const std::size_t down = across * snapshot.resolution.x;
+    // OpenEXR reads through a pointer that is not const, and writing a file reads nothing back
+    char * const floats = const_cast<char *>(reinterpret_cast<const char *>(snapshot.values.data()));
+    const std::size_t floatAcross = sizeof(float) * snapshot.stride;
+    const std::size_t floatDown = floatAcross * snapshot.resolution.x;
     for (std::size_t i = 0; i < count; ++i) {
+        if (floated(part, channels[i].first)) {
+            out.insert(channels[i].first, Imf::Slice(Imf::FLOAT, floats + (channels[i].second * sizeof(float)), floatAcross, floatDown));
+            continue;
+        }
         out.insert(channels[i].first, Imf::Slice(Imf::HALF, base + (i * sizeof(half)), across, down));
     }
     return out;
@@ -274,14 +295,14 @@ void writeExr(const std::string & path, const film::Snapshot & snapshot, const s
     std::vector<std::vector<half>> halves(parts.size());
     if (parts.size() == 1) {
         Imf::OutputFile file(path.c_str(), headers.front());
-        file.setFrameBuffer(frameOf(snapshot, channels.front(), parts.front().precision, counts, halves.front()));
+        file.setFrameBuffer(frameOf(snapshot, channels.front(), parts.front(), counts, halves.front()));
         file.writePixels(rows);
         return;
     }
     Imf::MultiPartOutputFile file(path.c_str(), headers.data(), static_cast<int>(headers.size()));
     for (std::size_t i = 0; i < parts.size(); ++i) {
         Imf::OutputPart part(file, static_cast<int>(i));
-        part.setFrameBuffer(frameOf(snapshot, channels[i], parts[i].precision, counts, halves[i]));
+        part.setFrameBuffer(frameOf(snapshot, channels[i], parts[i], counts, halves[i]));
         part.writePixels(rows);
     }
 }

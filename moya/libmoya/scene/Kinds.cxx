@@ -48,6 +48,9 @@ constexpr int kTextureMemory = 1048576;
 /** A film channel's floats, from 1 to 4, and the three of a colour. **/
 constexpr int kColourComponents = 3;
 
+/** The ranks a Cryptomatte layer keeps unless its channel asks for more. **/
+constexpr int kCryptomatteRanks = 6;
+
 /** A full turn, in degrees, as RI gives thetamax and phimax. **/
 constexpr float kTurn = 360.0F;
 
@@ -127,7 +130,8 @@ Kind channel() {
                 .type = Type::String,
                 .fallback = Value::string("default"),
                 .choices = { "default", "mean", "sum", "closest", "min", "max" } },
-            Declaration { .name = "components", .type = Type::Integer, .fallback = Value::integer(kColourComponents) } } };
+            Declaration { .name = "components", .type = Type::Integer, .fallback = Value::integer(kColourComponents) },
+            Declaration { .name = "ranks", .type = Type::Integer, .fallback = Value::integer(kCryptomatteRanks) } } };
 }
 
 Kind output() {

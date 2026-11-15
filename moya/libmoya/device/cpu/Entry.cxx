@@ -384,7 +384,8 @@ void profiledPaths(const ProfileParams & params, kernel::Item item) {
         .firstHits = from.firstHits,
         .features = from.features,
         .trail = from.trail,
-        .expressions = from.expressions };
+        .expressions = from.expressions,
+        .covered = from.covered };
     const std::uint64_t start = __rdtsc();
     kernel::integrate::paths(paths, item);
     tally.whole += __rdtsc() - start;

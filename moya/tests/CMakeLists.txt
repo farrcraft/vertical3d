@@ -14,6 +14,7 @@ v3d_add_test(moya
 	"CheckpointTest.cxx"
 	"CommandLineTest.cxx"
 	"CompareTest.cxx"
+	"CryptomatteTest.cxx"
 	"ConductorTest.cxx"
 	"DielectricTest.cxx"
 	"DisplacementTest.cxx"

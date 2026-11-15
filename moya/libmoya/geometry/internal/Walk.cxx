@@ -347,6 +347,7 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     const auto index = static_cast<std::uint32_t>(prototypes_.materials.size());
     prototypes_.materials.push_back(out);
     prototypes_.materialSpaces.push_back(space);
+    prototypes_.materialHandles.push_back(handle);
     materialIndex_.emplace(handle.index, index);
     materialHandles_.push_back(handle);
     return index;

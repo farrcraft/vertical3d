@@ -65,7 +65,10 @@ then derived as RI derives it.
   value's, the primvar's or the expression's name. `components` is its floats per pixel.
   `filter` is how its samples make a pixel: `mean`, `sum`, `closest`, `min` or `max`, or
   `default`, the fallback, which is `closest` for a raw depth, position, instance or face and
-  `mean` for any other. The channel's name is the object's.
+  `mean` for any other. The channel's name is the object's. A raw channel of the source name
+  `crypto_object`, `crypto_material` or `crypto_asset` is a Cryptomatte layer of that name, and
+  `ranks`, 6 by default, is how many of each pixel's IDs it keeps, as
+  [Film.md](Film.md#cryptomatte-coverage) says.
 - **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
   channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
   or `float`, and `compression`, one of OpenEXR's.

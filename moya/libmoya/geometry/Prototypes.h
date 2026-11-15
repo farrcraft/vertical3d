@@ -14,6 +14,7 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/texture/Request.h>
 
@@ -86,6 +87,9 @@ struct Prototypes {
      **/
     std::vector<kernel::surface::Material> materials;
     std::vector<std::string> materialSpaces;
+
+    /** The scene's material object each of the materials was made from. **/
+    std::vector<scene::Handle> materialHandles;
 
     /**
      * Every material's program: its instructions, and the values its registers start from, each

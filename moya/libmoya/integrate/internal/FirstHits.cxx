@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/output/Channel.h>
+#include <moya/libmoya/output/Cryptomatte.h>
 #include <moya/libmoya/output/Outputs.h>
 
 #include <algorithm>
@@ -87,6 +88,9 @@ FirstHits::FirstHits(device::Device & device, const std::vector<output::Channel>
     std::vector<kernel::integrate::FirstHit> filled;
     std::vector<kernel::integrate::FirstHit> features;
     for (const output::Channel & channel : channels) {
+        if (output::cryptomatteOf(channel)) {
+            continue;
+        }
         const std::optional<kernel::integrate::FirstHit> read = firstHitOf(channel, film, primvarNames);
         const bool feature = read && (read->reading == kernel::integrate::Reading::Albedo || read->reading == kernel::integrate::Reading::DenoisingNormal);
         if (feature) {

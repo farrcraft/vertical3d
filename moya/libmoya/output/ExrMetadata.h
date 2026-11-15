@@ -7,6 +7,8 @@
 
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <glm/mat4x4.hpp>
 
@@ -29,6 +31,9 @@ struct ExrMetadata {
 
     /** How long the picture took to render, written as moya/renderTime. **/
     std::optional<float> renderSeconds;
+
+    /** Other string attributes, each a name and its value, as a Cryptomatte manifest is. **/
+    std::vector<std::pair<std::string, std::string>> strings;
 };
 
 };  // namespace v3d::moya::output

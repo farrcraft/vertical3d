@@ -44,6 +44,8 @@ UTF-8.
   OpenEXR converts between pixel types only when it reads a file. To store the beauty as halves
   and depth as floats, put them in two parts.
 - **Compression is per part**, any of OpenEXR's, with `Compression::Zip` the default.
+- **A part's `floats` are written as 32-bit floats whatever its precision.** A Cryptomatte
+  layer's ranks are, since an ID read as a half loses its hash.
 
 ## Channel names
 
@@ -69,6 +71,21 @@ Every part's header holds:
   them. A glm matrix is written with each float at the same indices. glm multiplies column vectors
   and Imath multiplies row vectors, so the matrix reads back in Imath as the same transform.
 - **`moya/renderTime`**, a float of seconds, when `ExrMetadata` gives one.
+- **Each string of `ExrMetadata::strings`**, by its name.
+
+## Cryptomatte
+
+An output of a Cryptomatte layer writes it as the Cryptomatte specification lays it out.
+
+- **Its ranks are the channels `<layer>00.R` to `.A`, `<layer>01` and on**, of 32-bit floats,
+  beside a beauty of the output's precision.
+- **An ID is a name's 32-bit MurmurHash3**, `output::idOf()`, with the lowest bit of its exponent
+  flipped when the exponent is all zeros or all ones. Its float is never a NaN, an infinity or a
+  denormal.
+- **The header names each layer under its key**, the first seven hex digits of the layer name's
+  hash. It writes `cryptomatte/<key>/name`, `hash` as `MurmurHash3_32` and `conversion` as
+  `uint32_to_float32`. Its `manifest` is a JSON object of each name in the picture and its ID, as
+  eight hex digits.
 
 ## 8-bit pictures
 
