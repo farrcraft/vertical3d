@@ -285,6 +285,37 @@ lies in the first pass, so a render that resumes past it records nothing.
 Background:
 [ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md)
 
+## Light path expressions
+
+`lpe::compile()` reads every light path expression of a render, in OSL's grammar, and compiles
+them into one deterministic automaton, an `lpe::Automaton`. A path steps it once for each event,
+and a state names each expression the events so far match.
+
+- **Each event is one symbol**, which `kernel::integrate::symbolOf()` gives it. The symbols are
+  the camera, a reflection and a transmission of each scattering, an object, and a light in no
+  group. A light of each group follows, by its label, so a render of n groups reads 9 + n.
+- **An event is written `<type scattering label>`.** Each place is a letter, a quoted label, `.`
+  for any, or a set in brackets, `[...]`, or of all but them, `[^...]`. Places left off match
+  anything. The types are `C`, `R`, `T`, `V`, `L`, `O` and `B`, and the scatterings `D`, `G`,
+  `S` and `s`. Paths here have no volume, background or straight events, so `V`, `B` and `s`
+  match none.
+- **A letter alone is one event**: a type's letter is any event of that type, and a scattering's
+  any event of that scattering. `RD` is a reflection and then a diffuse event, and a diffuse
+  reflection is `<RD>`. A quoted label alone, such as `'key'`, is a light of that group, and `.`
+  is any event.
+- **Patterns follow one another**, are grouped in parentheses, and are alternatives across `|`.
+  A set of events in brackets matches any of them, and `[^...]` any event but them. A pattern
+  repeats by `*`, `+`, `?`, `{n}`, `{n,}` or `{n,m}`, a count at most `lpe::kMostRepeats`, 32.
+  Spaces between parts are ignored.
+- **A label no light group holds matches no light.** A light in no group carries no label.
+- **An expression that cannot be read** matches nothing. `compile()` names it with the place,
+  from zero, where reading it stopped, and why.
+- **The automaton is built by subset construction**, visiting each state's symbols in order,
+  and is then made minimal. Its states are numbered as a walk from the start first reaches them,
+  so two sets of expressions that match the same paths give the same automaton.
+- **A set is refused** with `lpe::Refused` when its automaton holds more than
+  `lpe::kMostStates`, 1024, states while it is built.
+
 ## Adaptive sampling
 
 A render stops each pixel once its noise falls below the options' `noiseThreshold`. The samples

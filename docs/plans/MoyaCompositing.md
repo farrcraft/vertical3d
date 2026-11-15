@@ -123,7 +123,7 @@ among the options before the record is drafted.
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | done |
 | [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
 | [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | done |
-| [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | open |
+| [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | done |
 | [12](#step-12--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231 | open |
 | [13](#step-13--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | open |
 | [14](#step-14--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | open |
@@ -466,6 +466,15 @@ event, and a ray that leaves the scene meets lights alone, so no event is the ba
 
 **Tests:** each construct of the grammar against strings of events it should and should not
 match. Two expressions OSL's documentation says are equal compile to the same automaton.
+
+**Done.** `lpe::parse()` reads OSL's grammar into a pattern over sets of symbols, one symbol to an
+event, which `kernel::integrate::symbolOf()` gives. `lpe::compile()` builds one automaton for a
+render's set by Thompson's construction and subset construction, makes it minimal by Moore's
+refinement, and numbers its states as a walk from the start reaches them. Each state names the
+expressions it accepts. The limit is 1024 states while the automaton is built, and a set past it
+is refused with `lpe::Refused`. A diffuse event eight events before the light compiles to 770
+states, and nine are refused. An event holds one label, as moya's events do, so an event of a
+fourth place is not read. A letter outside angle brackets is an event of its own, as in OSL.
 
 ### Step 12 — Light path expressions on the device
 
