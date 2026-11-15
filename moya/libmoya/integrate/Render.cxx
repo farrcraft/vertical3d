@@ -27,6 +27,7 @@
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/integrate/internal/Coverage.h>
+#include <moya/libmoya/integrate/internal/Crop.h>
 #include <moya/libmoya/integrate/internal/Deep.h>
 #include <moya/libmoya/integrate/internal/FirstHits.h>
 #include <moya/libmoya/integrate/internal/Kept.h>
@@ -209,7 +210,10 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints, Profile * profile,
     Trails * trails) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
-    const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
+    const glm::uvec2 image { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
+    const internal::Window window = internal::windowOf(option(scene, "crop").floatArray(), image, logger);
+    // the film holds the window's pixels alone
+    const glm::uvec2 resolution = window.size;
     const accel::Assembly assembly = accel::assemble(device, prototypes);
     const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);
@@ -218,7 +222,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
 
     const film::Filter filter = filterOf(device, scene);
 
-    const kernel::sample::ZSobol sampler(std::max(count(scene, "samples"), 1U), resolution, 0, count(scene, "frame"));
+    const kernel::sample::ZSobol sampler(std::max(count(scene, "samples"), 1U), image, 0, count(scene, "frame"), window.origin);
     const kernel::integrate::Settings settings = settingsOf(scene);
     const kernel::Function<device::cpu::PathParams> entry = device.module().paths;
     const float threshold = option(scene, "noiseThreshold").floatArray().front();
@@ -297,7 +301,10 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
         trail.into(*trails, lights.labels());
     }
     textures.report();
-    return finished(picture, kept, scene, outputs, logger);
+    film::Snapshot out = finished(picture, kept, scene, outputs, logger);
+    out.origin = window.origin;
+    out.image = image;
+    return out;
 }
 
 };  // namespace v3d::moya::integrate

@@ -11,8 +11,6 @@
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
 
-#include <spdlog/sinks/ringbuffer_sink.h>
-
 #include <algorithm>
 #include <memory>
 #include <sstream>
@@ -23,48 +21,14 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
+#include "Heard.h"
+
 namespace v3d::moya::handling {
 
 /*
  * What the cases that read RIB through moya::RIBHandler share: reading a source into a handler,
  * counting what a frame covered, and hearing what the context logged.
  */
-
-/**
- * Collects the lines a logger writes while this object exists. It adds a ring buffer sink to
- * the logger and removes the sink when destroyed. A case reads the log output through it,
- * without reading the log file.
- **/
-class Heard {
- public:
-    explicit Heard(std::shared_ptr<spdlog::logger> logger) :
-        logger_(std::move(logger)),
-        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(64)) {
-        logger_->sinks().push_back(sink_);
-    }
-
-    ~Heard() {
-        std::vector<spdlog::sink_ptr> & sinks = logger_->sinks();
-        sinks.erase(std::remove(sinks.begin(), sinks.end(), sink_), sinks.end());
-    }
-
-    Heard(const Heard &) = delete;
-    Heard & operator=(const Heard &) = delete;
-
-    /**
-     * Whether a line logged so far holds the text.
-     **/
-    bool said(const std::string & text) const {
-        const std::vector<std::string> lines = sink_->last_formatted();
-        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
-            return line.find(text) != std::string::npos;
-        });
-    }
-
- private:
-    std::shared_ptr<spdlog::logger> logger_;
-    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
-};
 
 /**
  * Pixels inside the quad, spread over it.

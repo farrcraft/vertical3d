@@ -34,6 +34,10 @@ UTF-8.
 - **A file holds one or more parts.** Each `ExrPart` names the outputs it holds, in order, how
   they are stored and how they are compressed. Every part covers the snapshot's whole
   resolution.
+- **The display window is the snapshot's image, and the data window its pixels.** A render of a
+  crop window holds a window of its image, so its file's data window lies at the window's place
+  in the display window. A deep file is written the same way. A snapshot that names no image is
+  its own image.
 - **One part is written as a plain scanline file**, which every EXR reader opens. Several are
   written as a multi-part file, and each then needs a name of its own.
 - **An output is the beauty, the count of samples or a channel.** `kBeauty`, "beauty", is the
@@ -113,6 +117,8 @@ editor's render view. `writePng(path, snapshot, display, logger)` writes it to a
 - **Each channel is 8 bits.** A value is clamped to [0, 1] and rounded to the nearest of 256 steps,
   and a NaN is zero.
 - **The bytes are red, green and blue** for each pixel, row by row from the top left.
+- **A PNG holds the snapshot's pixels alone.** A render of a crop window writes the window, since
+  a PNG has no window within an image.
 - **`writePng` throws `std::runtime_error`** when the picture does not encode or the file cannot
   be written.
 

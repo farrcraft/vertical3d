@@ -14,6 +14,7 @@
 #include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/view/Hits.h>
 #include <Imath/ImathBox.h>
+#include <Imath/ImathVec.h>
 #include <Imath/half.h>
 #include <OpenEXR/ImfChannelList.h>
 #include <OpenEXR/ImfChromaticities.h>
@@ -276,6 +277,34 @@ BOOST_AUTO_TEST_CASE(moya_exr_an_image_reads_back_in_the_space_its_chromaticitie
     }
     BOOST_TEST(output::readExr(unnamed).interopId == "lin_rec709_scene");
     BOOST_CHECK_THROW(output::readExr(sandbox.file("missing.exr")), std::exception);
+}
+
+// a snapshot of a window of an image takes the image as its display window, and the window's
+// pixels at their place as its data window. It does so in floats and in halves, and reads back as
+// the window's pixels
+BOOST_AUTO_TEST_CASE(moya_exr_a_window_of_an_image_is_written_at_its_place_test) {
+    const Sandbox sandbox("window");
+    film::Snapshot written = snapshot();
+    written.image = { kWidth + 7, kHeight + 5 };
+    written.origin = { 3, 2 };
+    for (const output::Precision precision : { output::Precision::Float, output::Precision::Half }) {
+        const std::string path = sandbox.file(precision == output::Precision::Float ? "floats.exr" : "halves.exr");
+        output::writeExr(path, written, { { .name = "", .outputs = { "beauty" }, .precision = precision, .compression = output::Compression::Zip } }, {});
+        const Imf::InputFile file(path.c_str());
+        BOOST_TEST((file.header().displayWindow() == Imath::Box2i(Imath::V2i(0, 0), Imath::V2i(kWidth + 6, kHeight + 4))));
+        BOOST_TEST((file.header().dataWindow() == Imath::Box2i(Imath::V2i(3, 2), Imath::V2i(kWidth + 2, kHeight + 1))));
+        const output::ExrImage image = output::readExr(path);
+        BOOST_TEST_REQUIRE(image.width == kWidth);
+        BOOST_TEST_REQUIRE(image.height == kHeight);
+        for (std::uint32_t y = 0; y < kHeight; ++y) {
+            for (std::uint32_t x = 0; x < kWidth; ++x) {
+                for (std::uint32_t i = 0; i < 3U; ++i) {
+                    const float want = precision == output::Precision::Float ? written.at(x, y, i) : static_cast<float>(half(written.at(x, y, i)));
+                    BOOST_TEST(image.texels[(static_cast<std::size_t>(y) * kWidth) + x][static_cast<glm::length_t>(i)] == want);
+                }
+            }
+        }
+    }
 }
 
 BOOST_AUTO_TEST_CASE(moya_exr_refuses_parts_it_cannot_write_test) {

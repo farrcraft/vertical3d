@@ -8,6 +8,7 @@
 #include <moya/libmoya/film/DeepSample.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/output/ExrPart.h>
+#include <moya/libmoya/output/internal/ExrWindows.h>
 #include <moya/libmoya/output/internal/Field.h>
 #include <Imath/half.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -72,7 +73,8 @@ void writeDeepExr(const std::string & path, const film::Snapshot & snapshot, Pre
         throw std::invalid_argument("a deep file of a snapshot that holds no deep samples for every pixel");
     }
     const bool halves = precision == Precision::Half;
-    Imf::Header header(static_cast<int>(snapshot.resolution.x), static_cast<int>(snapshot.resolution.y));
+    const internal::Windows windows = internal::windowsOf(snapshot);
+    Imf::Header header(windows.display, windows.data);
     header.setType(Imf::DEEPSCANLINE);
     header.compression() = deepCompressionOf(compression);
     for (const char * const name : kColours) {
@@ -112,23 +114,24 @@ void writeDeepExr(const std::string & path, const film::Snapshot & snapshot, Pre
         }
     }
     Imf::DeepFrameBuffer frame;
-    frame.insertSampleCountSlice(Imf::Slice(Imf::UINT, reinterpret_cast<char *>(counts.data()), sizeof(unsigned int), sizeof(unsigned int) * width));
+    frame.insertSampleCountSlice(Imf::Slice(Imf::UINT, internal::based(reinterpret_cast<char *>(counts.data()), windows.data, sizeof(unsigned int), sizeof(unsigned int) * width),
+        sizeof(unsigned int), sizeof(unsigned int) * width));
     for (std::size_t i = 0; i < kColourCount; ++i) {
         if (halves) {
             halfColours[i].place(counts);
-            frame.insert(kColours[i], halfColours[i].slice(Imf::HALF, width));
+            frame.insert(kColours[i], halfColours[i].slice(Imf::HALF, width, windows.data));
         } else {
             floatColours[i].place(counts);
-            frame.insert(kColours[i], floatColours[i].slice(Imf::FLOAT, width));
+            frame.insert(kColours[i], floatColours[i].slice(Imf::FLOAT, width, windows.data));
         }
     }
     depths.place(counts);
     objects.place(counts);
     materials.place(counts);
-    frame.insert("Z", depths.slice(Imf::FLOAT, width));
-    frame.insert("ZBack", depths.slice(Imf::FLOAT, width));
-    frame.insert("objectid", objects.slice(Imf::UINT, width));
-    frame.insert("materialid", materials.slice(Imf::UINT, width));
+    frame.insert("Z", depths.slice(Imf::FLOAT, width, windows.data));
+    frame.insert("ZBack", depths.slice(Imf::FLOAT, width, windows.data));
+    frame.insert("objectid", objects.slice(Imf::UINT, width, windows.data));
+    frame.insert("materialid", materials.slice(Imf::UINT, width, windows.data));
     Imf::DeepScanLineOutputFile file(path.c_str(), header);
     file.setFrameBuffer(frame);
     file.writePixels(static_cast<int>(snapshot.resolution.y));

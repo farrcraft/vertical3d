@@ -24,6 +24,14 @@ namespace v3d::moya::film {
 struct Snapshot {
     glm::uvec2 resolution { 0 };
 
+    /**
+     * The image the pixels are a window of, and the place of the window's top left pixel in it.
+     * An image of zero is the snapshot's own resolution. A crop window renders a window of the
+     * image, and a file is written with the image as its whole and the window as what it holds.
+     **/
+    glm::uvec2 image { 0 };
+    glm::uvec2 origin { 0 };
+
     /** The passes it holds the samples of. **/
     std::uint32_t passes { 0 };
 

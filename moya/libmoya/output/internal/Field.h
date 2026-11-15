@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <moya/libmoya/output/internal/ExrWindows.h>
+
+#include <Imath/ImathBox.h>
 #include <OpenEXR/ImfDeepFrameBuffer.h>
 #include <OpenEXR/ImfPixelType.h>
 
@@ -15,7 +18,7 @@ namespace v3d::moya::output::internal {
 
 /**
  * A field's values for every sample in pixel order, and where each pixel's first lies, as a deep
- * slice reads them.
+ * slice reads them, laid out row by row from the data window given to slice().
  **/
 template <typename T>
 struct Field {
@@ -31,8 +34,9 @@ struct Field {
         }
     }
 
-    Imf::DeepSlice slice(Imf::PixelType type, std::size_t width) {
-        return Imf::DeepSlice(type, reinterpret_cast<char *>(pointers.data()), sizeof(char *), sizeof(char *) * width, sizeof(T));
+    Imf::DeepSlice slice(Imf::PixelType type, std::size_t width, const Imath::Box2i & data) {
+        return Imf::DeepSlice(type, based(reinterpret_cast<char *>(pointers.data()), data, sizeof(char *), sizeof(char *) * width), sizeof(char *),
+            sizeof(char *) * width, sizeof(T));
     }
 };
 

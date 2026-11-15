@@ -212,6 +212,12 @@ can change what was gathered, such as a material's closures, before it renders.
   past any surface it passes as cut out, as [the next section](#values-at-the-first-hit) says.
 - **The picture is the same on any thread count** and however the samples are split into passes,
   since each pixel's samples are added in index order.
+- **The options' `crop` renders a window of the image.** Its pixels are those RI's crop window
+  names: on each axis, from `ceil(side * least)` up to and not including `ceil(side * most)`. The
+  film holds the window's pixels alone. Each draws the samples of its place in the image, and the
+  camera sees it there, so a pixel of a crop is the same, bit for bit, as that pixel of the whole
+  image. The snapshot names the image and the window's place in it. A window of no pixels is
+  logged, and the whole image is rendered.
 - **`moya --paths`** reads a RIB file through the scene client and writes each of the scene's
   outputs, as [Output.md](Output.md#a-scenes-outputs) says.
   [CommandLine.md](../manual/moya/CommandLine.md) lists its options.

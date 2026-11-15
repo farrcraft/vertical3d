@@ -11,6 +11,8 @@
 #include <moya/libmoya/output/Chromaticities.h>
 #include <moya/libmoya/output/ExrMetadata.h>
 #include <moya/libmoya/output/ExrPart.h>
+#include <moya/libmoya/output/internal/ExrWindows.h>
+#include <Imath/ImathBox.h>
 #include <Imath/ImathMatrix.h>
 #include <Imath/half.h>
 #include <Imath/ImathVec.h>
@@ -174,7 +176,8 @@ Imath::M44f matrixOf(const glm::mat4 & matrix) {
 
 /** The header of one part. **/
 Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, const FileChannels & channels, const ExrMetadata & metadata) {
-    Imf::Header header(static_cast<int>(snapshot.resolution.x), static_cast<int>(snapshot.resolution.y));
+    const internal::Windows windows = internal::windowsOf(snapshot);
+    Imf::Header header(windows.display, windows.data);
     header.compression() = compressionOf(part.compression);
     for (const auto & [name, offset] : channels) {
         header.channels().insert(name, Imf::Channel(part.precision == Precision::Float || floated(part, name) ? Imf::FLOAT : Imf::HALF));
@@ -217,6 +220,7 @@ Imf::Header headerOf(const film::Snapshot & snapshot, const ExrPart & part, cons
 Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & channels, const ExrPart & part,
     const std::vector<float> & counts, std::vector<half> & halves) {
     Imf::FrameBuffer out;
+    const Imath::Box2i data = internal::windowsOf(snapshot).data;
     if (part.precision == Precision::Float) {
         // OpenEXR reads through a pointer that is not const, and writing a file reads nothing back
         char * const base = const_cast<char *>(reinterpret_cast<const char *>(snapshot.values.data()));
@@ -225,10 +229,11 @@ Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & c
         for (const auto & [name, offset] : channels) {
             if (offset == kCounted) {
                 char * const counted = const_cast<char *>(reinterpret_cast<const char *>(counts.data()));
-                out.insert(name, Imf::Slice(Imf::FLOAT, counted, sizeof(float), sizeof(float) * snapshot.resolution.x));
+                out.insert(name, Imf::Slice(Imf::FLOAT, internal::based(counted, data, sizeof(float), sizeof(float) * snapshot.resolution.x), sizeof(float),
+                    sizeof(float) * snapshot.resolution.x));
                 continue;
             }
-            out.insert(name, Imf::Slice(Imf::FLOAT, base + (offset * sizeof(float)), across, down));
+            out.insert(name, Imf::Slice(Imf::FLOAT, internal::based(base + (offset * sizeof(float)), data, across, down), across, down));
         }
         return out;
     }
@@ -251,10 +256,11 @@ Imf::FrameBuffer frameOf(const film::Snapshot & snapshot, const FileChannels & c
     const std::size_t floatDown = floatAcross * snapshot.resolution.x;
     for (std::size_t i = 0; i < count; ++i) {
         if (floated(part, channels[i].first)) {
-            out.insert(channels[i].first, Imf::Slice(Imf::FLOAT, floats + (channels[i].second * sizeof(float)), floatAcross, floatDown));
+            out.insert(channels[i].first,
+                Imf::Slice(Imf::FLOAT, internal::based(floats + (channels[i].second * sizeof(float)), data, floatAcross, floatDown), floatAcross, floatDown));
             continue;
         }
-        out.insert(channels[i].first, Imf::Slice(Imf::HALF, base + (i * sizeof(half)), across, down));
+        out.insert(channels[i].first, Imf::Slice(Imf::HALF, internal::based(base + (i * sizeof(half)), data, across, down), across, down));
     }
     return out;
 }

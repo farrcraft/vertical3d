@@ -55,16 +55,25 @@ struct ZSobol {
     /** The seed and the frame, mixed. **/
     std::uint64_t scramble { 0 };
 
+    /**
+     * Where the pixels a sample names start in the image: the place of a cropped film's first
+     * pixel. A pixel draws the samples of its place in the image, so a crop of an image draws
+     * what the whole image draws there.
+     **/
+    glm::uvec2 origin { 0U };
+
     ZSobol() = default;
 
     /**
      * A sampler for an image of the given resolution, with the given samples per pixel. A count
-     * that is not a power of two is rounded up to one. Every frame takes its own samples.
+     * that is not a power of two is rounded up to one. Every frame takes its own samples. The
+     * pixels a sample names start at the origin in the image.
      **/
-    MOYA_KERNEL ZSobol(std::uint32_t samplesPerPixel, glm::uvec2 resolution, std::uint32_t seed, std::uint32_t frame) :
+    MOYA_KERNEL ZSobol(std::uint32_t samplesPerPixel, glm::uvec2 resolution, std::uint32_t seed, std::uint32_t frame,
+        glm::uvec2 start = glm::uvec2 { 0U }) :
         log2Samples(log2Ceiling(samplesPerPixel)),
         digits(log2Ceiling(resolution.x > resolution.y ? resolution.x : resolution.y) + ((log2Samples + 1U) / 2U)),
-        scramble(mix((static_cast<std::uint64_t>(seed) << 32U) | frame)) {
+        scramble(mix((static_cast<std::uint64_t>(seed) << 32U) | frame)), origin(start) {
     }
 
     /** The samples each pixel takes. **/
@@ -112,7 +121,7 @@ struct ZSobol {
      **/
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the sample, then the dimension
     MOYA_KERNEL std::uint64_t index(glm::uvec2 pixel, std::uint32_t sample, std::uint32_t dimension) const {
-        const std::uint64_t ordered = (morton(pixel.x, pixel.y) << log2Samples) | sample;
+        const std::uint64_t ordered = (morton(pixel.x + origin.x, pixel.y + origin.y) << log2Samples) | sample;
         const std::uint64_t salt = kDimensionSalt * dimension;
         const std::uint32_t odd = log2Samples & 1U;
         std::uint64_t out = 0;

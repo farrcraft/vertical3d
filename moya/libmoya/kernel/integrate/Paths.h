@@ -253,7 +253,9 @@ MOYA_KERNEL void firstHit(const Paths<T, X> & paths, const PathState & state, co
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, std::uint32_t sample, PathState & state) {
     const film::FilterSample placed = paths.filter.sample(paths.sampler.get2D(pixel, sample, kFilter));
-    const glm::vec2 raster = glm::vec2 { static_cast<float>(pixel.x), static_cast<float>(pixel.y) } + 0.5F + placed.offset;
+    // a pixel is the film's own, and the camera sees it at its place in the image
+    const glm::uvec2 imaged = pixel + paths.sampler.origin;
+    const glm::vec2 raster = glm::vec2 { static_cast<float>(imaged.x), static_cast<float>(imaged.y) } + 0.5F + placed.offset;
     MOYA_PATH(state, pixel) = pixel;
     MOYA_PATH(state, sample) = sample;
     MOYA_PATH(state, ray) = paths.camera.ray(raster, paths.sampler.get2D(pixel, sample, kLens), paths.sampler.get1D(pixel, sample, kTime));

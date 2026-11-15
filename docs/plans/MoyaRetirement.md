@@ -400,8 +400,13 @@ request means, rather than how the old hiders draw it, move to the scene client'
 **In progress.** `Hider`, `ShadingRate`, `Option "trace" "maxdepth"`, the parameters passed over by
 rule and the reports of every other parameter are done, and [Rib.md](../offline/Rib.md) states
 them. A declaration of an array in a parameter's name, such as `"int bucketsize[2]"`, is not read
-by the reader, so RI's standard declarations are used. `CropWindow` and the old cases' move are
-open.
+by the reader, so RI's standard declarations are used.
+
+`CropWindow` is done. The film holds the window's pixels alone, and the sampler and the camera
+place each at its pixel of the image. A crop is therefore the whole image's render there, bit for
+bit, in every float and every deep sample. The snapshot names the image and the window's place in
+it. An EXR or deep file then has the image as its display window and the crop as its data window,
+and a PNG holds the crop alone. The move of the old cases is open.
 
 ### Step 8 — The old scenes through the new core
 
@@ -485,6 +490,10 @@ no `Hider`. A document saved with each hider loads with the settings it had othe
 * **No new-core test includes an old-core header.**
 
 **Tests:** each moved case still fails when the value it checks is broken.
+
+**In progress.** The log catcher is in `Heard.h`, which names no old code, and `Handling.h`
+includes it. The crop's case in `DeepTest.cxx` uses it. The six tests that include `Handling.h`
+for it alone still do.
 
 ### Step 14 — RI's C interface
 

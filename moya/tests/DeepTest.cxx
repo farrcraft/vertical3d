@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <api/log/Logger.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/DeepSample.h>
@@ -13,6 +14,8 @@
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <Imath/ImathBox.h>
+#include <Imath/ImathVec.h>
 #include <OpenEXR/ImfCompositeDeepScanLine.h>
 #include <OpenEXR/ImfDeepScanLineInputFile.h>
 #include <OpenEXR/ImfFrameBuffer.h>
@@ -29,10 +32,14 @@
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "Heard.h"
 #include "Staged.h"
 
 namespace v3d::moya::tracing {
@@ -203,6 +210,77 @@ BOOST_AUTO_TEST_CASE(moya_deep_a_resumed_render_keeps_its_lists_test) {
     }
     BOOST_TEST(same);
     BOOST_TEST(samplesAt(resumed, kCarded, kRow).size() == 2U);
+}
+
+// a crop window renders its pixels alone, each as the whole image renders it there, bit for bit
+// in every float and every deep sample. Its file's display window is the whole image, and its
+// data window the crop's pixels at their place, which flatten to the cropped picture
+BOOST_AUTO_TEST_CASE(moya_deep_a_crop_renders_its_window_of_the_image_test) {
+    const film::Snapshot whole = Carded(true).render();
+    Carded cropping(true);
+    cropping.staged.made.set(cropping.staged.options, "crop", scene::Value::floats({ 0.25F, 0.75F, 0.5F, 1.0F }));
+    const film::Snapshot cropped = cropping.render();
+    const glm::uvec2 origin { kSide / 4U, kSide / 2U };
+    const glm::uvec2 size { kSide / 2U, kSide / 2U };
+    BOOST_TEST_REQUIRE((cropped.resolution == size));
+    BOOST_TEST((cropped.origin == origin));
+    BOOST_TEST((cropped.image == glm::uvec2(kSide)));
+    BOOST_TEST_REQUIRE(cropped.stride == whole.stride);
+
+    bool same = true;
+    for (std::uint32_t y = 0; y < size.y; ++y) {
+        for (std::uint32_t x = 0; x < size.x; ++x) {
+            for (std::uint32_t i = 0; i < cropped.stride; ++i) {
+                same = same && std::bit_cast<std::uint32_t>(cropped.at(x, y, i)) == std::bit_cast<std::uint32_t>(whole.at(x + origin.x, y + origin.y, i));
+            }
+            const std::vector<film::DeepSample> & left = cropped.deep.at((static_cast<std::size_t>(y) * size.x) + x);
+            const std::vector<film::DeepSample> & right = samplesAt(whole, x + origin.x, y + origin.y);
+            same = same && left.size() == right.size();
+            for (std::size_t s = 0; same && s < left.size(); ++s) {
+                same = std::bit_cast<std::uint32_t>(left[s].alpha) == std::bit_cast<std::uint32_t>(right[s].alpha) && left[s].depth == right[s].depth &&
+                    left[s].object == right[s].object;
+            }
+        }
+    }
+    BOOST_TEST(same);
+
+    output::write(output::outputsOf(cropping.staged.made).front(), cropped, colour::Config(), {});
+    Imf::DeepScanLineInputFile file(kFile);
+    const Imath::Box2i data = file.header().dataWindow();
+    BOOST_TEST((file.header().displayWindow() == Imath::Box2i(Imath::V2i(0, 0), Imath::V2i(static_cast<int>(kSide) - 1, static_cast<int>(kSide) - 1))));
+    BOOST_TEST((data == Imath::Box2i(Imath::V2i(static_cast<int>(origin.x), static_cast<int>(origin.y)),
+                    Imath::V2i(static_cast<int>(origin.x + size.x) - 1, static_cast<int>(origin.y + size.y) - 1))));
+    Imf::CompositeDeepScanLine composite;
+    composite.addSource(&file);
+    std::vector<float> alpha(static_cast<std::size_t>(size.x) * size.y, -1.0F);
+    Imf::FrameBuffer frame;
+    frame.insert("A", Imf::Slice::Make(Imf::FLOAT, alpha.data(), data, sizeof(float), sizeof(float) * size.x));
+    composite.setFrameBuffer(frame);
+    composite.readPixels(data.min.y, data.max.y);
+    for (std::uint32_t y = 0; y < size.y; ++y) {
+        for (std::uint32_t x = 0; x < size.x; ++x) {
+            const float want = cropped.at(x, y, 3);
+            BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
+                BOOST_TEST(std::fabs(alpha[(static_cast<std::size_t>(y) * size.x) + x] - want) <= kRounding * std::fmax(std::fabs(want), 1.0F));
+            }
+        }
+    }
+    std::remove(kFile);
+}
+
+// a crop window of no pixels is logged, and the whole image is rendered
+BOOST_AUTO_TEST_CASE(moya_deep_a_crop_of_no_pixels_renders_the_whole_image_test) {
+    Carded cropping(false);
+    cropping.staged.made.set(cropping.staged.options, "crop", scene::Value::floats({ 0.5F, 0.5F, 0.0F, 1.0F }));
+    cropping.staged.made.commit();
+    cropping.staged.made.apply();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const v3d::moya::handling::Heard heard(logger->get());
+    device::CpuDevice device;
+    const film::Snapshot picture = integrate::render(device, cropping.staged.made, logger, colour::Config());
+    BOOST_TEST(heard.said("covers no pixel"));
+    BOOST_TEST((picture.resolution == glm::uvec2(kSide)));
+    BOOST_TEST((picture.origin == glm::uvec2(0U)));
 }
 
 };  // namespace

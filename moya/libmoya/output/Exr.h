@@ -26,8 +26,9 @@ inline constexpr std::string_view kSampleCount = "sampleCount";
 
 /**
  * Writes a snapshot of a film to an EXR file, one part for each part given, every part with the
- * whole of the snapshot's resolution. A single part is written as a plain scanline file, which
- * every EXR reader opens. Several are written as a multi-part file.
+ * whole of the snapshot's resolution. The display window is the snapshot's image, and the data
+ * window its pixels at their place in it. A single part is written as a plain scanline file,
+ * which every EXR reader opens. Several are written as a multi-part file.
  *
  * The beauty is the channels R, G, B and A, and the count of samples is the channel sampleCount.
  * A channel of one float is named as the channel is. A channel of several floats is named as
