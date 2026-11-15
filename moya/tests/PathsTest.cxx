@@ -169,16 +169,28 @@ std::uint64_t printOf(float threshold) {
     return integrate::fingerprint(scene, {});
 }
 
-/** A shader node with a constant grey Cs, and a material whose surface it is. **/
-scene::Handle greyMaterial(scene::Scene & scene, const std::string & name, float grey) {
+/** An RI surface, matte unless named, of a constant grey Cs, and a material of that surface. **/
+scene::Handle greyMaterial(scene::Scene & scene, const std::string & name, float grey, const std::string & shader = "matte") {
     const scene::Handle node = scene.create("shader", name);
-    scene.set(node, "shader", scene::Value::string("plastic"));
+    scene.set(node, "shader", scene::Value::string(shader));
     scene.set(node, "language", scene::Value::string("ri"));
     scene.declare(node, scene::Declaration { .name = "Cs", .type = scene::Type::Colour, .fallback = scene::Value::colour(glm::vec3 { 1.0F }) });
     scene.set(node, "Cs", scene::Value::colour(glm::vec3 { grey }));
     const scene::Handle material = scene.create("material", name);
     scene.set(material, "surface", scene::Value::handle(node));
     return material;
+}
+
+/**
+ * A gathered material made one of closures alone, of a grey, in place of OpenPBR's layers, for a
+ * case to set its closures. A geometry's Cs overrides the grey.
+ **/
+kernel::surface::Material & closured(geometry::Prototypes & prototypes, float grey) {
+    kernel::surface::Material & out = prototypes.materials.front();
+    out = kernel::surface::Material {};
+    out.colour = glm::vec3 { grey };
+    out.coloured = 1;
+    return out;
 }
 
 /**
@@ -433,7 +445,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_two_halves_of_a_diffuse_lobe_render_as_one_test)
     const film::Snapshot whole = integrate::render(device, scene, prototypes, {}, colour::Config());
     BOOST_TEST(sameBytes(whole, integrate::render(device, scene, {}, colour::Config())));
     BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
-    kernel::surface::Material & halved = prototypes.materials.front();
+    kernel::surface::Material & halved = closured(prototypes, 0.5F);
     halved.closures[0] = kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Diffuse, .scale = 0.5F };
     halved.closures[1] = kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Diffuse, .scale = 0.5F };
     halved.count = 2;
@@ -460,7 +472,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_mirror_shows_a_light_with_its_whole_weight_tes
             buildMirrored(mirrored, strategy, true);
             geometry::Prototypes prototypes = geometry::gather(mirrored, {});
             BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
-            prototypes.materials.front().closures[0].model = kernel::bsdf::Model::Mirror;
+            closured(prototypes, 0.8F).closures[0].model = kernel::bsdf::Model::Mirror;
             const film::Estimate reflected =
                 film::mean(integrate::render(device, mirrored, prototypes, {}, colour::Config()), glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo));
             BOOST_TEST(reflected.value == 0.8F * seen.value, boost::test_tools::tolerance(0.01F));
@@ -480,7 +492,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_white_metal_sphere_in_a_white_furnace_is_white
     scene.apply();
     geometry::Prototypes prototypes = geometry::gather(scene, {});
     BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
-    prototypes.materials.front().closures[0] =
+    closured(prototypes, 1.0F).closures[0] =
         kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Conductor, .scale = 1.0F, .roughness = 0.7F, .anisotropy = 0.0F, .tint = glm::vec3 { 1.0F } };
     CpuDevice device;
     const film::Snapshot snapshot = integrate::render(device, scene, prototypes, {}, colour::Config());
@@ -507,7 +519,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test)
                 scene.apply();
                 geometry::Prototypes prototypes = geometry::gather(scene, {});
                 BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
-                prototypes.materials.front().closures[0] =
+                closured(prototypes, 1.0F).closures[0] =
                     kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Dielectric, .scale = 1.0F, .roughness = roughness, .ior = 1.5F, .thin = thin };
                 CpuDevice device;
                 const film::Snapshot snapshot = integrate::render(device, scene, prototypes, {}, colour::Config());
@@ -515,6 +527,29 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test)
                 BOOST_TEST(furthest.sigmas < 5.0F);
                 BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 1.0F, boost::test_tools::tolerance(0.01F));
             }
+        }
+    }
+}
+
+// RI's matte, metal and glass, white, are white in a white furnace: each conserves the dome's light
+// once it is OpenPBR's
+BOOST_AUTO_TEST_CASE(moya_paths_ris_white_surfaces_in_a_white_furnace_are_white_test) {
+    for (const char * shader : { "matte", "metal", "glass" }) {
+        BOOST_TEST_CONTEXT(shader) {
+            scene::Scene scene(scene::kinds());
+            const scene::Handle options = framed(scene, 64);
+            for (const char * depth : { "maxDepth", "diffuseDepth", "specularDepth", "glossyDepth", "transmissionDepth" }) {
+                scene.set(options, depth, scene::Value::integer(64));
+            }
+            const scene::Handle placed = ball(scene, "ball", 1.0F, glm::mat4(1.0F));
+            scene.set(placed, "material", scene::Value::handle(greyMaterial(scene, shader, 1.0F, shader)));
+            scene.commit();
+            scene.apply();
+            CpuDevice device;
+            const film::Snapshot snapshot = integrate::render(device, scene, {}, colour::Config());
+            const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });
+            BOOST_TEST(furthest.sigmas < 5.0F);
+            BOOST_TEST(film::mean(snapshot, glm::uvec2(kInsideFrom), glm::uvec2(kInsideTo)).value == 1.0F, boost::test_tools::tolerance(0.01F));
         }
     }
 }

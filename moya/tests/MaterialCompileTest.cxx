@@ -23,11 +23,17 @@
 #include <MaterialXFormat/XmlIo.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <ios>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/vec3.hpp>
@@ -309,6 +315,145 @@ BOOST_AUTO_TEST_CASE(moya_material_compile_a_gathered_instance_takes_its_compile
     BOOST_TEST(prototypes.materials.front().layered == 1U);
     BOOST_TEST(prototypes.materials.front().surface.transmissionWeight == 1.0F);
     BOOST_TEST(mentioning(prototypes.reports, "ND_no_such_node") == 1U);
+}
+
+/** An RI surface of a shader, with parameters as the scene client gives them, and its material. **/
+scene::Handle riMaterial(scene::Scene & scene, const std::string & shader, const std::vector<std::pair<std::string, scene::Value>> & parameters) {
+    const scene::Handle surface = scene.create("shader", shader);
+    scene.set(surface, "shader", scene::Value::string(shader));
+    scene.set(surface, "language", scene::Value::string("ri"));
+    for (const auto & [name, value] : parameters) {
+        setInput(scene, surface, name, value);
+    }
+    return materialOf(scene, shader, surface);
+}
+
+/** RI's roughness as OpenPBR's: the root of the Beckmann alpha of an exponent 1 / roughness. **/
+float openPbrRoughness(float roughness) {
+    return std::pow((2.0F * roughness) / (1.0F + (2.0F * roughness)), 0.25F);
+}
+
+// each of RI's built-in surfaces compiles onto OpenPBR, with its parameters as their definitions
+// read them and nothing reported
+BOOST_AUTO_TEST_CASE(moya_material_compile_ris_built_in_surfaces_compile_onto_openpbr_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle matte = riMaterial(scene, "matte", { { "Kd", scene::Value::floats({ 0.8F }) }, { "Os", scene::Value::colour(glm::vec3 { 0.5F }) } });
+    const scene::Handle plastic = riMaterial(scene, "plastic", { { "Ks", scene::Value::floats({ 0.7F }) }, { "Ka", scene::Value::floats({ 0.2F }) } });
+    const scene::Handle metal = riMaterial(scene, "metal", { { "roughness", scene::Value::floats({ 0.2F }) } });
+    const scene::Handle shiny = riMaterial(scene, "shinymetal", {});
+    const scene::Handle glass = riMaterial(scene, "glass", { { "eta", scene::Value::floats({ 1.33F }) }, { "Kt", scene::Value::floats({ 0.9F }) } });
+    const scene::Handle constant = riMaterial(scene, "constant", { { "Cs", scene::Value::colour(glm::vec3 { 1.0F, 0.5F, 0.0F }) } });
+    apply(scene);
+
+    const auto layersOf = [&scene](const scene::Handle & held) {
+        const material::Compiled compiled = compileOf(scene, held);
+        BOOST_TEST(compiled.reports.empty(), scene.name(held) << " reports " << (compiled.reports.empty() ? std::string() : compiled.reports.front()));
+        BOOST_TEST(compiled.material.layered == 1U);
+        return compiled.material.surface;
+    };
+    const OpenPbr matted = layersOf(matte);
+    BOOST_TEST(matted.baseWeight == 0.8F);
+    BOOST_TEST(matted.specularWeight == 0.0F);
+    BOOST_TEST(matted.geometryOpacity == 0.5F, boost::test_tools::tolerance(1.0e-5F));
+
+    const OpenPbr plastics = layersOf(plastic);
+    BOOST_TEST(plastics.baseWeight == 0.5F);
+    BOOST_TEST(plastics.specularWeight == 0.7F);
+    BOOST_TEST(plastics.specularRoughness == openPbrRoughness(0.1F), boost::test_tools::tolerance(1.0e-5F));
+    BOOST_TEST(plastics.geometryOpacity == 1.0F, boost::test_tools::tolerance(1.0e-5F));
+
+    const OpenPbr metals = layersOf(metal);
+    BOOST_TEST(metals.baseMetalness == 1.0F);
+    BOOST_TEST(metals.baseWeight == 1.0F);
+    BOOST_TEST(metals.specularRoughness == openPbrRoughness(0.2F), boost::test_tools::tolerance(1.0e-5F));
+
+    // a mirror of the same weight as the glossy lobe halves the roughness
+    const OpenPbr shinier = layersOf(shiny);
+    BOOST_TEST(shinier.baseMetalness == 1.0F);
+    BOOST_TEST(shinier.baseWeight == 1.0F);
+    BOOST_TEST(shinier.specularRoughness == 0.5F * openPbrRoughness(0.1F), boost::test_tools::tolerance(1.0e-5F));
+
+    const OpenPbr glassy = layersOf(glass);
+    BOOST_TEST(glassy.transmissionWeight == 0.9F);
+    BOOST_TEST(glassy.specularIor == 1.33F);
+    BOOST_TEST(glassy.specularRoughness == 0.0F);
+    BOOST_TEST(glassy.specularWeight == 1.0F);
+
+    const OpenPbr emitting = layersOf(constant);
+    BOOST_TEST(emitting.emissionLuminance == 1.0F);
+    BOOST_TEST((emitting.emissionColour == glm::vec3 { 1.0F, 0.5F, 0.0F }));
+    BOOST_TEST(emitting.baseWeight == 0.0F);
+    BOOST_TEST(emitting.specularWeight == 0.0F);
+}
+
+// RI's default surface is RI's matte, and an RI shader moya does not define is reported once and
+// shades as RI's matte, without a report for each of its own parameters
+BOOST_AUTO_TEST_CASE(moya_material_compile_an_undefined_ri_surface_shades_as_matte_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle fallback = riMaterial(scene, "defaultsurface", {});
+    const scene::Handle bumpy = riMaterial(scene, "bumpy", { { "amplitude", scene::Value::floats({ 2.0F }) } });
+    apply(scene);
+
+    const material::Compiled defaulted = compileOf(scene, fallback);
+    BOOST_TEST(defaulted.reports.empty());
+    BOOST_TEST(defaulted.material.layered == 1U);
+    BOOST_TEST(defaulted.material.surface.specularWeight == 0.0F);
+
+    const material::Compiled standIn = compileOf(scene, bumpy);
+    BOOST_TEST(standIn.reports.size() == 1U);
+    BOOST_TEST(mentioning(standIn.reports, "shades as RI's matte") == 1U);
+    BOOST_TEST(standIn.material.layered == 1U);
+    BOOST_TEST(standIn.material.surface.specularWeight == 0.0F);
+}
+
+/**
+ * A MaterialX document of an RI shader of one parameter, Kd, whose translation onto OpenPBR gives
+ * a base of half its Kd and no specular layer.
+ **/
+std::string halvingShader(const std::string & shader) {
+    const std::string definition = "ND_ri_" + shader;
+    return "<?xml version=\"1.0\"?>\n<materialx version=\"1.39\">\n"
+           "  <nodedef name=\"" + definition + "_surfaceshader\" node=\"ri_" + shader + "\" nodegroup=\"pbr\">\n"
+           "    <input name=\"Kd\" type=\"float\" value=\"1\" />\n    <output name=\"out\" type=\"surfaceshader\" />\n  </nodedef>\n"
+           "  <nodedef name=\"" + definition + "_to_open_pbr_surface\" node=\"ri_" + shader + "_to_open_pbr_surface\" nodegroup=\"translation\">\n"
+           "    <input name=\"Kd\" type=\"float\" value=\"1\" />\n    <output name=\"base_weight_out\" type=\"float\" />\n"
+           "    <output name=\"specular_weight_out\" type=\"float\" />\n  </nodedef>\n"
+           "  <nodegraph name=\"NG_ri_" + shader + "_to_open_pbr_surface\" nodedef=\"" + definition + "_to_open_pbr_surface\">\n"
+           "    <multiply name=\"halved\" type=\"float\">\n      <input name=\"in1\" type=\"float\" interfacename=\"Kd\" />\n"
+           "      <input name=\"in2\" type=\"float\" value=\"0.5\" />\n    </multiply>\n"
+           "    <dot name=\"none\" type=\"float\">\n      <input name=\"in\" type=\"float\" value=\"0\" />\n    </dot>\n"
+           "    <output name=\"base_weight_out\" type=\"float\" nodename=\"halved\" />\n"
+           "    <output name=\"specular_weight_out\" type=\"float\" nodename=\"none\" />\n  </nodegraph>\n</materialx>\n";
+}
+
+// a document of an RI shader's name on the shader search path defines it, in place of moya's own
+// definition of a built-in, or as a shader moya does not define. Without a search path, the
+// built-in is moya's
+BOOST_AUTO_TEST_CASE(moya_material_compile_a_shader_document_on_the_search_path_defines_it_test) {
+    const boost::filesystem::path directory = boost::filesystem::temp_directory_path() / "v3d_ri_shaders";
+    boost::filesystem::create_directories(directory);
+    for (const char * shader : { "plastic", "velvet" }) {
+        std::ofstream((directory / (std::string(shader) + ".mtlx")).string(), std::ios::binary) << halvingShader(shader);
+    }
+    const auto layersOf = [&directory](const std::string & shader, bool searched) {
+        scene::Scene scene(scene::kinds());
+        const scene::Handle options = scene.create("options", "options");
+        if (searched) {
+            scene.set(options, "shaderSearchPath", scene::Value::string("nowhere;" + directory.string()));
+        }
+        const scene::Handle held = riMaterial(scene, shader, { { "Kd", scene::Value::floats({ 0.8F }) } });
+        apply(scene);
+        const material::Compiled compiled = compileOf(scene, held);
+        BOOST_TEST(compiled.reports.empty(), shader << " reports " << (compiled.reports.empty() ? std::string() : compiled.reports.front()));
+        return compiled.material.surface;
+    };
+    BOOST_TEST(layersOf("plastic", true).baseWeight == 0.4F, boost::test_tools::tolerance(1.0e-6F));
+    BOOST_TEST(layersOf("plastic", true).specularWeight == 0.0F);
+    BOOST_TEST(layersOf("velvet", true).baseWeight == 0.4F, boost::test_tools::tolerance(1.0e-6F));
+    BOOST_TEST(layersOf("plastic", false).baseWeight == 0.8F);
+    BOOST_TEST(layersOf("plastic", false).specularWeight == 0.5F);
+    boost::system::error_code ignored;
+    boost::filesystem::remove_all(directory, ignored);
 }
 
 };  // namespace

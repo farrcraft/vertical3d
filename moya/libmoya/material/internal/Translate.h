@@ -11,13 +11,14 @@
 namespace v3d::moya::material::internal {
 
 /**
- * A surface node of Standard Surface, UsdPreviewSurface or glTF PBR translated onto OpenPBR
- * Surface, or the node as it was for any other definition.
+ * A surface node of Standard Surface, UsdPreviewSurface, glTF PBR or an RI surface translated onto
+ * OpenPBR Surface, or the node as it was for any other definition. An RI surface's definition is
+ * ND_ri_<shader>_surfaceshader, and its translation ND_ri_<shader>_to_open_pbr_surface.
  *
  * The node is replaced by two in the network's document: a translation node, whose definition
  * is ND_<shader>_to_open_pbr_surface, and an open_pbr_surface node that each of its outputs
  * feeds. MaterialX ships Standard Surface's translation, and material::Library reads moya's own
- * for the other two. The translation node takes every input of the surface node's definition,
+ * for the others. The translation node takes every input of the surface node's definition,
  * with the value or the connection the node gives it, or its definition's default. An input the
  * translation does not take is left out.
  *

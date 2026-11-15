@@ -39,7 +39,7 @@ struct Compiled {
 };
 
 /**
- * Compiles a scene's material whose surface terminal is a node of language `materialx`.
+ * Compiles a scene's material whose surface terminal is a node of language `materialx` or `ri`.
  *
  * The network is the surface node and every node that feeds it through the scene's connections.
  * Each node becomes the MaterialX node its `shader` names, a node definition such as
@@ -51,6 +51,12 @@ struct Compiled {
  *
  * A surface of Standard Surface, UsdPreviewSurface or glTF PBR is first translated onto
  * `open_pbr_surface`, as internal::translated() says, before the network is flattened.
+ *
+ * A surface node of language `ri` is the node of ND_ri_<shader>_surfaceshader, and is translated
+ * the same way. The definition is read from `<shader>.mtlx` in the first directory of the options'
+ * shaderSearchPath that holds one, before the library's own. RI's `defaultsurface` is RI's
+ * `matte`, and a shader neither defines is reported and is `matte` too, with none of its own
+ * parameters reported.
  *
  * A surface of `open_pbr_surface` makes the material layered, and its program gives OpenPBR's
  * parameters. Each input that is not connected gives the value its node holds, or its

@@ -324,6 +324,13 @@ std::uint32_t Walk::material(const scene::Handle & handle) {
     kernel::surface::Material out;
     std::string space;
     const scene::Handle surface = scene_.value(handle, "surface").handleArray().front();
+    // a displacement that displaces nothing says why wherever its material is used
+    const material::Compiled * displacement = programs_.displacement(handle.index);
+    if (displacement != nullptr && displacement->values.empty()) {
+        for (const std::string & message : displacement->reports) {
+            report(message);
+        }
+    }
     if (programs_.compiles(handle.index)) {
         std::vector<std::string> said;
         out = programs_.place(handle.index, prototypes_, said);

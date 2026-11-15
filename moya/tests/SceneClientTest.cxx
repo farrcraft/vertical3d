@@ -290,6 +290,13 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_ris_hiders_are_passed_over_test) {
     BOOST_TEST(Read("Hider \"raytrace\" \"int incremental\" [1]\nWorldBegin\nWorldEnd\n").warned());
 }
 
+// the shader search path is the options', each & in it standing for the path before
+BOOST_AUTO_TEST_CASE(moya_sceneclient_the_shader_search_path_is_the_options_test) {
+    const Read read("Option \"searchpath\" \"string shader\" [\"first\"]\nOption \"searchpath\" \"string shader\" [\"second:&\"]\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((read.value("options", "options", "shaderSearchPath") == scene::Value::string("second:first")));
+    BOOST_TEST(!read.warned());
+}
+
 BOOST_AUTO_TEST_CASE(moya_sceneclient_the_trace_depth_sets_the_most_bounces_test) {
     const Read read("Option \"trace\" \"int maxdepth\" [3]\nWorldBegin\nWorldEnd\n");
     BOOST_TEST((read.value("options", "options", "maxDepth") == scene::Value::integer(3)));

@@ -81,10 +81,10 @@ kernel::spectrum::SampledSpectrum flat(float value) {
     return kernel::spectrum::SampledSpectrum(value);
 }
 
-/** A shader node with a constant colour Cs, and a material whose surface it is. **/
+/** RI's matte of a constant colour Cs, and a material whose surface it is. **/
 scene::Handle colouredMaterial(scene::Scene & scene, const std::string & name, const glm::vec3 & colour) {
     const scene::Handle node = scene.create("shader", name);
-    scene.set(node, "shader", scene::Value::string("plastic"));
+    scene.set(node, "shader", scene::Value::string("matte"));
     scene.set(node, "language", scene::Value::string("ri"));
     scene.declare(node, scene::Declaration { .name = "Cs", .type = scene::Type::Colour, .fallback = scene::Value::colour(glm::vec3 { 1.0F }) });
     scene.set(node, "Cs", scene::Value::colour(colour));
@@ -102,7 +102,11 @@ scene::Handle square(scene::Scene & scene, const std::string & name) {
     return out;
 }
 
-/** The reflectance the BSDF at the middle of a scene's square holds, looked at from above. **/
+/**
+ * The reflectance the BSDF at the middle of a scene's square holds, looked at from above. It is the
+ * weight of its one diffuse closure times its colour. The colour is one for RI's diffuse lobe, and
+ * the reflectance for OpenPBR's base.
+ **/
 kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, const kernel::spectrum::SampledWavelengths & wavelengths) {
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
     kernel::geometry::Ray ray;
@@ -115,9 +119,15 @@ kernel::spectrum::SampledSpectrum reflectanceOf(const scene::Scene & scene, cons
     const kernel::surface::ShadingPoint point = held.at(traced.nearest.front(), ray);
     BOOST_TEST_REQUIRE(point.found());
     const bsdf::Bsdf scattering = bsdf::atSurface(held, point, colour::acescgTable(), v3d::moya::material::ggxAlbedos(), wavelengths, glm::vec3 { 0.0F, 0.0F, 1.0F });
-    BOOST_TEST_REQUIRE(scattering.count == 1U);
-    BOOST_TEST_REQUIRE((scattering.closures[0].model == bsdf::Model::Diffuse));
-    return scattering.closures[0].weight;
+    std::uint32_t diffuse = scattering.count;
+    for (std::uint32_t i = 0; i < scattering.count; ++i) {
+        if (scattering.closures[i].model == bsdf::Model::Diffuse || scattering.closures[i].model == bsdf::Model::OrenNayar) {
+            BOOST_TEST_REQUIRE(diffuse == scattering.count);
+            diffuse = i;
+        }
+    }
+    BOOST_TEST_REQUIRE(diffuse < scattering.count);
+    return scattering.closures[diffuse].weight * scattering.closures[diffuse].colour;
 }
 
 /** Whether two spectra are equal at each wavelength, within a tolerance. **/

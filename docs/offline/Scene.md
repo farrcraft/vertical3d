@@ -59,7 +59,9 @@ then derived as RI derives it.
   the first, and still join in a deep file, as [Compositing.md](Compositing.md#deep-lists) says.
   `denoise` is 1 to write the beauty denoised beside it, as
   [Output.md](Output.md#denoised-channels) says.
-  `textureSearchPath` holds the directories a texture's relative path is looked for in.
+  `textureSearchPath` holds the directories a texture's relative path is looked for in, and
+  `shaderSearchPath` those an RI shader's document is looked for in, as
+  [Materials.md](Materials.md#ris-built-in-surfaces) says.
   `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
   it. `textureDirectory` is where an image that is not a texture is made into one, as
   [Textures.md](Textures.md#finding-a-texture) says.

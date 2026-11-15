@@ -120,6 +120,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    resolution integer[2] = 320 240\n"
         "    rouletteDepth integer = 3\n"
         "    samples integer = 4\n"
+        "    shaderSearchPath string = \"\"\n"
         "    specularDepth integer = 12\n"
         "    textureDirectory string = \"\"\n"
         "    textureMemory integer = 1048576\n"

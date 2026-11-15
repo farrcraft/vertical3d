@@ -317,6 +317,15 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
         textureSearchPath_ = path;
         scene_.set(options_, "textureSearchPath", scene::Value::string(path));
     }
+    if (name == "searchpath" && parameters.has("shader")) {
+        const std::string given = parameters.string("shader");
+        std::string path;
+        for (const char letter : given) {
+            path += letter == '&' ? shaderSearchPath_ : std::string(1, letter);
+        }
+        shaderSearchPath_ = path;
+        scene_.set(options_, "shaderSearchPath", scene::Value::string(path));
+    }
     if (name == "moya" && parameters.has("denoise")) {
         scene_.set(options_, "denoise", scene::Value::integer(parameters.number("denoise", 0.0F) != 0.0F ? 1 : 0));
     }

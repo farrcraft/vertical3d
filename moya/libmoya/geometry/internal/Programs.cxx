@@ -27,7 +27,14 @@ namespace v3d::moya::geometry::internal {
 Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", "st" } {
     for (const scene::Handle & handle : scene.objects("material")) {
         const scene::Handle displacement = scene.value(handle, "displacement").handleArray().front();
-        if (displacement.valid() && scene.contains(displacement) && scene.value(displacement, "language").stringArray().front() == "materialx") {
+        const bool displaces = displacement.valid() && scene.contains(displacement);
+        if (displaces && scene.value(displacement, "language").stringArray().front() == "ri") {
+            material::Compiled none;
+            none.reports.push_back("material " + scene.name(handle) + " does not displace, because its displacement " +
+                scene.value(displacement, "shader").stringArray().front() + " is written for RI, and moya defines no RI displacement");
+            displacements_.emplace(handle.index, std::move(none));
+        }
+        if (displaces && scene.value(displacement, "language").stringArray().front() == "materialx") {
             try {
                 displacements_.emplace(handle.index, material::compileDisplacement(material::Library::installed(), scene, handle, names_));
             } catch (const std::runtime_error & refused) {
@@ -37,7 +44,11 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
             }
         }
         const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
-        if (!surface.valid() || !scene.contains(surface) || scene.value(surface, "language").stringArray().front() != "materialx") {
+        if (!surface.valid() || !scene.contains(surface)) {
+            continue;
+        }
+        const std::string & language = scene.value(surface, "language").stringArray().front();
+        if (language != "materialx" && language != "ri") {
             continue;
         }
         try {

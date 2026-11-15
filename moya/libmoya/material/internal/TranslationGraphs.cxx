@@ -5,6 +5,8 @@
 
 #include <moya/libmoya/material/internal/TranslationGraphs.h>
 
+#include <moya/libmoya/material/internal/RiSurfaces.h>
+
 #include <string>
 
 namespace v3d::moya::material::internal {
@@ -338,7 +340,7 @@ constexpr const char * kGltf = R"(
 };  // namespace
 
 const char * translationGraphs() {
-    static const std::string document = std::string("<?xml version=\"1.0\"?>\n<materialx version=\"1.39\">\n") + kUsd + kGltf + "</materialx>\n";
+    static const std::string document = std::string("<?xml version=\"1.0\"?>\n<materialx version=\"1.39\">\n") + kUsd + kGltf + riSurfaces() + "</materialx>\n";
     return document.c_str();
 }
 

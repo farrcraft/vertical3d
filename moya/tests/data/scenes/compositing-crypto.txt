@@ -123,6 +123,7 @@ options "options"
     resolution integer[2] = 48 32
     rouletteDepth integer = 3
     samples integer = 16
+    shaderSearchPath string = ""
     specularDepth integer = 12
     textureDirectory string = ""
     textureMemory integer = 1048576

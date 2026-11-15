@@ -144,13 +144,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     /**
-     * `Option "searchpath" "texture"` sets the options' textureSearchPath, each `&` in it standing
-     * for the path before, as RI says. `Option "limits" "texturememory"` sets textureMemory, in
-     * kilobytes. A limit below one or above what an integer holds is logged, and changes nothing.
+     * `Option "searchpath" "texture"` sets the options' textureSearchPath, and `"shader"` their
+     * shaderSearchPath, each `&` in either standing for the path before, as RI says.
+     * `Option "limits" "texturememory"` sets textureMemory, in kilobytes. A limit below one or
+     * above what an integer holds is logged, and changes nothing.
      * `Option "trace" "maxdepth"` sets maxDepth, and a depth below zero or above what an integer
      * holds is logged, and changes nothing.
      *
-     * The shader search path and the limits' `bucketsize` and `gridsize` are passed over. Any
+     * The limits' `bucketsize` and `gridsize` are passed over. Any
      * other parameter is logged once by its option and name, and changes nothing.
      **/
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
@@ -403,6 +404,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     /** The texture search path the options hold, which a new one's `&` stands for. **/
     std::string textureSearchPath_;
+
+    /** The shader search path the options hold, which a new one's `&` stands for. **/
+    std::string shaderSearchPath_;
 
     /** The built-in colour configuration textures are made in, made with the first texture. **/
     std::optional<colour::Config> colours_;

@@ -9,7 +9,8 @@ namespace v3d::moya::material::internal {
 
 /**
  * The MaterialX document of moya's own translations onto OpenPBR Surface, for the surface shaders
- * MaterialX ships no translation of: UsdPreviewSurface and glTF PBR. Each is a node definition
+ * MaterialX ships no translation of: UsdPreviewSurface, glTF PBR and RI's built-in surfaces, which
+ * riSurfaces() also defines. Each is a node definition
  * named as MaterialX names its own, ND_<shader>_to_open_pbr_surface. Its inputs are the shader's,
  * with the shader's defaults, and its outputs are OpenPBR's inputs, each named with `_out` after
  * it. A node graph built from standard nodes implements each.

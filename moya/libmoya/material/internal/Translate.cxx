@@ -28,6 +28,10 @@ constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
 /** The suffix each output of a translation has after the OpenPBR input it feeds. **/
 constexpr std::string_view kOut = "_out";
 
+/** The prefix and the suffix of the name of an RI surface's definition. **/
+constexpr std::string_view kRi = "ND_ri_";
+constexpr std::string_view kRiSurface = "_surfaceshader";
+
 using Passed = Translation::Passed;
 
 constexpr std::array kTranslations {
@@ -50,6 +54,21 @@ const Translation * translationOf(const std::string & definition) {
         }
     }
     return nullptr;
+}
+
+/**
+ * The translator of a definition: its translation's, or ND_ri_<shader>_to_open_pbr_surface for an
+ * RI surface, ND_ri_<shader>_surfaceshader. Empty for a definition that is neither.
+ **/
+std::string translatorOf(const std::string & definition) {
+    const Translation * translation = translationOf(definition);
+    if (translation != nullptr) {
+        return translation->translator;
+    }
+    if (definition.size() > kRi.size() + kRiSurface.size() && definition.starts_with(kRi) && definition.ends_with(kRiSurface)) {
+        return definition.substr(0, definition.size() - kRiSurface.size()) + "_to_open_pbr_surface";
+    }
+    return {};
 }
 
 /**
@@ -83,15 +102,17 @@ void copyInput(const mx::NodePtr & to, const mx::InputPtr & declared, const mx::
 
 MaterialX::NodePtr translated(Network & network, const MaterialX::NodePtr & surface) {
     const mx::NodeDefPtr def = surface->getNodeDef();
-    const Translation * translation = def ? translationOf(def->getName()) : nullptr;
-    if (translation == nullptr) {
+    const std::string named = def ? translatorOf(def->getName()) : std::string();
+    if (named.empty()) {
         return surface;
     }
+    const Translation * translation = translationOf(def->getName());
+    const std::array<Passed, 4> passing = translation != nullptr ? translation->passed : std::array<Passed, 4> {};
     const mx::DocumentPtr & document = network.document;
-    const mx::NodeDefPtr translator = document->getDataLibrary()->getNodeDef(translation->translator);
+    const mx::NodeDefPtr translator = document->getDataLibrary()->getNodeDef(named);
     const mx::NodeDefPtr openPbr = document->getDataLibrary()->getNodeDef(kOpenPbr);
     if (!translator || !openPbr) {
-        network.report(std::string("the libraries hold no ") + translation->translator + ", so " + surface->getName() + " is not translated onto OpenPBR");
+        network.report("the libraries hold no " + named + ", so " + surface->getName() + " is not translated onto OpenPBR");
         return surface;
     }
     const mx::NodePtr translating = document->addNodeInstance(translator, document->createValidChildName(surface->getName() + "_translation"));
@@ -106,7 +127,7 @@ MaterialX::NodePtr translated(Network & network, const MaterialX::NodePtr & surf
             continue;
         }
         const std::string target = name.substr(0, name.size() - kOut.size());
-        const bool passes = std::ranges::any_of(translation->passed, [&target](const Passed & passed) {
+        const bool passes = std::ranges::any_of(passing, [&target](const Passed & passed) {
             return passed.to != nullptr && target == passed.to;
         });
         if (passes || !openPbr->getActiveInput(target)) {
@@ -117,7 +138,7 @@ MaterialX::NodePtr translated(Network & network, const MaterialX::NodePtr & surf
         input->setConnectedNode(translating);
         input->setOutputString(name);
     }
-    for (const Passed & passed : translation->passed) {
+    for (const Passed & passed : passing) {
         if (passed.from == nullptr) {
             continue;
         }

@@ -24,6 +24,7 @@
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/light/Picked.h>
 #include <moya/libmoya/kernel/light/Tree.h>
+#include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
@@ -712,7 +713,7 @@ void withMaterial(scene::Scene & scene, const scene::Handle & instance, const st
 
 /**
  * A scene rendered with every material made an OpenPBR surface that reflects nothing and emits a
- * luminance in white.
+ * luminance in white. Each material runs no program, so its parameters are the ones set here.
  **/
 film::Snapshot renderedGlowing(scene::Scene & scene, float luminance) {
     scene.commit();
@@ -720,6 +721,7 @@ film::Snapshot renderedGlowing(scene::Scene & scene, float luminance) {
     geometry::Prototypes prototypes = geometry::gather(scene, {});
     for (kernel::surface::Material & material : prototypes.materials) {
         material.layered = 1U;
+        material.program = kernel::program::Program {};
         material.surface.baseColour = glm::vec3 { 0.0F };
         material.surface.specularWeight = 0.0F;
         material.surface.emissionLuminance = luminance;

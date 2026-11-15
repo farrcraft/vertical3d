@@ -158,7 +158,7 @@ chooses among the options before the record is drafted.
 | [2](#step-2--the-record-ris-ambient-light-and-imager) | The record: RI's ambient light and imager | `docs/adr` | **0237**, **0238** | accepted |
 | [3](#step-3--the-record-ris-c-interface) | The record: RI's C interface | `docs/adr` | **0239** | accepted |
 | [4](#step-4--the-record-the-offline-library) | The record: the offline library | `docs/adr` | **0240** | accepted |
-| [5](#step-5--ris-surfaces-become-materials) | RI's surfaces become materials | `moya/libmoya/ri`, `material` | 0236 | open |
+| [5](#step-5--ris-surfaces-become-materials) | RI's surfaces become materials | `moya/libmoya/ri`, `material` | 0236 | done |
 | [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | open |
 | [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
 | [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | — | open |
@@ -253,7 +253,7 @@ reported once, or a refusal of the scene. It settles how `Os` meets OpenPBR's
 built-in is a MaterialX node definition of RI's parameters and defaults, with a graph onto OpenPBR
 Surface, as moya already turns Standard Surface, UsdPreviewSurface and glTF PBR onto it. A
 surface of language `ri` compiles to the definition its name finds on the shader search path,
-then in the installed library. A name that finds none is reported once and shades as RI's matte,
+then in moya's own. A name that finds none is reported once and shades as RI's matte,
 which is also the default surface. Step 5 settles the rest as rules of the definitions: `Ka` is
 accepted and not used, `Os` becomes `geometry_opacity` by its mean, and `texturename` an image
 node. A roughness follows Walter and others' conversion from a Phong exponent. A `Displacement`
@@ -361,6 +361,18 @@ supersedes ADR-0022.
 **Tests:** each built-in surface's material, read from RIB, holds the inputs its parameters give.
 `matte` is white in a white furnace within errors. `metal` and `glass` conserve energy in a
 furnace within errors. A user shader is reported once, however often it is named.
+
+**Done.** `material/internal/RiSurfaces.cxx` defines the seven built-ins as
+`ND_ri_<shader>_surfaceshader`, with translations onto OpenPBR. They are read with moya's other
+translations, not installed as files. A surface of language `ri` compiles through them, and an RI
+surface's translation is found by its name, so a user's shader needs no entry of its own.
+`Option "searchpath" "shader"` sets the options' new `shaderSearchPath`, and `<shader>.mtlx` there
+is read before moya's own. The colour is the geometry's `Cs` primvar or the node's. The opacity is
+the mean of the node's `Os` alone, since a primvar read would leave every surface cut out. Every
+reference render held within its errors as `matte` moved onto OpenPBR. Each scene description
+gained `shaderSearchPath`. The cases that set a gathered material's closures now start from a
+material of closures, and the BSDF's colour cases read OpenPBR's base. A `Displacement` found as
+a document on the search path is not built, and is in [TODO.md](../TODO.md#offline-rendering).
 
 ### Step 6 — Ambient light and the background
 

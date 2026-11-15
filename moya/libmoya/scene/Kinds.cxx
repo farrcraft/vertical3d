@@ -122,6 +122,7 @@ Kind options() {
             Declaration { .name = "denoise", .type = Type::Integer, .fallback = Value::integer(0) },
             Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } },
             Declaration { .name = "textureSearchPath", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "shaderSearchPath", .type = Type::String, .fallback = Value::string("") },
             Declaration { .name = "textureMemory", .type = Type::Integer, .fallback = Value::integer(kTextureMemory) },
             Declaration { .name = "textureDirectory", .type = Type::String, .fallback = Value::string("") } } };
 }

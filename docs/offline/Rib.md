@@ -180,7 +180,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   `Displacement`, `Color` and `Opacity`. Each shader is a node of language `ri` with its
   parameters as inputs, and the colour and opacity are the surface node's `Cs` and `Os`. The
   instances made under one attribute state share it. With no `Surface`, the surface is
-  `defaultsurface`.
+  `defaultsurface`. RI's built-in surfaces compile onto OpenPBR, and any other shades as `matte`,
+  as [Materials.md](Materials.md#ris-built-in-surfaces) says.
 - **`Attribute "displacementbound"` bounds the subdivision surfaces after it** in its attribute
   block, as their `displacementBound`. Its `sphere` is taken into object space from the
   `coordinatesystem` it names, at the largest stretch of that space's axes, and a space no
@@ -261,8 +262,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **`Option "moya"` sets moya's own options**: its `"int denoise"` of 1 writes the beauty
   denoised beside it, and its `"float deepTolerance"` sets how near two depths join in a deep
   file.
-- **`Option "searchpath" "texture"` sets the options' `textureSearchPath`**, each `&` in it
-  standing for the path before, as RI says. `Option "limits" "texturememory"` sets
+- **`Option "searchpath" "texture"` sets the options' `textureSearchPath`**, and `"shader"` their
+  `shaderSearchPath`, each `&` in either standing for the path before, as RI says. A shader's
+  document on the shader search path defines it, as [Materials.md](Materials.md#ris-built-in-surfaces)
+  says. `Option "limits" "texturememory"` sets
   `textureMemory`, in kilobytes, and a limit below one or above what an integer holds is logged
   and changes nothing.
 - **`Option "trace" "maxdepth"` sets the options' `maxDepth`**, the most bounces a path takes. A
@@ -270,8 +273,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **`Hider "raytrace"` and `Hider "hidden"` are passed over**, since each names a renderer's
   default and moya renders by path tracing alone. Another hider is logged once by name.
 - **`ShadingRate` is passed over.** A surface is tessellated to the options' `edgeLength`.
-- **Some parameters are passed over by rule.** `Option "searchpath" "shader"` and
-  `Option "limits"`'s `bucketsize` and `gridsize` are. `Attribute "trace" "bias"` is too, since a
+- **Some parameters are passed over by rule.** `Option "limits"`'s `bucketsize` and `gridsize`
+  are. `Attribute "trace" "bias"` is too, since a
   ray leaving a surface starts off it by the core's own rule. `Attribute "light" "nsamples"` is
   too, since a path samples one light at each bounce.
 - **Every other parameter of an `Option`, an `Attribute`, a `Hider` or a `Display` that the client

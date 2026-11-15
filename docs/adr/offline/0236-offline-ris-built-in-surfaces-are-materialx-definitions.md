@@ -19,10 +19,10 @@ glTF PBR into OpenPBR through MaterialX translation graphs.
 ## Decision
 
 Each of RI's built-in surfaces is a MaterialX node definition of RI's parameters and defaults,
-with a graph that turns it into OpenPBR Surface, installed with moya. A surface of language `ri`
-compiles to the definition its name finds: a document of that name on the shader search path
-first, then the installed library. A name that finds none is reported once and shades as the
-default surface, which is RI's matte.
+with a graph that turns it into OpenPBR Surface, which moya holds beside its other translations.
+A surface of language `ri` compiles to the definition its name finds: a document of that name on
+the shader search path first, then moya's own. A name that finds none is reported once and shades
+as the default surface, which is RI's matte.
 
 ## Alternatives
 
@@ -51,5 +51,5 @@ default surface, which is RI's matte.
   - RI's lobes add without conserving energy, so each graph is an approximation. A roughness
     follows a published conversion that no source calls exact.
   - `shinymetal`'s mirror term and a coloured `Os` have no exact counterpart in OpenPBR.
-  - moya installs a library of documents, and a missing one has to be reported.
+  - moya holds a definition and a graph for each built-in, which its tests keep near RI's.
 - **Revisit when**: OSL patterns arrive, and a built-in written in OSL would be closer to RI's.

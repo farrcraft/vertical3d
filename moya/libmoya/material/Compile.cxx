@@ -20,6 +20,7 @@
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/texture/SearchPath.h>
 #include <MaterialXCore/Definition.h>
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Exception.h>
@@ -27,6 +28,7 @@
 #include <MaterialXCore/Node.h>
 #include <MaterialXCore/Types.h>
 #include <MaterialXCore/Value.h>
+#include <MaterialXFormat/File.h>
 #include <MaterialXFormat/XmlIo.h>
 
 #include <algorithm>
@@ -112,26 +114,79 @@ std::string joined(std::initializer_list<std::string_view> pieces) {
 }
 
 /**
+ * Puts the definitions of an RI shader's document on the scene's shader search path, the file
+ * `<shader>.mtlx` in the first of its directories that holds one, before the network's libraries.
+ * A definition of the document's therefore wins over one of the same name in the libraries. A
+ * shader search path that is empty names no document, and a document MaterialX cannot read is
+ * reported.
+ **/
+void readShaderDocument(Network & network, const scene::Scene & scene, const std::string & shader) {
+    const std::vector<scene::Handle> options = scene.objects("options");
+    const std::vector<std::string> directories =
+        options.empty() ? std::vector<std::string> {} : texture::directoriesOf(firstString(scene, options.front(), "shaderSearchPath"));
+    if (directories.empty()) {
+        return;
+    }
+    const std::optional<std::string> file = texture::found(shader + ".mtlx", directories);
+    if (!file) {
+        return;
+    }
+    try {
+        const mx::DocumentPtr own = mx::createDocument();
+        mx::readFromXmlFile(own, mx::FilePath(*file));
+        own->importLibrary(network.document->getDataLibrary());
+        network.document->setDataLibrary(own);
+    } catch (const mx::Exception & error) {
+        network.report("shader " + shader + "'s document " + *file + " is not a valid MaterialX document, so it is not read: " + error.what());
+    }
+}
+
+/**
+ * The definition an RI surface's name finds: ND_ri_<shader>_surfaceshader, from a document of
+ * the shader's on the scene's shader search path, or from the libraries. RI's default surface is
+ * RI's matte. A name neither defines is reported, and shades as RI's matte.
+ **/
+std::string riDefinition(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
+    const std::string shader = firstString(scene, handle, "shader");
+    const std::string matte = "ND_ri_matte_surfaceshader";
+    if (shader == "defaultsurface") {
+        return matte;
+    }
+    readShaderDocument(network, scene, shader);
+    const std::string definition = "ND_ri_" + shader + "_surfaceshader";
+    if (!network.document->getDataLibrary()->getNodeDef(definition)) {
+        network.report("shader " + scene.name(handle) + " is RI's " + shader + ", which moya does not define, so it shades as RI's matte");
+        return matte;
+    }
+    return definition;
+}
+
+/**
  * Adds the MaterialX node a scene's shader node names, with the inputs its primvars give, or
- * nothing when it names no definition or is not a MaterialX node.
+ * nothing when it names no definition or is neither a MaterialX node nor an RI surface.
  **/
 mx::NodePtr addNode(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
     const std::string & name = scene.name(handle);
-    if (firstString(scene, handle, "language") != "materialx") {
+    const std::string language = firstString(scene, handle, "language");
+    if (language != "materialx" && language != "ri") {
         network.report("shader " + name + " is not a MaterialX node, so it is left out of its material");
         return nullptr;
     }
-    const std::string definition = firstString(scene, handle, "shader");
+    const std::string definition = language == "ri" ? riDefinition(network, scene, handle) : firstString(scene, handle, "shader");
     const mx::NodeDefPtr def = network.document->getDataLibrary()->getNodeDef(definition);
     if (!def) {
         network.report("shader " + name + " names " + definition + ", which MaterialX does not define, so it is left out");
         return nullptr;
     }
     const mx::NodePtr node = network.document->addNodeInstance(def, network.document->createValidChildName(name));
+    // an RI shader that shades as RI's matte was reported once, and its own parameters are its
+    const bool standsIn = language == "ri" && definition != "ND_ri_" + firstString(scene, handle, "shader") + "_surfaceshader";
     for (const scene::Declaration & declaration : scene.primvars(handle)) {
         const mx::InputPtr declared = def->getActiveInput(declaration.name);
         if (!declared) {
-            network.report(joined({ "shader ", name, "'s ", declaration.name, " is not an input of ", definition, ", so it is left out" }));
+            if (!standsIn) {
+                network.report(joined({ "shader ", name, "'s ", declaration.name, " is not an input of ", definition, ", so it is left out" }));
+            }
             continue;
         }
         const scene::Value & value = scene.value(handle, declaration.name);

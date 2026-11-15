@@ -12,8 +12,9 @@ evaluated at, [Patterns.md](Patterns.md) the noises a program runs, and
 
 The gather reads the material each instance names, once per material, and reads it again on every
 update, so a changed material takes effect as the hierarchy does. A material whose surface node is
-of language `materialx` is compiled, as [Compiling a material](#compiling-a-material) says. Any
-other material is RI's: a `kernel::surface::Material` holds the colour its surface node's `Cs`
+of language `materialx` is compiled, as [Compiling a material](#compiling-a-material) says, and
+one of language `ri` too, as [RI's built-in surfaces](#ris-built-in-surfaces) says. Any other
+material is diffuse: a `kernel::surface::Material` holds the colour its surface node's `Cs`
 input gives, converted into ACEScg from the space the value names, and whether it gives one. It
 also holds the closures its BSDF is built from, at most `kMostMaterialClosures`. Each is a model
 and a scale, and a conductor's also holds its roughness, its anisotropy and its F82 tint. A
@@ -89,6 +90,51 @@ name, and a node graph implements it.
 - **Without the libraries**, a MaterialX material is diffuse, and the reason is reported.
 
 Each report is given once, with the gather's others.
+
+### RI's built-in surfaces
+
+A surface node of language `ri` compiles as a MaterialX node of moya's definition of its shader,
+`ND_ri_<shader>_surfaceshader`, which is translated onto OpenPBR as the shaders above are. moya
+defines RI's seven built-in surfaces, `constant`, `matte`, `metal`, `plastic`, `paintedplastic`,
+`shinymetal` and `glass`, with RI's parameters and defaults, `Cs` and `Os`. Its translations are
+read with the libraries, beside UsdPreviewSurface's and glTF PBR's. RI's lobes add without
+conserving energy and OpenPBR's layers conserve it, so each translation is near the shader, not
+equal to it.
+
+- **`defaultsurface`, RI's default surface, is `matte`.**
+- **A shader's document on the shader search path defines it first.** The document is
+  `<shader>.mtlx` in the first directory of the options' `shaderSearchPath` that holds one. It
+  holds `ND_ri_<shader>_surfaceshader` and its translation, `ND_ri_<shader>_to_open_pbr_surface`,
+  with a node graph that implements the translation, as moya's own built-ins are written. Its
+  definitions are read before the libraries', so one of a built-in's name takes its place, as a
+  `.sl` file of a built-in's name once did. An empty search path names no document, and a document
+  MaterialX cannot read is reported.
+- **A shader neither defines shades as `matte`**, and is reported once by name. Its own
+  parameters are not reported. A shader written in the shading language is such a shader.
+- **`Kd` weighs the base and `Ks` the specular layer.** `Ka` is taken and not used, because the
+  integrator gathers every light.
+- **The colour is the geometry's `Cs` primvar**, or the node's `Cs` where the geometry has none, as
+  RI's is. The opacity is the mean of the node's `Os`, since OpenPBR's opacity is one number. It is
+  the node's alone, so a surface whose opacity is one is never cut out.
+- **A roughness is RI's Phong exponent of one over it.** Walter and others' equivalence makes an
+  exponent n a Beckmann alpha of `sqrt(2 / (n + 2))`, and OpenPBR's roughness is the square root
+  of that alpha. RI's default of 0.1 is a roughness of about 0.64.
+- **`matte`** is a base of weight `Kd` in the colour, with no specular layer.
+- **`plastic`** adds a specular layer of weight `Ks` in `specularcolor`, at OpenPBR's index of
+  1.5. **`paintedplastic`** multiplies the colour by its `texturename`'s image at s and one less
+  t, since RI's t runs down an image and MaterialX's v up it. A texture of no name multiplies by
+  one.
+- **`metal`** is a conductor of the colour, of weight `Ks`.
+- **`shinymetal`** adds a mirror of weight `Kr`, which OpenPBR has no second lobe for. Its weight
+  is `Ks` and `Kr` together, at most one, and its roughness is the glossy lobe's times `Ks` over
+  `Ks` and `Kr` together.
+- **`glass`** reflects and refracts sharply, as its traced rays do. Its specular layer has the
+  weight `Kr`, its index is `eta`, and it transmits `Kt` in the colour. It is opaque, as the shader
+  makes it, and its `roughness` and `Ks`, which shaped a highlight, are not used.
+- **`constant`** emits its node's `Cs` at a luminance of one and reflects nothing. Its colour is
+  the node's alone, because a material's emission has to be the same at every point.
+- **A displacement of language `ri` does not displace.** moya defines no RI displacement, and the
+  material reports it once wherever it is used.
 
 ### Compiling a displacement
 
