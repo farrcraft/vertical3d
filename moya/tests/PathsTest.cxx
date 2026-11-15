@@ -531,8 +531,8 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test)
     }
 }
 
-// RI's matte, metal and glass, white, are white in a white furnace: each conserves the dome's light
-// once it is OpenPBR's
+// RI's matte, metal and glass, white, are OpenPBR's layers, and are white in a white furnace:
+// each conserves the dome's light
 BOOST_AUTO_TEST_CASE(moya_paths_ris_white_surfaces_in_a_white_furnace_are_white_test) {
     for (const char * shader : { "matte", "metal", "glass" }) {
         BOOST_TEST_CONTEXT(shader) {
@@ -545,6 +545,9 @@ BOOST_AUTO_TEST_CASE(moya_paths_ris_white_surfaces_in_a_white_furnace_are_white_
             scene.set(placed, "material", scene::Value::handle(greyMaterial(scene, shader, 1.0F, shader)));
             scene.commit();
             scene.apply();
+            const geometry::Prototypes gathered = geometry::gather(scene, {});
+            BOOST_TEST_REQUIRE(gathered.materials.size() == 1U);
+            BOOST_TEST(gathered.materials.front().layered == 1U);
             CpuDevice device;
             const film::Snapshot snapshot = integrate::render(device, scene, {}, colour::Config());
             const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });
