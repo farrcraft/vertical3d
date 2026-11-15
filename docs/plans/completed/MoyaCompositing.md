@@ -1,7 +1,7 @@
 # Moya Compositing — Outputs, Light Paths, IDs, Deep Pixels and Denoising
 
 Drafted 2026-11-13 against `7cc2313a`. This plan takes up section 6 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, the new core writes what a
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core writes what a
 compositor needs, not only a beauty. The scene's outputs decide the film's channels and the files
 written. A channel collects the light a light path expression names, or a value at the first hit.
 Light groups let a light be changed after rendering. Cryptomatte channels give each object's and
@@ -12,16 +12,16 @@ every editor render, and no picture they make changes.
 The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its first five plans are
 ADR-0195 to ADR-0229, all accepted. This plan follows four of them:
 
-* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
   moya implements its own light path expressions, coverage and deep samples. OpenEXR writes the
   files, and OIDN denoises.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
   gives one picture on every run, so every channel, ID and deep sample is the same under any
   thread count.
-* [ADR-0199](../adr/offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md): a
+* [ADR-0199](../../adr/offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md): a
   sample is added to the one pixel it was drawn for, so a pixel's coverage and deep samples come
   from its own samples alone.
-* [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+* [ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
   what a light path expression adds to a path is declared once in the path state.
 
 The plan keeps the roadmap's order, with five changes:
@@ -50,13 +50,13 @@ The tree was read at `7cc2313a`.
 **The film and its files:**
 
 * **The film holds a beauty and named channels**
-  ([Film.md](../offline/Film.md#the-films-pixels)). Each channel is a name and one to four floats.
+  ([Film.md](../../offline/Film.md#the-films-pixels)). Each channel is a name and one to four floats.
   `Pixels::addChannel()` adds a sample's value with the beauty's weight, so every channel is
   filtered as the beauty is. Its sums are floats, added in index order.
 * **A snapshot describes its channels**, and a checkpoint holds them, with the film's channels in
   its fingerprint.
 * **`writeExr()` writes parts of chosen outputs**, each half or float and compressed as it says
-  ([Output.md](../offline/Output.md#exr-files)). One part is a scanline file, and several a
+  ([Output.md](../../offline/Output.md#exr-files)). One part is a scanline file, and several a
   multi-part file. A channel of several floats is written as `name.R`, `name.G` and so on.
 * **The beauty has no alpha**, and no file holds one.
 * **OpenEXR writes no deep file** through moya, though the library reads and writes deep
@@ -64,17 +64,17 @@ The tree was read at `7cc2313a`.
 
 **The scene and the render:**
 
-* **The scene holds `channel` and `output` objects** ([Scene.md](../offline/Scene.md)). A channel
+* **The scene holds `channel` and `output` objects** ([Scene.md](../../offline/Scene.md)). A channel
   names its `source` and its `components`. An output names its `file`, its `format` of `exr`,
   `png` or `framebuffer`, the channels it writes, its `precision` and its `compression`.
-* **The RIB client makes them from `Display`** ([Rib.md](../offline/Rib.md#the-scene-client)). A
+* **The RIB client makes them from `Display`** ([Rib.md](../../offline/Rib.md#the-scene-client)). A
   mode other than `rgb` or `rgba` adds a channel whose source is the mode.
 * **`integrate::render()` reads none of them.** It makes its film with an empty list of channels.
 * **`moya --paths` writes the beauty alone**, in floats, to `--output` or `paths.exr`.
 
 **The integrator:**
 
-* **A path gathers into one radiance** ([Integrator.md](../offline/Integrator.md#the-stages)). The
+* **A path gathers into one radiance** ([Integrator.md](../../offline/Integrator.md#the-stages)). The
   shade stage adds what a light sample, a light's shape, a mesh light or a dome light gives, and
   accumulate adds it to the pixel. Nothing records which kind of bounce or light gave it.
 * **A BSDF sample names its lobe**: diffuse, glossy, specular or transmission. The path keeps a
@@ -91,7 +91,7 @@ feature of `vcpkg.json`.
 
 **The tests:** moya's suite has 34 RIB scenes, each with a committed description and hit view,
 and 11 reference renders of the path tracer held within five standard errors
-([Testing.md](../contributing/Testing.md#moya-references)).
+([Testing.md](../../contributing/Testing.md#moya-references)).
 
 ---
 
@@ -135,7 +135,7 @@ among the options before the record is drafted.
 | [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | done |
 | [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | done |
-| [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | open |
+| [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | done |
 
 ## What blocks what
 
@@ -209,7 +209,7 @@ normal, albedo and motion. It settles how a channel's samples are combined into 
 be averaged by the pixel filter, or kept as the nearest, least or most, as RenderMan's channel
 `filter` and Arnold's AOV filters keep depth and IDs.
 
-**Drafted** as [ADR-0230](../adr/offline/0230-offline-channels-follow-usds-render-vars.md): a
+**Drafted** as [ADR-0230](../../adr/offline/0230-offline-channels-follow-usds-render-vars.md): a
 channel names a kind of source and a name, as UsdRender's `RenderVar` does: a value the renderer
 computes, a primvar or a light path expression. Each channel names how its samples are combined:
 the filtered mean, the closest, the least, the most or the sum. Depth, position and IDs default
@@ -241,7 +241,7 @@ settles how a light group is named: as a label in an expression, as OSL's gramma
 as an attribute of the light, as Cycles' and RenderMan's `lightGroup` is.
 
 **Drafted** as
-[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md): every
+[ADR-0231](../../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md): every
 expression of a render compiles on the host into one deterministic automaton, as OSL's `accum`
 library builds one, whose accepting states name the channels they add to. A path carries one
 state, and a light sample is matched by stepping a copy of it, as OSL's `test()` does. A light
@@ -272,7 +272,7 @@ as the specification's object, material and asset layers do. It settles how cove
 surface that is cut out or seen through glass.
 
 **Drafted** as
-[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md): each
+[ADR-0232](../../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md): each
 camera sample records its IDs and filter weight in a buffer of the pass. After each pass, the host
 merges each pixel's records in sample order into an exact list, as Arnold keeps one. A camera
 sample keeps one surface, so a cut-out surface needs no rule of its own, and glass takes its own
@@ -299,7 +299,7 @@ fixes the file, and not how a renderer builds its lists.
 The record also settles what a sample's back depth is, and the channels a deep file holds beside
 depth and alpha. It settles whether a surface seen through glass or a cut-out card adds samples.
 
-**Drafted** as [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md): each
+**Drafted** as [ADR-0233](../../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md): each
 camera sample records its depth and radiance beside the records of ADR-0232, and the host merges
 each pixel's records in sample order into a list. Samples are joined when their IDs agree and
 their depths lie within a tolerance, as Arnold, RenderMan and Redshift join them. A surface is a
@@ -327,7 +327,7 @@ while sampling is denoised. Last, it settles whether OIDN on the CPU gives the s
 thread count, and what moya does if it does not.
 
 **Drafted** as
-[ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md): OIDN denoises
+[ADR-0234](../../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md): OIDN denoises
 the beauty and any expression channel or light group a scene marks, each into a channel beside
 its noisy original. One albedo and normal, filtered first by OIDN with `cleanAux` set, guide every
 channel, and moya gives `inputScale` from its own sum. A denoised channel is held to one picture
@@ -344,7 +344,7 @@ denoised until section 9.
   ISPC 1.30 or newer comes from a port or a host tool of its own.
 * **Its weights are installed beside moya**, if the port keeps them apart from the library.
 * **The Flatpak builds it** as a module.
-* **[Dependencies.md](../contributing/Dependencies.md)** names the port and why.
+* **[Dependencies.md](../../contributing/Dependencies.md)** names the port and why.
 
 **Tests:** a filter of OIDN's denoises a constant image to the same constant.
 
@@ -503,7 +503,7 @@ to every lobe at once, and the bounce takes the picked closure's lobe alone.
 A light sample is split by each closure's value towards the light under every option.
 
 **Drafted** as
-[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md): a bounce is weighed
+[ADR-0235](../../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md): a bounce is weighed
 by the closure it picked alone, and takes that closure's lobe. A light sample is split by each
 closure's value towards the light, each part weighed against that closure's own density.
 
@@ -685,27 +685,87 @@ the time and deep lists under two, so the rest of the cost is on the device.
 
 * **A new reference page**, `docs/offline/Compositing.md`, for light path expressions, light
   groups, Cryptomatte and deep output. The docs site's summary lists it.
-* **[Film.md](../offline/Film.md)** names alpha, the filters of channels and each pixel's IDs.
-* **[Output.md](../offline/Output.md)** names RGBA, deep files, Cryptomatte's channels and header,
+* **[Film.md](../../offline/Film.md)** names alpha, the filters of channels and each pixel's IDs.
+* **[Output.md](../../offline/Output.md)** names RGBA, deep files, Cryptomatte's channels and header,
   and the denoised output.
-* **[Integrator.md](../offline/Integrator.md)** names the events of a path and the values at the
+* **[Integrator.md](../../offline/Integrator.md)** names the events of a path and the values at the
   first hit.
-* **[Scene.md](../offline/Scene.md)** names a channel's sources, the outputs' formats and a light's
+* **[Scene.md](../../offline/Scene.md)** names a channel's sources, the outputs' formats and a light's
   group.
-* **[Rib.md](../offline/Rib.md)** names `DisplayChannel`, a light's group and the outputs' types.
-* **[The offline README](../offline/README.md)**'s section on the new core says it writes outputs
+* **[Rib.md](../../offline/Rib.md)** names `DisplayChannel`, a light's group and the outputs' types.
+* **[The offline README](../../offline/README.md)**'s section on the new core says it writes outputs
   for compositing.
-* **The moya manual's [CommandLine.md](../manual/moya/CommandLine.md)** names `--denoise`.
-* **[Testing.md](../contributing/Testing.md)** names the output references and the checks that
+* **The moya manual's [CommandLine.md](../../manual/moya/CommandLine.md)** names `--denoise`.
+* **[Testing.md](../../contributing/Testing.md)** names the output references and the checks that
   channels add up.
 * **Each record's `Documented in` line** names the reference page that states its rule.
 * **The roadmap's section 6** links here, and says so when this plan closes.
+
+**Done.** `docs/offline/Compositing.md` holds the events of a path, light path expressions, light
+groups, Cryptomatte and deep output. Their sections moved there from `Integrator.md`, `Film.md` and
+`Output.md`, which keep a pointer to it, and the site's summary lists it after Output. ADR-0231,
+0232 and 0233 are documented in it, and ADR-0235 in `Materials.md`, which states the rule. The other
+pages had been brought up to date by the steps that changed them.
+
+---
+
+## Outcome
+
+Closed 2026-11-15. moya's new core writes what a compositor needs beside the beauty. The scene's
+outputs decide the film's channels and the files written, and the beauty carries alpha. A
+channel holds a value at the first hit, or the light of the paths a light path expression
+matches, compiled with every other expression into one automaton. A light's group labels its
+light, so a channel can hold one group's. Cryptomatte layers give each pixel's objects and
+materials by coverage, a deep file gives each pixel's samples in depth, and OIDN denoises the
+beauty and any marked channel. RIB names all of it. No picture the reyes and ray hiders make
+changed.
+
+**Delivered:**
+
+- What a channel collects (ADR-0230), light path expressions as one automaton (ADR-0231),
+  Cryptomatte coverage merged on the host (ADR-0232), deep pixels merged on the host (ADR-0233)
+  and denoised channels beside noisy ones (ADR-0234). A seventh came of the work: a bounce samples
+  one closure alone (ADR-0235).
+- OIDN and ISPC as dependencies, built from their releases through overlay ports.
+- The scene's outputs in the render and in `moya --paths`, alpha, and values at the first hit by
+  each channel's combine.
+- The events of a path, `lpe::compile()` and the automaton on the device, and light groups.
+- Cryptomatte layers with their manifests, deep EXR files with Deep IDs, and checkpoints that
+  keep both exactly.
+- Denoising through OIDN's `RT` filter, and `moya --paths --denoise`.
+- `DisplayChannel`, `Display` modes of several channels, `deepexr`, `PxrCryptomatte`, a light's
+  `lightGroup` and `Option "moya"` from RIB.
+- Five reference renders of outputs, and the lit room with outputs in `moya_bench`.
+- `Compositing.md`, and the film, output, integrator, scene, RIB, materials, testing and manual
+  pages brought up to date.
+
+**Different from the plan:**
+
+- A bounce of several closures is weighed by the closure that drew it alone, so light split by
+  lobe adds up to the beauty. The plan had not seen that the BSDF's sample mixed its closures.
+- A light's `lightGroup` came with the events of a path, ahead of the light groups' step, which
+  then only added the cases.
+- OIDN's `RT` filter gives the same floats on any count of threads, so the fixed count ADR-0234
+  names is not needed.
+- The deep case's glass is a card a quarter opaque. A camera sample keeps glass as its own
+  surface, and passes a cut-out one by a draw.
+- RenderMan writes Cryptomatte through a sample filter, `PxrCryptomatte`, not a `Display`.
+- The Cryptomatte hash is checked against MurmurHash3's published values, since the
+  specification's own examples could not be reached.
+- The reference renders' step left out its scenes' committed descriptions and hit views, which
+  two later commits added.
+
+**Left open**, each an entry in [TODO.md](../../TODO.md#offline-rendering):
+
+- A pass's records of what its samples cover grow with the picture.
+- A compositing reference holds each channel to the beauty's error.
+- The editor shows no outputs. Its render view is section 9's.
 
 ---
 
 ## Working beside the editor scripting plan
 
-[EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, which are below
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, which are below
 this plan's records. Its step 16 adds a thread count to `moya/moya.cxx` and
 `docs/manual/moya/CommandLine.md`, where steps 7 and 17 change how `--paths` writes and add
 `--denoise`. Each lands as a commit of its own. This plan changes nothing the editor sends moya:

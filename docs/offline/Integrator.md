@@ -250,102 +250,13 @@ the scene. Each is added to its channel by the channel's combine, as
   shading normal.
 - **Any other raw or primvar channel holds zero, and is reported**: a raw name not in the
   table, and a raw value of other components than its channel's. A light path expression's
-  channel is filled as [Channels of light path expressions](#channels-of-light-path-expressions)
+  channel is filled as [Compositing.md](Compositing.md#channels-of-light-path-expressions)
   says.
-
-## The events of a path
-
-A path reports each of its events as OSL's light path expressions name them, as a
-`kernel::integrate::Event`: its type, how it scatters, and its label. The events are reported
-beside what the path gathers, and change nothing it gathers.
-
-| Type | Letter | Where a path reports it |
-|---|---|---|
-| Camera | `C` | first, as the camera sample is generated |
-| Reflection | `R` | a bounce that leaves on the side of the surface it arrived from |
-| Transmission | `T` | a bounce that crosses the surface |
-| Light | `L` | each light of the scene whose light it gathers |
-| Object | `O` | each emitting material whose light it gathers |
-
-- **A bounce's scattering** is singular, `S`, for a sample from a closure that scatters into one
-  direction. It is diffuse, `D`, for a sample from a diffuse, Oren-Nayar or fuzz closure, and
-  glossy, `G`, for any other. The camera, a light and an object scatter none.
-- **A bounce reports its event** once its depth limits allow it, before Russian roulette.
-- **A light's event is reported wherever the path gathers its light.** That is at a light sample
-  that brings some in, a light's shape the ray meets, and a mesh light at a shading point. It is
-  also at each dome or distant light that a ray leaving the scene meets. A path goes on from the
-  event before a light's, so a light it meets follows the bounce that sent the path to it.
-- **A light sample is gathered closure by closure**, each part after the event of the bounce its
-  closure would make towards the light, and then the light's. A diffuse wall lit by a light sample
-  reports `<RD>` then `L`, as a bounce to the light would. Those events come after the bounce
-  that arrived at the shading point and before the bounce that leaves it.
-- **A light's label is its light group's**: the place of its `lightGroup` among the render's
-  labels, which are the groups' names, sorted, each once. A light whose `lightGroup` is empty, and
-  an object, carry none.
-- **A surface that is cut out** reports no event where a ray passes through it.
-
-`render()` fills an `integrate::Trails` when it is given one, for inspecting what paths do. It
-holds the events of each pixel's sample zero, in the order they were reported, up to
-`kernel::integrate::kTrailSteps` of them, with each light's event marked as gathered. It also
-holds the names of the labels. The picture is the same as a render's without one. Sample zero
-lies in the first pass, so a render that resumes past it records nothing.
-
-Background:
-[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md),
-[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md)
 
 ## Light path expressions
 
-`lpe::compile()` reads every light path expression of a render, in OSL's grammar, and compiles
-them into one deterministic automaton, an `lpe::Automaton`. A path steps it once for each event,
-and a state names each expression the events so far match.
-
-- **Each event is one symbol**, which `kernel::integrate::symbolOf()` gives it. The symbols are
-  the camera, a reflection and a transmission of each scattering, an object, and a light in no
-  group. A light of each group follows, by its label, so a render of n groups reads 9 + n.
-- **An event is written `<type scattering label>`.** Each place is a letter, a quoted label, `.`
-  for any, or a set in brackets, `[...]`, or of all but them, `[^...]`. Places left off match
-  anything. The types are `C`, `R`, `T`, `V`, `L`, `O` and `B`, and the scatterings `D`, `G`,
-  `S` and `s`. Paths here have no volume, background or straight events, so `V`, `B` and `s`
-  match none.
-- **A letter alone is one event**: a type's letter is any event of that type, and a scattering's
-  any event of that scattering. `RD` is a reflection and then a diffuse event, and a diffuse
-  reflection is `<RD>`. A quoted label alone, such as `'key'`, is a light of that group, and `.`
-  is any event.
-- **Patterns follow one another**, are grouped in parentheses, and are alternatives across `|`.
-  A set of events in brackets matches any of them, and `[^...]` any event but them. A pattern
-  repeats by `*`, `+`, `?`, `{n}`, `{n,}` or `{n,m}`, a count at most `lpe::kMostRepeats`, 32.
-  Spaces between parts are ignored.
-- **A label no light group holds matches no light.** A light in no group carries no label.
-- **An expression that cannot be read** matches nothing. `compile()` names it with the place,
-  from zero, where reading it stopped, and why.
-- **The automaton is built by subset construction**, visiting each state's symbols in order,
-  and is then made minimal. Its states are numbered as a walk from the start first reaches them,
-  so two sets of expressions that match the same paths give the same automaton.
-- **A set is refused** with `lpe::Refused` when its automaton holds more than
-  `lpe::kMostStates`, 1024, states while it is built.
-
-### Channels of light path expressions
-
-A channel whose `sourceType` is `lpe` and whose `sourceName` is an expression, of three
-components, takes the light of the paths its expression matches, in ACEScg.
-
-- **A render compiles its channels' expressions into one automaton**, under its light groups'
-  labels, and the path state holds the path's state of it. A path steps it at the camera and at
-  each bounce.
-- **Each light the path gathers** steps a copy of that state by the light's event, or by a light
-  sample's closure event and then the light's. The light, times the path's throughput, is added
-  to the channel of each expression the copy accepts, by the channel's combine, with the
-  sample's filter weight. The path's own state is left as it is.
-- **The light is split as the beauty gathers it.** Channels that split every path one way add up
-  to the beauty, to float rounding, and the beauty is the same with any channels or none.
-- **A light group's channel is an expression of its label**, such as `C.*<L.'key'>`. The light
-  of the lights no group names is `C.*<L.[^'key''fill']>` for a render whose groups are `key` and
-  `fill`, and an emitting material's is `C.*O`. Those channels split every path one way. A
-  group's channel added to the beauty once more is the picture of its lights twice as bright.
-- **A render takes the first `kernel::integrate::kMostExpressions`, 32, channels of
-  expressions.** One past them, one of other components than three, one whose expression cannot
-  be read, and every one of a set the automaton refuses is reported, and holds zero.
+A path reports each of its events, and a channel may take the light of the paths a light path
+expression matches. Both, with light groups, are in [Compositing.md](Compositing.md).
 
 ## Adaptive sampling
 

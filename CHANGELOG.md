@@ -29,6 +29,13 @@ that section to its version, and the section becomes the release's notes.
 - `moya --maketexture` and RIB's `MakeTexture` make a tiled, mipmapped EXR texture from an
   image. A `--paths` render makes any other image a material reads into one, and finds it along
   RIB's texture search path.
+- A `--paths` render writes outputs for compositing. `DisplayChannel` names a channel of a light
+  path expression after `lpe:`, or of a value at the first hit such as `z`, `P` or `Nn`. A
+  light's `lightGroup` gives an expression a group of lights to name. `PxrCryptomatte` writes
+  Cryptomatte layers of objects and materials, and a `Display` of the type `deepexr` writes a deep
+  EXR file. The beauty carries alpha.
+- `moya --paths --denoise`, and `Option "moya" "int denoise" [1]`, denoise the beauty through
+  OIDN and write it beside the noisy one. A `DisplayChannel` whose `denoise` is 1 is denoised too.
 
 ### Fixed
 

@@ -181,6 +181,9 @@ changes a picture the hiders make.
 - **Colour management** goes through OpenColorIO, with its ACES 2.0 configuration built in.
   [Colour.md](Colour.md)
 - **Output** is OpenEXR in the working space, or 8 bits through a display. [Output.md](Output.md)
+- **Outputs for compositing** sit beside the beauty: channels of light path expressions, light
+  groups, Cryptomatte layers of objects and materials, and deep files. OIDN denoises the beauty
+  and any channel marked for it. [Compositing.md](Compositing.md)
 - **The scene** holds objects of declared kinds by handle, with samples over the shutter, and
   records every change as a version, so what is built from it rebuilds only what changed.
   `ri::SceneClient` fills it from RIB, and the editor keeps one in step with its own.
@@ -237,13 +240,13 @@ changes a picture the hiders make.
 - **A pixel stops at a noise threshold**, measured from two halves of its samples. A render keeps
   a checkpoint it resumes from, and gives the same picture as one that never stopped.
   [Integrator.md](Integrator.md#adaptive-sampling)
-- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room
-  and a textured one, against a committed baseline. [Traversal.md](Traversal.md#speed)
+- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room,
+  a textured one and one with outputs, against a committed baseline. [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
 all of it, and `PathsReferenceTest.cxx` holds seven lit scenes and four of materials to their
-committed renders.
+committed renders. `CompositingReferenceTest.cxx` holds five scenes of outputs to theirs.
 
 Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
 

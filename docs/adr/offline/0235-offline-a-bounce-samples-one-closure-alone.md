@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-14
 **Tags**: offline, compositing, lighting
-**Documented in**: [offline/Integrator.md](../../offline/Integrator.md)
+**Documented in**: [offline/Materials.md](../../offline/Materials.md)
 
 ## Context
 

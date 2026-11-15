@@ -73,22 +73,6 @@ Every part's header holds:
 - **`moya/renderTime`**, a float of seconds, when `ExrMetadata` gives one.
 - **Each string of `ExrMetadata::strings`**, by its name.
 
-## Deep files
-
-An output of the format `deepexr` writes the snapshot's deep samples, as
-[Film.md](Film.md#deep-lists) describes them, to a deep scanline EXR file with
-`output::writeDeepExr()`.
-
-- **Each sample is `R`, `G`, `B` and `A`**, its colour premultiplied by its alpha, at the
-  output's precision, then `Z` and `ZBack`, both its depth, as 32-bit floats. A pixel's samples
-  run front to back, so the file is tidy.
-- **`objectid` and `materialid` are unsigned integers**, the IDs of OpenEXR's Deep IDs. The
-  header's `idManifest` names each by MurmurHash3, the object's under `objectid` and the
-  material's under `materialid`.
-- **The header names the colour space** as `colorInteropID`, `lin_ap1_scene`.
-- **A deep file is compressed by none, RLE or ZIPS**, which is all OpenEXR's deep files take. Any
-  other compression the output asks for is written as ZIPS, ZIP the fallback among them.
-
 ## Denoised channels
 
 A render denoises its beauty, and each channel the scene marks, after its last pass, through
@@ -114,19 +98,10 @@ OIDN's `RT` filter on its CPU device, in `denoise::denoise()`.
 Background:
 [ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md)
 
-## Cryptomatte
+## Cryptomatte and deep files
 
-An output of a Cryptomatte layer writes it as the Cryptomatte specification lays it out.
-
-- **Its ranks are the channels `<layer>00.R` to `.A`, `<layer>01` and on**, of 32-bit floats,
-  beside a beauty of the output's precision.
-- **An ID is a name's 32-bit MurmurHash3**, `output::idOf()`, with the lowest bit of its exponent
-  flipped when the exponent is all zeros or all ones. Its float is never a NaN, an infinity or a
-  denormal.
-- **The header names each layer under its key**, the first seven hex digits of the layer name's
-  hash. It writes `cryptomatte/<key>/name`, `hash` as `MurmurHash3_32` and `conversion` as
-  `uint32_to_float32`. Its `manifest` is a JSON object of each name in the picture and its ID, as
-  eight hex digits.
+A Cryptomatte layer's channels and header, and a deep file, are written as
+[Compositing.md](Compositing.md) describes.
 
 ## 8-bit pictures
 

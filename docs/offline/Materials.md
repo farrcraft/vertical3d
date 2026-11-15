@@ -402,7 +402,8 @@ its scale, and its roughness, anisotropy, index and whether it is thin-walled ar
 closure's. A layered material's closures are OpenPBR's for light leaving along outgoing, and the
 `Cs` primvar overrides its base colour.
 
-Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
+Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md),
+[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md)
 
 ## Layering
 

@@ -178,11 +178,11 @@ a whole.
 
 ## Working beside the moya rebuild
 
-The rebuild has no open plan. Its sections up to materials are closed, the last by
-[MoyaMaterials](completed/MoyaMaterials.md), which left the editor's surfaces on RI's `matte`.
-Its later sections reach the editor: output for compositing (section 6), the retirement of the
-old hiders (section 7) and interactive rendering (section 9). Giving the editor materials is
-work for a plan of its own.
+The rebuild has no open plan. Its sections up to output for compositing are closed, the last by
+[MoyaCompositing](completed/MoyaCompositing.md), which changed nothing the editor sends moya.
+[MoyaMaterials](completed/MoyaMaterials.md) left the editor's surfaces on RI's `matte`. The
+rebuild's later sections reach the editor: the retirement of the old hiders (section 7) and
+interactive rendering (section 9). Giving the editor materials is work for a plan of its own.
 
 **Where the two meet:**
 
@@ -191,9 +191,9 @@ work for a plan of its own.
 | `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Section 7, and the plan that gives the editor materials | Step 10 |
 | `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the new core | Steps 14 and 17 |
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
-| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer added `--checkpoint`, `--checkpoint-interval` and `--resume`, and MoyaMaterials `--maketexture` | Step 16 |
+| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer added `--checkpoint`, `--checkpoint-interval` and `--resume`, MoyaMaterials `--maketexture`, and MoyaCompositing `--denoise` | Step 16 |
 | The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
-| `src/scene/RenderSettings.h` and its codec | Sections 6 and 7: the hider list and the AOVs | Nothing |
+| `src/scene/RenderSettings.h` and its codec | Section 7, the hider list, and section 9, the AOVs the render view shows | Nothing |
 | `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
 | ADR numbers | The rebuild's next plan | 0217 to 0221 |
 

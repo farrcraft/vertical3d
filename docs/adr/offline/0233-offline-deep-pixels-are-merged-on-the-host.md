@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-13
 **Tags**: offline, compositing
-**Documented in**: [offline/Film.md](../../offline/Film.md)
+**Documented in**: [offline/Compositing.md](../../offline/Compositing.md)
 
 ## Context
 

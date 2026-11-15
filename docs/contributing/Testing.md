@@ -513,6 +513,11 @@ so a case over every pixel allows more than one over a region's mean.
   every channel lie within five of the beauty's errors. Each Cryptomatte ID matches bit for bit,
   each manifest exactly, and each pixel's count of deep samples exactly. A second case renders
   each with every light twice as bright, and checks that the comparison fails it.
+- **Channels that split every path one way are checked to add up to the beauty**, in
+  `LightPathsTest.cxx`. The first bounce's lobes sum to the beauty within float rounding, and
+  the light groups, the lights of no group and the emitting objects sum to it too. A group's
+  channel added to the beauty once more matches a render with that group's lights twice as
+  bright, within the errors.
 - **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
   commit and a PNG to look at. Copy the EXR over the reference to change it on purpose.
 - **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone

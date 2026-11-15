@@ -154,7 +154,9 @@ built.
 
 ### 6. Output for compositing
 
-[MoyaCompositing](../plans/MoyaCompositing.md) is its plan.
+Done. [MoyaCompositing](../plans/completed/MoyaCompositing.md) was its plan, and
+[Compositing.md](../offline/Compositing.md) and [Output.md](../offline/Output.md) describe what it
+built.
 
 - **LPE AOVs**: each AOV names a light path expression, and the integrator reports the event of
   each bounce.

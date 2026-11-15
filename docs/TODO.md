@@ -128,6 +128,18 @@ and aliases by the scale. The fix is the one a split's step needs: the program c
 value's change across the footprint, or running again at its edges.
 [Textures.md](offline/Textures.md#looking-up-a-texture) states the rule.
 
+[] **A pass's records of what its samples cover grow with the picture.** A render of a
+Cryptomatte layer or a deep file gives each camera sample of a pass a record of 32 bytes, in one
+device buffer of every pixel's samples. A 3840 by 2160 picture at 16 samples a pass needs 4.2 GB
+for it. The host merges the records after the pass, so a buffer of a band of rows, merged band by
+band, would bound it. `integrate::internal::Records` owns the buffer.
+
+[] **A compositing reference holds each channel to the beauty's error.** A pixel keeps the
+standard error of its beauty alone, so `CompositingReferenceTest.cxx` compares every channel
+within five of those errors. A channel of little light, such as a caustic, is held far more loosely
+than its own noise would allow. A channel's own error, kept by the film for the channels a test
+compares, would hold each to its own noise.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the

@@ -136,57 +136,10 @@ uses it.
 - **A snapshot describes itself.** It holds the film's channels and their offsets, so
   `offset(name)` finds a channel without the film, and a writer needs only the snapshot.
 
-## Cryptomatte coverage
+## Cryptomatte and deep lists
 
-A Cryptomatte layer gives each pixel the IDs of the objects, materials or assets its samples met,
-each with its share of the pixel. It is a raw channel of the source name `crypto_object`,
-`crypto_material` or `crypto_asset`, as [Scene.md](Scene.md) says.
-
-- **An ID names what a camera sample first met.** An object's ID is the name of the innermost
-  instance that placed the surface, and a material's the name of the surface's material. An
-  asset's is the name of the group the outermost instance places, or of that instance when it
-  places a geometry. A sample that met nothing, or a light's shape, covers no ID.
-- **A camera sample keeps one surface**, so a surface that is cut out is covered by the samples
-  it stops, and glass takes its own ID.
-- **Each camera sample records what it covers and its filter weight** in a buffer of the pass,
-  `kernel::integrate::Covered`. A stopped pixel's records are empty.
-- **After each pass, the host adds each pixel's records in sample order**, in
-  `integrate::internal::Coverage`. Each ID's weights are summed, and so is the weight of every
-  sample the pixel took. An ID's coverage is its weight over that whole weight. Nothing is lost
-  however many IDs a pixel holds.
-- **A layer keeps each pixel's IDs of the most coverage**, `ranks` of them, the lower ID first in
-  a tie. They are written to the film channels `<layer>00`, `<layer>01` and on, two ranks to a
-  channel of four floats: an ID, its coverage, an ID, its coverage. A rank of no ID is zero. Each
-  ID is the float whose bits are its hash, as [Output.md](Output.md#cryptomatte) says.
-- **A snapshot holds each layer's manifest**, a JSON object of every name its IDs hold in the
-  picture and each one's ID, by the layer's name in `manifests`.
-
-Background:
-[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md)
-
-## Deep lists
-
-A render of a deep output keeps each pixel's samples in depth, which a deep file holds. Each
-camera sample records, beside what Cryptomatte reads, how far along its ray it met anything and
-the radiance it gathered, in ACEScg.
-
-- **After each pass, the host joins each pixel's records in sample order**, in
-  `integrate::internal::Deep`. A record joins the first entry of its object and material whose
-  depth lies within the options' `deepTolerance`, a share of that entry's depth, of its own. It
-  starts an entry otherwise. A record of no surface joins by its depth in the same way, and every
-  record that met nothing joins one entry behind all the others.
-- **An entry is a point sample at the depth of its first record.** A camera sample keeps one
-  surface, so a surface that is cut out is a sample of its own, and a surface behind glass is part
-  of the glass's sample.
-- **A snapshot resolves each pixel's entries front to back.** An entry's alpha is its weight over
-  the weight of the samples that reached its depth, and its colour its weighted radiance over that
-  weight, premultiplied. Compositing a pixel's samples over each other gives its flat beauty and
-  alpha. The entry of what met nothing has an alpha of zero, and is left out when it holds no
-  light. A pixel no record reached holds no sample.
-- **Each sample names its object's and material's IDs**, the MurmurHash3 of their names as
-  Cryptomatte's IDs are, or zero for none.
-
-Background: [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md)
+A render keeps each pixel's Cryptomatte coverage and deep lists on the host, beside the film,
+and a snapshot holds both. [Compositing.md](Compositing.md) describes them.
 
 ## Checkpoints
 
