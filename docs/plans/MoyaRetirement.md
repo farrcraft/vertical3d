@@ -160,7 +160,7 @@ chooses among the options before the record is drafted.
 | [4](#step-4--the-record-the-offline-library) | The record: the offline library | `docs/adr` | **0240** | accepted |
 | [5](#step-5--ris-surfaces-become-materials) | RI's surfaces become materials | `moya/libmoya/ri`, `material` | 0236 | open |
 | [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | open |
-| [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | open |
+| [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
 | [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | — | open |
 | [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | open |
 | [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | open |
@@ -397,7 +397,7 @@ read, reported once, or passed over by a rule [Rib.md](../offline/Rib.md) states
 cases of `RIBCameraTest`, `RIBGeometryTest`, `RIBOutputTest` and `RIBStateTest` that test what a
 request means, rather than how the old hiders draw it, move to the scene client's suite.
 
-**In progress.** `Hider`, `ShadingRate`, `Option "trace" "maxdepth"`, the parameters passed over by
+**Done.** `Hider`, `ShadingRate`, `Option "trace" "maxdepth"`, the parameters passed over by
 rule and the reports of every other parameter are done, and [Rib.md](../offline/Rib.md) states
 them. A declaration of an array in a parameter's name, such as `"int bucketsize[2]"`, is not read
 by the reader, so RI's standard declarations are used.
@@ -406,7 +406,14 @@ by the reader, so RI's standard declarations are used.
 place each at its pixel of the image. A crop is therefore the whole image's render there, bit for
 bit, in every float and every deep sample. The snapshot names the image and the window's place in
 it. An EXR or deep file then has the image as its display window and the crop as its data window,
-and a PNG holds the crop alone. The move of the old cases is open.
+and a PNG holds the crop alone.
+
+Of the old handler's 87 cases, 31 had a case against the scene client already, and 31 test only
+how the old hiders draw. Nine are moya.exe's or the editor's, for steps 9 and 10. The other
+sixteen meanings have cases now. They are the camera's `Transform`, depth of field, the screen
+window in any order, the specification's cube, transform and attribute blocks, and named spaces.
+They are also a shader of no name, an RI displacement, motion flat at both ends, an area light
+over a quadric, and RI's width of a curve. Each was broken in the scene client and its case failed.
 
 ### Step 8 — The old scenes through the new core
 

@@ -29,7 +29,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include "Handling.h"
+#include "Heard.h"
 
 namespace {
 
@@ -117,6 +117,31 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_the_camera_holds_camera_to_world_test) {
     const Read read("Translate 1 2 5\nWorldBegin\nWorldEnd\n");
     const glm::mat4 camera = read.value("camera", "camera", "transform").matrixAt(0);
     BOOST_TEST((camera[3] == glm::vec4(-1.0F, -2.0F, -5.0F, 1.0F)));
+}
+
+// Transform replaces the current transformation with its matrix as written, row by row, so the
+// camera holds its inverse
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_transform_replaces_the_cameras_matrix_test) {
+    const Read read("Translate 9 9 9\nTransform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 4 1]\nWorldBegin\nWorldEnd\n");
+    const glm::mat4 camera = read.value("camera", "camera", "transform").matrixAt(0);
+    BOOST_TEST((camera[3] == glm::vec4(0.0F, 0.0F, -4.0F, 1.0F)));
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_depth_of_field_sets_the_lens_test) {
+    const Read read("DepthOfField 8 0.1 3\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((read.value("camera", "camera", "fstop") == scene::Value::number(8.0F)));
+    BOOST_TEST((read.value("camera", "camera", "focalLength") == scene::Value::number(0.1F)));
+    BOOST_TEST((read.value("camera", "camera", "focalDistance") == scene::Value::number(3.0F)));
+}
+
+// a screen window holds whatever comes after it, a Format or a Projection, and one given after a
+// projection replaces the window without changing the projection
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_screen_window_holds_in_any_order_test) {
+    const Read before("ScreenWindow -2 2 -2 2\nFormat 64 48 1\nProjection \"perspective\"\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((before.value("camera", "camera", "screen") == scene::Value::floats({ -2.0F, 2.0F, -2.0F, 2.0F })));
+    const Read after("Projection \"orthographic\"\nScreenWindow 0 2 -1 1\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((after.value("camera", "camera", "screen") == scene::Value::floats({ 0.0F, 2.0F, -1.0F, 1.0F })));
+    BOOST_TEST((after.value("camera", "camera", "projection") == scene::Value::string("orthographic")));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_moving_camera_keeps_each_time_test) {

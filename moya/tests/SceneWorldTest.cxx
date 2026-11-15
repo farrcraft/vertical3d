@@ -14,6 +14,7 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <algorithm>
 #include <fstream>
 #include <ios>
 #include <istream>
@@ -27,11 +28,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "Handling.h"
+#include "Heard.h"
 
 namespace {
 
@@ -593,6 +595,127 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_every_test_scene_reads_as_committed_test) 
         scenes++;
     }
     BOOST_TEST(scenes == 39U);
+}
+
+/** Where an instance's transformation takes a point. **/
+glm::vec3 placed(const Read & read, const std::string & instance, const glm::vec3 & point) {
+    return glm::vec3(read.value("instance", instance, "transform").matrixAt(0) * glm::vec4(point, 1.0F));
+}
+
+/** Whether two points lie within a small distance of each other. **/
+bool near(const glm::vec3 & left, const glm::vec3 & right) {
+    return glm::length(left - right) < 1.0e-5F;
+}
+
+// the unit cube of the RenderMan Interface specification's example: one polygon at z = +0.5,
+// turned by the rotations before each copy into the faces the specification names
+BOOST_AUTO_TEST_CASE(moya_sceneclient_rotations_build_the_specifications_cube_test) {
+    const Read read(boost::filesystem::path("data") / "spec-cube.rib");
+    const glm::vec3 far { 0.0F, 0.0F, 0.5F };
+    BOOST_TEST(near(placed(read, "unitcube", far), far));
+    BOOST_TEST(near(placed(read, "unitcube 2", far), glm::vec3(0.5F, 0.0F, 0.0F)));
+    BOOST_TEST(near(placed(read, "unitcube 3", far), glm::vec3(0.0F, 0.0F, -0.5F)));
+    BOOST_TEST(near(placed(read, "unitcube 4", far), glm::vec3(-0.5F, 0.0F, 0.0F)));
+    BOOST_TEST(near(placed(read, "unitcube 5", far), glm::vec3(0.0F, -0.5F, 0.0F)));
+    BOOST_TEST(near(placed(read, "unitcube 6", far), glm::vec3(0.0F, 0.5F, 0.0F)));
+    BOOST_TEST((read.value("camera", "camera", "transform").matrixAt(0)[3] == glm::vec4(0.0F, 0.0F, -5.0F, 1.0F)));
+}
+
+// TransformEnd restores the transformation TransformBegin saved, and leaves the colour set
+// inside the block in force
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_transform_block_restores_the_transformation_alone_test) {
+    const Read read(world("TransformBegin\nTranslate 5 5 5\nColor 0 1 0\nTransformEnd\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    BOOST_TEST((read.value("instance", "Polygon 1", "transform").matrixAt(0) == glm::mat4(1.0F)));
+    const scene::Handle material = read.value("instance", "Polygon 1", "material").handleArray().front();
+    const scene::Handle surface = read.scene().value(material, "surface").handleArray().front();
+    BOOST_TEST((read.scene().value(surface, "Cs") == scene::Value::colour(glm::vec3(0.0F, 1.0F, 0.0F))));
+}
+
+// each attribute block starts from the state before it, and its colour and transformation end
+// with it
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_attribute_block_restores_the_state_test) {
+    const Read read(world(
+        "AttributeBegin\nColor 1 0 0\nTranslate 0 0 5\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\nAttributeEnd\n"
+        "AttributeBegin\nColor 0 0 1\nTranslate 0.5 0 5\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\nAttributeEnd\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    BOOST_TEST((read.value("instance", "Polygon 2", "transform").matrixAt(0)[3] == glm::vec4(0.5F, 0.0F, 5.0F, 1.0F)));
+    BOOST_TEST((read.value("instance", "Polygon 3", "transform").matrixAt(0) == glm::mat4(1.0F)));
+    const auto colourOf = [&read](const std::string & instance) {
+        const scene::Handle material = read.value("instance", instance, "material").handleArray().front();
+        return read.scene().value(read.scene().value(material, "surface").handleArray().front(), "Cs");
+    };
+    BOOST_TEST((colourOf("Polygon 2") == scene::Value::colour(glm::vec3(0.0F, 0.0F, 1.0F))));
+    BOOST_TEST((colourOf("Polygon 3") == scene::Value::colour(glm::vec3(1.0F))));
+    BOOST_TEST(!(read.value("instance", "Polygon 1", "material") == read.value("instance", "Polygon 2", "material")));
+}
+
+// CoordinateSystem names the current transformation, CoordSysTransform makes a named one current,
+// and "world" is the identity
+BOOST_AUTO_TEST_CASE(moya_sceneclient_named_spaces_hold_their_transformations_test) {
+    const Read read(world(
+        "Scale 2 2 2\nCoordinateSystem \"lamp\"\nIdentity\nCoordSysTransform \"lamp\"\nCoordinateSystem \"copy\"\nIdentity\n"
+        "CoordSysTransform \"copy\"\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "CoordSysTransform \"world\"\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    const glm::mat4 doubled { glm::vec4(2.0F, 0.0F, 0.0F, 0.0F), glm::vec4(0.0F, 2.0F, 0.0F, 0.0F), glm::vec4(0.0F, 0.0F, 2.0F, 0.0F),
+        glm::vec4(0.0F, 0.0F, 0.0F, 1.0F) };
+    BOOST_TEST((read.value("instance", "Polygon 1", "transform").matrixAt(0) == doubled));
+    BOOST_TEST((read.value("instance", "Polygon 2", "transform").matrixAt(0) == glm::mat4(1.0F)));
+}
+
+// a shader of no name changes nothing, so the surface before it stays in force
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_shader_of_no_name_changes_nothing_test) {
+    const Read read(world("Surface \"plastic\"\nSurface \"\"\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    const scene::Handle material = read.value("instance", "Polygon 1", "material").handleArray().front();
+    const scene::Handle surface = read.scene().value(material, "surface").handleArray().front();
+    BOOST_TEST((read.scene().value(surface, "shader") == scene::Value::string("plastic")));
+}
+
+// an RI displacement is a node of the material, with its parameters, and ends with its block
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_ri_displacement_is_held_by_the_material_test) {
+    const Read read(world(
+        "AttributeBegin\nSurface \"matte\"\nDisplacement \"lift\" \"float amount\" [0.1]\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\nAttributeEnd\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    const scene::Handle material = read.value("instance", "Polygon 1", "material").handleArray().front();
+    const std::vector<scene::Handle> & displacement = read.scene().value(material, "displacement").handleArray();
+    BOOST_TEST_REQUIRE(displacement.size() == 1U);
+    BOOST_TEST((read.scene().value(displacement.front(), "shader") == scene::Value::string("lift")));
+    BOOST_TEST((read.scene().value(displacement.front(), "language") == scene::Value::string("ri")));
+    BOOST_TEST((read.scene().value(displacement.front(), "amount") == scene::Value::floats({ 0.1F })));
+    const scene::Handle after = read.value("instance", "Polygon 2", "material").handleArray().front();
+    BOOST_TEST((read.scene().value(after, "displacement") == scene::Value::handle({})));
+}
+
+// a transformation that moves from nothing at one end of the shutter to nothing at the other
+// keeps both samples
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_motion_flat_at_both_ends_keeps_both_test) {
+    const Read read("Shutter 0 1\n" + world("MotionBegin [0 1]\nScale 0 1 1\nScale 1 0 1\nMotionEnd\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    const scene::Samples & samples = read.scene().samples(read.handle("instance", "Polygon 1"), "transform");
+    BOOST_TEST(samples.times == (std::vector<float> { 0.0F, 1.0F }), boost::test_tools::per_element());
+    BOOST_TEST_REQUIRE(samples.values.size() == 2U);
+    BOOST_TEST((samples.values[0].matrixAt(0)[0] == glm::vec4(0.0F)));
+    BOOST_TEST((samples.values[1].matrixAt(0)[1] == glm::vec4(0.0F)));
+}
+
+// every geometry after an area light in its block emits, a quadric as a mesh does, and a light
+// before the block makes no mesh light
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_area_light_takes_every_geometry_in_its_block_test) {
+    const Read read(world(
+        "LightSource \"pointlight\" 1\n"
+        "AttributeBegin\nAreaLightSource \"arealight\" 2\nPolygon \"P\" [0 0 0 1 0 0 1 1 0]\nSphere 1 -1 1 360\nAttributeEnd\n"));
+    BOOST_TEST(read.scene().objects("meshLight").size() == 2U);
+    std::vector<scene::Handle> lit;
+    for (const scene::Handle & light : read.scene().objects("meshLight")) {
+        lit.push_back(read.scene().value(light, "geometry").handleArray().front());
+    }
+    BOOST_TEST((std::find(lit.begin(), lit.end(), read.handle("mesh", "Polygon 1")) != lit.end()));
+    BOOST_TEST((std::find(lit.begin(), lit.end(), read.handle("sphere", "Sphere 1")) != lit.end()));
+}
+
+// a curve that names no width takes RI's width of one
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_curve_of_no_width_is_one_wide_test) {
+    const Read read(world("Curves \"linear\" [2] \"nonperiodic\" \"P\" [0 0 0 0 0 1]\n"));
+    BOOST_TEST((read.value("curves", "Curves 1", "constantWidth") == scene::Value::number(1.0F)));
+    BOOST_TEST(read.value("curves", "Curves 1", "width").floatArray().empty());
 }
 
 };  // namespace
