@@ -248,6 +248,43 @@ the scene. Each is added to its channel by the channel's combine, as
 - **Any other channel holds zero, and is reported**: a raw name not in the table, a raw value of
   other components than its channel's, and a light path expression.
 
+## The events of a path
+
+A path reports each of its events as OSL's light path expressions name them, as a
+`kernel::integrate::Event`: its type, how it scatters, and its label. The events are reported
+beside what the path gathers, and change nothing it gathers.
+
+| Type | Letter | Where a path reports it |
+|---|---|---|
+| Camera | `C` | first, as the camera sample is generated |
+| Reflection | `R` | a bounce that leaves on the side of the surface it arrived from |
+| Transmission | `T` | a bounce that crosses the surface |
+| Light | `L` | each light of the scene whose light it gathers |
+| Object | `O` | each emitting material whose light it gathers |
+
+- **A bounce's scattering** is singular, `S`, for a sample from a closure that scatters into one
+  direction. It is diffuse, `D`, for a sample from a diffuse, Oren-Nayar or fuzz closure, and
+  glossy, `G`, for any other. The camera, a light and an object scatter none.
+- **A bounce reports its event** once its depth limits allow it, before Russian roulette.
+- **A light's event is reported wherever the path gathers its light.** That is at a light sample
+  that brings some in, a light's shape the ray meets, and a mesh light at a shading point. It is
+  also at each dome or distant light that a ray leaving the scene meets. A path goes on from the
+  event before a light's, so a light sample's event follows the bounce that arrived at the shading
+  point, and comes before the bounce that leaves it.
+- **A light's label is its light group's**: the place of its `lightGroup` among the render's
+  labels, which are the groups' names, sorted, each once. A light whose `lightGroup` is empty, and
+  an object, carry none.
+- **A surface that is cut out** reports no event where a ray passes through it.
+
+`render()` fills an `integrate::Trails` when it is given one, for inspecting what paths do. It
+holds the events of each pixel's sample zero, in the order they were reported, up to
+`kernel::integrate::kTrailSteps` of them, with each light's event marked as gathered. It also
+holds the names of the labels. The picture is the same as a render's without one. Sample zero
+lies in the first pass, so a render that resumes past it records nothing.
+
+Background:
+[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md)
+
 ## Adaptive sampling
 
 A render stops each pixel once its noise falls below the options' `noiseThreshold`. The samples

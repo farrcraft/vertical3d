@@ -225,6 +225,7 @@ struct Bsdf {
         out.incoming = own.toWorld(drawn);
         out.lobe = closure.lobe(drawn.z * local.z < 0.0F);
         out.roughness = closure.spread();
+        out.diffuse = closure.diffuse();
         if (agrees(outgoing, out.incoming, local, drawn)) {
             out.value = evaluate(outgoing, out.incoming);
             out.projected = projected(outgoing, out.incoming);

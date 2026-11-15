@@ -11,6 +11,7 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/integrate/Profile.h>
+#include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -78,6 +79,7 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
  * Its picture is the same, byte for byte, as that of a render that never stopped.
  *
  * A render given a profile fills it. A counted render gives the same picture as one that is not.
+ * A render given trails fills them, and gives the same picture as one that is not.
  *
  * @throws std::runtime_error when the CPU device's library cannot be loaded, or from OpenColorIO
  *         when a colour names a space the configuration cannot convert into ACEScg
@@ -86,13 +88,14 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
  *         written
  **/
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr);
+    const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr, Trails * trails = nullptr);
 
 /**
  * A scene rendered as render() renders it, from the prototypes gathered from it, which the caller
  * may have changed since. It throws what render() throws.
  **/
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const geometry::Prototypes & prototypes,
-    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr);
+    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints = {}, Profile * profile = nullptr,
+    Trails * trails = nullptr);
 
 };  // namespace v3d::moya::integrate

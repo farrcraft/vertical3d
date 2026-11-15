@@ -6,6 +6,7 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -97,15 +98,15 @@ struct Squared {
         channels.push_back(object);
     }
 
-    /** The picture of one output that holds every channel. **/
-    film::Snapshot render() {
+    /** The picture of one output that holds every channel, filling a profile when given one. **/
+    film::Snapshot render(integrate::Profile * profile = nullptr) {
         const scene::Handle output = made.create("output", "picture");
         made.set(output, "file", scene::Value::string("picture.exr"));
         made.set(output, "channels", scene::Value::handles(channels));
         made.commit();
         made.apply();
         v3d::moya::device::CpuDevice device;
-        return integrate::render(device, made, {}, colour::Config());
+        return integrate::render(device, made, {}, colour::Config(), {}, profile);
     }
 };
 
@@ -134,6 +135,25 @@ BOOST_AUTO_TEST_CASE(moya_firsthit_a_square_facing_the_camera_is_five_units_deep
     }
     BOOST_TEST(at(picture, "depth", kEdge, kInside) == 5.0F, boost::test_tools::tolerance(kRounding));
     BOOST_TEST(at(picture, "depth", kCorner, kCorner) == std::numeric_limits<float>::infinity());
+}
+
+// a counted render runs another entry point, which fills the channels at the first hit as the
+// render's own does, so each pixel's depth is the same
+BOOST_AUTO_TEST_CASE(moya_firsthit_a_counted_render_fills_the_same_channels_test) {
+    Squared plain;
+    plain.channel("depth", "raw", "depth", 1);
+    const film::Snapshot want = plain.render();
+    Squared counted;
+    counted.channel("depth", "raw", "depth", 1);
+    integrate::Profile profile { .counted = true };
+    const film::Snapshot got = counted.render(&profile);
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
+                BOOST_TEST(at(got, "depth", x, y) == at(want, "depth", x, y));
+            }
+        }
+    }
 }
 
 // a filter of min or max keeps the least or the greatest of a pixel's samples, so the pixel the

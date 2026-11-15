@@ -13,6 +13,8 @@
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -68,6 +70,10 @@ namespace v3d::moya::light {
  *
  * A cone angle is held to [0, 180] degrees and a softness to [0, 1].
  *
+ * A light's lightGroup names its light group, which its events carry as their label. The labels
+ * are the groups' names, sorted, each once, and a light whose lightGroup is empty is in none. The
+ * lights an emitting material makes are objects, in no group.
+ *
  * It reads the device's memory, so the device outlives it.
  **/
 class Lights final {
@@ -84,6 +90,9 @@ class Lights final {
 
     /** The lights, as kernel code reads them. **/
     kernel::light::Lights view() const;
+
+    /** The names of the light groups, by the label each light's events carry. **/
+    const std::vector<std::string> & labels() const;
 
  private:
     boost::shared_ptr<device::Buffer> lights_;
@@ -110,6 +119,7 @@ class Lights final {
     boost::shared_ptr<device::Buffer> profiles_;
     boost::shared_ptr<device::Buffer> photometry_;
     std::uint32_t count_ { 0 };
+    std::vector<std::string> labels_;
 };
 
 };  // namespace v3d::moya::light

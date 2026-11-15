@@ -107,7 +107,9 @@ then derived as RI derives it.
   its `includeRoot` is 1, the fallback. When it is 0, the light lights only the `instances` it
   names, which may be none. As in UsdLux's shadow linking, every instance casts a light's
   shadows while its `shadowIncludeRoot` is 1, the fallback. When it is 0, only the
-  `shadowInstances` it names do, as [Lights.md](Lights.md#light-linking) says. A light with an
+  `shadowInstances` it names do, as [Lights.md](Lights.md#light-linking) says. Each light also
+  names its light group, `lightGroup`, which is empty, the fallback, for none, as
+  [Integrator.md](Integrator.md#the-events-of-a-path) says. A light with an
   area holds `coneAngle` and `coneSoftness`, and an IES profile, after UsdLux's
   `shaping:ies`: `iesFile`, `iesAngleScale` and `iesNormalize`, as
   [Lights.md](Lights.md#ies-profiles) says. It also holds

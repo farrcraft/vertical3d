@@ -96,6 +96,7 @@ sphereLight "light cool"
     includeRoot integer = 0
     instances handle[2] = instance "Polygon 1" instance "Sphere 2"
     intensity float = 80
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1
@@ -116,6 +117,7 @@ sphereLight "light warm"
     includeRoot integer = 0
     instances handle[2] = instance "Polygon 1" instance "Sphere 1"
     intensity float = 80
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1

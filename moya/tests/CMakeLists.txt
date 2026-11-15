@@ -27,6 +27,7 @@ v3d_add_test(moya
 	"ExrTest.cxx"
 	"FilmCombineTest.cxx"
 	"DenoiseFeaturesTest.cxx"
+	"EventsTest.cxx"
 	"FirstHitTest.cxx"
 	"FilmTest.cxx"
 	"GridShaderTest.cxx"

@@ -25,7 +25,8 @@ namespace v3d::moya::kernel::bsdf {
  *
  * Its roughness is that of the closure it was drawn from, which widens a ray's cone. It is a
  * microfacet lobe's GGX alpha, or the geometric mean of an anisotropic lobe's two, one for a
- * diffuse lobe, and zero for a specular sample.
+ * diffuse lobe, and zero for a specular sample. diffuse is whether that closure is a diffuse,
+ * Oren-Nayar or fuzz lobe, whichever side of the surface the sample leaves on.
  **/
 struct Sample {
     glm::vec3 incoming { 0.0F, 0.0F, 1.0F };
@@ -35,6 +36,7 @@ struct Sample {
     Lobe lobe { Lobe::Diffuse };
     float roughness { 0.0F };
     bool specular { false };
+    bool diffuse { false };
 
     MOYA_KERNEL bool found() const {
         return density > 0.0F;

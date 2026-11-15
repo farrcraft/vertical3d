@@ -122,7 +122,7 @@ among the options before the record is drafted.
 | [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | done |
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | done |
 | [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
-| [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | open |
+| [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | done |
 | [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | open |
 | [12](#step-12--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231 | open |
 | [13](#step-13--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | open |
@@ -445,6 +445,17 @@ mirror with the wall seen face on.
 **Tests:** a path of known bounces in a scene built for it reports the events in order. Every
 reference render of the path tracer is unchanged, byte for byte.
 
+**Done.** A path reports each event as a `kernel::integrate::Event` of a type, a scattering and a
+label, beside what it gathers. A bounce is a reflection or a transmission, singular for a closure
+that scatters into one direction, diffuse for a diffuse, Oren-Nayar or fuzz closure, and glossy
+otherwise. A BSDF sample now says whether its closure is diffuse, so a transmission is named
+too. Each light the path gathers reports its event, and a light an emitting material makes is an
+object. Every light of the scene holds `lightGroup`, which this step took from step 13. The host
+gives each light its group's place among the groups' names, sorted, as its label. The cases see
+the events through `integrate::Trails`: a render given one records the events of each pixel's
+sample zero, and gives the same picture as one that is not. Surfaces that are cut out report no
+event, and a ray that leaves the scene meets lights alone, so no event is the background.
+
 ### Step 11 — Compiling a light path expression
 
 * **OSL's grammar of light path expressions**: events, scattering types and labels, groups,
@@ -470,8 +481,8 @@ errors. A render with five expressions gives the same beauty as one with none, b
 
 ### Step 13 — Light groups
 
-* **A light names its group** as the record of step 2 settles, in the scene and through UsdLux's
-  names where they exist.
+* **A light's group comes through UsdLux's names** where they exist, as the scene's
+  `lightGroup` from step 10 does.
 * **A channel of each group** collects the light of that group's lights.
 * **A light with no group** belongs to none, and a channel of light no group names collects it.
 

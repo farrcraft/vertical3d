@@ -20,6 +20,9 @@ namespace v3d::moya::kernel::light {
 /** A quarter turn, in radians: a cone this wide or wider, with no softness, shapes nothing. **/
 inline constexpr float kQuarterTurn = 1.57079632679489661923F;
 
+/** The label of a light in no light group. **/
+inline constexpr std::uint32_t kNoLabel = 0xFFFFFFFFU;
+
 /**
  * The shape a light emits from. A point and a distant light have none that a ray can meet: a
  * point is a sphere light of no size, and a distant light lies beyond the scene. A mesh light
@@ -78,6 +81,9 @@ enum class Shape : std::uint8_t {
  * - shadowLinked is whether only some instances cast its shadows: those held among the links'
  *   casters, shadowCount of them from shadowFirst. A light that every instance shadows casts
  *   from all.
+ * - label is the place among the render's labels of its light group's name, or kNoLabel for a
+ *   light in no group. object is whether an emitting material made it, rather than a light of
+ *   the scene.
  **/
 struct Light {
     std::uint32_t id { 0 };
@@ -107,6 +113,8 @@ struct Light {
     bool shadowLinked { false };
     std::uint32_t shadowFirst { 0 };
     std::uint32_t shadowCount { 0 };
+    std::uint32_t label { kNoLabel };
+    bool object { false };
 };
 
 /** Whether a light has a shape of its own: a rect, disk, sphere or cylinder. **/

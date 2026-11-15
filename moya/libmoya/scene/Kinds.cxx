@@ -310,7 +310,8 @@ Kind material() {
  * kelvin while enableColorTemperature is 1, and what it lights. As in UsdLux's light linking, it
  * lights every instance while includeRoot is 1, and otherwise only the instances it names, which
  * may be none. As in UsdLux's shadow linking, every instance casts its shadows while
- * shadowIncludeRoot is 1, and otherwise only the instances shadowInstances names.
+ * shadowIncludeRoot is 1, and otherwise only the instances shadowInstances names. lightGroup
+ * names the light group its light belongs to, or is empty for none.
  **/
 std::vector<Declaration> light() {
     return {
@@ -325,7 +326,8 @@ std::vector<Declaration> light() {
         Declaration { .name = "instances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } },
         Declaration { .name = "shadowIncludeRoot", .type = Type::Integer, .fallback = Value::integer(1) },
         Declaration {
-            .name = "shadowInstances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } } };
+            .name = "shadowInstances", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "instance" } },
+        Declaration { .name = "lightGroup", .type = Type::String, .fallback = Value::string("") } };
 }
 
 /**

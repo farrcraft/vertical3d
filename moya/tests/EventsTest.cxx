@@ -1,0 +1,251 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+#include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/integrate/Trails.h>
+#include <moya/libmoya/kernel/integrate/Event.h>
+#include <moya/libmoya/kernel/integrate/Trail.h>
+#include <moya/libmoya/kernel/light/Light.h>
+#include <moya/libmoya/scene/Declaration.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Kinds.h>
+#include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Value.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
+#include <glm/geometric.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
+#include "Tracing.h"
+
+namespace v3d::moya::tracing {
+namespace {
+
+namespace film = v3d::moya::film;
+namespace integrate = v3d::moya::integrate;
+namespace events = v3d::moya::kernel::integrate;
+namespace scene = v3d::moya::scene;
+
+constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
+
+/** The picture's side, in pixels, and the pixels from one corner to the other of its middle. **/
+constexpr std::int32_t kSide = 16;
+constexpr std::uint32_t kMiddleFrom = 6;
+constexpr std::uint32_t kMiddleTo = 10;
+
+/**
+ * A scene of a camera five units back along -z, with no light unless a case adds one. The camera
+ * keeps the orthographic projection the scene falls back to, whose screen runs from -1 to 1. A
+ * path takes at most depth bounces, and Russian roulette never ends one.
+ **/
+struct Staged {
+    scene::Scene made { scene::kinds() };
+
+    explicit Staged(std::int32_t depth) {
+        const scene::Handle options = made.create("options", "options");
+        const scene::Handle camera = made.create("camera", "camera");
+        made.set(options, "camera", scene::Value::handle(camera));
+        made.set(options, "resolution", scene::Value::integers({ kSide, kSide }));
+        made.set(options, "samples", scene::Value::integer(4));
+        made.set(options, "maxDepth", scene::Value::integer(depth));
+        made.set(options, "rouletteDepth", scene::Value::integer(depth + 1));
+        made.set(camera, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -5.0F)));
+    }
+
+    /** A material of an OpenPBR surface with the inputs given. **/
+    scene::Handle material(const std::string & name, const std::vector<std::pair<std::string, scene::Value>> & inputs) {
+        const scene::Handle surface = made.create("shader", name);
+        made.set(surface, "shader", scene::Value::string(kOpenPbr));
+        for (const auto & [input, value] : inputs) {
+            made.declare(surface, scene::Declaration { .name = input, .type = value.type(), .count = static_cast<std::uint32_t>(value.size()), .fallback = value });
+            made.set(surface, input, value);
+        }
+        const scene::Handle out = made.create("material", name);
+        made.set(out, "surface", scene::Value::handle(surface));
+        return out;
+    }
+
+    /** A quadrilateral of four corners, in their order, placed with a material, and its mesh. **/
+    scene::Handle quad(const std::string & name, const std::vector<glm::vec3> & corners, const scene::Handle & material) {
+        const scene::Handle mesh = made.create("mesh", name);
+        made.set(mesh, "P", scene::Value::points(corners));
+        made.set(mesh, "vertices", scene::Value::integers({ 3, 3 }));
+        made.set(mesh, "indices", scene::Value::integers({ 0, 2, 1, 0, 3, 2 }));
+        const scene::Handle placed = instanced(made, name, mesh, {}, glm::mat4(1.0F));
+        if (material.valid()) {
+            made.set(placed, "material", scene::Value::handle(material));
+        }
+        return mesh;
+    }
+
+    /** A light of a kind, in a light group, or in none for an empty group. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the kind, the name, then the group
+    scene::Handle light(const std::string & kind, const std::string & name, const std::string & group) {
+        const scene::Handle out = made.create(kind, name);
+        made.set(out, "lightGroup", scene::Value::string(group));
+        return out;
+    }
+
+    /** The picture, and the events of each pixel's sample zero when trails are given. **/
+    film::Snapshot render(integrate::Trails * trails) {
+        made.commit();
+        made.apply();
+        v3d::moya::device::CpuDevice device;
+        return integrate::render(device, made, {}, colour::Config(), {}, nullptr, trails);
+    }
+};
+
+/** A pixel's events, each spelled as a light path expression spells it, a star on a light's. **/
+std::string spelled(const integrate::Trails & trails, std::uint32_t x, std::uint32_t y) {
+    std::string out;
+    for (const events::Step & step : trails.pixels[(y * kSide) + x]) {
+        static const char * const kTypes = "CRTLO";
+        static const char * const kScatterings = " DGS";
+        out += out.empty() ? "" : " ";
+        out += kTypes[static_cast<std::uint32_t>(step.event.type)];
+        if (step.event.scattering != events::Scattering::None) {
+            out += kScatterings[static_cast<std::uint32_t>(step.event.scattering)];
+        }
+        if (step.event.label != kernel::light::kNoLabel) {
+            out += "'" + trails.labels[step.event.label] + "'";
+        }
+        out += step.gathered != 0U ? "*" : "";
+    }
+    return out;
+}
+
+/** A transformation that turns a distant light's axis, -z, to shine along a direction. **/
+glm::mat4 shining(const glm::vec3 & along) {
+    const glm::vec3 axis = -glm::normalize(along);
+    const glm::vec3 side { 0.0F, 0.0F, 1.0F };
+    glm::mat4 out(1.0F);
+    out[0] = glm::vec4(side, 0.0F);
+    out[1] = glm::vec4(glm::cross(axis, side), 0.0F);
+    out[2] = glm::vec4(axis, 0.0F);
+    return out;
+}
+
+/**
+ * A smooth mirror turned 45 degrees about y, which sends each camera ray along +x to a red
+ * diffuse wall. A sun in the group key shines on the wall from above the mirror.
+ **/
+void mirrored(Staged & staged) {
+    const scene::Handle mirror = staged.material("mirror", { { "base_color", scene::Value::colour(glm::vec3 { 1.0F }) },
+                                                              { "base_metalness", scene::Value::number(1.0F) },
+                                                              { "specular_roughness", scene::Value::number(0.0F) } });
+    const scene::Handle red = staged.material("red", { { "base_color", scene::Value::colour(glm::vec3 { 0.8F, 0.1F, 0.1F }) }, { "specular_weight", scene::Value::number(0.0F) } });
+    staged.quad("mirror", { { -0.7F, -0.7F, -0.7F }, { 0.7F, -0.7F, 0.7F }, { 0.7F, 0.7F, 0.7F }, { -0.7F, 0.7F, -0.7F } }, mirror);
+    staged.quad("wall", { { 2.0F, -3.0F, -3.0F }, { 2.0F, 3.0F, -3.0F }, { 2.0F, 3.0F, 3.0F }, { 2.0F, -3.0F, 3.0F } }, red);
+    const scene::Handle sun = staged.light("distantLight", "sun", "key");
+    staged.made.set(sun, "transform", scene::Value::matrix(shining({ 1.0F, -2.0F, 0.0F })));
+}
+
+// a camera ray that a mirror sends to a wall under a sun makes a singular reflection there, then
+// takes a light sample of the sun at the wall, then makes a diffuse reflection. The path's depth
+// limit ends it after that, so every pixel the mirror fills reports those events in that order
+BOOST_AUTO_TEST_CASE(moya_events_a_mirror_then_a_wall_report_their_bounces_in_order_test) {
+    Staged staged(2);
+    mirrored(staged);
+    integrate::Trails trails;
+    staged.render(&trails);
+    BOOST_TEST(trails.labels == std::vector<std::string> { "key" });
+    for (std::uint32_t y = kMiddleFrom; y < kMiddleTo; ++y) {
+        for (std::uint32_t x = kMiddleFrom; x < kMiddleTo; ++x) {
+            BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
+                BOOST_TEST(spelled(trails, x, y) == "C RS L'key'* RD");
+            }
+        }
+    }
+}
+
+// smooth glass facing the camera reflects or transmits each camera ray singularly, and rough
+// glass glossily. Over the picture's middle, some rays cross it
+BOOST_AUTO_TEST_CASE(moya_events_glass_transmits_singularly_or_glossily_by_its_roughness_test) {
+    for (const auto & [roughness, scattering] : { std::pair { 0.0F, 'S' }, std::pair { 0.4F, 'G' } }) {
+        BOOST_TEST_CONTEXT("roughness " << roughness) {
+            Staged staged(1);
+            const scene::Handle glass = staged.material("glass", { { "transmission_weight", scene::Value::number(1.0F) },
+                                                                    { "specular_roughness", scene::Value::number(roughness) } });
+            staged.quad("pane", { { -1.0F, -1.0F, 0.0F }, { 1.0F, -1.0F, 0.0F }, { 1.0F, 1.0F, 0.0F }, { -1.0F, 1.0F, 0.0F } }, glass);
+            integrate::Trails trails;
+            staged.render(&trails);
+            std::uint32_t crossed = 0;
+            for (std::uint32_t y = kMiddleFrom; y < kMiddleTo; ++y) {
+                for (std::uint32_t x = kMiddleFrom; x < kMiddleTo; ++x) {
+                    const std::string got = spelled(trails, x, y);
+                    BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
+                        BOOST_TEST((got == std::string("C R") + scattering || got == std::string("C T") + scattering), got);
+                    }
+                    crossed += got[2] == 'T' ? 1U : 0U;
+                }
+            }
+            BOOST_TEST(crossed > 0U);
+        }
+    }
+}
+
+// a rect light in the group fill, which faces the camera and is seen by it, is gathered with its
+// group's label by each camera ray that meets it. A dome in no group is gathered with none by
+// each ray that leaves the scene. The labels are the groups' names, sorted, the sun's among them
+BOOST_AUTO_TEST_CASE(moya_events_a_light_the_camera_sees_carries_its_groups_label_test) {
+    Staged staged(0);
+    staged.made.set(staged.light("rectLight", "panel", "fill"), "camera", scene::Value::integer(1));
+    staged.light("distantLight", "sun", "key");
+    staged.light("domeLight", "sky", "");
+    integrate::Trails trails;
+    staged.render(&trails);
+    BOOST_TEST(trails.labels == (std::vector<std::string> { "fill", "key" }));
+    BOOST_TEST(spelled(trails, kSide / 2U, kSide / 2U) == "C L'fill'*");
+    BOOST_TEST(spelled(trails, 0, 0) == "C L*");
+}
+
+// a square whose material emits is an object, with no label, and a mesh light in the group glow
+// is a light with its label. The camera gathers each where it sees it
+BOOST_AUTO_TEST_CASE(moya_events_an_emitting_material_is_an_object_and_a_mesh_light_a_light_test) {
+    Staged staged(0);
+    const scene::Handle glowing = staged.material("glowing", { { "emission_luminance", scene::Value::number(1.0F) } });
+    staged.quad("left", { { -1.0F, -1.0F, 0.0F }, { 0.0F, -1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F }, { -1.0F, 1.0F, 0.0F } }, glowing);
+    const scene::Handle right = staged.quad("right", { { 0.0F, -1.0F, 0.0F }, { 1.0F, -1.0F, 0.0F }, { 1.0F, 1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F } }, {});
+    const scene::Handle mesh = staged.light("meshLight", "panel", "glow");
+    staged.made.set(mesh, "geometry", scene::Value::handle(right));
+    staged.made.set(mesh, "camera", scene::Value::integer(1));
+    integrate::Trails trails;
+    staged.render(&trails);
+    BOOST_TEST(spelled(trails, 4, kSide / 2U) == "C O*");
+    BOOST_TEST(spelled(trails, 12, kSide / 2U) == "C L'glow'*");
+}
+
+// recording the events changes nothing a path gathers, so the picture is the same, bit for bit
+BOOST_AUTO_TEST_CASE(moya_events_recording_them_leaves_the_picture_as_it_is_test) {
+    Staged plain(2);
+    mirrored(plain);
+    const film::Snapshot want = plain.render(nullptr);
+    Staged recorded(2);
+    mirrored(recorded);
+    integrate::Trails trails;
+    const film::Snapshot got = recorded.render(&trails);
+    BOOST_TEST(trails.pixels.size() == static_cast<std::size_t>(kSide) * kSide);
+    BOOST_REQUIRE(got.values.size() == want.values.size());
+    BOOST_REQUIRE(got.errors.size() == want.errors.size());
+    const std::uint32_t differ = static_cast<std::uint32_t>(std::memcmp(got.values.data(), want.values.data(), want.values.size() * sizeof(float)) != 0) +
+        static_cast<std::uint32_t>(std::memcmp(got.errors.data(), want.errors.data(), want.errors.size() * sizeof(float)) != 0);
+    BOOST_TEST(differ == 0U);
+}
+
+};  // namespace
+};  // namespace v3d::moya::tracing

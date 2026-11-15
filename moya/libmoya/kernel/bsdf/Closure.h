@@ -101,6 +101,11 @@ struct Closure {
         return 1.0F;
     }
 
+    /** Whether it is a diffuse, Oren-Nayar or fuzz lobe. **/
+    MOYA_KERNEL bool diffuse() const {
+        return model == Model::Diffuse || model == Model::OrenNayar || model == Model::Fuzz;
+    }
+
     /** The kind of bounce its sample makes: one that crosses the surface is a transmission. **/
     MOYA_KERNEL Lobe lobe(bool crossed) const {
         if (crossed) {
@@ -109,7 +114,7 @@ struct Closure {
         if (singular()) {
             return Lobe::Specular;
         }
-        return model == Model::Diffuse || model == Model::OrenNayar || model == Model::Fuzz ? Lobe::Diffuse : Lobe::Glossy;
+        return diffuse() ? Lobe::Diffuse : Lobe::Glossy;
     }
 };
 

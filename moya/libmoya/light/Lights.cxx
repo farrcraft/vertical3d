@@ -644,8 +644,8 @@ std::uint32_t materialOf(const geometry::Prototypes & prototypes, const std::vec
 
 /**
  * The light an emitting material makes: OpenPBR's emission luminance in its emission colour,
- * which camera rays see, in ACEScg. A material that is not layered, or emits no luminance, makes
- * none.
+ * which camera rays see, in ACEScg. It is an object, not a light of the scene. A material that is
+ * not layered, or emits no luminance, makes none.
  **/
 bool materialEmitter(const std::vector<kernel::surface::Material> & materials, std::uint32_t material, kernel::light::Light & out) {
     if (material == kernel::surface::kNoMaterial) {
@@ -659,6 +659,7 @@ bool materialEmitter(const std::vector<kernel::surface::Material> & materials, s
     out.colour = held.surface.emissionColour;
     out.scale = held.surface.emissionLuminance;
     out.camera = true;
+    out.object = true;
     return true;
 }
 
@@ -742,6 +743,30 @@ void treesBySet(const internal::Linking & links, internal::Gathered & all) {
     }
 }
 
+/**
+ * The names of the light groups of the lights the scene's objects made, sorted and each once,
+ * with each light given its group's place among them as its label.
+ **/
+std::vector<std::string> labelled(const scene::Scene & scene, const std::vector<scene::Handle> & handles, std::vector<kernel::light::Light> & lights) {
+    std::vector<std::string> groups(lights.size());
+    std::set<std::string> names;
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+        if (handles[i].valid()) {
+            groups[i] = scene.value(handles[i], "lightGroup").stringArray().front();
+        }
+        if (!groups[i].empty()) {
+            names.insert(groups[i]);
+        }
+    }
+    const std::vector<std::string> out(names.begin(), names.end());
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+        if (!groups[i].empty()) {
+            lights[i].label = static_cast<std::uint32_t>(std::lower_bound(out.begin(), out.end(), groups[i]) - out.begin());
+        }
+    }
+    return out;
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
@@ -808,6 +833,7 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         add(sky, handle, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
     }
     meshLights(scene, prototypes, config, logger, all);
+    labels_ = labelled(scene, all.handles, lights);
     const internal::Linking links = internal::linking(scene, prototypes, all.handles, lights);
     treesBySet(links, all);
     std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
@@ -840,6 +866,10 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     profiles_ = uploaded(device, profiles.profiles());
     photometry_ = uploaded(device, profiles.photometry());
     count_ = static_cast<std::uint32_t>(lights.size());
+}
+
+const std::vector<std::string> & Lights::labels() const {
+    return labels_;
 }
 
 kernel::light::Lights Lights::view() const {

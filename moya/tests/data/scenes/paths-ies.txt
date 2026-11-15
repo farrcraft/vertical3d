@@ -82,6 +82,7 @@ sphereLight "light lamp"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 5
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1

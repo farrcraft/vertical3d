@@ -78,6 +78,7 @@ meshLight "light 1"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 12
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =
@@ -97,6 +98,7 @@ meshLight "light glow"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 12
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =

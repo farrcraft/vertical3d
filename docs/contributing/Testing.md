@@ -526,9 +526,11 @@ Each `.rib` file also has what the new core makes of it committed in `moya/tests
   hider's to a ten thousandth. The old depth plane holds RI's screen depth on [0, 2], so the test
   takes it back to depth along the view through the camera's clipping planes.
 
-Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/data/`, when the
-new core changes what a scene makes on purpose. `--scene` writes to standard output, so its line
-endings are made LF before the file is committed.
+Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/` with `--file
+data/<scene>.rib`, when the new core changes what a scene makes on purpose. A material scene
+names its MaterialX documents from there, so read from anywhere else it loses its networks.
+`--scene` writes to standard output, so its line endings are made LF before the file is
+committed.
 
 ### moya's benchmark
 

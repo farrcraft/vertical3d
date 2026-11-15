@@ -58,6 +58,7 @@
 #include <moya/libmoya/kernel/geometry/Trace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/geometry/Traversal.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Dimensions.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Event.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/FirstHit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Keeping.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Opacity.h>  // IWYU pragma: keep
@@ -66,6 +67,7 @@
 #include <moya/libmoya/kernel/integrate/PathState.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Readings.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Settings.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Trail.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Bounds.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Dome.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Elliptic.h>  // IWYU pragma: keep

@@ -18,6 +18,7 @@ domeLight "light sky"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 1
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =

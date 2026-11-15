@@ -68,6 +68,7 @@ distantLight "light 1"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 2
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =
@@ -81,6 +82,7 @@ domeLight "light sky"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 0.25
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =

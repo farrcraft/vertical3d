@@ -18,6 +18,7 @@ distantLight "light 1"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 1.5
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =
@@ -96,6 +97,7 @@ sphereLight "light 2"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 12
+    lightGroup string = ""
     normalize integer = 1
     radius float = 0
     shadowIncludeRoot integer = 1
@@ -116,6 +118,7 @@ sphereLight "light 3"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 40
+    lightGroup string = ""
     normalize integer = 1
     radius float = 0
     shadowIncludeRoot integer = 1

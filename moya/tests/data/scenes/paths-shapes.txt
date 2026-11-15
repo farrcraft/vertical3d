@@ -24,6 +24,7 @@ cylinderLight "light cylinder"
     instances handle[0] =
     intensity float = 24
     length float = 1
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1
@@ -43,6 +44,7 @@ diskLight "light disk"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 24
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1
@@ -113,6 +115,7 @@ rectLight "light rect"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 24
+    lightGroup string = ""
     normalize integer = 0
     shadowIncludeRoot integer = 1
     shadowInstances handle[0] =
@@ -143,6 +146,7 @@ sphereLight "light sphere"
     includeRoot integer = 1
     instances handle[0] =
     intensity float = 24
+    lightGroup string = ""
     normalize integer = 0
     radius float = 0.5
     shadowIncludeRoot integer = 1

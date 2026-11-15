@@ -24,8 +24,10 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
 #include <moya/libmoya/integrate/Profile.h>
+#include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/integrate/internal/FirstHits.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
+#include <moya/libmoya/integrate/internal/TrailSteps.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
@@ -130,12 +132,13 @@ std::uint64_t fingerprint(const scene::Scene & scene, const std::vector<film::Ch
 }
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger,
-    const colour::Config & config, const Checkpoints & checkpoints, Profile * profile) {
-    return render(device, scene, geometry::gather(scene, logger), logger, config, checkpoints, profile);
+    const colour::Config & config, const Checkpoints & checkpoints, Profile * profile, Trails * trails) {
+    return render(device, scene, geometry::gather(scene, logger), logger, config, checkpoints, profile, trails);
 }
 
 film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, const geometry::Prototypes & prototypes,
-    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints, Profile * profile) {
+    const boost::shared_ptr<log::Logger> & logger, const colour::Config & config, const Checkpoints & checkpoints, Profile * profile,
+    Trails * trails) {
     const kernel::camera::Camera camera = camera::fromScene(scene);
     const glm::uvec2 resolution { static_cast<std::uint32_t>(camera.resolution.x), static_cast<std::uint32_t>(camera.resolution.y) };
     const accel::Assembly assembly = accel::assemble(device, prototypes);
@@ -170,6 +173,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     if (profile != nullptr && profile->counted) {
         tallies.emplace(device, resolution);
     }
+    const internal::TrailSteps trail(device, resolution, trails != nullptr);
     double passing = 0.0;
     const std::uint32_t start =
         static_cast<std::uint32_t>(std::min<std::uint64_t>(std::uint64_t { done } * kSamplesPerPass, sampler.samplesPerPixel()));
@@ -199,7 +203,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .first = first,
                 .count = samples,
                 .firstHits = firstHits.view(),
-                .features = firstHits.features() };
+                .features = firstHits.features(),
+                .trail = trail.view() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;
@@ -223,6 +228,9 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
         if (tallies) {
             tallies->into(*profile);
         }
+    }
+    if (trails != nullptr) {
+        trail.into(*trails, lights.labels());
     }
     textures.report();
     return picture.snapshot();
