@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(moya_scenehits_every_scene_traces_as_committed_test) {
         BOOST_TEST(apart == 0U, name);
         scenes++;
     }
-    BOOST_TEST(scenes == 34U);
+    BOOST_TEST(scenes == 39U);
 }
 
 /**
