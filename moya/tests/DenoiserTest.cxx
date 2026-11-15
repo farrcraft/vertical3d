@@ -100,8 +100,13 @@ BOOST_AUTO_TEST_CASE(moya_denoiser_a_constant_picture_denoises_to_itself_test) {
     BOOST_TEST(std::fabs((sum / static_cast<double>(kSize * kSize)) - kGrey) < 0.005 * kGrey);
 }
 
-// the RT filter gives the same floats, bit for bit, on one thread, on every thread, and again on
-// every thread
+/**
+ * The RT filter gives the same floats, bit for bit, on one thread, on every thread, and again on
+ * every thread. A denoised picture is then the same on every run without a fixed count of
+ * threads.
+ *
+ * Passes before the change: it checks OIDN itself, which the change relies on and does not alter.
+ **/
 BOOST_AUTO_TEST_CASE(moya_denoiser_the_filter_gives_one_picture_on_any_count_of_threads_test) {
     constexpr std::size_t kNoisy = 96;
     const std::vector<float> colour = noisy(kNoisy);
