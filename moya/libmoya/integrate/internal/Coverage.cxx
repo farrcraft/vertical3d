@@ -5,19 +5,16 @@
 
 #include <moya/libmoya/integrate/internal/Coverage.h>
 
-#include <moya/libmoya/device/Buffer.h>
-#include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/integrate/internal/Names.h>
+
 #include <moya/libmoya/film/Covering.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/film/State.h>
-#include <moya/libmoya/geometry/Instance.h>
 #include <moya/libmoya/geometry/Prototypes.h>
-#include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/integrate/Covered.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/output/Cryptomatte.h>
-#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <algorithm>
@@ -32,54 +29,9 @@
 
 namespace v3d::moya::integrate::internal {
 
-namespace {
-
-/** The scene's objects of a kind, by their index in the scene, and none where none is. **/
-std::vector<std::optional<scene::Handle>> byIndex(const scene::Scene & scene, const std::string & kind) {
-    std::vector<std::optional<scene::Handle>> out;
-    for (const scene::Handle & handle : scene.objects(kind)) {
-        if (handle.index >= out.size()) {
-            out.resize(handle.index + 1U);
-        }
-        out[handle.index] = handle;
-    }
-    return out;
-}
-
-/** The names a layer's IDs are hashed from, by the index a record names each by. **/
-std::vector<std::string> namesOf(output::Cryptomatte::Names names, const scene::Scene & scene, const geometry::Prototypes & prototypes) {
-    std::vector<std::string> out;
-    if (names == output::Cryptomatte::Names::Material) {
-        for (const scene::Handle & handle : prototypes.materialHandles) {
-            out.push_back(scene.contains(handle) ? scene.name(handle) : std::string());
-        }
-        return out;
-    }
-    const std::vector<std::optional<scene::Handle>> instances = byIndex(scene, "instance");
-    out.resize(instances.size());
-    for (std::size_t i = 0; i < instances.size(); ++i) {
-        out[i] = instances[i] ? scene.name(*instances[i]) : std::string();
-    }
-    if (names == output::Cryptomatte::Names::Asset) {
-        const std::vector<std::optional<scene::Handle>> groups = byIndex(scene, "group");
-        for (const geometry::Instance & instance : prototypes.instances) {
-            if (instance.kind != geometry::Prototype::Group || instance.id >= out.size()) {
-                continue;
-            }
-            const std::uint32_t group = prototypes.groups[instance.prototype].id;
-            if (group < groups.size() && groups[group]) {
-                out[instance.id] = scene.name(*groups[group]);
-            }
-        }
-    }
-    return out;
-}
-
-};  // namespace
-
-Coverage::Coverage(device::CpuDevice & device, const glm::uvec2 & resolution, std::uint32_t samples, const std::vector<output::Channel> & channels,
-    const scene::Scene & scene, const geometry::Prototypes & prototypes) :
-    device_(device), pixels_(static_cast<std::size_t>(resolution.x) * resolution.y) {
+Coverage::Coverage(const glm::uvec2 & resolution, const std::vector<output::Channel> & channels, const scene::Scene & scene,
+    const geometry::Prototypes & prototypes) :
+    pixels_(static_cast<std::size_t>(resolution.x) * resolution.y) {
     for (const output::Channel & channel : channels) {
         if (const std::optional<output::Cryptomatte> layer = output::cryptomatteOf(channel)) {
             layers_.push_back(*layer);
@@ -95,27 +47,16 @@ Coverage::Coverage(device::CpuDevice & device, const glm::uvec2 & resolution, st
     }
     held_.resize(layers_.size() * pixels_);
     whole_.assign(pixels_, 0.0);
-    records_ = pixels_ * samples;
-    const std::vector<kernel::integrate::Covered> empty(records_);
-    buffer_ = device_.allocate(records_ * sizeof(kernel::integrate::Covered));
-    device_.upload(*buffer_, empty.data(), records_ * sizeof(kernel::integrate::Covered));
 }
 
 bool Coverage::none() const {
     return layers_.empty();
 }
 
-kernel::Array<kernel::integrate::Covered> Coverage::view() const {
-    return buffer_ ? device::view<kernel::integrate::Covered>(*buffer_) : kernel::Array<kernel::integrate::Covered> {};
-}
-
-void Coverage::add(std::uint32_t samples) {
+void Coverage::add(const std::vector<kernel::integrate::Covered> & records, std::uint32_t samples) {
     if (layers_.empty()) {
         return;
     }
-    const std::size_t count = pixels_ * samples;
-    std::vector<kernel::integrate::Covered> records(count);
-    device_.download(*buffer_, records.data(), count * sizeof(kernel::integrate::Covered));
     for (std::size_t pixel = 0; pixel < pixels_; ++pixel) {
         for (std::uint32_t sample = 0; sample < samples; ++sample) {
             const kernel::integrate::Covered & record = records[(pixel * samples) + sample];

@@ -11,31 +11,30 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace v3d::moya::output::internal {
 
 /**
- * The entries of a checkpoint's coverage part, as OpenEXR reads and writes a deep part. It holds
- * each pixel's count of entries, and each field's values for every entry in pixel order. It also
- * holds where each pixel's first value of each field lies.
+ * The entries of one of a checkpoint's deep parts, as OpenEXR reads and writes it, each field a
+ * channel of unsigned integers. It holds each pixel's count of entries, and each field's values
+ * for every entry in pixel order. It also holds where each pixel's first value of each field
+ * lies.
  **/
 struct Entries {
-    /**
-     * The part's channels, each of unsigned integers: an entry's layer, its ID, and the high and
-     * low halves of its weight's bits.
-     **/
-    static constexpr const char * const kChannels[] = { "layer", "id", "weight.high", "weight.low" };
-    static constexpr std::size_t kFields = std::size(kChannels);
-
+    std::vector<std::string> channels;
     std::vector<unsigned int> counts;
-    std::vector<std::uint32_t> fields[kFields];
-    std::vector<char *> pointers[kFields];
+    std::vector<std::vector<std::uint32_t>> fields;
+    std::vector<std::vector<char *>> pointers;
+
+    /** Entries of the fields the channels name, in order, and no pixels yet. **/
+    explicit Entries(std::vector<std::string> names) : channels(std::move(names)), fields(channels.size()), pointers(channels.size()) {}
 
     /** Points each pixel's place in each field's values at its first entry. **/
     void place() {
-        for (std::size_t field = 0; field < kFields; ++field) {
+        for (std::size_t field = 0; field < fields.size(); ++field) {
             pointers[field].assign(counts.size(), nullptr);
             std::size_t first = 0;
             for (std::size_t pixel = 0; pixel < counts.size(); ++pixel) {
@@ -52,8 +51,8 @@ struct Entries {
     Imf::DeepFrameBuffer frame(std::ptrdiff_t origin, std::size_t width) {
         Imf::DeepFrameBuffer out;
         out.insertSampleCountSlice(Imf::Slice(Imf::UINT, reinterpret_cast<char *>(counts.data() + origin), sizeof(unsigned int), sizeof(unsigned int) * width));
-        for (std::size_t field = 0; field < kFields; ++field) {
-            out.insert(kChannels[field],
+        for (std::size_t field = 0; field < fields.size(); ++field) {
+            out.insert(channels[field],
                 Imf::DeepSlice(Imf::UINT, reinterpret_cast<char *>(pointers[field].data() + origin), sizeof(char *), sizeof(char *) * width, sizeof(std::uint32_t)));
         }
         return out;

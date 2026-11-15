@@ -26,12 +26,16 @@
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/integrate/internal/Coverage.h>
+#include <moya/libmoya/integrate/internal/Deep.h>
 #include <moya/libmoya/integrate/internal/FirstHits.h>
+#include <moya/libmoya/integrate/internal/Kept.h>
 #include <moya/libmoya/integrate/internal/LightPaths.h>
+#include <moya/libmoya/integrate/internal/Records.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
 #include <moya/libmoya/integrate/internal/TrailSteps.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
+#include <moya/libmoya/kernel/integrate/Covered.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
@@ -39,6 +43,7 @@
 #include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Checkpoint.h>
+#include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
@@ -108,13 +113,19 @@ film::Filter filterOf(device::CpuDevice & device, const scene::Scene & scene) {
     return film::Filter(device, kind, glm::vec2 { width[0], width[1] });
 }
 
-/** Restores a film and its coverage from a checkpoint, and gives the passes it held. **/
+/** Whether any of a scene's outputs is a deep file. **/
+bool deepened(const scene::Scene & scene) {
+    const std::vector<output::Output> outputs = output::outputsOf(scene);
+    return std::any_of(outputs.begin(), outputs.end(), [](const output::Output & each) { return each.format == output::Format::DeepExr; });
+}
+
+/** Restores a film and what it keeps from a checkpoint, and gives the passes it held. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path, then the fingerprint
-std::uint32_t resumed(const std::string & path, const std::vector<film::Channel> & channels, std::uint64_t print, film::Film & picture,
-    internal::Coverage & coverage) {
+std::uint32_t resumed(const std::string & path, const std::vector<film::Channel> & channels, std::uint64_t print, film::Film & picture, internal::Kept & kept) {
     const film::State state = output::readCheckpoint(path, channels, print);
     picture.restore(state);
-    coverage.restore(state);
+    kept.coverage.restore(state);
+    kept.deep.restore(state);
     return state.passes;
 }
 
@@ -129,17 +140,19 @@ void profiled(Profile * profile, double seconds, const std::optional<internal::T
     }
 }
 
-/** A film's snapshot, with each Cryptomatte layer's ranks and manifest. **/
-film::Snapshot finished(const film::Film & picture, const internal::Coverage & coverage) {
+/** A film's snapshot, with each Cryptomatte layer's ranks and manifest, and its deep samples. **/
+film::Snapshot finished(const film::Film & picture, const internal::Kept & kept) {
     film::Snapshot out = picture.snapshot();
-    coverage.into(out);
+    kept.coverage.into(out);
+    kept.deep.into(out);
     return out;
 }
 
-/** A film's state for a checkpoint, with every pixel's Cryptomatte coverage. **/
-film::State stateOf(const film::Film & picture, const internal::Coverage & coverage) {
+/** A film's state for a checkpoint, with every pixel's coverage and deep list. **/
+film::State stateOf(const film::Film & picture, const internal::Kept & kept) {
     film::State out = picture.state();
-    coverage.into(out);
+    kept.coverage.into(out);
+    kept.deep.into(out);
     return out;
 }
 
@@ -205,9 +218,11 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const std::vector<output::Channel> outputs = output::channelsOf(scene);
     const internal::FirstHits firstHits(device, outputs, picture, prototypes.primvarNames, logger);
     const internal::LightPaths lightPaths(device, outputs, picture, lights.labels(), logger);
-    internal::Coverage coverage(device, resolution, kSamplesPerPass, outputs, scene, prototypes);
+    internal::Kept kept { .coverage = internal::Coverage(resolution, outputs, scene, prototypes),
+        .deep = internal::Deep(resolution, deepened(scene), option(scene, "deepTolerance").floatArray().front(), scene, prototypes) };
+    const internal::Records records(device, resolution, kSamplesPerPass, !kept.coverage.none() || !kept.deep.none());
     const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
-    std::uint32_t done = checkpoints.resume ? resumed(checkpoints.path, channels, print, picture, coverage) : 0U;
+    std::uint32_t done = checkpoints.resume ? resumed(checkpoints.path, channels, print, picture, kept) : 0U;
     std::uint32_t written = done;
     std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
     std::optional<internal::Tallies> tallies;
@@ -247,32 +262,34 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .features = firstHits.features(),
                 .trail = trail.view(),
                 .expressions = lightPaths.view(),
-                .covered = coverage.view() };
+                .covered = records.view() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;
             }
             device.launch(resolution.x, resolution.y, params, entry);
         });
-        coverage.add(samples);
+        const std::vector<kernel::integrate::Covered> taken = records.taken(samples);
+        kept.coverage.add(taken, samples);
+        kept.deep.add(taken, samples);
         ++done;
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         passing += std::chrono::duration<double>(now - began).count();
         if (!checkpoints.path.empty() && std::chrono::duration<double>(now - last).count() >= checkpoints.interval) {
-            output::writeCheckpoint(checkpoints.path, stateOf(picture, coverage), print);
+            output::writeCheckpoint(checkpoints.path, stateOf(picture, kept), print);
             written = done;
             last = now;
         }
     }
     if (!checkpoints.path.empty() && written != done) {
-        output::writeCheckpoint(checkpoints.path, stateOf(picture, coverage), print);
+        output::writeCheckpoint(checkpoints.path, stateOf(picture, kept), print);
     }
     profiled(profile, passing, tallies);
     if (trails != nullptr) {
         trail.into(*trails, lights.labels());
     }
     textures.report();
-    return finished(picture, coverage);
+    return finished(picture, kept);
 }
 
 };  // namespace v3d::moya::integrate

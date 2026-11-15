@@ -130,7 +130,7 @@ among the options before the record is drafted.
 | [13](#step-13--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231, 0235 | done |
 | [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | done |
 | [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | done |
-| [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | open |
+| [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | done |
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | open |
 | [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
 | [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | open |
@@ -586,6 +586,17 @@ buffer of a band of rows would bound for large pictures.
 **Tests:** flattening the deep file through OpenEXR's own compositing gives the flat beauty and
 alpha, within float rounding. A pixel behind half-opaque glass holds a sample for the glass and
 one for the surface behind it.
+
+**Done.** Each camera sample's record holds its depth and its radiance in ACEScg beside what
+Cryptomatte reads, in one buffer that `integrate::internal::Records` owns for both. The host
+joins each pixel's records in `integrate::internal::Deep`, by object, material and a depth within
+the options' `deepTolerance`, and resolves them front to back into premultiplied point samples.
+The samples of what met nothing are one entry of zero alpha behind everything, so a pixel that
+sees a dome flattens to its beauty, and one that sees nothing holds no sample. An output of the
+format `deepexr` writes them with `objectid` and `materialid` and an `idManifest`. A checkpoint
+holds the lists as a third part, exactly. The glass of the test is a card a quarter opaque, since
+a camera sample passes a cut-out surface by a draw and keeps glass as its own sample. OpenEXR
+takes only none, RLE and ZIPS for deep data, so any other compression is written as ZIPS.
 
 ### Step 17 — Denoising
 

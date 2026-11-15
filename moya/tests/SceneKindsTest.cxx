@@ -100,6 +100,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "options \"render\"\n"
         "    camera handle = camera \"main\"\n"
         "    crop float[4] = 0 1 0 1\n"
+        "    deepTolerance float = 0.001\n"
         "    dicingCamera handle = none\n"
         "    diffuseDepth integer = 4\n"
         "    edgeLength float = 1\n"

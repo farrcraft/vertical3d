@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Covering.h>
+#include <moya/libmoya/film/DeepPoint.h>
 
 #include <cstdint>
 #include <vector>
@@ -45,6 +46,9 @@ struct State {
      * Cryptomatte layer.
      **/
     std::vector<std::vector<Covering>> coverage;
+
+    /** Every pixel's deep list, row by row from the top left, or none without a deep file. **/
+    std::vector<std::vector<DeepPoint>> deep;
 };
 
 };  // namespace v3d::moya::film

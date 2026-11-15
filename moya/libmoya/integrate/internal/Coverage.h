@@ -5,12 +5,9 @@
 
 #pragma once
 
-#include <moya/libmoya/device/Buffer.h>
-#include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/film/State.h>
 #include <moya/libmoya/geometry/Prototypes.h>
-#include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/integrate/Covered.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Cryptomatte.h>
@@ -21,20 +18,18 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include <glm/vec2.hpp>
 
 namespace v3d::moya::integrate::internal {
 
 /**
- * Each pixel's coverage by each ID of a render's Cryptomatte layers, kept on the host. The device
- * records what each camera sample of a pass covers in a buffer of the pass. After the pass, each
- * pixel's records are added in sample order: each ID's filter weights, and the weight of every
- * sample the pixel took. An ID's coverage is its weight over that whole weight.
+ * Each pixel's coverage by each ID of a render's Cryptomatte layers, kept on the host. After each
+ * pass, each pixel's records of what its samples covered are added in sample order: each ID's
+ * filter weights, and the weight of every sample the pixel took. An ID's coverage is its weight
+ * over that whole weight.
  *
  * A name is hashed once for each instance and material. An instance or material of no name, and
- * a sample that covered no surface, adds its weight to the whole alone. The device outlives it.
+ * a sample that covered no surface, adds its weight to the whole alone.
  **/
 class Coverage final {
  public:
@@ -44,18 +39,14 @@ class Coverage final {
         double weight { 0.0 };
     };
 
-    /** A buffer for each layer the channels name, for passes of up to samples to a pixel. **/
-    Coverage(device::CpuDevice & device, const glm::uvec2 & resolution, std::uint32_t samples, const std::vector<output::Channel> & channels,
-        const scene::Scene & scene, const geometry::Prototypes & prototypes);
+    /** The coverage of each layer the channels name. **/
+    Coverage(const glm::uvec2 & resolution, const std::vector<output::Channel> & channels, const scene::Scene & scene, const geometry::Prototypes & prototypes);
 
     /** Whether the render has no Cryptomatte layer, and records nothing. **/
     bool none() const;
 
-    /** The buffer as the kernel takes it, which is empty while the render records nothing. **/
-    kernel::Array<kernel::integrate::Covered> view() const;
-
     /** Adds what each pixel's samples covered in a pass of samples to a pixel. **/
-    void add(std::uint32_t samples);
+    void add(const std::vector<kernel::integrate::Covered> & records, std::uint32_t samples);
 
     /**
      * Writes each pixel's IDs of the most coverage, a layer's ranks of them, into the layer's rank
@@ -71,7 +62,6 @@ class Coverage final {
     void restore(const film::State & state);
 
  private:
-    device::CpuDevice & device_;
     std::size_t pixels_ { 0 };
     std::vector<output::Cryptomatte> layers_;
 
@@ -82,9 +72,6 @@ class Coverage final {
     /** Every layer's IDs for each pixel, layer by layer, and each pixel's whole weight. **/
     std::vector<std::vector<Held>> held_;
     std::vector<double> whole_;
-
-    boost::shared_ptr<device::Buffer> buffer_;
-    std::size_t records_ { 0 };
 
     /** Writes a pixel's ranks of a layer into a snapshot's rank channels, at their offsets. **/
     void rank(std::size_t layer, std::size_t pixel, const std::vector<std::uint32_t> & offsets, film::Snapshot & snapshot) const;

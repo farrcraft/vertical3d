@@ -18,6 +18,7 @@
 #include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/output/Cryptomatte.h>
+#include <moya/libmoya/output/DeepExr.h>
 #include <moya/libmoya/output/ExrMetadata.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -64,6 +65,9 @@ kernel::film::Combine combineOf(const std::string & filter, Source source, const
 }
 
 Format formatNamed(const std::string & name) {
+    if (name == "deepexr") {
+        return Format::DeepExr;
+    }
     if (name == "png") {
         return Format::Png;
     }
@@ -187,6 +191,9 @@ void write(const Output & output, const film::Snapshot & snapshot, const colour:
         writeExr(output.file, snapshot, { part }, metadata);
         return;
     }
+    case Format::DeepExr:
+        writeDeepExr(output.file, snapshot, output.precision, output.compression);
+        return;
     case Format::Png: {
         const std::string display = config.defaultDisplay();
         writePng(output.file, snapshot, config.display(display, config.defaultView(display)), logger);

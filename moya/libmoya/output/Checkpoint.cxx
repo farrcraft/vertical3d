@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Covering.h>
+#include <moya/libmoya/film/DeepPoint.h>
 #include <moya/libmoya/film/State.h>
 #include <moya/libmoya/kernel/film/Combine.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
@@ -35,6 +36,7 @@
 #include <iomanip>
 #include <ios>
 #include <iterator>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -60,6 +62,13 @@ constexpr const char * const kStopped = "moya.stopped";
 /** The names of a checkpoint's two parts when it holds Cryptomatte coverage. **/
 constexpr const char * const kFilmPart = "moya.film";
 constexpr const char * const kCoveragePart = "moya.coverage";
+constexpr const char * const kDeepPart = "moya.deep";
+
+/** Where the halves of a deep entry's weight, red, green and blue begin among its fields. **/
+constexpr std::size_t kDeepWeight = 3;
+constexpr std::size_t kDeepRed = 5;
+constexpr std::size_t kDeepGreen = 7;
+constexpr std::size_t kDeepBlue = 9;
 
 /** The bits of a half of a double's 64. **/
 constexpr std::uint32_t kHalfBits = 32;
@@ -108,29 +117,71 @@ std::vector<std::string> namesOf(const std::vector<film::Channel> & channels) {
     return out;
 }
 
-/** The header of the coverage part, of a resolution. **/
-Imf::Header coverageHeader(const glm::uvec2 & resolution) {
+/** The coverage part's channels: an entry's layer, its ID, and its weight's bits in halves. **/
+std::vector<std::string> coverageChannels() {
+    return { "layer", "id", "weight.high", "weight.low" };
+}
+
+/**
+ * The channels of the deep part: an entry's depth's bits, its object and material IDs, and the
+ * halves of the bits of its weight and of its red, green and blue.
+ **/
+std::vector<std::string> deepChannels() {
+    return { "depth", "object", "material", "weight.high", "weight.low", "red.high", "red.low", "green.high", "green.low", "blue.high", "blue.low" };
+}
+
+/** A double's bits, as its high half and then its low. **/
+void push(std::vector<std::vector<std::uint32_t>> & fields, std::size_t first, double value) {
+    const auto bits = std::bit_cast<std::uint64_t>(value);
+    fields[first].push_back(static_cast<std::uint32_t>(bits >> kHalfBits));
+    fields[first + 1U].push_back(static_cast<std::uint32_t>(bits));
+}
+
+/** A double from its high half's bits and its low's. **/
+double doubleOf(const std::vector<std::vector<std::uint32_t>> & fields, std::size_t first, std::size_t at) {
+    return std::bit_cast<double>((static_cast<std::uint64_t>(fields[first][at]) << kHalfBits) | fields[first + 1U][at]);
+}
+
+/** The header of a deep part of a name and its entries' channels, of a resolution. **/
+Imf::Header deepHeaderOf(const std::string & name, const std::vector<std::string> & channels, const glm::uvec2 & resolution) {
     Imf::Header out(static_cast<int>(resolution.x), static_cast<int>(resolution.y));
-    out.setName(kCoveragePart);
+    out.setName(name);
     out.setType(Imf::DEEPSCANLINE);
     out.compression() = Imf::ZIPS_COMPRESSION;
-    for (const char * const name : internal::Entries::kChannels) {
-        out.channels().insert(name, Imf::Channel(Imf::UINT));
+    for (const std::string & channel : channels) {
+        out.channels().insert(channel, Imf::Channel(Imf::UINT));
     }
     return out;
 }
 
-/** Every pixel's coverage as a deep part's entries. **/
+/** Every pixel's coverage as the coverage part's entries. **/
 internal::Entries entriesOf(const std::vector<std::vector<film::Covering>> & coverage) {
-    internal::Entries out;
+    internal::Entries out(coverageChannels());
     for (const std::vector<film::Covering> & pixel : coverage) {
         out.counts.push_back(static_cast<unsigned int>(pixel.size()));
         for (const film::Covering & entry : pixel) {
-            const auto bits = std::bit_cast<std::uint64_t>(entry.weight);
             out.fields[0].push_back(entry.layer);
             out.fields[1].push_back(entry.id);
-            out.fields[2].push_back(static_cast<std::uint32_t>(bits >> kHalfBits));
-            out.fields[3].push_back(static_cast<std::uint32_t>(bits));
+            push(out.fields, 2, entry.weight);
+        }
+    }
+    out.place();
+    return out;
+}
+
+/** Every pixel's deep list as the deep part's entries. **/
+internal::Entries entriesOf(const std::vector<std::vector<film::DeepPoint>> & deep) {
+    internal::Entries out(deepChannels());
+    for (const std::vector<film::DeepPoint> & pixel : deep) {
+        out.counts.push_back(static_cast<unsigned int>(pixel.size()));
+        for (const film::DeepPoint & entry : pixel) {
+            out.fields[0].push_back(std::bit_cast<std::uint32_t>(entry.depth));
+            out.fields[1].push_back(entry.object);
+            out.fields[2].push_back(entry.material);
+            push(out.fields, kDeepWeight, entry.weight);
+            push(out.fields, kDeepRed, entry.red);
+            push(out.fields, kDeepGreen, entry.green);
+            push(out.fields, kDeepBlue, entry.blue);
         }
     }
     out.place();
@@ -138,21 +189,28 @@ internal::Entries entriesOf(const std::vector<std::vector<film::Covering>> & cov
 }
 
 /**
- * Every pixel's coverage from a checkpoint's coverage part, or none for a checkpoint without one.
+ * The entries of a checkpoint's deep part of a name, of the channels given, or none for a
+ * checkpoint without that part.
  *
  * @throws Refused when the part holds no unsigned channel a field needs
  **/
-std::vector<std::vector<film::Covering>> coverageOf(const std::string & path) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file, then the part's name
+std::optional<internal::Entries> partOf(const std::string & path, const std::string & name, const std::vector<std::string> & channels) {
     Imf::MultiPartInputFile file(path.c_str());
     for (int index = 0; index < file.parts(); ++index) {
         const Imf::Header & header = file.header(index);
-        if (!header.hasName() || header.name() != kCoveragePart || header.type() != Imf::DEEPSCANLINE) {
+        if (!header.hasName() || header.name() != name || header.type() != Imf::DEEPSCANLINE) {
             continue;
         }
-        for (const char * const name : internal::Entries::kChannels) {
-            const Imf::Channel * const channel = header.channels().findChannel(name);
-            if (channel == nullptr || channel->type != Imf::UINT) {
-                throw Refused(path + " holds coverage of no unsigned channel " + std::string(name));
+        for (const std::string & channel : channels) {
+            const Imf::Channel * const found = header.channels().findChannel(channel);
+            if (found == nullptr || found->type != Imf::UINT) {
+                std::string message = path;
+                message += "'s part ";
+                message += name;
+                message += " holds no unsigned channel ";
+                message += channel;
+                throw Refused(message);
             }
         }
         const Imath::Box2i & window = header.dataWindow();
@@ -162,10 +220,10 @@ std::vector<std::vector<film::Covering>> coverageOf(const std::string & path) {
         const std::size_t pixels = width * static_cast<std::size_t>(down);
         const std::ptrdiff_t origin = -static_cast<std::ptrdiff_t>(window.min.x) - (static_cast<std::ptrdiff_t>(window.min.y) * static_cast<std::ptrdiff_t>(width));
         Imf::DeepScanLineInputPart part(file, index);
-        internal::Entries entries;
+        internal::Entries entries(channels);
         entries.counts.assign(pixels, 0U);
-        for (std::size_t field = 0; field < internal::Entries::kFields; ++field) {
-            entries.pointers[field].assign(pixels, nullptr);
+        for (std::vector<char *> & pointers : entries.pointers) {
+            pointers.assign(pixels, nullptr);
         }
         part.setFrameBuffer(entries.frame(origin, width));
         part.readPixelSampleCounts(window.min.y, window.max.y);
@@ -179,17 +237,47 @@ std::vector<std::vector<film::Covering>> coverageOf(const std::string & path) {
         entries.place();
         part.setFrameBuffer(entries.frame(origin, width));
         part.readPixels(window.min.y, window.max.y);
-        std::vector<std::vector<film::Covering>> out(pixels);
-        std::size_t at = 0;
-        for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
-            for (unsigned int i = 0; i < entries.counts[pixel]; ++i, ++at) {
-                const std::uint64_t bits = (static_cast<std::uint64_t>(entries.fields[2][at]) << kHalfBits) | entries.fields[3][at];
-                out[pixel].push_back(film::Covering { .layer = entries.fields[0][at], .id = entries.fields[1][at], .weight = std::bit_cast<double>(bits) });
-            }
-        }
-        return out;
+        return entries;
     }
-    return {};
+    return std::nullopt;
+}
+
+/** Every pixel's coverage from a checkpoint's coverage part, or none without one. **/
+std::vector<std::vector<film::Covering>> coverageOf(const std::string & path) {
+    const std::optional<internal::Entries> entries = partOf(path, kCoveragePart, coverageChannels());
+    if (!entries) {
+        return {};
+    }
+    std::vector<std::vector<film::Covering>> out(entries->counts.size());
+    std::size_t at = 0;
+    for (std::size_t pixel = 0; pixel < out.size(); ++pixel) {
+        for (unsigned int i = 0; i < entries->counts[pixel]; ++i, ++at) {
+            out[pixel].push_back(film::Covering { .layer = entries->fields[0][at], .id = entries->fields[1][at], .weight = doubleOf(entries->fields, 2, at) });
+        }
+    }
+    return out;
+}
+
+/** Every pixel's deep list from a checkpoint's deep part, or none without one. **/
+std::vector<std::vector<film::DeepPoint>> deepOf(const std::string & path) {
+    const std::optional<internal::Entries> entries = partOf(path, kDeepPart, deepChannels());
+    if (!entries) {
+        return {};
+    }
+    std::vector<std::vector<film::DeepPoint>> out(entries->counts.size());
+    std::size_t at = 0;
+    for (std::size_t pixel = 0; pixel < out.size(); ++pixel) {
+        for (unsigned int i = 0; i < entries->counts[pixel]; ++i, ++at) {
+            out[pixel].push_back(film::DeepPoint { .depth = std::bit_cast<float>(entries->fields[0][at]),
+                .object = entries->fields[1][at],
+                .material = entries->fields[2][at],
+                .weight = doubleOf(entries->fields, kDeepWeight, at),
+                .red = doubleOf(entries->fields, kDeepRed, at),
+                .green = doubleOf(entries->fields, kDeepGreen, at),
+                .blue = doubleOf(entries->fields, kDeepBlue, at) });
+        }
+    }
+    return out;
 }
 
 std::string hexOf(std::uint64_t value) {
@@ -227,26 +315,36 @@ void writeCheckpoint(const std::string & path, const film::State & state, std::u
     char * const flags = const_cast<char *>(reinterpret_cast<const char *>(state.stopped.data()));
     frame.insert(kStopped, Imf::Slice(Imf::UINT, flags, sizeof(std::uint32_t), sizeof(std::uint32_t) * state.resolution.x));
 
-    if (!state.coverage.empty() && state.coverage.size() != pixels) {
-        throw std::invalid_argument("a film state whose coverage does not fill its resolution");
+    if ((!state.coverage.empty() && state.coverage.size() != pixels) || (!state.deep.empty() && state.deep.size() != pixels)) {
+        throw std::invalid_argument("a film state whose coverage or deep lists do not fill its resolution");
     }
     const std::string partial = path + ".partial";
-    if (state.coverage.empty()) {
+    if (state.coverage.empty() && state.deep.empty()) {
         Imf::OutputFile file(partial.c_str(), header);
         file.setFrameBuffer(frame);
         file.writePixels(static_cast<int>(state.resolution.y));
     } else {
         header.setName(kFilmPart);
         header.setType(Imf::SCANLINEIMAGE);
-        const Imf::Header headers[] = { header, coverageHeader(state.resolution) };
-        internal::Entries entries = entriesOf(state.coverage);
-        Imf::MultiPartOutputFile file(partial.c_str(), headers, 2);
+        std::vector<Imf::Header> headers { header };
+        std::vector<internal::Entries> parts;
+        if (!state.coverage.empty()) {
+            headers.push_back(deepHeaderOf(kCoveragePart, coverageChannels(), state.resolution));
+            parts.push_back(entriesOf(state.coverage));
+        }
+        if (!state.deep.empty()) {
+            headers.push_back(deepHeaderOf(kDeepPart, deepChannels(), state.resolution));
+            parts.push_back(entriesOf(state.deep));
+        }
+        Imf::MultiPartOutputFile file(partial.c_str(), headers.data(), static_cast<int>(headers.size()));
         Imf::OutputPart film(file, 0);
         film.setFrameBuffer(frame);
         film.writePixels(static_cast<int>(state.resolution.y));
-        Imf::DeepScanLineOutputPart covered(file, 1);
-        covered.setFrameBuffer(entries.frame(0, state.resolution.x));
-        covered.writePixels(static_cast<int>(state.resolution.y));
+        for (std::size_t i = 0; i < parts.size(); ++i) {
+            Imf::DeepScanLineOutputPart deep(file, static_cast<int>(i + 1U));
+            deep.setFrameBuffer(parts[i].frame(0, state.resolution.x));
+            deep.writePixels(static_cast<int>(state.resolution.y));
+        }
     }
     boost::filesystem::rename(partial, path);
 }
@@ -300,6 +398,7 @@ film::State readCheckpoint(const std::string & path, const std::vector<film::Cha
     file.setFrameBuffer(frame);
     file.readPixels(window.min.y, window.max.y);
     out.coverage = coverageOf(path);
+    out.deep = deepOf(path);
     return out;
 }
 

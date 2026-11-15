@@ -164,6 +164,30 @@ each with its share of the pixel. It is a raw channel of the source name `crypto
 Background:
 [ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md)
 
+## Deep lists
+
+A render of a deep output keeps each pixel's samples in depth, which a deep file holds. Each
+camera sample records, beside what Cryptomatte reads, how far along its ray it met anything and
+the radiance it gathered, in ACEScg.
+
+- **After each pass, the host joins each pixel's records in sample order**, in
+  `integrate::internal::Deep`. A record joins the first entry of its object and material whose
+  depth lies within the options' `deepTolerance`, a share of that entry's depth, of its own. It
+  starts an entry otherwise. A record of no surface joins by its depth in the same way, and every
+  record that met nothing joins one entry behind all the others.
+- **An entry is a point sample at the depth of its first record.** A camera sample keeps one
+  surface, so a surface that is cut out is a sample of its own, and a surface behind glass is part
+  of the glass's sample.
+- **A snapshot resolves each pixel's entries front to back.** An entry's alpha is its weight over
+  the weight of the samples that reached its depth, and its colour its weighted radiance over that
+  weight, premultiplied. Compositing a pixel's samples over each other gives its flat beauty and
+  alpha. The entry of what met nothing has an alpha of zero, and is left out when it holds no
+  light. A pixel no record reached holds no sample.
+- **Each sample names its object's and material's IDs**, the MurmurHash3 of their names as
+  Cryptomatte's IDs are, or zero for none.
+
+Background: [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md)
+
 ## Checkpoints
 
 A checkpoint is the film as its device holds it, written so that a stopped render can continue
@@ -188,6 +212,10 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
   `moya.coverage`. Each entry is a sample of unsigned channels: `layer`, `id`, and `weight.high`
   and `weight.low`, the halves of the weight's 64 bits, so a resumed render sums the same
   weights. An entry of the layer `0xFFFFFFFF` holds the pixel's whole weight.
+- **A render of a deep output keeps its deep lists in its checkpoint** as the deep part
+  `moya.deep`. Each entry's depth is its float's bits in `depth`, then `object` and `material`,
+  then the halves of the bits of its weight and of its weighted red, green and blue. An entry
+  whose object is `0xFFFFFFFF` holds the pixel's whole weight.
 - **A checkpoint is written whole or not at all.** It is written to the path with `.partial`
   added, then renamed over the path, so a render stopped while it writes keeps the checkpoint
   before.

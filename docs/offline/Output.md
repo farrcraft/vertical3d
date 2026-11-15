@@ -73,6 +73,22 @@ Every part's header holds:
 - **`moya/renderTime`**, a float of seconds, when `ExrMetadata` gives one.
 - **Each string of `ExrMetadata::strings`**, by its name.
 
+## Deep files
+
+An output of the format `deepexr` writes the snapshot's deep samples, as
+[Film.md](Film.md#deep-lists) describes them, to a deep scanline EXR file with
+`output::writeDeepExr()`.
+
+- **Each sample is `R`, `G`, `B` and `A`**, its colour premultiplied by its alpha, at the
+  output's precision, then `Z` and `ZBack`, both its depth, as 32-bit floats. A pixel's samples
+  run front to back, so the file is tidy.
+- **`objectid` and `materialid` are unsigned integers**, the IDs of OpenEXR's Deep IDs. The
+  header's `idManifest` names each by MurmurHash3, the object's under `objectid` and the
+  material's under `materialid`.
+- **The header names the colour space** as `colorInteropID`, `lin_ap1_scene`.
+- **A deep file is compressed by none, RLE or ZIPS**, which is all OpenEXR's deep files take. Any
+  other compression the output asks for is written as ZIPS, ZIP the fallback among them.
+
 ## Cryptomatte
 
 An output of a Cryptomatte layer writes it as the Cryptomatte specification lays it out.

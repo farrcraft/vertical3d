@@ -48,6 +48,9 @@ constexpr int kTextureMemory = 1048576;
 /** A film channel's floats, from 1 to 4, and the three of a colour. **/
 constexpr int kColourComponents = 3;
 
+/** How far apart two depths lie, as a share of the first, and still join in a deep file. **/
+constexpr float kDeepTolerance = 0.001F;
+
 /** The ranks a Cryptomatte layer keeps unless its channel asks for more. **/
 constexpr int kCryptomatteRanks = 6;
 
@@ -115,6 +118,7 @@ Kind options() {
             Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
             Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } },
+            Declaration { .name = "deepTolerance", .type = Type::Float, .fallback = Value::number(kDeepTolerance) },
             Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } },
             Declaration { .name = "textureSearchPath", .type = Type::String, .fallback = Value::string("") },
             Declaration { .name = "textureMemory", .type = Type::Integer, .fallback = Value::integer(kTextureMemory) },
@@ -138,7 +142,7 @@ Kind output() {
     return Kind { .name = "output",
         .parameters = {
             Declaration { .name = "file", .type = Type::String, .fallback = Value::string("") },
-            Declaration { .name = "format", .type = Type::String, .fallback = Value::string("exr"), .choices = { "exr", "png", "framebuffer" } },
+            Declaration { .name = "format", .type = Type::String, .fallback = Value::string("exr"), .choices = { "exr", "deepexr", "png", "framebuffer" } },
             Declaration { .name = "channels", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "channel" } },
             Declaration { .name = "precision", .type = Type::String, .fallback = Value::string("half"), .choices = { "half", "float" } },
             Declaration { .name = "compression",

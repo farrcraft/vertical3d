@@ -113,18 +113,20 @@ MOYA_KERNEL std::uint32_t coveredFrom(const Paths<T, X> & paths, std::uint32_t x
 }
 
 /**
- * Records what a camera ray covers where it first meets the scene: the instances of a surface it
- * met and the surface's material. A ray that met no surface, or met a light's shape, covers
- * nothing. A later ray records nothing.
+ * Records what a camera ray covers where it first meets the scene: how far along it met anything,
+ * and the instances of a surface it met and the surface's material. A ray that met no surface, or
+ * met a light's shape, covers nothing. A later ray records nothing.
  **/
 template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, std::uint32_t material) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the material, then the distance
+MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, std::uint32_t material, float distance) {
     if (paths.covered.size == 0U || MOYA_PATH(state, bounces) != 0U) {
         return;
     }
     const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
     Covered out;
     out.weight = MOYA_PATH(state, weight);
+    out.depth = distance;
     if (hit.found() && hit.depth != 0U) {
         out.object = hit.instances[hit.depth - 1U];
         out.asset = hit.instances[0];
@@ -688,7 +690,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         const geometry::Hit hit = paths.traversal.nearest(ray, filter);
         if (!hit.found()) {
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
-            cover(paths, state, hit, surface::kNoMaterial);
+            cover(paths, state, hit, surface::kNoMaterial, std::numeric_limits<float>::infinity());
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
         }
@@ -698,7 +700,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
-            cover(paths, state, geometry::Hit {}, surface::kNoMaterial);
+            cover(paths, state, geometry::Hit {}, surface::kNoMaterial, hit.distance);
             const float time = paths.surfaces.held(hit.time);
             const float share = metShare(paths, met, geometry::kNoPrimitive, time, ray.at(hit.distance), state);
             if (share > 0.0F) {
@@ -711,7 +713,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         }
         surface::ShadingPoint point = paths.surfaces.at(hit, ray);
         firstHit(paths, state, hit, ray, point);
-        cover(paths, state, hit, point.material);
+        cover(paths, state, hit, point.material, hit.distance);
         if (!point.found()) {
             return;
         }
@@ -760,6 +762,13 @@ MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
         PathState state;
         generate(params, pixel, sample, state);
         trace(params, state);
+        if (params.covered.size != 0U) {
+            const glm::vec3 rgb = spectrum::acescgFromXyz(spectrum::toXyz(MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths)));
+            Covered & covered = params.covered[coveredFrom(params, item.x, item.y) + (sample - params.first)];
+            covered.red = rgb.x;
+            covered.green = rgb.y;
+            covered.blue = rgb.z;
+        }
         const bool half = (sample - params.first) < (params.count / 2U);
         params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths), half, MOYA_PATH(state, coverage));
     }

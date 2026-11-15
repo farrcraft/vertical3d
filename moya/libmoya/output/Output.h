@@ -16,6 +16,8 @@ namespace v3d::moya::output {
 /** The format of an output's file. **/
 enum class Format : std::uint8_t {
     Exr,
+    /** A deep scanline EXR file of each pixel's samples in depth. **/
+    DeepExr,
     Png,
     /** A picture shown while rendering, which moya has no window for. **/
     Framebuffer

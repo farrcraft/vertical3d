@@ -30,10 +30,12 @@ class Refused : public std::runtime_error {
  * is moya.stopped, of unsigned integers. The header's moya/passes holds the count of passes, and
  * moya/fingerprint the fingerprint given, as sixteen hexadecimal digits.
  *
- * A state that holds Cryptomatte coverage is written as two parts. The film's floats are the
- * scanline part moya.film, and the coverage the deep part moya.coverage. Each of a pixel's
- * entries there is a sample of unsigned channels: layer, id, and weight.high and weight.low, the
- * halves of its weight's 64 bits, so the weight is kept exactly.
+ * A state that holds Cryptomatte coverage or deep lists is written as several parts. The film's
+ * floats are the scanline part moya.film. The coverage is the deep part moya.coverage, each of a
+ * pixel's entries a sample of unsigned channels: layer, id, and weight.high and weight.low, the
+ * halves of its weight's 64 bits. The deep lists are the deep part moya.deep, each entry's depth's
+ * bits as depth, then object, material, and the halves of its weight, red, green and blue. Every
+ * value is kept exactly.
  *
  * The file is written beside the path, with .partial added to its name, and then renamed over
  * the path, so a render stopped while it writes leaves the checkpoint before.
@@ -47,7 +49,7 @@ void writeCheckpoint(const std::string & path, const film::State & state, std::u
 
 /**
  * Reads a checkpoint writeCheckpoint() wrote, for a film of the channels given, with its
- * Cryptomatte coverage when it holds some.
+ * Cryptomatte coverage and deep lists when it holds them.
  *
  * @param path the file, as UTF-8
  * @throws Refused when the file is not a checkpoint, when its fingerprint is not the one given,

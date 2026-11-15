@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/film/Channel.h>
+#include <moya/libmoya/film/DeepSample.h>
 
 #include <cstdint>
 #include <map>
@@ -51,6 +52,16 @@ struct Snapshot {
 
     /** Each Cryptomatte layer's manifest, as JSON, by the layer's name. **/
     std::map<std::string, std::string> manifests;
+
+    /**
+     * Every pixel's deep samples, front to back, row by row from the top left, or none for a
+     * render that writes no deep file.
+     **/
+    std::vector<std::vector<DeepSample>> deep;
+
+    /** The name of each object's and each material's ID the deep samples hold. **/
+    std::map<std::uint32_t, std::string> deepObjects;
+    std::map<std::uint32_t, std::string> deepMaterials;
 
     /** A pixel's standard error. **/
     float error(std::uint32_t x, std::uint32_t y) const;

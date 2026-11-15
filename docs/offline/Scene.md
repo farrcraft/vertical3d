@@ -55,6 +55,8 @@ then derived as RI derives it.
   `lightSampling` is how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
   [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its
   light: `tree`, the fallback, or `power`, as [Lights.md](Lights.md#drawing-a-light) says.
+  `deepTolerance`, 0.001 by default, is how far apart two samples' depths may lie, as a share of
+  the first, and still join in a deep file, as [Film.md](Film.md#deep-lists) says.
   `textureSearchPath` holds the directories a texture's relative path is looked for in.
   `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
   it. `textureDirectory` is where an image that is not a texture is made into one, as
@@ -69,9 +71,9 @@ then derived as RI derives it.
   `crypto_object`, `crypto_material` or `crypto_asset` is a Cryptomatte layer of that name, and
   `ranks`, 6 by default, is how many of each pixel's IDs it keeps, as
   [Film.md](Film.md#cryptomatte-coverage) says.
-- **`output`**: `file` and `format`, which is `exr`, `png` or `framebuffer`. `channels`, the
-  channels it writes beside the beauty, which is alone when there are none. `precision`, `half`
-  or `float`, and `compression`, one of OpenEXR's.
+- **`output`**: `file` and `format`, which is `exr`, `deepexr`, `png` or `framebuffer`.
+  `channels`, the channels it writes beside the beauty, which is alone when there are none.
+  `precision`, `half` or `float`, and `compression`, one of OpenEXR's.
 - **`mesh`**: `P` over the shutter, `vertices`, the count of each face's vertices, and `indices`
   into `P`, face after face.
 - **`subdivision`**: a mesh's three, then its `scheme`, `catmull-clark`, `loop` or `bilinear`.

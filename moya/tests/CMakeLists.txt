@@ -23,6 +23,7 @@ v3d_add_test(moya
 	"LayeringTest.cxx"
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"
+	"DeepTest.cxx"
 	"DenoiserTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"
