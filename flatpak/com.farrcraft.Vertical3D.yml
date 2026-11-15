@@ -344,9 +344,11 @@ modules:
           - x86_64
 
   # OIDN with its CPU device alone, static as the tree's overlay port builds it, from the
-  # release's source archive, which holds the trained weights
+  # release's source archive, which holds the trained weights. It builds out of source: built
+  # in its source tree, it writes the C++ generated from the weights to the filesystem root.
   - name: oidn
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POSITION_INDEPENDENT_CODE=ON

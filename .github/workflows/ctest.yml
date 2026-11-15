@@ -565,10 +565,13 @@ jobs:
       - name: Install NSIS
         if: matrix.preset == 'ci-release' && steps.nsis-cache.outputs.cache-hit != 'true'
         shell: pwsh
+        # curl fetches the zip, not Invoke-WebRequest. SourceForge answers PowerShell's user agent
+        # with an HTML download page in place of the file.
         run: |
           $archive = "$env:RUNNER_TEMP\nsis.zip"
           $url = "https://downloads.sourceforge.net/project/nsis/NSIS%203/$env:NSIS_VERSION/nsis-$env:NSIS_VERSION.zip"
-          Invoke-WebRequest -Uri $url -OutFile $archive -MaximumRetryCount 3 -RetryIntervalSec 10
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-delay 10 --output $archive $url
+          if ($LASTEXITCODE -ne 0) { throw "the NSIS $env:NSIS_VERSION download exited $LASTEXITCODE" }
           $hash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash
           if ($hash -ne $env:NSIS_SHA256) { throw "the NSIS $env:NSIS_VERSION zip has the hash $hash, not $env:NSIS_SHA256" }
           Expand-Archive -Path $archive -DestinationPath $env:NSIS_ROOT -Force
