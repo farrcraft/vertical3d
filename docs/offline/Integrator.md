@@ -339,6 +339,10 @@ components, takes the light of the paths its expression matches, in ACEScg.
   sample's filter weight. The path's own state is left as it is.
 - **The light is split as the beauty gathers it.** Channels that split every path one way add up
   to the beauty, to float rounding, and the beauty is the same with any channels or none.
+- **A light group's channel is an expression of its label**, such as `C.*<L.'key'>`. The light
+  of the lights no group names is `C.*<L.[^'key''fill']>` for a render whose groups are `key` and
+  `fill`, and an emitting material's is `C.*O`. Those channels split every path one way. A
+  group's channel added to the beauty once more is the picture of its lights twice as bright.
 - **A render takes the first `kernel::integrate::kMostExpressions`, 32, channels of
   expressions.** One past them, one of other components than three, one whose expression cannot
   be read, and every one of a set the automaton refuses is reported, and holds zero.

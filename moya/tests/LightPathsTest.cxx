@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <moya/libmoya/film/Compare.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Value.h>
@@ -19,6 +20,7 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 #include "Staged.h"
@@ -40,6 +42,15 @@ constexpr float kRounding = 1.0e-4F;
 
 /** The light that splits the beauty by the first bounce's scattering, or by none. **/
 const char * const kSplits[] = { "C<.D>.*", "C<.G>.*", "C<.S>.*", "C[LO]" };
+
+/** The light of each group, of the lights no group names, and of the emitting square. **/
+const char * const kGroups[] = { "C.*<L.'key'>", "C.*<L.'fill'>", "C.*<L.[^'key''fill']>", "C.*O" };
+
+/** The key light's intensity, which the brighter render doubles. **/
+constexpr float kKey = 6.0F;
+
+/** How many standard errors a picture may lie from another and still match it. **/
+constexpr float kMatched = 5.0F;
 
 /** A channel of a light path expression, of ACEScg's three components. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the channel's name, then the expression
@@ -86,6 +97,26 @@ void room(Staged & staged) {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the pixel, then the offset
 float at(const film::Snapshot & picture, std::uint32_t x, std::uint32_t y, std::uint32_t offset) {
     return picture.at(x, y, offset);
+}
+
+/**
+ * A grey floor and back wall under two rect lights, a dome in no group, and a square whose
+ * material emits. The key light, on the left, is in the group key and as bright as it is given.
+ * The fill light, on the right, is in the group fill.
+ **/
+void grouped(Staged & staged, float key) {
+    const scene::Handle grey = staged.material("grey", { { "base_color", scene::Value::colour(glm::vec3 { 0.6F }) }, { "specular_roughness", scene::Value::number(0.4F) } });
+    const scene::Handle glowing = staged.material("glowing", { { "emission_luminance", scene::Value::number(2.0F) } });
+    staged.quad("floor", { { -2.0F, -1.0F, -2.0F }, { 2.0F, -1.0F, -2.0F }, { 2.0F, -1.0F, 3.0F }, { -2.0F, -1.0F, 3.0F } }, grey);
+    staged.quad("back", { { -2.0F, -1.0F, 2.0F }, { 2.0F, -1.0F, 2.0F }, { 2.0F, 2.0F, 2.0F }, { -2.0F, 2.0F, 2.0F } }, grey);
+    staged.quad("glow", { { -0.2F, -0.9F, 1.5F }, { 0.2F, -0.9F, 1.5F }, { 0.2F, -0.5F, 1.5F }, { -0.2F, -0.5F, 1.5F } }, glowing);
+    const scene::Handle keyLight = staged.light("rectLight", "key", "key");
+    staged.made.set(keyLight, "intensity", scene::Value::number(key));
+    staged.made.set(keyLight, "transform", scene::Value::matrix(glm::rotate(moved(-0.8F, 0.9F, 0.8F), -kQuarterTurn, glm::vec3 { 1.0F, 0.0F, 0.0F })));
+    const scene::Handle fillLight = staged.light("rectLight", "fill", "fill");
+    staged.made.set(fillLight, "intensity", scene::Value::number(3.0F));
+    staged.made.set(fillLight, "transform", scene::Value::matrix(glm::rotate(moved(0.8F, 0.9F, 0.8F), -kQuarterTurn, glm::vec3 { 1.0F, 0.0F, 0.0F })));
+    staged.light("domeLight", "sky", "");
 }
 
 // light path expressions that split every path by its first bounce's scattering, and the light
@@ -215,6 +246,77 @@ BOOST_AUTO_TEST_CASE(moya_lightpaths_a_channel_past_the_most_or_unread_holds_zer
     BOOST_TEST(at(picture, x, y, picture.offset("every30")) == at(picture, x, y, picture.offset("every0")));
     BOOST_TEST(at(picture, x, y, picture.offset("every31")) == 0.0F);
     BOOST_TEST(at(picture, x, y, picture.offset("unread")) == 0.0F);
+}
+
+/**
+ * The light of each light group, of the lights no group names and of an emitting object split
+ * every path one way, so their channels sum to the beauty at each pixel. Each holds some light.
+ *
+ * Passes before the change: the change adds no code, since a group's channel is a light path
+ * expression, and the case fails without the expressions on the device.
+ **/
+BOOST_AUTO_TEST_CASE(moya_lightpaths_the_light_groups_sum_to_the_beauty_test) {
+    Staged staged(8, 16);
+    grouped(staged, kKey);
+    std::vector<scene::Handle> channels;
+    channels.reserve(std::size(kGroups));
+    for (std::size_t i = 0; i < std::size(kGroups); ++i) {
+        channels.push_back(expression(staged, "group" + std::to_string(i), kGroups[i]));
+    }
+    written(staged, channels);
+    const film::Snapshot picture = staged.render(nullptr);
+    std::vector<double> held(std::size(kGroups), 0.0);
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            for (std::uint32_t component = 0; component < 3U; ++component) {
+                float sum = 0.0F;
+                for (std::size_t i = 0; i < std::size(kGroups); ++i) {
+                    const float part = at(picture, x, y, picture.offset("group" + std::to_string(i)) + component);
+                    sum += part;
+                    held[i] += part;
+                }
+                const float beauty = at(picture, x, y, component);
+                BOOST_TEST_CONTEXT("pixel " << x << ", " << y << ", component " << component) {
+                    BOOST_TEST(std::fabs(sum - beauty) <= kRounding * std::fmax(beauty, 1.0F));
+                }
+            }
+        }
+    }
+    for (std::size_t i = 0; i < std::size(kGroups); ++i) {
+        BOOST_TEST(held[i] > 0.0, kGroups[i]);
+    }
+}
+
+/**
+ * A group's channel added once more to the beauty is the picture of its lights twice as bright,
+ * within errors at each pixel and over the picture. A compositor relies on that to change a
+ * light after rendering. The beauty alone lies far from that picture over the whole of it.
+ *
+ * Passes before the change: the change adds no code, since a group's channel is a light path
+ * expression, and the case fails without the expressions on the device.
+ **/
+BOOST_AUTO_TEST_CASE(moya_lightpaths_a_groups_channel_doubled_matches_its_lights_doubled_test) {
+    Staged split(8, 64);
+    grouped(split, kKey);
+    written(split, { expression(split, "key", kGroups[0]) });
+    film::Snapshot doubled = split.render(nullptr);
+    const film::Snapshot beauty = doubled;
+    const std::uint32_t key = doubled.offset("key");
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            const std::size_t first = ((static_cast<std::size_t>(y) * kSide) + x) * doubled.stride;
+            for (std::uint32_t component = 0; component < 3U; ++component) {
+                doubled.values[first + component] += doubled.values[first + key + component];
+            }
+        }
+    }
+    Staged brighter(8, 64);
+    grouped(brighter, 2.0F * kKey);
+    const film::Snapshot want = brighter.render(nullptr);
+    const glm::uvec2 corner { kSide, kSide };
+    BOOST_TEST(film::furthest(doubled, want).sigmas < kMatched);
+    BOOST_TEST(film::sigmas(film::mean(doubled, {}, corner), film::mean(want, {}, corner)) < kMatched);
+    BOOST_TEST(film::sigmas(film::mean(beauty, {}, corner), film::mean(want, {}, corner)) > kMatched);
 }
 
 };  // namespace

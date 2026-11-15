@@ -128,7 +128,7 @@ among the options before the record is drafted.
 | [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | done |
 | [12](#step-12--the-record-a-bounces-lobe) | The record: a bounce's lobe | `docs/adr` | **0235** | accepted |
 | [13](#step-13--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231, 0235 | done |
-| [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | open |
+| [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | done |
 | [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | open |
 | [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | open |
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | open |
@@ -541,6 +541,14 @@ light sample's closure event before the light's.
 
 **Tests:** a scene's groups sum to the beauty at each pixel. A group's channel scaled by two
 matches a render whose lights in that group are twice as bright, within errors.
+
+**Done.** Steps 10, 11 and 13 had built everything a group needs: the scene's `lightGroup`, a
+label on the light's event, and a channel of an expression that names it. This step adds the
+cases. A scene's key and fill groups, the lights no group names and an emitting square sum to
+the beauty at each pixel. The key's channel added to the beauty once more lies 0.5 errors from a
+render of the key twice as bright, at its furthest pixel. The beauty alone lies 30 errors from it
+over the picture. No client reads a UsdLux group yet: USD has no core attribute for one, moya
+has no USD client, and the RIB client's `lightGroup` is step 18's.
 
 ### Step 15 — Cryptomatte
 
