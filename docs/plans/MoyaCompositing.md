@@ -133,7 +133,7 @@ among the options before the record is drafted.
 | [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | done |
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | done |
 | [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
-| [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | done |
 | [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | open |
 | [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | open |
 
@@ -656,6 +656,15 @@ already printed every output, so the committed descriptions are unchanged.
 
 **Tests:** the committed renders, and a case that renders each with a light or an expression
 changed and checks that the comparison fails.
+
+**Done.** Five RIB scenes, `compositing-lpe`, `-groups`, `-crypto`, `-deep` and `-denoise`, each
+48 by 32 pixels, are rendered through the scene client by `CompositingReferenceTest.cxx`. Each
+committed EXR holds every float of a pixel, the beauty's standard errors, the deep samples
+flattened with their count, and the manifests. The beauty and every channel are held within five
+of the beauty's errors, Cryptomatte IDs bit for bit, coverage within 0.001, manifests and deep
+sample counts exactly. Every light twice as bright fails the comparison in each scene. Each
+channel is held to the beauty's error, the one each pixel keeps, so a channel of little light is
+held more loosely than its own noise would allow.
 
 ### Step 20 — Speed
 

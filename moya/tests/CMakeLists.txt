@@ -13,6 +13,7 @@ v3d_add_test(moya
 	"ConeTest.cxx"
 	"CheckpointTest.cxx"
 	"CommandLineTest.cxx"
+	"CompositingReferenceTest.cxx"
 	"CompareTest.cxx"
 	"CryptomatteTest.cxx"
 	"ConductorTest.cxx"

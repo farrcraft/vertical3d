@@ -507,6 +507,12 @@ so a case over every pixel allows more than one over a region's mean.
   the bound. A second case renders each scene with every light twice as bright and checks that
   the comparison fails it. A third renders each material scene with every surface's base at half
   its weight, and checks that the comparison fails it too.
+- **The compositing scenes, `compositing-*.rib`, are compared the same way**, channel by channel.
+  Their committed EXR holds every float of each pixel, the beauty's errors, each pixel's deep
+  samples flattened with their count, and each Cryptomatte layer's manifest. The beauty and
+  every channel lie within five of the beauty's errors. Each Cryptomatte ID matches bit for bit,
+  each manifest exactly, and each pixel's count of deep samples exactly. A second case renders
+  each with every light twice as bright, and checks that the comparison fails it.
 - **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
   commit and a PNG to look at. Copy the EXR over the reference to change it on purpose.
 - **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone
