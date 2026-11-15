@@ -26,9 +26,9 @@ set(release "${CURRENT_BUILDTREES_DIR}/release")
 file(REMOVE_RECURSE "${release}")
 vcpkg_extract_archive(ARCHIVE "${archive_path}" DESTINATION "${release}")
 # The compiler finds its standard headers in ../include, and on Linux its libraries in ../lib, so
-# the release's layout is kept
+# the release's layout is kept. Each file keeps its permissions, so the compiler stays executable
 foreach(part IN ITEMS bin include lib)
-    file(INSTALL "${release}/${folder}/${part}" DESTINATION "${CURRENT_PACKAGES_DIR}/tools/${PORT}")
+    file(INSTALL "${release}/${folder}/${part}" DESTINATION "${CURRENT_PACKAGES_DIR}/tools/${PORT}" USE_SOURCE_PERMISSIONS)
 endforeach()
 
 vcpkg_install_copyright(FILE_LIST "${release}/${folder}/LICENSE.txt")

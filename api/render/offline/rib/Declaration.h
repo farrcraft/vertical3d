@@ -41,6 +41,9 @@ class Declaration final {
 
     Declaration() noexcept;
     /**
+     * @param storage how the parameter's values are spread over a primitive
+     * @param type the type of each value
+     * @param count how many values of the type each element holds, as an array's length
      * @param reference whether the parameter is RenderMan's reference, which names another
      *        node's output of the type in place of a value
      **/
