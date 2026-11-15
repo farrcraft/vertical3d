@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaRetirement](MoyaRetirement.md) | Offline rendering, editor | moya with one renderer: RIB's built-in shaders as materials and lights, moya.exe and the editor rendering through the path tracer, and the reyes hider, the ray hider and the shading language deleted |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans

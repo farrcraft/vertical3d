@@ -168,6 +168,8 @@ built.
 
 ### 7. The retirement
 
+[MoyaRetirement](../plans/MoyaRetirement.md) is its plan.
+
 - RIB scenes that render today render through the new core, with the built-in shaders mapped to
   OpenPBR materials.
 - The reyes hider, the ray hider, `offline::trace` and `api/render/offline/sl` are removed.

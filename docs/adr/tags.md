@@ -124,6 +124,7 @@ reported, so the table lists only tags in use.
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
 | [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
 | [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
 
 ### camera
 
@@ -170,6 +171,8 @@ reported, so the table lists only tags in use.
 | [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
 | [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
 
 ### docs
 
@@ -284,6 +287,9 @@ reported, so the table lists only tags in use.
 | [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 | [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
+| [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
 
 ### lighting
 
@@ -298,6 +304,7 @@ reported, so the table lists only tags in use.
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
 | [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
 
 ### lit
 
@@ -405,6 +412,11 @@ reported, so the table lists only tags in use.
 | [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
 | [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
+| [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
 
 ### particles
 
@@ -486,6 +498,7 @@ reported, so the table lists only tags in use.
 | [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
 | [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
 
 ### shell
 

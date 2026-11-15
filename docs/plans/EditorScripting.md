@@ -178,11 +178,12 @@ a whole.
 
 ## Working beside the moya rebuild
 
-The rebuild has no open plan. Its sections up to output for compositing are closed, the last by
+The rebuild's sections up to output for compositing are closed, the last by
 [MoyaCompositing](completed/MoyaCompositing.md), which changed nothing the editor sends moya.
 [MoyaMaterials](completed/MoyaMaterials.md) left the editor's surfaces on RI's `matte`. The
-rebuild's later sections reach the editor: the retirement of the old hiders (section 7) and
-interactive rendering (section 9). Giving the editor materials is work for a plan of its own.
+retirement of the old hiders (section 7) is open as [MoyaRetirement](MoyaRetirement.md), which
+says where it meets this plan. Interactive rendering (section 9) reaches the editor too.
+Giving the editor materials is work for a plan of its own.
 
 **Where the two meet:**
 
@@ -195,7 +196,7 @@ interactive rendering (section 9). Giving the editor materials is work for a pla
 | The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
 | `src/scene/RenderSettings.h` and its codec | Section 7, the hider list, and section 9, the AOVs the render view shows | Nothing |
 | `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
-| ADR numbers | The rebuild's next plan | 0217 to 0221 |
+| ADR numbers | MoyaRetirement, 0236 to 0240 | 0217 to 0221 |
 
 **The rules:**
 

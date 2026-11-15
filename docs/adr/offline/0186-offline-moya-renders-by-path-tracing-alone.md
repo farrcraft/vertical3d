@@ -1,8 +1,9 @@
 # ADR-0186: Offline: moya renders by path tracing alone
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-06
 **Tags**: offline, lighting, shaders
+**Amended by**: [ADR-0236](0236-offline-ris-built-in-surfaces-are-materialx-definitions.md)
 **Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
 
 ## Context
