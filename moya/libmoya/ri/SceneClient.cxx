@@ -84,6 +84,28 @@ bool SceneClient::endsWith(const std::string & text, const std::string & suffix)
     return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+void SceneClient::unread(const std::string & request, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+    const std::set<std::string> & read) {
+    for (const std::string & parameter : parameters.names()) {
+        if (read.contains(parameter)) {
+            continue;
+        }
+        const std::string named = name.empty() ? request : request + " \"" + name + "\"";
+        warnings_.once(named + " " + parameter, named + "'s \"" + parameter + "\" is not read, so it changes nothing");
+    }
+}
+
+void SceneClient::hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name != "raytrace" && name != "hidden") {
+        warnings_.once("hider " + name, "moya renders by path tracing alone, so Hider \"" + name + "\" changes nothing");
+    }
+    unread("Hider", name, parameters, {});
+}
+
+void SceneClient::shadingRate(float size) {
+    (void)size;
+}
+
 void SceneClient::frame(const std::function<void()> & committed) {
     committed_ = committed;
 }
@@ -158,7 +180,7 @@ scene::Handle SceneClient::output(const std::string & file) {
 }
 
 void SceneClient::display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) {
-    (void)parameters;
+    unread("Display", "", parameters, {});
     const bool adds = !request.name.empty() && request.name.front() == '+';
     const std::string file = adds ? request.name.substr(1) : request.name;
     if (!adds) {
@@ -276,6 +298,20 @@ void SceneClient::sampleFilter(const v3d::render::offline::rib::requests::Shadin
 }
 
 void SceneClient::option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    static const std::map<std::string, std::set<std::string>> kRead { { "searchpath", { "texture", "shader" } },
+        { "moya", { "denoise", "deepTolerance" } }, { "limits", { "texturememory", "bucketsize", "gridsize" } }, { "trace", { "maxdepth" } } };
+    const auto read = kRead.find(name);
+    unread("Option", name, parameters, read == kRead.end() ? std::set<std::string> {} : read->second);
+
+    if (name == "trace" && parameters.has("maxdepth")) {
+        const float depth = parameters.number("maxdepth", 0.0F);
+        if (!(depth >= 0.0F) || !(depth <= static_cast<float>(std::numeric_limits<std::int32_t>::max()))) {
+            warnings_.once("maxdepth", "Option \"trace\" \"maxdepth\" has to be from 0 to the most an integer holds, so it changes nothing");
+        } else {
+            // checked: within an integer's range, as the test above holds it
+            scene_.set(options_, "maxDepth", scene::Value::integer(static_cast<std::int32_t>(depth)));
+        }
+    }
     if (name == "searchpath" && parameters.has("texture")) {
         const std::string given = parameters.string("texture");
         std::string path;
@@ -465,6 +501,11 @@ void SceneClient::motionEnd() {
 }
 
 void SceneClient::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    static const std::map<std::string, std::set<std::string>> kRead { { "identifier", { "name" } },
+        { "displacementbound", { "sphere", "coordinatesystem" } }, { "trace", { "bias" } }, { "light", { "nsamples" } } };
+    const auto read = kRead.find(name);
+    unread("Attribute", name, parameters, read == kRead.end() ? std::set<std::string> {} : read->second);
+
     if (name == "identifier" && parameters.has("name")) {
         current_.name = parameters.string("name");
     }

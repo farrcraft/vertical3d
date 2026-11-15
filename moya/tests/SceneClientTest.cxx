@@ -10,6 +10,7 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/ri/SceneClient.h>
+#include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Samples.h>
@@ -256,6 +257,49 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_each_frame_is_a_commit_test) {
     BOOST_TEST(read.frames() == (std::vector<std::int32_t> { 1, 2 }), boost::test_tools::per_element());
     BOOST_TEST(read.scene().version() == 2U);
     BOOST_TEST((read.value("options", "options", "resolution") == scene::Value::integers({ 128, 96 })));
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_ris_hiders_are_passed_over_test) {
+    BOOST_TEST(!Read("Hider \"raytrace\"\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(!Read("Hider \"hidden\"\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(Read("Hider \"zbuffer\"\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(Read("Hider \"raytrace\" \"int incremental\" [1]\nWorldBegin\nWorldEnd\n").warned());
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_shading_rate_is_passed_over_test) {
+    const Read rated("WorldBegin\nShadingRate 4\nPolygon \"P\" [-1 -1 0  1 -1 0  1 1 0]\nWorldEnd\n");
+    const Read plain("WorldBegin\nPolygon \"P\" [-1 -1 0  1 -1 0  1 1 0]\nWorldEnd\n");
+    BOOST_TEST(!rated.warned());
+    BOOST_TEST(scene::describe(rated.scene()) == scene::describe(plain.scene()));
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_the_trace_depth_sets_the_most_bounces_test) {
+    const Read read("Option \"trace\" \"int maxdepth\" [3]\nWorldBegin\nWorldEnd\n");
+    BOOST_TEST((read.value("options", "options", "maxDepth") == scene::Value::integer(3)));
+    BOOST_TEST(!read.warned());
+
+    const Read refused("Option \"trace\" \"int maxdepth\" [-1]\nWorldBegin\nWorldEnd\n");
+    const Read none("WorldBegin\nWorldEnd\n");
+    BOOST_TEST((refused.value("options", "options", "maxDepth") == none.value("options", "options", "maxDepth")));
+    BOOST_TEST(refused.warned());
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_options_moya_does_not_read_are_reported_test) {
+    BOOST_TEST(!Read("Option \"searchpath\" \"string shader\" [\"shaders\"]\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(!Read("Option \"limits\" \"bucketsize\" [16 16] \"gridsize\" [256]\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(Read("Option \"limits\" \"int othreshold\" [1]\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(Read("Option \"statistics\" \"int endofframe\" [1]\nWorldBegin\nWorldEnd\n").warned());
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_attributes_moya_does_not_read_are_reported_test) {
+    BOOST_TEST(!Read("WorldBegin\nAttribute \"trace\" \"float bias\" [0.01]\nAttribute \"light\" \"int nsamples\" [4]\nWorldEnd\n").warned());
+    BOOST_TEST(Read("WorldBegin\nAttribute \"visibility\" \"int camera\" [0]\nWorldEnd\n").warned());
+    BOOST_TEST(Read("WorldBegin\nAttribute \"identifier\" \"string shadinggroup\" [\"a\"]\nWorldEnd\n").warned());
+}
+
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_displays_parameters_are_reported_test) {
+    BOOST_TEST(!Read("Display \"out.exr\" \"openexr\" \"rgba\"\nWorldBegin\nWorldEnd\n").warned());
+    BOOST_TEST(Read("Display \"out.exr\" \"openexr\" \"rgba\" \"string compression\" [\"zip\"]\nWorldBegin\nWorldEnd\n").warned());
 }
 
 };  // namespace

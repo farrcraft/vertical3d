@@ -397,6 +397,12 @@ read, reported once, or passed over by a rule [Rib.md](../offline/Rib.md) states
 cases of `RIBCameraTest`, `RIBGeometryTest`, `RIBOutputTest` and `RIBStateTest` that test what a
 request means, rather than how the old hiders draw it, move to the scene client's suite.
 
+**In progress.** `Hider`, `ShadingRate`, `Option "trace" "maxdepth"`, the parameters passed over by
+rule and the reports of every other parameter are done, and [Rib.md](../offline/Rib.md) states
+them. A declaration of an array in a parameter's name, such as `"int bucketsize[2]"`, is not read
+by the reader, so RI's standard declarations are used. `CropWindow` and the old cases' move are
+open.
+
 ### Step 8 — The old scenes through the new core
 
 * **Each of the 22 scenes written for the old hiders renders through the scene client.** A scene

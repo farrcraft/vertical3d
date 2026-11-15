@@ -147,15 +147,29 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * `Option "searchpath" "texture"` sets the options' textureSearchPath, each `&` in it standing
      * for the path before, as RI says. `Option "limits" "texturememory"` sets textureMemory, in
      * kilobytes. A limit below one or above what an integer holds is logged, and changes nothing.
+     * `Option "trace" "maxdepth"` sets maxDepth, and a depth below zero or above what an integer
+     * holds is logged, and changes nothing.
+     *
+     * The shader search path and the limits' `bucketsize` and `gridsize` are passed over. Any
+     * other parameter is logged once by its option and name, and changes nothing.
      **/
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * `"raytrace"` and `"hidden"` are passed over, since both name the renderer's default and moya
+     * renders by path tracing alone. Another hider is logged once. Each parameter is logged once
+     * by its name, and changes nothing.
+     **/
+    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    /** Passed over. A surface is tessellated to the options' edgeLength, in pixels. **/
+    void shadingRate(float size) override;
     /**
      * A display whose name starts with `+` adds an output. Any other replaces every output
      * before it, as RI says. A file ending in `.png` is written as PNG, and any other as EXR,
      * unless the type is `"framebuffer"`, or `"deepexr"` for a deep file. The mode names the
      * channels the output holds beside the beauty, as RenderMan's do, apart by commas. `rgb`,
      * `rgba`, `Ci` and `a` name the beauty. Any other name is a DisplayChannel's, or a channel
-     * of that source, named after it, as displayChannel() reads a source.
+     * of that source, named after it, as displayChannel() reads a source. Each parameter is
+     * logged once by its name, and changes nothing.
      **/
     void display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override;
 
@@ -208,7 +222,12 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /**
      * `"identifier"`'s `"name"` names the objects made after it in the attribute block, and
      * `"displacementbound"`'s `"sphere"` bounds the displacement of the subdivision surfaces
-     * made after it.
+     * made after it, in the `"coordinatesystem"` it names.
+     *
+     * `"trace"`'s `"bias"` is passed over, since a ray leaving a surface starts off it by the
+     * core's own rule. `"light"`'s `"nsamples"` is passed over, since a path samples one light at
+     * each bounce. Any other parameter is logged once by its attribute and name, and changes
+     * nothing.
      **/
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
@@ -262,6 +281,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     /** Whether a file name ends with a suffix, compared exactly. **/
     static bool endsWith(const std::string & text, const std::string & suffix);
+
+    /**
+     * Logs once each parameter of a request that is not among those read, keyed by the request,
+     * its name and the parameter's name, so the same parameter is logged once however often
+     * it comes.
+     **/
+    void unread(const std::string & request, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+        const std::set<std::string> & read);
 
     /**
      * A shader as a request names it. An area light's name is the light's, and its light is
