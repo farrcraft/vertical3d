@@ -169,6 +169,7 @@ reported, so the table lists only tags in use.
 | [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
 | [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
 | [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 
 ### docs
 
@@ -296,6 +297,7 @@ reported, so the table lists only tags in use.
 | [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
 | [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
 | [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 
 ### lit
 
@@ -402,6 +404,7 @@ reported, so the table lists only tags in use.
 | [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
 | [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
 | [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 
 ### particles
 

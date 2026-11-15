@@ -26,10 +26,11 @@ ADR-0195 to ADR-0229, all accepted. This plan follows four of them:
 
 The plan keeps the roadmap's order, with five changes:
 
-* **Five decisions the roadmap leaves open are steps of their own**, each before the step that
-  builds on it. Two are what a channel collects and how a light path expression runs on every
-  device. Three are how a pixel's IDs are covered, how deep samples are kept, and what the
-  denoiser reads and writes. [Decisions](#decisions).
+* **Six decisions the roadmap leaves open are steps of their own**, each before the step that
+  builds on it. Three are what a channel collects, how a light path expression runs on every
+  device, and how a bounce of several closures is weighed and labelled. Three are how a pixel's
+  IDs are covered, how deep samples are kept, and what the denoiser reads and writes.
+  [Decisions](#decisions).
 * **The scene's outputs reach the render first.** The path tracer makes its film with no channels
   and `moya --paths` writes the beauty alone, whatever the scene names. Every later step needs a
   film made from the scene's outputs. [Step 7](#step-7--the-scenes-outputs-reach-the-render).
@@ -40,7 +41,7 @@ The plan keeps the roadmap's order, with five changes:
   [Step 9](#step-9--values-at-the-first-hit).
 * **RIB names every output.** A RIB file names its channels, light groups, Cryptomatte layers and
   deep files, so `moya --paths` renders them and the reference renders are RIB files.
-  [Step 17](#step-17--outputs-from-rib).
+  [Step 18](#step-18--outputs-from-rib).
 
 ## What the survey found
 
@@ -103,6 +104,7 @@ and 11 reference renders of the path tracer held within five standard errors
 | 0232 | How a pixel's IDs are covered | [3](#step-3--the-record-cryptomatte-coverage) |
 | 0233 | How a pixel's deep samples are kept | [4](#step-4--the-record-deep-samples) |
 | 0234 | What the denoiser reads and writes | [5](#step-5--the-record-denoising) |
+| 0235 | How a bounce of several closures is weighed and labelled | [12](#step-12--the-record-a-bounces-lobe) |
 
 Each record step researches how production renderers make the choice, and the owner chooses
 among the options before the record is drafted.
@@ -121,39 +123,40 @@ among the options before the record is drafted.
 | [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | done |
 | [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | done |
 | [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | done |
-| [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | open |
+| [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | done |
 | [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | done |
 | [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | done |
-| [12](#step-12--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231 | open |
-| [13](#step-13--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | open |
-| [14](#step-14--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | open |
-| [15](#step-15--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | open |
-| [16](#step-16--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | open |
-| [17](#step-17--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
-| [18](#step-18--the-reference-renders) | The reference renders | `moya/tests` | — | open |
-| [19](#step-19--speed) | Speed: outputs against the baseline | `moya/bench` | — | open |
-| [20](#step-20--the-documents) | The reference pages for outputs | `docs` | — | open |
+| [12](#step-12--the-record-a-bounces-lobe) | The record: a bounce's lobe | `docs/adr` | **0235** | accepted |
+| [13](#step-13--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231, 0235 | done |
+| [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | open |
+| [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | open |
+| [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | open |
+| [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | open |
+| [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
+| [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | open |
+| [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | open |
 
 ## What blocks what
 
 ```
-1 ADR ──> 7 Outputs ──┬──> 8 Alpha ──────────────────────┬──> 15 Deep (after 4)
-                      ├──> 9 First hit ─────────────────┼──> 16 Denoise (after 5, 6)
-                      │                                  └──> 14 Cryptomatte (after 3)
-2 ADR ──> 10 Events ──> 11 Compile ──> 12 Device (after 7) ──> 13 Light groups
+1 ADR ──> 7 Outputs ──┬──> 8 Alpha ──────────────────────┬──> 16 Deep (after 4)
+                      ├──> 9 First hit ─────────────────┼──> 17 Denoise (after 5, 6)
+                      │                                  └──> 15 Cryptomatte (after 3)
+2 ADR ──> 10 Events ──> 11 Compile ──> 12 ADR ──> 13 Device (after 7) ──> 14 Light groups
 6 OIDN (after 5)
 
-(7 to 16) ──> 17 RIB ──> 18 References, 19 Speed ──> 20 Documents
+(7 to 17) ──> 18 RIB ──> 19 References, 20 Speed ──> 21 Documents
 ```
 
 Steps 1 to 5 depend on nothing but each other, and step 6 needs the record of step 5. Step 7
 needs the record of step 1, and every step after it needs a film made from the scene's outputs.
 Steps 8 and 9 need only step 7. Step 10 needs the record of step 2, step 11 the events it names,
-and step 12 both and a film of channels. Step 13 is a label of step 12's expressions. Step 14 needs
-coverage and the record of step 3. Step 15 needs alpha, the first hit's depth and the record of
-step 4. Step 16 needs the first hit's albedo and normal, and OIDN. Step 17 names every output in
-RIB. Each step updates its own section of the reference documents, and step 20 checks that they
-read as a whole.
+and step 12 the events too. Step 13 needs steps 11 and 12 and a film of channels. Step 14 is a
+label of step 13's expressions. Step 15 needs coverage and the record of step 3. Step 16 needs
+alpha, the first hit's depth and the record of step 4. Step 17 needs the first hit's albedo and
+normal, and OIDN. Step 18 names every output in RIB. Each step updates its own section of the
+reference documents, and step 21 checks that they read as a whole.
 
 ## How every step is verified
 
@@ -176,8 +179,9 @@ read as a whole.
   sanitizers, in the spectral and the RGB build.
 * **No old picture changes.** The old hiders read RIB as before, so every committed PNG in
   `moya/tests/data/` stays as it is, and the editor's render window shows the same picture. A
-  render that names no channel writes the beauty it writes now, so the path tracer's reference
-  renders stay as they are.
+  render that names no channel writes the beauty it would without channels. The path tracer's
+  pictures change once, at step 13, as the record of step 12 says, and each reference render
+  stays within its errors.
 
 ---
 
@@ -350,7 +354,7 @@ itself. `ports/oidn` builds OIDN 2.5.1 from its release's source archive, which 
 weights, with the CPU device and the RT filter alone. It builds static, since a shared OIDN
 loads its CPU device from a module no executable's imports name, so the weights and the device
 are linked into whatever links OIDN. The Flatpak builds both as modules, ISPC for the build
-alone. libmoya does not link OIDN until step 16 uses it, so the moya suite links it for
+alone. libmoya does not link OIDN until step 17 uses it, so the moya suite links it for
 `DenoiserTest.cxx`. The default device is the CPU's, and a constant grey comes back within 1% of
 itself everywhere but the outermost four pixels, which the filter reads fewer neighbours for. The
 picture's mean holds within 0.1%.
@@ -450,7 +454,7 @@ label, beside what it gathers. A bounce is a reflection or a transmission, singu
 that scatters into one direction, diffuse for a diffuse, Oren-Nayar or fuzz closure, and glossy
 otherwise. A BSDF sample now says whether its closure is diffuse, so a transmission is named
 too. Each light the path gathers reports its event, and a light an emitting material makes is an
-object. Every light of the scene holds `lightGroup`, which this step took from step 13. The host
+object. Every light of the scene holds `lightGroup`, which this step took from step 14. The host
 gives each light its group's place among the groups' names, sorted, as its label. The cases see
 the events through `integrate::Trails`: a render given one records the events of each pixel's
 sample zero, and gives the same picture as one that is not. Surfaces that are cut out report no
@@ -476,19 +480,59 @@ is refused with `lpe::Refused`. A diffuse event eight events before the light co
 states, and nine are refused. An event holds one label, as moya's events do, so an event of a
 fourth place is not read. A letter outside angle brackets is an event of its own, as in OSL.
 
-### Step 12 — Light path expressions on the device
+### Step 12 — The record: a bounce's lobe
+
+**The question.** How a bounce from a BSDF of several closures is weighed and labelled, so that
+a channel split by lobe converges to that lobe's light. `Bsdf::sample()` picks one closure and
+weighs the direction by every closure's value over the mixture's density. The weight then belongs
+to every lobe at once, and the bounce takes the picked closure's lobe alone.
+
+**The options:**
+
+* **One closure alone**: the bounce is weighed by the picked closure's value over its chance and
+  its own density, and takes its lobe. Each lobe's channel converges to its light, and split
+  channels add up to the beauty. Layered surfaces are noisier, and every picture changes once.
+* **The mixture's weight, labelled by the closure picked**, as now. Nothing changes, and a lobe's
+  channel holds part of the other lobes' light.
+* **The mixture's weight, and a ratio for the channels**: the path carries the ratio of the one
+  closure's weight to the mixture's. Each channel converges, and split channels add up to the
+  beauty only on average.
+* **The first bounce's share of each lobe**, as Cycles carries `pass_diffuse_weight` and
+  `pass_glossy_weight`. Splits at the first bounce are right, and later ones are not.
+
+A light sample is split by each closure's value towards the light under every option.
+
+**Drafted** as
+[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md): a bounce is weighed
+by the closure it picked alone, and takes that closure's lobe. A light sample is split by each
+closure's value towards the light, each part weighed against that closure's own density.
+
+### Step 13 — Light path expressions on the device
 
 * **Each path carries its expressions' state**, declared once in the path state as the record
   decides, and advanced at each event.
 * **Light the path gathers is added to each channel whose expression accepts** the path's events
   with the light's.
+* **A bounce samples one closure alone**, as the record of step 12 decides, and a light sample
+  is gathered once for each closure towards the light, after that closure's event. The trail
+  records a light sample's closure event before the light's.
 * **The most expressions a render takes** is the record's, and a scene of more is reported.
 
 **Tests:** the lobes of the first bounce split the beauty into channels that sum to it at each
 pixel. `C<RD>L` in a diffuse box under one light matches a direct render's light alone, within
 errors. A render with five expressions gives the same beauty as one with none, byte for byte.
 
-### Step 13 — Light groups
+**Done.** A bounce is weighed by the closure that drew it alone. `Bsdf::part()` gives each
+closure's part towards a light, so a light sample is gathered closure by closure, each part
+weighed against its closure's own density. The host's `internal::LightPaths` compiles a
+render's channels of expressions under its light groups' labels and uploads the automaton, with a
+flag for each expression in each state's accepts. The path state's `expression` steps at the
+camera and at each bounce, and each light gathered steps a copy, by a light sample's closure
+event first. `C<RD>L` in the box matches a render of one bounce to float rounding, since both
+draw the same samples, which is closer than the errors the plan asked for. The trail records a
+light sample's closure event before the light's.
+
+### Step 14 — Light groups
 
 * **A light's group comes through UsdLux's names** where they exist, as the scene's
   `lightGroup` from step 10 does.
@@ -498,7 +542,7 @@ errors. A render with five expressions gives the same beauty as one with none, b
 **Tests:** a scene's groups sum to the beauty at each pixel. A group's channel scaled by two
 matches a render whose lights in that group are twice as bright, within errors.
 
-### Step 14 — Cryptomatte
+### Step 15 — Cryptomatte
 
 * **IDs are hashed from names** with MurmurHash3 as the Cryptomatte specification says, and
   made a float that is not a NaN or an infinity, as it says.
@@ -513,7 +557,7 @@ matches a render whose lights in that group are twice as bright, within errors.
 between two holds both, with the shares their areas give, within errors. The manifest names every
 object in the picture, and each hash matches the specification's examples.
 
-### Step 15 — Deep EXR
+### Step 16 — Deep EXR
 
 * **An output of the format `deepexr`** writes a deep scanline file through OpenEXR.
 * **Each pixel's samples** are kept and merged as the record of step 4 decides, each with its
@@ -524,7 +568,7 @@ object in the picture, and each hash matches the specification's examples.
 alpha, within float rounding. A pixel behind half-opaque glass holds a sample for the glass and
 one for the surface behind it.
 
-### Step 16 — Denoising
+### Step 17 — Denoising
 
 * **A denoised output** as the record of step 5 decides, after the last pass, through OIDN's
   `RT` filter, guided by the albedo and normal of step 9.
@@ -536,7 +580,7 @@ one for the surface behind it.
 in each pixel's mean squared error. A render denoised twice gives the same bytes, under one thread
 and every thread, if the record settles that it must.
 
-### Step 17 — Outputs from RIB
+### Step 18 — Outputs from RIB
 
 * **RIB's `DisplayChannel`** declares a channel, with its `source` of an expression or a value at
   the first hit, as RenderMan names one. A `Display` mode names those channels.
@@ -549,7 +593,7 @@ and every thread, if the record settles that it must.
 **Tests:** a RIB file of each output gives the scene the channels and outputs it names. A RIB
 file that names an expression and a light group renders both.
 
-### Step 18 — The reference renders
+### Step 19 — The reference renders
 
 * **A set of scenes made for compositing**, as RIB files in `moya/tests/data`. A room is split
   into channels by light path expressions, and another into light groups. Overlapping objects test
@@ -561,7 +605,7 @@ file that names an expression and a light group renders both.
 **Tests:** the committed renders, and a case that renders each with a light or an expression
 changed and checks that the comparison fails.
 
-### Step 19 — Speed
+### Step 20 — Speed
 
 * **`moya_bench` gains a pass of outputs**: the lit room with five light path expressions, two
   light groups, both Cryptomatte layers and a deep output, beside the lit room alone. It reports
@@ -570,7 +614,7 @@ changed and checks that the comparison fails.
 
 **Tests:** the benchmark's short pass times the room with its outputs.
 
-### Step 20 — The documents
+### Step 21 — The documents
 
 * **A new reference page**, `docs/offline/Compositing.md`, for light path expressions, light
   groups, Cryptomatte and deep output. The docs site's summary lists it.
@@ -596,7 +640,7 @@ changed and checks that the comparison fails.
 
 [EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, which are below
 this plan's records. Its step 16 adds a thread count to `moya/moya.cxx` and
-`docs/manual/moya/CommandLine.md`, where steps 7 and 16 change how `--paths` writes and add
+`docs/manual/moya/CommandLine.md`, where steps 7 and 17 change how `--paths` writes and add
 `--denoise`. Each lands as a commit of its own. This plan changes nothing the editor sends moya:
 the editor renders through the old hiders until section 7, and showing outputs in its render view
 is work for section 9.

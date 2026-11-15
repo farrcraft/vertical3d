@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/bsdf/Albedos.h>
 #include <moya/libmoya/kernel/bsdf/Closure.h>
+#include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Conductor.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Dielectric.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>
@@ -50,7 +51,12 @@ inline constexpr float kBelowOne = 0x1.fffffep-1F;
  * - **A sample picks one closure** by its estimated albedo and draws a direction from it. The
  *   first random number picks the closure and is then stretched over the closure's share, so it
  *   is drawn from again. A third number picks between a dielectric's reflection and transmission.
+ *   The sample is weighed by that closure alone: its value, over its own density times its chance
+ *   of being picked. Each closure's light is then its own, whichever closures share a direction.
  * - **The density of a direction** sums each closure's density times the chance it is picked.
+ *   sample() spreads its directions by it.
+ * - **One closure's part** for a pair of directions is its projected value and its density times
+ *   its chance, which a light sample weighs closure by closure.
  * - **A singular closure** has no value and no density for any direction it is given. Its sample
  *   is specular, as Sample says.
  * - **The albedo tables** are what a microfacet lobe's energy compensation reads, and the
@@ -166,7 +172,7 @@ struct Bsdf {
 
     /**
      * A direction light comes in from for outgoing, drawn from two random numbers and a third. Its
-     * value, projected value and density are the whole BSDF's, over every closure.
+     * value, projected value and density are the closure's that drew it.
      **/
     MOYA_KERNEL Sample sample(const glm::vec3 & outgoing, const glm::vec2 & u, float choice) const {
         Sample out;
@@ -186,6 +192,7 @@ struct Bsdf {
             below += chance;
         }
         const Closure & closure = closures[picked];
+        out.closure = picked;
         const surface::Frame & own = frameOf(closure);
         const glm::vec3 local = own.toLocal(outgoing);
         if (closure.singular()) {
@@ -227,10 +234,39 @@ struct Bsdf {
         out.roughness = closure.spread();
         out.diffuse = closure.diffuse();
         if (agrees(outgoing, out.incoming, local, drawn)) {
-            out.value = evaluate(outgoing, out.incoming);
-            out.projected = projected(outgoing, out.incoming);
-            out.density = density(outgoing, out.incoming);
+            out.value = closure.weight * valueOf(closure, local, drawn);
+            out.projected = out.value * std::fabs(drawn.z);
+            out.density = chance * densityOf(closure, local, drawn);
         }
+        return out;
+    }
+
+    /**
+     * One closure's part for light coming in along incoming and leaving along outgoing: its
+     * projected value, its density times its chance of being picked, and the kind of bounce it
+     * makes. A singular closure's part, and a part where the closure's frame and the geometric
+     * surface disagree, has no value and no density.
+     **/
+    struct Part {
+        spectrum::SampledSpectrum projected { 0.0F };
+        float density { 0.0F };
+        Lobe lobe { Lobe::Diffuse };
+        bool diffuse { false };
+    };
+
+    /** The part of the closure at a place, for two directions in world space. **/
+    MOYA_KERNEL Part part(std::uint32_t place, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
+        Part out;
+        const Closure & closure = closures[place];
+        const Directions local = directionsIn(frameOf(closure), outgoing, incoming);
+        out.lobe = closure.lobe(local.outgoing.z * local.incoming.z < 0.0F);
+        out.diffuse = closure.diffuse();
+        const float total = albedo();
+        if (closure.singular() || !local.agree || !(total > 0.0F)) {
+            return out;
+        }
+        out.projected = closure.weight * valueOf(closure, local.outgoing, local.incoming) * std::fabs(local.incoming.z);
+        out.density = (closure.albedo / total) * densityOf(closure, local.outgoing, local.incoming);
         return out;
     }
 

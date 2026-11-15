@@ -210,7 +210,15 @@ comes from.
   first random number picks the closure, and is then stretched over the closure's share so the
   closure draws from it again. A BSDF of one closure draws from the same numbers as that closure
   alone. A third random number picks between a dielectric's reflection and its transmission.
+- **A sample is weighed by the closure that drew it alone.** Its value and projected value are
+  that closure's, and its density is the closure's own density times the chance it was picked.
+  Each closure's light is then its own, whichever closures share a direction, so light split by
+  lobe adds up to the whole. `sample.closure` names the closure.
 - **The density of a direction** is each closure's density times the chance it is picked, summed.
+  That is how a BSDF spreads its samples' directions.
+- **One closure's part** for two directions, `Bsdf::part()`, is its projected value, its density
+  times its chance of being picked, and the kind of bounce it makes. A light sample is gathered
+  closure by closure from the parts.
 - **A closure that scatters into a single direction is singular**, or into one of two for a
   dielectric. It has no value and no density for any direction it is given, so a light sample
   gathers nothing through it. Its sample is marked `specular`: its value and its projected
@@ -221,8 +229,8 @@ comes from.
   the GGX distribution and Fresnel factors they share, is in `kernel/bsdf/scattering/`, in the
   namespace `bsdf::scattering`.
 - **Each closure works in a frame around a normal.** A coated closure, the coat, works in the
-  BSDF's `coatFrame`, and every other closure in its `frame`. A sample is drawn in the picked
-  closure's frame, and its value, projected value and density are the whole BSDF's.
+  BSDF's `coatFrame`, and every other closure in its `frame`. A sample is drawn and weighed in the
+  picked closure's frame.
 - **The geometric surface and a closure's frame have to agree** on whether two directions lie
   on one side or cross the surface. Where they disagree, the closure gives the pair no value, no
   density and no sample, so a reflection never crosses the geometric surface and a transmission

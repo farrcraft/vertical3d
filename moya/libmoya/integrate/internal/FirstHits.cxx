@@ -93,7 +93,7 @@ FirstHits::FirstHits(device::Device & device, const std::vector<output::Channel>
             features.push_back(*read);
         } else if (read) {
             filled.push_back(*read);
-        } else if (logger) {
+        } else if (logger && channel.source != output::Source::Lpe) {
             logger->get()->warn("channel {} of {} components collects the {} {}, which the path tracer does not fill, so it holds zero", channel.film.name,
                 channel.film.components, kinds.at(static_cast<std::size_t>(channel.source)), channel.sourceName);
         }

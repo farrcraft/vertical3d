@@ -61,16 +61,25 @@ inline constexpr std::uint32_t kObjectSymbol = 7;
 inline constexpr std::uint32_t kLightSymbol = 8;
 inline constexpr std::uint32_t kLabelled = 9;
 
-/** The event a bounce makes along a direction a BSDF sampled. **/
-MOYA_KERNEL inline Event scatteredBy(const bsdf::Sample & drawn) {
+/**
+ * The event of a bounce of a lobe from a closure: a transmission for one that crosses the surface
+ * and a reflection otherwise, singular, diffuse or glossy as its closure is.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - whether singular, then whether diffuse
+MOYA_KERNEL inline Event scatteredBy(bsdf::Lobe lobe, bool singular, bool diffuse) {
     Event out;
-    out.type = drawn.lobe == bsdf::Lobe::Transmission ? EventType::Transmission : EventType::Reflection;
-    if (drawn.specular) {
+    out.type = lobe == bsdf::Lobe::Transmission ? EventType::Transmission : EventType::Reflection;
+    if (singular) {
         out.scattering = Scattering::Singular;
     } else {
-        out.scattering = drawn.diffuse ? Scattering::Diffuse : Scattering::Glossy;
+        out.scattering = diffuse ? Scattering::Diffuse : Scattering::Glossy;
     }
     return out;
+}
+
+/** The event a bounce makes along a direction a BSDF sampled. **/
+MOYA_KERNEL inline Event scatteredBy(const bsdf::Sample & drawn) {
+    return scatteredBy(drawn.lobe, drawn.specular, drawn.diffuse);
 }
 
 /**

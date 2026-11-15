@@ -3,17 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <moya/libmoya/colour/Config.h>
-#include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
-#include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/kernel/integrate/Event.h>
 #include <moya/libmoya/kernel/integrate/Trail.h>
 #include <moya/libmoya/kernel/light/Light.h>
-#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
-#include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -31,7 +26,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "Tracing.h"
+#include "Staged.h"
 
 namespace v3d::moya::tracing {
 namespace {
@@ -41,74 +36,10 @@ namespace integrate = v3d::moya::integrate;
 namespace events = v3d::moya::kernel::integrate;
 namespace scene = v3d::moya::scene;
 
-constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
-
 /** The picture's side, in pixels, and the pixels from one corner to the other of its middle. **/
-constexpr std::int32_t kSide = 16;
+constexpr std::int32_t kSide = Staged::kSide;
 constexpr std::uint32_t kMiddleFrom = 6;
 constexpr std::uint32_t kMiddleTo = 10;
-
-/**
- * A scene of a camera five units back along -z, with no light unless a case adds one. The camera
- * keeps the orthographic projection the scene falls back to, whose screen runs from -1 to 1. A
- * path takes at most depth bounces, and Russian roulette never ends one.
- **/
-struct Staged {
-    scene::Scene made { scene::kinds() };
-
-    explicit Staged(std::int32_t depth) {
-        const scene::Handle options = made.create("options", "options");
-        const scene::Handle camera = made.create("camera", "camera");
-        made.set(options, "camera", scene::Value::handle(camera));
-        made.set(options, "resolution", scene::Value::integers({ kSide, kSide }));
-        made.set(options, "samples", scene::Value::integer(4));
-        made.set(options, "maxDepth", scene::Value::integer(depth));
-        made.set(options, "rouletteDepth", scene::Value::integer(depth + 1));
-        made.set(camera, "transform", scene::Value::matrix(moved(0.0F, 0.0F, -5.0F)));
-    }
-
-    /** A material of an OpenPBR surface with the inputs given. **/
-    scene::Handle material(const std::string & name, const std::vector<std::pair<std::string, scene::Value>> & inputs) {
-        const scene::Handle surface = made.create("shader", name);
-        made.set(surface, "shader", scene::Value::string(kOpenPbr));
-        for (const auto & [input, value] : inputs) {
-            made.declare(surface, scene::Declaration { .name = input, .type = value.type(), .count = static_cast<std::uint32_t>(value.size()), .fallback = value });
-            made.set(surface, input, value);
-        }
-        const scene::Handle out = made.create("material", name);
-        made.set(out, "surface", scene::Value::handle(surface));
-        return out;
-    }
-
-    /** A quadrilateral of four corners, in their order, placed with a material, and its mesh. **/
-    scene::Handle quad(const std::string & name, const std::vector<glm::vec3> & corners, const scene::Handle & material) {
-        const scene::Handle mesh = made.create("mesh", name);
-        made.set(mesh, "P", scene::Value::points(corners));
-        made.set(mesh, "vertices", scene::Value::integers({ 3, 3 }));
-        made.set(mesh, "indices", scene::Value::integers({ 0, 2, 1, 0, 3, 2 }));
-        const scene::Handle placed = instanced(made, name, mesh, {}, glm::mat4(1.0F));
-        if (material.valid()) {
-            made.set(placed, "material", scene::Value::handle(material));
-        }
-        return mesh;
-    }
-
-    /** A light of a kind, in a light group, or in none for an empty group. **/
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the kind, the name, then the group
-    scene::Handle light(const std::string & kind, const std::string & name, const std::string & group) {
-        const scene::Handle out = made.create(kind, name);
-        made.set(out, "lightGroup", scene::Value::string(group));
-        return out;
-    }
-
-    /** The picture, and the events of each pixel's sample zero when trails are given. **/
-    film::Snapshot render(integrate::Trails * trails) {
-        made.commit();
-        made.apply();
-        v3d::moya::device::CpuDevice device;
-        return integrate::render(device, made, {}, colour::Config(), {}, nullptr, trails);
-    }
-};
 
 /** A pixel's events, each spelled as a light path expression spells it, a star on a light's. **/
 std::string spelled(const integrate::Trails & trails, std::uint32_t x, std::uint32_t y) {
@@ -155,9 +86,10 @@ void mirrored(Staged & staged) {
     staged.made.set(sun, "transform", scene::Value::matrix(shining({ 1.0F, -2.0F, 0.0F })));
 }
 
-// a camera ray that a mirror sends to a wall under a sun makes a singular reflection there, then
-// takes a light sample of the sun at the wall, then makes a diffuse reflection. The path's depth
-// limit ends it after that, so every pixel the mirror fills reports those events in that order
+// a camera ray that a mirror sends to a wall under a sun makes a singular reflection there. It
+// then takes a light sample of the sun at the wall, gathered through the wall's diffuse closure,
+// and then makes a diffuse reflection. The path's depth limit ends it after that, so every pixel
+// the mirror fills reports those events in that order
 BOOST_AUTO_TEST_CASE(moya_events_a_mirror_then_a_wall_report_their_bounces_in_order_test) {
     Staged staged(2);
     mirrored(staged);
@@ -167,7 +99,7 @@ BOOST_AUTO_TEST_CASE(moya_events_a_mirror_then_a_wall_report_their_bounces_in_or
     for (std::uint32_t y = kMiddleFrom; y < kMiddleTo; ++y) {
         for (std::uint32_t x = kMiddleFrom; x < kMiddleTo; ++x) {
             BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
-                BOOST_TEST(spelled(trails, x, y) == "C RS L'key'* RD");
+                BOOST_TEST(spelled(trails, x, y) == "C RS RD* L'key'* RD");
             }
         }
     }

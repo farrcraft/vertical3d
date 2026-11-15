@@ -186,6 +186,26 @@ BOOST_AUTO_TEST_CASE(moya_conductor_a_smooth_conductor_is_specular_test) {
     BOOST_TEST((rough.lobe == bsdf::Lobe::Glossy));
 }
 
+// a sample is weighed by the closure that drew it alone. The samples a diffuse closure draws
+// beside a rough conductor, whose lobe overlaps it, carry the diffuse closure's light and none of
+// the conductor's, so their mean weight is the diffuse closure's albedo
+BOOST_AUTO_TEST_CASE(moya_conductor_a_sample_carries_its_own_closures_light_alone_test) {
+    bsdf::Bsdf both = metal(1.0F, 0.0F);
+    both.add(bsdf::Model::Diffuse, flat(0.5F));
+    BOOST_TEST_REQUIRE(both.count == 2U);
+    const glm::vec3 outgoing = towards(0.7F, 0.0F);
+    constexpr int kDrawn = 200000;
+    std::uint32_t seed = 61;
+    double diffuse = 0.0;
+    for (int i = 0; i < kDrawn; ++i) {
+        const bsdf::Sample drawn = both.sample(outgoing, { next(seed), next(seed) }, next(seed));
+        if (drawn.found() && drawn.closure == 1U) {
+            diffuse += static_cast<double>(drawn.projected[0] / drawn.density);
+        }
+    }
+    BOOST_TEST(diffuse / kDrawn == 0.5, boost::test_tools::tolerance(0.01));
+}
+
 };  // namespace
 
 };  // namespace v3d::moya::tracing

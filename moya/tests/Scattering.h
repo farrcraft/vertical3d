@@ -52,7 +52,7 @@ struct Fit {
  * sample, or one the BSDF refused, falls in no bin, so the bins expect only what the density
  * holds.
  *
- * Each sample's density is checked against the BSDF's density for its direction.
+ * Each sample's density is checked against its closure's part for its direction.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the count drawn, then the seed
 inline Fit densityFit(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoing, std::size_t drawn, std::uint32_t seed) {
@@ -67,7 +67,7 @@ inline Fit densityFit(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoin
         if (!sample.found() || sample.specular) {
             continue;
         }
-        BOOST_TEST_REQUIRE(sample.density == bsdf.density(outgoing, sample.incoming), boost::test_tools::tolerance(1.0e-3F));
+        BOOST_TEST_REQUIRE(sample.density == bsdf.part(sample.closure, outgoing, sample.incoming).density, boost::test_tools::tolerance(1.0e-3F));
         const glm::vec3 local = glm::normalize(bsdf.frame.toLocal(sample.incoming));
         const float polar = std::acos(std::fmin(std::fmax(local.z, -1.0F), 1.0F)) / kPi;
         const auto row = std::min(static_cast<std::size_t>(polar * kPolar), kPolar - 1);

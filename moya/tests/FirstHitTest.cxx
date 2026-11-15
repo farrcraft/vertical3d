@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE(moya_firsthit_a_deforming_mesh_moves_as_its_points_do_test)
 }
 
 // a raw value the path tracer does not compute, a value of other components than its channel's,
-// and a light path expression each hold zero
+// and a light path expression of one component each hold zero
 BOOST_AUTO_TEST_CASE(moya_firsthit_a_channel_it_cannot_fill_holds_zero_test) {
     Squared squared;
     squared.channel("unknown", "raw", "curvature", 1);
     squared.channel("narrow", "raw", "normal", 1);
-    squared.channel("light", "lpe", "C<RD>L", 3);
+    squared.channel("light", "lpe", "C<RD>L", 1);
     const film::Snapshot picture = squared.render();
     for (const char * name : { "unknown", "narrow", "light" }) {
         BOOST_TEST(at(picture, name, kInside, kInside) == 0.0F, name);

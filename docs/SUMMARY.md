@@ -245,6 +245,7 @@
     - [ADR-0232: Offline: Cryptomatte coverage is merged on the host](adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md)
     - [ADR-0233: Offline: deep pixels are merged on the host](adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md)
     - [ADR-0234: Offline: denoised channels sit beside noisy ones](adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md)
+    - [ADR-0235: Offline: a bounce samples one closure alone](adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

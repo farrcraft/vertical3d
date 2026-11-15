@@ -20,6 +20,7 @@
 #include <moya/libmoya/kernel/geometry/Traversal.h>
 #include <moya/libmoya/kernel/integrate/Dimensions.h>
 #include <moya/libmoya/kernel/integrate/Event.h>
+#include <moya/libmoya/kernel/integrate/Expressions.h>
 #include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/kernel/integrate/Keeping.h>
 #include <moya/libmoya/kernel/integrate/Opacity.h>
@@ -78,7 +79,7 @@ inline constexpr std::uint32_t kMostPassed = 256;
  * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
  * each camera ray fills where it first meets the scene, and features those a denoiser reads.
  * trail holds kTrailSteps steps for each pixel, row by row, where sample zero records its events,
- * or is empty to record none.
+ * or is empty to record none. expressions are the render's light path expressions.
  **/
 template <geometry::Traversal T, texture::Texels X>
 struct Paths {
@@ -98,6 +99,7 @@ struct Paths {
     Array<FirstHit> firstHits;
     Array<FirstHit> features;
     Array<Step> trail;
+    Expressions expressions;
 };
 
 /**
@@ -117,6 +119,63 @@ MOYA_KERNEL void record(const Paths<T, X> & paths, const PathState & state, cons
             paths.trail[i] = Step { .event = event, .used = 1U, .gathered = gathered ? 1U : 0U };
             return;
         }
+    }
+}
+
+/** Records an event the path goes on from, and steps its expressions' state by it. **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void advance(const Paths<T, X> & paths, PathState & state, const Event & event) {
+    record(paths, state, event, false);
+    if (!paths.expressions.none()) {
+        MOYA_PATH(state, expression) = paths.expressions.step(MOYA_PATH(state, expression), event);
+    }
+}
+
+/**
+ * Adds light a path gathers, already times its throughput, to the channel of each expression a
+ * state of the expressions' automaton accepts, in ACEScg, with the sample's filter weight.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void accepted(const Paths<T, X> & paths, const PathState & state, std::uint32_t at, const spectrum::SampledSpectrum & value) {
+    const std::uint32_t flags = paths.expressions.accepts[at];
+    if (flags == 0U) {
+        return;
+    }
+    const glm::vec3 rgb = spectrum::acescgFromXyz(spectrum::toXyz(value, MOYA_PATH(state, wavelengths)));
+    const glm::uvec2 & pixel = MOYA_PATH(state, pixel);
+    for (std::uint32_t i = 0; i < paths.expressions.channels.size; ++i) {
+        if ((flags & (1U << i)) != 0U) {
+            const Expressions::Channel & channel = paths.expressions.channels[i];
+            paths.pixels.keep(Item { .x = pixel.x, .y = pixel.y }, channel.offset, channel.combine, MOYA_PATH(state, weight), 0.0F, &rgb.x, 3U);
+        }
+    }
+}
+
+/**
+ * Light a path gathers from a light it meets, already times its throughput, recorded by the
+ * light's event and added to each expression that matches the path's events with it. The path's
+ * own state is left as it is.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void gathered(const Paths<T, X> & paths, const PathState & state, const Event & light, const spectrum::SampledSpectrum & value) {
+    record(paths, state, light, true);
+    if (!paths.expressions.none()) {
+        accepted(paths, state, paths.expressions.step(MOYA_PATH(state, expression), light), value);
+    }
+}
+
+/**
+ * Light a light sample gathers through one closure, already times its throughput: recorded by
+ * the closure's bounce and then the light's event, and added to each expression that matches the
+ * path's events with both.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the closure's bounce, then the light
+MOYA_KERNEL void gathered(const Paths<T, X> & paths, const PathState & state, const Event & bounce, const Event & light, const spectrum::SampledSpectrum & value) {
+    record(paths, state, bounce, true);
+    record(paths, state, light, true);
+    if (!paths.expressions.none()) {
+        accepted(paths, state, paths.expressions.step(paths.expressions.step(MOYA_PATH(state, expression), bounce), light), value);
     }
 }
 
@@ -170,7 +229,8 @@ MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, s
     MOYA_PATH(state, weight) = placed.weight;
     MOYA_PATH(state, throughput) = spectrum::SampledSpectrum(1.0F);
     MOYA_PATH(state, radiance) = spectrum::SampledSpectrum(0.0F);
-    record(paths, state, Event {}, false);
+    MOYA_PATH(state, expression) = 0U;
+    advance(paths, state, Event {});
 }
 
 /** Whether a bounce of a kind stays within that kind's depth limit, and counts it. **/
@@ -376,7 +436,10 @@ MOYA_KERNEL float passing(const Paths<T, X> & paths, const light::Light & light,
  * A light that only a light sample finds takes the whole weight, and is sampled whatever the
  * strategy. It lies at one point or along one direction, or its shadow link leaves an instance
  * out. While the BSDF alone finds the lights, a light sample of any other light gathers nothing.
- * A light sample that gathers light records its light's event.
+ *
+ * The light is gathered closure by closure: each closure's projected value towards the light,
+ * weighed against that closure's own density. Each closure's light is gathered after its bounce's
+ * event, so expressions split it by lobe.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
@@ -406,8 +469,13 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
     if (!drawn.found()) {
         return none;
     }
-    const spectrum::SampledSpectrum value = scattering.projected(outgoing, drawn.incoming);
-    if (value.black()) {
+    bsdf::Bsdf::Part parts[bsdf::kMostClosures];
+    bool any = false;
+    for (std::uint32_t i = 0; i < scattering.count && i < bsdf::kMostClosures; ++i) {
+        parts[i] = scattering.part(i, outgoing, drawn.incoming);
+        any = any || !parts[i].projected.black();
+    }
+    if (!any) {
         return none;
     }
     const spectrum::SampledSpectrum emitted = arrivingFrom(paths, place, held, point.position, drawn, MOYA_PATH(state, wavelengths));
@@ -426,9 +494,18 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
     }
     const float density = chance * drawn.density;
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
-    const float weight = weighed ? powerHeuristic(density, scattering.density(outgoing, drawn.incoming)) : 1.0F;
-    record(paths, state, litBy(chosen), true);
-    return value * emitted * (through * weight / density);
+    spectrum::SampledSpectrum out(0.0F);
+    for (std::uint32_t i = 0; i < scattering.count && i < bsdf::kMostClosures; ++i) {
+        const bsdf::Bsdf::Part & part = parts[i];
+        if (part.projected.black()) {
+            continue;
+        }
+        const float weight = weighed ? powerHeuristic(density, part.density) : 1.0F;
+        const spectrum::SampledSpectrum piece = part.projected * emitted * (through * weight / density);
+        out += piece;
+        gathered(paths, state, scatteredBy(part.lobe, false, part.diffuse), litBy(chosen), MOYA_PATH(state, throughput) * piece);
+    }
+    return out;
 }
 
 /**
@@ -460,7 +537,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     if (!drawn.found() || !counted(paths.settings, drawn.lobe, state)) {
         return false;
     }
-    record(paths, state, scatteredBy(drawn), false);
+    advance(paths, state, scatteredBy(drawn));
     MOYA_PATH(state, throughput) *= drawn.projected / drawn.density;
     MOYA_PATH(state, density) = drawn.density;
     MOYA_PATH(state, specular) = drawn.specular ? 1U : 0U;
@@ -529,8 +606,9 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
         const std::uint32_t place = paths.lights.domes[i];
         const float share = metShare(paths, place, geometry::kNoPrimitive, time, MOYA_PATH(state, from) + towards, state);
         if (share > 0.0F) {
-            out += light::domeRadiance(paths.lights, place, paths.lights.placement(place, time), towards, paths.table, wavelengths) * share;
-            record(paths, state, litBy(paths.lights.lights[place]), true);
+            const spectrum::SampledSpectrum piece = light::domeRadiance(paths.lights, place, paths.lights.placement(place, time), towards, paths.table, wavelengths) * share;
+            out += piece;
+            gathered(paths, state, litBy(paths.lights.lights[place]), MOYA_PATH(state, throughput) * piece);
         }
     }
     if (MOYA_PATH(state, bounces) == 0U) {
@@ -545,8 +623,9 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
         }
         const float share = metShare(paths, place, geometry::kNoPrimitive, time, MOYA_PATH(state, from) + towards, state);
         if (share > 0.0F) {
-            out += emitted * share;
-            record(paths, state, litBy(paths.lights.lights[place]), true);
+            const spectrum::SampledSpectrum piece = emitted * share;
+            out += piece;
+            gathered(paths, state, litBy(paths.lights.lights[place]), MOYA_PATH(state, throughput) * piece);
         }
     }
     return out;
@@ -590,9 +669,10 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             const float time = paths.surfaces.held(hit.time);
             const float share = metShare(paths, met, geometry::kNoPrimitive, time, ray.at(hit.distance), state);
             if (share > 0.0F) {
-                MOYA_PATH(state, radiance) +=
+                const spectrum::SampledSpectrum lit =
                     MOYA_PATH(state, throughput) * paths.lights.emitted(met, time, ray, hit, paths.table, MOYA_PATH(state, wavelengths)) * share;
-                record(paths, state, litBy(paths.lights.lights[met]), true);
+                MOYA_PATH(state, radiance) += lit;
+                gathered(paths, state, litBy(paths.lights.lights[met]), lit);
             }
             return;
         }
@@ -608,8 +688,9 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
              glowing = paths.lights.emitting(hit, glowing)) {
             const float share = metShare(paths, glowing, hit.primitive, paths.surfaces.held(hit.time), point.position, state);
             if (share > 0.0F) {
-                MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * light::glow(paths.lights.lights[glowing], paths.table, MOYA_PATH(state, wavelengths)) * share;
-                record(paths, state, litBy(paths.lights.lights[glowing]), true);
+                const spectrum::SampledSpectrum lit = MOYA_PATH(state, throughput) * light::glow(paths.lights.lights[glowing], paths.table, MOYA_PATH(state, wavelengths)) * share;
+                MOYA_PATH(state, radiance) += lit;
+                gathered(paths, state, litBy(paths.lights.lights[glowing]), lit);
             }
         }
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);

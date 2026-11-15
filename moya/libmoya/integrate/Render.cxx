@@ -26,6 +26,7 @@
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/integrate/internal/FirstHits.h>
+#include <moya/libmoya/integrate/internal/LightPaths.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
 #include <moya/libmoya/integrate/internal/TrailSteps.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
@@ -35,6 +36,7 @@
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/material/Albedos.h>
+#include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/scene/Declaration.h>
@@ -159,7 +161,9 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const std::uint32_t least = count(scene, "minSamples");
     const std::vector<film::Channel> channels = output::filmChannelsOf(scene);
     film::Film picture(device, resolution, channels);
-    const internal::FirstHits firstHits(device, output::channelsOf(scene), picture, prototypes.primvarNames, logger);
+    const std::vector<output::Channel> outputs = output::channelsOf(scene);
+    const internal::FirstHits firstHits(device, outputs, picture, prototypes.primvarNames, logger);
+    const internal::LightPaths lightPaths(device, outputs, picture, lights.labels(), logger);
     const std::uint64_t print = checkpoints.path.empty() ? 0U : fingerprint(scene, channels);
     std::uint32_t done = 0;
     if (checkpoints.resume) {
@@ -204,7 +208,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .count = samples,
                 .firstHits = firstHits.view(),
                 .features = firstHits.features(),
-                .trail = trail.view() };
+                .trail = trail.view(),
+                .expressions = lightPaths.view() };
             if (tallies) {
                 device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
                 return;

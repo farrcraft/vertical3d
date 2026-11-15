@@ -58,7 +58,8 @@ pixel in index order.
   what the light emits, and goes on to scatter there. At a shading point, a path gathers a light
   sample, as [Lights](#lights) says.
 - **Scatter** draws a direction from the BSDF at the shading point. The throughput is multiplied by
-  the sample's projected value over its density. A specular sample's holds no cosine, and the
+  the sample's projected value over its density, both of the closure that drew it alone, as
+  [Materials.md](Materials.md) says. A specular sample's holds no cosine, and the
   path marks the sample specular. The ray that leaves
   starts from the shading point's leaving point when it leaves on the geometric normal's side,
   and from the shading point on the other side, offset off the surface as
@@ -129,9 +130,11 @@ met where a ray that leaves the scene lies inside its cone. The options'
   light sample could have drawn its direction. A light sample at a shading point of singular
   closures alone gathers nothing, since they have no value for its direction.
 - **`mis`**, the fallback, weighs the two by multiple importance sampling with the power
-  heuristic. A light sample is weighed by its density against the BSDF's density for its
-  direction. A BSDF sample that meets a light is weighed by its density against the chance of the
-  light times the light's density for the point it met, seen from the shading point it left.
+  heuristic, closure by closure. A light sample gathers each closure's part apart, weighed by the
+  light's density against that closure's density for its direction. A BSDF sample that meets a
+  light is weighed by the density of the closure that drew it. That is weighed against the chance
+  of the light times the light's density for the point it met, seen from the shading point it
+  left.
 - **`light`** finds the lights by light samples alone, and a BSDF sample that meets a light
   gathers nothing.
 - **`bsdf`** finds them by BSDF samples alone. A light sample gathers nothing but the light of a
@@ -245,8 +248,10 @@ the scene. Each is added to its channel by the channel's combine, as
   that is not singular, or meets no surface. The albedo is that of the surface's closures that
   are not singular, under ACES white, so a white surface's is one. The normal is the surface's
   shading normal.
-- **Any other channel holds zero, and is reported**: a raw name not in the table, a raw value of
-  other components than its channel's, and a light path expression.
+- **Any other raw or primvar channel holds zero, and is reported**: a raw name not in the
+  table, and a raw value of other components than its channel's. A light path expression's
+  channel is filled as [Channels of light path expressions](#channels-of-light-path-expressions)
+  says.
 
 ## The events of a path
 
@@ -269,8 +274,11 @@ beside what the path gathers, and change nothing it gathers.
 - **A light's event is reported wherever the path gathers its light.** That is at a light sample
   that brings some in, a light's shape the ray meets, and a mesh light at a shading point. It is
   also at each dome or distant light that a ray leaving the scene meets. A path goes on from the
-  event before a light's, so a light sample's event follows the bounce that arrived at the shading
-  point, and comes before the bounce that leaves it.
+  event before a light's, so a light it meets follows the bounce that sent the path to it.
+- **A light sample is gathered closure by closure**, each part after the event of the bounce its
+  closure would make towards the light, and then the light's. A diffuse wall lit by a light sample
+  reports `<RD>` then `L`, as a bounce to the light would. Those events come after the bounce
+  that arrived at the shading point and before the bounce that leaves it.
 - **A light's label is its light group's**: the place of its `lightGroup` among the render's
   labels, which are the groups' names, sorted, each once. A light whose `lightGroup` is empty, and
   an object, carry none.
@@ -283,7 +291,8 @@ holds the names of the labels. The picture is the same as a render's without one
 lies in the first pass, so a render that resumes past it records nothing.
 
 Background:
-[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md)
+[ADR-0231](../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md),
+[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md)
 
 ## Light path expressions
 
@@ -315,6 +324,24 @@ and a state names each expression the events so far match.
   so two sets of expressions that match the same paths give the same automaton.
 - **A set is refused** with `lpe::Refused` when its automaton holds more than
   `lpe::kMostStates`, 1024, states while it is built.
+
+### Channels of light path expressions
+
+A channel whose `sourceType` is `lpe` and whose `sourceName` is an expression, of three
+components, takes the light of the paths its expression matches, in ACEScg.
+
+- **A render compiles its channels' expressions into one automaton**, under its light groups'
+  labels, and the path state holds the path's state of it. A path steps it at the camera and at
+  each bounce.
+- **Each light the path gathers** steps a copy of that state by the light's event, or by a light
+  sample's closure event and then the light's. The light, times the path's throughput, is added
+  to the channel of each expression the copy accepts, by the channel's combine, with the
+  sample's filter weight. The path's own state is left as it is.
+- **The light is split as the beauty gathers it.** Channels that split every path one way add up
+  to the beauty, to float rounding, and the beauty is the same with any channels or none.
+- **A render takes the first `kernel::integrate::kMostExpressions`, 32, channels of
+  expressions.** One past them, one of other components than three, one whose expression cannot
+  be read, and every one of a set the automaton refuses is reported, and holds zero.
 
 ## Adaptive sampling
 

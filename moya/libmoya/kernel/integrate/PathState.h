@@ -33,6 +33,8 @@
  *   specular, so no light sample could have drawn its direction.
  * - coverage is one once its camera ray meets anything, which the beauty's alpha adds.
  * - featured is one once the path has given a denoiser its albedo and normal, or can no longer.
+ * - expression is the state of the render's light path expressions' automaton after the path's
+ *   events so far.
  **/
 #define MOYA_PATH_FIELDS(FIELD)                                \
     FIELD(glm::uvec2, pixel)                                   \
@@ -54,7 +56,8 @@
     FIELD(std::uint32_t, linked)                               \
     FIELD(std::uint32_t, specular)                             \
     FIELD(float, coverage)                                     \
-    FIELD(std::uint32_t, featured)
+    FIELD(std::uint32_t, featured)                             \
+    FIELD(std::uint32_t, expression)
 
 namespace v3d::moya::kernel::integrate {
 

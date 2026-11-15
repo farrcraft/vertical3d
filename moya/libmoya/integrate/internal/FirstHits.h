@@ -27,8 +27,8 @@ namespace v3d::moya::integrate::internal {
  * A raw channel fills when output::readingNamed() knows its source name and its components are
  * the value's: one for a depth, an instance or a face, two for `st` or a motion, and three for a
  * position, a normal, or a denoiser's albedo or normal. A primvar channel fills from the primvar
- * of its source name, which the gather reads for it. Each other channel is reported, and holds
- * zero.
+ * of its source name, which the gather reads for it. A channel of a light path expression is
+ * LightPaths', and each other channel is reported, and holds zero.
  **/
 class FirstHits final {
  public:
