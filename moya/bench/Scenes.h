@@ -60,4 +60,12 @@ boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::ui
  **/
 boost::shared_ptr<scene::Scene> texturedRoom(float scale, std::uint32_t side, std::uint32_t samples, const std::string & image);
 
+/**
+ * The lit room with the outputs a compositor asks for. It has five light path expressions, and
+ * the rect light in the group key and the disk light in the group fill, with a channel of each.
+ * It has Cryptomatte layers of objects and of materials, and a deep file. The scene is committed
+ * and applied.
+ **/
+boost::shared_ptr<scene::Scene> outputRoom(float scale, std::uint32_t side, std::uint32_t samples);
+
 };  // namespace v3d::moya::bench

@@ -452,6 +452,40 @@ boost::shared_ptr<scene::Scene> texturedRoom(float scale, std::uint32_t side, st
     return out;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> outputRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    scene::Scene & made = *out;
+    // the room's lights are found once it is committed
+    made.commit();
+    made.apply();
+    made.set(*made.find("rectLight", "rect"), "lightGroup", scene::Value::string("key"));
+    made.set(*made.find("diskLight", "disk"), "lightGroup", scene::Value::string("fill"));
+    std::vector<scene::Handle> channels;
+    const std::pair<const char *, const char *> expressions[] = { { "diffuse", "C<.D>.*" }, { "glossy", "C<.G>.*" }, { "specular", "C<.S>.*" },
+        { "emission", "C[LO]" }, { "caustic", "C.*<TG>.*L" }, { "key", "C.*<L.'key'>" }, { "fill", "C.*<L.'fill'>" } };
+    for (const auto & [name, expression] : expressions) {
+        const scene::Handle channel = made.create("channel", name);
+        made.set(channel, "sourceType", scene::Value::string("lpe"));
+        made.set(channel, "sourceName", scene::Value::string(expression));
+        channels.push_back(channel);
+    }
+    for (const auto & [name, source] : { std::pair { "CryptoObject", "crypto_object" }, std::pair { "CryptoMaterial", "crypto_material" } }) {
+        const scene::Handle channel = made.create("channel", name);
+        made.set(channel, "sourceName", scene::Value::string(source));
+        channels.push_back(channel);
+    }
+    const scene::Handle picture = made.create("output", "picture");
+    made.set(picture, "file", scene::Value::string("outputs.exr"));
+    made.set(picture, "channels", scene::Value::handles(channels));
+    const scene::Handle deep = made.create("output", "deep");
+    made.set(deep, "file", scene::Value::string("outputs-deep.exr"));
+    made.set(deep, "format", scene::Value::string("deepexr"));
+    made.commit();
+    made.apply();
+    return out;
+}
+
 std::vector<Fixed> scenes(float scale) {
     std::vector<Fixed> out { smallTriangles(scale), largeTriangles(), curves(scale), instances(scale), motion(scale) };
     for (const Fixed & fixed : out) {

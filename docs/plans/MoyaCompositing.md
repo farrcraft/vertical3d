@@ -134,7 +134,7 @@ among the options before the record is drafted.
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | done |
 | [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | done |
-| [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | open |
+| [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | done |
 | [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | open |
 
 ## What blocks what
@@ -674,6 +674,12 @@ held more loosely than its own noise would allow.
 * **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
 
 **Tests:** the benchmark's short pass times the room with its outputs.
+
+**Done.** `moya_bench` prints a third table, the lit room with its outputs beside the plain room
+in the same rounds. `integrate::Profile` gains `coverage` and `deep`, the host's seconds after
+each pass in merging coverage and joining deep lists. In `x64-Release` on the baseline's machine,
+the outputs keep about 94 percent of the plain room's rate. Coverage takes about one percent of
+the time and deep lists under two, so the rest of the cost is on the device.
 
 ### Step 21 — The documents
 

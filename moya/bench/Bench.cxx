@@ -225,6 +225,35 @@ void lit(const std::string & name, const scene::Scene & room, const std::vector<
     }
 }
 
+/**
+ * Times the integrator over the lit room and over the room with its outputs at each instruction
+ * set, the fastest of some renders of each, and prints a row of the third table for each. The row
+ * gives the room with outputs' samples a second and that rate as a share of the plain room's. It
+ * also gives the shares of its time the host took after each pass to add Cryptomatte coverage and
+ * to join deep lists.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the samples per pixel
+void outputs(const scene::Scene & plain, const scene::Scene & covered, const std::vector<cpu::Isa> & isas, std::uint32_t side, std::uint32_t samples,
+    std::uint32_t repeats) {
+    const boost::shared_ptr<log::Logger> logger = boost::make_shared<log::Logger>();
+    const double taken = static_cast<double>(side) * side * samples;
+    for (const cpu::Isa isa : isas) {
+        device::CpuDevice device(0, isa);
+        integrate::Profile fastest { .seconds = std::numeric_limits<double>::infinity() };
+        integrate::Profile fastestPlain { .seconds = std::numeric_limits<double>::infinity() };
+        for (std::uint32_t repeat = 0; repeat < repeats; ++repeat) {
+            integrate::Profile once;
+            integrate::render(device, plain, logger, colour::Config(), {}, &once);
+            fastestPlain = once.seconds < fastestPlain.seconds ? once : fastestPlain;
+            integrate::render(device, covered, logger, colour::Config(), {}, &once);
+            fastest = once.seconds < fastest.seconds ? once : fastest;
+        }
+        std::cout << "| lit room with outputs | " << device::isaName(isa) << " | " << fixed(taken / fastest.seconds / kMillion, 3) << " | "
+                  << fixed(100.0 * fastestPlain.seconds / fastest.seconds, 1) << " | " << fixed(100.0 * fastest.coverage / fastest.seconds, 1) << " | "
+                  << fixed(100.0 * fastest.deep / fastest.seconds, 1) << " |\n";
+    }
+}
+
 int run(int argc, char * argv[]) {
     boost::program_options::options_description described("Allowed options");
     described.add_options()("help", "produce help message")(
@@ -280,6 +309,9 @@ int run(int argc, char * argv[]) {
     // the textured room's image is written where the system keeps temporary files
     const std::string image = (boost::filesystem::temp_directory_path() / "moya_bench_image.exr").string();
     lit("textured room", *texturedRoom(scale, pixels, samples, image), isas, pixels, samples, repeats);
+    std::cout << "\n| outputs | isa | Msamples/s | rate of the lit room % | coverage % | deep % |\n";
+    std::cout << "|---|---|---:|---:|---:|---:|\n";
+    outputs(*litRoom(scale, pixels, samples), *outputRoom(scale, pixels, samples), isas, pixels, samples, repeats);
     return EXIT_SUCCESS;
 }
 

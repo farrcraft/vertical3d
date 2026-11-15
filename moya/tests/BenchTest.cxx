@@ -86,6 +86,26 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_every_scene_test) {
     }
 }
 
+// a short pass times the lit room with its outputs, at a rate of samples, and the shares of its
+// time in adding Cryptomatte coverage and deep lists lie between none and all
+BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_room_with_outputs_test) {
+    const Run run = bench("--quick --isa sse42");
+    BOOST_TEST_REQUIRE(run.succeeded, run.printed);
+    const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "lit room with outputs");
+    BOOST_TEST_REQUIRE(rows.size() == 1U);
+    // the cells after the leading bar: scene, isa, samples a second, the plain room's rate as a
+    // share, and the shares in coverage and in deep lists
+    const std::vector<std::string> & cells = rows.front();
+    BOOST_TEST_REQUIRE(cells.size() >= 7U);
+    BOOST_TEST(cells[2] == "sse42");
+    BOOST_TEST(std::stod(cells[3]) > 0.0);
+    BOOST_TEST(std::stod(cells[4]) > 0.0);
+    for (std::size_t i = 5; i < 7U; ++i) {
+        BOOST_TEST(std::stod(cells[i]) > 0.0);
+        BOOST_TEST(std::stod(cells[i]) < 100.0);
+    }
+}
+
 // a short pass times the integrator over the lit room, at a rate of samples and of rays. There
 // are more rays than samples, since a sample traces a camera ray and its lights' shadow rays. The
 // share of the time in traversal lies between none and all

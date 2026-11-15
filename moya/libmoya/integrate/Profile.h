@@ -35,6 +35,13 @@ struct Profile {
      **/
     double programs { 0.0 };
     double lookups { 0.0 };
+
+    /**
+     * The seconds the host took after each pass, summed, to add its samples' Cryptomatte coverage
+     * and to join their deep lists. Each is part of seconds.
+     **/
+    double coverage { 0.0 };
+    double deep { 0.0 };
 };
 
 };  // namespace v3d::moya::integrate

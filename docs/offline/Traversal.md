@@ -538,8 +538,18 @@ out/build/x64-Release/moya/bench/moya_bench.exe --isa avx2 # one
   OpenPBR's base under a coat. Its base colour is an image of 1024 by 1024 texels the benchmark
   writes, and its specular roughness is the image's red. The floor's `st` runs over the image
   four times each way.
+- **A third table times the lit room with outputs.** These are the outputs a compositor asks for:
+  - five light path expressions, split by the first bounce's scattering, by emission and by
+    caustics;
+  - the rect light in the group `key` and the disk light in the group `fill`, with a channel of
+    each;
+  - Cryptomatte layers of objects and of materials, and a deep file.
+
+  It renders with the plain lit room in each of three rounds, and keeps the fastest of each. It
+  gives the samples a second and that rate as a share of the plain room's. It also gives the
+  shares of the time the host takes after each pass to merge Cryptomatte coverage and deep lists.
 - **`--quick` is a short pass**, the scenes 256 times smaller and 1024 rays of each kind traced
-  once, and both rooms at 16 by 16 pixels and 4 samples. The textured room's image is then 64
+  once, and the rooms at 16 by 16 pixels and 4 samples. The textured room's image is then 64
   texels to a side. moya's suite runs it in every build so
   the benchmark does not rot.
 - **`moya/bench/Baseline.md` holds a run** on one machine, so a later change is measured against

@@ -388,6 +388,9 @@ fallback, a render keeps no checkpoint.
 
 - **`seconds` is always measured**: the time the passes took, summed, without the noise checks
   and checkpoints between them.
+- **`coverage` and `deep` are always measured too.** They are the seconds the host took after
+  each pass, summed, to merge its samples' Cryptomatte coverage and to join their deep lists.
+  Each is part of `seconds`, and each is zero for a render with neither output.
 - **A counted render**, with `counted` true, runs the CPU library's `profiled` entry point in
   place of `paths`. It wraps the traversal in `device::cpu::Profiled`, which counts each ray into
   its pixel's `device::cpu::Tally` and reads the processor's time-stamp counter around it, and the
@@ -404,5 +407,5 @@ fallback, a render keeps no checkpoint.
   around every ray makes it slower, so its `seconds` is not the render's speed. A benchmark times
   one render and counts another.
 
-`moya_bench` times the integrator this way over a lit room and a textured one, as
+`moya_bench` times the integrator this way over a lit room, a textured one and one with outputs, as
 [Traversal.md](Traversal.md#speed) describes.

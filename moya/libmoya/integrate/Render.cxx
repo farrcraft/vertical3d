@@ -36,7 +36,6 @@
 #include <moya/libmoya/integrate/internal/TrailSteps.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
-#include <moya/libmoya/kernel/integrate/Covered.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
@@ -130,12 +129,17 @@ std::uint32_t resumed(const std::string & path, const std::vector<film::Channel>
     return state.passes;
 }
 
-/** Fills a profile with the seconds the passes took and, for a counted render, its tallies. **/
-void profiled(Profile * profile, double seconds, const std::optional<internal::Tallies> & tallies) {
+/**
+ * Fills a profile with the seconds the passes took, the seconds adding what they covered took, and,
+ * for a counted render, its tallies.
+ **/
+void profiled(Profile * profile, double seconds, const internal::Kept & kept, const std::optional<internal::Tallies> & tallies) {
     if (profile == nullptr) {
         return;
     }
     profile->seconds = seconds;
+    profile->coverage = kept.coverageSeconds;
+    profile->deep = kept.deepSeconds;
     if (tallies) {
         tallies->into(*profile);
     }
@@ -275,9 +279,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
             }
             device.launch(resolution.x, resolution.y, params, entry);
         });
-        const std::vector<kernel::integrate::Covered> taken = records.taken(samples);
-        kept.coverage.add(taken, samples);
-        kept.deep.add(taken, samples);
+        kept.add(records.taken(samples), samples);
         ++done;
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         passing += std::chrono::duration<double>(now - began).count();
@@ -290,7 +292,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     if (!checkpoints.path.empty() && written != done) {
         output::writeCheckpoint(checkpoints.path, stateOf(picture, kept), print);
     }
-    profiled(profile, passing, tallies);
+    profiled(profile, passing, kept, tallies);
     if (trails != nullptr) {
         trail.into(*trails, lights.labels());
     }
