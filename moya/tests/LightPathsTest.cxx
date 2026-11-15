@@ -164,8 +164,13 @@ BOOST_AUTO_TEST_CASE(moya_lightpaths_one_diffuse_bounce_matches_a_render_of_one_
     BOOST_TEST(lit > 0.0);
 }
 
-// light path expressions add channels and change nothing the paths gather, so a render with five
-// gives the same beauty, bit for bit, as one with none
+/**
+ * Light path expressions add channels and change nothing the paths gather, so a render with five
+ * gives the same beauty, bit for bit, as one with none.
+ *
+ * Passes before the change: before it, no expression reaches the paths at all, and adding light
+ * to channels as the paths gather it is the change that could disturb the beauty.
+ **/
 BOOST_AUTO_TEST_CASE(moya_lightpaths_expressions_leave_the_beauty_as_it_is_test) {
     Staged plain(8, 16);
     room(plain);
