@@ -179,6 +179,20 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         handler->display({.name = first, .type = second, .mode = third}, list);
         return Result::Handled;
     }
+    if (name == "DisplayChannel") {
+        if (!operands_.text(lexer, &first) || !operands_.parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        handler->displayChannel({ .declaration = first }, list);
+        return Result::Handled;
+    }
+    if (name == "SampleFilter") {
+        if (!operands_.text(lexer, &first) || !operands_.handle(lexer, &second) || !operands_.parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        handler->sampleFilter({ .type = first, .handle = second }, list);
+        return Result::Handled;
+    }
     if (name == "FrameBegin") {
         if (!operands_.number(lexer, &arg1)) {
             return Result::Failed;

@@ -5,6 +5,10 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/device/CpuDevice.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -12,6 +16,7 @@
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <sstream>
 #include <string>
@@ -148,9 +153,10 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_displays_add_and_replace_outputs_test) {
     BOOST_TEST((read.value("output", "first.exr", "channels") == scene::Value::handles({})));
     BOOST_TEST((read.value("output", "depth.png", "format") == scene::Value::string("png")));
     BOOST_TEST((read.value("output", "depth.png", "channels") == scene::Value::handles({ *made.find("channel", "z") })));
-    // a mode names a value the renderer computes, or a light path expression after lpe:
+    // a mode names a value the renderer computes, RenderMan's z the depth, or a light path
+    // expression after lpe:
     BOOST_TEST((read.value("channel", "z", "sourceType") == scene::Value::string("raw")));
-    BOOST_TEST((read.value("channel", "z", "sourceName") == scene::Value::string("z")));
+    BOOST_TEST((read.value("channel", "z", "sourceName") == scene::Value::string("depth")));
     BOOST_TEST((read.value("channel", "lpe:C<RD>L", "sourceType") == scene::Value::string("lpe")));
     BOOST_TEST((read.value("channel", "lpe:C<RD>L", "sourceName") == scene::Value::string("C<RD>L")));
     BOOST_TEST((read.value("output", "view", "format") == scene::Value::string("framebuffer")));
@@ -159,6 +165,88 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_displays_add_and_replace_outputs_test) {
     const Read replaced("Display \"first.exr\" \"file\" \"rgba\"\nDisplay \"second.exr\" \"file\" \"rgba\"\nWorldBegin\nWorldEnd\n");
     BOOST_TEST(replaced.scene().objects("output").size() == 1U);
     BOOST_TEST(replaced.scene().find("output", "second.exr").has_value());
+}
+
+// a DisplayChannel declares a channel of its declaration's name, of its type's components, that
+// collects its source: an expression after lpe:, or a value, RenderMan's z the depth. Its filter
+// and denoise carry over. A Display's mode names its channels apart by commas, and Ci and a name
+// the beauty. A display of the type deepexr is a deep file
+BOOST_AUTO_TEST_CASE(moya_sceneclient_display_channels_name_what_an_output_holds_test) {
+    const Read read(
+        "DisplayChannel \"varying color diffuse\" \"string source\" [\"color lpe:C<RD>L\"] \"string filter\" [\"sum\"] \"int denoise\" [1]\n"
+        "DisplayChannel \"float z\" \"string source\" [\"float z\"] \"string filter\" [\"zmin\"]\n"
+        "Display \"out.exr\" \"openexr\" \"Ci,a, diffuse ,z\"\n"
+        "Display \"+deep.exr\" \"deepexr\" \"rgba\"\n"
+        "WorldBegin\nWorldEnd\n");
+    const scene::Scene & made = read.scene();
+    BOOST_TEST((read.value("output", "out.exr", "channels") == scene::Value::handles({ *made.find("channel", "diffuse"), *made.find("channel", "z") })));
+    BOOST_TEST((read.value("channel", "diffuse", "sourceType") == scene::Value::string("lpe")));
+    BOOST_TEST((read.value("channel", "diffuse", "sourceName") == scene::Value::string("C<RD>L")));
+    BOOST_TEST((read.value("channel", "diffuse", "components") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("channel", "diffuse", "filter") == scene::Value::string("sum")));
+    BOOST_TEST((read.value("channel", "diffuse", "denoise") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("channel", "z", "sourceName") == scene::Value::string("depth")));
+    BOOST_TEST((read.value("channel", "z", "components") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("channel", "z", "filter") == scene::Value::string("closest")));
+    BOOST_TEST((read.value("output", "deep.exr", "format") == scene::Value::string("deepexr")));
+}
+
+// RenderMan's PxrCryptomatte adds an output of its file, in floats, of one Cryptomatte layer of
+// what its layer names. Option "moya" asks for the beauty denoised and sets the deep tolerance
+BOOST_AUTO_TEST_CASE(moya_sceneclient_cryptomatte_and_denoising_come_from_ri_test) {
+    const Read read(
+        "SampleFilter \"PxrCryptomatte\" \"ids\" \"string filename\" [\"ids.exr\"] \"string layer\" [\"Material\"]\n"
+        "Option \"moya\" \"int denoise\" [1] \"float deepTolerance\" [0.01]\n"
+        "WorldBegin\nWorldEnd\n");
+    const scene::Scene & made = read.scene();
+    BOOST_TEST((read.value("output", "ids.exr", "channels") == scene::Value::handles({ *made.find("channel", "CryptoMaterial") })));
+    BOOST_TEST((read.value("output", "ids.exr", "precision") == scene::Value::string("float")));
+    BOOST_TEST((read.value("channel", "CryptoMaterial", "sourceName") == scene::Value::string("crypto_material")));
+    BOOST_TEST((read.value("options", "options", "denoise") == scene::Value::integer(1)));
+    BOOST_TEST(read.value("options", "options", "deepTolerance").floatArray().front() == 0.01F);
+}
+
+// a light's "string lightGroup" names its light group, on RI's LightSource and RenderMan's Light
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_names_its_group_test) {
+    const Read read(
+        "WorldBegin\n"
+        "Attribute \"identifier\" \"name\" [\"key\"]\n"
+        "Light \"PxrRectLight\" \"keyLight\" \"string lightGroup\" [\"key\"]\n"
+        "Attribute \"identifier\" \"name\" [\"fill\"]\n"
+        "LightSource \"pointlight\" 1 \"string lightGroup\" [\"fill\"]\n"
+        "WorldEnd\n");
+    const scene::Scene & made = read.scene();
+    std::vector<std::string> groups;
+    for (const char * kind : { "rectLight", "sphereLight" }) {
+        for (const scene::Handle & light : made.objects(kind)) {
+            groups.push_back(made.value(light, "lightGroup").stringArray().front());
+        }
+    }
+    std::sort(groups.begin(), groups.end());
+    BOOST_TEST((groups == std::vector<std::string> { "fill", "key" }));
+}
+
+// a RIB file that names a light path expression and a light group's channel renders both: the
+// dome in the group key lights the square, so both channels hold light where it lies
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_expression_and_a_light_group_from_ri_render_test) {
+    const Read read(
+        "Format 16 16 1\n"
+        "PixelSamples 4 4\n"
+        "Projection \"perspective\" \"fov\" [40]\n"
+        "Clipping 0.01 100\n"
+        "Translate 0 0 5\n"
+        "DisplayChannel \"color keyed\" \"string source\" [\"color lpe:C.*<L.'key'>\"]\n"
+        "DisplayChannel \"color diffuse\" \"string source\" [\"color lpe:C<RD>L\"]\n"
+        "Display \"lit.exr\" \"openexr\" \"Ci,keyed,diffuse\"\n"
+        "WorldBegin\n"
+        "Light \"PxrDomeLight\" \"sky\" \"string lightGroup\" [\"key\"]\n"
+        "Surface \"matte\"\n"
+        "Polygon \"P\" [-1 -1 0  1 -1 0  1 1 0  -1 1 0]\n"
+        "WorldEnd\n");
+    v3d::moya::device::CpuDevice device;
+    const v3d::moya::film::Snapshot picture = v3d::moya::integrate::render(device, read.scene(), {}, v3d::moya::colour::Config());
+    BOOST_TEST(picture.at(8, 8, picture.offset("keyed")) > 0.0F);
+    BOOST_TEST(picture.at(8, 8, picture.offset("diffuse")) > 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_each_frame_is_a_commit_test) {

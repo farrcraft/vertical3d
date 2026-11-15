@@ -16,6 +16,7 @@
 #include <api/render/offline/rib/requests/DepthOfField.h>
 #include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/DisplayChannel.h>
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
@@ -95,6 +96,22 @@ class Handler {
     }
     virtual void pixelVariance(float variation) { (void)variation; }
     virtual void display(const requests::Display & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    /**
+     * RenderMan's `DisplayChannel`: a channel a later Display's mode can name, and what it
+     * collects. RI has no such request, so the default body ignores it.
+     **/
+    virtual void displayChannel(const requests::DisplayChannel & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    /**
+     * RenderMan's `SampleFilter`: a filter of a type and a handle that each camera sample passes
+     * through, such as `PxrCryptomatte`. RI has no such request, so the default body ignores it.
+     **/
+    virtual void sampleFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }

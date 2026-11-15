@@ -133,9 +133,23 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   do not rise is logged, and keeps its first time alone.
 - **A display becomes an output named after its file.** A name starting with `+` adds an output,
   and any other replaces every output before it. A `.png` file is written as PNG, and any other
-  as EXR, unless the type is `"framebuffer"`. A mode of `"rgb"` or `"rgba"` writes the beauty
-  alone, and any other mode adds a channel named after the mode. A mode after `lpe:` is the
-  channel's light path expression, and any other is the name of a value the renderer computes.
+  as EXR, unless the type is `"framebuffer"`, or `"deepexr"` for a deep file. The mode names the
+  channels the output holds beside the beauty, apart by commas, as RenderMan's do. `rgb`, `rgba`,
+  `Ci` and `a` name the beauty. Any other name is a `DisplayChannel`'s, or a channel named after
+  it whose source is the name.
+- **RenderMan's `DisplayChannel` declares a channel**, named as its declaration is, such as
+  `"varying color diffuse"`, of three components for a colour, point, vector or normal and one
+  for any other type. Its `"string source"`, after the source's type, is `lpe:` and a light path
+  expression, or a value at the first hit, RenderMan's `z`, `P` and `Nn` read as the depth, the
+  position and the normal. A channel of no source collects the value its name names. Its
+  `"string filter"` of `min`, `max`, `sum` or `zmin`, the closest, sets how its samples combine,
+  and its `"int denoise"` of 1 writes it denoised beside it.
+- **RenderMan's `PxrCryptomatte` sample filter adds a Cryptomatte output** of its
+  `"string filename"`, in floats. Its `"string layer"` names what the IDs name: `Name` an object,
+  `Material` a material, and `Path` an asset, each a layer named CryptoObject, CryptoMaterial or
+  CryptoAsset. Any other sample filter is logged and changes nothing.
+- **A light's `"string lightGroup"` names its light group**, on RI's `LightSource` and on
+  RenderMan's `Light`.
 - **A projection other than perspective or orthographic** is logged and changes nothing.
 - **`WorldEnd` commits the frame**, and calls the function the client's `frame()` was given, where
   the scene's owner applies the batch. A file of several frames is a scene that changes between
@@ -242,6 +256,9 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **A block the world opened ends with it.** An `AttributeBegin` or `ObjectBegin` still open at
   `WorldEnd` is closed there, with a warning, so the next world's geometry names no object the
   new world removed.
+- **`Option "moya"` sets moya's own options**: its `"int denoise"` of 1 writes the beauty
+  denoised beside it, and its `"float deepTolerance"` sets how near two depths join in a deep
+  file.
 - **`Option "searchpath" "texture"` sets the options' `textureSearchPath`**, each `&` in it
   standing for the path before, as RI says. `Option "limits" "texturememory"` sets
   `textureMemory`, in kilobytes, and a limit below one or above what an integer holds is logged

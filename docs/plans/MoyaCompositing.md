@@ -132,7 +132,7 @@ among the options before the record is drafted.
 | [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | done |
 | [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | done |
 | [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | done |
-| [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | open |
+| [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
 | [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | open |
 | [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | open |
@@ -633,6 +633,17 @@ without `--paths`. libmoya now links OIDN privately.
 
 **Tests:** a RIB file of each output gives the scene the channels and outputs it names. A RIB
 file that names an expression and a light group renders both.
+
+**Done.** The RIB library reads, writes and records `DisplayChannel` and `SampleFilter`, which a
+handler ignores by default. The scene client makes a channel of each `DisplayChannel`, of its
+type's components. Its source is an expression after `lpe:` or a value at the first hit, with
+RenderMan's `z`, `P` and `Nn` read as the depth, the position and the normal. Its filter and its
+`denoise` carry over. A `Display` mode names channels apart by commas, `Ci` and `a` the beauty,
+and the type `deepexr` is a deep file. `PxrCryptomatte` is a sample filter in RenderMan, not a
+`Display`, so its `filename` and `layer` make a Cryptomatte output. A light's `lightGroup` is read
+on `LightSource` and `Light`, and `Option "moya"` sets `denoise` and `deepTolerance`. A display
+mode of `z` now reads the depth, where it made a channel of no source before. `moya --scene`
+already printed every output, so the committed descriptions are unchanged.
 
 ### Step 19 — The reference renders
 

@@ -122,6 +122,9 @@ class Lights final {
         bool integer;
     };
 
+    /** Give a light the light group its request's `"string lightGroup"` names, if any. **/
+    void grouped(const scene::Handle & made, const v3d::render::offline::rib::ParameterList & parameters);
+
     /** Give a light of a kind each RenderMan parameter a request holds, by its UsdLux name. **/
     void rename(const scene::Handle & made, const std::string & kind, const v3d::render::offline::rib::ParameterList & parameters);
 

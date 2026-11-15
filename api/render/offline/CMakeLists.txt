@@ -37,6 +37,7 @@ v3d_add_api_library(render_offline
 	"rib/requests/DepthOfField.h"
 	"rib/requests/Disk.h"
 	"rib/requests/Display.h"
+	"rib/requests/DisplayChannel.h"
 	"rib/requests/Format.h"
 	"rib/requests/Hyperboloid.h"
 	"rib/requests/LightSource.h"

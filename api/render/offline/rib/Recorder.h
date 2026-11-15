@@ -16,6 +16,7 @@
 #include <api/render/offline/rib/requests/DepthOfField.h>
 #include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/DisplayChannel.h>
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
@@ -88,6 +89,8 @@ class Recorder final : public Handler {
     void pixelFilter(film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     void display(const requests::Display & request, const ParameterList & parameters) override;
+    void displayChannel(const requests::DisplayChannel & request, const ParameterList & parameters) override;
+    void sampleFilter(const requests::ShadingNode & request, const ParameterList & parameters) override;
 
     void frameBegin(int frame) override;
     void frameEnd() override;

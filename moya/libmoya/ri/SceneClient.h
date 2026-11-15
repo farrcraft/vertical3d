@@ -152,10 +152,33 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /**
      * A display whose name starts with `+` adds an output. Any other replaces every output
      * before it, as RI says. A file ending in `.png` is written as PNG, and any other as EXR,
-     * unless the type is `"framebuffer"`. A mode of `"rgb"` or `"rgba"` writes the beauty alone.
-     * Any other mode adds a channel of that source, named after it.
+     * unless the type is `"framebuffer"`, or `"deepexr"` for a deep file. The mode names the
+     * channels the output holds beside the beauty, as RenderMan's do, apart by commas. `rgb`,
+     * `rgba`, `Ci` and `a` name the beauty. Any other name is a DisplayChannel's, or a channel
+     * of that source, named after it, as displayChannel() reads a source.
      **/
     void display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+
+    /**
+     * Declares a channel of the declaration's name, of three components for a colour, point,
+     * vector or normal and one for any other type. Its `"string source"` is what it collects,
+     * after the source's type: `lpe:` and a light path expression, or a value at the first hit.
+     * RenderMan's `z`, `P` and `Nn` are the depth, the position and the normal, and any other
+     * name is read as moya names its values. A channel of no source collects the value its own
+     * name names. Its `"string filter"` is how its samples combine: `min`, `max`, `sum`, or
+     * `zmin` for the closest, and the default for any other. Its `"int denoise"` of 1 writes it
+     * denoised beside it.
+     **/
+    void displayChannel(const v3d::render::offline::rib::requests::DisplayChannel & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
+
+    /**
+     * RenderMan's `PxrCryptomatte` adds an output of its `"string filename"`, in floats, of one
+     * Cryptomatte layer. Its `"string layer"` names what the IDs name: `Name` or `object` an
+     * object, `Material` or `material` a material, and `Path` or `asset` an asset. The layer is
+     * named CryptoObject, CryptoMaterial or CryptoAsset. Any other sample filter is reported.
+     **/
+    void sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * Makes the texture file at once, as texture::make() does, in the colour space the
@@ -340,6 +363,13 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     /** The output named after a display's file, made when there is none. **/
     scene::Handle output(const std::string & file);
+
+    /**
+     * A channel of a name that collects a source: `lpe:` and an expression, or a value.
+     * RenderMan's z, P and Nn are read as the depth, the position and the normal. Components
+     * above zero set its own.
+     **/
+    scene::Handle channelOf(const std::string & name, const std::string & source, std::int32_t components);
 
     scene::Scene & scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;

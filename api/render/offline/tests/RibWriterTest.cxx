@@ -91,6 +91,8 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->pixelFilter(v3d::render::offline::film::Filter::CatmullRom, 3, 2);
     to->pixelVariance(0.01F);
     to->display({.name = "out.tif", .type = "file", .mode = "rgba"}, none);
+    to->displayChannel({ .declaration = "varying color diffuse" }, one("source", UNIFORM_STRING, {}, { "color lpe:C<RD>L" }));
+    to->sampleFilter({ .type = "PxrCryptomatte", .handle = "ids" }, one("layer", UNIFORM_STRING, {}, { "Material" }));
     to->frameBegin(7);
     to->transform(glm::mat4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));  // NOLINT(build/include_what_you_use)
     to->worldBegin();

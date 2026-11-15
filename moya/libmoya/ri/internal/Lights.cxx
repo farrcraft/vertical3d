@@ -102,6 +102,7 @@ scene::Handle Lights::light(const std::string & kind, const std::string & name, 
     aimed.set(scene_, made, "transform", logger_);
     scene_->set(made, "colour", scene::Value::colour(pointOf(parameters, "lightcolor", glm::vec3(1.0F))));
     scene_->set(made, "intensity", scene::Value::number(parameters.number("intensity", 1.0F)));
+    grouped(made, parameters);
     return made;
 }
 
@@ -132,6 +133,12 @@ bool Lights::source(const v3d::render::offline::rib::requests::LightSource & req
     return true;
 }
 
+void Lights::grouped(const scene::Handle & made, const ParameterList & parameters) {
+    if (parameters.has("lightGroup")) {
+        scene_->set(made, "lightGroup", scene::Value::string(parameters.string("lightGroup")));
+    }
+}
+
 void Lights::rename(const scene::Handle & made, const std::string & kind, const ParameterList & parameters) {
     // what every RenderMan light holds
     static constexpr Renamed kEvery[] = { { .from = "intensity", .to = "intensity", .integer = false },
@@ -151,6 +158,7 @@ void Lights::rename(const scene::Handle & made, const std::string & kind, const 
     for (const Renamed & each : kEvery) {
         copy(each);
     }
+    grouped(made, parameters);
     if (parameters.has("lightColor")) {
         scene_->set(made, "colour", scene::Value::colour(pointOf(parameters, "lightColor", glm::vec3(1.0F))));
     }

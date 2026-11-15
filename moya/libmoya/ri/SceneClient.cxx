@@ -19,6 +19,7 @@
 #include <api/render/offline/rib/requests/DepthOfField.h>
 #include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/DisplayChannel.h>
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
@@ -173,23 +174,105 @@ void SceneClient::display(const v3d::render::offline::rib::requests::Display & r
     std::string format = endsWith(file, ".png") ? "png" : "exr";
     if (request.type == "framebuffer") {
         format = "framebuffer";
+    } else if (request.type == "deepexr") {
+        format = "deepexr";
     }
     scene_.set(made, "format", scene::Value::string(format));
 
     std::vector<scene::Handle> channels;
-    if (request.mode != "rgb" && request.mode != "rgba" && !request.mode.empty()) {
-        const auto held = channels_.find(request.mode);
-        if (held == channels_.end()) {
-            const scene::Handle channel = scene_.create("channel", request.mode);
-            const std::string lpe = "lpe:";
-            const bool expression = request.mode.starts_with(lpe);
-            scene_.set(channel, "sourceType", scene::Value::string(expression ? "lpe" : "raw"));
-            scene_.set(channel, "sourceName", scene::Value::string(expression ? request.mode.substr(lpe.size()) : request.mode));
-            channels_[request.mode] = channel;
+    std::size_t from = 0;
+    while (from <= request.mode.size()) {
+        const std::size_t comma = std::min(request.mode.find(',', from), request.mode.size());
+        std::string name = request.mode.substr(from, comma - from);
+        name.erase(0, name.find_first_not_of(' '));
+        name.erase(name.find_last_not_of(' ') + 1U);
+        from = comma + 1U;
+        if (name.empty() || name == "rgb" || name == "rgba" || name == "Ci" || name == "a") {
+            continue;
         }
-        channels.push_back(channels_[request.mode]);
+        if (channels_.find(name) == channels_.end()) {
+            channels_[name] = channelOf(name, name, 0);
+        }
+        channels.push_back(channels_[name]);
     }
     scene_.set(made, "channels", scene::Value::handles(channels));
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the channel's name, then its source
+scene::Handle SceneClient::channelOf(const std::string & name, const std::string & source, std::int32_t components) {
+    const scene::Handle channel = scene_.create("channel", name);
+    const std::string lpe = "lpe:";
+    const bool expression = source.starts_with(lpe);
+    static const std::map<std::string, std::string> kRenderMan { { "z", "depth" }, { "P", "position" }, { "Nn", "normal" } };
+    const auto renamed = kRenderMan.find(source);
+    scene_.set(channel, "sourceType", scene::Value::string(expression ? "lpe" : "raw"));
+    std::string named = renamed != kRenderMan.end() ? renamed->second : source;
+    if (expression) {
+        named = source.substr(lpe.size());
+    }
+    scene_.set(channel, "sourceName", scene::Value::string(named));
+    if (components > 0) {
+        scene_.set(channel, "components", scene::Value::integer(components));
+    }
+    return channel;
+}
+
+void SceneClient::displayChannel(const v3d::render::offline::rib::requests::DisplayChannel & request,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    std::vector<std::string> words;
+    std::size_t at = 0;
+    while (at < request.declaration.size()) {
+        const std::size_t next = std::min(request.declaration.find(' ', at), request.declaration.size());
+        if (next > at) {
+            words.push_back(request.declaration.substr(at, next - at));
+        }
+        at = next + 1U;
+    }
+    if (words.empty()) {
+        warnings_.once("display channel", "a DisplayChannel that declares no name makes no channel");
+        return;
+    }
+    const std::string name = words.back();
+    static const std::set<std::string> kTriples { "color", "point", "vector", "normal" };
+    const bool triple = std::any_of(words.begin(), words.end() - 1, [](const std::string & word) { return kTriples.contains(word); });
+    std::string source = parameters.has("source") ? parameters.string("source") : name;
+    const std::size_t space = source.rfind(' ');
+    source = space == std::string::npos ? source : source.substr(space + 1U);
+    if (channels_.find(name) != channels_.end()) {
+        scene_.remove(channels_[name]);
+    }
+    const scene::Handle channel = channelOf(name, source, triple ? 3 : 1);
+    static const std::map<std::string, std::string> kFilters { { "min", "min" }, { "max", "max" }, { "sum", "sum" }, { "zmin", "closest" } };
+    const auto filter = kFilters.find(parameters.has("filter") ? parameters.string("filter") : std::string());
+    if (filter != kFilters.end()) {
+        scene_.set(channel, "filter", scene::Value::string(filter->second));
+    }
+    if (parameters.has("denoise")) {
+        scene_.set(channel, "denoise", scene::Value::integer(parameters.number("denoise", 0.0F) != 0.0F ? 1 : 0));
+    }
+    channels_[name] = channel;
+}
+
+void SceneClient::sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (request.type != "PxrCryptomatte") {
+        warnings_.once("sample filter " + request.type, "the sample filter " + request.type + " is not one moya reads, so it changes nothing");
+        return;
+    }
+    static const std::map<std::string, std::pair<std::string, std::string>> kLayers { { "Name", { "CryptoObject", "crypto_object" } },
+        { "object", { "CryptoObject", "crypto_object" } }, { "Material", { "CryptoMaterial", "crypto_material" } },
+        { "material", { "CryptoMaterial", "crypto_material" } }, { "Path", { "CryptoAsset", "crypto_asset" } }, { "asset", { "CryptoAsset", "crypto_asset" } } };
+    const auto layer = kLayers.find(parameters.has("layer") ? parameters.string("layer") : std::string("Name"));
+    if (layer == kLayers.end()) {
+        warnings_.once("cryptomatte layer", "a PxrCryptomatte layer other than Name, Material or Path makes no output");
+        return;
+    }
+    const std::string file = parameters.has("filename") ? parameters.string("filename") : std::string("cryptomatte.exr");
+    const scene::Handle made = output(file);
+    scene_.set(made, "format", scene::Value::string("exr"));
+    scene_.set(made, "precision", scene::Value::string("float"));
+    const scene::Handle channel = channelOf(layer->second.first, layer->second.second, 0);
+    channels_[layer->second.first] = channel;
+    scene_.set(made, "channels", scene::Value::handles({ channel }));
 }
 
 void SceneClient::option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
@@ -201,6 +284,12 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
         }
         textureSearchPath_ = path;
         scene_.set(options_, "textureSearchPath", scene::Value::string(path));
+    }
+    if (name == "moya" && parameters.has("denoise")) {
+        scene_.set(options_, "denoise", scene::Value::integer(parameters.number("denoise", 0.0F) != 0.0F ? 1 : 0));
+    }
+    if (name == "moya" && parameters.has("deepTolerance")) {
+        scene_.set(options_, "deepTolerance", scene::Value::number(parameters.number("deepTolerance", 0.0F)));
     }
     if (name == "limits" && parameters.has("texturememory")) {
         const float kilobytes = parameters.number("texturememory", 0.0F);

@@ -16,6 +16,7 @@
 #include <api/render/offline/rib/requests/DepthOfField.h>
 #include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/DisplayChannel.h>
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
@@ -222,6 +223,14 @@ void Writer::pixelVariance(float variation) {
 
 void Writer::display(const requests::Display & request, const ParameterList & parameters) {
     start("Display").text(request.name).text(request.type).text(request.mode).parameters(parameters).end();
+}
+
+void Writer::displayChannel(const requests::DisplayChannel & request, const ParameterList & parameters) {
+    start("DisplayChannel").text(request.declaration).parameters(parameters).end();
+}
+
+void Writer::sampleFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
+    start("SampleFilter").text(request.type).text(request.handle).parameters(parameters).end();
 }
 
 void Writer::frameBegin(int frame) {

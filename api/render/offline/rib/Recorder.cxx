@@ -16,6 +16,7 @@
 #include <api/render/offline/rib/requests/DepthOfField.h>
 #include <api/render/offline/rib/requests/Disk.h>
 #include <api/render/offline/rib/requests/Display.h>
+#include <api/render/offline/rib/requests/DisplayChannel.h>
 #include <api/render/offline/rib/requests/Format.h>
 #include <api/render/offline/rib/requests/Hyperboloid.h>
 #include <api/render/offline/rib/requests/LightSource.h>
@@ -113,6 +114,14 @@ void Recorder::pixelVariance(float variation) {
 
 void Recorder::display(const requests::Display & request, const ParameterList & parameters) {
     requests_.emplace_back([request, parameters](Handler & to) { to.display(request, parameters); });
+}
+
+void Recorder::displayChannel(const requests::DisplayChannel & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.displayChannel(request, parameters); });
+}
+
+void Recorder::sampleFilter(const requests::ShadingNode & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.sampleFilter(request, parameters); });
 }
 
 void Recorder::frameBegin(int frame) {

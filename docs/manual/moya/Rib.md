@@ -76,7 +76,9 @@ Options set up the picture and the camera. Put them before `WorldBegin`. They ta
 | `CropWindow xmin xmax ymin ymax` | Renders only that part of the picture. See [Output.md](Output.md#render-part-of-the-picture) |
 | `Projection "name" "fov" [degrees]` | `"perspective"` or `"orthographic"`. Default orthographic, with a fov of 90 for perspective |
 | `Clipping near far` | The nearest and furthest distances drawn. Default 1e-10 to 1e38 |
-| `Display "file" "type" "mode"` | The file to write. Only type `"file"` writes. The mode is ignored |
+| `Display "file" "type" "mode"` | The file to write. Only type `"file"` writes. The mode is ignored, but with `--paths` it names the channels the file holds, and type `"deepexr"` writes a deep file |
+| `DisplayChannel "type name" params` | With `--paths`, a channel a `Display` mode can name, and what its `"string source"` collects, as RenderMan writes them. The hiders ignore it |
+| `SampleFilter "PxrCryptomatte" handle params` | With `--paths`, a Cryptomatte file of its `"string filename"` and `"string layer"`. The hiders ignore it |
 | `Imager "name" params` | An imager shader, run over the finished picture. `"background"` is built in |
 | `PixelSamples x y` | Samples per pixel along each axis, from 1 to 256. Default 2 2 |
 | `PixelFilter "name" xwidth ywidth` | `"box"`, `"triangle"`, `"catmull-rom"`, `"gaussian"` or `"sinc"`. Default gaussian 2 2 |
@@ -210,4 +212,5 @@ again.
 
 Requests such as `Orientation`, `Sides`, `ReadArchive`, `Patch` and `NuPatch` are skipped with a
 warning, as is every request this page does
-not list. moya has no volume shaders, no shadow maps and no `Display` mode other than RGB.
+not list. moya has no volume shaders and no shadow maps, and its hiders write no `Display` mode
+other than RGB.
