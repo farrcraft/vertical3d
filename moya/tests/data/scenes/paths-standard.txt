@@ -52,6 +52,7 @@ options "options"
     camera handle = camera "camera"
     crop float[4] = 0 1 0 1
     deepTolerance float = 0.001
+    denoise integer = 0
     dicingCamera handle = none
     diffuseDepth integer = 4
     edgeLength float = 1

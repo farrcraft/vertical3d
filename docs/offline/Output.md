@@ -89,6 +89,31 @@ An output of the format `deepexr` writes the snapshot's deep samples, as
 - **A deep file is compressed by none, RLE or ZIPS**, which is all OpenEXR's deep files take. Any
   other compression the output asks for is written as ZIPS, ZIP the fallback among them.
 
+## Denoised channels
+
+A render denoises its beauty, and each channel the scene marks, after its last pass, through
+OIDN's `RT` filter on its CPU device, in `denoise::denoise()`.
+
+- **What is denoised.** The beauty is denoised while the options' `denoise` is 1, or under
+  `moya --paths --denoise`. A channel is denoised while its own `denoise` is 1, which suits a
+  light path expression or a light group.
+- **A denoised copy sits beside its noisy original.** The beauty's is the channel
+  `beauty_denoised`, and a channel's is its name followed by `_denoised`, both of ACEScg's three
+  components. An EXR output starts with the denoised beauty, and follows each marked channel it
+  names with its copy.
+- **One albedo and one normal guide every copy**: the scene's raw `albedo` and `denoisingNormal`
+  channels of three components, or `denoiseAlbedo` and `denoiseNormal`, which a render that
+  denoises adds when the scene names neither. OIDN filters each guide first, and then every copy
+  with `cleanAux` set. The normal is in world space.
+- **moya gives each picture's input scale**: 0.18 over the exponent of the mean log luminance of
+  the pixels that hold light, summed in pixel order. OIDN's own estimate is not used.
+- **A denoised copy is the same on every run.** OIDN's `RT` filter gives the same floats on one
+  thread and on every thread, so it runs on its own count of threads.
+- **A filter that fails is reported**, and its copy holds the noisy picture.
+
+Background:
+[ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md)
+
 ## Cryptomatte
 
 An output of a Cryptomatte layer writes it as the Cryptomatte specification lays it out.

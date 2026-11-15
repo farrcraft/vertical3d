@@ -119,6 +119,7 @@ Kind options() {
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
             Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } },
             Declaration { .name = "deepTolerance", .type = Type::Float, .fallback = Value::number(kDeepTolerance) },
+            Declaration { .name = "denoise", .type = Type::Integer, .fallback = Value::integer(0) },
             Declaration { .name = "lightPicking", .type = Type::String, .fallback = Value::string("tree"), .choices = { "tree", "power" } },
             Declaration { .name = "textureSearchPath", .type = Type::String, .fallback = Value::string("") },
             Declaration { .name = "textureMemory", .type = Type::Integer, .fallback = Value::integer(kTextureMemory) },
@@ -135,7 +136,8 @@ Kind channel() {
                 .fallback = Value::string("default"),
                 .choices = { "default", "mean", "sum", "closest", "min", "max" } },
             Declaration { .name = "components", .type = Type::Integer, .fallback = Value::integer(kColourComponents) },
-            Declaration { .name = "ranks", .type = Type::Integer, .fallback = Value::integer(kCryptomatteRanks) } } };
+            Declaration { .name = "ranks", .type = Type::Integer, .fallback = Value::integer(kCryptomatteRanks) },
+            Declaration { .name = "denoise", .type = Type::Integer, .fallback = Value::integer(0) } } };
 }
 
 Kind output() {

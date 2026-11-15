@@ -172,6 +172,17 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_checkpoints_it_cannot_keep_test) 
     BOOST_TEST(below.printed.find("--checkpoint-interval cannot be below zero") != std::string::npos, below.printed);
 }
 
+// --denoise denoises the path tracer's picture, so it is refused without --paths, and with
+// --maketexture, which reads no scene
+BOOST_AUTO_TEST_CASE(moya_command_line_refuses_denoise_without_paths_test) {
+    const Run alone = moya(std::string(kScene) + " --denoise");
+    BOOST_TEST(!alone.succeeded);
+    BOOST_TEST(alone.printed.find("--denoise can only be given with --paths") != std::string::npos, alone.printed);
+    const Run texture = moya("--maketexture a.png a.tx --denoise");
+    BOOST_TEST(!texture.succeeded);
+    BOOST_TEST(texture.printed.find("--denoise cannot be given with --maketexture") != std::string::npos, texture.printed);
+}
+
 /** A file's bytes. **/
 std::string bytesOf(const boost::filesystem::path & path) {
     std::ifstream stream(path.string(), std::ios::binary);

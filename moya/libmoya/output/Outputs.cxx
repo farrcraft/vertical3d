@@ -20,13 +20,17 @@
 #include <moya/libmoya/output/Cryptomatte.h>
 #include <moya/libmoya/output/DeepExr.h>
 #include <moya/libmoya/output/ExrMetadata.h>
+#include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Schema.h>
 
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <string_view>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -35,6 +39,20 @@
 namespace v3d::moya::output {
 
 namespace {
+
+/** An integer of the scene's options, or the fallback while the scene has none. **/
+std::int32_t option(const scene::Scene & scene, const std::string & name) {
+    const std::vector<scene::Handle> options = scene.objects("options");
+    if (!options.empty()) {
+        return scene.value(options.front(), name).integerArray().front();
+    }
+    for (const scene::Declaration & declaration : scene.schema().kind(*scene.schema().find("options")).parameters) {
+        if (declaration.name == name) {
+            return declaration.fallback.integerArray().front();
+        }
+    }
+    return 0;
+}
 
 const std::string & stringOf(const scene::Scene & scene, const scene::Handle & object, const std::string & parameter) {
     return scene.value(object, parameter).stringArray().front();
@@ -117,10 +135,29 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
                                              .combine = combineOf(stringOf(scene, channel, "filter"), source, sourceName) },
                 .source = source,
                 .sourceName = sourceName,
-                .ranks = static_cast<std::uint32_t>(std::max(scene.value(channel, "ranks").integerArray().front(), 1)) });
+                .ranks = static_cast<std::uint32_t>(std::max(scene.value(channel, "ranks").integerArray().front(), 1)),
+                .denoised = scene.value(channel, "denoise").integerArray().front() != 0 });
+        }
+    }
+    const bool denoising = denoisesBeauty(scene) || std::any_of(channels.begin(), channels.end(), [](const Channel & each) { return each.denoised; });
+    for (const auto & [name, reading] : { std::pair { kDenoiseAlbedo, "albedo" }, std::pair { kDenoiseNormal, "denoisingNormal" } }) {
+        const bool held = std::any_of(channels.begin(), channels.end(), [&](const Channel & each) {
+            return each.source == Source::Raw && each.sourceName == reading && each.film.components == 3U;
+        });
+        if (denoising && !held) {
+            channels.push_back(Channel {
+                .film = { .name = std::string(name), .components = 3U, .combine = kernel::film::Combine::Mean }, .source = Source::Raw, .sourceName = reading });
         }
     }
     return channels;
+}
+
+bool denoisesBeauty(const scene::Scene & scene) {
+    return option(scene, "denoise") != 0;
+}
+
+std::string denoisedOf(const std::string & channel) {
+    return channel + std::string(kDenoised);
 }
 
 std::vector<film::Channel> filmChannelsOf(const scene::Scene & scene) {
@@ -129,11 +166,17 @@ std::vector<film::Channel> filmChannelsOf(const scene::Scene & scene) {
         const std::optional<Cryptomatte> layer = cryptomatteOf(channel);
         if (!layer) {
             film.push_back(channel.film);
+            if (channel.denoised) {
+                film.push_back(film::Channel { .name = denoisedOf(channel.film.name), .components = 3U, .combine = kernel::film::Combine::Sum });
+            }
             continue;
         }
         for (const std::string & ranked : rankChannelsOf(*layer)) {
             film.push_back(film::Channel { .name = ranked, .components = 2U * kRanksPerChannel, .combine = kernel::film::Combine::Sum });
         }
+    }
+    if (denoisesBeauty(scene)) {
+        film.push_back(film::Channel { .name = denoisedOf(std::string(kBeauty)), .components = 3U, .combine = kernel::film::Combine::Sum });
     }
     return film;
 }
@@ -152,12 +195,18 @@ std::vector<Output> outputsOf(const scene::Scene & scene) {
             const std::optional<Cryptomatte> layer = named == every.end() ? std::nullopt : cryptomatteOf(*named);
             if (!layer) {
                 output.channels.push_back(scene.name(channel));
+                if (named != every.end() && named->denoised) {
+                    output.channels.push_back(denoisedOf(named->film.name));
+                }
                 continue;
             }
             const std::vector<std::string> ranked = rankChannelsOf(*layer);
             output.channels.insert(output.channels.end(), ranked.begin(), ranked.end());
             output.floats.insert(output.floats.end(), ranked.begin(), ranked.end());
             output.cryptomattes.push_back(layer->name);
+        }
+        if (denoisesBeauty(scene) && output.format == Format::Exr) {
+            output.channels.insert(output.channels.begin(), denoisedOf(std::string(kBeauty)));
         }
         outputs.push_back(output);
     }

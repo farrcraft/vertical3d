@@ -13,6 +13,7 @@
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
+#include <moya/libmoya/denoise/Denoise.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/cpu/ProfileParams.h>
@@ -140,11 +141,16 @@ void profiled(Profile * profile, double seconds, const std::optional<internal::T
     }
 }
 
-/** A film's snapshot, with each Cryptomatte layer's ranks and manifest, and its deep samples. **/
-film::Snapshot finished(const film::Film & picture, const internal::Kept & kept) {
+/**
+ * A film's snapshot, with each Cryptomatte layer's ranks and manifest, its deep samples, and the
+ * denoised copies the scene asks for.
+ **/
+film::Snapshot finished(const film::Film & picture, const internal::Kept & kept, const scene::Scene & scene, const std::vector<output::Channel> & channels,
+    const boost::shared_ptr<log::Logger> & logger) {
     film::Snapshot out = picture.snapshot();
     kept.coverage.into(out);
     kept.deep.into(out);
+    denoise::denoise(out, channels, output::denoisesBeauty(scene), logger);
     return out;
 }
 
@@ -289,7 +295,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
         trail.into(*trails, lights.labels());
     }
     textures.report();
-    return finished(picture, kept);
+    return finished(picture, kept, scene, outputs, logger);
 }
 
 };  // namespace v3d::moya::integrate

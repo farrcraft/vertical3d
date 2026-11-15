@@ -5,7 +5,7 @@ moya.exe --file <scene.rib> [--output <image>] [--width <n> --height <n>]
          [--grid <n>] [--bucket <n>] [--silent]
 moya.exe --file <scene.rib> --scene
 moya.exe --file <scene.rib> --hits [--output <image.exr>]
-moya.exe --file <scene.rib> --paths [--output <image>] [--checkpoint <file> [--checkpoint-interval <seconds>] [--resume]]
+moya.exe --file <scene.rib> --paths [--output <image>] [--checkpoint <file> [--checkpoint-interval <seconds>] [--resume]] [--denoise]
 moya.exe --maketexture <image> <texture> [--swrap <mode>] [--twrap <mode>] [--filter <name>]
          [--swidth <n>] [--twidth <n>] [--colorspace <space>]
 moya.exe --help
@@ -38,6 +38,7 @@ the directories on a search path. Give full paths to work with files elsewhere.
 | `--checkpoint <file>` | With `--paths`, write a checkpoint of the render to the file after each pass, as an EXR file, so a render that is stopped can continue. A file of several frames leaves the last frame's |
 | `--checkpoint-interval <seconds>` | Write the checkpoint at most once in the given seconds, in place of after every pass. The last pass is always written. Needs `--checkpoint` |
 | `--resume` | Continue the render the `--checkpoint` file holds, at the pass after its last, and write the same picture a render that never stopped writes. A checkpoint of another scene, or of the same scene changed, is refused. In a file of several frames the first frame resumes, and the frames after it start afresh. Needs `--checkpoint` |
+| `--denoise` | Denoise the beauty after the last pass, and write it beside the noisy beauty in each EXR output as `beauty_denoised`, as the scene's options' `denoise` asks. Only with `--paths` |
 | `--maketexture <image> <texture>` | Make a texture from an image, in place of rendering, and write it to the texture file as a tiled, mipmapped EXR file. The image is an `.exr`, `.png`, `.jpg`, `.jpeg`, `.tga` or `.bmp` file. A colour image is converted into ACEScg |
 | `--swrap <mode>` `--twrap <mode>` | How the texture is read beyond its edge along s and along t: `black`, `clamp` or `periodic`. Default `black` |
 | `--filter <name>` | The filter each smaller level of the texture is made with: `box`, `triangle`, `catmull-rom`, `gaussian` or `sinc`. Default `box` |
@@ -56,17 +57,17 @@ the directories on a search path. Give full paths to work with files elsewhere.
   `--hits`, an `--output` that does not end in `.exr` is refused, and with `--paths` one that
   ends in neither `.exr` nor `.png`. moya prints a line
   that says which option was refused, and exits with failure.
-- `--checkpoint`, `--checkpoint-interval` and `--resume` are refused without `--paths`. The
-  interval and `--resume` are refused without `--checkpoint`, and an interval below zero is
-  refused. A `--resume` whose checkpoint is missing or belongs to another scene prints `error:`
-  and the reason, and moya exits with failure.
-- `--maketexture` is refused with `--file`, `--output` and every option that renders, and has to
-  name two files. `--swrap`, `--twrap`, `--filter`, `--swidth`, `--twidth` and `--colorspace` are
-  refused without it, and so is a wrap mode or filter not in its list, or a width that is not
-  above zero and at most 64. moya prints a line that says which, and exits with failure. A
-  texture that cannot be made, from an image that does not read or in a colour space the
-  configuration lacks, prints `error making the texture - ` and the reason, and moya exits with
-  failure.
+- `--checkpoint`, `--checkpoint-interval`, `--resume` and `--denoise` are refused without
+  `--paths`. The interval and `--resume` are refused without `--checkpoint`, and an interval below
+  zero is refused. A `--resume` whose checkpoint is missing or belongs to another scene prints
+  `error:` and the reason, and moya exits with failure.
+- `--maketexture` is refused with `--file`, `--output`, `--denoise` and every option that renders,
+  and has to name two files. `--swrap`, `--twrap`, `--filter`, `--swidth`, `--twidth` and
+  `--colorspace` are refused without it, and so is a wrap mode or filter not in its list, or a
+  width that is not above zero and at most 64. moya prints a line that says which, and exits with
+  failure. A texture that cannot be made, from an image that does not read or in a colour space
+  the configuration lacks, prints `error making the texture - ` and the reason, and moya exits
+  with failure.
 - An option moya does not recognise, or one with a value that is not a number where a number is
   needed, prints `error:` and the reason, and moya exits with failure.
 

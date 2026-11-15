@@ -11,14 +11,17 @@
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Description.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/texture/Maker.h>
 #include <moya/libmoya/view/Hits.h>
 
@@ -97,7 +100,7 @@ std::string textureConflict(const boost::program_options::variables_map& var_map
         return {};
     }
     for (const char* const option : { "file", "output", "width", "height", "scene", "hits", "paths", "checkpoint", "checkpoint-interval", "resume",
-             "grid", "bucket" }) {
+             "denoise", "grid", "bucket" }) {
         if (var_map.count(option) > 0) {
             return "--" + std::string(option) + " cannot be given with --maketexture, which reads no scene";
         }
@@ -138,8 +141,9 @@ std::string outputConflict(const std::string & mode, std::string name) {
  * PNG file, so its --output has to end in .exr or .png.
  *
  * Only the path tracer keeps a checkpoint, so --checkpoint, --checkpoint-interval and --resume
- * are refused without --paths. The interval and --resume each need --checkpoint, which names
- * the file, and the interval cannot be below zero.
+ * are refused without --paths, and so is --denoise, which denoises the path tracer's picture. The
+ * interval and --resume each need --checkpoint, which names the file, and the interval cannot be
+ * below zero.
  **/
 std::string conflict(const boost::program_options::variables_map& var_map) {
     for (const char* const option : { "checkpoint", "checkpoint-interval", "resume" }) {
@@ -154,6 +158,9 @@ std::string conflict(const boost::program_options::variables_map& var_map) {
     }
     if (var_map.count("checkpoint-interval") > 0 && var_map["checkpoint-interval"].as<double>() < 0.0) {
         return "--checkpoint-interval cannot be below zero";
+    }
+    if (var_map.count("denoise") > 0 && var_map.count("paths") == 0) {
+        return "--denoise can only be given with --paths, whose path tracer's picture it denoises";
     }
     std::vector<std::string> modes;
     for (const char* const mode : { "scene", "hits", "paths" }) {
@@ -225,14 +232,19 @@ int showHits(const std::string & infile, const std::string & outfile, const boos
 
 /**
  * The outputs a frame writes: the scene's, with the first one's file replaced by outfile when it
- * is given. A scene with no output writes its beauty to outfile, or to paths.exr, in floats.
+ * is given. A scene with no output writes its beauty to outfile, or to paths.exr, in floats, with
+ * the beauty denoised beside it when the options ask for it.
  **/
 std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Scene & scene, const std::string & outfile) {
     std::vector<v3d::moya::output::Output> outputs = v3d::moya::output::outputsOf(scene);
     if (outputs.empty()) {
+        std::vector<std::string> channels;
+        if (v3d::moya::output::denoisesBeauty(scene)) {
+            channels.push_back(v3d::moya::output::denoisedOf(std::string(v3d::moya::output::kBeauty)));
+        }
         outputs.push_back({ .file = outfile.empty() ? std::string("paths.exr") : outfile,
             .format = v3d::moya::output::Format::Exr,
-            .channels = {},
+            .channels = channels,
             .precision = v3d::moya::output::Precision::Float,
             .compression = v3d::moya::output::Compression::Zip });
     } else if (!outfile.empty()) {
@@ -247,12 +259,13 @@ std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Sc
 /**
  * Read a file into the new core's scene, and write the outputs it names from the picture its
  * integrator renders after each frame the file commits, in place of rendering it with the hiders.
+ * When denoising, each frame's options ask for the beauty denoised.
  * A file of several frames leaves the last frame's. A checkpoint holds one frame, so a resume
  * continues the first frame, and each frame after it starts afresh and writes its checkpoint over
  * the one before.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
-int renderPaths(const std::string & infile, const std::string & outfile, const v3d::moya::integrate::Checkpoints & checkpoints,
+int renderPaths(const std::string & infile, const std::string & outfile, const v3d::moya::integrate::Checkpoints & checkpoints, bool denoising,
     const boost::shared_ptr<v3d::log::Logger> & logger) {
     v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
     v3d::moya::ri::SceneClient client(scene, logger);
@@ -261,6 +274,15 @@ int renderPaths(const std::string & infile, const std::string & outfile, const v
     v3d::moya::integrate::Checkpoints kept = checkpoints;
     client.frame([&]() {
         scene.apply();
+        if (denoising) {
+            std::vector<v3d::moya::scene::Handle> options = scene.objects("options");
+            if (options.empty()) {
+                options.push_back(scene.create("options", "options"));
+            }
+            scene.set(options.front(), "denoise", v3d::moya::scene::Value::integer(1));
+            scene.commit();
+            scene.apply();
+        }
         const v3d::moya::film::Snapshot picture = v3d::moya::integrate::render(device, scene, logger, config, kept);
         kept.resume = false;
         for (const v3d::moya::output::Output & output : outputsWritten(scene, outfile)) {
@@ -351,6 +373,7 @@ boost::program_options::options_description optionsOf() {
         ("checkpoint-interval", boost::program_options::value<double>(),
             "the least seconds between two checkpoints, in place of one after every pass; needs --checkpoint")
         ("resume", "continue the render the --checkpoint file holds, at the pass after its last; needs --checkpoint")
+        ("denoise", "write the path tracer's beauty denoised beside it, as beauty_denoised; only with --paths")
         ("grid", boost::program_options::value<int>(),
             "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
         ("bucket", boost::program_options::value<int>(),
@@ -427,7 +450,7 @@ int run(int argc, char *argv[]) {
         return describe(infile, logger);
     }
     if (var_map.count("paths") != 0) {
-        return renderPaths(infile, outfile, checkpointsOf(var_map), logger);
+        return renderPaths(infile, outfile, checkpointsOf(var_map), var_map.count("denoise") > 0, logger);
     }
     v3d::moya::ri::RIBHandler handler;
 

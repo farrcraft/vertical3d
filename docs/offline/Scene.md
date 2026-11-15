@@ -56,7 +56,8 @@ then derived as RI derives it.
   [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its
   light: `tree`, the fallback, or `power`, as [Lights.md](Lights.md#drawing-a-light) says.
   `deepTolerance`, 0.001 by default, is how far apart two samples' depths may lie, as a share of
-  the first, and still join in a deep file, as [Film.md](Film.md#deep-lists) says.
+  the first, and still join in a deep file, as [Film.md](Film.md#deep-lists) says. `denoise` is 1
+  to write the beauty denoised beside it, as [Output.md](Output.md#denoised-channels) says.
   `textureSearchPath` holds the directories a texture's relative path is looked for in.
   `textureMemory` is the most kilobytes the texture tiles held take, 1 GiB until a client sets
   it. `textureDirectory` is where an image that is not a texture is made into one, as
@@ -70,7 +71,8 @@ then derived as RI derives it.
   `mean` for any other. The channel's name is the object's. A raw channel of the source name
   `crypto_object`, `crypto_material` or `crypto_asset` is a Cryptomatte layer of that name, and
   `ranks`, 6 by default, is how many of each pixel's IDs it keeps, as
-  [Film.md](Film.md#cryptomatte-coverage) says.
+  [Film.md](Film.md#cryptomatte-coverage) says. `denoise` is 1 to write a channel denoised beside
+  it, as [Output.md](Output.md#denoised-channels) says.
 - **`output`**: `file` and `format`, which is `exr`, `deepexr`, `png` or `framebuffer`.
   `channels`, the channels it writes beside the beauty, which is alone when there are none.
   `precision`, `half` or `float`, and `compression`, one of OpenEXR's.

@@ -15,6 +15,7 @@
 #include <moya/libmoya/scene/Scene.h>
 
 #include <optional>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -31,17 +32,39 @@ std::optional<kernel::integrate::Reading> readingNamed(const std::string & name)
 
 /**
  * Every channel a scene's outputs name, each once, in the order the outputs name them. A channel
- * no output names is not rendered.
+ * no output names is not rendered. A render that denoises anything ends with the albedo and the
+ * normal that guide it, kDenoiseAlbedo and kDenoiseNormal, unless the scene names its own.
  *
  * A channel's filter names its combine: `mean`, `sum`, `closest`, `min` or `max`. Its
  * default is the closest for a raw depth, position, instance or face, and the mean for any other.
  **/
 std::vector<Channel> channelsOf(const scene::Scene & scene);
 
-/** The film channels of channelsOf(), the channels a film is made with. **/
+/**
+ * The film channels of channelsOf(), the channels a film is made with. A Cryptomatte layer is the
+ * channels of its ranks, and a denoised channel is followed by its denoised copy, of three
+ * components. A render that denoises its beauty ends with the denoised beauty's channel.
+ **/
 std::vector<film::Channel> filmChannelsOf(const scene::Scene & scene);
 
-/** The scene's outputs, in the order the scene holds them. **/
+/** The names of the guides a render that denoises adds when the scene names none of its own. **/
+inline constexpr std::string_view kDenoiseAlbedo = "denoiseAlbedo";
+inline constexpr std::string_view kDenoiseNormal = "denoiseNormal";
+
+/** What a denoised copy's name adds to the name of the channel it copies, or to the beauty's. **/
+inline constexpr std::string_view kDenoised = "_denoised";
+
+/** Whether the scene's options ask for the beauty denoised. **/
+bool denoisesBeauty(const scene::Scene & scene);
+
+/** The name of a channel's denoised copy. **/
+std::string denoisedOf(const std::string & channel);
+
+/**
+ * The scene's outputs, in the order the scene holds them. An EXR output of a render that denoises
+ * its beauty starts with the denoised beauty, and each denoised channel it names is followed by
+ * its denoised copy.
+ **/
 std::vector<Output> outputsOf(const scene::Scene & scene);
 
 /** The format a file's name gives: PNG for a name ending in .png in any case, else EXR. **/

@@ -74,6 +74,7 @@ add_library("v3dlib_moya"
 	"colour/internal/Processor.h"
 	"${V3D_MOYA_ACESCG_TABLE}"
 
+	"denoise/Denoise.h" "denoise/Denoise.cxx"
 	"device/Buffer.h"
 	"device/CpuDevice.h" "device/CpuDevice.cxx"
 	"device/CpuLibrary.h" "device/CpuLibrary.cxx"
@@ -275,10 +276,10 @@ endif()
 # maker's sources include TBB, and only the EXR files' sources and the texture maker's include
 # OpenEXR and Imath. Only the colour configuration's source and its internal headers include
 # OpenColorIO, only the subdivision surface's OpenSubdiv, and only the material library's source
-# and its internal header MaterialX. OpenSubdiv is linked static on every platform, as vcpkg builds
-# it on Windows.
+# and its internal header MaterialX, and only the denoiser's source OIDN. OpenSubdiv is linked
+# static on every platform, as vcpkg builds it on Windows.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise TBB::tbb)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
 # platforms, and finds it by its path.

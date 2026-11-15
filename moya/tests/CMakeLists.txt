@@ -24,6 +24,7 @@ v3d_add_test(moya
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"
 	"DeepTest.cxx"
+	"DenoiseTest.cxx"
 	"DenoiserTest.cxx"
 	"DeviceTest.cxx"
 	"ExrTest.cxx"

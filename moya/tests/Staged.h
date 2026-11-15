@@ -43,8 +43,11 @@ struct Staged {
 
     v3d::moya::scene::Scene made { v3d::moya::scene::kinds() };
 
+    /** The scene's options. **/
+    v3d::moya::scene::Handle options;
+
     explicit Staged(std::int32_t depth, std::int32_t samples = 4) {
-        const v3d::moya::scene::Handle options = made.create("options", "options");
+        options = made.create("options", "options");
         const v3d::moya::scene::Handle camera = made.create("camera", "camera");
         made.set(options, "camera", v3d::moya::scene::Value::handle(camera));
         made.set(options, "resolution", v3d::moya::scene::Value::integers({ kSide, kSide }));

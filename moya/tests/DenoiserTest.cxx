@@ -5,6 +5,8 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -16,6 +18,36 @@ namespace {
 constexpr std::size_t kSize = 32;
 constexpr float kGrey = 0.5F;
 constexpr std::size_t kBorder = 4;
+
+/** A noisy picture of a gradient, each float moved by a seeded draw, the same on every run. **/
+std::vector<float> noisy(std::size_t size) {
+    std::vector<float> out(size * size * 3);
+    std::uint32_t seed = 7;
+    for (std::size_t i = 0; i < out.size(); ++i) {
+        seed = (seed * 1664525U) + 1013904223U;
+        const float draw = static_cast<float>(seed >> 8U) / static_cast<float>(1U << 24U);
+        out[i] = (static_cast<float>(i / 3 % size) / static_cast<float>(size)) + (0.5F * (draw - 0.5F));
+    }
+    return out;
+}
+
+/** A picture the RT filter denoises on a CPU device of a count of threads, or its own for zero. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the count of threads
+std::vector<float> denoised(const std::vector<float> & colour, std::size_t size, int threads) {
+    oidn::DeviceRef device = oidn::newDevice(oidn::DeviceType::CPU);
+    if (threads != 0) {
+        device.set("numThreads", threads);
+    }
+    device.commit();
+    std::vector<float> output(colour.size(), 0.0F);
+    oidn::FilterRef filter = device.newFilter("RT");
+    filter.setImage("color", const_cast<float *>(colour.data()), oidn::Format::Float3, size, size);
+    filter.setImage("output", output.data(), oidn::Format::Float3, size, size);
+    filter.set("hdr", true);
+    filter.commit();
+    filter.execute();
+    return output;
+}
 
 // OIDN is built static with its CPU device alone, so a device of the default type is the CPU's
 BOOST_AUTO_TEST_CASE(moya_denoiser_the_default_device_is_the_cpu_test) {
@@ -66,6 +98,18 @@ BOOST_AUTO_TEST_CASE(moya_denoiser_a_constant_picture_denoises_to_itself_test) {
     }
     BOOST_TEST(furthest < 0.02F * kGrey);
     BOOST_TEST(std::fabs((sum / static_cast<double>(kSize * kSize)) - kGrey) < 0.005 * kGrey);
+}
+
+// the RT filter gives the same floats, bit for bit, on one thread, on every thread, and again on
+// every thread
+BOOST_AUTO_TEST_CASE(moya_denoiser_the_filter_gives_one_picture_on_any_count_of_threads_test) {
+    constexpr std::size_t kNoisy = 96;
+    const std::vector<float> colour = noisy(kNoisy);
+    const std::vector<float> one = denoised(colour, kNoisy, 1);
+    const std::vector<float> every = denoised(colour, kNoisy, 0);
+    const std::vector<float> again = denoised(colour, kNoisy, 0);
+    BOOST_TEST(std::memcmp(one.data(), every.data(), one.size() * sizeof(float)) == 0);
+    BOOST_TEST(std::memcmp(every.data(), again.data(), every.size() * sizeof(float)) == 0);
 }
 
 };  // namespace
