@@ -106,10 +106,21 @@ void SceneClient::frame(const std::function<void()> & committed) {
     committed_ = committed;
 }
 
-void SceneClient::format(const v3d::render::offline::rib::requests::Format & request) {
-    const int width = request.width == 0 ? kWidth : static_cast<int>(request.width);
-    const int height = request.height == 0 ? kHeight : static_cast<int>(request.height);
+bool SceneClient::resolution(int width, int height) {
+    if (!v3d::render::offline::film::resolution(static_cast<float>(width)) || !v3d::render::offline::film::resolution(static_cast<float>(height))) {
+        return false;
+    }
+    resolution_ = glm::ivec2(width, height);
     scene_.set(options_, "resolution", scene::Value::integers({ width, height }));
+    return true;
+}
+
+void SceneClient::format(const v3d::render::offline::rib::requests::Format & request) {
+    if (!resolution_) {
+        const int width = request.width == 0 ? kWidth : static_cast<int>(request.width);
+        const int height = request.height == 0 ? kHeight : static_cast<int>(request.height);
+        scene_.set(options_, "resolution", scene::Value::integers({ width, height }));
+    }
     scene_.set(options_, "pixelAspect", scene::Value::number(request.pixelAspect));
 }
 

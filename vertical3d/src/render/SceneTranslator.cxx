@@ -199,6 +199,8 @@ void SceneTranslator::Walk::place(const moya::Handle& prototype, const std::stri
     translator_->put(instance, "prototype", moya::Value::handle(prototype));
     translator_->put(instance, "transform", moya::Value::matrix(placed.world));
     translator_->put(instance, "material", moya::Value::handle(translator_->material()));
+    // two-sided, as RI's default Sides is, since the RIB export names no Sides
+    translator_->put(instance, "doubleSided", moya::Value::integer(1));
 }
 
 SceneTranslator::SceneTranslator(v3d::moya::scene::Scene* scene) : scene_(scene) {

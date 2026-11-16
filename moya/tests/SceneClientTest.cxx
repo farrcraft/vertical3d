@@ -108,6 +108,24 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_format_side_of_zero_takes_ris_default_te
     BOOST_TEST((read.value("options", "options", "resolution") == scene::Value::integers({ 320, 100 })));
 }
 
+// a size set before the scene is read wins over its Format, which still sets the pixel aspect
+// ratio, and a side the renderer refuses changes nothing
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_resolution_set_first_wins_over_the_format_test) {
+    scene::Scene made(scene::kinds());
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::moya::ri::SceneClient client(made, logger);
+    BOOST_TEST(!client.resolution(0, 48));
+    BOOST_TEST(!client.resolution(64, 65537));
+    BOOST_TEST(client.resolution(32, 24));
+    client.frame([&made]() { made.apply(); });
+    v3d::render::offline::rib::Reader reader(logger);
+    std::istringstream stream("Format 640 480 1.5\nWorldBegin\nWorldEnd\n");
+    BOOST_REQUIRE(reader.read(stream, &client));
+    const scene::Handle options = *made.find("options", "options");
+    BOOST_TEST((made.value(options, "resolution") == scene::Value::integers({ 32, 24 })));
+    BOOST_TEST((made.value(options, "pixelAspect") == scene::Value::number(1.5F)));
+}
+
 BOOST_AUTO_TEST_CASE(moya_sceneclient_another_projection_changes_nothing_test) {
     const Read read("Projection \"fisheye\"\nWorldBegin\nWorldEnd\n");
     BOOST_TEST((read.value("camera", "camera", "projection") == scene::Value::string("orthographic")));

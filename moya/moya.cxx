@@ -15,7 +15,6 @@
 #include <moya/libmoya/output/ExrPart.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
-#include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -27,6 +26,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -44,43 +45,13 @@
 namespace {
 
 /**
- * The picture, grid and bucket sizes the command line names, each checked before it is used.
- * A size the renderer refuses is reported, and the scene's own size or the default is kept.
+ * Pixar's notice, which a renderer of RIB that is not RenderMan compliant prints. It is printed
+ * before every render, even a silent one, and with the version.
  **/
-void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::RIBHandler* handler) {
-    const bool width = var_map.count("width") > 0;
-    const bool height = var_map.count("height") > 0;
-    // a picture within the largest side can still be larger than memory holds. main catches
-    // and reports the allocation that fails
-    if (width && height) {
-        const int x = var_map["width"].as<int>();
-        const int y = var_map["height"].as<int>();
-        if (!handler->resolution(x, y)) {
-            std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::film::largestResolution
-                << ", so the scene's Format is used" << "\n";
-        }
-    } else if (width || height) {
-        std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
-    }
-    // the command line pins the grid and bucket sizes before the scene is read, so a scene
-    // that names its own with Option "limits" keeps the command line's
-    const unsigned int largest = v3d::moya::ri::RIBHandler::largestLimit;
-    if (var_map.count("grid") != 0) {
-        const int grid = var_map["grid"].as<int>();
-        if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
-            std::cout << "--grid has to be between 1 and " << largest << ", so the scene's Option \"limits\" or the default is used" << "\n";
-        } else {
-            handler->context().pinGridSize(static_cast<unsigned int>(grid));
-        }
-    }
-    if (var_map.count("bucket") != 0) {
-        const int bucket = var_map["bucket"].as<int>();
-        if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
-            std::cout << "--bucket has to be between 1 and " << largest << ", so the scene's Option \"limits\" or the default is used" << "\n";
-        } else {
-            handler->context().pinBucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
-        }
-    }
+void notice() {
+    std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                 "Copyright 1988, 1989, Pixar" << "\n" <<
+                 "All Rights Reserved" << "\n";
 }
 
 /**
@@ -99,8 +70,8 @@ std::string textureConflict(const boost::program_options::variables_map& var_map
         }
         return {};
     }
-    for (const char* const option : { "file", "output", "width", "height", "scene", "hits", "paths", "checkpoint", "checkpoint-interval", "resume",
-             "denoise", "grid", "bucket" }) {
+    for (const char* const option : { "file", "output", "width", "height", "scene", "hits", "checkpoint", "checkpoint-interval", "resume",
+             "denoise" }) {
         if (var_map.count(option) > 0) {
             return "--" + std::string(option) + " cannot be given with --maketexture, which reads no scene";
         }
@@ -112,8 +83,8 @@ std::string textureConflict(const boost::program_options::variables_map& var_map
 }
 
 /**
- * Why --hits or --paths cannot write the --output named, or empty when it can. --hits writes an
- * EXR file, and --paths an EXR or a PNG file, named in any case.
+ * Why the --output named cannot be written, or empty when it can. --hits writes an EXR file, and
+ * a render an EXR or a PNG file, named in any case. An empty mode is a render.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the mode, then the file it writes
 std::string outputConflict(const std::string & mode, std::string name) {
@@ -121,8 +92,8 @@ std::string outputConflict(const std::string & mode, std::string name) {
     const auto ends = [&name](const std::string & extension) {
         return name.size() >= extension.size() && name.compare(name.size() - extension.size(), extension.size(), extension) == 0;
     };
-    if (mode == "--paths" && !ends(".exr") && !ends(".png")) {
-        return "--output has to name an .exr or a .png file with --paths, which writes an EXR or a PNG file";
+    if (mode.empty() && !ends(".exr") && !ends(".png")) {
+        return "--output has to name an .exr or a .png file, which a render writes";
     }
     if (mode == "--hits" && !ends(".exr")) {
         return "--output has to name an .exr file with --hits, which writes an EXR file";
@@ -133,23 +104,41 @@ std::string outputConflict(const std::string & mode, std::string name) {
 /**
  * Why the options cannot be used together, or empty when they can.
  *
- * --scene, --hits and --paths each read the scene into the new core in place of rendering it
- * with the hiders, so only one of them can be given. Each takes the picture's size from the
- * scene's Format, and none renders in grids or buckets. --width, --height, --grid and --bucket
- * are refused with any of them. --scene writes no file, so --output is refused with it. --hits
- * writes an EXR file, so its --output has to end in .exr, in any case. --paths writes an EXR or a
- * PNG file, so its --output has to end in .exr or .png.
+ * --scene and --hits each read the scene in place of rendering it, so only one of them can be
+ * given. Neither renders a picture, so --checkpoint, --checkpoint-interval, --resume and
+ * --denoise are refused with them. Each takes the picture's size from the scene's Format, so
+ * --width and --height are refused with them too. --scene writes no file, so --output is refused
+ * with it. --hits writes an EXR file, so its --output has to end in .exr, in any case.
  *
- * Only the path tracer keeps a checkpoint, so --checkpoint, --checkpoint-interval and --resume
- * are refused without --paths, and so is --denoise, which denoises the path tracer's picture. The
- * interval and --resume each need --checkpoint, which names the file, and the interval cannot be
- * below zero.
+ * A render writes an EXR or a PNG file, so its --output has to end in .exr or .png. --width and
+ * --height are given together. The interval and --resume each need --checkpoint, which names
+ * the file, and the interval cannot be below zero.
  **/
 std::string conflict(const boost::program_options::variables_map& var_map) {
-    for (const char* const option : { "checkpoint", "checkpoint-interval", "resume" }) {
-        if (var_map.count(option) > 0 && var_map.count("paths") == 0) {
-            return "--" + std::string(option) + " can only be given with --paths, whose path tracer keeps a checkpoint";
+    std::vector<std::string> modes;
+    for (const char* const mode : { "scene", "hits" }) {
+        if (var_map.count(mode) > 0) {
+            modes.push_back("--" + std::string(mode));
         }
+    }
+    if (modes.size() > 1) {
+        return modes[0] + " and " + modes[1] + " cannot be given together";
+    }
+    const std::string mode = modes.empty() ? std::string() : modes.front();
+    if (!mode.empty()) {
+        for (const char* const option : { "checkpoint", "checkpoint-interval", "resume", "denoise" }) {
+            if (var_map.count(option) > 0) {
+                return "--" + std::string(option) + " cannot be given with " + mode + ", which renders no picture";
+            }
+        }
+        for (const char* const option : { "width", "height" }) {
+            if (var_map.count(option) > 0) {
+                return "--" + std::string(option) + " cannot be given with " + mode + ", which takes the scene's own Format";
+            }
+        }
+    }
+    if ((var_map.count("width") > 0) != (var_map.count("height") > 0)) {
+        return "--width and --height have to be given together";
     }
     for (const char* const option : { "checkpoint-interval", "resume" }) {
         if (var_map.count(option) > 0 && var_map.count("checkpoint") == 0) {
@@ -159,39 +148,17 @@ std::string conflict(const boost::program_options::variables_map& var_map) {
     if (var_map.count("checkpoint-interval") > 0 && var_map["checkpoint-interval"].as<double>() < 0.0) {
         return "--checkpoint-interval cannot be below zero";
     }
-    if (var_map.count("denoise") > 0 && var_map.count("paths") == 0) {
-        return "--denoise can only be given with --paths, whose path tracer's picture it denoises";
-    }
-    std::vector<std::string> modes;
-    for (const char* const mode : { "scene", "hits", "paths" }) {
-        if (var_map.count(mode) > 0) {
-            modes.push_back("--" + std::string(mode));
-        }
-    }
-    if (modes.size() > 1) {
-        return modes[0] + " and " + modes[1] + " cannot be given together";
-    }
-    if (modes.empty()) {
+    if (var_map.count("output") == 0) {
         return {};
     }
-    const std::string & mode = modes.front();
-    const bool scene = mode == "--scene";
-    for (const char* const option : { "width", "height", "grid", "bucket" }) {
-        if (var_map.count(option) > 0) {
-            return "--" + std::string(option) + " cannot be given with " + mode + ", which takes the scene's own Format";
-        }
-    }
-    if (scene && var_map.count("output") > 0) {
+    if (mode == "--scene") {
         return "--output cannot be given with --scene, which prints the scene and writes no file";
     }
-    if (!scene && var_map.count("output") > 0) {
-        return outputConflict(mode, var_map["output"].as<std::string>());
-    }
-    return {};
+    return outputConflict(mode, var_map["output"].as<std::string>());
 }
 
 /**
- * Read a file into the new core's scene, and print the scene's description after each frame
+ * Read a file into the scene, and print the scene's description after each frame
  * the file commits, in place of rendering it.
  **/
 int describe(const std::string & infile, const boost::shared_ptr<v3d::log::Logger> & logger) {
@@ -210,7 +177,7 @@ int describe(const std::string & infile, const boost::shared_ptr<v3d::log::Logge
 }
 
 /**
- * Read a file into the new core's scene, and write its hit view after each frame the file
+ * Read a file into the scene, and write its hit view after each frame the file
  * commits, in place of rendering it. A file of several frames leaves the last frame's.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
@@ -230,19 +197,29 @@ int showHits(const std::string & infile, const std::string & outfile, const boos
     return EXIT_SUCCESS;
 }
 
+/** A file's name without its directory or last extension. `scenes/spheres.rib` is `spheres`. **/
+std::string stemOf(const std::string & file) {
+    const std::size_t slash = file.find_last_of("/\\");
+    const std::string name = slash == std::string::npos ? file : file.substr(slash + 1);
+    const std::size_t dot = name.find_last_of('.');
+    return dot == std::string::npos || dot == 0 ? name : name.substr(0, dot);
+}
+
 /**
  * The outputs a frame writes: the scene's, with the first one's file replaced by outfile when it
- * is given. A scene with no output writes its beauty to outfile, or to paths.exr, in floats, with
- * the beauty denoised beside it when the options ask for it.
+ * is given. A scene with no output writes its beauty in floats to outfile, or to an EXR file named
+ * after the scene in the working directory. The beauty is denoised beside it when the options ask
+ * for it.
  **/
-std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Scene & scene, const std::string & outfile) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
+std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Scene & scene, const std::string & infile, const std::string & outfile) {
     std::vector<v3d::moya::output::Output> outputs = v3d::moya::output::outputsOf(scene);
     if (outputs.empty()) {
         std::vector<std::string> channels;
         if (v3d::moya::output::denoisesBeauty(scene)) {
             channels.push_back(v3d::moya::output::denoisedOf(std::string(v3d::moya::output::kBeauty)));
         }
-        outputs.push_back({ .file = outfile.empty() ? std::string("paths.exr") : outfile,
+        outputs.push_back({ .file = outfile.empty() ? stemOf(infile) + ".exr" : outfile,
             .format = v3d::moya::output::Format::Exr,
             .channels = channels,
             .precision = v3d::moya::output::Precision::Float,
@@ -256,22 +233,44 @@ std::vector<v3d::moya::output::Output> outputsWritten(const v3d::moya::scene::Sc
     return outputs;
 }
 
+/** The checkpoints --checkpoint, --checkpoint-interval and --resume name. **/
+v3d::moya::integrate::Checkpoints checkpointsOf(const boost::program_options::variables_map& var_map) {
+    v3d::moya::integrate::Checkpoints out;
+    if (var_map.count("checkpoint") != 0) {
+        out.path = var_map["checkpoint"].as<std::string>();
+    }
+    if (var_map.count("checkpoint-interval") != 0) {
+        out.interval = var_map["checkpoint-interval"].as<double>();
+    }
+    out.resume = var_map.count("resume") != 0;
+    return out;
+}
+
 /**
- * Read a file into the new core's scene, and write the outputs it names from the picture its
- * integrator renders after each frame the file commits, in place of rendering it with the hiders.
- * When denoising, each frame's options ask for the beauty denoised.
- * A file of several frames leaves the last frame's. A checkpoint holds one frame, so a resume
- * continues the first frame, and each frame after it starts afresh and writes its checkpoint over
- * the one before.
+ * Read a file into the scene, and write the outputs it names from the picture the path tracer
+ * renders after each frame the file commits. When denoising, each frame's options ask for the
+ * beauty denoised. A file of several frames leaves the last frame's. A checkpoint holds one
+ * frame, so a resume continues the first frame, and each frame after it starts afresh and writes
+ * its checkpoint over the one before.
+ *
+ * A file that cannot be written is logged, and the frames after it still render. The last such
+ * file is printed once the whole scene is read, and the render fails.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the file read, then the file written
-int renderPaths(const std::string & infile, const std::string & outfile, const v3d::moya::integrate::Checkpoints & checkpoints, bool denoising,
+int render(const boost::program_options::variables_map& var_map, const std::string & infile, const std::string & outfile,
     const boost::shared_ptr<v3d::log::Logger> & logger) {
     v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
     v3d::moya::ri::SceneClient client(scene, logger);
+    if (var_map.count("width") != 0 && !client.resolution(var_map["width"].as<int>(), var_map["height"].as<int>())) {
+        std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::film::largestResolution << "\n";
+        return EXIT_FAILURE;
+    }
+    notice();
     v3d::moya::device::CpuDevice device;
     const v3d::moya::colour::Config config;
-    v3d::moya::integrate::Checkpoints kept = checkpoints;
+    v3d::moya::integrate::Checkpoints kept = checkpointsOf(var_map);
+    const bool denoising = var_map.count("denoise") != 0;
+    std::string unwritten;
     client.frame([&]() {
         scene.apply();
         if (denoising) {
@@ -283,15 +282,32 @@ int renderPaths(const std::string & infile, const std::string & outfile, const v
             scene.commit();
             scene.apply();
         }
+        const auto started = std::chrono::steady_clock::now();
         const v3d::moya::film::Snapshot picture = v3d::moya::integrate::render(device, scene, logger, config, kept);
+        const std::chrono::duration<double> took = std::chrono::steady_clock::now() - started;
+        logger->get()->info("rendered {} by {} pixels in {:.3f} s", picture.resolution.x, picture.resolution.y, took.count());
         kept.resume = false;
-        for (const v3d::moya::output::Output & output : outputsWritten(scene, outfile)) {
-            v3d::moya::output::write(output, picture, config, logger);
+        for (const v3d::moya::output::Output & output : outputsWritten(scene, infile, outfile)) {
+            try {
+                v3d::moya::output::write(output, picture, config, logger);
+            } catch (const std::exception & error) {
+                logger->get()->error("the picture could not be written to '{}' - {}", output.file, error.what());
+                unwritten = output.file;
+            }
         }
     });
+    // flushed rather than left to the buffer: the render that follows takes the rest of the
+    // run, and the progress line has to appear before it starts
+    if (var_map.count("silent") == 0) {
+        std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
+    }
     v3d::render::offline::rib::Reader reader(logger);
     if (!reader.read(infile, &client)) {
         std::cout << "error reading rib file - " << reader.error() << "\n";
+        return EXIT_FAILURE;
+    }
+    if (!unwritten.empty()) {
+        std::cout << "error writing the picture - " << unwritten << "\n";
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
@@ -338,19 +354,6 @@ int makeTexture(const boost::program_options::variables_map& var_map) {
     return EXIT_SUCCESS;
 }
 
-/** The checkpoints --checkpoint, --checkpoint-interval and --resume name. **/
-v3d::moya::integrate::Checkpoints checkpointsOf(const boost::program_options::variables_map& var_map) {
-    v3d::moya::integrate::Checkpoints out;
-    if (var_map.count("checkpoint") != 0) {
-        out.path = var_map["checkpoint"].as<std::string>();
-    }
-    if (var_map.count("checkpoint-interval") != 0) {
-        out.interval = var_map["checkpoint-interval"].as<double>();
-    }
-    out.resume = var_map.count("resume") != 0;
-    return out;
-}
-
 /** The options moya takes, as --help prints them. **/
 boost::program_options::options_description optionsOf() {
     boost::program_options::options_description opts_desc("Allowed options");
@@ -358,26 +361,20 @@ boost::program_options::options_description optionsOf() {
         ("help", "produce help message")
         ("version", "display version info")
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
-        ("output", boost::program_options::value<std::string>(), "filename to be written; not with --scene")
-        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height; not with --scene, --hits or --paths")
-        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width; not with --scene, --hits or --paths")
+        ("output", boost::program_options::value<std::string>(),
+            "the file to write, which has to end in .exr or .png, in place of the first file the scene names; not with --scene")
+        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height; not with --scene or --hits")
+        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width; not with --scene or --hits")
         ("silent", "print no progress line")
-        ("scene", "print the scene the new core reads from the file, in place of rendering it; not with --hits or --paths")
-        ("hits", "write what the new core's rays hit to --output, which has to end in .exr, or to hits.exr, as an EXR file, "
-            "in place of rendering it; not with --scene or --paths")
-        ("paths", "write the outputs the scene names from the picture the new core's path tracer renders, in place of rendering it; "
-            "--output, which has to end in .exr or .png, replaces the first one's file, and a scene that names none writes paths.exr; "
-            "not with --scene or --hits")
+        ("scene", "print the scene read from the file, in place of rendering it; not with --hits")
+        ("hits", "write what the rays hit to --output, which has to end in .exr, or to hits.exr, as an EXR file, "
+            "in place of rendering it; not with --scene")
         ("checkpoint", boost::program_options::value<std::string>(),
-            "a checkpoint the path tracer writes after each pass, as an EXR file, and reads with --resume; only with --paths")
+            "a checkpoint the path tracer writes after each pass, as an EXR file, and reads with --resume; not with --scene or --hits")
         ("checkpoint-interval", boost::program_options::value<double>(),
             "the least seconds between two checkpoints, in place of one after every pass; needs --checkpoint")
         ("resume", "continue the render the --checkpoint file holds, at the pass after its last; needs --checkpoint")
-        ("denoise", "write the path tracer's beauty denoised beside it, as beauty_denoised; only with --paths")
-        ("grid", boost::program_options::value<int>(),
-            "micropolygon grid size, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
-        ("bucket", boost::program_options::value<int>(),
-            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names; not with --scene, --hits or --paths")
+        ("denoise", "write the path tracer's beauty denoised beside it, as beauty_denoised; not with --scene or --hits")
         ("maketexture", boost::program_options::value<std::vector<std::string>>()->multitoken(),
             "make a texture from an image: the image, then the texture, a tiled EXR file; not with --file")
         ("swrap", boost::program_options::value<std::string>(), "the texture's wrap mode along s: black, clamp or periodic; default black; needs --maketexture")
@@ -404,10 +401,7 @@ int run(int argc, char *argv[]) {
 
     if (var_map.count("version") != 0) {
         std::cout << "moya " << v3d::version::text() << "\n";
-        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
-                     "Copyright 1988, 1989, Pixar" << "\n" <<
-                     "All Rights Reserved" << "\n";
-
+        notice();
         exit(EXIT_SUCCESS);
     }
 
@@ -441,7 +435,6 @@ int run(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     if (var_map.count("hits") != 0) {
         return showHits(infile, outfile.empty() ? std::string("hits.exr") : outfile, logger);
@@ -449,35 +442,7 @@ int run(int argc, char *argv[]) {
     if (var_map.count("scene") != 0) {
         return describe(infile, logger);
     }
-    if (var_map.count("paths") != 0) {
-        return renderPaths(infile, outfile, checkpointsOf(var_map), var_map.count("denoise") > 0, logger);
-    }
-    v3d::moya::ri::RIBHandler handler;
-
-    if (!outfile.empty()) {
-        handler.output(outfile);
-    }
-    sizes(var_map, &handler);
-
-    // flushed rather than left to the buffer: the render that follows takes the rest of the
-    // run, and the progress line has to appear before it starts
-    if (var_map.count("silent") == 0) {
-        std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
-    }
-
-    v3d::render::offline::rib::Reader reader(logger);
-    if (!reader.read(infile, &handler)) {
-        std::cout << "error reading rib file - " << reader.error() << "\n";
-        exit(EXIT_FAILURE);
-    }
-
-    // the picture was written by RiWorldEnd, as the RI standard specifies. The log names each
-    // file of a scene of several frames that could not be written
-    if (handler.context().unwritten() > 0) {
-        std::cout << "error writing the picture - " << handler.context().displayName() << "\n";
-        exit(EXIT_FAILURE);
-    }
-    return EXIT_SUCCESS;
+    return render(var_map, infile, outfile, logger);
 }
 
 };  // namespace

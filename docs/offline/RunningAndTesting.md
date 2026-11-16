@@ -33,19 +33,17 @@ The command-line driver, its options, what it prints and its log are in the user
   cannot find its DLLs and shows a modal dialog. The process then waits on the dialog and uses
   no CPU.
 - **Two demo scenes are copied into `data/moya/` beside the executable** at build time, from
-  `moya/data/`: `test-scene-01.rib` (two quads under the reyes hider) and `raytrace-scene.rib` (a
-  metal and a glass sphere under the ray hider). Neither names a `Display`, so pass `--output` to
-  get a file.
-- **The driver pins `--grid` and `--bucket` before the scene is read.** The context leaves a
-  pinned size as it is, so the command line wins over the scene's `Option "limits"` while the
-  scene is read and rendered.
-- A Debug build is slower than a Release build. It renders `raytrace-scene.rib` at 256 by 192 in
-  about six seconds.
+  `moya/data/`: `test-scene-01.rib` (two quads) and `raytrace-scene.rib` (a metal and a glass
+  sphere). Neither names a `Display`, so each writes its beauty to an EXR file named after it in
+  the working directory, unless `--output` names another.
+- **The driver renders through the scene client and the path tracer**, as `--scene` and `--hits`
+  read through the scene client. `--width` and `--height` set the scene client's resolution
+  before the scene is read, so they win over the scene's `Format`.
+- A Debug build is slower than a Release build. It renders `raytrace-scene.rib` at 320 by 240 in
+  about two seconds.
 
-moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/ri/RIBHandler.h` explains
-why: a second API beside the RI C API breaks the standard's "one true API" clause. The first
-handler a process makes prints Pixar's copyright notice, as a program that is not compliant
-must.
+moya is not RenderMan compliant, and does not aim to be. It prints Pixar's copyright notice before
+every render, as a program that is not compliant must.
 
 ### Inside another program
 

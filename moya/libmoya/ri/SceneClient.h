@@ -127,6 +127,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** What is called after each frame is committed. An empty function calls nothing. **/
     void frame(const std::function<void()> & committed);
 
+    /**
+     * The size of the picture whatever the scene's Format says. A Format still sets the pixel
+     * aspect ratio. It is set before the scene is read.
+     *
+     * @return false, changing nothing, when a side is below 1 or above largestResolution
+     **/
+    bool resolution(int width, int height);
+
     void format(const v3d::render::offline::rib::requests::Format & request) override;
     void frameAspectRatio(float aspect) override;
     void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) override;
@@ -432,6 +440,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     /** The built-in colour configuration textures are made in, made with the first texture. **/
     std::optional<colour::Config> colours_;
+
+    /** The size resolution() set, which a Format does not change. **/
+    std::optional<glm::ivec2> resolution_;
 
     scene::Handle options_;
     scene::Handle camera_;

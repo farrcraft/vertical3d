@@ -83,8 +83,6 @@ Option "limits" "bucketsize" [32 32] "gridsize" [64]
 - `gridsize` is the number of micropolygons the reyes hider shades together, 256 by default.
 - `bucketsize` is the size in pixels of the rectangles the reyes hider renders one at a time,
   16 by 16 by default.
-- `--grid` and `--bucket` on the command line set the same sizes, and win over the scene's
-  `Option "limits"`. `--bucket` sets a square bucket.
 - Each size is from 1 to 65536. Any other value is reported, and the size stays as it was.
 - A smaller grid splits surfaces into more, smaller pieces before it dices them.
 

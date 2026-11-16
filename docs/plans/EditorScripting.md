@@ -168,8 +168,9 @@ a whole.
   is run on the change to show that each new case fails without it.
 * **Old documents.** A document of every earlier schema version reads, and its items keep their
   placements, keys and geometry.
-* **No picture changes.** Every committed PNG in `moya/tests/data/` stays as it is, and so does
-  every scene description the translator's tests commit. The editor's render window shows the
+* **No picture changes.** Every committed reference render in `moya/tests/data/` still compares
+  within five standard errors, and every scene description the translator's tests commit stays
+  as it is. The editor's render window shows the
   same picture of every scene.
 * **A script and a menu agree.** Each new command is run from a script and from the command
   table, and both give the same scene and the same history.
@@ -192,7 +193,7 @@ Giving the editor materials is work for a plan of its own.
 | `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Section 7, and the plan that gives the editor materials | Step 10 |
 | `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the new core | Steps 14 and 17 |
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
-| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaPathTracer added `--checkpoint`, `--checkpoint-interval` and `--resume`, MoyaMaterials `--maketexture`, and MoyaCompositing `--denoise` | Step 16 |
+| `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaRetirement's step 9 made the path tracer moya.exe's default and removed `--paths`, `--grid` and `--bucket` | Step 16 |
 | The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
 | `src/scene/RenderSettings.h` and its codec | Section 7, the hider list, and section 9, the AOVs the render view shows | Nothing |
 | `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
@@ -218,8 +219,8 @@ Giving the editor materials is work for a plan of its own.
 * **Each commit names its paths.** The rebuild's work is often staged while it is in progress,
   so a commit of this plan's work is made with `git commit -- <paths>` and takes nothing else.
 * **Step 16's option sits beside the checkpoint options in the same two files.** `moya.cxx`
-  refuses those options without `--paths` in `conflict()`, and keeps its option table in
-  `optionsOf()`, where step 16 adds its own.
+  refuses those options with `--scene` or `--hits` in `conflict()`, and keeps its option table
+  in `optionsOf()`, where step 16 adds its own.
 
 ---
 
@@ -419,7 +420,6 @@ A script that throws exits non-zero. The run opens no window.
 
 * **`moya --threads <count>`** gives the new core's device at most that many threads, as
   `CpuDevice` takes them. With no count it takes as many as oneTBB gives, as now.
-* **The old hiders take the option and run on one thread**, as now.
 * **A count that is not a whole number above 0 is refused.**
 
 **Tests:** a render on one thread and on four gives the same bytes. A count of 0 or of text is

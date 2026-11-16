@@ -22,9 +22,9 @@ snapshot, which [The film](Film.md) describes.
   beauty followed by its channels, at its precision and compression. A PNG output is the beauty
   through the configuration's default display and view. A framebuffer is logged and not written,
   since moya has no window.
-- **`moya --paths` writes every output after each frame.** Its `--output` replaces the first
-  output's file, and the file's name gives its format. A scene with no output writes its beauty
-  to `--output` or `paths.exr`, in floats.
+- **`moya` writes every output after each frame.** Its `--output` replaces the first output's
+  file, and the file's name gives its format. A scene with no output writes its beauty to
+  `--output`, or to an EXR file named after the scene in the working directory, in floats.
 
 ## EXR files
 

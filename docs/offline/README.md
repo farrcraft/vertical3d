@@ -225,7 +225,7 @@ changes a picture the hiders make.
   [Textures.md](Textures.md)
 - **The integrator builds paths in stages** over a path state declared once, with depth limits
   and Russian roulette. Each bounce samples a light and the BSDF, and weighs the two by multiple
-  importance sampling. `moya --paths` renders a RIB file through it. [Integrator.md](Integrator.md)
+  importance sampling. `moya` renders a RIB file through it. [Integrator.md](Integrator.md)
 - **Every UsdLux light lights the scene.** A rect, disk, sphere or cylinder light is an instance
   in the world's hierarchy, which a path meets as it meets geometry. A point and a distant light
   have no shape. A mesh light makes a geometry emit. A dome light is the environment, and its

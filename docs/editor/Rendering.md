@@ -42,7 +42,8 @@ recorded shot. [The scene](../offline/Scene.md) describes what it holds.
   describe alike. The options, the camera and the output come first. Each mesh is a prototype
   and an instance, each run of a curve's curves is a prototype and an instance, and each light
   is one of UsdLux's. Every surface takes one `matte` material, and a scene with no light gets the
-  camera's distant light.
+  camera's distant light. Every instance is two-sided, as RI's default `Sides` is, since the
+  export names none.
 - **Each object is named after its item**, and kept by its kind and name from one render to the
   next. A curve's second run is its name and `2`, and the camera's light is `camera light`.
 - **An update sets only what changed.** A parameter is set when its value differs from the one

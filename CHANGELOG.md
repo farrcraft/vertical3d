@@ -12,32 +12,44 @@ that section to its version, and the section becomes the release's notes.
 
 ### Added
 
-- `moya --paths` renders a RIB file through moya's new path tracer and writes the picture as an
-  EXR file. It lights a scene by RI's standard and area lights,
-  and by RenderMan's `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`,
-  `PxrDistantLight`, `PxrDomeLight` and `PxrMeshLight` through the `Light` request, with cones
-  and IES profiles. `Illuminate` links a light to the objects it lights.
-- `PixelVariance` stops each pixel of a `--paths` render once its noise falls below it.
-- `moya --paths --checkpoint <file>` writes a checkpoint after each pass, or at most once in the
+- moya's path tracer lights a scene by RI's standard and area lights, and by RenderMan's
+  `PxrRectLight`, `PxrDiskLight`, `PxrSphereLight`, `PxrCylinderLight`, `PxrDistantLight`,
+  `PxrDomeLight` and `PxrMeshLight` through the `Light` request, with cones and IES profiles.
+  `Illuminate` links a light to the objects it lights.
+- `PixelVariance` stops each pixel of a render once its noise falls below it.
+- `moya --checkpoint <file>` writes a checkpoint after each pass, or at most once in the
   seconds `--checkpoint-interval` gives. `--resume` continues a stopped render from it, and gives
   the same picture as a render that never stopped.
-- A `--paths` render shades each surface by its material. RenderMan's `Pattern` and `Bxdf`
+- A render shades each surface by its material. RenderMan's `Pattern` and `Bxdf`
   name MaterialX nodes in RIB, and a `Bxdf` of type `materialx` reads a material from a
   MaterialX document. OpenPBR Surface, Standard Surface, UsdPreviewSurface and glTF PBR render,
   with MaterialX's pattern, image, normal map and bump nodes, and a material's displacement and
   opacity.
-- RIB's `Sides` is read. In a `--paths` render, a material that emits, such as RI's `constant`,
+- RIB's `Sides` is read. A material that emits, such as RI's `constant`,
   emits from both faces of a two-sided surface, which RI's default is.
 - `moya --maketexture` and RIB's `MakeTexture` make a tiled, mipmapped EXR texture from an
-  image. A `--paths` render makes any other image a material reads into one, and finds it along
+  image. A render makes any other image a material reads into one, and finds it along
   RIB's texture search path.
-- A `--paths` render writes outputs for compositing. `DisplayChannel` names a channel of a light
+- A render writes outputs for compositing. `DisplayChannel` names a channel of a light
   path expression after `lpe:`, or of a value at the first hit such as `z`, `P` or `Nn`. A
   light's `lightGroup` gives an expression a group of lights to name. `PxrCryptomatte` writes
   Cryptomatte layers of objects and materials, and a `Display` of the type `deepexr` writes a deep
   EXR file. The beauty carries alpha.
-- `moya --paths --denoise`, and `Option "moya" "int denoise" [1]`, denoise the beauty through
+- `moya --denoise`, and `Option "moya" "int denoise" [1]`, denoise the beauty through
   OIDN and write it beside the noisy one. A `DisplayChannel` whose `denoise` is 1 is denoised too.
+
+### Changed
+
+- `moya` renders a RIB file by path tracing, in place of the reyes and ray-trace hiders, and
+  writes every file the scene's `Display` requests name, a `.png` or an EXR file. `--output`
+  has to end in `.exr` or `.png`. A scene that names no `Display` writes its beauty to an EXR
+  file named after the scene. `Hider`, `ShadingRate` and `Option "limits"` change nothing.
+- `moya --width` without `--height`, or a side outside 1 to 65536, is refused, where the scene's
+  `Format` was used.
+
+### Removed
+
+- `moya --grid` and `--bucket`, which sized the reyes hider's grids and buckets.
 
 ### Fixed
 

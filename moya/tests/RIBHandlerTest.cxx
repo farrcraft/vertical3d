@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
- * A size pinned before the scene is read, as moya's --grid and --bucket pin theirs, survives a
- * scene that names its own with Option "limits". A size that is not pinned is replaced.
+ * A size pinned before the scene is read survives a scene that names its own with
+ * Option "limits". A size that is not pinned is replaced.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_pinned_limits_win_test) {
     v3d::moya::ri::RIBHandler handler;

@@ -282,8 +282,8 @@ class RenderContext {
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
         /**
-         * Sets a size and pins it, so a scene's Option "limits" does not replace it. moya's
-         * `--bucket` and `--grid` pin the sizes they name. A zero is refused and pins nothing.
+         * Sets a size and pins it, so a scene's Option "limits" does not replace it.
+         * A zero is refused and pins nothing.
          **/
         void pinBucketSize(unsigned int width, unsigned int height);
         void pinGridSize(unsigned int size);

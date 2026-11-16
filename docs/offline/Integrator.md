@@ -218,7 +218,7 @@ can change what was gathered, such as a material's closures, before it renders.
   camera sees it there, so a pixel of a crop is the same, bit for bit, as that pixel of the whole
   image. The snapshot names the image and the window's place in it. A window of no pixels is
   logged, and the whole image is rendered.
-- **`moya --paths`** reads a RIB file through the scene client and writes each of the scene's
+- **`moya`** reads a RIB file through the scene client and writes each of the scene's
   outputs, as [Output.md](Output.md#a-scenes-outputs) says.
   [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
 

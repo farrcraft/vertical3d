@@ -67,22 +67,22 @@ Options set up the picture and the camera. Put them before `WorldBegin`. They ta
 | `Declare "name" "class type"` | Gives a parameter name a type for the rest of the file |
 | `Option "searchpath" "shader" ["dirs"]` | Sets the directories searched for shader files. See [Shaders.md](Shaders.md#2-tell-moya-where-the-shader-is) |
 | `Option "searchpath" "texture" ["dirs"]` | Sets the directories searched for texture images |
-| `Option "limits" "bucketsize" [w h] "gridsize" [n]` | Sets the reyes bucket size and grid size. `--bucket` and `--grid` win over it |
+| `Option "limits" "bucketsize" [w h] "gridsize" [n]` | Nothing. moya renders no buckets or grids |
 | `Option "trace" "maxdepth" [n]` | Sets how deep traced rays go, from 0 to 16. Default 2 |
-| `Hider "name"` | `"hidden"` for the reyes hider, the default, or `"raytrace"`. See [Hiders.md](Hiders.md) |
+| `Hider "name"` | Nothing, since moya renders by path tracing alone. A name other than `"hidden"` or `"raytrace"` is logged |
 | `Format width height aspect` | The picture's size in pixels and the shape of a pixel. Default 320 240 1 |
 | `FrameAspectRatio ratio` | The frame's width divided by its height. It follows `Format` by default |
 | `ScreenWindow left right bottom top` | The part of the projection the picture shows |
 | `CropWindow xmin xmax ymin ymax` | Renders only that part of the picture. See [Output.md](Output.md#render-part-of-the-picture) |
 | `Projection "name" "fov" [degrees]` | `"perspective"` or `"orthographic"`. Default orthographic, with a fov of 90 for perspective |
 | `Clipping near far` | The nearest and furthest distances drawn. Default 1e-10 to 1e38 |
-| `Display "file" "type" "mode"` | The file to write. Only type `"file"` writes. The mode is ignored, but with `--paths` it names the channels the file holds, and type `"deepexr"` writes a deep file |
-| `DisplayChannel "type name" params` | With `--paths`, a channel a `Display` mode can name, and what its `"string source"` collects, as RenderMan writes them. The hiders ignore it |
-| `SampleFilter "PxrCryptomatte" handle params` | With `--paths`, a Cryptomatte file of its `"string filename"` and `"string layer"`. The hiders ignore it |
-| `Imager "name" params` | An imager shader, run over the finished picture. `"background"` is built in |
+| `Display "file" "type" "mode"` | The file to write. Only type `"file"` writes. The mode names the channels the file holds, and type `"deepexr"` writes a deep file |
+| `DisplayChannel "type name" params` | A channel a `Display` mode can name, and what its `"string source"` collects, as RenderMan writes them |
+| `SampleFilter "PxrCryptomatte" handle params` | A Cryptomatte file of its `"string filename"` and `"string layer"` |
+| `Imager "name" params` | `"background"` lays the picture over its `"background"` colour when the picture is written. Any other imager is logged |
 | `PixelSamples x y` | Samples per pixel along each axis, from 1 to 256. Default 2 2 |
 | `PixelFilter "name" xwidth ywidth` | `"box"`, `"triangle"`, `"catmull-rom"`, `"gaussian"` or `"sinc"`. Default gaussian 2 2 |
-| `PixelVariance v` | Under the ray-trace hider, adds samples where a pixel is noisier than v. Default 0, off |
+| `PixelVariance v` | Stops sampling a pixel once its noise falls below v. Default 0, off |
 | `DepthOfField fstop focallength focaldistance` | Sets the lens. With no arguments, a pinhole. See [Camera.md](Camera.md#add-depth-of-field) |
 | `Shutter open close` | The times the shutter opens and closes. Default 0 0, no motion blur |
 
@@ -148,11 +148,12 @@ again.
 |---|---|
 | `Color [r g b]` | The surface colour, `Cs` in a shader. Default white |
 | `Opacity [r g b]` | The surface opacity, `Os` in a shader. Default 1, opaque. A shadow lets through one minus it |
-| `ShadingRate area` | Under the reyes hider, the area of one micropolygon in pixels. Default 1. See [Quality.md](Quality.md#shading-rate-reyes) |
+| `ShadingRate area` | Nothing. moya tessellates by its own edge length in pixels |
+| `Sides n` | 2, the default, lets a surface that glows, such as `constant`, glow from both faces, and 1 from its front alone. Both faces are seen either way |
 | `Basis "name" step "name" step` | The basis of cubic curves. See [Curves.md](Curves.md#choose-the-basis-of-a-cubic-curve) |
 | `Attribute "light" "integer nsamples" [n]` | How many points an area light made after it samples, from 1 to 4096. Default 16 |
 | `Attribute "displacementbound" "float sphere" [d]` | How far a displacement shader can move a point. See [Displacement.md](Displacement.md#3-set-the-displacement-bound) |
-| `Attribute "trace" "bias" [d]` | How far from a surface a shadow or traced ray leaving it starts, in world units. Default 0.0001. See [Displacement.md](Displacement.md#4-set-a-trace-bias-under-the-reyes-hider) |
+| `Attribute "trace" "bias" [d]` | Nothing. A ray leaving a surface starts off it by moya's own rule |
 
 - `Attribute` reads only the names in the table. Any other attribute is reported once by name
   and ignored.
@@ -168,8 +169,8 @@ again.
 | `LightSource "name" handle params` | Creates a light and switches it on. See [Lights.md](Lights.md) |
 | `AreaLightSource "name" handle params` | Creates an area light. The polygons and spheres after it in the same block are its geometry |
 | `Illuminate handle on` | Switches a light on (1) or off (0) for the primitives that follow |
-| `Light "name" handle params` | One of RenderMan's lights, such as `PxrRectLight`. Read, and not drawn by the reyes and ray-trace hiders. The first a scene names is logged |
-| `Pattern "type" handle params` | A MaterialX node of the shading network, such as `ND_constant_color3`. Read by `--scene`, `--hits` and `--paths`, and not drawn by the reyes and ray-trace hiders. The first a scene names is logged |
+| `Light "name" handle params` | One of RenderMan's lights, such as `PxrRectLight`. |
+| `Pattern "type" handle params` | A MaterialX node of the shading network, such as `ND_constant_color3`. |
 | `Bxdf "type" handle params` | The surface node of the shading network, such as `ND_open_pbr_surface_surfaceshader`, or `materialx` with a `file` and a `material` to read one from a document. Read as `Pattern` is |
 | `MakeTexture ...` | Nothing. A shader reads the image file itself. See [Textures.md](Textures.md) |
 
@@ -185,7 +186,7 @@ again.
 |---|---|
 | `Polygon params` | One flat, convex polygon. Reads `"P"`, `"Cs"`, `"N"` and `"st"` |
 | `PointsPolygons [counts] [indices] params` | A set of polygons that share points. Reads `"P"`, `"Cs"`, `"N"` and `"st"`, one value for each point |
-| `Sphere radius zmin zmax thetamax` | A sphere cut to the heights zmin to zmax and swept through thetamax degrees. Drawn by the ray-trace hider only. Reads no parameters |
+| `Sphere radius zmin zmax thetamax` | A sphere cut to the heights zmin to zmax and swept through thetamax degrees. Reads no parameters |
 | `Curves "type" [counts] "wrap" params` | Ribbons along lines or cubic curves. See [Curves.md](Curves.md) |
 | `Points params`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk`, `Torus`, `SubdivisionMesh` | Read, and not yet drawn. The first of each a scene names is logged, and the picture is made without them |
 | `ObjectBegin handle`, `ObjectEnd`, `ObjectInstance handle` | Read, and not yet instanced. The geometry inside an object is not drawn, and the first object is logged |
@@ -201,8 +202,6 @@ again.
 - **A polygon's winding sets its geometric normal.** A polygon wound clockwise as the camera sees
   it has a geometric normal that faces the camera. A scene that gives `"N"` facing the camera
   must wind its polygons that way too, or the built-in shaders shade it from behind.
-- A polygon with more than four vertices must be convex. The reyes hider may draw a concave one
-  wrongly.
 - In `PointsPolygons`, a face with fewer than three vertices is skipped. A face whose indices run
   past the end of the index list ends the request.
 - A sphere whose radius is not above zero is logged and not drawn. `Orientation` is not read, so
@@ -210,7 +209,6 @@ again.
 
 ## What moya does not read
 
-Requests such as `Orientation`, `Sides`, `ReadArchive`, `Patch` and `NuPatch` are skipped with a
+Requests such as `Orientation`, `ReadArchive`, `Patch` and `NuPatch` are skipped with a
 warning, as is every request this page does
-not list. moya has no volume shaders and no shadow maps, and its hiders write no `Display` mode
-other than RGB.
+not list. moya has no volume shaders.

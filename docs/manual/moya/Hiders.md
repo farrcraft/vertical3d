@@ -29,7 +29,7 @@ as it was.
 | Translucent surfaces (`Opacity` below 1) | Composited front to back | Composited front to back |
 | Shadows, reflections and refraction | Traced, when a shader asks for them | Traced |
 | A moving object's shadow | Sharp: shadows are cast at the shutter's open time | Blurred with the object |
-| `ShadingRate`, `--grid`, `--bucket` | Used | Not used |
+| `ShadingRate` | Used | Not used |
 | `PixelVariance` | Not used | Adds samples where a pixel is noisy |
 
 Both hiders read the same scene and the same camera, run the same shaders, and filter their

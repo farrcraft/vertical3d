@@ -163,7 +163,7 @@ chooses among the options before the record is drafted.
 | [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | done |
 | [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
 | [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | 0241 | done |
-| [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | open |
+| [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | done |
 | [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | open |
 | [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | open |
 | [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | open |
@@ -487,6 +487,25 @@ deleted, and `Reference.h` keeps what the foundation chart and the depth case us
 
 **Tests:** `CommandLineTest` renders a scene through the default and checks its output. A removed
 option is refused with a message that names it.
+
+**Done.** `moya --file <scene>.rib` renders through the scene client and the path tracer.
+`--paths`, `--grid` and `--bucket` are not options any more, so each is refused by name as one
+moya does not recognise. `--width` and `--height` set the scene client's new `resolution()`,
+which a `Format` does not change. A side given alone, or out of range, is refused where the old
+path printed a line and kept the scene's size. The checkpoint options and `--denoise` are
+refused only with `--scene` or `--hits`, which render no picture.
+
+The old path wrote no file for a scene with no `Display`, so the plan's bullet named nothing.
+Such a scene writes its beauty to an EXR file named after it in the working directory, in place
+of `paths.exr`. A render prints Pixar's notice, as the old handler did, and logs its time. A file
+it cannot write is logged, the frames after it still render, and the file is printed once the
+scene is read. The editor's batch and the install job run moya.exe as before, and render through
+the new core. The command line page, the changelog and the reference pages that named the old
+options state the new rules. The manual's pages on the hiders are step 18's. This step also makes
+the editor scripting plan's verification name the path-traced references in place of the PNGs,
+which step 8 left undone. Step 8 also left the editor's translator describing every instance as
+one-sided, where the scene client reads its RIB export as RI's default of two, so two cases of
+`SceneTranslatorTest` failed. The translator's instances are two-sided now.
 
 ### Step 10 — The editor's render view
 
