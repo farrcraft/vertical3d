@@ -3,6 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-06
 **Tags**: offline, testing
+**Supersedes**: [ADR-0076](0076-offline-seeded-samples-resolved-by-one-shared-film.md)
 **Documented in**: [offline/Sampler.md](../../offline/Sampler.md)
 
 ## Context

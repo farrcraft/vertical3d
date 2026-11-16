@@ -1,8 +1,9 @@
 # ADR-0023: Offline: RIB is the scene format
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-04
 **Tags**: offline
+**Amended by**: [ADR-0240](0240-offline-rib-is-a-library-of-its-own.md)
 **Documented in**: [offline/Rib.md](../../offline/Rib.md), [editor/Files.md](../../editor/Files.md)
 
 ## Context

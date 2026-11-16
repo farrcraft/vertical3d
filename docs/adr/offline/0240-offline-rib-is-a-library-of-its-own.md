@@ -3,6 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-15
 **Tags**: offline, build, interchange
+**Amends**: [ADR-0023](0023-offline-rib-is-the-scene-format.md), [ADR-0025](0025-offline-rib-reader-calls-a-typed-handler-interface.md), [ADR-0195](0195-offline-the-renderers-core-lives-in-libmoya.md)
 **Supersedes**: ADR-0022
 **Documented in**: [api/README.md](../../api/README.md), [offline/Rib.md](../../offline/Rib.md)
 

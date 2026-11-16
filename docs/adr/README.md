@@ -124,20 +124,20 @@ The next record is ADR-0242.
 | ADR | Decision | Status | Tags |
 |---|---|---|---|
 | [0022](offline/0022-offline-shared-library-with-no-vulkan.md) | Offline: shared library with no Vulkan | superseded by 0240 | offline |
-| [0023](offline/0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | accepted | offline |
-| [0025](offline/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | accepted | offline |
-| [0026](offline/0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | accepted | offline |
-| [0076](offline/0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted | offline |
+| [0023](offline/0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | amended by 0240 | offline |
+| [0025](offline/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | amended by 0239, 0240 | offline |
+| [0026](offline/0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | superseded by 0186 | offline |
+| [0076](offline/0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | superseded by 0194 | offline |
 | [0077](offline/0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 | offline |
-| [0078](offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted | offline |
-| [0092](offline/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted | offline |
-| [0093](offline/0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | amended by 0113, 0114 | offline |
-| [0094](offline/0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted | offline |
-| [0095](offline/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted | offline |
-| [0113](offline/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted | offline |
-| [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted | offline |
-| [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted | offline |
-| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias | accepted | offline |
+| [0078](offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | superseded by 0186 | offline |
+| [0092](offline/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | superseded by 0193 | offline |
+| [0093](offline/0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | superseded by 0186 | offline |
+| [0094](offline/0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | superseded by 0186 | offline |
+| [0095](offline/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | superseded by 0186 | offline |
+| [0113](offline/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | superseded by 0186 | offline |
+| [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | superseded by 0186 | offline |
+| [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | superseded by 0186 | offline |
+| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias | superseded by 0186 | offline |
 | [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone | amended by 0236 | offline, lighting, shaders |
 | [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats | accepted | offline, build, interchange |
 | [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns | accepted | offline, editor, interchange |
@@ -147,7 +147,7 @@ The next record is ADR-0242.
 | [0192](offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md) | Offline: path stages run fused on the CPU, queued on the GPU | accepted | offline |
 | [0193](offline/0193-offline-moya-owns-its-ray-acceleration-structure.md) | Offline: moya owns its ray acceleration structure | accepted | offline |
 | [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device | accepted | offline, testing |
-| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya | accepted | offline, build |
+| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya | amended by 0240 | offline, build |
 | [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB | accepted | offline, build |
 | [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices | accepted | offline, code |
 | [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role | accepted | offline, colour |

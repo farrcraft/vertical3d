@@ -1,9 +1,10 @@
 # ADR-0113: Offline: ray hits are shaded in batches at every depth
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-25
 **Tags**: offline
 **Amends**: ADR-0093
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 **Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
 
 ## Context

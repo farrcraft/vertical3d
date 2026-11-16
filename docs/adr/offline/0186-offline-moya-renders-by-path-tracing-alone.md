@@ -4,6 +4,7 @@
 **Date**: 2026-11-06
 **Tags**: offline, lighting, shaders
 **Amended by**: [ADR-0236](0236-offline-ris-built-in-surfaces-are-materialx-definitions.md)
+**Supersedes**: [ADR-0026](0026-offline-shaders-run-over-batches-of-points.md), [ADR-0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md), [ADR-0093](0093-offline-derivatives-from-neighbouring-shading-points.md), [ADR-0094](0094-offline-area-lights-sampled-per-shading-point.md), [ADR-0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md), [ADR-0113](0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md), [ADR-0114](0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md), [ADR-0125](0125-offline-moya-renders-curves-as-ribbons.md), [ADR-0185](0185-offline-a-surface-sets-its-trace-bias.md)
 **Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
 
 ## Context

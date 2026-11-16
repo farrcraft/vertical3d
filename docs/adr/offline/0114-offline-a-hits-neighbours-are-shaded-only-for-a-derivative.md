@@ -1,9 +1,10 @@
 # ADR-0114: Offline: a hit's neighbours are shaded only for a derivative
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-25
 **Tags**: offline
 **Amends**: ADR-0093
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 **Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
 
 ## Context

@@ -173,9 +173,10 @@ built.
 - RIB scenes that render today render through the new core, with the built-in shaders mapped to
   OpenPBR materials.
 - The reyes hider, the ray hider, `offline::trace` and `api/render/offline/sl` are removed.
-- The moya manual and the offline reference pages are rewritten. ADR-0026, ADR-0078, ADR-0093,
-  ADR-0094, ADR-0095, ADR-0113, ADR-0114 and ADR-0125 are superseded. ADR-0023, ADR-0025,
-  ADR-0076 and ADR-0092 are amended.
+- The moya manual and the offline reference pages are rewritten. ADR-0186 supersedes ADR-0026,
+  ADR-0078, ADR-0093, ADR-0094, ADR-0095, ADR-0113, ADR-0114, ADR-0125 and ADR-0185. ADR-0194
+  supersedes ADR-0076, and ADR-0193 supersedes ADR-0092. ADR-0240 amends ADR-0023, ADR-0025 and
+  ADR-0195, and ADR-0239 amends ADR-0025.
 
 ### 8. Volumes, subsurface and hair
 

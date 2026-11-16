@@ -1,8 +1,9 @@
 # ADR-0185: Offline: a surface sets its trace bias
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-11-06
 **Tags**: offline
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 **Documented in**: [manual/moya/Displacement.md](../../manual/moya/Displacement.md#4-set-a-trace-bias-under-the-reyes-hider)
 
 ## Context

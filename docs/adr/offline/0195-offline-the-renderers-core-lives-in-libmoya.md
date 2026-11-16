@@ -1,8 +1,9 @@
 # ADR-0195: Offline: the renderer's core lives in libmoya
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-07
 **Tags**: offline, build
+**Amended by**: [ADR-0240](0240-offline-rib-is-a-library-of-its-own.md)
 **Documented in**: [offline/README.md](../../offline/README.md#the-new-core)
 
 ## Context

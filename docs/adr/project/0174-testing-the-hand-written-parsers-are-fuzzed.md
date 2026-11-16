@@ -7,7 +7,7 @@
 
 ## Context
 
-The tree parses several formats itself: RIB, the shading language, TGA and BMP. Their input
+The tree parses several formats itself: RIB, TGA and BMP. Their input
 comes from files a user writes or downloads, so a malformed file is ordinary input, not a
 fault. A unit test covers the malformed cases its author thought of. Generated input reaches
 the ones nobody thought of, and the sanitizers turn a quiet misread into a failure.

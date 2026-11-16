@@ -3,6 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-15
 **Tags**: offline, interchange
+**Amends**: [ADR-0025](0025-offline-rib-reader-calls-a-typed-handler-interface.md)
 **Documented in**: [offline/README.md](../../offline/README.md)
 
 ## Context

@@ -171,7 +171,7 @@ chooses among the options before the record is drafted.
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | done |
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | done |
 | [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | done |
-| [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | open |
+| [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | done |
 | [18](#step-18--the-documents) | The documents | `docs` | — | open |
 
 ## What blocks what
@@ -689,6 +689,16 @@ pipeline still names the old film and camera until step 18.
 * **ADR-0022** is superseded by ADR-0240, as the record of step 4 sets. ADR-0195 is read against
   it, since it names `v3dlib_render_offline` as the library that keeps RIB.
 * **The index and the tags** are regenerated.
+
+**Done.** The nine records ADR-0186 supersedes are marked so, and it names them. ADR-0076 and
+ADR-0092 decided the old film and the old ray tracer's hierarchy. Nothing of either rule is left,
+so they are superseded rather than amended. ADR-0194 supersedes ADR-0076, since its samples are
+stateless, and ADR-0193 supersedes ADR-0092, since its hierarchy is moya's own.
+ADR-0240 amends ADR-0023 and ADR-0195, which placed RIB in `api/render/offline`, and ADR-0025,
+whose handler moved with it.
+ADR-0239 amends ADR-0025 too, since it kept RI's C interface as moya's own. ADR-0174's rule is
+unchanged, so its list of parsers is corrected in place. ADR-0022 was already superseded by
+ADR-0240. The roadmap names the records as they stand.
 
 ### Step 18 — The documents
 

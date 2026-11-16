@@ -3,6 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-06
 **Tags**: offline
+**Supersedes**: [ADR-0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md)
 **Documented in**: [offline/Traversal.md](../../offline/Traversal.md)
 
 ## Context
