@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -253,8 +254,8 @@ Format formatOfFile(const std::string & file) {
     return ending == png ? Format::Png : Format::Exr;
 }
 
-void write(const Output & output, const film::Snapshot & given, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger) {
-    const film::Snapshot snapshot = output.background ? composited(given, config.input(output.backgroundSpace).apply(*output.background)) : given;
+void write(const Output & output, const film::Snapshot & snapshot, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger) {
+    const film::Snapshot written = output.background ? composited(snapshot, config.input(output.backgroundSpace).apply(*output.background)) : snapshot;
     switch (output.format) {
     case Format::Exr: {
         ExrPart part { .name = "", .outputs = { std::string(kBeauty) }, .precision = output.precision, .compression = output.compression, .floats = output.floats };
@@ -262,21 +263,21 @@ void write(const Output & output, const film::Snapshot & given, const colour::Co
         ExrMetadata metadata;
         for (const std::string & layer : output.cryptomattes) {
             const std::string prefix = "cryptomatte/" + keyOf(layer) + "/";
-            const auto manifest = snapshot.manifests.find(layer);
+            const auto manifest = written.manifests.find(layer);
             metadata.strings.emplace_back(prefix + "name", layer);
             metadata.strings.emplace_back(prefix + "hash", "MurmurHash3_32");
             metadata.strings.emplace_back(prefix + "conversion", "uint32_to_float32");
-            metadata.strings.emplace_back(prefix + "manifest", manifest == snapshot.manifests.end() ? std::string("{}") : manifest->second);
+            metadata.strings.emplace_back(prefix + "manifest", manifest == written.manifests.end() ? std::string("{}") : manifest->second);
         }
-        writeExr(output.file, snapshot, { part }, metadata);
+        writeExr(output.file, written, { part }, metadata);
         return;
     }
     case Format::DeepExr:
-        writeDeepExr(output.file, snapshot, output.precision, output.compression);
+        writeDeepExr(output.file, written, output.precision, output.compression);
         return;
     case Format::Png: {
         const std::string display = config.defaultDisplay();
-        writePng(output.file, snapshot, config.display(display, config.defaultView(display)), logger);
+        writePng(output.file, written, config.display(display, config.defaultView(display)), logger);
         return;
     }
     case Format::Framebuffer:

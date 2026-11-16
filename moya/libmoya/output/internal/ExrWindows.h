@@ -41,7 +41,9 @@ inline Windows windowsOf(const film::Snapshot & snapshot) {
  **/
 inline char * based(char * first, const Imath::Box2i & data, std::size_t across, std::size_t down) {
     const std::size_t before = (static_cast<std::size_t>(data.min.x) * across) + (static_cast<std::size_t>(data.min.y) * down);
-    // OpenEXR's own Slice::Make offsets its base by the same address arithmetic
+    // the base can lie outside the pixels, where pointer arithmetic is undefined, so the address
+    // is offset as an integer, as OpenEXR's own Slice::Make offsets it
+    // NOLINTNEXTLINE(performance-no-int-to-ptr) - the address is offset as OpenEXR offsets it
     return reinterpret_cast<char *>(reinterpret_cast<std::uintptr_t>(first) - before);
 }
 

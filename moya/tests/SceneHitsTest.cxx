@@ -11,6 +11,7 @@
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/view/Hits.h>
+#include <moya/libmoya/view/Tracing.h>
 
 #include <OpenEXR/ImfChannelList.h>
 #include <OpenEXR/ImfFrameBuffer.h>

@@ -308,6 +308,12 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** Whether a file name ends with a suffix, compared exactly. **/
     static bool endsWith(const std::string & text, const std::string & suffix);
 
+    /** A search path as RI gives it, with each `&` replaced by the path it replaces. **/
+    static std::string searchPath(const std::string & given, const std::string & previous);
+
+    /** Whether a number is at least the least given, and at most the most an integer holds. **/
+    static bool inIntegers(float value, float least);
+
     /**
      * Logs once each parameter of a request that is not among those read, keyed by the request,
      * its name and the parameter's name, so the same parameter is logged once however often

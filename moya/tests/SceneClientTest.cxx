@@ -8,6 +8,7 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Compare.h>
+#include <moya/libmoya/film/Estimate.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/ri/SceneClient.h>

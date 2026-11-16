@@ -84,14 +84,39 @@ bool SceneClient::endsWith(const std::string & text, const std::string & suffix)
     return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path given, then the path it replaces
+std::string SceneClient::searchPath(const std::string & given, const std::string & previous) {
+    std::string path;
+    for (const char letter : given) {
+        if (letter == '&') {
+            path += previous;
+        } else {
+            path += letter;
+        }
+    }
+    return path;
+}
+
+bool SceneClient::inIntegers(float value, float least) {
+    return value >= least && value <= static_cast<float>(std::numeric_limits<std::int32_t>::max());
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the request, then its name
 void SceneClient::unread(const std::string & request, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
     const std::set<std::string> & read) {
     for (const std::string & parameter : parameters.names()) {
         if (read.contains(parameter)) {
             continue;
         }
-        const std::string named = name.empty() ? request : request + " \"" + name + "\"";
-        warnings_.once(named + " " + parameter, named + "'s \"" + parameter + "\" is not read, so it changes nothing");
+        std::string named = request;
+        if (!name.empty()) {
+            named.append(" \"").append(name).append("\"");
+        }
+        std::string key = named;
+        key.append(" ").append(parameter);
+        std::string message = named;
+        message.append("'s \"").append(parameter).append("\" is not read, so it changes nothing");
+        warnings_.once(key, message);
     }
 }
 
@@ -340,7 +365,7 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
 
     if (name == "trace" && parameters.has("maxdepth")) {
         const float depth = parameters.number("maxdepth", 0.0F);
-        if (!(depth >= 0.0F) || !(depth <= static_cast<float>(std::numeric_limits<std::int32_t>::max()))) {
+        if (!inIntegers(depth, 0.0F)) {
             warnings_.once("maxdepth", "Option \"trace\" \"maxdepth\" has to be from 0 to the most an integer holds, so it changes nothing");
         } else {
             // checked: within an integer's range, as the test above holds it
@@ -348,22 +373,12 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
         }
     }
     if (name == "searchpath" && parameters.has("texture")) {
-        const std::string given = parameters.string("texture");
-        std::string path;
-        for (const char letter : given) {
-            path += letter == '&' ? textureSearchPath_ : std::string(1, letter);
-        }
-        textureSearchPath_ = path;
-        scene_.set(options_, "textureSearchPath", scene::Value::string(path));
+        textureSearchPath_ = searchPath(parameters.string("texture"), textureSearchPath_);
+        scene_.set(options_, "textureSearchPath", scene::Value::string(textureSearchPath_));
     }
     if (name == "searchpath" && parameters.has("shader")) {
-        const std::string given = parameters.string("shader");
-        std::string path;
-        for (const char letter : given) {
-            path += letter == '&' ? shaderSearchPath_ : std::string(1, letter);
-        }
-        shaderSearchPath_ = path;
-        scene_.set(options_, "shaderSearchPath", scene::Value::string(path));
+        shaderSearchPath_ = searchPath(parameters.string("shader"), shaderSearchPath_);
+        scene_.set(options_, "shaderSearchPath", scene::Value::string(shaderSearchPath_));
     }
     if (name == "moya" && parameters.has("denoise")) {
         scene_.set(options_, "denoise", scene::Value::integer(parameters.number("denoise", 0.0F) != 0.0F ? 1 : 0));
@@ -373,7 +388,7 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
     }
     if (name == "limits" && parameters.has("texturememory")) {
         const float kilobytes = parameters.number("texturememory", 0.0F);
-        if (!(kilobytes >= 1.0F) || !(kilobytes <= static_cast<float>(std::numeric_limits<std::int32_t>::max()))) {
+        if (!inIntegers(kilobytes, 1.0F)) {
             warnings_.once("texturememory", "Option \"limits\" \"texturememory\" has to be from 1 to the most an integer holds, so it changes nothing");
             return;
         }

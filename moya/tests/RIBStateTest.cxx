@@ -30,6 +30,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Handling.h"
+#include "Heard.h"
 
 namespace v3d::moya::handling {
 namespace {

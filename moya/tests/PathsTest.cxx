@@ -229,7 +229,7 @@ bool sameBytes(const film::Snapshot & one, const film::Snapshot & other) {
 // a render takes its samples rounded up to a power of two, sixteen to a pass, and a scene whose
 // options name no samples takes one
 BOOST_AUTO_TEST_CASE(moya_paths_the_passes_a_render_takes_test) {
-    scene::Scene bare(scene::kinds());
+    const scene::Scene bare(scene::kinds());
     BOOST_TEST(v3d::moya::integrate::passesOf(bare) == 1U);
     for (const auto [samples, passes] : { std::pair { 1U, 1U }, std::pair { 16U, 1U }, std::pair { 17U, 2U }, std::pair { 33U, 4U }, std::pair { 64U, 4U } }) {
         scene::Scene made(scene::kinds());

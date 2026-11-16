@@ -24,6 +24,7 @@
 #include <glm/glm.hpp>
 
 #include "Handling.h"
+#include "Heard.h"
 
 namespace v3d::moya::handling {
 namespace {

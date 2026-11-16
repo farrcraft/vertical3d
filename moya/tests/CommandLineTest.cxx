@@ -193,7 +193,9 @@ BOOST_AUTO_TEST_CASE(moya_command_line_refuses_a_size_it_cannot_use_test) {
 BOOST_AUTO_TEST_CASE(moya_command_line_refuses_the_options_of_the_hiders_test) {
     for (const std::string option : { "--paths", "--grid", "--bucket" }) {
         const std::string value = option == "--paths" ? "" : " 8";
-        const Run run = moya(std::string(kScene) + " " + option + value);
+        std::string arguments = kScene;
+        arguments.append(" ").append(option).append(value);
+        const Run run = moya(arguments);
         BOOST_TEST(!run.succeeded, option);
         BOOST_TEST(run.printed.find("'" + option + "'") != std::string::npos, option << ": " << run.printed);
     }
@@ -253,7 +255,9 @@ BOOST_AUTO_TEST_CASE(moya_command_line_a_picture_it_cannot_write_fails_the_rende
 BOOST_AUTO_TEST_CASE(moya_command_line_refuses_checkpoints_it_cannot_keep_test) {
     for (const std::string mode : { "--scene", "--hits" }) {
         for (const std::string option : { "--checkpoint c.exr", "--checkpoint-interval 5", "--resume" }) {
-            const Run run = moya(std::string(kScene) + " " + mode + " " + option);
+            std::string arguments = kScene;
+            arguments.append(" ").append(mode).append(" ").append(option);
+            const Run run = moya(arguments);
             BOOST_TEST(!run.succeeded, mode << " " << option);
             const std::string expected = "cannot be given with " + mode + ", which renders no picture";
             BOOST_TEST(run.printed.find(expected) != std::string::npos, mode << " " << option << ": " << run.printed);

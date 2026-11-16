@@ -730,8 +730,13 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_an_area_light_takes_every_geometry_in_its_
     for (const scene::Handle & light : read.scene().objects("meshLight")) {
         lit.push_back(read.scene().value(light, "geometry").handleArray().front());
     }
-    BOOST_TEST((std::find(lit.begin(), lit.end(), read.handle("mesh", "Polygon 1")) != lit.end()));
-    BOOST_TEST((std::find(lit.begin(), lit.end(), read.handle("sphere", "Sphere 1")) != lit.end()));
+    // a lambda, since MSVC's STL vectorises std::find over a Handle and then fails to compile
+    // under clang-tidy
+    const auto lights = [&lit](const scene::Handle & geometry) {
+        return std::any_of(lit.begin(), lit.end(), [&geometry](const scene::Handle & each) { return each == geometry; });
+    };
+    BOOST_TEST(lights(read.handle("mesh", "Polygon 1")));
+    BOOST_TEST(lights(read.handle("sphere", "Sphere 1")));
 }
 
 // a curve that names no width takes RI's width of one

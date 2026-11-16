@@ -158,12 +158,12 @@ void readShaderDocument(Network & network, const scene::Scene & scene, const std
  **/
 std::string riDefinition(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
     const std::string shader = firstString(scene, handle, "shader");
-    const std::string matte = "ND_ri_matte_surfaceshader";
+    std::string matte = "ND_ri_matte_surfaceshader";
     if (shader == "defaultsurface") {
         return matte;
     }
     readShaderDocument(network, scene, shader);
-    const std::string definition = "ND_ri_" + shader + "_surfaceshader";
+    std::string definition = "ND_ri_" + shader + "_surfaceshader";
     if (!network.document->getDataLibrary()->getNodeDef(definition)) {
         network.report("shader " + scene.name(handle) + " is RI's " + shader + ", which moya does not define, so it shades as RI's matte");
         return matte;
@@ -179,7 +179,7 @@ std::string riDefinition(Network & network, const scene::Scene & scene, const sc
 std::optional<std::string> riDisplacementDefinition(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
     const std::string shader = firstString(scene, handle, "shader");
     readShaderDocument(network, scene, shader);
-    const std::string definition = "ND_ri_" + shader + "_displacementshader";
+    std::string definition = "ND_ri_" + shader + "_displacementshader";
     if (!network.document->getDataLibrary()->getNodeDef(definition)) {
         network.report("shader " + scene.name(handle) + " is RI's displacement " + shader + ", which moya does not define, so it does not displace");
         return std::nullopt;
@@ -273,6 +273,21 @@ void connect(Network & network, const scene::Scene & scene, const scene::Handle 
 }
 
 /**
+ * Every connection whose ends are both in the scene, by the scene's index of the node it feeds.
+ **/
+std::multimap<std::uint32_t, scene::Handle> feedingOf(const scene::Scene & scene) {
+    std::multimap<std::uint32_t, scene::Handle> feeding;
+    for (const scene::Handle & connection : scene.objects("connection")) {
+        const scene::Handle to = firstHandle(scene, connection, "to");
+        const scene::Handle from = firstHandle(scene, connection, "from");
+        if (to.valid() && from.valid() && scene.contains(to) && scene.contains(from)) {
+            feeding.emplace(to.index, connection);
+        }
+    }
+    return feeding;
+}
+
+/**
  * The network of one of a material's terminals, its surface or its displacement: every node that
  * feeds the terminal's node through the scene's connections, read into a MaterialX document and
  * flattened.
@@ -285,15 +300,7 @@ Network network(const Library & library, const scene::Scene & scene, const scene
     if (!surface.valid() || !scene.contains(surface)) {
         return out;
     }
-    // every connection, by the scene's index of the node it feeds
-    std::multimap<std::uint32_t, scene::Handle> feeding;
-    for (const scene::Handle & connection : scene.objects("connection")) {
-        const scene::Handle to = firstHandle(scene, connection, "to");
-        const scene::Handle from = firstHandle(scene, connection, "from");
-        if (to.valid() && from.valid() && scene.contains(to) && scene.contains(from)) {
-            feeding.emplace(to.index, connection);
-        }
-    }
+    const std::multimap<std::uint32_t, scene::Handle> feeding = feedingOf(scene);
     try {
         // the surface node, then each node that feeds a node already read, each once
         std::map<std::uint32_t, mx::NodePtr> nodes;
