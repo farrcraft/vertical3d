@@ -37,6 +37,8 @@ that section to its version, and the section becomes the release's notes.
   EXR file. The beauty carries alpha.
 - `moya --denoise`, and `Option "moya" "int denoise" [1]`, denoise the beauty through
   OIDN and write it beside the noisy one. A `DisplayChannel` whose `denoise` is 1 is denoised too.
+- An RI `Displacement` reads `<name>.mtlx` on the shader search path, as a `Surface` does, and
+  displaces a subdivision surface by the graph it defines.
 
 ### Changed
 

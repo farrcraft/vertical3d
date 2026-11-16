@@ -226,7 +226,10 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   `Illuminate` turns a light on and off in the attribute state, and `AttributeEnd` restores it.
 - **RI's `ambientlight` is a dome light** of its `lightcolor` and `intensity`, whose shadow link
   names no instance and whose `camera` is 0. It lights every point by its albedo times the light,
-  as RI's ambient term does, and the camera does not see it.
+  as RI's ambient term does, and the camera does not see it. Since it casts no shadow, only a
+  light sample finds it, so a glossy surface under it converges slowly and shows bright single
+  samples at first. RenderMan's `PxrDomeLight` casts shadows, and lights the same surface
+  smoothly.
 - **`AreaLightSource` makes a mesh light of each geometry after it in its attribute block**, with
   its `intensity` and `lightcolor`. The mesh light names the geometry's prototype, so the
   instance that places it emits. A shader other than `arealight` is logged once, and makes no

@@ -166,7 +166,7 @@ chooses among the options before the record is drafted.
 | [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | done |
 | [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | done |
 | [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | done |
-| [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | open |
+| [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | done |
 | [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | open |
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | open |
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | open |
@@ -566,6 +566,22 @@ render settings' keys and the rule.
 * **`pictures.test.ts`** follows the change.
 
 **Tests:** the install job renders its scene. `pictures.test.ts` passes.
+
+**Done.** The shipped scenes and the manual's four name no `Hider`. The manual's take 64
+samples a pixel, and the shipped ones 16 and 64. `stripes.mtlx` and `ripple.mtlx` define RI's
+`stripes` surface and `ripple` displacement beside their `.sl` files, which Shaders.md and
+Displacement.md still show until step 18. `ripple` needed what ADR-0236 decided and step 5 left
+out: an RI displacement now takes `ND_ri_<shader>_displacementshader` from the shader search
+path, and its graph is flattened into the network. The panel it ripples is a subdivision
+surface. The stripes run across a panel with its own `st`, since a quadric has none in the new
+core, which [TODO.md](../TODO.md) records. The four pictures were made again. `pictures.ts` and
+the install job needed no change.
+
+`test-scene-01.rib` rendered black: RI's default surface is a matte now, and the scene had no
+light, so it gained a distant light and an ambient one. In `raytrace-scene.rib` the glass lost
+its `Opacity`, which the old ray hider read only as a shadow's and the new core reads as a cut.
+Its metal sparkled under the ambient light, which only a light sample finds, so the scene lights
+its sky with `PxrDomeLight`, and [Rib.md](../offline/Rib.md) states why.
 
 ### Step 13 — Tests on the new core alone
 

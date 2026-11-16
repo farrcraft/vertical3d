@@ -28,13 +28,8 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
     for (const scene::Handle & handle : scene.objects("material")) {
         const scene::Handle displacement = scene.value(handle, "displacement").handleArray().front();
         const bool displaces = displacement.valid() && scene.contains(displacement);
-        if (displaces && scene.value(displacement, "language").stringArray().front() == "ri") {
-            material::Compiled none;
-            none.reports.push_back("material " + scene.name(handle) + " does not displace, because its displacement " +
-                scene.value(displacement, "shader").stringArray().front() + " is written for RI, and moya defines no RI displacement");
-            displacements_.emplace(handle.index, std::move(none));
-        }
-        if (displaces && scene.value(displacement, "language").stringArray().front() == "materialx") {
+        const std::string displacedBy = displaces ? scene.value(displacement, "language").stringArray().front() : std::string();
+        if (displacedBy == "materialx" || displacedBy == "ri") {
             try {
                 displacements_.emplace(handle.index, material::compileDisplacement(material::Library::installed(), scene, handle, names_));
             } catch (const std::runtime_error & refused) {

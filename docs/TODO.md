@@ -140,13 +140,12 @@ within five of those errors. A channel of little light, such as a caustic, is he
 than its own noise would allow. A channel's own error, kept by the film for the channels a test
 compares, would hold each to its own noise.
 
-[] **An RI displacement is not found on the shader search path.** ADR-0236 has a `Displacement`
-find a document of its name as a `Surface` does, and give that document's displacement. A
-displacement of language `ri` is reported and does not displace, whatever the search path holds.
-Compiling a displacement needs `ND_displacement_float` or `ND_displacement_vector3` at its
-terminal. A document of an RI displacement therefore needs a definition whose graph ends in one,
-and `material::compileDisplacement()` needs to read it as `compile()` reads an RI surface's.
-[Materials.md](offline/Materials.md#ris-built-in-surfaces) states the rule as it stands.
+[] **A quadric has no `st`.** RI gives each quadric parametric coordinates, `s` around it and
+`t` along it, which a pattern or a texture reads. The new core holds a quadric's constant and
+uniform primvars alone, so a node that reads `st` on a sphere reads nothing, and a striped or
+textured sphere renders in its plain colour. A quadric hit needs to give its `st` from the
+angle and height it was hit at, as RI defines them for each quadric.
+[Surfaces.md](offline/Surfaces.md) states the rule as it stands.
 
 ## Editor
 

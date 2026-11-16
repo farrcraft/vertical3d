@@ -133,14 +133,19 @@ equal to it.
   makes it, and its `roughness` and `Ks`, which shaped a highlight, are not used.
 - **`constant`** emits its node's `Cs` at a luminance of one and reflects nothing. Its colour is
   the node's alone, because a material's emission has to be the same at every point.
-- **A displacement of language `ri` does not displace.** moya defines no RI displacement, and the
-  material reports it once wherever it is used.
+- **A displacement of language `ri` is the node of `ND_ri_<shader>_displacementshader`**, read
+  from `<shader>.mtlx` on the shader search path before moya's own, as a surface's definition
+  is. moya defines no RI displacement of its own. A name no document defines is reported once,
+  and the material does not displace.
 
 ### Compiling a displacement
 
 `material::compileDisplacement()` compiles a material's `displacement` terminal whose node is
-a MaterialX node, as `compile()` compiles its surface. Its network is flattened alike, and its
-reports follow the same rules.
+a MaterialX node or an RI displacement, as `compile()` compiles its surface. Its network is
+flattened alike, and its reports follow the same rules.
+
+- **An RI displacement's graph is flattened into the network**, though the node is a shader,
+  so the displacement node its graph ends in is the terminal.
 
 - **A displacement of `ND_displacement_float` or `ND_displacement_vector3`** gives a program
   whose values begin with `kDisplacementRegisters`, laid out as `kernel/program/Displacement.h`

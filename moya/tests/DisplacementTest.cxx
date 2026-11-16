@@ -17,6 +17,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <ios>
 #include <string>
 #include <vector>
 
@@ -206,6 +208,62 @@ BOOST_AUTO_TEST_CASE(moya_displacement_beyond_the_bound_is_held_to_it_test) {
     const geometry::Prototypes prototypes = geometry::gather(scene, {});
     BOOST_TEST(reported(prototypes, "subdivision square is displaced beyond its bound of 0.5, and is held to it"));
     BOOST_TEST(apart(prototypes.points, undisplaced(), glm::vec3 { 0.0F, 0.3F, 0.4F }) < 1.0e-5F);
+}
+
+/**
+ * The points of the square displaced by an RI displacement of a shader name, with its inputs,
+ * read with the shader search path given.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the shader, then the search path
+geometry::Prototypes displacedByRi(const std::string & shader, const std::string & searchPath, const std::vector<Given> & inputs) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle ri = node(scene, "ri", shader, inputs);
+    scene.set(ri, "language", scene::Value::string("ri"));
+    const scene::Handle options = scene.create("options", "options");
+    scene.set(options, "edgeLength", scene::Value::number(0.5F));
+    scene.set(options, "shaderSearchPath", scene::Value::string(searchPath));
+    const scene::Handle placed = instanced(scene, "placed", square(scene), {}, glm::mat4(1.0F));
+    scene.set(placed, "material", scene::Value::handle(displacing(scene, "ri", ri)));
+    scene.commit();
+    scene.apply();
+    return geometry::gather(scene, {});
+}
+
+// an RI displacement takes the definition its name finds on the shader search path, and its
+// graph displaces as a MaterialX displacement does, with the inputs RIB gave it
+BOOST_AUTO_TEST_CASE(moya_displacement_an_ri_displacement_is_found_on_the_search_path_test) {
+    const boost::filesystem::path folder = boost::filesystem::temp_directory_path() / "v3d_displacement_ri";
+    boost::system::error_code ignored;
+    boost::filesystem::remove_all(folder, ignored);
+    boost::filesystem::create_directories(folder);
+    {
+        std::ofstream written((folder / "raise.mtlx").string(), std::ios::binary);
+        written << "<?xml version=\"1.0\"?>\n<materialx version=\"1.39\">\n"
+                   "  <nodedef name=\"ND_ri_raise_displacementshader\" node=\"ri_raise\" nodegroup=\"pbr\">\n"
+                   "    <input name=\"height\" type=\"float\" value=\"0.25\" />\n"
+                   "    <output name=\"out\" type=\"displacementshader\" />\n"
+                   "  </nodedef>\n"
+                   "  <nodegraph name=\"NG_ri_raise_displacementshader\" nodedef=\"ND_ri_raise_displacementshader\">\n"
+                   "    <displacement name=\"raised\" type=\"displacementshader\">\n"
+                   "      <input name=\"displacement\" type=\"float\" interfacename=\"height\" />\n"
+                   "    </displacement>\n"
+                   "    <output name=\"out\" type=\"displacementshader\" nodename=\"raised\" />\n"
+                   "  </nodegraph>\n"
+                   "</materialx>\n";
+    }
+    const geometry::Prototypes given = displacedByRi("raise", folder.string(), { { "height", scene::Value::number(0.5F) } });
+    BOOST_TEST(apart(given.points, undisplaced(), glm::vec3 { 0.0F, 0.0F, 0.5F }) < 1.0e-5F);
+    const geometry::Prototypes fallen = displacedByRi("raise", folder.string(), {});
+    BOOST_TEST(apart(fallen.points, undisplaced(), glm::vec3 { 0.0F, 0.0F, 0.25F }) < 1.0e-5F);
+    boost::filesystem::remove_all(folder, ignored);
+}
+
+// an RI displacement that no document on the search path defines is reported, and does not
+// displace
+BOOST_AUTO_TEST_CASE(moya_displacement_an_ri_displacement_nothing_defines_is_reported_test) {
+    const geometry::Prototypes prototypes = displacedByRi("bumps", "nowhere", {});
+    BOOST_TEST(reported(prototypes, "shader ri is RI's displacement bumps, which moya does not define, so it does not displace"));
+    BOOST_TEST(apart(prototypes.points, undisplaced(), glm::vec3 { 0.0F }) < 1.0e-6F);
 }
 
 // a displacement of a node that is not a displacement shader is reported, and leaves the surface

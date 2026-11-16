@@ -85,9 +85,14 @@ struct Compiled {
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
 
 /**
- * Compiles a scene's material whose displacement terminal is a node of language `materialx`, as
- * compile() compiles its surface. The network is the displacement node and every node that feeds
- * it, flattened as compile() flattens a surface's.
+ * Compiles a scene's material whose displacement terminal is a node of language `materialx` or
+ * `ri`, as compile() compiles its surface. The network is the displacement node and every node
+ * that feeds it, flattened as compile() flattens a surface's.
+ *
+ * A displacement node of language `ri` is the node of ND_ri_<shader>_displacementshader, read
+ * from `<shader>.mtlx` on the options' shaderSearchPath before the library's own, as an RI
+ * surface's definition is. Its graph is flattened into the network, so the displacement it ends
+ * in is the terminal. A shader neither defines is reported, and the material does not displace.
  *
  * A displacement of ND_displacement_float or ND_displacement_vector3 gives a program whose values
  * begin with a displacement's, as kernel/program/Displacement.h lays them out. A float is a

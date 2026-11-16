@@ -62,6 +62,16 @@ bool shading(const mx::NodePtr & node) {
     return kTypes.contains(node->getType());
 }
 
+/**
+ * Whether a node is an RI displacement, of a definition ND_ri_<shader>_displacementshader. Its
+ * graph is flattened into the network, so the displacement it ends in is the terminal.
+ **/
+bool riDisplacement(const mx::NodePtr & node) {
+    const std::string definition = node->getNodeDefString();
+    const std::string suffix = "_displacementshader";
+    return definition.starts_with("ND_ri_") && definition.size() > suffix.size() && definition.ends_with(suffix);
+}
+
 std::string firstString(const scene::Scene & scene, const scene::Handle & object, const std::string & parameter) {
     return scene.value(object, parameter).stringArray().front();
 }
@@ -162,17 +172,43 @@ std::string riDefinition(Network & network, const scene::Scene & scene, const sc
 }
 
 /**
- * Adds the MaterialX node a scene's shader node names, with the inputs its primvars give, or
- * nothing when it names no definition or is neither a MaterialX node nor an RI surface.
+ * The definition an RI displacement's name finds: ND_ri_<shader>_displacementshader, from a
+ * document of the shader's on the scene's shader search path, or from the libraries. A name
+ * neither defines is reported, and gives no definition, so the material does not displace.
  **/
-mx::NodePtr addNode(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
+std::optional<std::string> riDisplacementDefinition(Network & network, const scene::Scene & scene, const scene::Handle & handle) {
+    const std::string shader = firstString(scene, handle, "shader");
+    readShaderDocument(network, scene, shader);
+    const std::string definition = "ND_ri_" + shader + "_displacementshader";
+    if (!network.document->getDataLibrary()->getNodeDef(definition)) {
+        network.report("shader " + scene.name(handle) + " is RI's displacement " + shader + ", which moya does not define, so it does not displace");
+        return std::nullopt;
+    }
+    return definition;
+}
+
+/**
+ * Adds the MaterialX node a scene's shader node names, with the inputs its primvars give, or
+ * nothing when it names no definition or is neither a MaterialX node nor an RI shader. An RI node
+ * is a surface, or a displacement when it is a displacement terminal.
+ **/
+mx::NodePtr addNode(Network & network, const scene::Scene & scene, const scene::Handle & handle, bool displacing = false) {
     const std::string & name = scene.name(handle);
     const std::string language = firstString(scene, handle, "language");
     if (language != "materialx" && language != "ri") {
         network.report("shader " + name + " is not a MaterialX node, so it is left out of its material");
         return nullptr;
     }
-    const std::string definition = language == "ri" ? riDefinition(network, scene, handle) : firstString(scene, handle, "shader");
+    std::string definition = firstString(scene, handle, "shader");
+    if (language == "ri" && displacing) {
+        const std::optional<std::string> found = riDisplacementDefinition(network, scene, handle);
+        if (!found) {
+            return nullptr;
+        }
+        definition = *found;
+    } else if (language == "ri") {
+        definition = riDefinition(network, scene, handle);
+    }
     const mx::NodeDefPtr def = network.document->getDataLibrary()->getNodeDef(definition);
     if (!def) {
         network.report("shader " + name + " names " + definition + ", which MaterialX does not define, so it is left out");
@@ -180,7 +216,7 @@ mx::NodePtr addNode(Network & network, const scene::Scene & scene, const scene::
     }
     const mx::NodePtr node = network.document->addNodeInstance(def, network.document->createValidChildName(name));
     // an RI shader that shades as RI's matte was reported once, and its own parameters are its
-    const bool standsIn = language == "ri" && definition != "ND_ri_" + firstString(scene, handle, "shader") + "_surfaceshader";
+    const bool standsIn = language == "ri" && !displacing && definition != "ND_ri_" + firstString(scene, handle, "shader") + "_surfaceshader";
     for (const scene::Declaration & declaration : scene.primvars(handle)) {
         const mx::InputPtr declared = def->getActiveInput(declaration.name);
         if (!declared) {
@@ -262,7 +298,7 @@ Network network(const Library & library, const scene::Scene & scene, const scene
         // the surface node, then each node that feeds a node already read, each once
         std::map<std::uint32_t, mx::NodePtr> nodes;
         std::vector<scene::Handle> reached { surface };
-        nodes.emplace(surface.index, addNode(out, scene, surface));
+        nodes.emplace(surface.index, addNode(out, scene, surface, terminal == "displacement"));
         for (std::size_t i = 0; i < reached.size(); ++i) {
             const auto [first, last] = feeding.equal_range(reached[i].index);
             for (auto at = first; at != last; ++at) {
@@ -283,12 +319,25 @@ Network network(const Library & library, const scene::Scene & scene, const scene
         if (out.terminal && terminal == "surface") {
             out.terminal = internal::translated(out, out.terminal);
         }
+        mx::NodePtr made;
         if (out.terminal) {
-            out.document->addMaterialNode(out.document->createValidChildName(scene.name(material)), out.terminal);
+            made = out.document->addMaterialNode(out.document->createValidChildName(scene.name(material)), out.terminal);
         }
+        const bool flattensTerminal = out.terminal && riDisplacement(out.terminal);
         out.document->flattenSubgraphs(mx::EMPTY_STRING, [](const mx::NodePtr & node) {
-            return !shading(node);
+            return !shading(node) || riDisplacement(node);
         });
+        // an RI displacement's graph took its place, and the displacement the graph ends in is
+        // what the material's input reads now
+        if (flattensTerminal) {
+            const mx::InputPtr reads = made->getInput("displacementshader");
+            out.terminal = reads ? reads->getConnectedNode() : nullptr;
+            // a node a graph was flattened into names its definition by its category and type alone
+            const mx::NodeDefPtr def = out.terminal ? out.terminal->getNodeDef() : nullptr;
+            if (def) {
+                out.terminal->setNodeDefString(def->getName());
+            }
+        }
     } catch (const mx::Exception & error) {
         out.report("material " + scene.name(material) + " is not a valid MaterialX network: " + error.what());
         out.terminal = nullptr;

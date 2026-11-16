@@ -40,7 +40,7 @@ The command-line driver, its options, what it prints and its log are in the user
   read through the scene client. `--width` and `--height` set the scene client's resolution
   before the scene is read, so they win over the scene's `Format`.
 - A Debug build is slower than a Release build. It renders `raytrace-scene.rib` at 320 by 240 in
-  about two seconds.
+  about 25 seconds.
 
 moya is not RenderMan compliant, and does not aim to be. It prints Pixar's copyright notice before
 every render, as a program that is not compliant must.
