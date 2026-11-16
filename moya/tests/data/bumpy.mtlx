@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!--
+    RI's surface "bumpy": a matte surface whose normal is tilted by noise in its object space. The
+    noise is a fixed function of position, so the bumps are the same on every render. The tilt
+    grows with amplitude and frequency, as the slope of a bump of that height and size does.
+  -->
+  <nodedef name="ND_ri_bumpy_surfaceshader" node="ri_bumpy" nodegroup="pbr">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="amplitude" type="float" value="0.08" />
+    <input name="frequency" type="float" value="2.5" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="out" type="surfaceshader" />
+  </nodedef>
+  <nodedef name="ND_ri_bumpy_to_open_pbr_surface" node="ri_bumpy_to_open_pbr_surface" nodegroup="translation">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="amplitude" type="float" value="0.08" />
+    <input name="frequency" type="float" value="2.5" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="base_weight_out" type="float" />
+    <output name="base_color_out" type="color3" />
+    <output name="specular_weight_out" type="float" />
+    <output name="geometry_normal_out" type="vector3" />
+  </nodedef>
+  <nodegraph name="NG_ri_bumpy_to_open_pbr_surface" nodedef="ND_ri_bumpy_to_open_pbr_surface">
+    <dot name="baseWeight" type="float">
+      <input name="in" type="float" interfacename="Kd" />
+    </dot>
+    <dot name="none" type="float">
+      <input name="in" type="float" value="0" />
+    </dot>
+    <geompropvalue name="colour" type="color3">
+      <input name="geomprop" type="string" value="Cs" />
+      <input name="default" type="color3" interfacename="Cs" />
+    </geompropvalue>
+    <!-- noise at the point, at the bumps' frequency -->
+    <position name="where" type="vector3" />
+    <multiply name="finer" type="vector3">
+      <input name="in1" type="vector3" nodename="where" />
+      <input name="in2" type="float" interfacename="frequency" />
+    </multiply>
+    <!-- noise of amplitude a f, which a normal map takes to a tilt of up to 2 a f: about the
+         steepest slope of a bump a high and 1 / f across -->
+    <multiply name="slope" type="float">
+      <input name="in1" type="float" interfacename="amplitude" />
+      <input name="in2" type="float" interfacename="frequency" />
+    </multiply>
+    <combine3 name="reach" type="vector3">
+      <input name="in1" type="float" nodename="slope" />
+      <input name="in2" type="float" nodename="slope" />
+      <input name="in3" type="float" value="0" />
+    </combine3>
+    <noise3d name="wobble" type="vector3">
+      <input name="amplitude" type="vector3" nodename="reach" />
+      <input name="position" type="vector3" nodename="finer" />
+    </noise3d>
+    <add name="tilt" type="vector3">
+      <input name="in1" type="vector3" nodename="wobble" />
+      <input name="in2" type="vector3" value="0.5, 0.5, 1" />
+    </add>
+    <normalmap name="bumped" type="vector3">
+      <input name="in" type="vector3" nodename="tilt" />
+    </normalmap>
+    <output name="base_weight_out" type="float" nodename="baseWeight" />
+    <output name="base_color_out" type="color3" nodename="colour" />
+    <output name="specular_weight_out" type="float" nodename="none" />
+    <output name="geometry_normal_out" type="vector3" nodename="bumped" />
+  </nodegraph>
+</materialx>

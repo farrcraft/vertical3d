@@ -75,9 +75,8 @@ editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
   build, and its CI suites, first.
 - **Two suites cover the offline code**: `render_offline` tests the library alone, and `moya`
   tests the renderer. Run either with `ctest -R`.
-- **The moya suite renders against committed PNGs** in `moya/tests/data/`: `reference-*` under
-  the reyes hider and `raytrace-*` under the ray hider. Each PNG has a `.rib` beside it
-  describing the same scene, so the file route and the code route are pinned to one picture.
+- **The moya suite renders against committed EXRs** in `moya/tests/data/`, each the path
+  tracer's render of the `.rib` beside it, compared within its standard errors.
 - **`foundation-chart.png` is the new core's**: a chart of 24 colours with no geometry, sampled
   through the filter, the sampler and the spectrum table, and shown through the sRGB display. It
   has no `.rib`, since the chart has no geometry for a RIB file to describe. An RGB build draws

@@ -113,6 +113,7 @@ class Writer final : public Handler {
     void basis(const requests::Basis & request) override;
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
+    void sides(int count) override;
     void attribute(const std::string & name, const ParameterList & parameters) override;
     void surface(const std::string & name, const ParameterList & parameters) override;
     void displacement(const std::string & name, const ParameterList & parameters) override;

@@ -249,6 +249,8 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
 
     void color(const glm::vec3 & value) override;
     void opacity(const glm::vec3 & value) override;
+    /** Whether each instance made after it is two-sided: with 2, RI's default, and not with 1. **/
+    void sides(int count) override;
     /** The basis a cubic curve takes. A basis RI does not name is logged, and Bezier is used. **/
     void basis(const v3d::render::offline::rib::requests::Basis & request) override;
     void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
@@ -331,6 +333,9 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
         glm::vec3 opacity { 1.0F };
         Shader surface { .name = "defaultsurface" };
         Shader displacement{};
+
+        /** Whether an instance is two-sided, as RI's Sides says. **/
+        bool twoSided { true };
 
         /** How far a displacement may move a subdivision surface's points, in object space. **/
         float displacementBound { 0.0F };

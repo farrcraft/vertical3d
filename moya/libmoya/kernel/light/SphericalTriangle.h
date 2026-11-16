@@ -22,7 +22,8 @@ namespace v3d::moya::kernel::light {
  * Arvo's method as pbrt-v4 gives it. Below kLeastTriangleAngle its solid angle loses precision,
  * and above kMostTriangleAngle the method does, so it is sampled uniformly by its area there and
  * its density converted to solid angle. A triangle emits from the side its normal faces, and draws
- * nothing for a point behind it.
+ * nothing for a point behind it. faceTowards() turns the normal of a triangle that emits from both
+ * faces.
  */
 
 /** The solid angles, in steradians, between which a triangle is sampled in solid angle. **/
@@ -134,6 +135,16 @@ MOYA_KERNEL inline float triangleAreaDensity(const glm::vec3 (&corners)[3], cons
 /** Whether a point lies on the side of a triangle its unit normal faces. **/
 MOYA_KERNEL inline bool before(const glm::vec3 (&corners)[3], const glm::vec3 & normal, const glm::vec3 & from) {
     return glm::dot(from - corners[0], normal) > 0.0F;
+}
+
+/**
+ * Turns the unit normal of a triangle that emits from both faces to the side a point lies on, so
+ * the point sees the face that emits towards it. A triangle that emits from one face keeps it.
+ **/
+MOYA_KERNEL inline void faceTowards(bool twoSided, const glm::vec3 (&corners)[3], const glm::vec3 & from, glm::vec3 & normal) {
+    if (twoSided && glm::dot(from - corners[0], normal) < 0.0F) {
+        normal = -normal;
+    }
 }
 
 /**

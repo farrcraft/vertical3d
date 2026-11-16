@@ -27,6 +27,7 @@ domeLight "light sky"
     transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
 instance "Sphere 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte"

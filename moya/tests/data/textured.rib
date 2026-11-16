@@ -1,8 +1,9 @@
 ##RenderMan RIB-Structure 1.1
-##Scene A quad showing blocks.png, at one sample a pixel and lit by an ambient light alone
+##Scene A quad showing blocks.png, lit by an ambient light alone
 version 3.03
 Format 64 48 1
-PixelSamples 1 1
+# a dome lights the quad, which needs many samples for a pixel's error to be small
+PixelSamples 16 16
 PixelFilter "box" 1 1
 Projection "orthographic"
 Clipping 1 100
@@ -10,8 +11,8 @@ Clipping 1 100
 Option "searchpath" "texture" ["data:&"]
 WorldBegin
 LightSource "ambientlight" 1 "intensity" [1]
-# with no diffuse and no specular, paintedplastic's colour is the texture's
-Surface "paintedplastic" "Kd" [0] "Ks" [0] "texturename" ["blocks.png"]
+# a white diffuse under a white dome gives back the texture, with no highlight on it
+Surface "paintedplastic" "Kd" [1] "Ks" [0] "texturename" ["blocks.png"]
 # 32 pixels square and centred, so each of the image's 2 by 2 texel blocks is 8 pixels
 # across. The upper left corner is st (0, 0), which shows the image upright
 Polygon "P" [-0.6666667 -0.6666667 5  0.6666667 -0.6666667 5  0.6666667 0.6666667 5  -0.6666667 0.6666667 5]

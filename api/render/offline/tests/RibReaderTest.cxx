@@ -540,15 +540,15 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
-        "Sides 2\n"
+        "Orientation \"lh\"\n"
         "Exterior \"MyShader\" \"squish\" [5]\n"
-        "Sides 1\n"
+        "Orientation \"rh\"\n"
         "WorldBegin\n"
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
         "WorldEnd\n", &handler, &reader));
 
     BOOST_REQUIRE_EQUAL(reader.unrecognised().size(), 2U);
-    BOOST_CHECK_EQUAL(reader.unrecognised()[0], "Sides");
+    BOOST_CHECK_EQUAL(reader.unrecognised()[0], "Orientation");
     BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Exterior");
     // everything after them still arrived
     BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1U);

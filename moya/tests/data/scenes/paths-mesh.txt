@@ -11,6 +11,7 @@ camera "camera"
     transform matrix = [1 0 0 0 0 0.866025 0.5 0 0 -0.5 0.866025 0 0 2.5 -4.33013 1]
 instance "Polygon 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
@@ -19,6 +20,7 @@ instance "Polygon 1"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 2"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
@@ -27,6 +29,7 @@ instance "Polygon 2"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 3"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte"
@@ -35,6 +38,7 @@ instance "Polygon 3"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Sphere 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte"

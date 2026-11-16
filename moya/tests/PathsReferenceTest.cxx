@@ -39,6 +39,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -46,8 +47,8 @@ namespace film = v3d::moya::film;
 namespace scene = v3d::moya::scene;
 
 /**
- * The scenes made for the path tracer and its materials, each a RIB file in data/ with its
- * render beside it.
+ * The scenes made for the path tracer and its materials, and those written for RI's own
+ * surfaces and lights, each a RIB file in data/ with its render beside it.
  **/
 constexpr const char * kScenes[] = {
     "paths-furnace",
@@ -61,6 +62,20 @@ constexpr const char * kScenes[] = {
     "materials-lobes",
     "materials-surfaces",
     "materials-displaced",
+    "raytrace-lit-quad",
+    "raytrace-spheres",
+    "raytrace-triangle",
+    "reference-area",
+    "reference-bump",
+    "reference-displaced",
+    "reference-focus",
+    "reference-glass",
+    "reference-motion",
+    "reference-polygon",
+    "reference-shaded",
+    "reference-shadow",
+    "spec-cube",
+    "textured",
 };
 
 /** The scenes made for materials, each of whose surfaces is OpenPBR's. **/
@@ -189,7 +204,8 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_every_scene_renders_as_committed_test
 }
 
 // a light twice as bright fails the comparison in every scene, so the comparison sees a change of
-// light and not only a change of picture
+// light and not only a change of picture. RI's constant surface emits its colour, and is the only
+// light of a scene that has no other, so it is twice as bright too
 BOOST_AUTO_TEST_CASE(moya_paths_references_a_brighter_light_fails_the_comparison_test) {
     for (const char * name : kScenes) {
         BOOST_TEST_CONTEXT(name) {
@@ -198,6 +214,14 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_a_brighter_light_fails_the_comparison
                     for (const scene::Handle & light : scene.objects(kind)) {
                         scene.set(light, "exposure", scene::Value::number(scene.value(light, "exposure").floatArray().front() + 1.0F));
                     }
+                }
+                for (const scene::Handle & node : scene.objects("shader")) {
+                    if (scene.value(node, "language").stringArray().front() != "ri" || scene.value(node, "shader").stringArray().front() != "constant") {
+                        continue;
+                    }
+                    const scene::Value & colour = scene.value(node, "Cs");
+                    const std::vector<float> & cs = colour.floatArray();
+                    scene.set(node, "Cs", scene::Value::colour(glm::vec3 { cs[0], cs[1], cs[2] } * 2.0F, colour.space()));
                 }
             });
             BOOST_TEST(film::furthest(brighter, readReference("data/" + std::string(name) + ".exr")).sigmas > kAllowed);

@@ -11,6 +11,7 @@ camera "camera"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "constant"
@@ -48,7 +49,7 @@ options "options"
     pixelAspect float = 1
     resolution integer[2] = 64 48
     rouletteDepth integer = 3
-    samples integer = 1
+    samples integer = 64
     shaderSearchPath string = ""
     specularDepth integer = 12
     textureDirectory string = ""

@@ -772,6 +772,54 @@ BOOST_AUTO_TEST_CASE(moya_lights_an_emitting_material_shows_its_luminance_test) 
     BOOST_TEST(seen.value == 2.5F, boost::test_tools::tolerance(1.0e-3F));
 }
 
+/**
+ * A white plane under a square of a half side whose material emits a luminance of one, with its
+ * winding turned away from the plane, placed by an instance that is double-sided or not.
+ **/
+film::Snapshot underTurnedGlowingSquare(const char * strategy, bool doubleSided) {
+    scene::Scene scene(scene::kinds());
+    litPlane(scene, strategy, 256, 0.25F);
+    const scene::Handle panel = square(scene, "panel", 0.5F);
+    const scene::Handle placed = instanced(scene, "panel", panel, {}, flipped(moved(0.0F, 0.0F, -0.5F)));
+    scene.set(placed, "camera", scene::Value::integer(0));
+    scene.set(placed, "doubleSided", scene::Value::integer(doubleSided ? 1 : 0));
+    withMaterial(scene, placed, "emissive");
+    return renderedGlowing(scene, 1.0F);
+}
+
+// a material on a double-sided instance emits from the face its winding turns away too. A square
+// that faces away from the plane lights it as a rect light facing it does, by light samples alone,
+// by BSDF samples alone and by both. On an instance that is not double-sided it lights nothing
+BOOST_AUTO_TEST_CASE(moya_lights_a_double_sided_material_emits_from_both_faces_test) {
+    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
+    for (const char * strategy : { "bsdf", "light", "mis" }) {
+        BOOST_TEST_CONTEXT(strategy) {
+            const film::Snapshot glowed = underTurnedGlowingSquare(strategy, true);
+            BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
+            BOOST_TEST(film::furthest(glowed, rect).sigmas < 5.0F);
+            BOOST_TEST(film::mean(underTurnedGlowingSquare(strategy, false), { 0, 0 }, { kSide, kSide }).value == 0.0F);
+        }
+    }
+}
+
+// a camera sees the face of a double-sided emitting square its winding turns away, and sees
+// nothing from that face of one that is not double-sided
+BOOST_AUTO_TEST_CASE(moya_lights_a_camera_sees_a_double_sided_material_from_behind_test) {
+    for (const bool doubleSided : { true, false }) {
+        BOOST_TEST_CONTEXT(doubleSided) {
+            scene::Scene scene(scene::kinds());
+            viewed(scene, 16, 5.0F, glm::vec2 { 0.0F }, 0.25F);
+            const scene::Handle panel = square(scene, "panel", 1.0F);
+            const scene::Handle placed = instanced(scene, "panel", panel, {}, moved(0.0F, 0.0F, -0.5F));
+            scene.set(placed, "doubleSided", scene::Value::integer(doubleSided ? 1 : 0));
+            withMaterial(scene, placed, "emissive");
+            const film::Estimate seen = film::mean(renderedGlowing(scene, 2.5F), { 0, 0 }, { kSide, kSide });
+            BOOST_TEST(seen.value == (doubleSided ? 2.5F : 0.0F), boost::test_tools::tolerance(1.0e-3F));
+        }
+    }
+}
+
 // a mesh light and an emitting material on one geometry both emit, and their light adds: a square
 // of both lights the plane as a rect light of their summed radiance does
 BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_and_an_emitting_material_add_test) {

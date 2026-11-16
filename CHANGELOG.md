@@ -26,6 +26,8 @@ that section to its version, and the section becomes the release's notes.
   MaterialX document. OpenPBR Surface, Standard Surface, UsdPreviewSurface and glTF PBR render,
   with MaterialX's pattern, image, normal map and bump nodes, and a material's displacement and
   opacity.
+- RIB's `Sides` is read. In a `--paths` render, a material that emits, such as RI's `constant`,
+  emits from both faces of a two-sided surface, which RI's default is.
 - `moya --maketexture` and RIB's `MakeTexture` make a tiled, mipmapped EXR texture from an
   image. A `--paths` render makes any other image a material reads into one, and finds it along
   RIB's texture search path.

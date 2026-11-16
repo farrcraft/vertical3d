@@ -103,6 +103,7 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->color(glm::vec3(0.9F, 0.2F, 0.1F));
     to->opacity(glm::vec3(0.5F));
     to->shadingRate(0.25F);
+    to->sides(1);
     // a standard basis by name, and one of no name by its numbers
     to->basis({.u = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }, .ustep = 4,
         .v = { 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2 }, .vstep = 2});

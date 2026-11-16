@@ -44,6 +44,9 @@ struct Instance {
 
     std::uint32_t visibility { 0 };
 
+    /** Whether a material that emits from the geometry it places emits from both faces. **/
+    bool doubleSided { false };
+
     /** Its material among the prototypes' materials, or kernel::surface::kNoMaterial. **/
     std::uint32_t material { kernel::surface::kNoMaterial };
 

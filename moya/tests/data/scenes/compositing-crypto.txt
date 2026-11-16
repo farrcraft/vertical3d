@@ -41,6 +41,7 @@ domeLight "light sky"
     transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
 instance "floor"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material"
@@ -49,6 +50,7 @@ instance "floor"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "floor 2"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material"
@@ -57,6 +59,7 @@ instance "floor 2"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "front"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 3"
@@ -65,6 +68,7 @@ instance "front"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 -0.7 -0.6 1]
 instance "left"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
@@ -73,6 +77,7 @@ instance "left"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -0.45 -0.5 0 1]
 instance "right"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 2"

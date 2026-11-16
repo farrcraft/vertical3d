@@ -91,6 +91,7 @@ domeLight "light sky"
     transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material"
@@ -99,6 +100,7 @@ instance "Polygon 1"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 2"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
@@ -107,6 +109,7 @@ instance "Polygon 2"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 3"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 4"
@@ -115,6 +118,7 @@ instance "Polygon 3"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Sphere 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 3"

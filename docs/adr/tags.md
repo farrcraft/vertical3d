@@ -305,6 +305,7 @@ reported, so the table lists only tags in use.
 | [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 | [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
 
 ### lit
 
@@ -417,6 +418,7 @@ reported, so the table lists only tags in use.
 | [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
 | [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
 | [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
 
 ### particles
 

@@ -339,6 +339,11 @@ void Writer::shadingRate(float size) {
     start("ShadingRate").number(size).end();
 }
 
+void Writer::sides(int count) {
+    *stream_ << "Sides " << count;
+    end();
+}
+
 void Writer::attribute(const std::string & name, const ParameterList & parameters) {
     start("Attribute").text(name).parameters(parameters).end();
 }

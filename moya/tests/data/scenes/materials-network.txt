@@ -35,6 +35,7 @@ distantLight "light 1"
     transform matrix = [-0.707107 0 0.707107 0 0.57735 0.57735 0.57735 0 -0.408248 0.816497 -0.408248 0 0 0 0 1]
 instance "Sphere 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material"
@@ -43,6 +44,7 @@ instance "Sphere 1"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -0.8 0 0 1]
 instance "Sphere 2"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 2"

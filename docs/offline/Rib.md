@@ -281,6 +281,9 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **`Hider "raytrace"` and `Hider "hidden"` are passed over**, since each names a renderer's
   default and moya renders by path tracing alone. Another hider is logged once by name.
 - **`ShadingRate` is passed over.** A surface is tessellated to the options' `edgeLength`.
+- **`Sides` sets each later instance's `doubleSided`**: 1 for RI's default of 2, and 0 for 1, to
+  the end of its attribute block. A count that is neither is logged and changes nothing. It
+  decides which faces an emitting material emits from, and hides no face from the camera.
 - **Some parameters are passed over by rule.** `Option "limits"`'s `bucketsize` and `gridsize`
   are. `Attribute "trace" "bias"` is too, since a
   ray leaving a surface starts off it by the core's own rule. `Attribute "light" "nsamples"` is

@@ -216,6 +216,10 @@ void Recorder::shadingRate(float size) {
     requests_.emplace_back([size](Handler & to) { to.shadingRate(size); });
 }
 
+void Recorder::sides(int count) {
+    requests_.emplace_back([count](Handler & to) { to.sides(count); });
+}
+
 void Recorder::attribute(const std::string & name, const ParameterList & parameters) {
     requests_.emplace_back([name, parameters](Handler & to) { to.attribute(name, parameters); });
 }

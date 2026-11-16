@@ -55,6 +55,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -369,8 +370,10 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
         case kernel::light::Shape::Rect:
         case kernel::light::Shape::Disk:
         case kernel::light::Shape::Sphere:
-        case kernel::light::Shape::Cylinder:
         case kernel::light::Shape::Mesh:
+            // a triangle that emits from both faces sends as much again from its other
+            return light.scale * size * kPi * (light.twoSided ? 2.0F : 1.0F);
+        case kernel::light::Shape::Cylinder:
             break;
     }
     return light.scale * size * kPi;
@@ -512,9 +515,9 @@ void spreadOf(const std::vector<glm::vec3> & areas, kernel::light::Bounds & boun
 /**
  * A subtree over the triangles of a geometry, in its own space, appended to what is gathered. Each
  * triangle's power is its area when the shutter opens, and its box holds it over the shutter. One
- * whose points move is bounded by every direction.
+ * whose points move, or one that emits from both faces, is bounded by every direction.
  **/
-internal::Subtree subtreeOf(const geometry::Prototypes & prototypes, const geometry::Geometry & shape, internal::Gathered & out) {
+internal::Subtree subtreeOf(const geometry::Prototypes & prototypes, const geometry::Geometry & shape, bool twoSided, internal::Gathered & out) {
     const accel::Sweep sweep = accel::triangleSweep(shape.points, prototypes.points, prototypes.times);
     const std::vector<glm::vec3> areas = emittingAreas(prototypes, glm::mat4(1.0F), shape);
     const bool still = shape.points.samples < 2U;
@@ -530,7 +533,7 @@ internal::Subtree subtreeOf(const geometry::Prototypes & prototypes, const geome
         }
         internal::Leaf leaf { .bounds = internal::everyDirection(box.lower, box.upper), .held = triangle };
         leaf.bounds.power = glm::length(areas[triangle]);
-        if (still && leaf.bounds.power > 0.0F) {
+        if (still && !twoSided && leaf.bounds.power > 0.0F) {
             leaf.bounds.axis = glm::normalize(areas[triangle]);
             leaf.bounds.cosSpread = 1.0F;
         }
@@ -549,11 +552,12 @@ internal::Subtree subtreeOf(const geometry::Prototypes & prototypes, const geome
 /**
  * A mesh light's bounds in the top tree, with its power: its subtree's box where its chain places
  * it over the shutter, and the directions its triangles face in the world, each given by
- * emittingAreas(). A chain that turns, or points that move, are bounded by every direction.
+ * emittingAreas(). A chain that turns, points that move, or triangles that emit from both faces
+ * are bounded by every direction.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain, then the triangles
 kernel::light::Bounds meshBounds(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & chain, const geometry::Geometry & shape,
-    const internal::Subtree & subtree, const std::vector<glm::vec3> & areas, float power) {  // NOLINT(bugprone-easily-swappable-parameters)
+    const internal::Subtree & subtree, const std::vector<glm::vec3> & areas, float power, bool twoSided) {  // NOLINT(bugprone-easily-swappable-parameters)
     accel::Box box { .lower = subtree.bounds.lower, .upper = subtree.bounds.upper };
     bool moves = shape.points.samples > 1U;
     for (auto level = chain.rbegin(); level != chain.rend(); ++level) {
@@ -563,7 +567,7 @@ kernel::light::Bounds meshBounds(const geometry::Prototypes & prototypes, const 
     }
     kernel::light::Bounds out = internal::everyDirection(box.lower, box.upper);
     out.power = power;
-    if (!moves) {
+    if (!moves && !twoSided) {
         spreadOf(areas, out);
     }
     return out;
@@ -578,7 +582,7 @@ kernel::light::Bounds meshBounds(const geometry::Prototypes & prototypes, const 
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what is read, then what is built
 void appendMesh(const geometry::Prototypes & prototypes, kernel::light::Light made, bool normalise, const scene::Handle & handle,
-    const std::vector<std::uint32_t> & placed, std::uint32_t at, std::map<std::uint32_t, internal::Subtree> & subtrees, internal::Gathered & out) {
+    const std::vector<std::uint32_t> & placed, std::uint32_t at, std::map<std::pair<std::uint32_t, bool>, internal::Subtree> & subtrees, internal::Gathered & out) {
     const geometry::Geometry & shape = prototypes.geometries[at];
     glm::mat4 toWorld { 1.0F };
     for (const std::uint32_t member : placed) {
@@ -595,9 +599,10 @@ void appendMesh(const geometry::Prototypes & prototypes, kernel::light::Light ma
     if (sums.empty()) {
         return;
     }
-    auto subtree = subtrees.find(at);
+    const std::pair<std::uint32_t, bool> key { at, made.twoSided };
+    auto subtree = subtrees.find(key);
     if (subtree == subtrees.end()) {
-        subtree = subtrees.emplace(at, subtreeOf(prototypes, shape, out)).first;
+        subtree = subtrees.emplace(key, subtreeOf(prototypes, shape, made.twoSided, out)).first;
     }
     made.id = kernel::geometry::kNoPrimitive;
     made.shape = kernel::light::Shape::Mesh;
@@ -622,7 +627,7 @@ void appendMesh(const geometry::Prototypes & prototypes, kernel::light::Light ma
     }
     const float power = std::fmax(0.0F, powerOf(made, size, 0.0F) * kernel::spectrum::acescgToXyz(made.colour).y);
     if (made.tree != kernel::geometry::kNoPrimitive) {
-        out.top.push_back(internal::Leaf { .bounds = meshBounds(prototypes, placed, shape, subtree->second, areas, power),
+        out.top.push_back(internal::Leaf { .bounds = meshBounds(prototypes, placed, shape, subtree->second, areas, power, made.twoSided),
             .held = static_cast<std::uint32_t>(out.lights.size()) });
     }
     out.lights.push_back(made);
@@ -646,10 +651,11 @@ std::uint32_t materialOf(const geometry::Prototypes & prototypes, const std::vec
 
 /**
  * The light an emitting material makes: OpenPBR's emission luminance in its emission colour,
- * which camera rays see, in ACEScg. It is an object, not a light of the scene. A material that is
- * not layered, or emits no luminance, makes none.
+ * which camera rays see, in ACEScg. It is an object, not a light of the scene. It emits from both
+ * faces where the instance that places its geometry is double-sided. A material that is not
+ * layered, or emits no luminance, makes none.
  **/
-bool materialEmitter(const std::vector<kernel::surface::Material> & materials, std::uint32_t material, kernel::light::Light & out) {
+bool materialEmitter(const std::vector<kernel::surface::Material> & materials, std::uint32_t material, bool doubleSided, kernel::light::Light & out) {
     if (material == kernel::surface::kNoMaterial) {
         return false;
     }
@@ -662,6 +668,7 @@ bool materialEmitter(const std::vector<kernel::surface::Material> & materials, s
     out.scale = held.surface.emissionLuminance;
     out.camera = true;
     out.object = true;
+    out.twoSided = doubleSided;
     return true;
 }
 
@@ -679,13 +686,13 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
     const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
     const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config).materials;
     std::set<std::uint32_t> reported;
-    std::map<std::uint32_t, internal::Subtree> subtrees;
+    std::map<std::pair<std::uint32_t, bool>, internal::Subtree> subtrees;
     std::vector<std::uint32_t> chain;
     chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
         const geometry::Geometry & shape = prototypes.geometries[at];
         const auto naming = named.find(shape.id);
         kernel::light::Light glowing;
-        const bool glows = materialEmitter(materials, materialOf(prototypes, placed), glowing);
+        const bool glows = materialEmitter(materials, materialOf(prototypes, placed), prototypes.instances[placed.back()].doubleSided, glowing);
         if (naming == named.end() && !glows) {
             return;
         }

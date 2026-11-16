@@ -279,7 +279,8 @@ Kind instance() {
             Declaration { .name = "material", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "material" } },
             Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(1) },
             Declaration { .name = "shadow", .type = Type::Integer, .fallback = Value::integer(1) },
-            Declaration { .name = "indirect", .type = Type::Integer, .fallback = Value::integer(1) } } };
+            Declaration { .name = "indirect", .type = Type::Integer, .fallback = Value::integer(1) },
+            Declaration { .name = "doubleSided", .type = Type::Integer, .fallback = Value::integer(0) } } };
 }
 
 /**

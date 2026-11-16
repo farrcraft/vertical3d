@@ -84,7 +84,8 @@ enum class Shape : std::uint8_t {
  *   from all.
  * - label is the place among the render's labels of its light group's name, or kNoLabel for a
  *   light in no group. object is whether an emitting material made it, rather than a light of
- *   the scene.
+ *   the scene. twoSided is whether a mesh light emits from both faces of its triangles, rather
+ *   than from the side their winding faces.
  **/
 struct Light {
     std::uint32_t id { 0 };
@@ -116,6 +117,7 @@ struct Light {
     std::uint32_t shadowCount { 0 };
     std::uint32_t label { kNoLabel };
     bool object { false };
+    bool twoSided { false };
 };
 
 /** Whether a light has a shape of its own: a rect, disk, sphere or cylinder. **/

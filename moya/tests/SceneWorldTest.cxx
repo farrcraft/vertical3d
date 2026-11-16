@@ -108,6 +108,29 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_block_left_open_ends_with_its_world_test
     BOOST_TEST(block.heard("left open"));
 }
 
+// an instance is double-sided under RI's default of two sides, and not under Sides 1, which lasts
+// to the end of its attribute block. A count of sides RI does not name is reported and changes
+// nothing
+BOOST_AUTO_TEST_CASE(moya_sceneclient_sides_decides_whether_an_instance_is_double_sided_test) {
+    const Read read(world(
+        "Attribute \"identifier\" \"name\" \"both\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "AttributeBegin\n"
+        "Sides 1\n"
+        "Attribute \"identifier\" \"name\" \"front\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "Sides 3\n"
+        "Attribute \"identifier\" \"name\" \"still front\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"
+        "AttributeEnd\n"
+        "Attribute \"identifier\" \"name\" \"again\"\n"
+        "Polygon \"P\" [0 0 0 1 0 0 1 1 0]\n"));
+    BOOST_TEST((read.value("instance", "both", "doubleSided") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("instance", "front", "doubleSided") == scene::Value::integer(0)));
+    BOOST_TEST((read.value("instance", "still front", "doubleSided") == scene::Value::integer(0)));
+    BOOST_TEST((read.value("instance", "again", "doubleSided") == scene::Value::integer(1)));
+}
+
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_primitive_is_a_prototype_and_an_instance_test) {
     const Read read(world(
         "AttributeBegin\n"
@@ -594,7 +617,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_every_test_scene_reads_as_committed_test) 
         BOOST_TEST(read.described() == expected, entry.path().filename().string());
         scenes++;
     }
-    BOOST_TEST(scenes == 39U);
+    BOOST_TEST(scenes == 31U);
 }
 
 /** Where an instance's transformation takes a point. **/

@@ -92,9 +92,8 @@ struct Picture {
 
 /** The scenes that hold still and are not displaced, whose depth the ray hider's must match. **/
 const std::set<std::string> & stillScenes() {
-    static const std::set<std::string> scenes { "raytrace-area", "raytrace-bump", "raytrace-focus", "raytrace-lit-quad", "raytrace-sampled",
-        "raytrace-shaded", "raytrace-spheres", "raytrace-triangle", "reference-area", "reference-bump", "reference-focus", "reference-glass",
-        "reference-polygon", "reference-sampled", "reference-shaded", "reference-shadow", "spec-cube", "textured" };
+    static const std::set<std::string> scenes { "raytrace-lit-quad", "raytrace-spheres", "raytrace-triangle", "reference-area", "reference-bump",
+        "reference-focus", "reference-glass", "reference-polygon", "reference-shaded", "reference-shadow", "spec-cube", "textured" };
     return scenes;
 }
 
@@ -226,14 +225,14 @@ BOOST_AUTO_TEST_CASE(moya_scenehits_every_scene_traces_as_committed_test) {
         BOOST_TEST(apart == 0U, name);
         scenes++;
     }
-    BOOST_TEST(scenes == 39U);
+    BOOST_TEST(scenes == 31U);
 }
 
 /**
  * Each scene that holds still and is not displaced lies where the ray hider finds it: at every
  * pixel inside one surface, the hit view's depth is the ray hider's depth plane. The ray hider
- * takes one sample at each pixel's centre, as the hit view does, unless the scene names its own
- * sampling, so a curved surface's depth is not averaged across a pixel.
+ * takes one sample at each pixel's centre, as the hit view does, whatever sampling the scene
+ * names, since it keeps the nearest of a pixel's samples.
  *
  * Covers the base: e8e902d8 added the hit view and moya --hits. Checked by widening the camera's
  * field of view by a tenth, by making a sphere a hundredth larger, and by making every depth a

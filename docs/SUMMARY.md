@@ -252,6 +252,7 @@
     - [ADR-0238: Offline: a background is composited when an output is written](adr/offline/0238-offline-a-background-is-composited-when-an-output-is-written.md)
     - [ADR-0239: Offline: RI's C interface is retired](adr/offline/0239-offline-ris-c-interface-is-retired.md)
     - [ADR-0240: Offline: RIB is a library of its own](adr/offline/0240-offline-rib-is-a-library-of-its-own.md)
+    - [ADR-0241: Offline: RI's Sides decides which faces a material emits from](adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

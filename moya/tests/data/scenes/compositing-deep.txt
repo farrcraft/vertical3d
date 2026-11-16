@@ -27,6 +27,7 @@ domeLight "light sky"
     transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
 instance "card"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 3"
@@ -35,6 +36,7 @@ instance "card"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "pane"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
@@ -43,6 +45,7 @@ instance "pane"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "wall"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "material"

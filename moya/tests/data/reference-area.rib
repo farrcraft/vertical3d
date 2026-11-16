@@ -2,8 +2,8 @@
 ##Scene A box in front of a wall, lit by a quad light to one side, with a soft shadow
 version 3.03
 Format 64 48 1
-# one sample at each pixel centre under a one pixel box, which the film gives back exactly
-PixelSamples 1 1
+# sixty-four samples a pixel under a one pixel box, so each pixel has a standard error
+PixelSamples 8 8
 PixelFilter "box" 1 1
 Projection "orthographic"
 ScreenWindow -2 2 -1.5 1.5

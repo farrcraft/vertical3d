@@ -27,6 +27,7 @@ domeLight "light 1"
     transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "paintedplastic"
@@ -65,7 +66,7 @@ options "options"
     pixelAspect float = 1
     resolution integer[2] = 64 48
     rouletteDepth integer = 3
-    samples integer = 1
+    samples integer = 256
     shaderSearchPath string = ""
     specularDepth integer = 12
     textureDirectory string = ""
@@ -74,7 +75,7 @@ options "options"
     transmissionDepth integer = 12
 shader "paintedplastic"
     Cs colour = (1, 1, 1)
-    Kd float = 0
+    Kd float = 1
     Ks float = 0
     Os colour = (1, 1, 1)
     language string = "ri"

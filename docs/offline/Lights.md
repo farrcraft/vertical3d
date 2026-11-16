@@ -112,7 +112,8 @@ the world that places the geometry.
   surface into. A geometry with no triangles, such as a quadric, emits nothing, and the logger
   reports it once for each light.
 - **A triangle emits from the side its winding faces**, turned into the world as a normal is, the
-  side a shading point's geometric normal faces.
+  side a shading point's geometric normal faces. An emitting material's triangles emit from both
+  faces where the innermost instance of the chain is `doubleSided`, as the next section says.
 - **Its radiance is UsdLux's**, from its `intensity`, `exposure`, `colour` and colour
   temperature. With `normalize`, it is divided by the area in the world of the triangles the
   chain places, as they stand when the shutter opens.
@@ -133,13 +134,20 @@ normalised, and it lights everything, with every instance casting its shadows. A
 no triangles emits nothing from its material either. A chain whose geometry a mesh light also
 names makes both lights, the mesh light's first, and their light adds.
 
+- **A material emits from both faces of a double-sided instance.** Where the innermost instance
+  of the chain is `doubleSided`, its light is two-sided. A hit on either face sees it, a light
+  sample is drawn on the face towards the shading point, and its power counts both faces. The
+  light tree bounds it by every direction. A mesh light emits from the side its winding faces,
+  whatever the instance holds.
+
 `kernel::light::Lights::emitting()` gives a mesh light whose geometry a hit's chain places, from
 `meshes`, which holds the first mesh light each instance in the world places. Given the place of
 one it found, it gives the next, so a hit meets both of its chain's lights.
-
-Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md)
 `Lights::triangleAt()` gives a triangle in the world at a time, with the unit normal of the side
-it emits from.
+its winding faces, and `faceTowards()` turns that of a two-sided light to the side a point lies on.
+
+Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md),
+[ADR-0241](../adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
 
 ## Images
 

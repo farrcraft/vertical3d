@@ -2,12 +2,12 @@
 ##Scene A translucent quad in front of a checked plane
 version 3.03
 Format 64 48 1
-# one sample at each pixel centre under a one pixel box, which the film gives back exactly
-PixelSamples 1 1
+# sixty-four samples a pixel under a one pixel box, so each pixel has a standard error
+PixelSamples 8 8
 PixelFilter "box" 1 1
 Projection "orthographic"
 Clipping 1 100
-# the checked shader is a fixture beside the scene rather than one of the standard ones
+# checked is not one of RI's surfaces, so its document, checked.mtlx, is read from beside the scene
 Option "searchpath" "shader" ["data:&"]
 WorldBegin
 LightSource "ambientlight" 0 "intensity" [0.3]

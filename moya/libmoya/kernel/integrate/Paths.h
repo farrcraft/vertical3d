@@ -386,6 +386,7 @@ MOYA_KERNEL light::LightSample drawLight(const Paths<T, X> & paths, std::uint32_
     if (primitive == geometry::kNoPrimitive || !paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return light::LightSample {};
     }
+    light::faceTowards(chosen.twoSided, corners, from, normal);
     return light::triangleSample(corners, normal, from, u);
 }
 
@@ -410,6 +411,7 @@ MOYA_KERNEL float lightDensity(const Paths<T, X> & paths, std::uint32_t place, s
     if (!paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return 0.0F;
     }
+    light::faceTowards(light.twoSided, corners, from, normal);
     return light::triangleDensity(corners, normal, from, met);
 }
 
@@ -725,8 +727,11 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         // a hit's distance is in the ray's lengths, and the cone's in world units
         const float length = glm::length(ray.direction);
         point.footprint = surface::footprintOf(MOYA_PATH(state, cone).widthAt(hit.distance * length), ray.direction / length, point.shading);
-        for (std::uint32_t glowing = paths.lights.emitting(hit); glowing != geometry::kNoPrimitive && point.front;
-             glowing = paths.lights.emitting(hit, glowing)) {
+        for (std::uint32_t glowing = paths.lights.emitting(hit); glowing != geometry::kNoPrimitive; glowing = paths.lights.emitting(hit, glowing)) {
+            // a light seen from behind its triangles emits only when it is two-sided
+            if (!point.front && !paths.lights.lights[glowing].twoSided) {
+                continue;
+            }
             const float share = metShare(paths, glowing, hit.primitive, paths.surfaces.held(hit.time), point.position, state);
             if (share > 0.0F) {
                 const spectrum::SampledSpectrum lit = MOYA_PATH(state, throughput) * light::glow(paths.lights.lights[glowing], paths.table, MOYA_PATH(state, wavelengths)) * share;

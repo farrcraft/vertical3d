@@ -3,12 +3,11 @@
 version 3.03
 Hider "raytrace"
 Format 64 48 1
-# one sample at each pixel centre under a one pixel box, which the film gives back exactly:
-# this picture pins the hider and the shading, and reference-sampled pins the sampling
-PixelSamples 1 1
+# sixty-four samples a pixel under a one pixel box, so each pixel has a standard error
+PixelSamples 8 8
 PixelFilter "box" 1 1
 Projection "orthographic"
-# an ortho zoom of one and a pixel aspect of 4:3, as the scene ReferenceTest builds in code has
+# an ortho zoom of one and a pixel aspect of 4:3
 ScreenWindow -1.333333 1.333333 -1 1
 Clipping 0.001 100
 # what a ray that hits nothing is worth, said with a request rather than with geometry
@@ -17,8 +16,8 @@ Imager "background" "background" [0.15 0.25 0.45]
 # world origin one unit in front of the camera
 Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
 WorldBegin
-# the shader that means no shading, named rather than left as the default, so the picture
-# shows that the shading language draws an unshaded surface unchanged
+# the surface that emits its colour and scatters nothing, named rather than left as the
+# default, so the picture is the colour alone
 Surface "constant"
 # asymmetric about both axes, so a flipped picture is a failing one
 Color [0.9 0.2 0.2]

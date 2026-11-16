@@ -615,6 +615,7 @@ scene::Handle SceneClient::instance(const scene::Handle & prototype, const std::
     const scene::Handle placed = made_.make("instance", name);
     scene_.set(placed, "prototype", scene::Value::handle(prototype));
     current_.transformation.set(&scene_, placed, "transform", logger_);
+    scene_.set(placed, "doubleSided", scene::Value::integer(current_.twoSided ? 1 : 0));
     if (current_.group.valid()) {
         // an object's geometry takes the material in force where the object is placed
         scene_.set(placed, "group", scene::Value::handle(current_.group));
@@ -782,6 +783,10 @@ void SceneClient::color(const glm::vec3 & value) {
 void SceneClient::opacity(const glm::vec3 & value) {
     current_.opacity = value;
     current_.material = boost::make_shared<scene::Handle>();
+}
+
+void SceneClient::sides(int count) {
+    current_.twoSided = count == 2;
 }
 
 void SceneClient::basis(const v3d::render::offline::rib::requests::Basis & request) {

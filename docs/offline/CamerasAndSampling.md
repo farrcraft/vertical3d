@@ -57,9 +57,6 @@ Both hiders render through them.
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel itself,
   because a blend of two surfaces' depths lies on neither surface. A pixel no sample hit keeps
   the value its depth plane held.
-- **A reference image that pins hiding or shading names `PixelSamples 1 1` and
-  `PixelFilter "box" 1 1`**, in its test code and in its `.rib`. `reference-sampled.png` and
-  `raytrace-sampled.png` pin the defaults.
 
 Background: [ADR-0076](../adr/offline/0076-offline-seeded-samples-resolved-by-one-shared-film.md)
 

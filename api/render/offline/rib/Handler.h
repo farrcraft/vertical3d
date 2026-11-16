@@ -179,6 +179,8 @@ class Handler {
     virtual void color(const glm::vec3 & value) { (void)value; }
     virtual void opacity(const glm::vec3 & value) { (void)value; }
     virtual void shadingRate(float size) { (void)size; }
+    /** How many faces of a surface are seen, 1 or 2. **/
+    virtual void sides(int count) { (void)count; }
     virtual void attribute(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;

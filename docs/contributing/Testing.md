@@ -442,13 +442,9 @@ Background: [ADR-0054](../adr/project/0054-testing-golden-images-hold-only-spec-
 
 ### moya references
 
-The moya suite renders scenes on the CPU and compares them with committed PNGs in
+The moya suite renders scenes on the CPU and compares them with committed pictures in
 `moya/tests/data/`:
 
-- `reference-*.png` are rendered with the Reyes hider.
-- `raytrace-*.png` are rendered with the ray tracing hider.
-- Each PNG has a `.rib` file beside it that describes the same scene. The suite renders it from
-  the file and from code, so both paths are tied to one picture.
 - `foundation-chart.png` is rendered by the new core, from code alone, and only in a spectral
   build.
 - `paths-*.exr` are rendered by the new core's path tracer from the `.rib` file beside each, and
@@ -461,11 +457,15 @@ The moya suite renders scenes on the CPU and compares them with committed PNGs i
   coated, a fuzzed and a thin-filmed sphere. The others hold a textured quad, a normal-mapped
   sphere, a cut-out card, and a subdivision surface its material displaces.
   `materials-patterns.mtlx` holds the materials they read from a document.
+- `reference-*.exr`, `raytrace-*.exr`, `spec-cube.exr` and `textured.exr` are rendered the same
+  way, from scenes written for RI's own surfaces and lights. `checked.mtlx` and `bumpy.mtlx`
+  define two RI surfaces of their names, which the scenes read from the shader search path, and
+  `rippled.mtlx` holds a displacement.
 
-The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
-differences between compilers. It reports the worst pixel and by how much. A failing case, or a
-case with no reference yet, writes what it rendered to `data_out/` beside the executable. Copy that
-file over the reference to change it on purpose.
+The chart is compared by `image::compare` at a tolerance of 1, which absorbs floating-point
+rounding differences between compilers. It reports the worst pixel and by how much. A failing
+case, or a case with no reference yet, writes what it rendered to `data_out/` beside the
+executable. Copy that file over the reference to change it on purpose.
 
 Every traversal the new core has is checked against the brute-force traversal, the oracle. It
 tests each ray against every placed primitive, so its nearest hit is right by construction. A
@@ -505,8 +505,9 @@ so a case over every pixel allows more than one over a region's mean.
   five standard errors. The same samples are drawn on every run, so a render lies far less than
   an error from its reference unless its light changed. Rounding between compilers stays inside
   the bound. A second case renders each scene with every light twice as bright and checks that
-  the comparison fails it. A third renders each material scene with every surface's base at half
-  its weight, and checks that the comparison fails it too.
+  the comparison fails it. RI's `constant` surface emits its colour, so that case doubles its
+  colour too, and a scene lit by it alone fails as well. A third renders each material scene
+  with every surface's base at half its weight, and checks that the comparison fails it too.
 - **The compositing scenes, `compositing-*.rib`, are compared the same way**, channel by channel.
   Their committed EXR holds every float of each pixel, the beauty's errors, each pixel's deep
   samples flattened with their count, and each Cryptomatte layer's manifest. The beauty and
@@ -532,8 +533,8 @@ Each `.rib` file also has what the new core makes of it committed in `moya/tests
   thousandth, and what each ray met exactly. A pixel on an edge, where a neighbour's ray met
   something else, is left out, since rounding between compilers can take a ray to either side.
 - **Depth is checked against the ray hider.** Each scene that holds still and is not displaced
-  is rendered by the ray hider too, one sample at each pixel's centre unless the scene names its
-  own sampling. Wherever both cover a pixel inside one surface, the hit view's depth is the ray
+  is rendered by the ray hider too, one sample at each pixel's centre whatever sampling the scene
+  names. Wherever both cover a pixel inside one surface, the hit view's depth is the ray
   hider's to a ten thousandth. The old depth plane holds RI's screen depth on [0, 2], so the test
   takes it back to depth along the view through the camera's clipping planes.
 

@@ -100,7 +100,9 @@ then derived as RI derives it.
 - **`group`**: a prototype made of the instances that name it.
 - **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
   to, or none for the world. `transform` over the shutter, its `material`, and its visibility
-  to `camera`, `shadow` and `indirect` rays, each 1 or 0. An instance of a group places every
+  to `camera`, `shadow` and `indirect` rays, each 1 or 0. `doubleSided`, 1 or 0 and 0 unless a
+  client sets it, says whether a material that emits from the geometry it places emits from both
+  faces, as [Lights.md](Lights.md#mesh-lights) says. An instance of a group places every
   instance in it, so instancing nests. An instance in a group with no material takes the
   material of the instance that places the group. Flattening it into placements is the work of
   whatever is built from the scene, which stops at a group that holds itself.

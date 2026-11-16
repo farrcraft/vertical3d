@@ -449,6 +449,18 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
         handler->shadingRate(arg1);
         return Result::Handled;
     }
+    if (name == "Sides") {
+        if (!operands_.number(lexer, &arg1)) {
+            return Result::Failed;
+        }
+        const std::optional<int32_t> count = v3d::type::toInteger(arg1, {.minimum = 1, .maximum = 2});
+        if (!count) {
+            logger_->get()->warn("RIB Sides {} is neither 1 nor 2 and was skipped", arg1);
+            return Result::Handled;
+        }
+        handler->sides(*count);
+        return Result::Handled;
+    }
     if (name == "Basis") {
         requests::Basis request;
         if (!operands_.basis(lexer, &request.u, &request.ustep) || !operands_.basis(lexer, &request.v, &request.vstep)) {

@@ -144,6 +144,7 @@ core includes no new-core header.
 | 0238 | What RI's background imager becomes | [2](#step-2--the-record-ris-ambient-light-and-imager) |
 | 0239 | Whether RI's C interface stays, and over what | [3](#step-3--the-record-ris-c-interface) |
 | 0240 | What `api/render/offline` holds, and its name | [4](#step-4--the-record-the-offline-library) |
+| 0241 | Which faces a material emits from, as RI's `Sides` says | [8](#step-8--the-old-scenes-through-the-new-core) |
 
 Each record step researches how production renderers and tools make the choice. The owner
 chooses among the options before the record is drafted.
@@ -161,7 +162,7 @@ chooses among the options before the record is drafted.
 | [5](#step-5--ris-surfaces-become-materials) | RI's surfaces become materials | `moya/libmoya/ri`, `material` | 0236 | done |
 | [6](#step-6--ambient-light-and-the-background) | Ambient light and the background | `moya/libmoya/ri`, `light`, `output` | 0237, 0238 | done |
 | [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
-| [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | — | open |
+| [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | 0241 | done |
 | [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | open |
 | [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | open |
 | [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | open |
@@ -456,6 +457,22 @@ over a quadric, and RI's width of a curve. Each was broken in the scene client a
 
 **Tests:** the committed renders, and a case for each that renders it with a light twice as
 bright and checks that the comparison fails.
+
+**Done.** Six pairs described the same scene, and two scenes differed from another only in
+their sampling, so 22 scenes are 14. Each is rendered by the path tracer and compared within
+five standard errors. A scene that took one sample a pixel takes 64, since one sample has no
+error, and `textured.rib`'s dome needs 256. The old ray hider's depth check reads each scene at
+pixel centres whatever sampling it names. `checked.mtlx` and `bumpy.mtlx` define those two RI
+surfaces on the shader search path, and `reference-displaced.rib` is a subdivision surface that
+`rippled.mtlx` displaces. `textured.rib`'s quad is diffuse, since the ambient light is a dome.
+The brighter case doubles RI's `constant` colour too, the only light of four scenes.
+
+RI's `constant` surfaces seen from behind rendered black, since a triangle emitted from its
+front alone. [ADR-0241](../adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
+has RI's `Sides` decide: the reader reads it, the scene client sets an instance's new
+`doubleSided`, and an emitting material on a two-sided instance emits from both faces. Every
+scene description gained `doubleSided`. The 19 PNGs and the three old reference suites are
+deleted, and `Reference.h` keeps what the foundation chart and the depth case use.
 
 ### Step 9 — moya.exe renders by path tracing
 

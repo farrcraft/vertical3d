@@ -27,6 +27,7 @@ domeLight "light 0"
     transform matrix = [-1 0 0 0 0 1 0 0 0 0 -1 0 0 0 0 1]
 instance "Polygon 1"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "constant"
@@ -35,6 +36,7 @@ instance "Polygon 1"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 2"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte"
@@ -43,6 +45,7 @@ instance "Polygon 2"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 3"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -51,6 +54,7 @@ instance "Polygon 3"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 4"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -59,6 +63,7 @@ instance "Polygon 4"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 5"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -67,6 +72,7 @@ instance "Polygon 5"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 6"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -75,6 +81,7 @@ instance "Polygon 6"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 7"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -83,6 +90,7 @@ instance "Polygon 7"
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
 instance "Polygon 8"
     camera integer = 1
+    doubleSided integer = 1
     group handle = none
     indirect integer = 1
     material handle = material "matte 2"
@@ -178,7 +186,7 @@ options "options"
     pixelAspect float = 1
     resolution integer[2] = 64 48
     rouletteDepth integer = 3
-    samples integer = 1
+    samples integer = 64
     shaderSearchPath string = ""
     specularDepth integer = 12
     textureDirectory string = ""
