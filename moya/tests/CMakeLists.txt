@@ -65,8 +65,6 @@ v3d_add_test(moya
 	"RIBHandlerTest.cxx"
 	"RIBOutputTest.cxx"
 	"RIBStateTest.cxx"
-	"RenderManTest.cxx"
-	"RendererTest.cxx"
 	"RgbTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"SamplesTest.cxx"

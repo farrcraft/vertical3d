@@ -26,8 +26,7 @@ the reader and the handler.
   first error, and the geometric primitives through `rib::internal::Primitives`.
 - **Only ASCII RIB is read.** A binary or gzipped stream is rejected with a message naming
   which it is. A stream is read from where it stands rather than from its beginning.
-- **A request whose number cannot be used is skipped with a warning.** `RiFormat` and
-  `RiPixelFilter` in the C interface refuse the same values, and the context keeps what it had.
+- **A request whose number cannot be used is skipped with a warning.**
 - **An unrecognised request is reported once per name, and its arguments are skipped.**
   `Reader::unrecognised()` lists them. `Reader::unsupported()` lists what was read but not
   built, such as a deforming primitive.
@@ -53,23 +52,8 @@ the reader and the handler.
 - **RenderMan's `reference` may come before a declaration's type**, as in
   `"reference color base_color"`. A reference names another node's output in place of a value, so
   its values are strings whatever its type, and it is written back as `uniform reference color`.
-- **The C interface counts a facevarying array by its faces' corners.** `RiPointsPolygons` and
-  `RiSubdivisionMesh` read one element per index of their faces, and their varying and vertex
-  arrays one element per point the faces index.
-- **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
-  array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
-  `RtFloat`s.
-- **A C entry point and a file's request reach the same `RIBHandler` method.** A variadic entry
-  point forwards to its `V` form, which converts the arguments and calls the handler, so the two
-  forms of a request cannot differ. `RiPolygon` and the RIB `Polygon` both read `"P"`, `"Cs"`,
-  `"N"` and `"st"`. The quadrics, `RiPoints` and `RiSubdivisionMesh` reach the handler as their
-  RIB requests do. The C interface gives a subdivision mesh's tags two counts each, as RI 3.2
-  defines it. `RiObjectBegin` returns no handle and reaches no handler.
 - **A shader, light or space with an empty name names nothing.** `RIBHandler` ignores the
-  request, and the state stays as it was. The C interface passes `RI_NULL` on as the empty name.
-- **`RiGetContext` returns a handle that lasts until `RiEnd` ends its context.** `RiContext`
-  makes that context active again, and a handle to a context that has ended is ignored. `RiEnd`
-  with no context begun does nothing.
+  request, and the state stays as it was.
 - **A predefined space cannot be saved over.** The camera sets them, so the hiders read the
   camera the scene set up. `RiCoordinateSystem` with one of them is logged and saves nothing.
 - **A quadric's varying and facevarying parameters hold four values**, one at each corner of its
@@ -106,11 +90,10 @@ the reader and the handler.
 - **`Attribute "displacementbound"` is kept in camera space**, scaled by the largest stretch of
   the axes of the space it was given in.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
-  `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
+  `Handler::areaLightSource`. moya overrides it.
 - **A primitive repeated inside a motion block is a deformation, which moya does not build.**
   The reader hands the later poses to `Handler::deformation()`, which returns null unless a
-  renderer overrides it, and lists them in `Reader::unsupported()`. `RIBHandler` leaves out a
-  later pose that reaches it through the C interface in the same way, and logs the first one.
+  renderer overrides it, and lists them in `Reader::unsupported()`.
 - **A polygon's `"st"` is carried by both hiders.** A traced triangle weights its corners' values
   by its barycentric coordinates. A triangle given none has `s` and `t` equal to those
   coordinates. The reyes hider interpolates `"st"` across a grid, as it does `"Cs"`, and carries

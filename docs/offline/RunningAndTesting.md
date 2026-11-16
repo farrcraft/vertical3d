@@ -9,7 +9,7 @@ moya is three CMake targets, and it is built on one api library:
 | Directory | Target | Contents |
 |---|---|---|
 | `moya/libmoya` | `v3dlib_moya` | The renderer. At its root, what both hiders share: the `Hider` base, and the polygons, vertices and curves they draw. Namespace `v3d::moya` |
-| `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the RI C API, the handler RIB requests and C calls reach, and the C interface's stack of handlers. Namespace `v3d::moya::ri` |
+| `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the handlers RIB requests reach, the old core's and the scene client. Namespace `v3d::moya::ri` |
 | `moya/libmoya/state` | `v3dlib_moya` | The graphics state: the render context and each part of the state it holds. Namespace `v3d::moya::state` |
 | `moya/libmoya/raytrace` | `v3dlib_moya` | The ray hider and the scene its rays meet. Namespace `v3d::moya::raytrace` |
 | `moya/libmoya/reyes` | `v3dlib_moya` | The reyes hider's pipeline: buckets, dicing, grid shading and the samples. Namespace `v3d::moya::reyes` |

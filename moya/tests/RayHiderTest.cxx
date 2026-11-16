@@ -16,7 +16,6 @@
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/raytrace/Hider.h>
 #include <moya/libmoya/ri/RIBHandler.h>
-#include <moya/libmoya/ri/RenderMan.h>
 #include <moya/libmoya/state/Planes.h>
 #include <moya/libmoya/state/RenderContext.h>
 
@@ -114,16 +113,6 @@ BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {
     BOOST_CHECK(rc.raytracing());
     rc.hider("hidden");
     BOOST_CHECK(!rc.raytracing());
-}
-
-/**
- * RiHider reaches the same context the RIB request does.
- **/
-BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
-    RiBegin(RI_NULL);
-    RiHider(const_cast<char*>("raytrace"), RI_NULL);
-    BOOST_CHECK(static_cast<v3d::moya::ri::RIBHandler*>(RiGetContext())->context().raytracing());
-    RiEnd();
 }
 
 /**

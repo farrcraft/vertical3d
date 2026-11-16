@@ -39,16 +39,13 @@
 namespace v3d::moya::ri {
 
 /**
- * Drives a render context from RI requests. The RIB reader calls one typed method per request,
- * and so do the C entry points in RenderMan.cxx, so each RI rule this renderer follows is
- * written here once.
+ * Drives a render context from RI requests. The RIB reader calls one typed method per request.
  *
  * A handler owns its render context and the declarations its parameters are typed by. RiBegin
  * and RiEnd have no RIB equivalent: the standard implies them at the start and end of a file,
  * and a handler's life is that span.
  *
- * A request whose shader, light or space name is empty names nothing, and is ignored. The C
- * interface passes RI_NULL on as the empty name.
+ * A request whose shader, light or space name is empty names nothing, and is ignored.
  *
  * Moya is not a RenderMan compliant renderer. Compliance forbids any way into the renderer
  * besides the RI calls and RIB, and RenderContext is another way in. A program that uses the
@@ -65,8 +62,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     RIBHandler & operator=(const RIBHandler &) = delete;
 
     /**
-     * Records the declaration for the parameters the C interface passes. The RIB reader keeps
-     * its own for the file it reads, and this one as well.
+     * Records the declaration in the handler's own declarations. The RIB reader keeps its own
+     * for the file it reads, and this one as well.
      **/
     void declare(const v3d::render::offline::rib::requests::Declare & request) override;
 
@@ -176,8 +173,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     state::RenderContext & context();
 
     /**
-     * What the scene has declared, and what the standard declares for it. The C interface
-     * types the parameters it is passed by these.
+     * What the scene has declared, and what the standard declares for it.
      **/
     const v3d::render::offline::rib::Declarations & declarations() const;
 

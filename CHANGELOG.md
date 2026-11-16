@@ -52,6 +52,8 @@ that section to its version, and the section becomes the release's notes.
 ### Removed
 
 - `moya --grid` and `--bucket`, which sized the reyes hider's grids and buckets.
+- RI's C interface in libmoya, `RiBegin` and the other `Ri` entry points with their header
+  `RenderMan.h`. A program builds moya's scene through the retained scene in C++, or writes RIB.
 
 ### Fixed
 

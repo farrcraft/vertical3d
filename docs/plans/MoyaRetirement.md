@@ -168,7 +168,7 @@ chooses among the options before the record is drafted.
 | [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | done |
 | [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | done |
 | [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | done |
-| [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | open |
+| [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | done |
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | open |
 | [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | open |
 | [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | open |
@@ -617,6 +617,21 @@ the case in six scenes.
 
 **Tests:** as the record decides. An adapter renders a scene through the C interface and gives the
 same scene description as its RIB.
+
+**Done.** `ri/RenderMan.h` and `RenderMan.cxx`, `Renderer`, `internal/Converter`,
+`RenderManTest`, `RendererTest` and the ray hider's case of `RiHider` are deleted. The offline
+library's `rib/Arguments`, which typed the C interface's arrays, goes with its test, since nothing
+else read it. The TODO.md entry on `RiObjectBegin` is deleted, as the record says. libmoya
+compiles with C4100 and `-Wunused-parameter` back on, and `readability-non-const-parameter` is
+checked across the tree again with no finding. [Rib.md](../offline/Rib.md), the offline README and
+[RunningAndTesting.md](../offline/RunningAndTesting.md) no longer describe the C interface, and
+the changelog names its removal. ADR-0025 still names `RenderMan.h`, and is step 17's.
+
+The tree-wide clang-tidy pass also found what steps 5 to 13 had left. `SceneWorldTest` failed to
+compile under clang, since MSVC's STL vectorises `std::find` over a 12-byte `Handle` and then
+fails its own size check, so the case searches with `std::any_of`. The material compiler, the
+outputs, the EXR windows, the scene client and ten test files held 25 findings, which are fixed.
+The scene client's `option()` reads its search paths and integer limits through two helpers.
 
 ### Step 15 — The old core leaves libmoya
 

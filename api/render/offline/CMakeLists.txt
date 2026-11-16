@@ -26,7 +26,6 @@ v3d_add_api_library(render_offline
 	"rib/Declaration.h" "rib/Declaration.cxx"
 	"rib/Declarations.h" "rib/Declarations.cxx"
 	"rib/Parameters.h" "rib/Parameters.cxx"
-	"rib/Arguments.h" "rib/Arguments.cxx"
 	"rib/requests/Basis.h"
 	"rib/requests/Clipping.h"
 	"rib/requests/Cone.h"

@@ -188,11 +188,8 @@ add_library("v3dlib_moya"
 	"output/Output.h"
 	"output/Outputs.h" "output/Outputs.cxx"
 
-	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
-	"ri/Renderer.h" "ri/Renderer.cxx"
 	"ri/SceneClient.h" "ri/SceneClient.cxx"
-	"ri/internal/Converter.h" "ri/internal/Converter.cxx"
 	"ri/internal/Deforming.h" "ri/internal/Deforming.cxx"
 	"ri/internal/Document.h" "ri/internal/Document.cxx"
 	"ri/internal/DocumentReader.h" "ri/internal/DocumentReader.cxx"
@@ -262,15 +259,10 @@ add_library("v3dlib_moya"
 	"reyes/Samples.h" "reyes/Samples.cxx"
 )
 
-# ri/RenderMan.cxx defines the whole RenderMan Interface and leaves many of its entry points
-# empty. Every parameter of an empty entry point is unreferenced, and at /W4 those C4100
-# warnings would bury the rest of the tree's warnings. C4100 is disabled for this target, so
-# a parameter keeps its name until its function gets a body. -Wunused-parameter is the same
-# warning to Clang and GCC.
+# MSVC needs /EHsc for C++ exceptions, and /utf-8 for the fmt that spdlog bundles. Clang and
+# GCC need neither.
 if(MSVC)
-	target_compile_options("v3dlib_moya" PRIVATE /wd4100 /EHsc /utf-8)
-else()
-	target_compile_options("v3dlib_moya" PRIVATE -Wno-unused-parameter)
+	target_compile_options("v3dlib_moya" PRIVATE /EHsc /utf-8)
 endif()
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's

@@ -33,8 +33,8 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 
 ### Glossary
 
-- **RI** (RenderMan Interface): the C API a RenderMan renderer exposes, such as `RiPolygon`
-  and `RiSurface`. moya declares all of it in `moya/libmoya/ri/RenderMan.h`.
+- **RI** (RenderMan Interface): the calls a RenderMan renderer takes, such as `RiPolygon` and
+  `RiSurface`. moya takes them as RIB requests alone, and has no C interface.
 - **RIB** (RenderMan Interface Bytestream): a text file of RI calls, one **request** per call,
   such as `Polygon "P" [...]`. It is the scene format moya reads.
 - **Parameter list**: the name and value pairs that end a request, such as `"Cs" [1 0 0]`. Each
@@ -92,27 +92,7 @@ scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics sta
 5. The imager shader, if the scene names one, runs over the planes.
 6. The colour planes are written to the output file.
 
-**The RI C entry points in `ri/RenderMan.cxx` are an adapter over `RIBHandler`.** Each converts
-its arguments into the request the handler takes and passes it on, so a C call and a file's
-request follow the same rules. The conversion is all an entry point does. `ri::internal::Converter`
-holds each conversion: RI_NULL becomes the empty name, a filter function becomes a `Filter`, and
-the untyped parameter arrays become a list typed by the handler's declarations. Arguments the RIB
-reader would refuse in a file skip the request. The reader cannot call the C entry points instead,
-because most take varargs and a `va_list` cannot be built at run time.
-
-- `moya::ri::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
-  pops it. The active handler receives every call, and `RiGetContext`'s handle is the handler.
-- `RIBHandler` ignores a request whose shader, light or space name is empty.
-- Every C entry point has a definition, but many are empty: every quadric but the sphere, and
-  `RiMakeTexture`, among them.
-- `RiCurves` reads only `"P"` and `"constantwidth"`. A varying value's count depends on the
-  basis's step, and a C array carries no length, so any other parameter is skipped and logged
-  rather than read past.
-- A varargs form collects its parameters and calls its `V` form. `RiSphere` is the exception.
-  RI ends its named arguments on a float, which a `va_list` cannot be started from, so it passes
-  no parameter. moya reads none of a sphere's.
-- Each token in the token table holds RI's string for it, and each basis matrix holds RI's
-  values.
+`RIBHandler` ignores a request whose shader, light or space name is empty.
 
 ### The render context
 

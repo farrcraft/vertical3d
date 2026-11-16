@@ -66,12 +66,6 @@ editor's controller and area layout in `vertical3d/src/ControllerWindows.cxx` an
 
 Open work on moya. [offline/](offline/README.md) describes it.
 
-[] **RiObjectBegin names no object.** RI's C interface returns no handle from `RiObjectBegin`,
-and `RiObjectEnd` and `RiObjectInstance` reach no handler, so a program that calls RI directly
-cannot instance an object. RIB's `ObjectBegin` reaches the handler with a number or a string.
-RI's handle is a pointer, so the C interface needs a table from the handles it gives out to the
-handler's names.
-
 [] **The new core's CPU traversal is several times slower than Embree's.** On a million
 triangles `moya_bench` traces 11 to 12.5 million rays a second. Embree's paper gives 38 to 59
 million on an older processor with half the cores. The build with spatial splits is five to
