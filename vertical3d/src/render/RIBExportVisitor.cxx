@@ -73,7 +73,6 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     handler_->version(RIB_VERSION);
     handler_->format({.width = settings.size.x, .height = settings.size.y, .pixelAspect = 1.0F});
     handler_->pixelSamples(glm::uvec2(settings.samples));
-    handler_->hider(settings.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
     if (output.file.empty()) {
         handler_->display({.name = FRAMEBUFFER, .type = "framebuffer", .mode = "rgb"}, ParameterList());
     } else {

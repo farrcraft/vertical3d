@@ -7,28 +7,33 @@
 
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/film/FrameBuffer.h>
-#include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
-#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/output/Output.h>
+#include <moya/libmoya/output/Outputs.h>
+#include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/state/Planes.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <exception>
 #include <mutex>
 #include <stop_token>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include "Delegate.h"
 #include "RIBExportVisitor.h"
 #include "SceneTranslator.h"
-#include "Shot.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 
 namespace v3d::editor::render {
 
@@ -81,36 +86,47 @@ void MoyaDelegate::start(const scene::Scene& scene, const v3d::type::camera::Pro
     if (translator_.update(scene, evaluation, from, output)) {
         retained_.apply();
     }
-
-    const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
-    shoot(shot.get(), scene, evaluation, from, output);
     {
         const std::scoped_lock lock(mutex_);
         status_.state = State::Rendering;
         status_.done = 0.0F;
     }
-    worker_ = std::jthread([this, shot](const std::stop_token& stop) { run(*shot, stop); });
+    worker_ = std::jthread([this](const std::stop_token& stop) { run(stop); });
 }
 
 /**
  **/
-void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const std::stop_token& stop) {
+void MoyaDelegate::run(const std::stop_token& stop) {
     State finished = State::Failed;
     boost::shared_ptr<v3d::image::Image> image;
     try {
-        v3d::moya::ri::RIBHandler handler;
-        handler.context().progress([this, &stop](float done) {
-            const std::scoped_lock lock(mutex_);
-            status_.done = done;
-            return !stop.stop_requested();
-        });
-        shot.replay(&handler);
-        if (handler.context().stopped()) {
+        if (!device_) {
+            device_.emplace();
+        }
+        const std::uint32_t passes = v3d::moya::integrate::passesOf(retained_);
+        bool stopped = false;
+        v3d::moya::integrate::Checkpoints checkpoints;
+        checkpoints.stop = [this, &stop, &stopped, passes](std::uint32_t done) {
+            {
+                const std::scoped_lock lock(mutex_);
+                status_.done = static_cast<float>(std::min(done, passes)) / static_cast<float>(passes);
+            }
+            stopped = stop.stop_requested();
+            return stopped;
+        };
+        v3d::moya::film::Snapshot snapshot = v3d::moya::integrate::render(*device_, retained_, logger_, colours_, checkpoints);
+        if (stopped) {
             finished = State::Stopped;
-        } else if (!handler.context().picture()) {
-            logger_->get()->error("the render made no picture of the scene");
         } else {
-            image = handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS);
+            // composited over the first output's background, as moya writes that output
+            const std::vector<v3d::moya::output::Output> outputs = v3d::moya::output::outputsOf(retained_);
+            if (!outputs.empty() && outputs.front().background) {
+                snapshot = v3d::moya::output::composited(snapshot, colours_.input(outputs.front().backgroundSpace).apply(*outputs.front().background));
+            }
+            const std::string display = colours_.defaultDisplay();
+            const std::vector<std::uint8_t> shown = v3d::moya::output::displayed(snapshot, colours_.display(display, colours_.defaultView(display)));
+            image = boost::make_shared<v3d::image::Image>(glm::uvec2(snapshot.resolution), static_cast<std::uint8_t>(24));
+            std::copy(shown.begin(), shown.end(), image->data());
             finished = State::Finished;
         }
     } catch (const std::exception& error) {

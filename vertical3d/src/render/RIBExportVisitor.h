@@ -41,9 +41,9 @@ namespace v3d::editor::render {
  * shade. A scene with no light gets a distant light from the camera, shining the way it looks,
  * so that what it sees is lit.
  *
- * **The picture.** The render settings give the Format, the PixelSamples along each axis and the
- * Hider. A Display names the file the picture is written to, or a "framebuffer" display that
- * leaves it in the renderer.
+ * **The picture.** The render settings give the Format and the PixelSamples along each axis. No
+ * Hider is written, since moya renders by path tracing alone. A Display names the file the
+ * picture is written to, or a "framebuffer" display that leaves it in the renderer.
  *
  * **The hierarchy is kept.** Each item is an AttributeBegin block holding its local matrix and
  * an identifier of its name, and the blocks of the items beneath it nest inside. A light, which

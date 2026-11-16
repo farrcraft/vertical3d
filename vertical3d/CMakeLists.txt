@@ -184,6 +184,11 @@ target_link_libraries(vertical3d PRIVATE v3dlib_editor v3dlib_engine)
 # a batch render runs moya.exe, which the editor finds beside itself
 v3d_copy_program(vertical3d moya)
 
+# the render view renders through moya's CPU device, which loads its libraries from beside the
+# editor, and reads materials against MaterialX's standard libraries, which it finds there too
+v3d_moya_cpu_libraries(vertical3d)
+v3d_moya_materialx_libraries(vertical3d)
+
 # importing a USD stage reads OpenUSD's plugins from beside the editor
 v3d_copy_usd_plugins(vertical3d)
 v3d_install_usd_plugins()

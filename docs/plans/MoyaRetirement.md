@@ -164,8 +164,8 @@ chooses among the options before the record is drafted.
 | [7](#step-7--every-request-the-old-handler-read) | Every request the old handler read | `moya/libmoya/ri` | — | done |
 | [8](#step-8--the-old-scenes-through-the-new-core) | The old scenes through the new core | `moya/tests` | 0241 | done |
 | [9](#step-9--moyaexe-renders-by-path-tracing) | moya.exe renders by path tracing | `moya/moya.cxx` | — | done |
-| [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | open |
-| [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | open |
+| [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | done |
+| [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | done |
 | [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | open |
 | [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | open |
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | open |
@@ -522,6 +522,18 @@ one-sided, where the scene client reads its RIB export as RI's default of two, s
 **Tests:** `DelegateTest` renders a scene through the new core, cancels one, and reports its
 progress. Its picture is the same bytes as moya.exe's render of the scene's RIB export.
 
+**Done.** `MoyaDelegate` renders its retained scene through `integrate::render()` on its thread,
+and the recorded shot and the `RIBHandler` are gone from it. The delegate's base class cancels a
+running render and waits for its thread before the next one starts, so the translator changes
+the scene only while no render reads it. The progress is the passes done over
+`integrate::passesOf()`, a new function that gives the passes a scene's samples take. The picture
+is `output::displayed()` of the snapshot, composited over the first output's background where it
+names one, as a PNG output is written. A render of a cube and a batch's moya.exe render of its
+export give the same bytes. The editor and its suite now carry moya's CPU libraries and
+MaterialX's standard libraries beside them, as moya.exe does. The render settings' hider changes
+nothing now, and [Rendering.md](../editor/Rendering.md) and the editor manual's rendering page say
+so until step 11 removes it.
+
 ### Step 11 — The editor's batch, export and settings
 
 * **A batch runs moya.exe on its default path**, and reads the PNG each job names, as now.
@@ -535,6 +547,15 @@ progress. Its picture is the same bytes as moya.exe's render of the scene's RIB 
 
 **Tests:** `BatchTest` renders a frame through moya.exe's default. `RIBExportVisitorTest` writes
 no `Hider`. A document saved with each hider loads with the settings it had otherwise.
+
+**Done.** A batch already ran moya.exe's default once step 9 landed, so its code is unchanged.
+`RenderSettings` holds the size and the samples alone, the settings editor drops its list, and
+the RIB export writes no `Hider`. The store reads the meta table by a list of keys, so a key
+outside the list is passed over at every version. `render_hider` left the list, and a document
+that holds it loads at its own version, whatever it names, where one that named another hider
+was refused. No new schema version is needed. A document the editor saves whole drops the row,
+and one it saves in part keeps it, passed over. [Files.md](../editor/Files.md) now names the
+render settings' keys and the rule.
 
 ### Step 12 — The shipped scenes and the manual's pictures
 

@@ -33,6 +33,13 @@ namespace v3d::moya::integrate {
 inline constexpr std::uint32_t kSamplesPerPass = 16;
 
 /**
+ * The passes a render of the scene takes when no pixel stops early: the samples the options name,
+ * rounded up to a power of two, in passes of kSamplesPerPass. A render whose noise threshold stops
+ * every pixel takes fewer.
+ **/
+std::uint32_t passesOf(const scene::Scene & scene);
+
+/**
  * The integrator's settings from a scene's options: its depth limits and how it finds the
  * lights. A depth below zero is taken as zero.
  **/

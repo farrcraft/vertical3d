@@ -456,13 +456,6 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
         loaded->timeline.frame = static_cast<int>(meta.integer(1));
     } else if (key == "auto_key") {
         loaded->timeline.autoKey = meta.integer(1) != 0;
-    } else if (key == "render_hider") {
-        const std::string hider = meta.text(1);
-        if (hider != "hidden" && hider != "raytrace") {
-            *problem = "its render settings name a hider this build does not have";
-            return false;
-        }
-        loaded->render.hider = hider == "raytrace" ? scene::RenderSettings::Hider::RayTrace : scene::RenderSettings::Hider::Hidden;
     } else if (key == "length_unit") {
         const std::optional<scene::Length> unit = scene::lengthOf(meta.text(1));
         if (!unit) {
@@ -487,12 +480,12 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
 
 /**
  * A document's timeline, render settings and unit of length, from its meta table. Each part a
- * document does not hold keeps its default.
+ * document does not hold keeps its default, and a key this build does not read is passed over.
  **/
 bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, std::string* problem) {
     v3d::database::Statement meta = database->prepare(
         "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', 'auto_key', "
-        "'render_width', 'render_height', 'render_samples', 'render_hider', 'length_unit')");
+        "'render_width', 'render_height', 'render_samples', 'length_unit')");
     if (!meta.valid()) {
         *problem = database->error();
         return false;
@@ -646,7 +639,6 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         Binder(&meta).text("render_width").integer(render.size.x).run() &&
         Binder(&meta).text("render_height").integer(render.size.y).run() &&
         Binder(&meta).text("render_samples").integer(render.samples).run() &&
-        Binder(&meta).text("render_hider").text(render.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run() &&
         Binder(&meta).text("length_unit").text(std::string(scene::symbol(scene.length()))).run();
     return wrote || failed(meta);
 }

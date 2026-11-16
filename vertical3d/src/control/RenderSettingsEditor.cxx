@@ -55,13 +55,6 @@ void RenderSettingsEditor::draw(v3d::ui::Immediate* ui, std::size_t editor, cons
         state.editing = false;
         take(state);
     }
-
-    int hider = held.hider == scene::RenderSettings::Hider::RayTrace ? 1 : 0;
-    if (ui->combo("Hider", &hider, { "Reyes", "Ray trace" })) {
-        scene::RenderSettings chosen = held;
-        chosen.hider = hider == 1 ? scene::RenderSettings::Hider::RayTrace : scene::RenderSettings::Hider::Hidden;
-        apply(chosen);
-    }
     ui->popId();
     ui->endRegion();
 }

@@ -29,7 +29,8 @@ render is doing: Nothing rendered yet, Rendering with how much is done, Rendered
 that the render failed.
 
 While a render view is shown, the editor renders again after each change to the scene, the
-camera, the frame or the settings. A render already running is stopped and started again.
+camera, the frame or the settings. A render already running stops once it finishes the pass it
+is on, and starts again.
 
 The render view has two buttons. **Render** starts a render. **Stop** stops it, and keeps the
 last finished picture.
@@ -46,15 +47,11 @@ Choose **Render > Settings**, or press Shift+F10 with the cursor over an area.
 | Setting | What it sets | Default | Range |
 |---|---|---|---|
 | Width, Height | The picture's size in pixels | 640 by 480 | 1 to 16384 each |
-| Samples | How many samples are taken along each side of a pixel. More samples give smoother edges | 2 | 1 to 16 |
-| Hider | How moya finds what each pixel sees: Reyes or Ray trace | Reyes | |
+| Samples | How many samples are taken along each side of a pixel. More samples give smoother edges and less noise | 2 | 1 to 16 |
 
 Drag a number, or click it and type. The change is taken when you let go or finish typing. A
 number that is not whole, or is out of its range, is refused. Each change is one step of the
 history, and the project saves the settings.
-
-Reyes keeps every sample of the picture in memory at once. A large picture with many samples
-needs a great deal of memory under Reyes. Ray trace does not.
 
 ## What a render shows
 

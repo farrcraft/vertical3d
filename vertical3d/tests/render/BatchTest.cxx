@@ -154,7 +154,6 @@ BOOST_FIXTURE_TEST_CASE(batch_cancel_test, Shots) {
     scene.timeline({ .start = 1, .end = 50, .frame = 1 });
     settings.size = glm::uvec2(2048, 2048);
     settings.samples = 8;
-    settings.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
     v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
 
     // a stop ends the frame being rendered and starts no other

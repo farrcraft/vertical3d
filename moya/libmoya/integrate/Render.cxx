@@ -307,4 +307,9 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     return out;
 }
 
+std::uint32_t passesOf(const scene::Scene & scene) {
+    const std::uint32_t samples = kernel::sample::ZSobol(std::max(count(scene, "samples"), 1U), glm::uvec2(1U), 0, 0).samplesPerPixel();
+    return (samples + kSamplesPerPass - 1U) / kSamplesPerPass;
+}
+
 };  // namespace v3d::moya::integrate

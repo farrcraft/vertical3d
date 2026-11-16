@@ -80,8 +80,9 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     }
     void pixelSamples(const glm::uvec2 & samples) override { samples_ = samples; }
     void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)name;
         (void)parameters;
-        hider_ = name;
+        hid_ = true;
     }
     void display(const v3d::render::offline::rib::requests::Display & request,
         const v3d::render::offline::rib::ParameterList & parameters) override {
@@ -162,7 +163,8 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     glm::mat4x4 camera_ = glm::mat4x4(1.0F);
     std::string projection_;
     glm::uvec2 samples_ = glm::uvec2(0U);
-    std::string hider_;
+    /** Whether a Hider request was read. **/
+    bool hid_ = false;
     v3d::render::offline::rib::requests::Display display_;
     std::string surface_;
     float right_ = 0.0F;
@@ -430,28 +432,25 @@ BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
     v3d::editor::render::RIBExportVisitor::Output output;
     output.settings.size = glm::uvec2(200, 100);
     output.settings.samples = 3;
-    output.settings.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
     output.file = "C:/renders/frame.png";
 
-    // the settings give the picture's size, its samples and its hider, and the display
-    // names the file the picture is written to
+    // the settings give the picture's size and its samples, and the display names the file the
+    // picture is written to. No hider is written, since moya renders by path tracing alone
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, output), &handler));
     BOOST_CHECK_EQUAL(handler.width_, 200U);
     BOOST_CHECK_EQUAL(handler.height_, 100U);
     BOOST_CHECK(handler.samples_ == glm::uvec2(3U, 3U));
-    BOOST_CHECK_EQUAL(handler.hider_, "raytrace");
+    BOOST_CHECK(!handler.hid_);
     BOOST_CHECK_EQUAL(handler.display_.name, "C:/renders/frame.png");
     BOOST_CHECK_EQUAL(handler.display_.type, "file");
     BOOST_CHECK_EQUAL(handler.surface_, "matte");
 
     // with no file the picture stays in the renderer
     output.file.clear();
-    output.settings.hider = v3d::editor::scene::RenderSettings::Hider::Hidden;
     ImportHandler kept;
     BOOST_REQUIRE(reimport(exportScene(scene, output), &kept));
     BOOST_CHECK_EQUAL(kept.display_.type, "framebuffer");
-    BOOST_CHECK_EQUAL(kept.hider_, "hidden");
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {

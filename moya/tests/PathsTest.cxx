@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -223,6 +224,20 @@ void buildMirrored(scene::Scene & scene, const std::string & strategy, bool mirr
 bool sameBytes(const film::Snapshot & one, const film::Snapshot & other) {
     return one.values.size() == other.values.size() && one.samples == other.samples &&
         std::memcmp(one.values.data(), other.values.data(), one.values.size() * sizeof(float)) == 0;
+}
+
+// a render takes its samples rounded up to a power of two, sixteen to a pass, and a scene whose
+// options name no samples takes one
+BOOST_AUTO_TEST_CASE(moya_paths_the_passes_a_render_takes_test) {
+    scene::Scene bare(scene::kinds());
+    BOOST_TEST(v3d::moya::integrate::passesOf(bare) == 1U);
+    for (const auto [samples, passes] : { std::pair { 1U, 1U }, std::pair { 16U, 1U }, std::pair { 17U, 2U }, std::pair { 33U, 4U }, std::pair { 64U, 4U } }) {
+        scene::Scene made(scene::kinds());
+        framed(made, samples);
+        made.commit();
+        made.apply();
+        BOOST_TEST(v3d::moya::integrate::passesOf(made) == passes, samples << " samples");
+    }
 }
 
 // a white sphere under a white dome is white wherever it is seen: every path reaches the

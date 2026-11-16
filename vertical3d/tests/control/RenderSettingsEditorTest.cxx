@@ -139,17 +139,6 @@ BOOST_AUTO_TEST_CASE(samples_out_of_range_are_refused) {
     BOOST_CHECK(!panel.reported.back().done);
 }
 
-/**
- * A choice of hider is taken as it is made.
- **/
-BOOST_AUTO_TEST_CASE(a_hider_is_chosen) {
-    Panel panel;
-    panel.drag(panel.on("Reyes"), panel.on("Reyes"));
-    panel.drag(panel.on("Ray trace"), panel.on("Ray trace"));
-    BOOST_CHECK(panel.settings().hider == RenderSettings::Hider::RayTrace);
-    BOOST_CHECK_EQUAL(panel.document->history()->undoDepth(), 1U);
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace
