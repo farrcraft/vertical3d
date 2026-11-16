@@ -224,13 +224,8 @@ BOOST_AUTO_TEST_CASE(moya_command_line_writes_the_picture_test) {
     boost::filesystem::remove(written, ignored);
 }
 
-/**
- * A render prints Pixar's notice even when silent, since moya reads RIB and is not RenderMan
- * compliant.
- *
- * Passes before the change: the hiders' handler printed the notice, and this case holds that a
- * render through the path tracer still prints it.
- **/
+// a render prints Pixar's notice even when silent, since moya reads RIB and is not RenderMan
+// compliant
 BOOST_AUTO_TEST_CASE(moya_command_line_a_render_prints_the_renderman_notice_test) {
     const boost::filesystem::path written = boost::filesystem::temp_directory_path() / "v3d_moya_command_line_notice.exr";
     boost::system::error_code ignored;
