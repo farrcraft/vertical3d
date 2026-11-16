@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <api/asset/Writer.h>
+#include <api/image/Compare.h>
+#include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/film/Sampling.h>
@@ -41,6 +44,7 @@
 #include <fstream>
 #include <ios>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,7 +57,6 @@
 #include <glm/vec3.hpp>
 
 #include "Chart.h"
-#include "Reference.h"
 
 namespace {
 
@@ -91,6 +94,18 @@ struct Chart {
     kernel::spectrum::RgbTable table;
     kernel::Array<glm::vec3> patches;
 };
+
+#ifndef MOYA_RGB
+/** Writes a picture to kRendered, so a failure can be looked at. **/
+void keep(const boost::shared_ptr<v3d::image::Image> & image) {
+    boost::filesystem::create_directory("data_out");
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    const std::optional<std::string> encoded = factory.encode(image, v3d::image::Factory::kind(kRendered));
+    if (encoded) {
+        v3d::asset::writeFile(kRendered, *encoded);
+    }
+}
+#endif
 
 /** The ACEScg colour at a point, in pixels from the picture's top left: a patch's, or black. **/
 glm::vec3 colourAt(const Chart & chart, const glm::vec2 & point) {
@@ -179,7 +194,16 @@ BOOST_AUTO_TEST_CASE(moya_foundation_a_colour_chart_renders_its_reference_test) 
     const std::vector<std::uint8_t> bytes = output::displayed(rendered(0), config.display(display, config.defaultView(display)));
     const auto image = boost::make_shared<v3d::image::Image>(glm::uvec2(kWidth, kHeight), 24);
     std::memcpy(image->data(), bytes.data(), bytes.size());
-    v3d::moya::reference::check(image, kReference, kRendered);
+    const boost::shared_ptr<v3d::image::Image> committed = v3d::image::Factory(boost::make_shared<v3d::log::Logger>()).read(kReference);
+    if (committed == nullptr) {
+        keep(image);
+    }
+    BOOST_REQUIRE_MESSAGE(committed != nullptr, std::string("cannot read the reference image ") + kReference + " - what was rendered is in " + kRendered);
+    const v3d::image::Difference difference = v3d::image::compare(*image, *committed, 1);
+    if (!difference.match) {
+        keep(image);
+    }
+    BOOST_CHECK_MESSAGE(difference.match, difference.description() + " - what was rendered instead is in " + kRendered);
 }
 #endif
 

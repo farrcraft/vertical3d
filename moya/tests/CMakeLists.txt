@@ -56,7 +56,6 @@ v3d_add_test(moya
 	"ProgramTest.cxx"
 	"ProjectedSpaceTest.cxx"
 	"RayHiderTest.cxx"
-	"Reference.cxx"
 	"TriangulateTest.cxx"
 	"TraversalTest.cxx"
 	"RenderContextTest.cxx"

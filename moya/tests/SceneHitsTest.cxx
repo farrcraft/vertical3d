@@ -4,16 +4,12 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
-#include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
-#include <moya/libmoya/state/Planes.h>
 #include <moya/libmoya/view/Hits.h>
 
 #include <OpenEXR/ImfChannelList.h>
@@ -32,7 +28,6 @@
 #include <fstream>
 #include <ios>
 #include <map>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -41,14 +36,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "Reference.h"
-
-namespace v3d::moya::reference {
 namespace {
 
 namespace scene = v3d::moya::scene;
 namespace view = v3d::moya::view;
-typedef v3d::moya::state::Planes Planes;
 
 /** The hit view's channels as an EXR file names them, in the snapshot's order after the beauty. **/
 constexpr std::array<const char *, 7> kChannels { "depth", "normal.R", "normal.G", "normal.B", "instance", "face", "coverage" };
@@ -89,13 +80,6 @@ struct Picture {
         return channels.at(channel)[(static_cast<std::size_t>(y) * width) + x];
     }
 };
-
-/** The scenes that hold still and are not displaced, whose depth the ray hider's must match. **/
-const std::set<std::string> & stillScenes() {
-    static const std::set<std::string> scenes { "raytrace-lit-quad", "raytrace-spheres", "raytrace-triangle", "reference-area", "reference-bump",
-        "reference-focus", "reference-glass", "reference-polygon", "reference-shaded", "reference-shadow", "spec-cube", "textured" };
-    return scenes;
-}
 
 /** A committed hit view, read from its EXR file. **/
 Picture readHits(const boost::filesystem::path & file) {
@@ -161,21 +145,6 @@ bool sameDepth(float got, float want) {
     return std::fabs(got - want) <= 1.0e-4F * std::max(1.0F, std::fabs(want));
 }
 
-/**
- * The depth along a camera's view of a depth the old hiders' depth plane holds. The plane holds
- * RI's screen depth moved onto [0, 2]: the clipping planes taken to 0 and 2, linearly under an
- * orthographic camera, and as a perspective camera divides by depth under one.
- **/
-float depthOf(float raster, const v3d::moya::kernel::camera::Camera & camera) {
-    const float near = camera.near;
-    const float far = camera.far;
-    if (!camera.perspective) {
-        return near + (raster * (far - near) * 0.5F);
-    }
-    const float screen = raster - 1.0F;
-    return (2.0F * far * near / (far - near)) / (((far + near) / (far - near)) - screen);
-}
-
 /** The scene files the suite renders, by their names without the extension. **/
 std::vector<boost::filesystem::path> sceneFiles() {
     std::vector<boost::filesystem::path> out;
@@ -229,49 +198,43 @@ BOOST_AUTO_TEST_CASE(moya_scenehits_every_scene_traces_as_committed_test) {
 }
 
 /**
- * Each scene that holds still and is not displaced lies where the ray hider finds it: at every
- * pixel inside one surface, the hit view's depth is the ray hider's depth plane. The ray hider
- * takes one sample at each pixel's centre, as the hit view does, whatever sampling the scene
- * names, since it keeps the nearest of a pixel's samples.
+ * Every scene's hit view through the hierarchy is its hit view through the brute-force traversal,
+ * which tests each triangle in turn. Depths and normals agree to rounding. What each ray met
+ * agrees exactly, except on an edge of either view.
  *
- * Covers the base: e8e902d8 added the hit view and moya --hits. Checked by widening the camera's
- * field of view by a tenth, by making a sphere a hundredth larger, and by making every depth a
- * thousandth longer, each of which fails this case.
+ * Checked by making a leaf of the hierarchy test one triangle fewer than it holds, which fails
+ * this case.
  **/
-BOOST_AUTO_TEST_CASE(moya_scenehits_depth_matches_the_ray_hiders_test) {
+BOOST_AUTO_TEST_CASE(moya_scenehits_the_hierarchy_finds_the_brute_force_traversals_hits_test) {
     v3d::moya::device::CpuDevice device;
     unsigned int scenes = 0;
     for (const boost::filesystem::path & file : sceneFiles()) {
         const std::string name = file.stem().string();
-        if (!stillScenes().contains(name)) {
-            continue;
-        }
         const FromFile read(file);
-        const Picture hits = pictureOf(view::hits(device, read.scene(), read.logger()));
-        const v3d::moya::kernel::camera::Camera camera = v3d::moya::camera::fromScene(read.scene());
-        const std::string path = file.string();
-        const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> traced = reference::read({ .file = path.c_str(), .hider = "raytrace", .centres = true });
-        std::size_t compared = 0;
+        const Picture got = pictureOf(view::hits(device, read.scene(), read.logger(), 0.0F, view::Tracer::Hierarchy));
+        const Picture want = pictureOf(view::hits(device, read.scene(), read.logger(), 0.0F, view::Tracer::BruteForce));
+        BOOST_REQUIRE_EQUAL(got.width, want.width);
+        BOOST_REQUIRE_EQUAL(got.height, want.height);
         std::size_t apart = 0;
-        float furthest = 0.0F;
-        for (std::uint32_t y = 0; y < hits.height; ++y) {
-            for (std::uint32_t x = 0; x < hits.width; ++x) {
-                if (hits.at("coverage", x, y) == 0.0F || onEdge(hits, x, y) || traced->value(Planes::COVERAGE, x, y) < 1.0F) {
+        for (std::uint32_t y = 0; y < want.height; ++y) {
+            for (std::uint32_t x = 0; x < want.width; ++x) {
+                if (onEdge(want, x, y) || onEdge(got, x, y)) {
                     continue;
                 }
-                const float want = depthOf(traced->value(Planes::DEPTH, x, y), camera);
-                const float got = hits.at("depth", x, y);
-                furthest = std::max(furthest, std::fabs(got - want) / std::max(1.0F, std::fabs(want)));
-                apart += std::fabs(got - want) <= 1.0e-4F * std::max(1.0F, std::fabs(want)) ? 0 : 1;
-                compared++;
+                bool same = sameDepth(got.at("depth", x, y), want.at("depth", x, y));
+                for (const char * channel : { "normal.R", "normal.G", "normal.B" }) {
+                    same = same && std::fabs(got.at(channel, x, y) - want.at(channel, x, y)) <= 1.0e-4F;
+                }
+                for (const char * channel : { "instance", "face", "coverage" }) {
+                    same = same && got.at(channel, x, y) == want.at(channel, x, y);
+                }
+                apart += same ? 0 : 1;
             }
         }
-        BOOST_TEST(compared > 0U, name);
-        BOOST_TEST(apart == 0U, name << ", furthest apart " << furthest);
+        BOOST_TEST(apart == 0U, name);
         scenes++;
     }
-    BOOST_TEST(scenes == stillScenes().size());
+    BOOST_TEST(scenes == 31U);
 }
 
 };  // namespace
-};  // namespace v3d::moya::reference

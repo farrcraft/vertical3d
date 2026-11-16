@@ -167,7 +167,7 @@ chooses among the options before the record is drafted.
 | [10](#step-10--the-editors-render-view) | The editor's render view | `vertical3d/src/render` | — | done |
 | [11](#step-11--the-editors-batch-export-and-settings) | The editor's batch, export and settings | `vertical3d/src` | — | done |
 | [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | done |
-| [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | open |
+| [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | done |
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | open |
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | open |
 | [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | open |
@@ -595,9 +595,18 @@ its sky with `PxrDomeLight`, and [Rib.md](../offline/Rib.md) states why.
 
 **Tests:** each moved case still fails when the value it checks is broken.
 
-**In progress.** The log catcher is in `Heard.h`, which names no old code, and `Handling.h`
-includes it. The crop's case in `DeepTest.cxx` uses it. The six tests that include `Handling.h`
-for it alone still do.
+**Done.** The log catcher is in `Heard.h`, which names no old code. Every new-core test that
+used it includes it, and `Handling.h` is left to the old tests. `FoundationTest` compares its
+chart with the committed PNG itself, as `Reference.h` did. `SceneKindsTest` states RI's
+defaults as numbers, and the comment in `scene/Kinds.cxx` that cited `CameraOptions` states them
+too. With no user left, `Reference.h` and `Reference.cxx` are deleted.
+
+The depth case compared the hit view with the ray hider's depth plane in 12 still scenes. Its
+reference is now the hit view through the brute-force traversal, and the hit view through the
+hierarchy must match it in every channel, in all 31 scenes. The hit view used the hierarchy
+already, so the case now checks that traversal. The committed hit views still check where the
+camera and the geometry put each surface. A hierarchy whose leaves each drop one triangle fails
+the case in six scenes.
 
 ### Step 14 — RI's C interface
 
@@ -612,7 +621,7 @@ same scene description as its RIB.
 ### Step 15 — The old core leaves libmoya
 
 * **Deleted:** `reyes/`, `raytrace/`, `state/`, `Hider.h`, `Curve`, `Polygon` and `Vertex`,
-  `ri/RIBHandler`, and the 23 old test files with `Reference.*` and `Handling.h`.
+  `ri/RIBHandler`, and the 23 old test files with `Handling.h`.
 * **The `.sl` fixtures** in `moya/tests/data` are deleted.
 * **`Executable.h`** stays, as a helper the device and the material library use.
 * **`v3dlib_moya`'s link to the offline library** becomes private if no public header of libmoya

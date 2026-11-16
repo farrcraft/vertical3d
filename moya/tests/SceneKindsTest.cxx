@@ -3,7 +3,6 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
-#include <api/render/offline/CameraOptions.h>
 #include <moya/libmoya/scene/Description.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -19,7 +18,6 @@
 namespace {
 
 namespace scene = v3d::moya::scene;
-typedef v3d::render::offline::CameraOptions CameraOptions;
 
 BOOST_AUTO_TEST_CASE(moya_scene_a_camera_and_options_take_ris_defaults_test) {
     scene::Scene scene(scene::kinds());
@@ -29,15 +27,15 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_camera_and_options_take_ris_defaults_test) {
     scene.apply();
 
     BOOST_TEST((scene.value(camera, "projection") == scene::Value::string("orthographic")));
-    BOOST_TEST(scene.value(camera, "fov").floatArray().front() == CameraOptions::defaultFov);
-    BOOST_TEST(scene.value(camera, "near").floatArray().front() == CameraOptions::defaultHither);
-    BOOST_TEST(scene.value(camera, "far").floatArray().front() == CameraOptions::defaultYon);
+    BOOST_TEST(scene.value(camera, "fov").floatArray().front() == 90.0F);
+    BOOST_TEST(scene.value(camera, "near").floatArray().front() == 1.0e-10F);
+    BOOST_TEST(scene.value(camera, "far").floatArray().front() == 1.0e38F);
     BOOST_TEST(scene.value(camera, "fstop").floatArray().front() == std::numeric_limits<float>::infinity());
     BOOST_TEST(scene.value(camera, "screen").size() == 0U);
 
     const scene::Value resolution = scene.value(options, "resolution");
-    BOOST_TEST(resolution.integerArray().at(0) == static_cast<int>(CameraOptions::defaultWidth));
-    BOOST_TEST(resolution.integerArray().at(1) == static_cast<int>(CameraOptions::defaultHeight));
+    BOOST_TEST(resolution.integerArray().at(0) == 320);
+    BOOST_TEST(resolution.integerArray().at(1) == 240);
     BOOST_TEST((scene.value(options, "filter") == scene::Value::string("gaussian")));
     BOOST_TEST((scene.value(options, "filterWidth") == scene::Value::floats({ 2.0F, 2.0F })));
     BOOST_TEST(scene.value(options, "samples").integerArray().front() == 4);

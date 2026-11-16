@@ -22,7 +22,8 @@ namespace v3d::moya::scene {
 
 namespace {
 
-/** RI's defaults, as CameraOptions states them. **/
+/** RI's defaults: a frame 320 by 240, a field of view of 90 degrees, and clipping planes at
+ * RI_EPSILON and RI_INFINITY. **/
 constexpr int kWidth = 320;
 constexpr int kHeight = 240;
 constexpr float kFov = 90.0F;
