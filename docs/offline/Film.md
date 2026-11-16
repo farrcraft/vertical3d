@@ -2,9 +2,7 @@
 
 This page is for anyone changing how moya's new core places camera samples and adds them to a
 picture. The host side is in `moya/libmoya/film/`, in the namespace `v3d::moya::film`. The
-kernel side is in `moya/libmoya/kernel/film/`, in `v3d::moya::kernel::film`. The reyes and ray
-hiders use `render::offline::film` instead, as [Cameras and sampling](CamerasAndSampling.md)
-describes.
+kernel side is in `moya/libmoya/kernel/film/`, in `v3d::moya::kernel::film`.
 
 ## A sample lands in its own pixel
 
@@ -23,8 +21,9 @@ Background: [ADR-0199](../adr/offline/0199-offline-a-sample-lands-in-the-one-pix
 
 ## The pixel filters
 
-`film::Filter` builds one of RI's five filters on a device, from `render::offline::film::filter`
-and a width along each axis. `view()` gives the `kernel::film::PixelFilter` that kernel code
+`film::Filter` builds one of RI's five filters on a device, from the weight
+`film::Filter::weight()` gives and a width along each axis. RIB names the filter as
+`rib::Filter`. `view()` gives the `kernel::film::PixelFilter` that kernel code
 reads.
 
 - **A box** draws its offset uniformly over the width.

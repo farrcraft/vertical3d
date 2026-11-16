@@ -1,10 +1,10 @@
 # moya
 
-A RenderMan-style offline renderer. It reads a RIB scene file and writes an image, with a Reyes
-hider or with ray tracing. It links no Vulkan and no SDL, and it opens no window.
+A RenderMan-style offline renderer. It reads a RIB scene file and writes an image by path
+tracing. It links no Vulkan and no SDL, and it opens no window.
 
-The renderer is `v3dlib_moya` in [libmoya/](libmoya/), built on the api library
-[api/render/offline](../api/render/offline/). `moya.cxx` is the command-line driver.
+The renderer is `v3dlib_moya` in [libmoya/](libmoya/). It reads RIB through the api library
+[api/rib](../api/rib/). `moya.cxx` is the command-line driver.
 [tools/rgbtable/](tools/rgbtable/) fits the RGB-to-spectrum table libmoya compiles, and
 [tools/albedo/](tools/albedo/) integrates the GGX albedo tables energy compensation reads, each
 when moya is built.

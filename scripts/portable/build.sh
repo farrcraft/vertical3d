@@ -16,7 +16,7 @@ work=/work
 source /usr/local/bin/v3d-vcpkg
 
 # The libraries whose closure names neither SDL3, Vulkan nor OpenUSD
-libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;render_offline;type"
+libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;rib;type"
 
 "$CXX" --version
 

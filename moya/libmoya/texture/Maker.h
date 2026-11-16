@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 #include <moya/libmoya/texture/Level.h>
 
 #include <cstdint>
@@ -62,7 +62,7 @@ std::string wrapName(Wrap wrap);
 struct Making {
     Wrap swrap { Wrap::Black };
     Wrap twrap { Wrap::Black };
-    render::offline::film::Filter filter { render::offline::film::Filter::Box };
+    rib::Filter filter { rib::Filter::Box };
     glm::vec2 width { 1.0F };
     std::string colourSpace;
     bool data { false };

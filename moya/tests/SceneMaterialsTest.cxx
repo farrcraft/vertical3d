@@ -4,7 +4,7 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/ri/SceneClient.h>
@@ -44,7 +44,7 @@ class Read final {
             scene_.apply();
         });
         std::istringstream stream("WorldBegin\n" + requests + "WorldEnd\n");
-        v3d::render::offline::rib::Reader reader(logger_);
+        v3d::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(stream, &client));
         heard_ = !listen.empty() && heard.said(listen);
     }

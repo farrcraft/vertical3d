@@ -1,0 +1,201 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+#include "Declaration.h"
+
+#include "Words.h"
+
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+namespace v3d::rib {
+
+bool Declaration::storageWord(const std::string & word, Declaration::Storage * storage) {
+    if (word == "constant") {
+        *storage = Declaration::Storage::CONSTANT;
+    } else if (word == "uniform") {
+        *storage = Declaration::Storage::UNIFORM;
+    } else if (word == "varying") {
+        *storage = Declaration::Storage::VARYING;
+    } else if (word == "vertex") {
+        *storage = Declaration::Storage::VERTEX;
+    } else if (word == "facevarying") {
+        *storage = Declaration::Storage::FACEVARYING;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool Declaration::typeWord(const std::string & word, Declaration::Type * type) {
+    if (word == "float") {
+        *type = Declaration::Type::FLOAT;
+    } else if (word == "integer" || word == "int") {
+        *type = Declaration::Type::INTEGER;
+    } else if (word == "string") {
+        *type = Declaration::Type::STRING;
+    } else if (word == "color" || word == "colour") {
+        *type = Declaration::Type::COLOR;
+    } else if (word == "point") {
+        *type = Declaration::Type::POINT;
+    } else if (word == "vector") {
+        *type = Declaration::Type::VECTOR;
+    } else if (word == "normal") {
+        *type = Declaration::Type::NORMAL;
+    } else if (word == "matrix") {
+        *type = Declaration::Type::MATRIX;
+    } else if (word == "hpoint") {
+        *type = Declaration::Type::HPOINT;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+unsigned int Declaration::arrayCount(std::string * word) {
+    const std::string::size_type open = word->find('[');
+    if (open == std::string::npos || word->back() != ']') {
+        return 1;
+    }
+    const std::string digits = word->substr(open + 1, word->size() - open - 2);
+    word->erase(open);
+    const long count = std::strtol(digits.c_str(), nullptr, 10);  // NOLINT(runtime/int)
+    return count > 0 ? static_cast<unsigned int>(count) : 1;
+}
+
+Declaration::Declaration() noexcept {
+}
+
+Declaration::Declaration(Storage storage, Type type, unsigned int count, bool reference) noexcept :
+    storage_(storage),
+    type_(type),
+    count_(count),
+    reference_(reference) {
+}
+
+bool Declaration::parse(const std::string & text, Declaration * declaration) {
+    std::vector<std::string> parts = words(text);
+    if (parts.empty()) {
+        return false;
+    }
+
+    Storage storage = Storage::UNIFORM;
+    std::size_t index = 0;
+    if (storageWord(parts[0], &storage)) {
+        index = 1;
+    }
+    const bool reference = index < parts.size() && parts[index] == "reference";
+    if (reference) {
+        ++index;
+    }
+    if (index >= parts.size()) {
+        return false;
+    }
+
+    std::string word = parts[index];
+    const unsigned int count = arrayCount(&word);
+    Type type = Type::FLOAT;
+    if (!typeWord(word, &type)) {
+        return false;
+    }
+
+    *declaration = Declaration(storage, type, count, reference);
+    return true;
+}
+
+Declaration::Storage Declaration::storage() const {
+    return storage_;
+}
+
+Declaration::Type Declaration::type() const {
+    return type_;
+}
+
+unsigned int Declaration::count() const {
+    return count_;
+}
+
+bool Declaration::reference() const {
+    return reference_;
+}
+
+bool Declaration::textual() const {
+    return reference_ || type_ == Type::STRING;
+}
+
+unsigned int Declaration::floats() const {
+    if (reference_) {
+        return 0;
+    }
+    switch (type_) {
+        case Type::STRING:
+            return 0;
+        case Type::COLOR:
+        case Type::POINT:
+        case Type::VECTOR:
+        case Type::NORMAL:
+            return 3;
+        case Type::HPOINT:
+            return 4;
+        case Type::MATRIX:
+            return 16;
+        case Type::FLOAT:
+        case Type::INTEGER:
+            return 1;
+    }
+    return 1;
+}
+
+std::string Declaration::text() const {
+    std::string storage;
+    switch (storage_) {
+        case Storage::CONSTANT: storage = "constant"; break;
+        case Storage::UNIFORM: storage = "uniform"; break;
+        case Storage::VARYING: storage = "varying"; break;
+        case Storage::VERTEX: storage = "vertex"; break;
+        case Storage::FACEVARYING: storage = "facevarying"; break;
+    }
+    std::string type;
+    switch (type_) {
+        case Type::FLOAT: type = "float"; break;
+        case Type::INTEGER: type = "integer"; break;
+        case Type::STRING: type = "string"; break;
+        case Type::COLOR: type = "color"; break;
+        case Type::POINT: type = "point"; break;
+        case Type::VECTOR: type = "vector"; break;
+        case Type::NORMAL: type = "normal"; break;
+        case Type::MATRIX: type = "matrix"; break;
+        case Type::HPOINT: type = "hpoint"; break;
+    }
+    if (count_ != 1) {
+        type += "[" + std::to_string(count_) + "]";
+    }
+    return storage + (reference_ ? " reference " : " ") + type;
+}
+
+bool Declaration::operator==(const Declaration & other) const {
+    return storage_ == other.storage_ && type_ == other.type_ && count_ == other.count_ && reference_ == other.reference_;
+}
+
+unsigned int Declaration::elements(unsigned int vertices) const {
+    return elements(vertices, vertices);
+}
+
+unsigned int Declaration::elements(unsigned int vertices, unsigned int corners) const {
+    switch (storage_) {
+        case Storage::VARYING:
+        case Storage::VERTEX:
+            return vertices;
+        case Storage::FACEVARYING:
+            return corners;
+        case Storage::CONSTANT:
+        case Storage::UNIFORM:
+            return 1;
+    }
+    return 1;
+}
+
+};  // namespace v3d::rib

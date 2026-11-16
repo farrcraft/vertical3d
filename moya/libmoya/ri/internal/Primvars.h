@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/render/offline/rib/Declaration.h>
-#include <api/render/offline/rib/Parameters.h>
+#include <api/rib/Declaration.h>
+#include <api/rib/Parameters.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -27,10 +27,10 @@ namespace v3d::moya::ri::internal {
  *
  * @return nothing when the list holds no such parameter
  **/
-std::optional<scene::Value> valueOf(const v3d::render::offline::rib::ParameterList & parameters, const std::string & name);
+std::optional<scene::Value> valueOf(const v3d::rib::ParameterList & parameters, const std::string & name);
 
 /** The scene's interpolation class for a RIB storage class. **/
-scene::Interpolation interpolationOf(v3d::render::offline::rib::Declaration::Storage storage);
+scene::Interpolation interpolationOf(v3d::rib::Declaration::Storage storage);
 
 /**
  * Declare and set each parameter of a list as a primvar of an object, with its RIB storage
@@ -39,7 +39,7 @@ scene::Interpolation interpolationOf(v3d::render::offline::rib::Declaration::Sto
  * @param constant declare every one as constant, as a shader node's inputs are, rather than by
  *        its storage class
  **/
-void declare(scene::Scene * scene, const scene::Handle & object, const v3d::render::offline::rib::ParameterList & parameters,
+void declare(scene::Scene * scene, const scene::Handle & object, const v3d::rib::ParameterList & parameters,
     const std::set<std::string> & except, bool constant);
 
 };  // namespace v3d::moya::ri::internal

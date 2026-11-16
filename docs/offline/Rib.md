@@ -5,13 +5,12 @@ How moya reads a RenderMan scene file. The terms used here are defined in
 
 ## RIB
 
-The RIB reader is in `api/render/offline/rib`. It calls `offline::rib::Handler`, a C++
-interface with typed parameter lists, not the RI C API. A request that takes several values
-of one type passes them as one struct named after the request, so a call names each value:
-`handler->clipping({.hither = 0.1F, .yon = 100.0F})`. Each struct has its own header in
-`rib/requests/`, in the namespace `offline::rib::requests`. moya implements the handler as
-`moya::ri::RIBHandler`. The editor exports its scenes to RIB, one way; see
-[editor/](../editor/README.md).
+The RIB reader is in `api/rib`. It calls `rib::Handler`, a C++ interface with typed parameter
+lists. A request that takes several values of one type passes them as one struct named after the
+request, so a call names each value: `handler->clipping({.hither = 0.1F, .yon = 100.0F})`. Each
+struct has its own header in `api/rib/requests/`, in the namespace `rib::requests`. moya
+implements the handler as `moya::ri::SceneClient`. The editor exports its scenes to RIB, one
+way; see [editor/](../editor/README.md).
 
 ### What is read
 
@@ -289,7 +288,7 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 
 ### Writing and recording
 
-Two handlers in `api/render/offline/rib` take requests from anything that sends them, such as
+Two handlers in `api/rib` take requests from anything that sends them, such as
 the editor's export, rather than from the reader.
 
 - **`rib::Writer` writes each request as a line of ASCII RIB**, which the reader reads back as

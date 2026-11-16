@@ -4,8 +4,8 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Sampling.h>
+#include <api/rib/Reader.h>
 #include <api/version/Version.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
@@ -168,7 +168,7 @@ int describe(const std::string & infile, const boost::shared_ptr<v3d::log::Logge
         scene.apply();
         std::cout << v3d::moya::scene::describe(scene) << std::flush;
     });
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     if (!reader.read(infile, &client)) {
         std::cout << "error reading rib file - " << reader.error() << "\n";
         return EXIT_FAILURE;
@@ -189,7 +189,7 @@ int showHits(const std::string & infile, const std::string & outfile, const boos
         scene.apply();
         v3d::moya::view::writeHits(outfile, v3d::moya::view::hits(device, scene, logger));
     });
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     if (!reader.read(infile, &client)) {
         std::cout << "error reading rib file - " << reader.error() << "\n";
         return EXIT_FAILURE;
@@ -262,7 +262,7 @@ int render(const boost::program_options::variables_map& var_map, const std::stri
     v3d::moya::scene::Scene scene(v3d::moya::scene::kinds());
     v3d::moya::ri::SceneClient client(scene, logger);
     if (var_map.count("width") != 0 && !client.resolution(var_map["width"].as<int>(), var_map["height"].as<int>())) {
-        std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::film::largestResolution << "\n";
+        std::cout << "--width and --height have to be between 1 and " << v3d::rib::largestResolution << "\n";
         return EXIT_FAILURE;
     }
     notice();
@@ -301,7 +301,7 @@ int render(const boost::program_options::variables_map& var_map, const std::stri
     if (var_map.count("silent") == 0) {
         std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
     }
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     if (!reader.read(infile, &client)) {
         std::cout << "error reading rib file - " << reader.error() << "\n";
         return EXIT_FAILURE;
@@ -327,7 +327,7 @@ int makeTexture(const boost::program_options::variables_map& var_map) {
             return EXIT_FAILURE;
         }
     }
-    if (var_map.count("filter") > 0 && !v3d::render::offline::film::filterNamed(var_map["filter"].as<std::string>(), &making.filter)) {
+    if (var_map.count("filter") > 0 && !v3d::rib::filterNamed(var_map["filter"].as<std::string>(), &making.filter)) {
         std::cout << "--filter has to be box, triangle, catmull-rom, gaussian or sinc" << "\n";
         return EXIT_FAILURE;
     }

@@ -7,8 +7,8 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Sampling.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/output/Chromaticities.h>
@@ -54,7 +54,7 @@
 
 namespace {
 
-namespace film = v3d::render::offline::film;
+namespace film = v3d::rib;
 namespace texture = v3d::moya::texture;
 
 /**
@@ -445,7 +445,7 @@ BOOST_AUTO_TEST_CASE(moya_texture_rib_make_texture_makes_one_test) {
     const auto logger = boost::make_shared<v3d::log::Logger>();
     const v3d::moya::handling::Heard heard(logger->get());
     v3d::moya::ri::SceneClient client(scene, logger);
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     std::istringstream stream("MakeTexture \"" + escaped + "\" \"" + written + "\" \"periodic\" \"mirror\" \"gaussian\" 2 2 \"string colorspace\" \"Raw\"\n");
     BOOST_REQUIRE(reader.read(stream, &client));
     BOOST_TEST(heard.said("wrap mode mirror is not one RI names"));

@@ -5,8 +5,8 @@
 
 #include "Primvars.h"
 
-#include <api/render/offline/rib/Declaration.h>
-#include <api/render/offline/rib/Parameters.h>
+#include <api/rib/Declaration.h>
+#include <api/rib/Parameters.h>
 #include <api/type/Checked.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -28,7 +28,7 @@ namespace v3d::moya::ri::internal {
 
 namespace {
 
-typedef v3d::render::offline::rib::Declaration Declaration;
+typedef v3d::rib::Declaration Declaration;
 
 /** The floats of a matrix, and of an hpoint. **/
 constexpr std::size_t kMatrixFloats = 16;
@@ -50,7 +50,7 @@ std::vector<glm::vec3> triples(const std::vector<float> & floats) {
 
 };  // namespace
 
-std::optional<scene::Value> valueOf(const v3d::render::offline::rib::ParameterList & parameters, const std::string & name) {
+std::optional<scene::Value> valueOf(const v3d::rib::ParameterList & parameters, const std::string & name) {
     const Declaration * declaration = parameters.declaration(name);
     if (declaration == nullptr) {
         return std::nullopt;
@@ -107,7 +107,7 @@ scene::Interpolation interpolationOf(Declaration::Storage storage) {
     return scene::Interpolation::Constant;
 }
 
-void declare(scene::Scene * scene, const scene::Handle & object, const v3d::render::offline::rib::ParameterList & parameters,
+void declare(scene::Scene * scene, const scene::Handle & object, const v3d::rib::ParameterList & parameters,
     const std::set<std::string> & except, bool constant) {
     for (const std::string & name : parameters.names()) {
         if (except.contains(name)) {

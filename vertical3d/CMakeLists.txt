@@ -160,7 +160,7 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_log
 	v3dlib_moya
 	v3dlib_render
-	v3dlib_render_offline
+	v3dlib_rib
 	v3dlib_script
 	v3dlib_type
 	v3dlib_shell

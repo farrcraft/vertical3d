@@ -201,7 +201,7 @@ Giving the editor materials is work for a plan of its own.
 
 **The rules:**
 
-* **This plan changes nothing in `moya/libmoya` or `api/render/offline`.** Its one change to
+* **This plan changes nothing in `moya/libmoya` or `api/rib`.** Its one change to
   moya is step 16's option in `moya/moya.cxx`, which only passes a count to `CpuDevice`.
 * **Step 10 is the only step that changes what the editor sends moya.** It groups shared meshes
   into one prototype or object. A scene with no shared mesh gives the same RIB and the same

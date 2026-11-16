@@ -7,7 +7,7 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Textures.h>
@@ -229,7 +229,7 @@ std::string optionOf(const std::string & source, const std::string & name) {
     scene::Scene held(scene::kinds());
     const auto logger = logOf();
     v3d::moya::ri::SceneClient client(held, logger);
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     std::istringstream stream(source);
     BOOST_REQUIRE(reader.read(stream, &client));
     held.commit();

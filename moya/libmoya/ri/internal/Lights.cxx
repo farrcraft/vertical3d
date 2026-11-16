@@ -6,8 +6,8 @@
 #include "Lights.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/LightSource.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -34,7 +34,7 @@ namespace v3d::moya::ri::internal {
 
 namespace {
 
-typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::rib::ParameterList ParameterList;
 
 /** A normalised point's radiant intensity is its emission over this. **/
 constexpr float kPointShare = 4.0F;
@@ -106,7 +106,7 @@ scene::Handle Lights::light(const std::string & kind, const std::string & name, 
     return made;
 }
 
-bool Lights::source(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters, const std::string & name,
+bool Lights::source(const v3d::rib::requests::LightSource & request, const ParameterList & parameters, const std::string & name,
     const Sampled & transformation) {
     scene::Handle made;
     if (request.shader == "pointlight") {
@@ -183,7 +183,7 @@ void Lights::rename(const scene::Handle & made, const std::string & kind, const 
     }
 }
 
-bool Lights::renderman(const v3d::render::offline::rib::requests::LightSource & request, const ParameterList & parameters, const std::string & name,
+bool Lights::renderman(const v3d::rib::requests::LightSource & request, const ParameterList & parameters, const std::string & name,
     const Sampled & transformation) {
     const auto found = renderManKinds().find(request.shader);
     if (found == renderManKinds().end()) {

@@ -6,30 +6,30 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Basis.h>
-#include <api/render/offline/rib/requests/Clipping.h>
-#include <api/render/offline/rib/requests/Cone.h>
-#include <api/render/offline/rib/requests/CropWindow.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/Cylinder.h>
-#include <api/render/offline/rib/requests/DepthOfField.h>
-#include <api/render/offline/rib/requests/Disk.h>
-#include <api/render/offline/rib/requests/Display.h>
-#include <api/render/offline/rib/requests/Format.h>
-#include <api/render/offline/rib/requests/Hyperboloid.h>
-#include <api/render/offline/rib/requests/LightSource.h>
-#include <api/render/offline/rib/requests/MakeTexture.h>
-#include <api/render/offline/rib/requests/Paraboloid.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
-#include <api/render/offline/rib/requests/ShadingNode.h>
-#include <api/render/offline/rib/requests/Shutter.h>
-#include <api/render/offline/rib/requests/Sphere.h>
-#include <api/render/offline/rib/requests/SubdivisionMesh.h>
-#include <api/render/offline/rib/requests/Torus.h>
+#include <api/rib/Sampling.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Basis.h>
+#include <api/rib/requests/Clipping.h>
+#include <api/rib/requests/Cone.h>
+#include <api/rib/requests/CropWindow.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/Cylinder.h>
+#include <api/rib/requests/DepthOfField.h>
+#include <api/rib/requests/Disk.h>
+#include <api/rib/requests/Display.h>
+#include <api/rib/requests/Format.h>
+#include <api/rib/requests/Hyperboloid.h>
+#include <api/rib/requests/LightSource.h>
+#include <api/rib/requests/MakeTexture.h>
+#include <api/rib/requests/Paraboloid.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/ScreenWindow.h>
+#include <api/rib/requests/ShadingNode.h>
+#include <api/rib/requests/Shutter.h>
+#include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Torus.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/ri/internal/Deforming.h>
 #include <moya/libmoya/ri/internal/Document.h>
@@ -114,7 +114,7 @@ namespace v3d::moya::ri {
  * request and its place in the file. A name a kind already holds gets a number after it. A
  * display's output is named after its file, and a light without a name after its handle.
  **/
-class SceneClient final : public v3d::render::offline::rib::Handler {
+class SceneClient final : public v3d::rib::Handler {
  public:
     /**
      * @param scene made with scene::kinds(), which outlives the client
@@ -134,21 +134,21 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      **/
     bool resolution(int width, int height);
 
-    void format(const v3d::render::offline::rib::requests::Format & request) override;
+    void format(const v3d::rib::requests::Format & request) override;
     void frameAspectRatio(float aspect) override;
-    void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) override;
-    void cropWindow(const v3d::render::offline::rib::requests::CropWindow & request) override;
+    void screenWindow(const v3d::rib::requests::ScreenWindow & request) override;
+    void cropWindow(const v3d::rib::requests::CropWindow & request) override;
     /**
      * `"perspective"` or `"orthographic"`, with a perspective one's `"fov"`. Another projection
      * is logged and changes nothing.
      **/
-    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void clipping(const v3d::render::offline::rib::requests::Clipping & request) override;
-    void depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) override;
-    void shutter(const v3d::render::offline::rib::requests::Shutter & request) override;
+    void projection(const std::string & name, const v3d::rib::ParameterList & parameters) override;
+    void clipping(const v3d::rib::requests::Clipping & request) override;
+    void depthOfField(const v3d::rib::requests::DepthOfField & request) override;
+    void shutter(const v3d::rib::requests::Shutter & request) override;
     /** The samples per pixel are the two counts multiplied. **/
     void pixelSamples(const glm::uvec2 & samples) override;
-    void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override;
+    void pixelFilter(v3d::rib::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     /**
      * `Option "searchpath" "texture"` sets the options' textureSearchPath, and `"shader"` their
@@ -161,13 +161,13 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * The limits' `bucketsize` and `gridsize` are passed over. Any
      * other parameter is logged once by its option and name, and changes nothing.
      **/
-    void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void option(const std::string & name, const v3d::rib::ParameterList & parameters) override;
     /**
      * `"raytrace"` and `"hidden"` are passed over, since both name the renderer's default and moya
      * renders by path tracing alone. Another hider is logged once. Each parameter is logged once
      * by its name, and changes nothing.
      **/
-    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hider(const std::string & name, const v3d::rib::ParameterList & parameters) override;
     /**
      * A display whose name starts with `+` adds an output. Any other replaces every output
      * before it, as RI says. A file ending in `.png` is written as PNG, and any other as EXR,
@@ -177,7 +177,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * of that source, named after it, as displayChannel() reads a source. Each parameter is
      * logged once by its name, and changes nothing.
      **/
-    void display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void display(const v3d::rib::requests::Display & request, const v3d::rib::ParameterList & parameters) override;
 
     /**
      * Declares a channel of the declaration's name, of three components for a colour, point,
@@ -189,8 +189,8 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * `zmin` for the closest, and the default for any other. Its `"int denoise"` of 1 writes it
      * denoised beside it.
      **/
-    void displayChannel(const v3d::render::offline::rib::requests::DisplayChannel & request,
-        const v3d::render::offline::rib::ParameterList & parameters) override;
+    void displayChannel(const v3d::rib::requests::DisplayChannel & request,
+        const v3d::rib::ParameterList & parameters) override;
 
     /**
      * RenderMan's `PxrCryptomatte` adds an output of its `"string filename"`, in floats, of one
@@ -198,17 +198,17 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * object, `Material` or `material` a material, and `Path` or `asset` an asset. The layer is
      * named CryptoObject, CryptoMaterial or CryptoAsset. Any other sample filter is reported.
      **/
-    void sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void sampleFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) override;
     /**
      * RenderMan's `PxrBackgroundDisplayFilter` sets the options' background to its
      * `"color backgroundColor"`, black by default. Any other display filter is logged once by name.
      **/
-    void displayFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void displayFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) override;
     /**
      * RI's `background` imager sets the options' background to its `"color background"`, black by
      * default. Any other imager is logged once by name.
      **/
-    void imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void imager(const std::string & name, const v3d::rib::ParameterList & parameters) override;
 
     /**
      * Makes the texture file at once, as texture::make() does, in the colour space the
@@ -216,7 +216,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * not name is logged, and the texture is made with black or the box. A texture that cannot
      * be made is logged, and the file reads on.
      **/
-    void makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void makeTexture(const v3d::rib::requests::MakeTexture & request, const v3d::rib::ParameterList & parameters) override;
 
     void frameBegin(int frame) override;
     void worldBegin() override;
@@ -245,7 +245,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * each bounce. Any other parameter is logged once by its attribute and name, and changes
      * nothing.
      **/
-    void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void attribute(const std::string & name, const v3d::rib::ParameterList & parameters) override;
 
     /**
      * A space a scene names, or `"world"` and `"camera"`. Another of RI's own spaces is logged
@@ -259,37 +259,37 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     /** Whether each instance made after it is two-sided: with 2, RI's default, and not with 1. **/
     void sides(int count) override;
     /** The basis a cubic curve takes. A basis RI does not name is logged, and Bezier is used. **/
-    void basis(const v3d::render::offline::rib::requests::Basis & request) override;
-    void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void pattern(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void basis(const v3d::rib::requests::Basis & request) override;
+    void surface(const std::string & name, const v3d::rib::ParameterList & parameters) override;
+    void pattern(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) override;
+    void bxdf(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) override;
+    void displacement(const std::string & name, const v3d::rib::ParameterList & parameters) override;
+    void lightSource(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) override;
     /**
      * RI's `arealight` makes a mesh light of each geometry after it in its attribute block. Another
      * shader is logged once, and makes no light.
      **/
-    void areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void areaLightSource(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) override;
+    void light(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
 
     Handler* deformation() override;
-    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void sphere(const v3d::render::offline::rib::requests::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void curves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cone(const v3d::render::offline::rib::requests::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void disk(const v3d::render::offline::rib::requests::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void torus(const v3d::render::offline::rib::requests::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void polygon(unsigned int vertices, const v3d::rib::ParameterList & parameters) override;
+    void pointsPolygons(const v3d::rib::requests::PointsPolygons & request, const v3d::rib::ParameterList & parameters) override;
+    void sphere(const v3d::rib::requests::Sphere & request, const v3d::rib::ParameterList & parameters) override;
+    void curves(const v3d::rib::requests::Curves & request, const v3d::rib::ParameterList & parameters) override;
+    void points(unsigned int count, const v3d::rib::ParameterList & parameters) override;
+    void cone(const v3d::rib::requests::Cone & request, const v3d::rib::ParameterList & parameters) override;
+    void cylinder(const v3d::rib::requests::Cylinder & request, const v3d::rib::ParameterList & parameters) override;
+    void hyperboloid(const v3d::rib::requests::Hyperboloid & request, const v3d::rib::ParameterList & parameters) override;
+    void paraboloid(const v3d::rib::requests::Paraboloid & request, const v3d::rib::ParameterList & parameters) override;
+    void disk(const v3d::rib::requests::Disk & request, const v3d::rib::ParameterList & parameters) override;
+    void torus(const v3d::rib::requests::Torus & request, const v3d::rib::ParameterList & parameters) override;
     /**
      * A tag RI names, `crease`, `corner`, `hole` or `interpolateboundary`, becomes the mesh's
      * parameters. Another tag is logged.
      **/
-    void subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const v3d::rib::ParameterList & parameters) override;
 
     void objectBegin(const std::string & handle) override;
     void objectEnd() override;
@@ -302,7 +302,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
     static constexpr int kHeight = 240;
 
     /** Sets the options' background to a colour parameter, black when it is not given. **/
-    void background(const v3d::render::offline::rib::ParameterList & parameters, const std::string & colour);
+    void background(const v3d::rib::ParameterList & parameters, const std::string & colour);
 
     /** Whether a file name ends with a suffix, compared exactly. **/
     static bool endsWith(const std::string & text, const std::string & suffix);
@@ -318,7 +318,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * its name and the parameter's name, so the same parameter is logged once however often
      * it comes.
      **/
-    void unread(const std::string & request, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+    void unread(const std::string & request, const std::string & name, const v3d::rib::ParameterList & parameters,
         const std::set<std::string> & read);
 
     /**
@@ -327,14 +327,14 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      **/
     struct Shader {
         std::string name{};
-        v3d::render::offline::rib::ParameterList parameters{};
+        v3d::rib::ParameterList parameters{};
         std::string light{};
     };
 
     /** A Pattern or a Bxdf request: its node, its parameters, and whether it is a Bxdf. **/
     struct Node {
-        v3d::render::offline::rib::requests::ShadingNode request{};
-        v3d::render::offline::rib::ParameterList parameters{};
+        v3d::rib::requests::ShadingNode request{};
+        v3d::rib::ParameterList parameters{};
         bool bxdf { false };
     };
 
@@ -387,7 +387,7 @@ class SceneClient final : public v3d::render::offline::rib::Handler {
      * `"coordinatesystem"` it names. A bound that is not a distance, or a space no request named,
      * is logged.
      **/
-    void displacementBound(const v3d::render::offline::rib::ParameterList & parameters);
+    void displacementBound(const v3d::rib::ParameterList & parameters);
 
     /** The material of the current attribute state, made when there is none. **/
     scene::Handle material();

@@ -8,9 +8,10 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/Transform.h>
+#include <moya/libmoya/film/Filter.h>
 #include <moya/libmoya/output/Chromaticities.h>
 #include <moya/libmoya/texture/Level.h>
 #include <moya/libmoya/texture/internal/Picture.h>
@@ -52,8 +53,6 @@
 namespace v3d::moya::texture {
 
 namespace {
-
-namespace film = render::offline::film;
 
 /** The side of a texture file's tiles, in texels. **/
 constexpr int kTile = 64;
@@ -233,7 +232,7 @@ void filterTexel(const Level & above, std::uint32_t channels, const Making & mak
     for (std::size_t y = 0; y < down.offsets.size(); ++y) {
         const std::int64_t readRow = wrapped(down.first + static_cast<std::int64_t>(y), above.height, making.twrap);
         for (std::size_t x = 0; x < across.offsets.size(); ++x) {
-            const float weight = film::filter(making.filter, glm::vec2(across.offsets[x], down.offsets[y]), making.width);
+            const float weight = film::Filter::weight(making.filter, glm::vec2(across.offsets[x], down.offsets[y]), making.width);
             total += weight;
             const std::int64_t readColumn = wrapped(across.first + static_cast<std::int64_t>(x), above.width, making.swrap);
             if (readRow < 0 || readColumn < 0) {
@@ -356,7 +355,7 @@ std::string wrapName(Wrap wrap) {
 }
 
 bool widthAllowed(const glm::vec2 & width) {
-    return film::filterWidth(width) && width.x <= kWidest && width.y <= kWidest;
+    return rib::filterWidth(width) && width.x <= kWidest && width.y <= kWidest;
 }
 
 std::vector<Level> mipmap(const Level & image, std::uint32_t channels, const Making & making) {

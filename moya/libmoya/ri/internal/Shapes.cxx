@@ -5,17 +5,17 @@
 
 #include "Shapes.h"
 
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Cone.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/Cylinder.h>
-#include <api/render/offline/rib/requests/Disk.h>
-#include <api/render/offline/rib/requests/Hyperboloid.h>
-#include <api/render/offline/rib/requests/Paraboloid.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/Sphere.h>
-#include <api/render/offline/rib/requests/SubdivisionMesh.h>
-#include <api/render/offline/rib/requests/Torus.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Cone.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/Cylinder.h>
+#include <api/rib/requests/Disk.h>
+#include <api/rib/requests/Hyperboloid.h>
+#include <api/rib/requests/Paraboloid.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Torus.h>
 #include <moya/libmoya/ri/internal/Primvars.h>
 #include <moya/libmoya/scene/Value.h>
 
@@ -36,7 +36,7 @@ namespace v3d::moya::ri::internal {
 
 namespace {
 
-typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::rib::ParameterList ParameterList;
 
 };  // namespace
 
@@ -116,7 +116,7 @@ Shape Shapes::polygon(unsigned int vertices, const ParameterList & parameters) {
         .taken = { "P", "Pw", "Pz" } };
 }
 
-Shape Shapes::mesh(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
+Shape Shapes::mesh(const v3d::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     return Shape { .kind = "mesh",
         .request = "PointsPolygons",
         .parameters = { { "P", pointsOf(parameters) }, { "vertices", integersOf(request.counts) }, { "indices", integersOf(request.indices) } },
@@ -124,7 +124,7 @@ Shape Shapes::mesh(const v3d::render::offline::rib::requests::PointsPolygons & r
         .taken = { "P", "Pw", "Pz" } };
 }
 
-Shape Shapes::curves(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters, const std::string & basis) {
+Shape Shapes::curves(const v3d::rib::requests::Curves & request, const ParameterList & parameters, const std::string & basis) {
     Shape shape { .kind = "curves",
         .request = "Curves",
         .parameters = { { "P", pointsOf(parameters) }, { "vertices", integersOf(request.vertices) },
@@ -147,7 +147,7 @@ Shape Shapes::points(const ParameterList & parameters) {
     return shape;
 }
 
-Shape Shapes::subdivision(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters, Warnings * warnings) {
+Shape Shapes::subdivision(const v3d::rib::requests::SubdivisionMesh & request, const ParameterList & parameters, Warnings * warnings) {
     std::string scheme = request.scheme;
     if (scheme != "catmull-clark" && scheme != "loop" && scheme != "bilinear") {
         warnings->once("scheme " + scheme, "moya subdivides by catmull-clark, loop or bilinear, so a \"" + scheme + "\" mesh is subdivided by catmull-clark");
@@ -186,42 +186,42 @@ Shape Shapes::subdivision(const v3d::render::offline::rib::requests::Subdivision
         .taken = { "P", "Pw", "Pz" } };
 }
 
-Shape Shapes::sphere(const v3d::render::offline::rib::requests::Sphere & request, const ParameterList & parameters) {
+Shape Shapes::sphere(const v3d::rib::requests::Sphere & request, const ParameterList & parameters) {
     return quadric("sphere", "Sphere", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::cone(const v3d::render::offline::rib::requests::Cone & request, const ParameterList & parameters) {
+Shape Shapes::cone(const v3d::rib::requests::Cone & request, const ParameterList & parameters) {
     return quadric("cone", "Cone", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const ParameterList & parameters) {
+Shape Shapes::cylinder(const v3d::rib::requests::Cylinder & request, const ParameterList & parameters) {
     return quadric("cylinder", "Cylinder", parameters, { { "radius", scene::Value::number(request.radius) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
+Shape Shapes::hyperboloid(const v3d::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
     return quadric("hyperboloid", "Hyperboloid", parameters, {
         { "point1", scene::Value::point(glm::vec3(request.point1[0], request.point1[1], request.point1[2])) },
         { "point2", scene::Value::point(glm::vec3(request.point2[0], request.point2[1], request.point2[2])) },
         { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const ParameterList & parameters) {
+Shape Shapes::paraboloid(const v3d::rib::requests::Paraboloid & request, const ParameterList & parameters) {
     return quadric("paraboloid", "Paraboloid", parameters, { { "rmax", scene::Value::number(request.rmax) },
         { "zmin", scene::Value::number(request.zmin) }, { "zmax", scene::Value::number(request.zmax) },
         { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::disk(const v3d::render::offline::rib::requests::Disk & request, const ParameterList & parameters) {
+Shape Shapes::disk(const v3d::rib::requests::Disk & request, const ParameterList & parameters) {
     return quadric("disk", "Disk", parameters, { { "height", scene::Value::number(request.height) },
         { "radius", scene::Value::number(request.radius) }, { "thetamax", scene::Value::number(request.thetamax) } });
 }
 
-Shape Shapes::torus(const v3d::render::offline::rib::requests::Torus & request, const ParameterList & parameters) {
+Shape Shapes::torus(const v3d::rib::requests::Torus & request, const ParameterList & parameters) {
     return quadric("torus", "Torus", parameters, { { "majorRadius", scene::Value::number(request.majorRadius) },
         { "minorRadius", scene::Value::number(request.minorRadius) }, { "phimin", scene::Value::number(request.phimin) },
         { "phimax", scene::Value::number(request.phimax) }, { "thetamax", scene::Value::number(request.thetamax) } });

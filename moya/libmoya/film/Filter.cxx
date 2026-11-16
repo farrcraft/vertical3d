@@ -8,9 +8,10 @@
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/kernel/film/PixelFilter.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -25,20 +26,34 @@ namespace v3d::moya::film {
 
 namespace {
 
-namespace offline = v3d::render::offline::film;
+/** The coefficients of a cubic in the radius, of radius^3, radius^2, radius and 1 in turn. **/
+typedef std::array<float, 4> Cubic;
+
+/**
+ * The two pieces of the Catmull-Rom kernel, doubled: one for a radius under one, and one for a
+ * radius from one to two. Doubling scales every weight alike, and the film divides by the total
+ * weight.
+ **/
+constexpr Cubic CATMULL_ROM_INNER{3.0F, -5.0F, 0.0F, 2.0F};
+constexpr Cubic CATMULL_ROM_OUTER{-1.0F, 5.0F, -8.0F, 4.0F};
+
+/** A cubic at a radius, given the radius and its square. **/
+float evaluate(const Cubic & cubic, float radius, float radiusSquared) {
+    return (cubic[0] * radius * radiusSquared) + (cubic[1] * radiusSquared) + (cubic[2] * radius) + cubic[3];
+}
 
 };  // namespace
 
-Filter::Filter(device::Device & device, offline::Filter kind, const glm::vec2 & width) {
-    if (!offline::filterWidth(width)) {
+Filter::Filter(device::Device & device, rib::Filter kind, const glm::vec2 & width) {
+    if (!rib::filterWidth(width)) {
         throw std::invalid_argument("a pixel filter's width must be positive and finite");
     }
     filter_.radius = width * 0.5F;
-    if (kind == offline::Filter::Box) {
+    if (kind == rib::Filter::Box) {
         filter_.kind = kernel::film::FilterKind::Box;
         return;
     }
-    if (kind == offline::Filter::Triangle) {
+    if (kind == rib::Filter::Triangle) {
         filter_.kind = kernel::film::FilterKind::Triangle;
         return;
     }
@@ -59,7 +74,7 @@ Filter::Filter(device::Device & device, offline::Filter kind, const glm::vec2 & 
         double sum = 0.0;
         for (std::uint32_t column = 0; column < columns; ++column) {
             const glm::vec2 centre { (static_cast<float>(column) + 0.5F) * cell.x, (static_cast<float>(row) + 0.5F) * cell.y };
-            const float value = offline::filter(kind, centre - filter_.radius, width);
+            const float value = weight(kind, centre - filter_.radius, width);
             values[(static_cast<std::size_t>(row) * columns) + column] = value;
             sum += std::fabs(value);
             cdf[column + 1U] = static_cast<float>(sum);
@@ -105,6 +120,46 @@ void Filter::normalise(float * cdf, std::uint32_t count) {
         cdf[i] = total > 0.0F ? cdf[i] / total : static_cast<float>(i) / static_cast<float>(count);
     }
     cdf[count] = 1.0F;
+}
+
+float Filter::weight(rib::Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
+    const glm::vec2 half = width * 0.5F;
+    if (!(std::fabs(offset.x) <= half.x) || !(std::fabs(offset.y) <= half.y)) {
+        return 0.0F;
+    }
+    switch (kind) {
+    case rib::Filter::Box:
+        return 1.0F;
+    case rib::Filter::Triangle:
+        return (1.0F - (std::fabs(offset.x) / half.x)) * (1.0F - (std::fabs(offset.y) / half.y));
+    case rib::Filter::CatmullRom: {
+        // radial and not scaled by the width. The kernel reaches zero two pixels out, so a
+        // width under four cuts it off at the width test above. RI applies that cut-off to
+        // every filter
+        const float radiusSquared = (offset.x * offset.x) + (offset.y * offset.y);
+        const float radius = std::sqrt(radiusSquared);
+        if (radius >= 2.0F) {
+            return 0.0F;
+        }
+        if (radius < 1.0F) {
+            return evaluate(CATMULL_ROM_INNER, radius, radiusSquared);
+        }
+        return evaluate(CATMULL_ROM_OUTER, radius, radiusSquared);
+    }
+    case rib::Filter::Gaussian: {
+        // scaled so that the edge of the width is two standard deviations out
+        const float x = offset.x * 2.0F / width.x;
+        const float y = offset.y * 2.0F / width.y;
+        return std::exp(-2.0F * ((x * x) + (y * y)));
+    }
+    case rib::Filter::Sinc: {
+        const float pi = 3.14159265358979F;
+        const float x = offset.x == 0.0F ? 1.0F : std::sin(pi * offset.x) / (pi * offset.x);
+        const float y = offset.y == 0.0F ? 1.0F : std::sin(pi * offset.y) / (pi * offset.y);
+        return x * y;
+    }
+    }
+    return 0.0F;
 }
 
 };  // namespace v3d::moya::film

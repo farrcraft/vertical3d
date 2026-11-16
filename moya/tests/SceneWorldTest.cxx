@@ -4,7 +4,7 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
@@ -75,7 +75,7 @@ class Read final {
             scene_.apply();
             described_ += describe(scene_);
         });
-        v3d::render::offline::rib::Reader reader(logger_);
+        v3d::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(*stream, &client));
         for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by", "left open" }) {
             if (heard.said(text)) {

@@ -8,7 +8,7 @@
 #include <moya/libmoya/device/Buffer.h>
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/kernel/film/PixelFilter.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 
 #include <cstdint>
 #include <vector>
@@ -37,9 +37,19 @@ class Filter final {
     /**
      * @param kind which of RI's filters
      * @param width the filter's whole extent along each axis, in pixels, as PixelFilter gives it
-     * @throws std::invalid_argument when render::offline::film::filterWidth() refuses the width
+     * @throws std::invalid_argument when rib::filterWidth() refuses the width
      **/
-    Filter(device::Device & device, render::offline::film::Filter kind, const glm::vec2 & width);
+    Filter(device::Device & device, rib::Filter kind, const glm::vec2 & width);
+
+    /**
+     * A pixel filter's weight at an offset from the pixel centre, with RI's formulas.
+     *
+     * @param kind which filter's formula to use
+     * @param offset from the centre, in pixels
+     * @param width the filter's whole extent along each axis, in pixels. Every filter is zero
+     *        outside it, including catmull-rom and sinc, whose RI formulas ignore the width
+     **/
+    static float weight(rib::Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 
     /** The filter as kernel code reads it, valid while this filter lives. **/
     kernel::film::PixelFilter view() const;

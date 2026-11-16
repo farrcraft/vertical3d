@@ -99,8 +99,8 @@ test("namespaces allows a forward declaration in another directory's namespace",
 });
 
 test('namespaces reports a namespace under v3d that no directory gives', () => {
-    const text = 'namespace v3d::render::offline {\nnamespace uniform {\nvoid f();\n}\n}\n';
-    assert.deepEqual(check(text, 'v3d::render::offline', ['v3d::render::offline']), ['2: no-directory']);
+    const text = 'namespace v3d::rib {\nnamespace uniform {\nvoid f();\n}\n}\n';
+    assert.deepEqual(check(text, 'v3d::rib', ['v3d::rib']), ['2: no-directory']);
 });
 
 test('namespaces leaves a namespace outside v3d alone, and a file that opens none', () => {

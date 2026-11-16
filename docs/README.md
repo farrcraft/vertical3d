@@ -57,7 +57,7 @@ For anyone working inside a library rather than using it.
 | Document | Covers |
 |---|---|
 | [internals/](internals/README.md) | How `api/render/realtime` and `api/ui` work inside |
-| [offline/](offline/README.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
+| [offline/](offline/README.md) | moya and `api/rib`: RIB, the scene, the path tracer, the film |
 
 ## The applications
 

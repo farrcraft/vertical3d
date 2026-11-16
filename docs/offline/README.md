@@ -1,6 +1,6 @@
 # The offline renderer
 
-These pages are for anyone changing `moya` or the library under it, `api/render/offline`.
+These pages are for anyone changing `moya` or the library it reads RIB through, `api/rib`.
 Someone who renders with moya reads the [moya manual](../manual/moya/README.md) instead.
 
 moya is the only offline renderer in the tree. It reads a RenderMan scene file and writes an
@@ -39,9 +39,9 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
   such as `Polygon "P" [...]`. It is the scene format moya reads.
 - **Parameter list**: the name and value pairs that end a request, such as `"Cs" [1 0 0]`. Each
   name has a type, set by a declaration.
-- **RIB reader**: `offline::rib::Reader`. It tokenises a RIB file and calls one handler method
+- **RIB reader**: `rib::Reader`. It tokenises a RIB file and calls one handler method
   per request.
-- **Handler**: `offline::rib::Handler`, a C++ interface with one virtual method per request.
+- **Handler**: `rib::Handler`, a C++ interface with one virtual method per request.
   moya implements it as `moya::ri::RIBHandler`.
 - **Graphics state**: the current transformation, colour, opacity, surface shader and lights,
   plus the frame's options. `moya::state::RenderContext` holds it, as the classes below.

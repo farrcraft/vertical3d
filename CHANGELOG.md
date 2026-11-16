@@ -48,12 +48,17 @@ that section to its version, and the section becomes the release's notes.
   file named after the scene. `Hider`, `ShadingRate` and `Option "limits"` change nothing.
 - `moya --width` without `--height`, or a side outside 1 to 65536, is refused, where the scene's
   `Format` was used.
+- RIB is the api library `rib`, in `api/rib` and the namespace `v3d::rib`, where it was part of
+  `render_offline` in `v3d::render::offline::rib`. A project links `v3d::rib`. A pixel filter's
+  name and limits are `rib::Filter` and its neighbours, and its weight is moya's.
 
 ### Removed
 
 - `moya --grid` and `--bucket`, which sized the reyes hider's grids and buckets.
 - RI's C interface in libmoya, `RiBegin` and the other `Ri` entry points with their header
   `RenderMan.h`. A program builds moya's scene through the retained scene in C++, or writes RIB.
+- The api library `render_offline`, with the shading language, the ray tracer, the old film, the
+  textures and the old camera it held. RIB stays, as the library `rib`.
 
 ### Fixed
 

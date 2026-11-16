@@ -6,18 +6,18 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Cone.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/Cylinder.h>
-#include <api/render/offline/rib/requests/Disk.h>
-#include <api/render/offline/rib/requests/Hyperboloid.h>
-#include <api/render/offline/rib/requests/Paraboloid.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/Sphere.h>
-#include <api/render/offline/rib/requests/SubdivisionMesh.h>
-#include <api/render/offline/rib/requests/Torus.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Cone.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/Cylinder.h>
+#include <api/rib/requests/Disk.h>
+#include <api/rib/requests/Hyperboloid.h>
+#include <api/rib/requests/Paraboloid.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Torus.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
@@ -39,7 +39,7 @@ namespace v3d::moya::ri::internal {
  * the parameters its kind declares for motion. end() sets them as samples of the prototype, one
  * at each of the block's times.
  **/
-class Deforming final : public v3d::render::offline::rib::Handler {
+class Deforming final : public v3d::rib::Handler {
  public:
     /**
      * The scene and the warnings outlive the handler.
@@ -62,18 +62,18 @@ class Deforming final : public v3d::render::offline::rib::Handler {
      **/
     void end(const std::vector<float> & times);
 
-    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void sphere(const v3d::render::offline::rib::requests::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void curves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cone(const v3d::render::offline::rib::requests::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void disk(const v3d::render::offline::rib::requests::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void torus(const v3d::render::offline::rib::requests::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void polygon(unsigned int vertices, const v3d::rib::ParameterList & parameters) override;
+    void pointsPolygons(const v3d::rib::requests::PointsPolygons & request, const v3d::rib::ParameterList & parameters) override;
+    void sphere(const v3d::rib::requests::Sphere & request, const v3d::rib::ParameterList & parameters) override;
+    void curves(const v3d::rib::requests::Curves & request, const v3d::rib::ParameterList & parameters) override;
+    void points(unsigned int count, const v3d::rib::ParameterList & parameters) override;
+    void cone(const v3d::rib::requests::Cone & request, const v3d::rib::ParameterList & parameters) override;
+    void cylinder(const v3d::rib::requests::Cylinder & request, const v3d::rib::ParameterList & parameters) override;
+    void hyperboloid(const v3d::rib::requests::Hyperboloid & request, const v3d::rib::ParameterList & parameters) override;
+    void paraboloid(const v3d::rib::requests::Paraboloid & request, const v3d::rib::ParameterList & parameters) override;
+    void disk(const v3d::rib::requests::Disk & request, const v3d::rib::ParameterList & parameters) override;
+    void torus(const v3d::rib::requests::Torus & request, const v3d::rib::ParameterList & parameters) override;
+    void subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const v3d::rib::ParameterList & parameters) override;
 
  private:
     /** Keep a later pose's values. A pose of another kind of primitive is logged and left out. **/

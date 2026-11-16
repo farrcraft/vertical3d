@@ -4,7 +4,7 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
@@ -119,7 +119,7 @@ Picture rendered(const std::string & name, const std::function<void(scene::Scene
         }
         out.snapshot = v3d::moya::integrate::render(device, made, logger, v3d::moya::colour::Config());
     });
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     BOOST_TEST_REQUIRE(reader.read("data/" + name + ".rib", &client), reader.error());
     out.manifests = out.snapshot.manifests;
     if (!out.snapshot.deep.empty()) {

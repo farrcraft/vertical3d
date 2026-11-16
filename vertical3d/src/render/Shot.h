@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/rib/Handler.h>
+#include <api/rib/Handler.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
@@ -48,7 +48,7 @@ v3d::type::camera::Camera shotCamera(const v3d::type::camera::Profile& from, con
  * The camera takes the picture's size and frame aspect from the settings, so the picture is
  * not stretched whatever the shape of the view it came from.
  **/
-void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
+void shoot(v3d::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
     const v3d::type::camera::Profile& from, const RIBExportVisitor::Output& output);
 
 /**

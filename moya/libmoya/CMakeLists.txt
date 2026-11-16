@@ -247,7 +247,7 @@ endif()
 # OpenSubdiv, and only the material library's source and its internal header MaterialX, and
 # only the denoiser's source OIDN. OpenSubdiv is linked static on every platform, as vcpkg
 # builds it on Windows.
-target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline glm::glm)
+target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_rib glm::glm)
 target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise TBB::tbb)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some

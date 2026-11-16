@@ -11,7 +11,7 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Basis.h>
 #include <api/curve/Curves.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/scene/Declaration.h>
@@ -280,7 +280,7 @@ bool SceneTranslator::update(const scene::Scene& scene, const scene::Evaluation&
     } else {
         put(lens, "fov", moya::Value::number(profile.fov()));
     }
-    const v3d::render::offline::rib::requests::ScreenWindow screen = RIBExportVisitor::screen(profile);
+    const v3d::rib::requests::ScreenWindow screen = RIBExportVisitor::screen(profile);
     put(lens, "screen", moya::Value::floats({ screen.left, screen.right, screen.bottom, screen.top }));
     put(lens, "near", moya::Value::number(profile.clipping().x));
     put(lens, "far", moya::Value::number(profile.clipping().y));

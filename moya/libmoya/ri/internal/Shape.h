@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/rib/Parameters.h>
+#include <api/rib/Parameters.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <set>
@@ -24,7 +24,7 @@ struct Shape {
     std::string kind{};
     std::string request{};
     std::vector<std::pair<std::string, scene::Value>> parameters{};
-    v3d::render::offline::rib::ParameterList primvars{};
+    v3d::rib::ParameterList primvars{};
     std::set<std::string> taken{};
 };
 

@@ -136,8 +136,8 @@ Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 im
   `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
   fuzz target after them. See [Testing.md](Testing.md#sanitizers).
   [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
-  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
-  render_offline and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
+  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log, rib
+  and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
   leaves out the manifest's `platform` and `usd` features.
 - **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
   older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's

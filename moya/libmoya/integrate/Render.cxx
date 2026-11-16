@@ -6,7 +6,7 @@
 #include <moya/libmoya/integrate/Render.h>
 
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 #include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/accel/Box.h>
 #include <moya/libmoya/accel/Sweep.h>
@@ -108,8 +108,8 @@ kernel::integrate::Strategy strategyNamed(const std::string & name) {
 
 /** The pixel filter the scene's options name, of the width they give. **/
 film::Filter filterOf(device::CpuDevice & device, const scene::Scene & scene) {
-    render::offline::film::Filter kind = render::offline::film::Filter::Gaussian;
-    render::offline::film::filterNamed(option(scene, "filter").stringArray().front(), &kind);
+    rib::Filter kind = rib::Filter::Gaussian;
+    rib::filterNamed(option(scene, "filter").stringArray().front(), &kind);
     const std::vector<float> & width = option(scene, "filterWidth").floatArray();
     return film::Filter(device, kind, glm::vec2 { width[0], width[1] });
 }

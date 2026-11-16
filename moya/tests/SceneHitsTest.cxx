@@ -4,7 +4,7 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/ri/SceneClient.h>
@@ -54,7 +54,7 @@ class FromFile final {
             scene_.apply();
         });
         std::ifstream stream(file.string(), std::ios::binary);
-        v3d::render::offline::rib::Reader reader(logger_);
+        v3d::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(stream, &client));
     }
 

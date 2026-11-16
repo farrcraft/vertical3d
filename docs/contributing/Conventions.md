@@ -156,8 +156,8 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
   headers that all implement one concept, so it stays one directory.
 - **A directory holds at most 15 headers, not counting those under `tests/`.** A directory past
   that size almost always does several jobs, so split it by them. The exception is a directory
-  whose headers all belong to one family that is used together, such as
-  `api/render/offline/sl/syntax`, which holds one header for each kind of syntax tree node. List
+  whose headers all belong to one family that is used together, such as `api/rib/requests`,
+  which holds one header for the arguments of each RIB request. List
   such a directory in `COHESIVE` in `scripts/dirsize.ts`, with the family it holds. Headers are
   counted rather than sources, because each class has one header and may have no source of its
   own. `scripts/dirsize.ts` reports a directory over the limit that is not listed, and a listed

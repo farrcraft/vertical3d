@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Recorder.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/Recorder.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>
@@ -66,7 +66,7 @@ class RIBExportVisitor final : public scene::Visitor {
     /**
      * @param handler where the requests go, which outlives the export
      **/
-    explicit RIBExportVisitor(v3d::render::offline::rib::Handler* handler);
+    explicit RIBExportVisitor(v3d::rib::Handler* handler);
 
     /**
      * What a render of the export makes: its settings, and where its picture goes.
@@ -91,7 +91,7 @@ class RIBExportVisitor final : public scene::Visitor {
      * The screen window a camera is sent with: its ortho zoom by its pixel aspect for an
      * orthographic camera, and the pixel aspect by one for a perspective one.
      **/
-    static v3d::render::offline::rib::requests::ScreenWindow screen(const v3d::type::camera::Profile& profile);
+    static v3d::rib::requests::ScreenWindow screen(const v3d::type::camera::Profile& profile);
 
     /** The name of the light a scene with no light of its own is given. **/
     static constexpr const char* CAMERA_LIGHT = "camera light";
@@ -139,7 +139,7 @@ class RIBExportVisitor final : public scene::Visitor {
     /** The version of RIB the export is written in. **/
     static constexpr float RIB_VERSION = 3.03F;
     /** An identifier attribute that names what follows. **/
-    static v3d::render::offline::rib::ParameterList identifier(const std::string& name);
+    static v3d::rib::ParameterList identifier(const std::string& name);
     static std::vector<float> floats(const glm::vec3& value);
 
     /**
@@ -162,9 +162,9 @@ class RIBExportVisitor final : public scene::Visitor {
      **/
     void open();
 
-    v3d::render::offline::rib::Handler* handler_;
+    v3d::rib::Handler* handler_;
     // the meshes, held until every light has been sent
-    v3d::render::offline::rib::Recorder body_;
+    v3d::rib::Recorder body_;
     // the blocks of the item being visited and of each item above it, outermost first
     std::vector<Block> blocks_;
     unsigned int lights_ = 0;

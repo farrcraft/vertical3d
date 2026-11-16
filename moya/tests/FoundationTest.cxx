@@ -8,7 +8,7 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/colour/Transform.h>
@@ -144,7 +144,7 @@ film::Snapshot rendered(unsigned int threads) {
     const std::vector<glm::vec3> colours = v3d::moya::chart::colours();
     auto patches = device.allocate(colours.size() * sizeof(glm::vec3));
     device.upload(*patches, colours.data(), colours.size() * sizeof(glm::vec3));
-    const film::Filter filter(device, v3d::render::offline::film::Filter::Gaussian, { 2.0F, 2.0F });
+    const film::Filter filter(device, v3d::rib::Filter::Gaussian, { 2.0F, 2.0F });
     film::Film picture(device, { kWidth, kHeight }, {});
     picture.pass([&](const kernel::film::Pixels & pixels) {
         const Chart chart { .pixels = pixels, .filter = filter.view(), .sampler = kernel::sample::ZSobol(kSamples, { kWidth, kHeight }, 1, 0),

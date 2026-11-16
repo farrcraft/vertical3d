@@ -12,7 +12,7 @@
  *                      directory gives. A file that opens none, such as a main or a header of
  *                      a C interface, is not reported.
  *   no-directory       a namespace under v3d that no checked directory gives, such as
- *                      v3d::render::offline::uniform when there is no uniform directory.
+ *                      v3d::rib::uniform when there is no uniform directory.
  *   no-description     a namespace of the api reference that nothing describes.
  *   described-twice    a namespace described more than once.
  *

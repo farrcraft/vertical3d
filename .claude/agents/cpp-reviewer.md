@@ -116,7 +116,7 @@ them. Run it, and report what it reports in the changed files. The fifth needs y
 ### Boundaries
 
 - **The offline renderer must not acquire a realtime dependency.** `moya`, `v3dlib_moya` and
-  `v3dlib_render_offline` link no Vulkan and no SDL, so their suites run in CI with no GPU. A
+  `v3dlib_rib` link no Vulkan and no SDL, so their suites run in CI with no GPU. A
   change that pulls `render`, `ui`, `input`, `window`, Vulkan or SDL into any of them, directly or
   through another library, is a finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The

@@ -202,7 +202,7 @@ endif()
 
 # The api libraries moya and its suite link, added to a narrowed selection that builds moya.
 if(V3D_BUILD_MOYA)
-	list(APPEND V3D_LIBRARIES asset image log render_offline type version)
+	list(APPEND V3D_LIBRARIES asset image log rib type version)
 	list(REMOVE_DUPLICATES V3D_LIBRARIES)
 endif()
 

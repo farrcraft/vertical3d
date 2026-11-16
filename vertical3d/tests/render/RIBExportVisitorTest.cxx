@@ -9,17 +9,17 @@
 #include <api/curve/Curves.h>
 #include <api/curve/Poly.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Declaration.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Reader.h>
-#include <api/render/offline/rib/Writer.h>
-#include <api/render/offline/rib/requests/Clipping.h>
-#include <api/render/offline/rib/requests/Display.h>
-#include <api/render/offline/rib/requests/Format.h>
-#include <api/render/offline/rib/requests/LightSource.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/rib/Declaration.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/Reader.h>
+#include <api/rib/Writer.h>
+#include <api/rib/requests/Clipping.h>
+#include <api/rib/requests/Display.h>
+#include <api/rib/requests/Format.h>
+#include <api/rib/requests/LightSource.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
@@ -54,21 +54,21 @@ namespace {
  * What the RIB reader parsed from the file. The tests assert on this rather than on the
  * text, because the export has to be readable by a renderer.
  **/
-class ImportHandler final : public v3d::render::offline::rib::Handler {
+class ImportHandler final : public v3d::rib::Handler {
  public:
-    void format(const v3d::render::offline::rib::requests::Format & request) override {
+    void format(const v3d::rib::requests::Format & request) override {
         width_ = request.width;
         height_ = request.height;
     }
-    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void projection(const std::string & name, const v3d::rib::ParameterList & parameters) override {
         (void)parameters;
         projection_ = name;
     }
-    void screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) override {
+    void screenWindow(const v3d::rib::requests::ScreenWindow & request) override {
         right_ = request.right;
         top_ = request.top;
     }
-    void clipping(const v3d::render::offline::rib::requests::Clipping & request) override {
+    void clipping(const v3d::rib::requests::Clipping & request) override {
         hither_ = request.hither;
         yon_ = request.yon;
     }
@@ -79,17 +79,17 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         placements_.push_back(matrix);
     }
     void pixelSamples(const glm::uvec2 & samples) override { samples_ = samples; }
-    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void hider(const std::string & name, const v3d::rib::ParameterList & parameters) override {
         (void)name;
         (void)parameters;
         hid_ = true;
     }
-    void display(const v3d::render::offline::rib::requests::Display & request,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void display(const v3d::rib::requests::Display & request,
+        const v3d::rib::ParameterList & parameters) override {
         (void)parameters;
         display_ = request;
     }
-    void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void surface(const std::string & name, const v3d::rib::ParameterList & parameters) override {
         (void)parameters;
         surface_ = name;
     }
@@ -100,12 +100,12 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         shape_ += "(";
     }
     void attributeEnd() override { shape_ += ")"; }
-    void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void attribute(const std::string & name, const v3d::rib::ParameterList & parameters) override {
         (void)name;
         names_.push_back(parameters.string("name"));
     }
-    void lightSource(const v3d::render::offline::rib::requests::LightSource & request,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void lightSource(const v3d::rib::requests::LightSource & request,
+        const v3d::rib::ParameterList & parameters) override {
         lights_.push_back(request.shader);
         order_ += "L";
         froms_.push_back(parameters.points("from").empty() ? glm::vec3(-99.0F) : parameters.points("from").front());
@@ -113,7 +113,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         cones_.push_back(parameters.number("coneangle", -1.0F));
         intensities_.push_back(parameters.number("intensity", -1.0F));
     }
-    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+    void polygon(unsigned int vertices, const v3d::rib::ParameterList & parameters) override {
         order_ += "P";
         if (shape_.empty() || shape_.back() != 'P') {
             shape_ += "P";
@@ -130,19 +130,19 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
      * A mesh's faces, each booked as polygon() books a polygon, with its corners taken from the
      * mesh's points by index.
      **/
-    void pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void pointsPolygons(const v3d::rib::requests::PointsPolygons & request,
+        const v3d::rib::ParameterList & parameters) override {
         const std::vector<glm::vec3> points = parameters.points("P");
         std::size_t at = 0;
         for (const unsigned int count : request.counts) {
-            v3d::render::offline::rib::ParameterList face;
+            v3d::rib::ParameterList face;
             std::vector<float> corners;
             for (unsigned int corner = 0; corner < count; ++corner) {
                 const glm::vec3 & point = points.at(request.indices.at(at + corner));
                 corners.insert(corners.end(), { point.x, point.y, point.z });
             }
-            face.add("P", v3d::render::offline::rib::Declaration(v3d::render::offline::rib::Declaration::Storage::VERTEX,
-                v3d::render::offline::rib::Declaration::Type::POINT, 1), corners, {});
+            face.add("P", v3d::rib::Declaration(v3d::rib::Declaration::Storage::VERTEX,
+                v3d::rib::Declaration::Type::POINT, 1), corners, {});
             polygon(count, face);
             at += count;
         }
@@ -165,7 +165,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     glm::uvec2 samples_ = glm::uvec2(0U);
     /** Whether a Hider request was read. **/
     bool hid_ = false;
-    v3d::render::offline::rib::requests::Display display_;
+    v3d::rib::requests::Display display_;
     std::string surface_;
     float right_ = 0.0F;
     float top_ = 0.0F;
@@ -197,7 +197,7 @@ v3d::type::camera::Camera camera(bool orthographic) {
 
 std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & scene, const v3d::editor::render::RIBExportVisitor::Output & output) {
     std::ostringstream stream;
-    v3d::render::offline::rib::Writer writer(&stream);
+    v3d::rib::Writer writer(&stream);
     v3d::editor::render::RIBExportVisitor visitor(&writer);
     visitor.begin(camera(false), output);
     scene->accept(&visitor);
@@ -207,7 +207,7 @@ std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & sce
 
 std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
-    v3d::render::offline::rib::Writer writer(&stream);
+    v3d::rib::Writer writer(&stream);
     v3d::editor::render::RIBExportVisitor visitor(&writer);
     const v3d::type::camera::Camera view = camera(orthographic);
     v3d::editor::render::RIBExportVisitor::Output output;
@@ -219,7 +219,7 @@ std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & sce
 }
 
 bool reimport(const std::string & source, ImportHandler * handler) {
-    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }

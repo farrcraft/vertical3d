@@ -4,7 +4,7 @@
  */
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Compare.h>
@@ -51,7 +51,7 @@ class Read final {
             const scene::Handle options = *scene_.find("options", "options");
             frames_.push_back(scene_.value(options, "frame").integerArray().front());
         });
-        v3d::render::offline::rib::Reader reader(logger_);
+        v3d::rib::Reader reader(logger_);
         std::istringstream stream(source);
         BOOST_REQUIRE(reader.read(stream, &client));
         warned_ = heard.said("changes nothing") || heard.said("not in order");
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_resolution_set_first_wins_over_the_forma
     BOOST_TEST(!client.resolution(64, 65537));
     BOOST_TEST(client.resolution(32, 24));
     client.frame([&made]() { made.apply(); });
-    v3d::render::offline::rib::Reader reader(logger);
+    v3d::rib::Reader reader(logger);
     std::istringstream stream("Format 640 480 1.5\nWorldBegin\nWorldEnd\n");
     BOOST_REQUIRE(reader.read(stream, &client));
     const scene::Handle options = *made.find("options", "options");

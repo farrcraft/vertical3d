@@ -14,7 +14,7 @@ and says where to read next. It ends with a glossary of the terms the other api 
 Each directory under `api/` is one library. Its CMake target is `v3dlib_<name>`, and a project
 outside the tree links it as `v3d::<name>`. Its namespace follows its path, so `api/type/camera`
 is `v3d::type::camera`. Two libraries sit inside another library's directory: `asset_media` in
-`api/asset/media` and `render_offline` in `api/render/offline`.
+`api/asset/media` and `interchange_usd` in `api/interchange/usd`.
 
 | Library | What it is for |
 |---|---|
@@ -37,7 +37,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
-| [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
+| [`rib`](../../api/rib/) | RIB, the RenderMan Interface Bytestream: its reader, writer and recorder, and the requests a handler takes. moya reads it and the editor writes it. It uses no Vulkan and no SDL. |
 | [`script`](../../api/script/) | TypeScript run on QuickJS: a runtime that strips a script's types and runs it, with the functions a host binds into it. See [Scripting.md](Scripting.md). |
 | [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
@@ -73,7 +73,7 @@ Boost.
 | `interchange_usd` | interchange, curve, type | **OpenUSD**, glm |
 | `asset_media` | log, animation, asset, image, interchange, model | glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
-| `render_offline` | log, image, type | glm |
+| `rib` | log, type | glm |
 | `script` | none | QuickJS-ng |
 | `window` | log | **SDL3**, glm |
 | `render` | log, animation, asset, asset_media, ecs, image, model, type, version, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
@@ -85,11 +85,10 @@ The same picture as layers, lowest first. A library uses only libraries in the r
 
 ```
 log   type   animation   grid   database   curve   script   version   no device, no window
-image  asset  ecs  brep  model
+image  asset  ecs  brep  model  rib
 interchange
 interchange_usd                            OpenUSD
 font   asset_media  event
-render_offline                             offline renderer, no Vulkan or SDL
 input  window                              SDL3
 audio                                      SDL3_mixer
 engine                                     SDL3, no Vulkan
@@ -135,7 +134,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Lay out text with a font | [Fonts.md](Fonts.md) |
 | Change the realtime renderer itself | [../internals/realtime/](../internals/realtime/README.md) |
 | Change the ui library itself | [../internals/ui/](../internals/ui/README.md) |
-| Work on moya or `render_offline` | [../offline/](../offline/README.md) |
+| Work on moya or `rib` | [../offline/](../offline/README.md) |
 | See a complete small app | [examples/starter](../../examples/starter/) |
 
 ## Glossary

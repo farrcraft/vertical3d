@@ -17,7 +17,7 @@
 #include <moya/libmoya/kernel/spectrum/Colorimetry.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
-#include <api/render/offline/film/Sampling.h>
+#include <api/rib/Sampling.h>
 
 #include <algorithm>
 #include <atomic>
@@ -38,7 +38,7 @@ namespace {
 
 namespace kernel = v3d::moya::kernel;
 namespace film = v3d::moya::film;
-namespace offline = v3d::render::offline::film;
+namespace rib = v3d::rib;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
 /** The samples weighted() adds to each pixel. **/
@@ -159,7 +159,7 @@ film::Snapshot sampledOn(unsigned int threads) {
  * The integral of a filter over each of a grid of bins across its extent, from its RI formula at
  * 8 by 8 points of each bin.
  **/
-std::vector<float> exactBins(offline::Filter kind, const glm::vec2 & width, int bins) {
+std::vector<float> exactBins(rib::Filter kind, const glm::vec2 & width, int bins) {
     std::vector<float> out(static_cast<std::size_t>(bins) * bins, 0.0F);
     const glm::vec2 bin = width / static_cast<float>(bins);
     constexpr int kPoints = 8;
@@ -170,7 +170,7 @@ std::vector<float> exactBins(offline::Filter kind, const glm::vec2 & width, int 
                 for (int x = 0; x < kPoints; ++x) {
                     const glm::vec2 at { (static_cast<float>(column) + ((static_cast<float>(x) + 0.5F) / kPoints)) * bin.x,
                         (static_cast<float>(row) + ((static_cast<float>(y) + 0.5F) / kPoints)) * bin.y };
-                    sum += offline::filter(kind, at - (width * 0.5F), width);
+                    sum += film::Filter::weight(kind, at - (width * 0.5F), width);
                 }
             }
             out[(static_cast<std::size_t>(row) * bins) + column] = sum / (kPoints * kPoints) * bin.x * bin.y;
@@ -369,12 +369,12 @@ BOOST_AUTO_TEST_CASE(moya_film_refuses_channels_it_cannot_hold_test) {
 // samples drawn from a filter, each counted with its weight, land in each part of the filter's
 // extent in proportion to the filter's integral over it, negative lobes included
 BOOST_AUTO_TEST_CASE(moya_film_filtered_samples_reproduce_each_filters_shape_test) {
-    const std::pair<offline::Filter, glm::vec2> filters[] = {
-        { offline::Filter::Box, { 2.0F, 2.0F } },
-        { offline::Filter::Triangle, { 2.0F, 2.0F } },
-        { offline::Filter::CatmullRom, { 4.0F, 4.0F } },
-        { offline::Filter::Gaussian, { 2.0F, 3.0F } },
-        { offline::Filter::Sinc, { 4.0F, 4.0F } },
+    const std::pair<rib::Filter, glm::vec2> filters[] = {
+        { rib::Filter::Box, { 2.0F, 2.0F } },
+        { rib::Filter::Triangle, { 2.0F, 2.0F } },
+        { rib::Filter::CatmullRom, { 4.0F, 4.0F } },
+        { rib::Filter::Gaussian, { 2.0F, 3.0F } },
+        { rib::Filter::Sinc, { 4.0F, 4.0F } },
     };
     constexpr int kBins = 16;
     CpuDevice device;
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(moya_film_filtered_samples_reproduce_each_filters_shape_tes
             drawnTotal += drawn[i];
             largest = std::max(largest, std::fabs(exact[i]));
         }
-        BOOST_TEST_CONTEXT(offline::filterName(kind)) {
+        BOOST_TEST_CONTEXT(rib::filterName(kind)) {
             for (std::size_t i = 0; i < exact.size(); ++i) {
                 BOOST_TEST(std::fabs((drawn[i] / drawnTotal) - (exact[i] / exactTotal)) <= 0.01F * largest / exactTotal);
             }
@@ -400,8 +400,8 @@ BOOST_AUTO_TEST_CASE(moya_film_filtered_samples_reproduce_each_filters_shape_tes
 
 BOOST_AUTO_TEST_CASE(moya_film_refuses_a_filter_width_it_cannot_sample_test) {
     CpuDevice device;
-    BOOST_CHECK_THROW(film::Filter(device, offline::Filter::Gaussian, { 0.0F, 2.0F }), std::invalid_argument);
-    BOOST_CHECK_THROW(film::Filter(device, offline::Filter::Box, { 2.0F, std::nanf("") }), std::invalid_argument);
+    BOOST_CHECK_THROW(film::Filter(device, rib::Filter::Gaussian, { 0.0F, 2.0F }), std::invalid_argument);
+    BOOST_CHECK_THROW(film::Filter(device, rib::Filter::Box, { 2.0F, std::nanf("") }), std::invalid_argument);
 }
 
 };  // namespace

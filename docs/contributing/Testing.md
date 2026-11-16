@@ -49,7 +49,7 @@ the libraries that need neither a window nor a device under the sanitizers.
 
 - **One suite per api library**, in `api/<lib>/tests/`, built as `v3dtest_<lib>`. A library nested
   inside another one's directory has its own suite: `asset_media` is in
-  `api/asset/media/tests/` and `render_offline` is in `api/render/offline/tests/`.
+  `api/asset/media/tests/` and `interchange_usd` is in `api/interchange/usd/tests/`.
 - **One extra suite for the realtime renderer on a real device**, `render_device`, from
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
 - **One more for the frame loop on a real window**, `render_window`, from
@@ -292,8 +292,7 @@ makes its parser misbehave. Whether the parser accepts the input does not matter
 |---|---|---|
 | `v3dfuzz_tga` | `image::reader::Tga` | [api/image/tests/data](../../api/image/tests/data) |
 | `v3dfuzz_bmp` | `image::reader::Bmp` | [api/image/tests/data](../../api/image/tests/data) |
-| `v3dfuzz_rib` | `render::offline::rib::Reader` and its lexer | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
-| `v3dfuzz_sl` | the shading language parser and compiler | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+| `v3dfuzz_rib` | `rib::Reader` and its lexer | [api/rib/tests/data](../../api/rib/tests/data) |
 
 **Every build builds the targets, and ctest runs each over its corpus once**, as the ctest entry
 `fuzz_<name>`, labelled `fuzz`. Without libFuzzer, a target links a small main that passes each

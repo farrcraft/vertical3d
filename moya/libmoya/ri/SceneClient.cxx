@@ -6,32 +6,32 @@
 #include "SceneClient.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/film/Sampling.h>
-#include <api/render/offline/rib/Bases.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Basis.h>
-#include <api/render/offline/rib/requests/Clipping.h>
-#include <api/render/offline/rib/requests/Cone.h>
-#include <api/render/offline/rib/requests/CropWindow.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/Cylinder.h>
-#include <api/render/offline/rib/requests/DepthOfField.h>
-#include <api/render/offline/rib/requests/Disk.h>
-#include <api/render/offline/rib/requests/Display.h>
-#include <api/render/offline/rib/requests/DisplayChannel.h>
-#include <api/render/offline/rib/requests/Format.h>
-#include <api/render/offline/rib/requests/Hyperboloid.h>
-#include <api/render/offline/rib/requests/LightSource.h>
-#include <api/render/offline/rib/requests/MakeTexture.h>
-#include <api/render/offline/rib/requests/Paraboloid.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
-#include <api/render/offline/rib/requests/ShadingNode.h>
-#include <api/render/offline/rib/requests/Shutter.h>
-#include <api/render/offline/rib/requests/Sphere.h>
-#include <api/render/offline/rib/requests/SubdivisionMesh.h>
-#include <api/render/offline/rib/requests/Torus.h>
+#include <api/rib/Sampling.h>
+#include <api/rib/Bases.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Basis.h>
+#include <api/rib/requests/Clipping.h>
+#include <api/rib/requests/Cone.h>
+#include <api/rib/requests/CropWindow.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/Cylinder.h>
+#include <api/rib/requests/DepthOfField.h>
+#include <api/rib/requests/Disk.h>
+#include <api/rib/requests/Display.h>
+#include <api/rib/requests/DisplayChannel.h>
+#include <api/rib/requests/Format.h>
+#include <api/rib/requests/Hyperboloid.h>
+#include <api/rib/requests/LightSource.h>
+#include <api/rib/requests/MakeTexture.h>
+#include <api/rib/requests/Paraboloid.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/ScreenWindow.h>
+#include <api/rib/requests/ShadingNode.h>
+#include <api/rib/requests/Shutter.h>
+#include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Torus.h>
 #include <moya/libmoya/ri/internal/Document.h>
 #include <moya/libmoya/ri/internal/Primvars.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
@@ -102,7 +102,7 @@ bool SceneClient::inIntegers(float value, float least) {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the request, then its name
-void SceneClient::unread(const std::string & request, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+void SceneClient::unread(const std::string & request, const std::string & name, const v3d::rib::ParameterList & parameters,
     const std::set<std::string> & read) {
     for (const std::string & parameter : parameters.names()) {
         if (read.contains(parameter)) {
@@ -120,7 +120,7 @@ void SceneClient::unread(const std::string & request, const std::string & name, 
     }
 }
 
-void SceneClient::hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::hider(const std::string & name, const v3d::rib::ParameterList & parameters) {
     if (name != "raytrace" && name != "hidden") {
         warnings_.once("hider " + name, "moya renders by path tracing alone, so Hider \"" + name + "\" changes nothing");
     }
@@ -132,7 +132,7 @@ void SceneClient::frame(const std::function<void()> & committed) {
 }
 
 bool SceneClient::resolution(int width, int height) {
-    if (!v3d::render::offline::film::resolution(static_cast<float>(width)) || !v3d::render::offline::film::resolution(static_cast<float>(height))) {
+    if (!v3d::rib::resolution(static_cast<float>(width)) || !v3d::rib::resolution(static_cast<float>(height))) {
         return false;
     }
     resolution_ = glm::ivec2(width, height);
@@ -140,7 +140,7 @@ bool SceneClient::resolution(int width, int height) {
     return true;
 }
 
-void SceneClient::format(const v3d::render::offline::rib::requests::Format & request) {
+void SceneClient::format(const v3d::rib::requests::Format & request) {
     if (!resolution_) {
         const int width = request.width == 0 ? kWidth : static_cast<int>(request.width);
         const int height = request.height == 0 ? kHeight : static_cast<int>(request.height);
@@ -153,15 +153,15 @@ void SceneClient::frameAspectRatio(float aspect) {
     scene_.set(options_, "frameAspect", scene::Value::number(aspect));
 }
 
-void SceneClient::screenWindow(const v3d::render::offline::rib::requests::ScreenWindow & request) {
+void SceneClient::screenWindow(const v3d::rib::requests::ScreenWindow & request) {
     scene_.set(camera_, "screen", scene::Value::floats({ request.left, request.right, request.bottom, request.top }));
 }
 
-void SceneClient::cropWindow(const v3d::render::offline::rib::requests::CropWindow & request) {
+void SceneClient::cropWindow(const v3d::rib::requests::CropWindow & request) {
     scene_.set(options_, "crop", scene::Value::floats({ request.xmin, request.xmax, request.ymin, request.ymax }));
 }
 
-void SceneClient::projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::projection(const std::string & name, const v3d::rib::ParameterList & parameters) {
     if (name != "perspective" && name != "orthographic") {
         logger_->get()->warn("moya's camera is perspective or orthographic, so Projection \"{}\" changes nothing", name);
         return;
@@ -172,18 +172,18 @@ void SceneClient::projection(const std::string & name, const v3d::render::offlin
     }
 }
 
-void SceneClient::clipping(const v3d::render::offline::rib::requests::Clipping & request) {
+void SceneClient::clipping(const v3d::rib::requests::Clipping & request) {
     scene_.set(camera_, "near", scene::Value::number(request.hither));
     scene_.set(camera_, "far", scene::Value::number(request.yon));
 }
 
-void SceneClient::depthOfField(const v3d::render::offline::rib::requests::DepthOfField & request) {
+void SceneClient::depthOfField(const v3d::rib::requests::DepthOfField & request) {
     scene_.set(camera_, "fstop", scene::Value::number(request.fstop));
     scene_.set(camera_, "focalLength", scene::Value::number(request.focalLength));
     scene_.set(camera_, "focalDistance", scene::Value::number(request.focalDistance));
 }
 
-void SceneClient::shutter(const v3d::render::offline::rib::requests::Shutter & request) {
+void SceneClient::shutter(const v3d::rib::requests::Shutter & request) {
     scene_.set(camera_, "shutter", scene::Value::floats({ request.open, request.close }));
 }
 
@@ -191,8 +191,8 @@ void SceneClient::pixelSamples(const glm::uvec2 & samples) {
     scene_.set(options_, "samples", scene::Value::integer(static_cast<std::int32_t>(samples.x * samples.y)));
 }
 
-void SceneClient::pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) {
-    scene_.set(options_, "filter", scene::Value::string(v3d::render::offline::film::filterName(filter)));
+void SceneClient::pixelFilter(v3d::rib::Filter filter, float xwidth, float ywidth) {
+    scene_.set(options_, "filter", scene::Value::string(v3d::rib::filterName(filter)));
     scene_.set(options_, "filterWidth", scene::Value::floats({ xwidth, ywidth }));
 }
 
@@ -211,7 +211,7 @@ scene::Handle SceneClient::output(const std::string & file) {
     return made;
 }
 
-void SceneClient::display(const v3d::render::offline::rib::requests::Display & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::display(const v3d::rib::requests::Display & request, const v3d::rib::ParameterList & parameters) {
     unread("Display", "", parameters, {});
     const bool adds = !request.name.empty() && request.name.front() == '+';
     const std::string file = adds ? request.name.substr(1) : request.name;
@@ -271,8 +271,8 @@ scene::Handle SceneClient::channelOf(const std::string & name, const std::string
     return channel;
 }
 
-void SceneClient::displayChannel(const v3d::render::offline::rib::requests::DisplayChannel & request,
-    const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::displayChannel(const v3d::rib::requests::DisplayChannel & request,
+    const v3d::rib::ParameterList & parameters) {
     std::vector<std::string> words;
     std::size_t at = 0;
     while (at < request.declaration.size()) {
@@ -307,7 +307,7 @@ void SceneClient::displayChannel(const v3d::render::offline::rib::requests::Disp
     channels_[name] = channel;
 }
 
-void SceneClient::displayFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::displayFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) {
     if (request.type != "PxrBackgroundDisplayFilter") {
         warnings_.once("display filter " + request.type, "moya runs no display filter " + request.type + ", so it changes nothing");
         return;
@@ -315,7 +315,7 @@ void SceneClient::displayFilter(const v3d::render::offline::rib::requests::Shadi
     background(parameters, "backgroundColor");
 }
 
-void SceneClient::imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::imager(const std::string & name, const v3d::rib::ParameterList & parameters) {
     if (name.empty()) {
         return;
     }
@@ -326,7 +326,7 @@ void SceneClient::imager(const std::string & name, const v3d::render::offline::r
     background(parameters, "background");
 }
 
-void SceneClient::background(const v3d::render::offline::rib::ParameterList & parameters, const std::string & colour) {
+void SceneClient::background(const v3d::rib::ParameterList & parameters, const std::string & colour) {
     glm::vec3 given(0.0F);
     if (parameters.has(colour) && parameters.floats(colour).size() >= 3U) {
         const std::vector<float> & floats = parameters.floats(colour);
@@ -335,7 +335,7 @@ void SceneClient::background(const v3d::render::offline::rib::ParameterList & pa
     scene_.set(options_, "background", scene::Value::colours({ given }));
 }
 
-void SceneClient::sampleFilter(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::sampleFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) {
     if (request.type != "PxrCryptomatte") {
         warnings_.once("sample filter " + request.type, "the sample filter " + request.type + " is not one moya reads, so it changes nothing");
         return;
@@ -357,7 +357,7 @@ void SceneClient::sampleFilter(const v3d::render::offline::rib::requests::Shadin
     scene_.set(made, "channels", scene::Value::handles({ channel }));
 }
 
-void SceneClient::option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::option(const std::string & name, const v3d::rib::ParameterList & parameters) {
     static const std::map<std::string, std::set<std::string>> kRead { { "searchpath", { "texture", "shader" } },
         { "moya", { "denoise", "deepTolerance" } }, { "limits", { "texturememory", "bucketsize", "gridsize" } }, { "trace", { "maxdepth" } } };
     const auto read = kRead.find(name);
@@ -397,14 +397,14 @@ void SceneClient::option(const std::string & name, const v3d::render::offline::r
     }
 }
 
-void SceneClient::makeTexture(const v3d::render::offline::rib::requests::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::makeTexture(const v3d::rib::requests::MakeTexture & request, const v3d::rib::ParameterList & parameters) {
     texture::Making making;
     for (const auto & [given, wrap] : { std::pair { &request.swrap, &making.swrap }, std::pair { &request.twrap, &making.twrap } }) {
         if (!texture::wrapNamed(*given, wrap)) {
             logger_->get()->warn("MakeTexture's wrap mode {} is not one RI names, so {} is made with black", *given, request.texture);
         }
     }
-    if (!v3d::render::offline::film::filterNamed(request.filter, &making.filter)) {
+    if (!v3d::rib::filterNamed(request.filter, &making.filter)) {
         logger_->get()->warn("MakeTexture's filter {} is not one RI names, so {} is made with the box", request.filter, request.texture);
     }
     making.width = glm::vec2(request.swidth, request.twidth);
@@ -559,7 +559,7 @@ void SceneClient::motionEnd() {
     }
 }
 
-void SceneClient::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::attribute(const std::string & name, const v3d::rib::ParameterList & parameters) {
     static const std::map<std::string, std::set<std::string>> kRead { { "identifier", { "name" } },
         { "displacementbound", { "sphere", "coordinatesystem" } }, { "trace", { "bias" } }, { "light", { "nsamples" } } };
     const auto read = kRead.find(name);
@@ -573,7 +573,7 @@ void SceneClient::attribute(const std::string & name, const v3d::render::offline
     }
 }
 
-void SceneClient::displacementBound(const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::displacementBound(const v3d::rib::ParameterList & parameters) {
     const float radius = parameters.number("sphere", 0.0F);
     if (!std::isfinite(radius) || radius < 0.0F) {
         warnings_.once("bound " + std::to_string(radius), "a displacement bound of " + std::to_string(radius) + " is not a distance, and is not used");
@@ -815,8 +815,8 @@ void SceneClient::sides(int count) {
     current_.twoSided = count == 2;
 }
 
-void SceneClient::basis(const v3d::render::offline::rib::requests::Basis & request) {
-    std::string name = v3d::render::offline::rib::basisName(request.v);
+void SceneClient::basis(const v3d::rib::requests::Basis & request) {
+    std::string name = v3d::rib::basisName(request.v);
     if (name.empty()) {
         warnings_.once("basis", "moya's curves take a basis RI names, so a basis of its own numbers is taken as bezier");
         name = "bezier";
@@ -824,7 +824,7 @@ void SceneClient::basis(const v3d::render::offline::rib::requests::Basis & reque
     current_.basis = name;
 }
 
-void SceneClient::surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::surface(const std::string & name, const v3d::rib::ParameterList & parameters) {
     if (name.empty()) {
         return;
     }
@@ -833,7 +833,7 @@ void SceneClient::surface(const std::string & name, const v3d::render::offline::
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::pattern(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::pattern(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) {
     if (request.type.empty()) {
         return;
     }
@@ -841,7 +841,7 @@ void SceneClient::pattern(const v3d::render::offline::rib::requests::ShadingNode
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::bxdf(const v3d::render::offline::rib::requests::ShadingNode & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::bxdf(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) {
     if (request.type.empty()) {
         return;
     }
@@ -849,7 +849,7 @@ void SceneClient::bxdf(const v3d::render::offline::rib::requests::ShadingNode & 
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::displacement(const std::string & name, const v3d::rib::ParameterList & parameters) {
     if (name.empty()) {
         return;
     }
@@ -857,7 +857,7 @@ void SceneClient::displacement(const std::string & name, const v3d::render::offl
     current_.material = boost::make_shared<scene::Handle>();
 }
 
-void SceneClient::lightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::lightSource(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) {
     if (request.shader.empty()) {
         return;
     }
@@ -871,7 +871,7 @@ void SceneClient::lightSource(const v3d::render::offline::rib::requests::LightSo
     }
 }
 
-void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::areaLightSource(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) {
     if (request.shader.empty()) {
         current_.area.reset();
         return;
@@ -885,7 +885,7 @@ void SceneClient::areaLightSource(const v3d::render::offline::rib::requests::Lig
     current_.area = Shader { .name = current_.name.empty() ? "light " + request.handle : current_.name, .parameters = parameters, .light = request.shader };
 }
 
-void SceneClient::light(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::light(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters) {
     if (request.shader.empty()) {
         return;
     }
@@ -914,56 +914,56 @@ void SceneClient::illuminate(const std::string & handle, bool on) {
     }
 }
 
-v3d::render::offline::rib::Handler* SceneClient::deformation() {
+v3d::rib::Handler* SceneClient::deformation() {
     return &deformations_;
 }
 
-void SceneClient::polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::polygon(unsigned int vertices, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::polygon(vertices, parameters));
 }
 
-void SceneClient::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::pointsPolygons(const v3d::rib::requests::PointsPolygons & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::mesh(request, parameters));
 }
 
-void SceneClient::sphere(const v3d::render::offline::rib::requests::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::sphere(const v3d::rib::requests::Sphere & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::sphere(request, parameters));
 }
 
-void SceneClient::curves(const v3d::render::offline::rib::requests::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::curves(const v3d::rib::requests::Curves & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::curves(request, parameters, current_.basis));
 }
 
-void SceneClient::points(unsigned int count, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::points(unsigned int count, const v3d::rib::ParameterList & parameters) {
     (void)count;
     place(internal::Shapes::points(parameters));
 }
 
-void SceneClient::cone(const v3d::render::offline::rib::requests::Cone & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::cone(const v3d::rib::requests::Cone & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::cone(request, parameters));
 }
 
-void SceneClient::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::cylinder(const v3d::rib::requests::Cylinder & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::cylinder(request, parameters));
 }
 
-void SceneClient::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::hyperboloid(const v3d::rib::requests::Hyperboloid & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::hyperboloid(request, parameters));
 }
 
-void SceneClient::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::paraboloid(const v3d::rib::requests::Paraboloid & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::paraboloid(request, parameters));
 }
 
-void SceneClient::disk(const v3d::render::offline::rib::requests::Disk & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::disk(const v3d::rib::requests::Disk & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::disk(request, parameters));
 }
 
-void SceneClient::torus(const v3d::render::offline::rib::requests::Torus & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::torus(const v3d::rib::requests::Torus & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::torus(request, parameters));
 }
 
-void SceneClient::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const v3d::render::offline::rib::ParameterList & parameters) {
+void SceneClient::subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::subdivision(request, parameters, &warnings_));
 }
 

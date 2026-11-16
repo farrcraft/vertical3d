@@ -170,7 +170,7 @@ chooses among the options before the record is drafted.
 | [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | done |
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | done |
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | done |
-| [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | open |
+| [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | done |
 | [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | open |
 | [18](#step-18--the-documents) | The documents | `docs` | — | open |
 
@@ -665,6 +665,19 @@ and the moya manual still describe the old core until step 18.
 * **`dirsize.ts`'s exemption** for `sl/syntax` goes.
 
 **Tests:** the suites pass, and `fuzz_rib` replays its corpus.
+
+**Done.** The old parts and their 24 test files are deleted, with `fuzz_sl`, its five `.sl` files
+and the texture test's `blocks.png`. RIB is `api/rib`, built as `v3dlib_rib` in `v3d::rib`, with
+its lexer's `source/` below it in `v3d::rib::source`. Its four suites dropped the `Rib` prefix,
+and its suite is `rib`. `film/Sampling.h` became `api/rib/Sampling.h`: the filters' names and the
+limits of `Format`, `PixelSamples` and `PixelFilter`. The filters' weights are moya's
+`film::Filter::weight()`, which the film and the texture maker both call. The old `Sampling`
+struct went, with the reader case's check of its pinhole. `v3dlib_rib` links `log` and glm
+publicly and `type` privately, where `render_offline` linked `image` and Boost.Filesystem too.
+The manifest, the portable job's list of libraries, the library tables and the documents that
+name the library follow. `dirsize.ts` lists `api/rib/requests` at its new path and drops
+`sl/syntax`. The offline README's
+pipeline still names the old film and camera until step 18.
 
 ### Step 17 — The records
 

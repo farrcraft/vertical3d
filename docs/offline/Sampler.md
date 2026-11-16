@@ -2,8 +2,7 @@
 
 This page is for anyone changing how moya's new core draws the random numbers a path uses. The
 code is kernel code, in `moya/libmoya/kernel/sample/` and the namespace
-`v3d::moya::kernel::sample`. The old film's sampler, `offline::film::Sampler`, serves the reyes
-and ray hiders and is described in [Cameras and sampling](CamerasAndSampling.md).
+`v3d::moya::kernel::sample`.
 
 ## A sample holds no state
 

@@ -12,16 +12,8 @@ moya is three CMake targets, and it is built on one api library:
 | `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the scene client that RIB requests reach. Namespace `v3d::moya::ri` |
 | `moya` | `moya` | The command-line driver, `moya.cxx`, and its demo scenes in `moya/data/` |
 | `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
-| `api/render/offline` | `v3dlib_render_offline` | What the renderers share at their root: the camera and its options, the moving transform, an area light's geometry, points spread over a shape, and pi. Namespace `v3d::render::offline` |
-| `api/render/offline/source` | `v3dlib_render_offline` | What the RIB and SL lexers share: the character stream, a token's kind and text, and its position. Namespace `v3d::render::offline::source` |
-| `api/render/offline/film` | `v3dlib_render_offline` | Sampling and the film: the sampling options and pixel filters, the sampler, the film and the framebuffer. Namespace `v3d::render::offline::film` |
-| `api/render/offline/texture` | `v3dlib_render_offline` | Textures and noise: a texture, the textures read for a frame, the search path, and the noise function. Namespace `v3d::render::offline::texture` |
-| `api/render/offline/rib` | `v3dlib_render_offline` | The RIB lexer, reader and writer, and the handler they call. Namespace `v3d::render::offline::rib` |
-| `api/render/offline/sl` | `v3dlib_render_offline` | The shading language at its root: its types, the shader library, and a shader bound and placed in a scene. Namespace `v3d::render::offline::sl` |
-| `api/render/offline/sl/syntax` | `v3dlib_render_offline` | The syntax tree, one header for each kind of node. Namespace `v3d::render::offline::sl::syntax` |
-| `api/render/offline/sl/compiler` | `v3dlib_render_offline` | Source to program: the lexer, the parser, the type checker, inference, the emitter and the built-in functions' signatures. Namespace `v3d::render::offline::sl::compiler` |
-| `api/render/offline/sl/runtime` | `v3dlib_render_offline` | A program and the machine that runs it, the renderer it asks, the globals a hider binds, and the imager. Namespace `v3d::render::offline::sl::runtime` |
-| `api/render/offline/trace` | `v3dlib_render_offline` | The ray tracer both hiders share. Namespace `v3d::render::offline::trace` |
+| `api/rib` | `v3dlib_rib` | RIB: the lexer, reader, writer and recorder, the handler they call, and the names and limits of the sampling requests. Namespace `v3d::rib` |
+| `api/rib/source` | `v3dlib_rib` | What the RIB lexer reads through: the character stream, a token's kind and text, and its position. Namespace `v3d::rib::source` |
 
 The command-line driver, its options, what it prints and its log are in the user manual's
 [CommandLine.md](../manual/moya/CommandLine.md). The rules a developer needs when running it:
@@ -61,15 +53,12 @@ editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
 
 ## Building and testing
 
-- **`api/render/offline` is added by `api/CMakeLists.txt`** from the library manifest, like
-  every api library. It inherits nothing from the `api/render` directory above it, so it sets
-  `/utf-8` in its own CMakeLists. spdlog's bundled fmt has a `static_assert` that fails without
-  that flag.
-- **`v3dlib_render_offline` links `v3dlib_log`, `v3dlib_image`, `v3dlib_type` and glm**, and
-  never Vulkan or SDL. A realtime dependency arriving through one of those libraries breaks its
-  build, and its CI suites, first.
-- **Two suites cover the offline code**: `render_offline` tests the library alone, and `moya`
-  tests the renderer. Run either with `ctest -R`.
+- **`api/rib` is added by `api/CMakeLists.txt`** from the library manifest, like every api
+  library.
+- **`v3dlib_rib` links `v3dlib_log`, `v3dlib_type` and glm**, and never Vulkan or SDL. A realtime
+  dependency arriving through one of those libraries breaks its build, and its CI suites, first.
+- **Two suites cover the offline code**: `rib` tests the RIB library alone, and `moya` tests the
+  renderer. Run either with `ctest -R`.
 - **The moya suite renders against committed EXRs** in `moya/tests/data/`, each the path
   tracer's render of the `.rib` beside it, compared within its standard errors.
 - **`foundation-chart.png` is the new core's**: a chart of 24 colours with no geometry, sampled

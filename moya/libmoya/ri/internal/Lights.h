@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/LightSource.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/LightSource.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 
@@ -58,7 +58,7 @@ class Lights final {
      * @param name what the light is called before it is made unique
      * @return whether a light was made, so that it is on
      **/
-    bool source(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters,
+    bool source(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters,
         const std::string & name, const Sampled & transformation);
 
     /**
@@ -76,7 +76,7 @@ class Lights final {
      * @param name what the light is called before it is made unique
      * @return whether a light was made, so that it is on
      **/
-    bool renderman(const v3d::render::offline::rib::requests::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters,
+    bool renderman(const v3d::rib::requests::LightSource & request, const v3d::rib::ParameterList & parameters,
         const std::string & name, const Sampled & transformation);
 
     /**
@@ -86,7 +86,7 @@ class Lights final {
      * @param name what the light is called before it is made unique
      **/
     void glow(const scene::Handle & geometry, const std::string & shader, const std::string & name,
-        const v3d::render::offline::rib::ParameterList & parameters, const Sampled & transformation);
+        const v3d::rib::ParameterList & parameters, const Sampled & transformation);
 
     /**
      * Give each light the instances it lit. A light that lit every instance keeps `includeRoot`.
@@ -109,10 +109,10 @@ class Lights final {
     static constexpr float kDistantIntensity = 50000.0F;
 
     /** A point a light's parameters give, or the fallback when they give none. **/
-    static glm::vec3 pointOf(const v3d::render::offline::rib::ParameterList & parameters, const std::string & name, const glm::vec3 & fallback);
+    static glm::vec3 pointOf(const v3d::rib::ParameterList & parameters, const std::string & name, const glm::vec3 & fallback);
 
     /** A light at a transformation, from `from` towards `to`. **/
-    scene::Handle light(const std::string & kind, const std::string & name, const v3d::render::offline::rib::ParameterList & parameters,
+    scene::Handle light(const std::string & kind, const std::string & name, const v3d::rib::ParameterList & parameters,
         const glm::vec3 & defaultTo, const Sampled & transformation);
 
     /** A number RenderMan names, its UsdLux name, and whether UsdLux's is an integer. **/
@@ -123,10 +123,10 @@ class Lights final {
     };
 
     /** Give a light the light group its request's `"string lightGroup"` names, if any. **/
-    void grouped(const scene::Handle & made, const v3d::render::offline::rib::ParameterList & parameters);
+    void grouped(const scene::Handle & made, const v3d::rib::ParameterList & parameters);
 
     /** Give a light of a kind each RenderMan parameter a request holds, by its UsdLux name. **/
-    void rename(const scene::Handle & made, const std::string & kind, const v3d::render::offline::rib::ParameterList & parameters);
+    void rename(const scene::Handle & made, const std::string & kind, const v3d::rib::ParameterList & parameters);
 
     scene::Scene * scene_;
     Objects * objects_;

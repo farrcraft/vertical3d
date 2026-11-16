@@ -11,14 +11,14 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Basis.h>
 #include <api/curve/Curves.h>
-#include <api/render/offline/rib/Bases.h>
-#include <api/render/offline/rib/Declaration.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Basis.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/ScreenWindow.h>
+#include <api/rib/Bases.h>
+#include <api/rib/Declaration.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Basis.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Placed.h>
@@ -46,8 +46,8 @@ namespace v3d::editor::render {
 
 namespace {
 
-typedef v3d::render::offline::rib::Declaration Declaration;
-typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::rib::Declaration Declaration;
+typedef v3d::rib::ParameterList ParameterList;
 
 const Declaration UNIFORM_FLOAT(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1);
 const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type::POINT, 1);
@@ -60,7 +60,7 @@ std::vector<float> RIBExportVisitor::floats(const glm::vec3& value) {
     return { value.x, value.y, value.z };
 }
 
-RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) : handler_(handler) {
+RIBExportVisitor::RIBExportVisitor(v3d::rib::Handler* handler) : handler_(handler) {
 }
 
 void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Output& output) {
@@ -120,7 +120,7 @@ void RIBExportVisitor::enter(const std::string& name, const glm::mat4x4& local) 
     blocks_.push_back({ .name = name, .local = local });
 }
 
-v3d::render::offline::rib::requests::ScreenWindow RIBExportVisitor::screen(const v3d::type::camera::Profile& profile) {
+v3d::rib::requests::ScreenWindow RIBExportVisitor::screen(const v3d::type::camera::Profile& profile) {
     if (profile.orthographic()) {
         const float top = profile.orthoZoom();
         const float right = top * profile.pixelAspect();
@@ -168,7 +168,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Mesh>& item, c
     // RI draws a polygon only when it is convex and flat, which a face with more than three
     // corners need not be, so every face is sent as the triangles it is cut into. Those wind
     // the other way from the face's loop, and are turned back to wind as the loop does
-    v3d::render::offline::rib::requests::PointsPolygons faces;
+    v3d::rib::requests::PointsPolygons faces;
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
         for (const std::array<v3d::brep::Index, 3>& triangle : v3d::brep::triangulateFace(*mesh, face)) {
             faces.counts.push_back(3);
@@ -222,12 +222,12 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve,
         }
         const v3d::curve::BasisCurve& first = run.front();
         if (first.basis != v3d::curve::Basis::Linear) {
-            v3d::render::offline::rib::requests::Basis basis;
-            v3d::render::offline::rib::namedBasis(first.basis == v3d::curve::Basis::Bezier ? "bezier" : "catmull-rom", &basis.v);
-            basis.vstep = first.basis == v3d::curve::Basis::Bezier ? v3d::render::offline::rib::requests::Basis::BEZIER_STEP : 1;
+            v3d::rib::requests::Basis basis;
+            v3d::rib::namedBasis(first.basis == v3d::curve::Basis::Bezier ? "bezier" : "catmull-rom", &basis.v);
+            basis.vstep = first.basis == v3d::curve::Basis::Bezier ? v3d::rib::requests::Basis::BEZIER_STEP : 1;
             body_.basis(basis);
         }
-        v3d::render::offline::rib::requests::Curves request{ .cubic = first.basis != v3d::curve::Basis::Linear, .periodic = first.periodic };
+        v3d::rib::requests::Curves request{ .cubic = first.basis != v3d::curve::Basis::Linear, .periodic = first.periodic };
         std::vector<float> points;
         for (const v3d::curve::BasisCurve& each : run) {
             request.vertices.push_back(static_cast<unsigned int>(each.points.size()));

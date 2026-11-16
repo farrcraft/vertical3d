@@ -42,7 +42,7 @@ is SDL3.
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
 | Changing `api/ui` | [docs/internals/ui/](docs/internals/ui/README.md) |
-| `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
+| `moya`, `api/rib`, RIB | [docs/offline/](docs/offline/README.md) |
 | `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
 | `demos/` (pong, tetris, voxel, odyssey, diorama) | [docs/Demos.md](docs/Demos.md) |
 | imagetool | [docs/Imagetool.md](docs/Imagetool.md) |

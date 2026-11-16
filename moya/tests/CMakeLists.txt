@@ -71,7 +71,7 @@ v3d_add_test(moya
 	"ZSobolTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes
-# what it rendered through api/asset, reads RIB through api/render/offline, and builds loggers
+# what it rendered through api/asset, reads RIB through api/rib, and builds loggers
 # and reads what they wrote through api/log and the spdlog it carries. It reads the CPU's node
 # layout and instruction sets through v3dlib_moya_cpu. glm and Boost::filesystem
 # come through the api libraries, as a package does. It launches kernel code on the CPU device,
@@ -80,7 +80,7 @@ v3d_add_test(moya
 # which libmoya links PRIVATE too. It flattens MaterialX documents through MaterialX itself, to
 # check the materials libmoya flattens against MaterialX's own. It denoises through OIDN, which
 # libmoya does not link yet.
-target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
+target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_rib
 	Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise TBB::tbb)
 
 # The command line cases run the moya executable itself, and the benchmark's case runs

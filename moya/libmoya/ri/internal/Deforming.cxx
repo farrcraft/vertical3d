@@ -6,17 +6,17 @@
 #include "Deforming.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/requests/Cone.h>
-#include <api/render/offline/rib/requests/Curves.h>
-#include <api/render/offline/rib/requests/Cylinder.h>
-#include <api/render/offline/rib/requests/Disk.h>
-#include <api/render/offline/rib/requests/Hyperboloid.h>
-#include <api/render/offline/rib/requests/Paraboloid.h>
-#include <api/render/offline/rib/requests/PointsPolygons.h>
-#include <api/render/offline/rib/requests/Sphere.h>
-#include <api/render/offline/rib/requests/SubdivisionMesh.h>
-#include <api/render/offline/rib/requests/Torus.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Cone.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/Cylinder.h>
+#include <api/rib/requests/Disk.h>
+#include <api/rib/requests/Hyperboloid.h>
+#include <api/rib/requests/Paraboloid.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Torus.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kind.h>
@@ -40,7 +40,7 @@ namespace v3d::moya::ri::internal {
 
 namespace {
 
-typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::rib::ParameterList ParameterList;
 
 };  // namespace
 
@@ -103,15 +103,15 @@ void Deforming::polygon(unsigned int vertices, const ParameterList & parameters)
     add(Shapes::polygon(vertices, parameters));
 }
 
-void Deforming::pointsPolygons(const v3d::render::offline::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
+void Deforming::pointsPolygons(const v3d::rib::requests::PointsPolygons & request, const ParameterList & parameters) {
     add(Shapes::mesh(request, parameters));
 }
 
-void Deforming::sphere(const v3d::render::offline::rib::requests::Sphere & request, const ParameterList & parameters) {
+void Deforming::sphere(const v3d::rib::requests::Sphere & request, const ParameterList & parameters) {
     add(Shapes::sphere(request, parameters));
 }
 
-void Deforming::curves(const v3d::render::offline::rib::requests::Curves & request, const ParameterList & parameters) {
+void Deforming::curves(const v3d::rib::requests::Curves & request, const ParameterList & parameters) {
     add(Shapes::curves(request, parameters, basis_));
 }
 
@@ -120,31 +120,31 @@ void Deforming::points(unsigned int count, const ParameterList & parameters) {
     add(Shapes::points(parameters));
 }
 
-void Deforming::cone(const v3d::render::offline::rib::requests::Cone & request, const ParameterList & parameters) {
+void Deforming::cone(const v3d::rib::requests::Cone & request, const ParameterList & parameters) {
     add(Shapes::cone(request, parameters));
 }
 
-void Deforming::cylinder(const v3d::render::offline::rib::requests::Cylinder & request, const ParameterList & parameters) {
+void Deforming::cylinder(const v3d::rib::requests::Cylinder & request, const ParameterList & parameters) {
     add(Shapes::cylinder(request, parameters));
 }
 
-void Deforming::hyperboloid(const v3d::render::offline::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
+void Deforming::hyperboloid(const v3d::rib::requests::Hyperboloid & request, const ParameterList & parameters) {
     add(Shapes::hyperboloid(request, parameters));
 }
 
-void Deforming::paraboloid(const v3d::render::offline::rib::requests::Paraboloid & request, const ParameterList & parameters) {
+void Deforming::paraboloid(const v3d::rib::requests::Paraboloid & request, const ParameterList & parameters) {
     add(Shapes::paraboloid(request, parameters));
 }
 
-void Deforming::disk(const v3d::render::offline::rib::requests::Disk & request, const ParameterList & parameters) {
+void Deforming::disk(const v3d::rib::requests::Disk & request, const ParameterList & parameters) {
     add(Shapes::disk(request, parameters));
 }
 
-void Deforming::torus(const v3d::render::offline::rib::requests::Torus & request, const ParameterList & parameters) {
+void Deforming::torus(const v3d::rib::requests::Torus & request, const ParameterList & parameters) {
     add(Shapes::torus(request, parameters));
 }
 
-void Deforming::subdivisionMesh(const v3d::render::offline::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
+void Deforming::subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const ParameterList & parameters) {
     add(Shapes::subdivision(request, parameters, warnings_));
 }
 
