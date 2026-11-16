@@ -202,7 +202,7 @@ needs, where it is done, and what exists.
 | Animation | Rigs posed and keyed, clips | Editor | Transform keys |
 | FX | Particles, rain, volumes, caches | Editor, and outside tools for large simulations | Nothing |
 | Lighting | Many lights, light linking, a dome, time of day | Editor, moya | Three light types |
-| Rendering | A path tracer, AOVs, a denoiser, a farm | moya, an outside farm | The old hiders, one machine |
+| Rendering | A path tracer, AOVs, a denoiser, a farm | moya, an outside farm | A spectral path tracer with AOVs and a denoiser, on one machine |
 | Review | Frames played at speed through a colour transform | Outside players. Snapshots compared in the render view | One picture in the render view |
 | Compositing | AOVs and deep images combined | Slap comps in the editor. Final comps in outside compositors, or later the suite's own | Nothing |
 | Editorial, delivery | Shots conformed to the edit, encoded masters | Outside tools, through OTIO | Nothing |

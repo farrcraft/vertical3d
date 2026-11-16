@@ -4,7 +4,6 @@
 **Date**: 2026-10-04
 **Tags**: offline
 **Superseded by**: [ADR-0194](0194-offline-stateless-samples-one-picture-per-device.md)
-**Documented in**: [offline/CamerasAndSampling.md](../../offline/CamerasAndSampling.md)
 
 ## Context
 

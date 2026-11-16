@@ -4,10 +4,10 @@ What moya needs to become a modern production renderer, and in what order. moya 
 own, renders to a high standard on the CPU and on GPUs, integrates first with the editor, and
 plugs into other pipelines through RIB and USD. It is written for whoever starts the rebuild.
 
-moya today implements RenderMan as it was before 2016: a reyes hider, a Whitted ray hider and an
-interpreted RenderMan Shading Language. Every current production renderer is a path tracer in
-which the integrator gathers light. The rebuild replaces moya's core with one, and keeps the name,
-the executable and the editor's two ways of rendering.
+Before the rebuild, moya implemented RenderMan as it was before 2016: a reyes hider, a Whitted ray
+hider and an interpreted RenderMan Shading Language. Every current production renderer is a path
+tracer in which the integrator gathers light. The rebuild replaced moya's core with one, and kept
+the name, the executable and the editor's two ways of rendering. Sections 1 to 7 are done.
 [The offline renderer](../offline/README.md) describes the code as it stands.
 
 ## Glossary
@@ -45,28 +45,30 @@ The rebuild follows these records.
 
 ## What carries over
 
-- **The RIB reader** in `api/render/offline/rib`, and the lexer it shares in
-  `api/render/offline/source`. RIB becomes a client of the scene interface.
-- **The pixel filters** in `offline::film`. The film around them is rebuilt for spectra and
-  AOVs.
+- **The RIB reader**, the api library `v3dlib_rib` in `api/rib`, with the lexer it shares in
+  `api/rib/source`. RIB is a client of the scene interface.
+- **The pixel filters' names** in `api/rib/Sampling.h`, with the limits of `Format`,
+  `PixelSamples` and `PixelFilter`. Their weights are `film::Filter::weight()` in moya's film,
+  which is rebuilt for spectra and AOVs.
 - **`api/image`**, for reading and writing the 8-bit formats it already handles.
 - **The editor's two paths**: `MoyaDelegate` for interactive renders and `moya.exe` for batches.
-  The delegate moves onto the scene interface.
+  The delegate renders through the scene interface.
 - **The fuzzed parsers and the reference-image tests.** Their reference images are made again.
 
 ## What is retired
 
-The reyes hider, the ray hider, `offline::trace`, the shading language compiler and machine in
-`api/render/offline/sl`, the built-in shaders, and RI's light shaders. The moya manual is
-rewritten for the new renderer. Section 7 removes them, once the new core renders what RIB
-scenes describe.
+Everything else of the old core and of `api/render/offline`: the reyes hider, the ray hider,
+`offline::trace`, the shading language compiler and machine in `api/render/offline/sl`, the old
+film, camera and textures, RI's C interface, and `RIBHandler`. RI's built-in surfaces are
+MaterialX materials, and its lights are UsdLux lights. The moya manual is rewritten for the new
+renderer. Section 7 removed them.
 
 ## What it needs
 
 ### 1. The foundation
 
 Done. Everything later runs on this. [MoyaFoundation](../plans/completed/MoyaFoundation.md) was
-its plan, and [the offline README](../offline/README.md#the-new-core) describes what it built.
+its plan, and [the offline README](../offline/README.md#the-parts) describes what it built.
 
 - **The kernel subset and the CPU device.** The rules of the subset: no virtual calls, no
   exceptions and no allocation in shared code. A device interface for memory, ray traversal and
@@ -168,10 +170,11 @@ built.
 
 ### 7. The retirement
 
-[MoyaRetirement](../plans/MoyaRetirement.md) is its plan.
+Done. [MoyaRetirement](../plans/completed/MoyaRetirement.md) was its plan, and
+[the offline README](../offline/README.md) describes the one renderer that remains.
 
-- RIB scenes that render today render through the new core, with the built-in shaders mapped to
-  OpenPBR materials.
+- RIB scenes render through the path tracer, with RI's built-in surfaces as MaterialX definitions
+  on OpenPBR, and its lights as UsdLux lights.
 - The reyes hider, the ray hider, `offline::trace` and `api/render/offline/sl` are removed.
 - The moya manual and the offline reference pages are rewritten. ADR-0186 supersedes ADR-0026,
   ADR-0078, ADR-0093, ADR-0094, ADR-0095, ADR-0113, ADR-0114, ADR-0125 and ADR-0185. ADR-0194

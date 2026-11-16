@@ -51,9 +51,8 @@ Every camera request takes effect at `WorldBegin`, in any order. Put them all be
 Depth of field blurs what lies nearer or further than one distance from the camera.
 
 ```
-Hider "raytrace"
 Format 160 120 1
-PixelSamples 4 4
+PixelSamples 8 8
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
 DepthOfField 2 0.5 4
@@ -90,7 +89,7 @@ then give the transformation at the start and the end of the motion:
 
 ```
 Format 160 120 1
-PixelSamples 4 4
+PixelSamples 8 8
 Shutter 0 1
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
@@ -113,13 +112,27 @@ The yellow quad is smeared from left to right.
 - `MotionBegin` lists the times, and holds one transformation request for each time. Each request
   applies to the transformation as it stood at `MotionBegin`, so here the quad is at x = -1 when
   the shutter opens and at x = 1 when it closes.
-- A block with more than two times uses the first and the last.
-- Between the two ends, moya moves and scales the object in a straight line and turns it at an
-  even rate.
-- **Only a transformation moves.** A primitive given twice in a motion block, to change its
-  shape, is drawn at the first shape. moya does not build deforming primitives.
-- Requests after `MotionEnd` apply at both ends, so what follows the block moves with it.
-- Under the reyes hider, a moving object's shadow is sharp, because its shadow rays are cast at
-  the time the shutter opens.
+- A block may list more than two times. The object passes through the transformation given for
+  each, in order. The times have to rise. A block whose times do not rise is logged, and keeps
+  its first time alone.
+- Between two times, moya moves and scales the object in a straight line and turns it the
+  shortest way at an even rate.
+- Requests after `MotionEnd` apply at every time, so what follows the block moves with it.
+- A motion block before `WorldBegin` moves the camera.
 - Each pixel's samples fall at different times in the shutter. Raise `PixelSamples` to make the
-  smear smooth.
+  smear smooth. Shadows and reflections blur with the object.
+
+### Change an object's shape
+
+A primitive given once for each time inside a motion block changes its shape over the shutter:
+
+```
+MotionBegin [0 1]
+Polygon "P" [-0.4 -0.4 5  0.4 -0.4 5  0.4 0.4 5  -0.4 0.4 5]
+Polygon "P" [-0.4 -0.4 5  0.4 -0.4 5  0.8 0.8 5  -0.8 0.8 5]
+MotionEnd
+```
+
+- moya moves each point in a straight line between its positions.
+- Each later primitive has to have as many points as the first. One that does not is logged, and
+  the object keeps the first shape.

@@ -36,20 +36,24 @@ every render, as a program that is not compliant must.
 
 ### Inside another program
 
-A program that links `v3dlib_moya` renders a RIB stream with a `RIBHandler` of its own, as the
-driver does. Nothing a handler holds is shared, so two renders on two threads do not meet. The
-editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
+A program that links `v3dlib_moya` holds a `scene::Scene` of its own and renders it with
+`integrate::render()`. Nothing one scene holds is shared, so two renders of two scenes on two
+threads do not meet.
 
-- **A `Display` of type `framebuffer`** writes no file, and the picture stays in
-  `context().picture()`.
-- **`RenderContext::progress(callback)`** is told how much of the frame is done, from 0 to 1. The
-  reyes hider tells it after each bucket and the ray-trace hider after each row. Progress
-  reaches 1 at the end of the first pass over the buckets, and holds there through a pass
-  repeated because a primitive split. The callback runs on the rendering thread.
-- **A callback that returns false stops the render** there. The buckets or rows not yet rendered
-  stay empty, no imager runs, no file is written, and `stopped()` says so until the next render.
-- The reyes hider gathers every sample of the frame before it renders its first bucket, so a
-  stop cannot come sooner than that.
+- **A RIB stream fills the scene through a `ri::SceneClient`**, as the driver does. The function
+  the client's `frame()` is given runs after each `WorldEnd`. The driver applies the scene there,
+  renders it, and writes each of its outputs.
+- **The editor fills its scene from its own document**, with no RIB between, as
+  [editor/Rendering.md](../editor/Rendering.md) says.
+- **A `Display` of type `framebuffer`** writes no file. The picture is the snapshot
+  `integrate::render()` returns.
+- **`integrate::passesOf(scene)`** gives the passes a render takes when no pixel stops early. The
+  `stop` function of the `integrate::Checkpoints` a render is given is asked before each pass,
+  with the passes the film holds, so a caller reports progress from it. It runs on the rendering
+  thread.
+- **A `stop` that answers true ends the render** there. The render writes its checkpoint, if it
+  keeps one, and returns the snapshot of the passes it took, as
+  [Integrator.md](Integrator.md#checkpoint-and-resume) says.
 
 ## Building and testing
 
@@ -58,17 +62,18 @@ editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
 - **`v3dlib_rib` links `v3dlib_log`, `v3dlib_type` and glm**, and never Vulkan or SDL. A realtime
   dependency arriving through one of those libraries breaks its build, and its CI suites, first.
 - **Two suites cover the offline code**: `rib` tests the RIB library alone, and `moya` tests the
-  renderer. Run either with `ctest -R`.
+  renderer. Run either with `ctest -R`. `v3dfuzz_rib` fuzzes the reader, with the `rib` suite's
+  fixtures in `api/rib/tests/data/` as its corpus.
 - **The moya suite renders against committed EXRs** in `moya/tests/data/`, each the path
-  tracer's render of the `.rib` beside it, compared within its standard errors.
-- **`foundation-chart.png` is the new core's**: a chart of 24 colours with no geometry, sampled
+  tracer's render of the `.rib` beside it, compared within five standard errors.
+- **`foundation-chart.png` is moya's chart**: 24 colours with no geometry, sampled
   through the filter, the sampler and the spectrum table, and shown through the sRGB display. It
   has no `.rib`, since the chart has no geometry for a RIB file to describe. An RGB build draws
-  no wavelengths, so its suite leaves this case out.
+  no wavelengths, so its suite leaves this case and the EXR references out.
 - **A failing case writes what it rendered to `data_out/`** beside the test executable. That is
-  also how a reference is regenerated when a change is meant to alter the picture.
-- **Fixtures are copied only when the test target relinks.** Editing a `.rib`, `.sl` or `.png`
-  alone leaves the old copy in place, and the suite tests the old file. Touch a source file of
+  also how a reference is made again when a change is meant to alter the picture.
+- **Fixtures are copied only when the test target relinks.** Editing a `.rib`, `.mtlx` or `.exr`
+  alone leaves the copy in the build in place, and the suite tests that copy. Touch a source file of
   the suite, or copy the fixture into `out/build/x64-Debug/moya/tests/data/` by hand.
 - **To look at a reference at a useful size**, copy its `.rib` to a scratch directory, raise its
   `Format`, and give it an absolute shader search path. Render it with the driver from the

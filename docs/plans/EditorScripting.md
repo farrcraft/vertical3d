@@ -22,8 +22,8 @@ The plan keeps the roadmap's order, with four changes:
   plan also renders a shared mesh as one prototype with several instances, in the RIB export and
   in moya's new scene, so the scene a script builds is the scene moya holds.
   [Step 10](#step-10--shared-geometry-in-renders).
-* **The roadmap's check of section 6 against the new core is done.** The old hiders run on one
-  thread, so several processes use a machine that one cannot. The new core's CPU device takes
+* **The roadmap's check of section 6 against moya's path tracer is done.** The old hiders ran on one
+  thread, so several processes used a machine that one could not. moya's CPU device takes
   every thread by default, so several processes would each take every thread. A batch in parallel
   therefore needs moya.exe to take a number of threads.
   [What the survey found](#what-the-survey-found), [step 16](#step-16--a-thread-count-for-moyaexe).
@@ -57,8 +57,7 @@ The tree was read at `48cc20b8`.
   reads back as copies.
 * **The translator makes one prototype for each mesh item**, named after the item
   (`render::SceneTranslator`). The RIB export writes each mesh in full where it stands.
-* **Both RIB handlers read `ObjectBegin` and `ObjectInstance`**: the old hiders' `RIBHandler` and
-  the new core's `SceneClient`.
+* **moya's RIB handler, `SceneClient`, reads `ObjectBegin` and `ObjectInstance`.**
 
 **Commands and scripts:**
 
@@ -84,12 +83,12 @@ The tree was read at `48cc20b8`.
   `render::Batch` itself depends on nothing in `control/`.
 * **A batch from a scene with no camera is rendered from the active view.**
 
-**Batches and the new core:**
+**Batches and moya's path tracer:**
 
 * **A batch runs moya.exe on one frame at a time**, on a thread of its own, through
   `render::runProgram()`.
-* **The old hiders run on one thread.** Nothing in `moya/libmoya` but the device starts a thread.
-* **The new core's `CpuDevice` takes a thread count**, and 0 means as many as oneTBB gives.
+* **Nothing in `moya/libmoya` but the device starts a thread.**
+* **moya's `CpuDevice` takes a thread count**, and 0 means as many as oneTBB gives.
   `moya.exe` makes its device with the default, and has no option for the count.
 * **Each device gives one picture on every run**, whatever its thread count (ADR-0194).
 
@@ -182,8 +181,8 @@ a whole.
 The rebuild's sections up to output for compositing are closed, the last by
 [MoyaCompositing](completed/MoyaCompositing.md), which changed nothing the editor sends moya.
 [MoyaMaterials](completed/MoyaMaterials.md) left the editor's surfaces on RI's `matte`. The
-retirement of the old hiders (section 7) is open as [MoyaRetirement](MoyaRetirement.md), which
-says where it meets this plan. Interactive rendering (section 9) reaches the editor too.
+retirement of the old hiders (section 7) was [MoyaRetirement](completed/MoyaRetirement.md), which
+says where it met this plan. Interactive rendering (section 9) reaches the editor too.
 Giving the editor materials is work for a plan of its own.
 
 **Where the two meet:**
@@ -191,11 +190,11 @@ Giving the editor materials is work for a plan of its own.
 | Shared ground | The rebuild changes it in | This plan changes it in |
 |---|---|---|
 | `src/render/SceneTranslator.*`, `RIBExportVisitor.*`, `tests/render/` | Section 7, and the plan that gives the editor materials | Step 10 |
-| `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the new core | Steps 14 and 17 |
+| `src/render/Batch.*`, `Process.*` | Section 7, which renders a batch through the path tracer | Steps 14 and 17 |
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
 | `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaRetirement's step 9 made the path tracer moya.exe's default and removed `--paths`, `--grid` and `--bucket` | Step 16 |
 | The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
-| `src/scene/RenderSettings.h` and its codec | Section 7, the hider list, and section 9, the AOVs the render view shows | Nothing |
+| `src/scene/RenderSettings.h` and its codec | Section 9, the AOVs the render view shows. MoyaRetirement's step 11 removed the hider list | Nothing |
 | `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
 | ADR numbers | MoyaRetirement, 0236 to 0240 | 0217 to 0221 |
 
@@ -291,7 +290,7 @@ user setting a headless run can give, and a GPU takes one process.
 
 * **Processes and threads.** A batch can run several moya.exe processes and give each a share of
   the machine's threads, or run one at a time on every thread. Under the old hiders only the first
-  uses the machine. Under the new core both can, and the first also overlaps reading one scene
+  used the machine. Under moya's path tracer both can, and the first also overlaps reading one scene
   with rendering another. Houdini's PDG and Deadline both size a local job by slots and threads.
   The record says how the editor sizes it, and what it does on a GPU, which one process holds.
 * **Where the count is kept.** A count belongs to a machine more than to a scene. The record says
@@ -352,8 +351,8 @@ the editor does not take is refused, and nothing changes.
 * **A geometry one item shows** is translated and written as it is now.
 
 **Tests:** a scene with a shared mesh gives one prototype with two instances, and a RIB file with
-one object placed twice. The old hiders' picture of it is the same as the picture of the two
-copies. Every committed translator description stays as it is.
+one object placed twice. moya's picture of it is the same as the picture of the two copies.
+Every committed translator description stays as it is.
 
 ### Step 11 — Placing an item by value
 
@@ -418,7 +417,7 @@ A script that throws exits non-zero. The run opens no window.
 
 ### Step 16 — A thread count for moya.exe
 
-* **`moya --threads <count>`** gives the new core's device at most that many threads, as
+* **`moya --threads <count>`** gives moya's device at most that many threads, as
   `CpuDevice` takes them. With no count it takes as many as oneTBB gives, as now.
 * **A count that is not a whole number above 0 is refused.**
 

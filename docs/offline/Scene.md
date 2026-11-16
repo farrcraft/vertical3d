@@ -1,9 +1,9 @@
 # The scene
 
-This page is for anyone writing a client of moya's new core, or a structure built from its
+This page is for anyone writing a client of moya, or a structure built from its
 scene. The scene is in `moya/libmoya/scene/`, in the namespace `v3d::moya::scene`. It is host
 code: no device reads it, and the structures a render needs are built from it. RIB and the editor
-fill it, and the reyes and ray hiders do not read it.
+fill it.
 
 ## Kinds and their parameters
 
@@ -40,19 +40,23 @@ then derived as RI derives it.
   `orthographic` or `perspective`, and `fov` in degrees for a perspective one. `screen`, the
   screen window as left, right, bottom and top, which is derived from the frame's aspect while it
   is empty. `near` and `far` clipping. `fstop`, `focalLength` and `focalDistance` for depth of
-  field, with an infinite f-stop for a pinhole. `shutter`, its open and close times.
-- **`options`**: `resolution` in pixels, `pixelAspect`, and `frameAspect`, which is derived from
-  the resolution while it is zero. `crop` as RI's crop window. `samples` per pixel, the most a
-  pixel takes. `noiseThreshold`, the noise at which a pixel stops sampling, and zero for none,
-  and `minSamples`, the samples a pixel takes before its noise is first checked, as
-  [Integrator.md](Integrator.md#adaptive-sampling) says. The pixel
-  `filter`, one of RI's five, and `filterWidth`. `frame`, which seeds the sampler. `camera`, the
-  camera the render looks through. `edgeLength`, the longest a tessellated edge may be in
-  pixels, 1 until a client sets it, and `dicingCamera`, the camera that length is measured
-  from, which is the render camera while it names none. `maxDepth`, `diffuseDepth`,
-  `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth` limit a path's
-  bounces, as [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says.
-  `lightSampling` is how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
+  field, with an infinite f-stop for a pinhole. `shutter`, its open and close times. Until a
+  client sets them, a camera is orthographic with a field of view of 90 degrees, clips from
+  `1e-10` to `1e38`, and has a shutter of 0 to 0, which blurs nothing.
+- **`options`**: `resolution` in pixels, 320 by 240 until a client sets it, `pixelAspect`, 1
+  until a client sets it, and `frameAspect`, which is derived from the resolution while it is
+  zero. `crop` as RI's crop window. `samples` per pixel, the most a pixel takes, which is 4,
+  RI's two by two. `noiseThreshold`, the noise at which a pixel stops sampling, and zero for
+  none, and `minSamples`, the samples a pixel takes before its noise is first checked, as
+  [Integrator.md](Integrator.md#adaptive-sampling) says. The pixel `filter`, one of RI's five,
+  and `filterWidth`, which are RI's gaussian two pixels wide until a client sets them. `frame`,
+  which seeds the sampler. `camera`, the camera the render looks through. `edgeLength`, the
+  longest a tessellated edge may be in pixels, 1 until a client sets it, and `dicingCamera`, the
+  camera that length is measured from, which is the render camera while it names none.
+  `maxDepth`, `diffuseDepth`, `glossyDepth`, `specularDepth`, `transmissionDepth` and
+  `rouletteDepth` limit a path's bounces, as
+  [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says. `lightSampling` is
+  how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
   [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its
   light: `tree`, the fallback, or `power`, as [Lights.md](Lights.md#drawing-a-light) says.
   `deepTolerance`, 0.001 by default, is how far apart two samples' depths may lie, as a share of

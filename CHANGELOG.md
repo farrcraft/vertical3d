@@ -54,6 +54,11 @@ that section to its version, and the section becomes the release's notes.
 
 ### Removed
 
+- moya's reyes hider, its ray-trace hider and the RenderMan Shading Language, with no mode that
+  keeps them. A scene's `.sl` shaders stop working: a surface no MaterialX document defines
+  shades as `matte`, and moya reports it. RI's built-in surfaces and lights still render, as
+  MaterialX materials and UsdLux lights. The editor's render settings hold no hider, and a
+  project that names one still opens.
 - `moya --grid` and `--bucket`, which sized the reyes hider's grids and buckets.
 - RI's C interface in libmoya, `RiBegin` and the other `Ri` entry points with their header
   `RenderMan.h`. A program builds moya's scene through the retained scene in C++, or writes RIB.

@@ -10,7 +10,7 @@ The renderer is `v3dlib_moya` in [libmoya/](libmoya/). It reads RIB through the 
 when moya is built.
 
 - [docs/manual/moya/](../docs/manual/moya/README.md) is the manual for rendering with it: the
-  command line, the RIB requests it reads and the shading language.
+  command line, the RIB requests it reads, materials and lights.
 - [docs/offline/RunningAndTesting.md](../docs/offline/RunningAndTesting.md) covers building and
   testing it.
 - [docs/offline/](../docs/offline/README.md) covers how a scene becomes an image, and each part of

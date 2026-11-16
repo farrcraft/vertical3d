@@ -1,12 +1,9 @@
 # Kernel code
 
-This page is for anyone writing moya's kernel code. Kernel code is the part of the new core that
+This page is for anyone writing moya's kernel code. Kernel code is the part of moya that
 every device compiles from one source: the CPU now, and HIP and CUDA when their back ends exist.
 It lives in `moya/libmoya/kernel/`, in the namespace `v3d::moya::kernel`. Everything outside that
 directory is host code, which calls kernel code and is never called by it.
-
-The new core sits beside the reyes hider and the ray hider until they are removed. Nothing here
-changes how either of them renders.
 
 ## The rules
 

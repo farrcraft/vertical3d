@@ -3,31 +3,33 @@
 These pages are for anyone changing `moya` or the library it reads RIB through, `api/rib`.
 Someone who renders with moya reads the [moya manual](../manual/moya/README.md) instead.
 
-moya is the only offline renderer in the tree. It reads a RenderMan scene file and writes an
-image file. It shares no code with the realtime Vulkan renderer: nothing it links names Vulkan
-or SDL, and it opens no window. Its test suites therefore run in CI on machines with no GPU.
+moya is the only offline renderer in the tree. It is a spectral path tracer. It reads a
+RenderMan scene file and writes image files. It shares no code with the realtime Vulkan
+renderer: nothing it links names Vulkan or SDL, and it opens no window. Its test suites
+therefore run in CI on machines with no GPU.
 
 | Page | Read it to |
 |---|---|
-| This page | Learn the terms, and how a RIB scene becomes an image |
+| This page | Learn the terms, and how a RIB scene becomes a picture |
 | [RunningAndTesting.md](RunningAndTesting.md) | See how moya is laid out, and build and test it |
-| [Rib.md](Rib.md) | Change the RIB reader, writer or handler |
-| [CamerasAndSampling.md](CamerasAndSampling.md) | Change raster space, sampling, the film, cameras, depth of field or motion blur |
-| [ShadingLanguage.md](ShadingLanguage.md) | Change the shading language compiler, runtime, built-ins or normals |
-| [Reyes.md](Reyes.md) | Change the reyes hider: bucketing, splitting, dicing and hiding |
-| [RayTracing.md](RayTracing.md) | Change the ray tracer or the ray-trace hider |
-| [Kernel.md](Kernel.md) | Write kernel code for the new core, which every device compiles from one source |
-| [Devices.md](Devices.md) | Change how the new core holds memory on a device and launches kernel code |
-| [Spectra.md](Spectra.md) | Change how the new core carries light as wavelengths and turns it into colour |
-| [Sampler.md](Sampler.md) | Change how the new core draws the random numbers a path uses |
-| [Film.md](Film.md) | Change how the new core places camera samples and adds them to a picture |
-| [Integrator.md](Integrator.md) | Change how the new core builds paths, samples lights, stops a pixel and resumes a render |
-| [Lights.md](Lights.md) | Change the new core's lights, how a path meets and samples them, the light tree and linking |
-| [Materials.md](Materials.md) | Change how the new core compiles a material into a program, and the BSDF library it feeds |
-| [Patterns.md](Patterns.md) | Change the new core's noises, ramps, splits and rotations, which a material's program runs |
-| [Textures.md](Textures.md) | Change the texture files the new core reads, and the maker that writes them from images |
-| [Output.md](Output.md) | Change how the new core writes its pictures to EXR files |
-| [Colour.md](Colour.md) | Change how the new core converts between colour spaces and shows a picture on a display |
+| [Rib.md](Rib.md) | Change the RIB reader, writer or recorder, or the scene client that reads RIB into the scene |
+| [Scene.md](Scene.md) | Change the scene: its kinds, handles, samples over the shutter, primvars and versions |
+| [Kernel.md](Kernel.md) | Write kernel code, which every device compiles from one source |
+| [Devices.md](Devices.md) | Change how moya holds memory on a device and launches kernel code |
+| [Spectra.md](Spectra.md) | Change how moya carries light as wavelengths and turns it into colour |
+| [Sampler.md](Sampler.md) | Change how moya draws the random numbers a path uses |
+| [Film.md](Film.md) | Change how moya places camera samples and adds them to a picture |
+| [Traversal.md](Traversal.md) | Change rays, hits, the camera's rays, the hierarchies and how a ray finds what it meets |
+| [Geometry.md](Geometry.md) | Change how meshes, subdivision surfaces and curves become what a ray meets |
+| [Surfaces.md](Surfaces.md) | Change how a hit becomes the point a path shades |
+| [Materials.md](Materials.md) | Change how moya compiles a material into a program, and the BSDF library it feeds |
+| [Patterns.md](Patterns.md) | Change the noises, ramps, splits and rotations a material's program runs |
+| [Textures.md](Textures.md) | Change the texture files moya reads, and the maker that writes them from images |
+| [Integrator.md](Integrator.md) | Change how moya builds paths, samples lights, stops a pixel and resumes a render |
+| [Lights.md](Lights.md) | Change moya's lights, how a path meets and samples them, the light tree and linking |
+| [Output.md](Output.md) | Change how moya writes its pictures to EXR and PNG files |
+| [Compositing.md](Compositing.md) | Change the channels, light groups, Cryptomatte layers and deep files moya writes beside the beauty |
+| [Colour.md](Colour.md) | Change how moya converts between colour spaces and shows a picture on a display |
 
 ## How a frame is made
 
@@ -39,112 +41,69 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
   such as `Polygon "P" [...]`. It is the scene format moya reads.
 - **Parameter list**: the name and value pairs that end a request, such as `"Cs" [1 0 0]`. Each
   name has a type, set by a declaration.
-- **RIB reader**: `rib::Reader`. It tokenises a RIB file and calls one handler method
-  per request.
+- **RIB reader**: `rib::Reader`. It tokenises a RIB file and calls one handler method per
+  request.
 - **Handler**: `rib::Handler`, a C++ interface with one virtual method per request.
-  moya implements it as `moya::ri::RIBHandler`.
-- **Graphics state**: the current transformation, colour, opacity, surface shader and lights,
-  plus the frame's options. `moya::state::RenderContext` holds it, as the classes below.
-- **Primitive**: one piece of geometry: a polygon, a sphere, or one segment of a curve.
-- **Hider**: the stage that decides what is visible at each sample. moya has two, selected by
-  the `Hider` request: `"hidden"` (the reyes hider, and RI's default) and `"raytrace"`.
-- **Bucket**: a rectangle of pixels, 16 by 16 by default. The reyes hider sorts primitives into
-  buckets and renders one bucket at a time.
-- **Split**: cut a primitive that is too large into smaller primitives.
-- **Dice**: turn a primitive into a grid.
-- **Grid**: a regular mesh of shading points made from one primitive.
-- **Micropolygon**: one cell of a grid, about one pixel across or smaller.
-- **Shading language (SL)**: RenderMan's C-like language for shaders. moya compiles a subset of
-  it at run time and interprets the result.
-- **Shader**: a program written in SL. moya runs surface, light and imager shaders.
-- **Batch**: the set of shading points one shader run covers: a grid's vertices, up to 64 ray
-  hits that share a shader, or a row of pixels.
-- **Mask**: one flag per point in a batch, saying which points execute the current statement.
-- **Uniform and varying**: a uniform value is one value for the whole batch. A varying value has
-  one value per point.
-- **Sample**: a point inside a pixel where visibility is decided. It also carries a time within
-  the shutter and a point on the lens.
-- **Film**: `offline::film::Film`. It weights samples into pixels with a pixel filter.
-- **Pixel filter**: the weighting function: box, triangle, catmull-rom, gaussian or sinc.
-- **Imager**: a shader run over the finished picture, one row of pixels at a time.
+- **Scene client**: `moya::ri::SceneClient`, the handler moya implements. It keeps RI's
+  graphics state, the current transformation and attributes, and fills the scene from it.
+- **Scene**: `moya::scene::Scene`, the retained scene moya renders. It holds objects of declared
+  kinds by handle, and records each change as a version.
+- **Prototype and instance**: a prototype is a geometry or a group. An instance places a
+  prototype in the world, or in a group, with a transformation and a material.
+- **Options**: the scene object that holds the frame's settings, such as the resolution, the
+  samples per pixel and the pixel filter. The **camera** is the object the options name.
+- **Kernel code**: the code every device compiles from one source, in `moya/libmoya/kernel/`.
+  Everything else is host code.
+- **Device**: what holds the memory kernel code reads and launches it over the pixels of an
+  image. The CPU device is the only one.
+- **Path**: the rays a camera sample follows from the camera through each bounce. The
+  **integrator** builds paths and gathers the light they carry.
+- **Sample**: one path's contribution to one pixel. It carries a place in the pixel, a time
+  within the shutter and a point on the lens. A **pass** adds a fixed number of samples to each
+  pixel.
+- **Pixel filter**: the weighting of a pixel's samples: box, triangle, catmull-rom, gaussian or
+  sinc.
+- **Film**: `film::Film`, which holds each pixel's weighted sums of its samples in a device's
+  memory. A **snapshot** is the picture the film holds, resolved into each pixel's means.
+- **Channel**: a value the film holds per pixel beside the beauty, such as a depth or the light
+  of a light path expression. The **beauty** is the picture's colour.
+- **Output**: a file a render writes, with the channels it names.
 - **Raster space**: pixel coordinates, with the origin at the image's upper left.
 
 ### The pipeline
 
 ```
-scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics state)
-                                                      |  WorldEnd
-                               reyes::Hider ("hidden") or raytrace::Hider ("raytrace")
-                                                      |  samples
-                                   offline::film::Film -> planes -> imager -> image file
+scene.rib -> rib::Reader -> ri::SceneClient -> scene::Scene
+                                                   |  WorldEnd: commit
+              gather the prototypes, build the hierarchies, compile the materials, build the lights
+                                                   |
+             integrate::render: paths on a device -> film -> film::Snapshot
+                                                   |
+                                     output::write -> EXR, deep EXR or PNG files
 ```
 
-1. The reader parses each request and calls the matching `RIBHandler` method, with its
+1. The reader parses each request and calls the matching `SceneClient` method, with its
    parameter list already typed.
-2. The handler updates the graphics state in `RenderContext`. At `WorldBegin` the context saves
-   the camera and builds the frame from the options as they stand. An option set after it is
-   not refused. Each primitive is added to the traced scene, and under the reyes hider it is
-   also filed in a bucket.
-3. At `WorldEnd` the hider renders. The reyes hider splits, dices, shades and hides each
-   bucket's primitives into a frame of samples. The ray hider casts a primary ray through each
-   sample.
-4. The film filters the samples into the framebuffer's planes.
-5. The imager shader, if the scene names one, runs over the planes.
-6. The colour planes are written to the output file.
+2. The scene client updates its graphics state, and creates and changes scene objects as the
+   requests arrive. The options, the camera, the outputs and their channels are objects. A
+   prototype and an instance for each primitive, its material, and the lights are objects too.
+3. At `WorldEnd` the client commits the frame and calls the function its `frame()` was given.
+   The scene's owner applies the batch there and renders.
+4. `integrate::render()` gathers the prototypes the world's instances reach, and builds a
+   hierarchy over each and one over the world. It compiles each material into a program and
+   builds the lights.
+5. The integrator runs on the CPU device in passes. For each sample, the sampler draws its
+   numbers, the pixel filter places it, and the camera gives its ray. The path's light, and the
+   channels the outputs name, are added to the sample's own pixel in the film.
+6. The render returns the film's snapshot. Each output writes the beauty and its channels, as
+   EXR, as a deep EXR file, or through a display as an 8-bit PNG.
 
-`RIBHandler` ignores a request whose shader, light or space name is empty.
+Background: [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-alone.md)
 
-### The render context
+### The parts
 
-**`RenderContext` has one method per RI request**, and holds the world from `WorldBegin` to
-`WorldEnd`. Each part of the graphics state is a class of its own in `moya::state`, in
-`moya/libmoya/state/`:
-
-| Class | Holds |
-|---|---|
-| `CameraOptions`, `Camera` | The camera options, and the camera they freeze into at `WorldBegin`. Both are in `api/render/offline` |
-| `Transforms` | The current transformation, the `TransformBegin` stack, and the coordinate systems a scene named |
-| `Attributes` | Everything `AttributeBegin` saves but the transformation. A block saves and restores the whole value |
-| `Lights` | The lights a scene created, which last for the frame. Which are on is an attribute |
-| `Shaders` | The shader library, the textures, the imager, and whether any bound shader traces |
-| `raytrace::Scene` | The scene a ray meets, which every primitive is added to. It is in `moya/libmoya/raytrace/`, beside the ray hider |
-| `Display` | `Display` and `CropWindow`, and the finishing of a frame |
-| `Progress` | The callback a render reports to, and whether it was asked to stop |
-
-The planes a frame is drawn into are `context().picture()`, indexed by `moya::state::Planes`.
-
-### The two hiders
-
-**A hider is a `moya::Hider`.** It reports whether it sees only the traced scene
-(`traces()`), and it renders what the context gathered (`render()`). `RenderContext` holds one.
-`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::raytrace::Hider`. A hider name
-moya does not recognise is logged, and the current hider stays.
-
-Both hiders read one graphics state and one camera, write one framebuffer, and share the film,
-the shading language and the ray tracer. They differ in these ways:
-
-| | Reyes (`"hidden"`) | Ray (`"raytrace"`) |
-|---|---|---|
-| Default | Yes | No |
-| Spheres | Not drawn. The first in a scene is logged | Intersected exactly |
-| Curves | Split, then diced into ribbons facing the eye | Intersected as ribbons facing each ray |
-| A shader's `Oi` | Composited front to back, at each sample | Composited front to back, along each ray |
-| A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
-| `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
-| Time of shadow and traced rays | Shutter open | Each sample's own time |
-| Storage of a primitive | In a bucket, and in the traced scene until rendering starts if no shader traces | Once, in the traced scene |
-
-Background: [ADR-0078](../adr/offline/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
-
-## The new core
-
-moya is being rebuilt as a spectral path tracer, and its new core sits beside the two hiders.
-The hiders render every RIB scene as before. The new core holds a scene, read from RIB or kept in
-step with the editor's, traces rays through it, and renders it by path tracing. Nothing in it
-changes a picture the hiders make.
-
-- **It lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
-  client of the core is built in this tree.
+- **moya lives in `moya/libmoya`**, in the namespace `v3d::moya`, not in an api library. Every
+  client of it is built in this tree.
 - **Kernel code** is in `moya/libmoya/kernel/`, compiled under the rules a GPU compiler imposes
   as the target `v3dlib_moya_kernel`. The CPU and every later device run it from one source.
   [Kernel.md](Kernel.md)
@@ -197,9 +156,9 @@ changes a picture the hiders make.
   [Surfaces.md](Surfaces.md)
 - **A surface is shaded by its material.** A material is a MaterialX graph, compiled into a node
   program every device runs, which feeds a BSDF library arranged as OpenPBR Surface arranges its
-  layers. Standard Surface, UsdPreviewSurface and glTF PBR are translated onto OpenPBR. A
-  material's displacement moves a subdivision surface's points, and its opacity cuts a surface
-  out. [Materials.md](Materials.md)
+  layers. Standard Surface, UsdPreviewSurface and glTF PBR are translated onto OpenPBR, and so
+  are RI's built-in surfaces. A material's displacement moves a subdivision surface's points, and
+  its opacity cuts a surface out. [Materials.md](Materials.md)
 - **Patterns read textures** through a cache of tiles of mipmapped EXR files, filtered by the
   footprint of the cone a ray carries. The texture maker writes those files from images.
   [Textures.md](Textures.md)
@@ -215,8 +174,8 @@ changes a picture the hiders make.
   light a shading point samples by its expected contribution. A light lights only the instances
   it links, and casts shadows only from those its shadow link names.
   [Lights.md](Lights.md#the-light-tree)
-- **RIB names the lights**: RI's standard and area lights, and RenderMan's `PxrRectLight` and its
-  kin through `Light`. [Rib.md](Rib.md#the-scene-client)
+- **RIB names the lights**: RI's standard, ambient and area lights, and RenderMan's
+  `PxrRectLight` and its kin through `Light`. [Rib.md](Rib.md#the-scene-client)
 - **A pixel stops at a noise threshold**, measured from two halves of its samples. A render keeps
   a checkpoint it resumes from, and gives the same picture as one that never stopped.
   [Integrator.md](Integrator.md#adaptive-sampling)
@@ -225,8 +184,9 @@ changes a picture the hiders make.
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through
-all of it, and `PathsReferenceTest.cxx` holds seven lit scenes and four of materials to their
-committed renders. `CompositingReferenceTest.cxx` holds five scenes of outputs to theirs.
+all of it. `PathsReferenceTest.cxx` holds every lit scene, material scene and scene written for
+RI's surfaces to its committed render, and `CompositingReferenceTest.cxx` holds every scene of
+outputs to its own.
 
 Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-libmoya.md)
 
@@ -235,12 +195,14 @@ Background: [ADR-0195](../adr/offline/0195-offline-the-renderers-core-lives-in-l
 [TODO.md](../TODO.md#offline-rendering) holds the offline renderer's open items. These are not
 built:
 
-- Volume shaders, the `shadow()` built-in and shadow maps.
-- Deforming primitives inside a motion block.
-- Any geometry beyond `Polygon`, `PointsPolygons`, `Sphere` and `Curves`, and spheres under
-  the reyes hider. The reader reads `Points`, the other quadrics, `SubdivisionMesh` and objects,
-  and the hiders leave them out.
-- A curve's `"N"`, which would turn its ribbon to face a given way, its varying `"Cs"`, round
-  curves, a displaced traced curve, and a curve joining an area light.
-- `Orientation`, any `Attribute` but `"light"`, `"displacementbound"` and `"trace"`, binary
-  and gzipped RIB, and `Display` modes other than RGB.
+- `st` on a quadric, so a pattern or a texture that reads `st` on a sphere reads nothing.
+- Emission that varies over a surface. An emitting material's emission is a constant.
+- A mesh light whose material cuts it out. A light sample counts the cut-away area too.
+- A split's step smoothed over a pixel, and a texture filtered over the footprint of a scaled
+  coordinate.
+- A device other than the CPU.
+- Displacement of any geometry but a subdivision surface, and shaders written in RenderMan's
+  shading language. A surface shader moya cannot find shades as `matte`.
+- Volumes, and any request the reader does not recognise, such as `Orientation`, `ReadArchive`,
+  `Patch` and `NuPatch`.
+- Binary and gzipped RIB.

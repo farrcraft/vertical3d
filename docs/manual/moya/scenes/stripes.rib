@@ -1,5 +1,5 @@
 ##RenderMan RIB-Structure 1.1
-##Scene The stripes surface from Shaders.md on a standing panel, beside a matte sphere
+##Scene The stripes surface from Materials.md on a standing panel, beside a matte sphere
 version 3.03
 Format 320 240 1
 PixelSamples 8 8

@@ -1,6 +1,6 @@
 # Colour management
 
-This page is for anyone changing how moya's new core names colours, converts between colour
+This page is for anyone changing how moya names colours, converts between colour
 spaces and shows a picture on a display. The code is host code, in `moya/libmoya/colour/` and
 the namespace `v3d::moya::colour`. It goes through OpenColorIO, which libmoya links PRIVATE:
 only `Config.cxx` and the headers in `colour/internal/` include it.

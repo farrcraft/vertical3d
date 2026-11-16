@@ -1,6 +1,6 @@
 # The integrator
 
-This page is for anyone changing how moya's new core builds paths and gathers light. The kernel
+This page is for anyone changing how moya builds paths and gathers light. The kernel
 side is in `moya/libmoya/kernel/integrate/`, in the namespace `v3d::moya::kernel::integrate`. The
 host side is `integrate::render()`, in `moya/libmoya/integrate/`. [Surfaces.md](Surfaces.md)
 covers the shading point, [Materials.md](Materials.md) the BSDF a path scatters by, and

@@ -1,6 +1,6 @@
 # Spectra
 
-This page is for anyone changing how moya's new core carries light and turns it into colour.
+This page is for anyone changing how moya carries light and turns it into colour.
 The code is kernel code, in `moya/libmoya/kernel/spectrum/` and the namespace
 `v3d::moya::kernel::spectrum`.
 

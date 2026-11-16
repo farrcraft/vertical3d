@@ -3,92 +3,98 @@
 This page explains how a RIB file becomes an image, at the level that helps you set up a scene
 and understand its settings. It does not describe the code.
 
+```
+scene.rib -> scene client -> scene -> path tracer -> film -> outputs -> image files
+```
+
 ## Terms
 
-- **Primitive**: one piece of geometry, such as a polygon, a sphere or one curve.
-- **Graphics state**: the colour, opacity, shaders, lights and transformation in force while the
-  file is read. Each primitive takes the state current when it is given.
-- **Hider**: the part of moya that works out which surface the camera sees at each point of the
-  picture. moya has two, the reyes hider and the ray-trace hider.
-- **Sample**: one point inside a pixel where the hider finds what is seen. A sample also has a
-  time within the shutter, for motion blur, and a point on the lens, for depth of field.
-- **Pixel filter**: the weighting that blends the samples near a pixel into its colour.
-- **Shading point**: a point where moya runs the shaders to find a colour.
-- **Micropolygon**: a tiny polygon, about a pixel across or smaller, that the reyes hider cuts a
-  surface into.
-- **Grid**: a regular mesh of micropolygons cut from one primitive. The reyes hider shades a
-  whole grid at once.
-- **Bucket**: a rectangle of pixels, 16 by 16 by default. The reyes hider sorts primitives into
-  buckets.
-- **Shading rate**: the area of one micropolygon, in pixels.
-- **Imager**: a shader run over the finished picture.
+- **Scene client**: the part of moya that reads each RIB request and changes the scene to match.
+- **Scene**: what moya renders. It holds the camera, the options, every object, material and
+  light, and the outputs, each with its parameters. moya keeps it whole until a frame ends.
+- **Graphics state**: the colour, opacity, material, lights and transformation in force while
+  the file is read. Each object takes the state current when it is given.
+- **Primitive**: one piece of geometry, such as a polygon, a sphere, a subdivision surface or a
+  set of curves.
+- **Instance**: one placement of a primitive in the world, with its transformation and its
+  material.
+- **Material**: how a surface reflects, transmits and emits light. [Materials.md](Materials.md)
+  describes them.
+- **Primvar**: a value a primitive carries at each vertex, face or corner, such as `"st"` or
+  `"Cs"`. A material can read it.
+- **Path**: the route a ray of light takes from the camera, bouncing off surfaces, until it
+  leaves the scene or stops.
+- **Sample**: one path through one pixel. A sample has its own point in the pixel, a time within
+  the shutter for motion blur, and a point on the lens for depth of field.
+- **Pass**: a round of up to 16 samples in every pixel.
+- **Film**: the picture moya adds samples to. Each pixel holds the sum of its samples and how
+  much each counts.
+- **Pixel filter**: the weighting that sets how much a sample counts toward its pixel.
+- **Output**: a file moya writes from the film, such as a PNG or an EXR file.
+- **Channel**: a picture an EXR output holds beside the beauty, such as depth or the light of one
+  group.
+- **Beauty**: the finished picture, with its alpha.
 
 ## From file to image
 
-1. **moya reads the file, one request at a time.** The options before `WorldBegin` set up the
-   picture and the camera. Each request inside the world changes the graphics state or adds a
-   primitive.
-2. **At `WorldBegin` the camera is fixed.** Every camera request takes effect then, in whatever
-   order the file gave them.
-3. **Each primitive is stored with its graphics state.** Changing the colour after a polygon
-   does not change that polygon.
-4. **At `WorldEnd` the hider renders.** It finds what each sample sees and runs the shaders there.
-5. **The pixel filter blends the samples into pixels.**
-6. **The imager runs**, if the scene names one, over each row of pixels.
-7. **moya writes the image file**, if one is named.
+1. **The scene client reads the file, one request at a time.** The options before `WorldBegin`
+   set up the picture and the camera. Each request inside the world changes the graphics state or
+   adds an object to the scene.
+2. **At `WorldBegin` the camera is placed** by the transformation in force. The scene of any
+   earlier world is cleared.
+3. **Each primitive becomes a primitive and an instance in the scene.** The instance takes the
+   material the graphics state names. Changing the colour after a polygon does not change that
+   polygon.
+4. **At `WorldEnd` the scene is complete, and the path tracer renders it.** moya cuts each
+   subdivision surface into triangles, displaces it, and builds a structure that lets a ray find
+   the surface it meets quickly.
+5. **The path tracer adds samples to the film, a pass at a time**, until every pixel has its
+   samples or has stopped early.
+6. **The outputs are written** from the film, with the background laid behind each, if the scene
+   names one.
 
-## The reyes hider
+A file can hold several frames, each between `FrameBegin` and `FrameEnd`. moya renders and writes
+each frame at its `WorldEnd`.
 
-The reyes hider cuts every surface into micropolygons and shades them before it decides what
-is visible.
+## A path
 
-- **Bucketing.** As each primitive arrives, the hider works out which part of the picture it
-  covers, and files it in the bucket at that part's upper left corner. A primitive outside the
-  camera's view, or outside the clipping range, is dropped here.
-- **Splitting.** A primitive too large to dice is split into smaller pieces, which are bucketed
-  again. The shading rate and the grid size set how large is too large.
-- **Dicing.** A primitive small enough is cut into one grid of micropolygons.
-- **Displacement and shading.** The displacement shader moves the grid's points. The surface
-  shader then runs once over all the grid's points together.
-- **Hiding.** Each micropolygon is tested against the samples it covers. A sample keeps every
-  surface in front of its nearest opaque one, and composites them front to back.
+A sample starts at the camera. Its ray goes through the sample's point in the pixel, from its
+point on the lens, at its time.
 
-Shading happens before hiding. The shaders run on surfaces that may later turn out to be hidden,
-and their cost depends on the shading rate, not on the number of samples. Raising
-`PixelSamples` smooths edges and blur for little extra shading. Lowering `ShadingRate` shades
-more points.
+- **The ray meets the nearest surface.** The material there says how the surface scatters light.
+- **moya picks one light and a point on it**, and casts a shadow ray toward it. If nothing blocks
+  the shadow ray, the light it brings is added, weighted by the material.
+- **The path bounces.** moya picks a new direction from the material, and the ray goes on from
+  the surface. A path that meets a light or a glowing surface adds that light too.
+- **Light found both ways is weighted** so that each way counts most where it finds light best.
+  A small, bright light is found best by the shadow ray, and a large, dim one by the bounce. The
+  method is called multiple importance sampling.
+- **The path ends** when it leaves the scene, reaches its limit of bounces, or is ended at random
+  once it carries little light. A path that leaves the scene adds what any dome light or distant
+  light gives it there.
 
-The reyes hider casts no rays to find what the camera sees. When a shader asks for a shadow or a
-reflection, the ray is traced through the same scene the ray-trace hider uses.
+A path carries a few wavelengths of light, not red, green and blue. moya turns them into the
+picture's colour as it adds the sample to the film. Colours in the scene, such as `Color`,
+become spectra first.
 
-## The ray-trace hider
+## Grain and how it falls
 
-The ray-trace hider casts a ray from the camera through each sample. It finds the nearest surface
-the ray meets and shades that point. If the surface is translucent, the ray goes on through it,
-and moya composites what it passes through front to back.
+Each sample is a guess at the pixel's light, and the mean of many guesses is the pixel. The
+grain is how far the mean of the samples taken so far lies from the true value.
 
-- It shades only points the camera sees, once for each sample that sees them.
-- It meets spheres exactly, and curves as ribbons, without cutting either into micropolygons.
-- It can add samples where a pixel is noisy, through `PixelVariance`.
-- It dices a displaced polygon into a fixed grid, 64 by 64, before it traces it.
-
-## Shadows and traced rays
-
-Both hiders answer a shader's `trace()` and `transmission()` from one store of the scene's
-geometry.
-
-- `transmission()` casts a shadow ray. Each object it passes lets through one minus its opacity.
-  It does not run that object's shader.
-- `trace()` casts a ray and shades what it meets. A traced ray can trace again, up to the depth
-  `Option "trace" "maxdepth"` sets. Past it, the ray returns the background.
+- The grain falls with the square root of the number of samples. Four times the samples halves
+  it.
+- A scene of small lights, glossy surfaces or light that bounces many times is grainier than one
+  lit by a broad sky.
+- The random numbers depend only on the pixel and the sample, so a render is the same on every
+  run. An animation shows the same grain pattern in every frame where nothing moves.
+- [Quality.md](Quality.md) lists the settings that trade time for grain: samples, adaptive
+  sampling, bounces and denoising.
 
 ## Sampling and filtering
 
-- moya takes `PixelSamples` samples in each pixel, each at a random place in its own cell of a
-  grid over the pixel.
-- The random places depend only on the pixel's position. The same scene renders to the same
-  image on every run. An animation shows the same noise pattern in every frame.
-- The pixel filter blends each sample into every pixel whose centre is near enough. A wider
-  filter gives a softer picture.
-- Each sample counts toward a pixel's coverage when it meets a surface. The `background` imager
-  fills the part of each pixel the scene left uncovered.
+- Each sample lands at a point in its pixel drawn by the pixel filter, and counts toward that
+  pixel alone.
+- A wider filter gives a softer picture.
+- A sample covers its pixel when its camera ray meets something. The pixel's alpha is the share
+  of its samples that cover it.

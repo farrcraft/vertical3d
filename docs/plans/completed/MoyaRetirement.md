@@ -1,7 +1,7 @@
 # Moya Retirement — One Core for Every Render
 
 Drafted 2026-11-15 against `376b408a`. This plan takes up section 7 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md#7-the-retirement). When it closes, the path
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md#7-the-retirement). When it closes, the path
 tracer is moya's only renderer. Every RIB scene moya reads renders through the scene client and
 the new core, and RI's built-in shaders become materials and lights. The editor's render view and
 its batches render through the new core. The reyes hider, the ray hider, the old graphics state,
@@ -11,12 +11,12 @@ fixtures and documents that describe them.
 The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its first six plans are
 ADR-0195 to ADR-0216 and ADR-0222 to ADR-0235, all accepted. This plan follows three of them:
 
-* [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-alone.md): the old hiders and
+* [ADR-0186](../../adr/offline/0186-offline-moya-renders-by-path-tracing-alone.md): the old hiders and
   the shading language are retired with no compatibility mode. A shader written in RSL stops
   working, and RIB stays as one way to describe a scene.
-* [ADR-0188](../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): the retained
+* [ADR-0188](../../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): the retained
   scene is moya's API, and RIB and the editor are its clients.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
   gives one picture on every run, so the editor's render of a scene and moya.exe's render of the
   same scene can be compared byte for byte.
 
@@ -48,7 +48,7 @@ The tree was read at `376b408a`.
 **The two RIB handlers:**
 
 * **The reader recognises a fixed set of requests**, and reports any other once by name
-  ([Rib.md](../offline/Rib.md)). `Atmosphere`, `Interior`, `Exterior`, the patches, `Blobby`,
+  ([Rib.md](../../offline/Rib.md)). `Atmosphere`, `Interior`, `Exterior`, the patches, `Blobby`,
   `Procedural`, `ReadArchive` and `Bound` reach neither handler.
 * **`RIBHandler` drives the old graphics state** and the two hiders, and shades through the
   shading language. It draws no point, no quadric but the sphere, no subdivision mesh and no
@@ -172,7 +172,7 @@ chooses among the options before the record is drafted.
 | [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | done |
 | [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | done |
 | [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | done |
-| [18](#step-18--the-documents) | The documents | `docs` | — | open |
+| [18](#step-18--the-documents) | The documents | `docs` | — | done |
 
 ## What blocks what
 
@@ -250,7 +250,7 @@ reported once, or a refusal of the scene. It settles how `Os` meets OpenPBR's
 `defaultsurface`, which RI defines as a matte of its own.
 
 **Drafted** as
-[ADR-0236](../adr/offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md): each
+[ADR-0236](../../adr/offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md): each
 built-in is a MaterialX node definition of RI's parameters and defaults, with a graph onto OpenPBR
 Surface, as moya already turns Standard Surface, UsdPreviewSurface and glTF PBR onto it. A
 surface of language `ri` compiles to the definition its name finds on the shader search path,
@@ -291,11 +291,11 @@ The research added a fourth option for the ambient light: a dome of constant rad
 shadow link names no instance, which the scene already expresses.
 
 **Drafted** as two records, one decision each.
-[ADR-0237](../adr/offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md): an ambient
+[ADR-0237](../../adr/offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md): an ambient
 light is a dome of constant radiance whose shadow link names no instance, and camera rays do not
 see it. On a diffuse surface it gives RI's ambient term, and it stays a light the integrator
 samples.
-[ADR-0238](../adr/offline/0238-offline-a-background-is-composited-when-an-output-is-written.md):
+[ADR-0238](../../adr/offline/0238-offline-a-background-is-composited-when-an-output-is-written.md):
 a background composites an output's beauty over its colour when the output is written, and sets
 its alpha to one. `Imager "background"` and RenderMan's `DisplayFilter
 "PxrBackgroundDisplayFilter"` both name it, and any other imager or display filter is reported
@@ -306,7 +306,7 @@ as any other RSL light is.
 
 **The question.** Whether moya keeps RI's C entry points in `ri/RenderMan.cxx`, and what they
 drive once `RIBHandler` is gone. They are an adapter over a `rib::Handler`, so the scene client
-can take its place. The C interface cannot instance an object, as [TODO.md](../TODO.md) records.
+can take its place. The C interface cannot instance an object, as [TODO.md](../../TODO.md) records.
 
 **The options:**
 
@@ -319,7 +319,7 @@ can take its place. The C interface cannot instance an object, as [TODO.md](../T
 
 The record also settles where `RenderMan.h` lives if it stays, since it is moya's only C header.
 
-**Drafted** as [ADR-0239](../adr/offline/0239-offline-ris-c-interface-is-retired.md): RI's C
+**Drafted** as [ADR-0239](../../adr/offline/0239-offline-ris-c-interface-is-retired.md): RI's C
 entry points are deleted, with the converter and the stack of handlers. Nothing outside their own
 tests calls them, and they have C++ linkage, so no C program links them now. moya's API is the
 retained scene, and a C interface over it, if one is needed, is a decision of its own.
@@ -344,7 +344,7 @@ RIB requests name. The editor writes RIB through it, and links libmoya as well.
 The record also settles whether ADR-0022 is amended or superseded, and how the rename moves the
 fuzzer, the tests and the editor's includes.
 
-**Drafted** as [ADR-0240](../adr/offline/0240-offline-rib-is-a-library-of-its-own.md): RIB is
+**Drafted** as [ADR-0240](../../adr/offline/0240-offline-rib-is-a-library-of-its-own.md): RIB is
 `api/rib`, built as `v3dlib_rib` in `v3d::rib`, with the reader, writer, recorder, requests and
 their lexer. A pixel filter is named by RI's name, and its weights move to moya's film. It
 supersedes ADR-0022.
@@ -373,7 +373,7 @@ the mean of the node's `Os` alone, since a primvar read would leave every surfac
 reference render held within its errors as `matte` moved onto OpenPBR. Each scene description
 gained `shaderSearchPath`. The cases that set a gathered material's closures now start from a
 material of closures, and the BSDF's colour cases read OpenPBR's base. A `Displacement` found as
-a document on the search path is not built, and is in [TODO.md](../TODO.md#offline-rendering).
+a document on the search path is not built, and is in [TODO.md](../../TODO.md#offline-rendering).
 
 ### Step 6 — Ambient light and the background
 
@@ -402,7 +402,7 @@ twelve with an ambient light were made again, since the dome shifts every later 
 ### Step 7 — Every request the old handler read
 
 Every request and parameter `RIBHandler` reads has a stated behaviour in the scene client:
-read, reported once, or passed over by a rule [Rib.md](../offline/Rib.md) states.
+read, reported once, or passed over by a rule [Rib.md](../../offline/Rib.md) states.
 
 * **`Hider`.** `"raytrace"` and `"hidden"` are RI's and RenderMan's names for the renderer's
   default, and are read with no report. Any other name is reported once.
@@ -423,7 +423,7 @@ cases of `RIBCameraTest`, `RIBGeometryTest`, `RIBOutputTest` and `RIBStateTest` 
 request means, rather than how the old hiders draw it, move to the scene client's suite.
 
 **Done.** `Hider`, `ShadingRate`, `Option "trace" "maxdepth"`, the parameters passed over by
-rule and the reports of every other parameter are done, and [Rib.md](../offline/Rib.md) states
+rule and the reports of every other parameter are done, and [Rib.md](../../offline/Rib.md) states
 them. A declaration of an array in a parameter's name, such as `"int bucketsize[2]"`, is not read
 by the reader, so RI's standard declarations are used.
 
@@ -468,7 +468,7 @@ surfaces on the shader search path, and `reference-displaced.rib` is a subdivisi
 The brighter case doubles RI's `constant` colour too, the only light of four scenes.
 
 RI's `constant` surfaces seen from behind rendered black, since a triangle emitted from its
-front alone. [ADR-0241](../adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
+front alone. [ADR-0241](../../adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
 has RI's `Sides` decide: the reader reads it, the scene client sets an instance's new
 `doubleSided`, and an emitting material on a two-sided instance emits from both faces. Every
 scene description gained `doubleSided`. The 19 PNGs and the three old reference suites are
@@ -531,7 +531,7 @@ is `output::displayed()` of the snapshot, composited over the first output's bac
 names one, as a PNG output is written. A render of a cube and a batch's moya.exe render of its
 export give the same bytes. The editor and its suite now carry moya's CPU libraries and
 MaterialX's standard libraries beside them, as moya.exe does. The render settings' hider changes
-nothing now, and [Rendering.md](../editor/Rendering.md) and the editor manual's rendering page say
+nothing now, and [Rendering.md](../../editor/Rendering.md) and the editor manual's rendering page say
 so until step 11 removes it.
 
 ### Step 11 — The editor's batch, export and settings
@@ -540,7 +540,7 @@ so until step 11 removes it.
 * **The RIB export writes no `Hider`.**
 * **The render settings lose the hider.** The settings editor drops its list. A document that
   holds `render_hider` loads, and the key is read and passed over. The document needs no new
-  version if [Files.md](../editor/Files.md#scene-documents) allows a key to be passed over at
+  version if [Files.md](../../editor/Files.md#scene-documents) allows a key to be passed over at
   every version. Otherwise the step takes the next schema version after the editor scripting
   plan's.
 * **The samples along each side** stay as they are, and reach moya through `PixelSamples`.
@@ -554,7 +554,7 @@ the RIB export writes no `Hider`. The store reads the meta table by a list of ke
 outside the list is passed over at every version. `render_hider` left the list, and a document
 that holds it loads at its own version, whatever it names, where one that named another hider
 was refused. No new schema version is needed. A document the editor saves whole drops the row,
-and one it saves in part keeps it, passed over. [Files.md](../editor/Files.md) now names the
+and one it saves in part keeps it, passed over. [Files.md](../../editor/Files.md) now names the
 render settings' keys and the rule.
 
 ### Step 12 — The shipped scenes and the manual's pictures
@@ -574,14 +574,14 @@ Displacement.md still show until step 18. `ripple` needed what ADR-0236 decided 
 out: an RI displacement now takes `ND_ri_<shader>_displacementshader` from the shader search
 path, and its graph is flattened into the network. The panel it ripples is a subdivision
 surface. The stripes run across a panel with its own `st`, since a quadric has none in the new
-core, which [TODO.md](../TODO.md) records. The four pictures were made again. `pictures.ts` and
+core, which [TODO.md](../../TODO.md) records. The four pictures were made again. `pictures.ts` and
 the install job needed no change.
 
 `test-scene-01.rib` rendered black: RI's default surface is a matte now, and the scene had no
 light, so it gained a distant light and an ambient one. In `raytrace-scene.rib` the glass lost
 its `Opacity`, which the old ray hider read only as a shadow's and the new core reads as a cut.
 Its metal sparkled under the ambient light, which only a light sample finds, so the scene lights
-its sky with `PxrDomeLight`, and [Rib.md](../offline/Rib.md) states why.
+its sky with `PxrDomeLight`, and [Rib.md](../../offline/Rib.md) states why.
 
 ### Step 13 — Tests on the new core alone
 
@@ -623,8 +623,8 @@ same scene description as its RIB.
 library's `rib/Arguments`, which typed the C interface's arrays, goes with its test, since nothing
 else read it. The TODO.md entry on `RiObjectBegin` is deleted, as the record says. libmoya
 compiles with C4100 and `-Wunused-parameter` back on, and `readability-non-const-parameter` is
-checked across the tree again with no finding. [Rib.md](../offline/Rib.md), the offline README and
-[RunningAndTesting.md](../offline/RunningAndTesting.md) no longer describe the C interface, and
+checked across the tree again with no finding. [Rib.md](../../offline/Rib.md), the offline README and
+[RunningAndTesting.md](../../offline/RunningAndTesting.md) no longer describe the C interface, and
 the changelog names its removal. ADR-0025 still names `RenderMan.h`, and is step 17's.
 
 The tree-wide clang-tidy pass also found what steps 5 to 13 had left. `SceneWorldTest` failed to
@@ -702,31 +702,44 @@ ADR-0240. The roadmap names the records as they stand.
 
 ### Step 18 — The documents
 
-* **Deleted:** [Reyes.md](../offline/Reyes.md), [RayTracing.md](../offline/RayTracing.md) and
-  [ShadingLanguage.md](../offline/ShadingLanguage.md). Any rule in
-  [CamerasAndSampling.md](../offline/CamerasAndSampling.md) that the new core keeps, RI's camera
+* **Deleted:** `docs/offline/Reyes.md`, `RayTracing.md` and `ShadingLanguage.md`. Any rule in
+  `CamerasAndSampling.md` that the new core keeps, RI's camera
   among them, moves to the page that owns it, and the page is deleted.
-* **[The offline README](../offline/README.md)** describes one renderer: its glossary, its
+* **[The offline README](../../offline/README.md)** describes one renderer: its glossary, its
   pipeline from RIB to the scene to the pictures, and what is not built.
-* **[RunningAndTesting.md](../offline/RunningAndTesting.md)** and **[Rib.md](../offline/Rib.md)**
+* **[RunningAndTesting.md](../../offline/RunningAndTesting.md)** and **[Rib.md](../../offline/Rib.md)**
   describe the new core and the one handler.
 * **The moya manual** is rewritten for the path tracer. Hiders, the shading language, shaders and
   displacement shaders give way to materials, lights and displacement through MaterialX.
   `HowMoyaRenders.md`, `Quality.md` and `CommandLine.md` describe the new core.
-* **[Rendering.md](../editor/Rendering.md)** and the editor manual's rendering page describe the
+* **[Rendering.md](../../editor/Rendering.md)** and the editor manual's rendering page describe the
   new core behind the render view and the batch, and settings with no hider.
-* **[Testing.md](../contributing/Testing.md)** names the references that replace the PNGs.
+* **[Testing.md](../../contributing/Testing.md)** names the references that replace the PNGs.
 * **`docs/SUMMARY.md`**, the root README, `moya/README.md`, the offline library's README,
   `GettingStarted.md` and the Flatpak's metainfo follow.
 * **The changelog** says the old hiders and the shading language are gone.
 * **The roadmap's section 7** links here, and says so when this plan closes. Its section on what
   carries over and what is retired is brought up to date.
 
+**Done.** The four offline pages are deleted. The rules of `CamerasAndSampling.md` that moya
+keeps moved to [Scene.md](../../offline/Scene.md) for the camera's and the options' defaults,
+[Rib.md](../../offline/Rib.md) for the limits of `Format`, `PixelSamples`, `PixelFilter` and
+`DepthOfField`, and [Traversal.md](../../offline/Traversal.md) for the lens. The offline README has
+a glossary, the pipeline, the parts and what is not built, and its table lists every page. Rib.md
+and RunningAndTesting.md describe the scene client alone, and every offline page says moya where
+it said the new core. The manual's `Hiders.md` and `ShadingLanguage.md` are deleted, with the
+two `.sl` files beside its scenes. `Shaders.md` is [Materials.md](../../manual/moya/Materials.md),
+and the other pages describe the path tracer. The manual's four pictures are kept, since step 12
+made them through the path tracer. The editor's pages, Testing.md, the READMEs,
+`GettingStarted.md`, the metainfo, the summary, the changelog and the roadmap follow. The
+superseded records that named a deleted page no longer name a document, and ADR-0195 and the
+roadmap link the README's section on the parts.
+
 ---
 
 ## Working beside the editor scripting plan
 
-[EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan
 takes 0236 to 0240.
 
 | Shared ground | This plan changes it in | The editor scripting plan changes it in |

@@ -1,6 +1,6 @@
 # Lights
 
-This page is for anyone changing how moya's new core places lights and what they emit. The
+This page is for anyone changing how moya places lights and what they emit. The
 kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
 host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
 shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point

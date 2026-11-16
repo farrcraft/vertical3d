@@ -5,7 +5,6 @@
 **Tags**: offline
 **Amended by**: ADR-0113, ADR-0114
 **Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
-**Documented in**: [offline/ShadingLanguage.md](../../offline/ShadingLanguage.md)
 
 ## Context
 

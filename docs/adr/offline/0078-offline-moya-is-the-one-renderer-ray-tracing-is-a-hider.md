@@ -6,7 +6,6 @@
 **Amends**: [ADR-0022](0022-offline-shared-library-with-no-vulkan.md)
 **Supersedes**: [ADR-0077](0077-offline-one-shared-ray-tracer.md)
 **Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
-**Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
 
 ## Context
 

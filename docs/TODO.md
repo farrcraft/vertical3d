@@ -58,15 +58,15 @@ parameter one value per face of a polygon mesh or subdivision mesh, so a uniform
 [] **Drift: a class's definitions spread over files named for something else.** Conventions.md
 "Size" asks for a class to be split rather than spread. `Eraser` is defined in
 `api/script/internal/EraserExpressions.cxx` and `EraserTypes.cxx`, `ui::Immediate` in the
-`api/ui/Immediate*.cpp` files, `sl::runtime::Machine` in `sl/runtime/Library.cxx`, and the
-editor's controller and area layout in `vertical3d/src/ControllerWindows.cxx` and
-`view/AreaLayout.cxx`. Some may be nested classes, which the rule allows.
+`api/ui/Immediate*.cpp` files, and the editor's controller and area layout in
+`vertical3d/src/ControllerWindows.cxx` and `view/AreaLayout.cxx`. Some may be nested classes,
+which the rule allows.
 
 ## Offline rendering
 
 Open work on moya. [offline/](offline/README.md) describes it.
 
-[] **The new core's CPU traversal is several times slower than Embree's.** On a million
+[] **moya's CPU traversal is several times slower than Embree's.** On a million
 triangles `moya_bench` traces 11 to 12.5 million rays a second. Embree's paper gives 38 to 59
 million on an older processor with half the cores. The build with spatial splits is five to
 seven times slower. Most of a ray's cost does not grow with the scene: 32 triangles
@@ -135,7 +135,7 @@ than its own noise would allow. A channel's own error, kept by the film for the 
 compares, would hold each to its own noise.
 
 [] **A quadric has no `st`.** RI gives each quadric parametric coordinates, `s` around it and
-`t` along it, which a pattern or a texture reads. The new core holds a quadric's constant and
+`t` along it, which a pattern or a texture reads. moya holds a quadric's constant and
 uniform primvars alone, so a node that reads `st` on a sphere reads nothing, and a striped or
 textured sphere renders in its plain colour. A quadric hit needs to give its `st` from the
 angle and height it was hit at, as RI defines them for each quadric.

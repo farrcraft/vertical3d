@@ -82,12 +82,10 @@ A batch renders one frame at a time. Its frames are independent files, and could
 moya.exe processes at once. The number of processes is a setting of the batch. Stop stops all
 of them, and the status counts frames from every process.
 
-The reyes and ray hiders run on one thread, so a process for each core uses the machine.
-[The moya rebuild](MoyaRebuild.md) is replacing that core. The new core's CPU device takes
-every thread by default, so a process for each core would give each process every thread.
-moya.exe therefore needs an option for its thread count, and the batch gives each process a
-share. A GPU is held by one process, so frames on a GPU share it rather than run beside each
-other.
+moya's CPU device takes every thread by default, so a process for each core would give each
+process every thread. moya.exe therefore needs an option for its thread count, and the batch
+gives each process a share. A GPU is held by one process, so frames on a GPU share it rather
+than run beside each other.
 
 ## The order
 

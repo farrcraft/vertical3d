@@ -95,7 +95,7 @@ end of the file.
 | Level | Means |
 |---|---|
 | `[info]` | How long the render took: `rendered 320 by 240 pixels in 5.570 s` |
-| `[warning]` | Something in the scene moya skipped or changed, such as an unknown request, a parameter with no type, or a shader moya does not have |
+| `[warning]` | Something in the scene moya skipped or changed, such as an unknown request, a parameter with no type, or a surface moya does not have |
 | `[error]` | Something that failed, such as a picture that could not be written |
 | `[debug]` | Detail, such as which file a texture was read from |
 

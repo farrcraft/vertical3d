@@ -1,7 +1,8 @@
 # Rendering
 
 How to render the scene with moya, change what a render is made with, and render every frame of
-the animation to files. moya is the renderer that comes with Vertical3D, and
+the animation to files. moya is the renderer that comes with Vertical3D. It renders by path
+tracing, which follows random paths of light from the camera into the scene.
 [offline/](../../offline/README.md) describes it.
 
 ## Choose the camera

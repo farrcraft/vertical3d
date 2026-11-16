@@ -1,6 +1,6 @@
 # Materials
 
-This page is for anyone changing how moya's new core shades a surface by its material. It covers
+This page is for anyone changing how moya shades a surface by its material. It covers
 how the gather reads a material and compiles it into a node program, the BSDF library the program
 feeds, and how OpenPBR's layers are arranged in it. The host side is in `moya/libmoya/material/`,
 in the namespace `v3d::moya::material`. The kernel side is in `moya/libmoya/kernel/program/` and
@@ -106,11 +106,10 @@ equal to it.
   `<shader>.mtlx` in the first directory of the options' `shaderSearchPath` that holds one. It
   holds `ND_ri_<shader>_surfaceshader` and its translation, `ND_ri_<shader>_to_open_pbr_surface`,
   with a node graph that implements the translation, as moya's own built-ins are written. Its
-  definitions are read before the libraries', so one of a built-in's name takes its place, as a
-  `.sl` file of a built-in's name once did. An empty search path names no document, and a document
-  MaterialX cannot read is reported.
+  definitions are read before the libraries', so one of a built-in's name takes its place. An
+  empty search path names no document, and a document MaterialX cannot read is reported.
 - **A shader neither defines shades as `matte`**, and is reported once by name. Its own
-  parameters are not reported. A shader written in the shading language is such a shader.
+  parameters are not reported.
 - **`Kd` weighs the base and `Ks` the specular layer.** `Ka` is taken and not used, because the
   integrator gathers every light.
 - **The colour is the geometry's `Cs` primvar**, or the node's `Cs` where the geometry has none, as

@@ -1,6 +1,6 @@
 # Compositing
 
-This page is for anyone changing or using what moya's new core writes for a compositor beyond
+This page is for anyone changing or using what moya writes for a compositor beyond
 the beauty: light path expressions, light groups, Cryptomatte and deep files. A scene asks for
 each through its `channel` and `output` objects, as [Scene.md](Scene.md) describes. A RIB file
 asks through `DisplayChannel`, `Display` and `PxrCryptomatte`, as [Rib.md](Rib.md) describes.

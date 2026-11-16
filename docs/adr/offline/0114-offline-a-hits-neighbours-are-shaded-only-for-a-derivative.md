@@ -5,7 +5,6 @@
 **Tags**: offline
 **Amends**: ADR-0093
 **Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
-**Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
 
 ## Context
 

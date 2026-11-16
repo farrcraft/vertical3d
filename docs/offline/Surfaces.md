@@ -1,6 +1,6 @@
 # Surfaces
 
-This page is for anyone changing how moya's new core turns a hit into the point a path shades.
+This page is for anyone changing how moya turns a hit into the point a path shades.
 The kernel side is in `moya/libmoya/kernel/surface/`, in the namespace `v3d::moya::kernel::surface`.
 The host side is `geometry::Surfaces`, in `moya/libmoya/geometry/`. [Traversal.md](Traversal.md)
 covers the hits, and [Geometry.md](Geometry.md) the geometry they are met on.

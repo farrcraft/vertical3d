@@ -1,6 +1,6 @@
 # Output
 
-This page is for anyone changing how moya's new core writes its pictures to files and shows
+This page is for anyone changing how moya writes its pictures to files and shows
 them on a display. The code is
 host code, in `moya/libmoya/output/` and the namespace `v3d::moya::output`. It writes a film's
 snapshot, which [The film](Film.md) describes.
@@ -83,7 +83,7 @@ A render denoises its beauty, and each channel the scene marks, after its last p
 OIDN's `RT` filter on its CPU device, in `denoise::denoise()`.
 
 - **What is denoised.** The beauty is denoised while the options' `denoise` is 1, or under
-  `moya --paths --denoise`. A channel is denoised while its own `denoise` is 1, which suits a
+  `moya --denoise`. A channel is denoised while its own `denoise` is 1, which suits a
   light path expression or a light group.
 - **A denoised copy sits beside its noisy original.** The beauty's is the channel
   `beauty_denoised`, and a channel's is its name followed by `_denoised`, both of ACEScg's three

@@ -1,6 +1,6 @@
 # The sampler
 
-This page is for anyone changing how moya's new core draws the random numbers a path uses. The
+This page is for anyone changing how moya draws the random numbers a path uses. The
 code is kernel code, in `moya/libmoya/kernel/sample/` and the namespace
 `v3d::moya::kernel::sample`.
 

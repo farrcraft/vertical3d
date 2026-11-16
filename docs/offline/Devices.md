@@ -1,6 +1,6 @@
 # Devices
 
-This page is for anyone changing how moya's new core holds memory or runs kernel code. A device
+This page is for anyone changing how moya holds memory or runs kernel code. A device
 is a processor moya renders on: the CPU now, and one kind of GPU for each back end added later.
 The device layer is host code, in `moya/libmoya/device/` and the namespace `v3d::moya::device`.
 [Kernel.md](Kernel.md) covers the kernel code a device runs.

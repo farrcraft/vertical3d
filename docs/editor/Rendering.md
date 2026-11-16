@@ -57,7 +57,9 @@ file stands between the render and its picture.
   makes any more is removed. An update that changes nothing commits nothing.
 
 **A batch writes files and runs moya.exe.** `Batch` writes one RIB file per frame per camera,
-then runs `moya.exe` on each in turn on a thread of its own. The files stay, so a farm or another
+then runs `moya.exe --file <job>.rib --silent` on each in turn on a thread of its own. moya.exe
+renders each by path tracing and writes the PNG the file's `Display` names. A frame is rendered
+when moya.exe ends with 0 and its PNG exists. The files stay, so a farm or another
 RenderMan renderer can render them instead. `runProgram()` in `src/render/Process.h` starts the
 program, waits for it, and ends it when a stop is asked for.
 

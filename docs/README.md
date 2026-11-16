@@ -13,7 +13,7 @@ says which kind each page is.
 |---|---|
 | [manual/Install.md](manual/Install.md) | Installing a release on Windows or Linux, where the apps keep your files, and building from source |
 | [manual/editor/](manual/editor/README.md) | Modelling, the scene, animating, rendering, projects, the workspace, the menus and the key bindings |
-| [manual/moya/](manual/moya/README.md) | Rendering a RIB scene: hiders, lights, shaders, the camera, output and quality, the command line, RIB and the shading language |
+| [manual/moya/](manual/moya/README.md) | Rendering a RIB scene by path tracing: materials, lights, displacement, the camera, output and quality, the command line and RIB |
 
 ## Working in this repository
 
@@ -57,7 +57,7 @@ For anyone working inside a library rather than using it.
 | Document | Covers |
 |---|---|
 | [internals/](internals/README.md) | How `api/render/realtime` and `api/ui` work inside |
-| [offline/](offline/README.md) | moya and `api/rib`: RIB, the scene, the path tracer, the film |
+| [offline/](offline/README.md) | moya and `api/rib`: RIB, the scene, the path tracer, the film, materials, lights and output |
 
 ## The applications
 

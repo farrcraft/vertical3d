@@ -1,6 +1,6 @@
 # The film
 
-This page is for anyone changing how moya's new core places camera samples and adds them to a
+This page is for anyone changing how moya places camera samples and adds them to a
 picture. The host side is in `moya/libmoya/film/`, in the namespace `v3d::moya::film`. The
 kernel side is in `moya/libmoya/kernel/film/`, in `v3d::moya::kernel::film`.
 

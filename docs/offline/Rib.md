@@ -51,10 +51,15 @@ the reader and the handler.
 - **RenderMan's `reference` may come before a declaration's type**, as in
   `"reference color base_color"`. A reference names another node's output in place of a value, so
   its values are strings whatever its type, and it is written back as `uniform reference color`.
-- **A shader, light or space with an empty name names nothing.** `RIBHandler` ignores the
-  request, and the state stays as it was.
-- **A predefined space cannot be saved over.** The camera sets them, so the hiders read the
-  camera the scene set up. `RiCoordinateSystem` with one of them is logged and saves nothing.
+- **A shader, light or space with an empty name names nothing.** The scene client passes over a
+  `Surface`, `Displacement`, `LightSource`, `Light` or `CoordinateSystem` of no name, and a
+  `Pattern` or `Bxdf` of no type, and the state stays as it was. An `AreaLightSource` of no name
+  ends the area light in force.
+- **A picture side is from 1 to 65536 pixels**, `largestResolution` in
+  [Sampling.h](../../api/rib/Sampling.h). The reader skips a `Format` whose side is not finite,
+  lies between 0 and 1, or is above that, and logs it. A side of zero or less reaches the handler
+  as 0, which asks for the renderer's default for that side. A side's fraction is dropped. A
+  pixel aspect that is not a positive finite number reaches the handler as 1, square pixels.
 - **A quadric's varying and facevarying parameters hold four values**, one at each corner of its
   parameter space, as RI defines them. A uniform one holds one. The reader reads the seven
   quadrics alike.
@@ -75,36 +80,36 @@ the reader and the handler.
   later RIB writes a string.
 - **An object holds geometry alone.** `ObjectBegin` to `ObjectEnd` marks the geometry an
   `ObjectInstance` places, with the attributes and transformation in force where it is placed.
-  `RIBHandler` does not instance, so it leaves out the geometry inside an object, as RI leaves it
-  out where it is declared, and logs the first object.
-- **`RIBHandler` logs each request its hiders do not draw**, once per name: `Points`, the quadrics
-  but `Sphere`, `SubdivisionMesh`, `ObjectBegin` and `Light`. The handler's empty bodies accept
-  them, so another handler sees each one.
 - **RenderMan's `Light` reaches `Handler::light()`**, with its shader, its handle and its
-  parameters, as `LightSource` does. RI's shading language has no such lights, so the default
-  body ignores it. The writer and the recorder carry it.
-- **A `PixelFilter` name the reader does not recognise never reaches the handler.** A
-  `PixelSamples` rate reaches the handler as a count of at least one. `DepthOfField` with no
-  arguments is sent as an infinite fstop.
-- **`Attribute "displacementbound"` is kept in camera space**, scaled by the largest stretch of
-  the axes of the space it was given in.
+  parameters, as `LightSource` does. The default body ignores it. The writer and the recorder
+  carry it.
+- **A `PixelFilter` the reader cannot use never reaches the handler.** A name it does not
+  recognise is logged once, and a width that is not positive and finite on each axis is logged.
+  The filter in force stays.
+- **A `PixelSamples` rate reaches the handler as a count along each axis**, from 1 to 256,
+  `maximumSamples` in [Sampling.h](../../api/rib/Sampling.h). A rate below one, or one that is
+  not a number, is one sample, and a rate above 256 is 256.
+- **`DepthOfField` with no arguments is sent as an infinite fstop**, a pinhole.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
-  `Handler::areaLightSource`. moya overrides it.
-- **A primitive repeated inside a motion block is a deformation, which moya does not build.**
-  The reader hands the later poses to `Handler::deformation()`, which returns null unless a
-  renderer overrides it, and lists them in `Reader::unsupported()`.
-- **A polygon's `"st"` is carried by both hiders.** A traced triangle weights its corners' values
-  by its barycentric coordinates. A triangle given none has `s` and `t` equal to those
-  coordinates. The reyes hider interpolates `"st"` across a grid, as it does `"Cs"`, and carries
-  both through a split. A grid whose corners have none uses its own parameters.
+  `Handler::areaLightSource`. The scene client overrides it.
+- **A primitive repeated inside a motion block is a deformation.** The reader hands the later
+  poses to `Handler::deformation()`. That returns null unless a handler overrides it, and the
+  reader then drops the poses and lists them in `Reader::unsupported()`. The scene client
+  overrides it.
 
 ### The scene client
 
-`moya::ri::SceneClient` fills the new core's scene from RI requests, beside `RIBHandler`, which
-drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fills.
+`moya::ri::SceneClient` is the handler moya reads RIB through. It fills moya's scene from RI
+requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the scene it fills.
 
 - **The options and the camera are made with the client**, named `options` and `camera`, so a
-  scene that names neither has RI's defaults. The frame's requests set their parameters.
+  scene that names neither has RI's defaults. The frame's requests set their parameters. The
+  camera is built from those parameters when the scene renders, so the frame's requests may come
+  in any order.
+- **`Format` sets the options' `resolution` and `pixelAspect`.** A side of 0 is 320 for the width
+  and 240 for the height. `resolution()` sets the size before the scene is read, and each
+  `Format` then sets the pixel aspect alone. It refuses a side below 1 or above 65536, and then
+  changes nothing.
   `PixelSamples` sets the samples per pixel to its two counts multiplied, and `PixelVariance`
   sets the options' `noiseThreshold`. `CropWindow` sets the options' `crop`, which renders the
   window of the image RI's crop window names, as
@@ -157,7 +162,8 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
 - **A primitive repeated inside a motion block deforms.** Each later pose adds a sample, at the
   block's next time, to each parameter of the first pose's prototype that may move. A pose whose
   points differ in number keeps the first pose alone, and is logged.
-- **A primitive outside the world is not drawn**, and the first is logged.
+- **A primitive outside the world is not drawn**, and the first is logged. A light outside the
+  world makes no light, and the first is logged too.
 - **The material is made when a geometry needs one**, from the attribute state's `Surface`,
   `Displacement`, `Color` and `Opacity`. Each shader is a node of language `ri` with its
   parameters as inputs, and the colour and opacity are the surface node's `Cs` and `Os`. The
@@ -271,7 +277,7 @@ drives the reyes and ray hiders. [Scene.md](Scene.md) describes the scene it fil
   decides which faces an emitting material emits from, and hides no face from the camera.
 - **Some parameters are passed over by rule.** `Option "limits"`'s `bucketsize` and `gridsize`
   are. `Attribute "trace" "bias"` is too, since a
-  ray leaving a surface starts off it by the core's own rule. `Attribute "light" "nsamples"` is
+  ray leaving a surface starts off it by moya's own rule. `Attribute "light" "nsamples"` is
   too, since a path samples one light at each bounce.
 - **Every other parameter of an `Option`, an `Attribute`, a `Hider` or a `Display` that the client
   does not read is logged once** by its request, its name and the parameter's name, and changes

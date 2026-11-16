@@ -1,26 +1,48 @@
 # Control quality and speed
 
-Each setting here trades render time for a smoother picture. Set them before `WorldBegin`,
-except `ShadingRate` and the light samples, which belong to each object.
+moya renders by path tracing. Each sample of a pixel follows one path of light through the
+scene, and the pixel is the mean of its samples. A few samples give a grainy picture, and more
+samples give a smoother one. Each setting here trades render time for less grain. Set them
+before `WorldBegin`.
 
-A render is the same on every run. moya places each pixel's samples by the pixel's position,
-so the noise in a picture does not change from one run to the next.
+A render is the same on every run. moya draws each sample's random numbers from the pixel and the
+sample alone, so the grain does not change from one run to the next, or with the number of
+threads.
 
 ## Pixel samples
 
 ```
-PixelSamples 4 4
+PixelSamples 8 8
 ```
 
-- moya decides what is seen at several points in each pixel, called samples, and blends them
-  into the pixel's colour. `PixelSamples x y` takes x by y samples per pixel.
-- The default is 2 by 2. A scene that names none is smoothed at its edges, and takes four times
-  as long as one sample per pixel.
-- More samples smooth edges, depth of field, motion blur and soft shadows. The time grows with
-  the number of samples.
-- A count below 1 is taken as 1, and one above 256 as 256.
-- Each sample is placed at random inside its own cell of an x by y grid over the pixel. With one
-  sample along an axis, it is at the pixel's centre.
+- `PixelSamples x y` takes x times y samples in each pixel. moya spreads them over the pixel
+  in its own pattern, so only the product counts.
+- The count is rounded up to a power of two. `PixelSamples 6 6` takes 64 samples.
+- The default is 2 by 2, which is grainy. 64 samples suit a test, and a few hundred a finished
+  picture of soft light.
+- Each axis is from 1 to 256. A count below 1 is taken as 1, and one above 256 as 256.
+- The time grows with the number of samples. Doubling the samples takes twice as long, and
+  reduces the grain by about a third.
+- More samples smooth edges, soft shadows, depth of field, motion blur and glossy reflections
+  together.
+
+## Adaptive sampling
+
+```
+PixelSamples 32 32
+PixelVariance 0.02
+```
+
+`PixelVariance` stops sampling each pixel once its grain falls below the value. `PixelSamples`
+is then the most samples a pixel takes. A smooth wall stops early, and a soft shadow keeps
+sampling.
+
+- moya measures a pixel's grain from two halves of its samples. It compares their means, and
+  scales the difference down for a bright pixel.
+- The first check comes once a pixel holds 16 samples, and another after every 16 more.
+- A pixel stops only when its four neighbours are also below the value.
+- A smaller value takes more samples. 0 is the default, and samples every pixel to the most.
+- The render ends early when every pixel has stopped.
 
 ## Pixel filter
 
@@ -28,13 +50,12 @@ PixelSamples 4 4
 PixelFilter "gaussian" 2 2
 ```
 
-The filter sets how much each sample counts toward the pixels near it. The two numbers are its
-width and height in pixels. A sample counts toward every pixel whose centre is within half the
-width of it.
+The filter sets how much each sample counts toward its pixel, by where in the pixel it falls.
+The two numbers are its width and height in pixels.
 
 | Filter | Result |
 |---|---|
-| `"box"` | Every sample inside counts equally. `"box" 1 1` with `PixelSamples 1 1` gives one sample at each pixel centre, with no smoothing |
+| `"box"` | Every sample counts equally. `"box" 1 1` keeps each pixel's samples inside it |
 | `"triangle"` | Samples nearer the pixel's centre count more |
 | `"gaussian"` | The default, 2 by 2. Soft, with no ringing |
 | `"catmull-rom"` | Sharper than gaussian. It can ring: a thin dark or bright edge beside a sharp change |
@@ -43,71 +64,59 @@ width of it.
 A filter name moya does not recognise is reported, and the filter stays as it was. A width that is
 not above zero is skipped with a warning.
 
-## Adaptive samples (ray-trace hider)
+## Bounces
 
 ```
-PixelVariance 0.01
+Option "trace" "maxdepth" [6]
 ```
 
-Under the ray-trace hider, `PixelVariance` adds samples only where a pixel is noisy. moya takes
-another set of `PixelSamples` samples wherever the variance of the pixel's mean, in its worst
-channel, is above the value. It stops at four times the first set. A smaller value adds samples
-in more places. Zero, the default, turns it off.
+A path bounces from surface to surface until it leaves the scene or reaches a limit.
+`maxdepth` sets the most bounces in all. The default is 12.
 
-The reyes hider ignores `PixelVariance`, and always takes `PixelSamples` samples.
+- Fewer bounces render faster. A scene loses light where paths stop early: the inside of glass
+  and the light between mirrors first.
+- moya also stops a path after 4 diffuse bounces and 4 glossy ones. `maxdepth` does not change
+  those limits.
+- From the third bounce on, moya ends a path at random once it carries little light. A path
+  that survives counts for more, so the picture stays as bright on average.
+- A depth below zero is logged and not used.
 
-## Shading rate (reyes)
-
-```
-ShadingRate 0.5
-```
-
-The reyes hider cuts each surface into tiny polygons, called micropolygons, and runs the shaders
-once at each of their corners. `ShadingRate` is the area of one micropolygon, in pixels.
-
-- The default is 1, about one micropolygon per pixel.
-- A smaller rate shades more points. It shows finer detail in a shader's pattern or a
-  displacement, and takes longer.
-- A larger rate, such as 4, renders faster and blurs fine detail.
-- It belongs to each object, like a colour, so one object can be shaded more finely than the
-  rest.
-
-The ray-trace hider shades the points its rays hit, and ignores `ShadingRate`.
-
-## Grid and bucket size (reyes)
+## Denoising
 
 ```
-Option "limits" "bucketsize" [32 32] "gridsize" [64]
+Option "moya" "int denoise" [1]
 ```
 
-- `gridsize` is the number of micropolygons the reyes hider shades together, 256 by default.
-- `bucketsize` is the size in pixels of the rectangles the reyes hider renders one at a time,
-  16 by 16 by default.
-- Each size is from 1 to 65536. Any other value is reported, and the size stays as it was.
-- A smaller grid splits surfaces into more, smaller pieces before it dices them.
+moya can remove the grain from the picture after its last pass, through Intel's Open Image
+Denoise. `--denoise` on the command line does the same.
 
-## Trace depth
+- The denoised picture is the channel `beauty_denoised` of each EXR file, beside the grainy
+  picture. Open it in a compositor or an EXR viewer.
+- A PNG holds the grainy picture alone. Write an EXR file to keep the denoised one.
+- moya guides the denoiser by each pixel's surface colour and normal, so edges and textures stay
+  sharp.
+- A denoised picture smooths fine detail that too few samples left unclear. Denoise a render
+  that is nearly smooth already, such as one of 64 samples or more.
+
+## Checkpoints
+
+A long render can write a checkpoint after each pass of 16 samples, and continue from it after it
+is stopped:
 
 ```
-Option "trace" "maxdepth" [3]
+moya.exe --file scene.rib --checkpoint scene.ckpt.exr --checkpoint-interval 60
+moya.exe --file scene.rib --checkpoint scene.ckpt.exr --resume
 ```
 
-A reflection can show another reflection, and so on. `maxdepth` sets how many times a ray can
-bounce before it returns the background. The default is 2.
-
-- A depth above 16 is taken as 16, with a warning.
-- A depth that is negative or not a number is not used, with a warning.
-- A fraction is rounded down.
-
-## Area light samples
-
-`Attribute "light" "integer nsamples"` sets how many points of an area light are sampled for
-each shaded point. More samples give smoother soft shadows. [Lights.md](Lights.md#area-lights)
-describes it.
+- `--checkpoint-interval` writes it at most once a minute here, and always after the last pass.
+- `--resume` gives the same picture as a render that never stopped.
+- A checkpoint of another scene, or of the same scene changed, is refused.
+- [CommandLine.md](CommandLine.md#options) lists the rules.
 
 ## Render faster while you work
 
 - Render smaller with `--width` and `--height`, or a part of the picture with `CropWindow`
   ([Output.md](Output.md)).
-- Use `PixelSamples 1 1` until the scene is right.
+- Use `PixelSamples 4 4`, or `PixelVariance`, until the scene is right.
+- Lower `maxdepth` for a scene of diffuse surfaces.
 - Use a released moya, or a Release build. A Debug build is slower.

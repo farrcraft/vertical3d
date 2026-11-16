@@ -444,9 +444,9 @@ Background: [ADR-0054](../adr/project/0054-testing-golden-images-hold-only-spec-
 The moya suite renders scenes on the CPU and compares them with committed pictures in
 `moya/tests/data/`:
 
-- `foundation-chart.png` is rendered by the new core, from code alone, and only in a spectral
+- `foundation-chart.png` is rendered by moya, from code alone, and only in a spectral
   build.
-- `paths-*.exr` are rendered by the new core's path tracer from the `.rib` file beside each, and
+- `paths-*.exr` are rendered by moya's path tracer from the `.rib` file beside each, and
   only in a spectral build. They cover a furnace, a room under a dome, RenderMan's shaped lights,
   RI's standard lights, mesh lights, lights that `Illuminate` links, and a light that
   `paths.ies` shapes. Each holds the beauty as `R`, `G` and `B` floats and the standard error of
@@ -466,7 +466,7 @@ rounding differences between compilers. It reports the worst pixel and by how mu
 case, or a case with no reference yet, writes what it rendered to `data_out/` beside the
 executable. Copy that file over the reference to change it on purpose.
 
-Every traversal the new core has is checked against the brute-force traversal, the oracle. It
+Every traversal moya has is checked against the brute-force traversal, the oracle. It
 tests each ray against every placed primitive, so its nearest hit is right by construction. A
 case traces a fixed set of rays through both, and each ray meets the same primitive at a
 distance within a tolerance, since the two round apart.
@@ -523,7 +523,7 @@ so a case over every pixel allows more than one over a region's mean.
 - **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone
   does not rebuild the suite, so copy it into the build's `data/` while working on a scene.
 
-Each `.rib` file also has what the new core makes of it committed in `moya/tests/data/scenes/`:
+Each `.rib` file also has what moya makes of it committed in `moya/tests/data/scenes/`:
 
 - `<scene>.txt` is the scene's description, as `moya --scene` prints it. The suite reads every
   file through the scene client and compares the two exactly.
@@ -531,21 +531,19 @@ Each `.rib` file also has what the new core makes of it committed in `moya/tests
   and compares the two. Depths agree to a ten thousandth of the depth, normals to a ten
   thousandth, and what each ray met exactly. A pixel on an edge, where a neighbour's ray met
   something else, is left out, since rounding between compilers can take a ray to either side.
-- **Depth is checked against the ray hider.** Each scene that holds still and is not displaced
-  is rendered by the ray hider too, one sample at each pixel's centre whatever sampling the scene
-  names. Wherever both cover a pixel inside one surface, the hit view's depth is the ray
-  hider's to a ten thousandth. The old depth plane holds RI's screen depth on [0, 2], so the test
-  takes it back to depth along the view through the camera's clipping planes.
+- **The hit view is checked against the brute-force traversal.** Each scene's hit view is traced
+  through the brute-force traversal too. The hit view through the hierarchy matches it in every
+  channel, in every scene, but on an edge of either view.
 
 Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/` with `--file
-data/<scene>.rib`, when the new core changes what a scene makes on purpose. A material scene
+data/<scene>.rib`, when moya changes what a scene makes on purpose. A material scene
 names its MaterialX documents from there, so read from anywhere else it loses its networks.
 `--scene` writes to standard output, so its line endings are made LF before the file is
 committed.
 
 ### moya's benchmark
 
-`moya_bench` times the new core's hierarchies over fixed scenes, as
+`moya_bench` times moya's hierarchies over fixed scenes, as
 [Traversal.md](../offline/Traversal.md#speed) describes. The suite runs one short pass of it,
 `--quick` at SSE4.2, in every build and checks that each scene and each room are timed, so it
 keeps working. Its
@@ -611,4 +609,5 @@ change locally by running an app and reading its log.
 - **Run the moya executable from its own directory.** It is
   `out/build/x64-Debug/moya/moya.exe`. Started from another directory it can stop on a
   missing-DLL dialog and use no CPU, which looks like a hung render.
-- **A debug moya render is slow.** A 256x192 ray traced scene takes about a minute.
+- **A debug moya render is slow.** It renders `raytrace-scene.rib` at 320 by 240 in about 25
+  seconds.

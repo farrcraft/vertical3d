@@ -3,7 +3,7 @@
 This page is for anyone writing kernel code that traces rays, or a device's traversal. Rays,
 hits and the tests that intersect primitives are kernel code, in `moya/libmoya/kernel/geometry/`
 and the namespace `v3d::moya::kernel::geometry`. Every device compiles them. Which primitives a
-ray reaches is each device's own traversal. The reyes and ray hiders use none of this.
+ray reaches is each device's own traversal.
 
 ## Rays
 
@@ -185,7 +185,8 @@ scene's options name.
   point it reaches. Its interval is the clipping planes'.
 - **Depth of field draws a point on the lens.** The lens's radius is the focal length over twice
   the f-stop, and every ray through one pixel meets at the focal distance. A camera whose
-  f-stop, focal length or focal distance is not positive and finite is a pinhole.
+  f-stop, focal length or focal distance is not positive and finite is a pinhole. Only a
+  perspective camera has a lens, so an orthographic camera does not blur.
 - **A ray's time is drawn over the shutter**, from its opening to its close.
 - **The camera's transformation is its first sample.**
 

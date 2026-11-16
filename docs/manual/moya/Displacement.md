@@ -1,102 +1,124 @@
-# Move a surface with a displacement shader
+# Displace a subdivision surface
 
-A displacement shader moves the points of a surface before the surface shader runs. It can add
-ripples, bumps or grooves to a flat polygon. The surface shader then shades the moved surface,
-and shadows and reflections follow its moved shape.
+A displacement moves the points of a surface before it is rendered. It can add ripples, bumps or
+grooves to a smooth surface. Shading, shadows and reflections all follow the moved shape.
 
-## 1. Write the shader
+moya displaces subdivision surfaces alone. A polygon, a sphere or a curve is drawn where its
+points put it, whatever displacement it is given. To displace a flat panel, make it a
+`SubdivisionMesh`, as the example here does.
 
-Save this as `ripple.sl` in a shader directory, such as `C:\renders\shaders`:
+A displacement is a MaterialX graph. RI's `Displacement` request names one by a document on the
+shader search path, as `Surface` names a surface of your own. A material read by a `Bxdf` of type
+`materialx` can carry its own displacement instead.
 
+## 1. Write the document
+
+When a scene names `Displacement "ripple"`, moya reads `ripple.mtlx` from the shader search
+path. [scenes/shaders/ripple.mtlx](scenes/shaders/ripple.mtlx) moves a surface along its normal
+by a sine wave across x:
+
+```xml
+<nodedef name="ND_ri_ripple_displacementshader" node="ri_ripple" nodegroup="pbr">
+  <input name="height" type="float" value="0.05" />
+  <input name="frequency" type="float" value="10" />
+  <output name="out" type="displacementshader" />
+</nodedef>
+<nodegraph name="NG_ri_ripple_displacementshader" nodedef="ND_ri_ripple_displacementshader">
+  <position name="where" type="vector3" />
+  <extract name="x" type="float">
+    <input name="in" type="vector3" nodename="where" />
+    <input name="index" type="integer" value="0" />
+  </extract>
+  <multiply name="phase" type="float">
+    <input name="in1" type="float" nodename="x" />
+    <input name="in2" type="float" interfacename="frequency" />
+  </multiply>
+  <sin name="wave" type="float">
+    <input name="in" type="float" nodename="phase" />
+  </sin>
+  <multiply name="lift" type="float">
+    <input name="in1" type="float" nodename="wave" />
+    <input name="in2" type="float" interfacename="height" />
+  </multiply>
+  <displacement name="moved" type="displacementshader">
+    <input name="displacement" type="float" nodename="lift" />
+  </displacement>
+  <output name="out" type="displacementshader" nodename="moved" />
+</nodegraph>
 ```
-/* Moves the surface along its normal by a sine wave across x in shader space. */
-displacement ripple(float height = 0.05; float frequency = 10) {
-    point Pshader = ptransform("shader", P);
-    P += height * sin(frequency * xcomp(Pshader)) * normalize(N);
-    N = calculatenormal(P);
-}
-```
 
-- A displacement shader writes `P`, the position, and `N`, the normal.
-- It can read `Ng`, `I`, `E`, `s`, `t`, `u`, `v`, `du` and `dv`. It cannot read the surface's
-  colour or anything a surface shader writes.
-- `calculatenormal(P)` finds the normal of the moved surface. Without that line, the surface
-  moves but is shaded as if it were flat.
-- The wave follows the position in the shader's own space, not `s`. A large polygon can be split
-  into pieces that each have their own `s`, and a pattern in `s` would not join across them.
+- **The definition is named `ND_ri_<name>_displacementshader`**, and its output is of type
+  `displacementshader`. Its inputs are the displacement's parameters, each with its type and
+  default.
+- **The node graph implements it**, and ends in MaterialX's `displacement` node.
+- **A float displacement moves a point along its normal.** A `vector3` displacement moves it
+  along the surface's tangent, bitangent and normal, in that order.
+- **`position` gives the point in the surface's own space**, before it moves. The wave here
+  follows x in that space, so it does not change when the object is moved.
+- **The graph can read the texture coordinates, a primvar, a noise or an image**, as a surface's
+  graph can. [Materials.md](Materials.md#what-a-graph-can-hold) lists what it can hold.
+
+The search path is set as [Materials.md](Materials.md#1-tell-moya-where-the-documents-are)
+describes.
 
 ## 2. Use it
 
 ```
-Hider "raytrace"
-Format 160 120 1
+Format 320 240 1
+PixelSamples 8 8
 Projection "perspective" "fov" [40]
 Option "searchpath" "shader" ["C:/renders/shaders:&"]
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
 WorldBegin
-LightSource "ambientlight" 1 "intensity" [0.1]
-LightSource "distantlight" 2 "to" [1 0 1]
-Color [0.8 0.8 0.85]
-Surface "matte"
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [0.9] "to" [1 -0.4 0.5]
+Color [0.85 0.55 0.3]
+Surface "plastic" "Ks" [0.4] "roughness" [0.1]
 Attribute "displacementbound" "float sphere" [0.1]
-Displacement "ripple" "float height" [-0.1] "float frequency" [8]
-Polygon "P" [-1.5 -1 5  1.5 -1 5  1.5 1 5  -1.5 1 5]
+Displacement "ripple" "float height" [0.08] "float frequency" [10]
+SubdivisionMesh "catmull-clark" [4] [0 1 2 3] ["interpolateboundary"] [0 0] [] []
+    "P" [-1.4 0 1  1.4 0 1  1.4 1.8 1  -1.4 1.8 1]
 WorldEnd
 ```
 
-The quad shows vertical ripples, lit on one slope and shaded on the other. The quad's normal
-points away from the camera, so a negative `height` moves it toward the camera.
+The panel is one face whose boundary is interpolated, so it is flat until it is displaced. It
+shows vertical ridges, lit on one slope and shaded on the other.
 
 ![A panel standing on a floor, its surface raised in vertical ridges](images/ripple.png)
 
-*[scenes/ripple.rib](scenes/ripple.rib): the same shader on a panel lit from the left, rendered by
+*[scenes/ripple.rib](scenes/ripple.rib), the same panel on a floor, rendered by
 `node scripts/pictures.ts`.*
 
-`Displacement` names the shader for the surfaces that follow, as `Surface` does. `Option
-"searchpath"` is described in [Shaders.md](Shaders.md#2-tell-moya-where-the-shader-is).
+- `Displacement` names the displacement for the objects that follow, as `Surface` does.
+- Give each parameter its type, as in `"float height"`. A parameter with no type is skipped with
+  a warning, and the displacement uses its default.
+- A positive height moves the surface toward its front, the side its corners wind
+  counterclockwise as you look at it.
+- A name that no document on the path defines is logged once, and the surface is not displaced.
 
 ## 3. Set the displacement bound
 
-`Attribute "displacementbound"` tells moya how far the shader can move a point. Set it to the
-largest distance the shader moves anything:
+`Attribute "displacementbound"` sets how far the displacement may move a point. **Without it,
+nothing moves.** Set it to the largest distance the displacement moves anything:
 
 ```
 Attribute "displacementbound" "float sphere" [0.1]
 ```
 
-- moya uses the bound to decide which part of the picture a surface can reach. A surface the
-  shader moves further than its bound can be cut off at the bound's edge.
-- Without a bound, moya works out where a surface can reach from its shape before it moves.
+- A point the displacement moves further than the bound stops at the bound, and the log says so.
 - The distance is in object space. Add `"string coordinatesystem" ["world"]` to give it in world
-  space instead. `"camera"`, and any name the scene saved with `CoordinateSystem`, also work. A
-  name moya does not recognise is logged, and object space is used.
+  space instead. A name the scene saved with `CoordinateSystem` also works. Any other name is
+  logged, and object space is used.
+- A distance below zero is logged and not used.
+- The bound applies to the subdivision surfaces after it in its attribute block.
 
-## How each hider displaces
+## How finely a surface is cut
 
-- **The reyes hider** runs the shader on each grid it dices. The grid is as fine as the shading
-  rate sets ([Quality.md](Quality.md#shading-rate-reyes)).
-- **The ray-trace hider** dices each displaced polygon into a grid of 64 by 64 squares, runs the
-  shader once on it, and traces the result as flat triangles. Detail finer than that grid is
-  lost.
-- Under either hider, shadows and reflections meet the displaced shape. The shader runs once,
-  so a displacement that changes over the shutter does not blur.
+moya cuts a subdivision surface into triangles before it displaces them. Each edge of the
+control mesh is cut into pieces about one pixel long on the screen, and into at most 64 pieces.
+A displacement shows no detail finer than those pieces.
 
-## 4. Set a trace bias under the reyes hider
-
-Shadows and reflections meet the 64 by 64 copy of the surface that the ray-trace hider uses.
-The reyes hider shades its own, finer grids. Where the surface curves, the two lie a little
-apart. A shadow ray from a reyes grid can then start just under the copy and meet it, and the
-slopes of the surface show black and white stripes.
-
-`Attribute "trace" "bias"` sets how far from the surface a ray leaving it starts, in world
-units. Set it larger than the gap:
-
-```
-Attribute "trace" "bias" [0.005]
-```
-
-- The default is 0.0001, which is enough for a surface that is not displaced.
-- The gap grows with how sharply the surface curves and how large it is. A surface a unit or two
-  across, rippled a tenth of a unit, needs about 0.002. A bias ten times the gap leaves margin.
-- Too large a bias lets light through where two surfaces touch, so a contact shadow thins.
-- The attribute applies under both hiders, to every surface declared after it in the block.
-- A sphere is never displaced.
+- A large face close to the camera reaches 64 pieces along each edge. Give the control mesh more
+  faces to show finer detail on it.
+- A surface placed many times is cut once, for the placement nearest the camera.

@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [MoyaRetirement](MoyaRetirement.md) | Offline rendering, editor | moya with one renderer: RIB's built-in shaders as materials and lights, moya.exe and the editor rendering through the path tracer, and the reyes hider, the ray hider and the shading language deleted |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans
@@ -31,6 +30,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaRetirement](completed/MoyaRetirement.md) | Offline rendering, editor | 2026-11-16 | moya with one renderer: RIB's built-in shaders as materials and lights, moya.exe and the editor rendering through the path tracer, RIB as a library of its own, and the reyes hider, the ray hider and the shading language deleted |
 | [MoyaCompositing](completed/MoyaCompositing.md) | Offline rendering | 2026-11-15 | The rebuilt moya's outputs for compositing: the scene's outputs in the render, alpha, values at the first hit, light path expressions, light groups, Cryptomatte, deep EXR and denoising through OIDN, all named in RIB |
 | [MoyaMaterials](completed/MoyaMaterials.md) | Offline rendering | 2026-11-13 | The rebuilt moya's materials: a BSDF library arranged as OpenPBR Surface, MaterialX graphs compiled into a node program every device runs, a texture cache filtered by a ray's footprint, displacement and opacity from the material, and materials named in RIB |
 | [MoyaPathTracer](completed/MoyaPathTracer.md) | Offline rendering | 2026-11-11 | The rebuilt moya's path tracer: the integrator's stages over a path state, next event estimation and MIS, every UsdLux light sampled by solid angle, a dome light, a light tree, light and shadow linking, IES profiles, RenderMan's lights from RIB, adaptive sampling, checkpoints, a statistical oracle and reference renders |

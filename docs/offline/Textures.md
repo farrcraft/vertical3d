@@ -1,6 +1,6 @@
 # Textures
 
-The new core reads a texture from a tiled, mipmapped OpenEXR file, which the texture maker writes
+moya reads a texture from a tiled, mipmapped OpenEXR file, which the texture maker writes
 from images. `moya --maketexture` and RIB's `MakeTexture` both run the maker, and a render makes
 any image a material reads that is not yet a texture. A render holds the tiles it reads in a
 cache, within a limit of memory, and a material's image node looks a texture up over the shading

@@ -314,6 +314,6 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 
 - **RIB** — the RenderMan Interface Bytestream, the scene file format moya reads. See
   [offline/](../offline/README.md).
-- **Hider** — the part of moya that decides which surfaces the camera sees: the Reyes hider or
-  the ray tracing hider. A scene picks one with `Hider`. See
-  [offline/](../offline/README.md).
+- **Path tracing** — how moya renders: it estimates the light at each pixel by following random
+  paths from the camera, each bouncing until it reaches a light or ends. See
+  [offline/Integrator.md](../offline/Integrator.md).

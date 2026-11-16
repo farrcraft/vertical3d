@@ -39,7 +39,7 @@ directories. The five demos, voxel, pong, tetris, odyssey and diorama, are under
 | **tetris** | Tetris |
 | **odyssey** | A tile-based roguelike in early development: a world of regions loaded as the player moves, routes and line of sight across them, and a player sprite |
 | **diorama** | A lit village of glTF models with shadows under a moving sun, an isometric camera, and a looping sound placed at its well |
-| **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
+| **moya** | A RenderMan-style renderer. It reads a RIB file and renders it by spectral path tracing, with MaterialX materials and UsdLux lights |
 | **imagetool** | A command-line tool for images. It prints an image's size, crops it and converts it, and it packs images into a sprite sheet and unpacks one |
 
 [examples/](examples/) is separate: each example is its own CMake project that uses the
