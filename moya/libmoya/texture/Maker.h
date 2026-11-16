@@ -25,7 +25,7 @@ class Config;
 };  // namespace v3d::moya::colour
 
 /**
- * The textures the new core reads: tiled, mipmapped OpenEXR files, and the maker that writes them
+ * The textures moya reads: tiled, mipmapped OpenEXR files, and the maker that writes them
  * from images.
  **/
 namespace v3d::moya::texture {

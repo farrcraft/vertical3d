@@ -76,7 +76,7 @@ test('kernel allows only kernel paths, glm and the standard headers listed', () 
     assert.ok(allowed('moya/libmoya/kernel/spectrum/Spectrum.h'));
     assert.ok(allowed('glm/mat4x4.hpp'));
     assert.ok(allowed('type_traits'));
-    assert.ok(!allowed('moya/libmoya/state/RenderContext.h'));
+    assert.ok(!allowed('moya/libmoya/scene/Scene.h'));
     assert.ok(!allowed('utility'));
 });
 

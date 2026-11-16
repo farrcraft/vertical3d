@@ -37,11 +37,7 @@ if(MSVC)
 endif()
 
 add_library("v3dlib_moya"
-	"Curve.h" "Curve.cxx"
 	"Executable.h" "Executable.cxx"
-	"Hider.h"
-	"Polygon.h" "Polygon.cxx"
-	"Vertex.h" "Vertex.cxx"
 
 	"accel/Assembler.h" "accel/Assembler.cxx"
 	"accel/Box.h"
@@ -188,7 +184,6 @@ add_library("v3dlib_moya"
 	"output/Output.h"
 	"output/Outputs.h" "output/Outputs.cxx"
 
-	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/SceneClient.h" "ri/SceneClient.cxx"
 	"ri/internal/Deforming.h" "ri/internal/Deforming.cxx"
 	"ri/internal/Document.h" "ri/internal/Document.cxx"
@@ -213,15 +208,6 @@ add_library("v3dlib_moya"
 	"scene/Schema.h" "scene/Schema.cxx"
 	"scene/Value.h" "scene/Value.cxx"
 
-	"state/Attributes.h" "state/Attributes.cxx"
-	"state/Display.h" "state/Display.cxx"
-	"state/Lights.h" "state/Lights.cxx"
-	"state/Planes.h" "state/Planes.cxx"
-	"state/Progress.h" "state/Progress.cxx"
-	"state/RenderContext.h" "state/RenderContext.cxx"
-	"state/Shaders.h" "state/Shaders.cxx"
-	"state/Shading.h"
-	"state/Transforms.h" "state/Transforms.cxx"
 
 	"texture/Cache.h" "texture/Cache.cxx"
 	"texture/Level.h"
@@ -240,23 +226,7 @@ add_library("v3dlib_moya"
 	"view/Traced.h"
 	"view/Tracing.h" "view/Tracing.cxx"
 
-	"raytrace/Hider.h" "raytrace/Hider.cxx"
-	"raytrace/Pass.h"
-	"raytrace/Pixel.h"
-	"raytrace/Spread.h"
-	"raytrace/Scene.h" "raytrace/Scene.cxx"
 
-	"reyes/Bucket.h" "reyes/Bucket.cxx"
-	"reyes/Buckets.h" "reyes/Buckets.cxx"
-	"reyes/Footprint.h" "reyes/Footprint.cxx"
-	"reyes/GridShader.h" "reyes/GridShader.cxx"
-	"reyes/Hider.h" "reyes/Hider.cxx"
-	"reyes/MicroPolygon.h" "reyes/MicroPolygon.cxx"
-	"reyes/MicroPolygonGrid.h" "reyes/MicroPolygonGrid.cxx"
-	"reyes/Motions.h" "reyes/Motions.cxx"
-	"reyes/Placement.h" "reyes/Placement.cxx"
-	"reyes/Primitive.h" "reyes/Primitive.cxx"
-	"reyes/Samples.h" "reyes/Samples.cxx"
 )
 
 # MSVC needs /EHsc for C++ exceptions, and /utf-8 for the fmt that spdlog bundles. Clang and
@@ -265,18 +235,20 @@ if(MSVC)
 	target_compile_options("v3dlib_moya" PRIVATE /EHsc /utf-8)
 endif()
 
-# PUBLIC: the framebuffer is part of the render context's interface, and the render context's
-# header includes the log's. moya's headers name glm types, and the device's headers name kernel
-# types. The CPU device's header names the instruction sets its libraries are built for.
-# PRIVATE: Display and the PNG writer encode an image with image and write the file through
-# asset, and the texture maker reads one with image. Only the CPU device's and the texture
-# maker's sources include TBB, and only the EXR files' sources and the texture maker's include
-# OpenEXR and Imath. Only the colour configuration's source and its internal headers include
-# OpenColorIO, only the subdivision surface's OpenSubdiv, and only the material library's source
-# and its internal header MaterialX, and only the denoiser's source OIDN. OpenSubdiv is linked
-# static on every platform, as vcpkg builds it on Windows.
-target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise TBB::tbb)
+# PUBLIC: the scene client's, the film filter's and the texture maker's headers name the RIB
+# requests and pixel filters of the offline library, and the headers of the denoiser and the
+# integrator include the log's. moya's headers name glm types, and the device's headers name
+# kernel types. The CPU device's header names the instruction sets its libraries are built for.
+# PRIVATE: the PNG writer encodes an image with image and writes the file through asset, and the
+# texture maker reads one with image. Only the scene client's primitive variables include type.
+# Only the CPU device's and the texture maker's sources include TBB, and only the EXR files'
+# sources and the texture maker's include OpenEXR and Imath. Only the colour configuration's
+# source and its internal headers include OpenColorIO, only the subdivision surface's
+# OpenSubdiv, and only the material library's source and its internal header MaterialX, and
+# only the denoiser's source OIDN. OpenSubdiv is linked static on every platform, as vcpkg
+# builds it on Windows.
+target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_render_offline glm::glm)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise TBB::tbb)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
 # platforms, and finds it by its path.

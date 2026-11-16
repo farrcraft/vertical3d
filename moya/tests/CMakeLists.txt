@@ -2,12 +2,10 @@
 # neither a window nor a device.
 v3d_add_test(moya
 	"TestMain.cxx"
-	"FootprintTest.cxx"
 	"FoundationTest.cxx"
 	"AssemblerTest.cxx"
 	"BenchTest.cxx"
 	"BsdfTest.cxx"
-	"BucketsTest.cxx"
 	"BuilderTest.cxx"
 	"ColourTest.cxx"
 	"ConeTest.cxx"
@@ -34,7 +32,6 @@ v3d_add_test(moya
 	"EventsTest.cxx"
 	"FirstHitTest.cxx"
 	"FilmTest.cxx"
-	"GridShaderTest.cxx"
 	"HitTest.cxx"
 	"HitViewTest.cxx"
 	"InstancesTest.cxx"
@@ -50,24 +47,10 @@ v3d_add_test(moya
 	"OutputsTest.cxx"
 	"PathsReferenceTest.cxx"
 	"PathsTest.cxx"
-	"MicroPolygonGridTest.cxx"
-	"PolygonClipTest.cxx"
-	"PolygonTest.cxx"
 	"ProgramTest.cxx"
-	"ProjectedSpaceTest.cxx"
-	"RayHiderTest.cxx"
 	"TriangulateTest.cxx"
 	"TraversalTest.cxx"
-	"RenderContextTest.cxx"
-	"RIBCameraTest.cxx"
-	"RIBGeometryTest.cxx"
-	"RIBCurvesTest.cxx"
-	"RIBHandlerTest.cxx"
-	"RIBOutputTest.cxx"
-	"RIBStateTest.cxx"
 	"RgbTest.cxx"
-	"ReyesPrimitiveTest.cxx"
-	"SamplesTest.cxx"
 	"SceneClientTest.cxx"
 	"SceneDescriptionTest.cxx"
 	"SceneGeometryTest.cxx"
@@ -85,7 +68,6 @@ v3d_add_test(moya
 	"TextureCacheTest.cxx"
 	"TextureLookupTest.cxx"
 	"TextureMakerTest.cxx"
-	"VertexTest.cxx"
 	"ZSobolTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes
@@ -99,7 +81,7 @@ v3d_add_test(moya
 # check the materials libmoya flattens against MaterialX's own. It denoises through OIDN, which
 # libmoya does not link yet.
 target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_render_offline
-	v3dlib_type Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise TBB::tbb)
+	Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise TBB::tbb)
 
 # The command line cases run the moya executable itself, and the benchmark's case runs
 # moya_bench, each by its path in the build tree, so both are built before the suite.

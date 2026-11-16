@@ -26,7 +26,7 @@ namespace v3d::log {
 class Logger;
 };  // namespace v3d::log
 
-/** Rendering a scene through the new core's integrator. Host code, which launches its kernel. **/
+/** Rendering a scene through moya's integrator. Host code, which launches its kernel. **/
 namespace v3d::moya::integrate {
 
 /** The most samples one pass adds to each pixel. **/

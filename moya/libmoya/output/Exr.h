@@ -14,7 +14,7 @@
 #include <vector>
 
 /**
- * The files the new core writes its pictures to.
+ * The files moya writes its pictures to.
  **/
 namespace v3d::moya::output {
 

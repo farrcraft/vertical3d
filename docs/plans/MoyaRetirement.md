@@ -169,7 +169,7 @@ chooses among the options before the record is drafted.
 | [12](#step-12--the-shipped-scenes-and-the-manuals-pictures) | The shipped scenes and the manual's pictures | `moya/data`, `docs/manual/moya`, `scripts`, `.github` | — | done |
 | [13](#step-13--tests-on-the-new-core-alone) | Tests on the new core alone | `moya/tests` | — | done |
 | [14](#step-14--ris-c-interface) | RI's C interface | `moya/libmoya/ri` | 0239 | done |
-| [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | open |
+| [15](#step-15--the-old-core-leaves-libmoya) | The old core leaves libmoya | `moya/libmoya`, `moya/tests` | — | done |
 | [16](#step-16--the-offline-library) | The offline library | `api/render/offline` | 0240 | open |
 | [17](#step-17--the-records) | The records the retirement ends | `docs/adr` | — | open |
 | [18](#step-18--the-documents) | The documents | `docs` | — | open |
@@ -643,6 +643,17 @@ The scene client's `option()` reads its search paths and integer limits through 
   names it.
 
 **Tests:** the suites pass with the old code gone.
+
+**Done.** The three directories, `Hider.h`, `Curve`, `Polygon`, `Vertex` and `ri/RIBHandler`
+are deleted, with `Handling.h`, the thirteen `.sl` fixtures and 18 old test files. Step 14 had
+deleted `RenderManTest` and `RendererTest`, and step 13 `Reference.*`, so 20 old test files went
+in all, not 23. `Executable.h` is libmoya's
+only file at its root. The link to the offline library stays public, since the scene client's,
+the film filter's and the texture maker's headers name its RIB requests and pixel filters.
+`v3dlib_type` is private now, since only a source file includes it, and moya's suite no longer
+links it. Two script tests that named a `state/` header name a `scene/` one. The comments that
+contrasted the new core with the old say moya. The offline README, `Reyes.md`, `RayTracing.md`
+and the moya manual still describe the old core until step 18.
 
 ### Step 16 — The offline library
 

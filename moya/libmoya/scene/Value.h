@@ -17,7 +17,7 @@
 #include <glm/vec3.hpp>
 
 /**
- * The new core's retained scene: objects of declared kinds, their parameters, and the versions
+ * moya's retained scene: objects of declared kinds, their parameters, and the versions
  * that record each change. RIB and the editor are its clients.
  **/
 namespace v3d::moya::scene {

@@ -37,7 +37,7 @@ test('namespaces gives a file the namespace of its root and the directories belo
     assert.equal(expected('api/asset/Asset.h'), 'v3d::asset');
     assert.equal(expected('api/render/realtime/vulkan/device/Device.cpp'), 'v3d::render::realtime::vulkan::device');
     assert.equal(expected('api/interchange/usd/internal/Reader.h'), 'v3d::interchange::usd::internal');
-    assert.equal(expected('moya/libmoya/state/Attributes.h'), 'v3d::moya::state');
+    assert.equal(expected('moya/libmoya/scene/Kinds.h'), 'v3d::moya::scene');
     assert.equal(expected('moya/moya.cxx'), 'v3d::moya');
     assert.equal(expected('vertical3d/src/Controller.h'), 'v3d::editor');
     assert.equal(expected('vertical3d/src/scene/Scene.h'), 'v3d::editor::scene');

@@ -59,8 +59,7 @@ namespace v3d::moya::ri {
 
 /**
  * Fills moya's retained scene from RI requests. It keeps RI's graphics state, and creates and
- * modifies scene objects as the requests arrive. The reyes and ray hiders read RIB through
- * RIBHandler instead.
+ * modifies scene objects as the requests arrive.
  *
  * **The frame.** The options, the camera and the displays become the scene's `options`,
  * `camera`, `output` and `channel` objects. The options and the camera are made when the client

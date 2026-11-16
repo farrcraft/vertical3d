@@ -23,13 +23,12 @@
 #include <glm/vec2.hpp>
 
 /**
- * The new core's film: the pixels samples are added to, and the pixel filter that places them.
- * The reyes and ray hiders use render::offline::film instead.
+ * moya's film: the pixels samples are added to, and the pixel filter that places them.
  **/
 namespace v3d::moya::film {
 
 /**
- * The pixels the new core adds samples to, in a device's memory. Each pixel holds the beauty, in
+ * The pixels moya adds samples to, in a device's memory. Each pixel holds the beauty, in
  * ACEScg, and any number of named channels, each as weighted sums with one weight for the pixel.
  *
  * Samples are added in passes. A pass launches kernel code that adds each pixel's next samples to

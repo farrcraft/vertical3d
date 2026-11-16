@@ -8,11 +8,8 @@ moya is three CMake targets, and it is built on one api library:
 
 | Directory | Target | Contents |
 |---|---|---|
-| `moya/libmoya` | `v3dlib_moya` | The renderer. At its root, what both hiders share: the `Hider` base, and the polygons, vertices and curves they draw. Namespace `v3d::moya` |
-| `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the handlers RIB requests reach, the old core's and the scene client. Namespace `v3d::moya::ri` |
-| `moya/libmoya/state` | `v3dlib_moya` | The graphics state: the render context and each part of the state it holds. Namespace `v3d::moya::state` |
-| `moya/libmoya/raytrace` | `v3dlib_moya` | The ray hider and the scene its rays meet. Namespace `v3d::moya::raytrace` |
-| `moya/libmoya/reyes` | `v3dlib_moya` | The reyes hider's pipeline: buckets, dicing, grid shading and the samples. Namespace `v3d::moya::reyes` |
+| `moya/libmoya` | `v3dlib_moya` | The renderer. At its root, the directory of the running executable, beside which the CPU device and the material library find their files. Namespace `v3d::moya` |
+| `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the scene client that RIB requests reach. Namespace `v3d::moya::ri` |
 | `moya` | `moya` | The command-line driver, `moya.cxx`, and its demo scenes in `moya/data/` |
 | `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
 | `api/render/offline` | `v3dlib_render_offline` | What the renderers share at their root: the camera and its options, the moving transform, an area light's geometry, points spread over a shape, and pi. Namespace `v3d::render::offline` |
