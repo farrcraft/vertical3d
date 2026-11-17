@@ -200,6 +200,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = "data:"
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "blocks"
     file string = "blocks.png"
     language string = "materialx"

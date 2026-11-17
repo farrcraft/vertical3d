@@ -10,6 +10,7 @@
 #include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/texture/Texture.h>
+#include <moya/libmoya/kernel/volume/Interior.h>
 #include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -17,6 +18,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -24,39 +26,88 @@
 
 namespace v3d::moya::geometry::internal {
 
-Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", "st" } {
-    for (const scene::Handle & handle : scene.objects("material")) {
-        const scene::Handle displacement = scene.value(handle, "displacement").handleArray().front();
-        const bool displaces = displacement.valid() && scene.contains(displacement);
-        const std::string displacedBy = displaces ? scene.value(displacement, "language").stringArray().front() : std::string();
-        if (displacedBy == "materialx" || displacedBy == "ri") {
-            try {
-                displacements_.emplace(handle.index, material::compileDisplacement(material::Library::installed(), scene, handle, names_));
-            } catch (const std::runtime_error & refused) {
-                material::Compiled none;
-                none.reports.push_back("material " + scene.name(handle) + " does not displace, because " + refused.what());
-                displacements_.emplace(handle.index, std::move(none));
-            }
+namespace {
+
+/**
+ * Gives a compiled material the medium it encloses: its volume's, compiled from its volume
+ * terminal when it has one, and otherwise the one a layered material's OpenPBR transmission
+ * gives. A volume that does not compile is reported, and the material encloses no medium.
+ **/
+void enclose(const scene::Scene & scene, const scene::Handle & handle, material::Compiled & compiled, std::vector<std::string> & names) {
+    const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
+    if (!volume.valid() || !scene.contains(volume)) {
+        if (compiled.material.layered != 0U) {
+            compiled.material.medium = kernel::volume::interior(compiled.material.surface);
         }
-        const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
-        if (!surface.valid() || !scene.contains(surface)) {
-            // a material of a volume and no surface is a boundary, which compiling marks
-            const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
-            if (volume.valid() && scene.contains(volume)) {
-                compiled_.emplace(handle.index, material::compile(material::Library::installed(), scene, handle, names_));
-            }
-            continue;
+        return;
+    }
+    try {
+        const material::Compiled medium = material::compileVolume(material::Library::installed(), scene, handle, names);
+        compiled.material.medium = medium.medium;
+        compiled.reports.insert(compiled.reports.end(), medium.reports.begin(), medium.reports.end());
+    } catch (const std::runtime_error & refused) {
+        compiled.reports.push_back("material " + scene.name(handle) + " encloses no medium, because " + refused.what());
+    }
+}
+
+/**
+ * A material's displacement compiled, when its displacement node is a MaterialX or an RI node.
+ * One that does not compile does not displace, and its report says why.
+ **/
+std::optional<material::Compiled> displacementOf(const scene::Scene & scene, const scene::Handle & handle, std::vector<std::string> & names) {
+    const scene::Handle displacement = scene.value(handle, "displacement").handleArray().front();
+    const bool displaces = displacement.valid() && scene.contains(displacement);
+    const std::string displacedBy = displaces ? scene.value(displacement, "language").stringArray().front() : std::string();
+    if (displacedBy != "materialx" && displacedBy != "ri") {
+        return std::nullopt;
+    }
+    try {
+        return material::compileDisplacement(material::Library::installed(), scene, handle, names);
+    } catch (const std::runtime_error & refused) {
+        material::Compiled none;
+        none.reports.push_back("material " + scene.name(handle) + " does not displace, because " + refused.what());
+        return none;
+    }
+}
+
+/**
+ * A material compiled with the medium it encloses, when its surface node is a MaterialX or an RI
+ * node, or it has a volume and no surface, which makes it a boundary. A surface that does not
+ * compile is diffuse, and its report says why.
+ **/
+std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const scene::Handle & handle, std::vector<std::string> & names) {
+    const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
+    if (!surface.valid() || !scene.contains(surface)) {
+        const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
+        if (!volume.valid() || !scene.contains(volume)) {
+            return std::nullopt;
         }
+    } else {
         const std::string & language = scene.value(surface, "language").stringArray().front();
         if (language != "materialx" && language != "ri") {
-            continue;
+            return std::nullopt;
         }
-        try {
-            compiled_.emplace(handle.index, material::compile(material::Library::installed(), scene, handle, names_));
-        } catch (const std::runtime_error & refused) {
-            material::Compiled diffuse;
-            diffuse.reports.push_back("material " + scene.name(handle) + " is diffuse, because " + refused.what());
-            compiled_.emplace(handle.index, std::move(diffuse));
+    }
+    try {
+        material::Compiled out = material::compile(material::Library::installed(), scene, handle, names);
+        enclose(scene, handle, out, names);
+        return out;
+    } catch (const std::runtime_error & refused) {
+        material::Compiled diffuse;
+        diffuse.reports.push_back("material " + scene.name(handle) + " is diffuse, because " + refused.what());
+        return diffuse;
+    }
+}
+
+};  // namespace
+
+Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", "st" } {
+    for (const scene::Handle & handle : scene.objects("material")) {
+        if (std::optional<material::Compiled> displaced = displacementOf(scene, handle, names_)) {
+            displacements_.emplace(handle.index, std::move(*displaced));
+        }
+        if (std::optional<material::Compiled> surfaced = surfaceOf(scene, handle, names_)) {
+            compiled_.emplace(handle.index, std::move(*surfaced));
         }
     }
     // a channel can read a primvar that no program reads

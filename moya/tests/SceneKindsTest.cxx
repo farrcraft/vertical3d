@@ -125,6 +125,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    textureMemory integer = 1048576\n"
         "    textureSearchPath string = \"\"\n"
         "    transmissionDepth integer = 12\n"
+        "    volumeDepth integer = 4\n"
         "output \"beauty\"\n"
         "    channels handle[1] = channel \"albedo\"\n"
         "    compression string = \"zip\"\n"

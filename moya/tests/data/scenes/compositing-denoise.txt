@@ -90,6 +90,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 output "compositing-denoise.exr"
     channels handle[0] =
     compression string = "zip"

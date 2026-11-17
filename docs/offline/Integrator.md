@@ -19,10 +19,13 @@ A path's state is what one stage hands the next. Its fields are declared once, i
 
 The state holds the pixel and the sample, the ray traced next and its cone, the throughput and
 the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
-count of bounces in all and of each kind. Last, it holds the last BSDF sample's density and
-whether it was specular, and the shading point it was drawn at with its shading normal and its
-set of linked lights. Its coverage is one once the camera ray has met something. Its media are
-the closed surfaces it is inside, as [nested media](#nested-media) says.
+count of bounces in all and of each kind, a scattering event in a medium being a volume bounce.
+Its chances are the densities with which it would have been tracked through media at each of its
+wavelengths, as [tracking through a medium](#tracking-through-a-medium) says. Last, it holds the
+last BSDF or phase function sample's density and whether it was specular, and the point it was
+drawn at with its shading normal and its set of linked lights. Its coverage is one once the
+camera ray has met something. Its media are the closed surfaces it is inside, as
+[nested media](#nested-media) says.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -39,6 +42,13 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
   ray takes the first bounce's.
 - **`bounceDimension(bounce, place)`** gives a draw's dimension. Any stage then draws its numbers
   from the pixel, the sample, the bounce and the place alone.
+- **A scattering event in a medium draws from its bounce's block** as a shading point does. The
+  phase function's direction takes the BSDF's direction, and its lobe the BSDF's choice. Its
+  light sample and Russian roulette take their own places.
+- **A collision in a medium takes its numbers from a hash**, `collisionDraw()`, of the pixel in
+  the image, the sample, the bounce and the collision's count within the bounce. A path meets a
+  count of collisions no block could hold a place for. The numbers are the same on every run, but
+  they do not gain from the sampler's stratification.
 
 ## The stages
 
@@ -50,7 +60,9 @@ pixel in index order.
   weight, and its point on the lens, its time and its wavelengths. Its ray and its cone are the
   camera's.
 - **Intersect** traces the ray through the traversal the launch was built with, passing through
-  what is cut out as [Surfaces that are cut out](#surfaces-that-are-cut-out) says.
+  what is cut out as [Surfaces that are cut out](#surfaces-that-are-cut-out) says. A path in a
+  medium is then tracked through it up to the hit, as
+  [tracking through a medium](#tracking-through-a-medium) says, and may scatter or end before it.
 - **Shade** turns the hit into a shading point, with the footprint the path's cone makes there.
   A path whose ray leaves the scene gathers its share of the dome lights and the distant lights
   it meets, as [Lights](#lights) says, times its throughput. A path whose ray meets a light's
@@ -70,7 +82,7 @@ pixel in index order.
   coverage to the pixel's alpha.
 
 A path ends when it leaves the scene, when it meets a light, at a depth limit, when the BSDF
-refuses a sample, or by Russian roulette.
+refuses a sample, when a medium absorbs it, or by Russian roulette.
 
 ## A ray's footprint
 
@@ -179,8 +191,8 @@ Background: [ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-
 
 ## Nested media
 
-A path carries the closed surfaces it is inside, in `kernel/integrate/Media.h`, so a dielectric
-bends light by the media on its two sides and overlapping surfaces give one medium.
+A path carries the closed surfaces it is inside, in `kernel/integrate/media/Media.h`, so a
+dielectric bends light by the media on its two sides and overlapping surfaces give one medium.
 
 - **A material encloses a medium** when a path may cross its surface into it. A layered material
   does when it is not thin-walled and its transmission's weight may be more than zero. Any other
@@ -205,10 +217,53 @@ bends light by the media on its two sides and overlapping surfaces give one medi
 - **A camera ray finds the surfaces it starts inside** when any material encloses a medium. It is
   traced on through everything it meets, and it is inside each surface whose first face it meets
   is a back face.
-- **A shadow ray passes a boundary**, whose opacity is zero. Any other surface it meets casts its
-  shadow as it would outside a medium.
+- **A shadow ray carries a copy of the media of the path it leaves**, when any material encloses
+  a medium. It passes by the surfaces a path would pass by, entering and leaving their media as a
+  path does, and they cast no shadow. Any other surface it meets casts its shadow as it would
+  outside a medium.
 
 Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md)
+
+## Tracking through a medium
+
+The medium a path is in is its winning surface's material's, in `kernel/volume/`. A path in no
+medium, or in one of no coefficients, carries its light unchanged from one surface to the next.
+
+- **A medium's coefficients** are absorption and up to two lobes of scattering, each with an
+  anisotropy, in ACEScg. A path reads each as the unbounded spectrum of its colour at its four
+  wavelengths, `volume::coefficientsOf()`. The extinction is the absorption and every lobe's
+  scattering.
+- **A homogeneous medium is tracked by its own extinction.** The distance to a collision is drawn
+  from the exponential distribution of the extinction at the tracked wavelength. A collision
+  scatters with the chance of that wavelength's scattering over its extinction, and is otherwise
+  absorbed, which ends the path. A path whose collision lies past the surface it meets reaches the
+  surface.
+- **The tracked wavelength** is a spectral path's first. Its four are drawn as one evenly spaced
+  set, so any of them is equally likely to come first. An RGB path is tracked by a channel drawn
+  from a hash of its pixel and sample.
+- **Every wavelength is weighed by spectral multiple importance sampling**, `rescale()`. An
+  event's value at each wavelength is also the density with which a path tracked there would have
+  made it. That is the transmittance for a path that reaches the surface, and the scattering
+  times the transmittance for one that scatters. The path's throughput is its value
+  over the average of those densities over the whole path, so a medium whose coefficients differ
+  by wavelength stays unbiased at each. A path that crosses no medium keeps chances of one, and
+  its throughput is what it would be without them.
+- **A scattering event takes a light sample**, `directInMedium()`, as a shading point does, with
+  the phase function in place of the BSDF and no normal. Its light is multiplied by the
+  transmittance of the media its shadow ray crosses, by Beer and Lambert's law. It is weighed
+  against the phase function's sample by the power heuristic, where the phase function's density
+  is multiplied by the chance a tracked path would have passed those media. A light a path meets
+  after a phase function's sample is weighed the same way, since a path's density grows by that
+  chance along every ray. The point is lit by the lights that light an instance of no links.
+- **The phase function** is each lobe's Henyey and Greenstein's, weighed at each wavelength by its
+  share of the scattering there, `volume::phaseValue()`. A direction is drawn from one lobe, picked
+  by its share of the scattering over all four wavelengths together, so its density is the same
+  whichever wavelength is tracked. The throughput is multiplied by the phase function over that
+  density.
+- **The ray that leaves a scattering event** starts at the point itself, its cone spread as a lobe
+  of roughness one spreads it. The event gives a denoiser nothing past it.
+
+Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md)
 
 ## Depth limits and Russian roulette
 
@@ -222,8 +277,13 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
   at its limit ends the path. A bounce that crosses the surface is a transmission, smooth or
   rough. One that stays on its side is specular from a singular closure, glossy from a
   microfacet lobe, and diffuse from a diffuse one.
+- **`volumeDepth`** is the most scattering events a path makes in media, four by default. A
+  scattering event counts against `maxDepth` too. One a limit refuses ends the path there,
+  before its light sample. Cycles' limit of zero lets a path scatter once in a medium, and moya
+  counts that event, so its default is four rather than Cycles' zero.
 - **`rouletteDepth`** is the bounce from which Russian roulette may end a path, the third by
-  default. A path survives with the chance of its largest throughput, held to one, and a
+  default. A scattering event in a medium counts as any bounce. A path survives with the chance
+  of its largest throughput, held to one, and a
   survivor's throughput is divided by that chance, so the picture's mean is unchanged.
 - **A depth below zero is taken as zero.**
 

@@ -9,6 +9,7 @@
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
+#include <moya/libmoya/kernel/volume/Medium.h>
 
 #include <cstdint>
 #include <limits>
@@ -64,6 +65,12 @@ struct Material {
 
     /** One when the material has a volume and no surface. **/
     std::uint32_t boundary { 0 };
+
+    /**
+     * The medium the material encloses: its volume's, when it has a volume, and otherwise the one
+     * its OpenPBR transmission gives. A medium of no coefficients lets light through unchanged.
+     **/
+    volume::Medium medium;
 
     /** Whether a surface of this material may be cut out anywhere, or is a boundary. **/
     MOYA_KERNEL bool cutOut() const {

@@ -393,6 +393,50 @@ void fill(internal::Emitter & emitter, Network & network, bool compiling, bool e
     }
 }
 
+/**
+ * Compiles an OpenPBR surface into its program and the material's parameters, as compile() says.
+ * Emission that varies over the surface, and a program that needs more registers than one holds,
+ * are reported, and each node feeding them gives its default.
+ **/
+void compileOpenPbr(Network & held, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars, Compiled & out) {
+    internal::Emitter compiled(held, primvars, kernel::program::kParameterRegisters);
+    fill(compiled, held, true, true, internal::kOpenPbrInputs);
+    // a light's emission is made before rendering, so emission that varies is a default
+    const Folded emitted = fold(compiled.instructions(), compiled.values());
+    const bool varies = !compiled.overflowed() &&
+        !(emitted.constantFrom(kernel::program::kEmissionLuminance, 1U) && emitted.constantFrom(kernel::program::kEmissionColour, 3U));
+    internal::Emitter steady(held, primvars, kernel::program::kParameterRegisters);
+    if (varies) {
+        held.report("material " + scene.name(material) + "'s emission varies over its surface, so each node feeding it gives its default");
+        fill(steady, held, true, false, internal::kOpenPbrInputs);
+    }
+    const internal::Emitter & chosen = varies ? steady : compiled;
+    internal::Emitter constants(held, primvars, kernel::program::kParameterRegisters);
+    if (chosen.overflowed()) {
+        held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
+        fill(constants, held, false, false, internal::kOpenPbrInputs);
+    }
+    const internal::Emitter & emitter = chosen.overflowed() ? constants : chosen;
+    out.instructions = emitter.instructions();
+    out.values = emitter.values();
+    out.colours = emitter.colours();
+    out.spaces = emitter.spaces();
+    out.images = emitter.images();
+    out.material.program = kernel::program::Program { .instructions = 0,
+        .count = static_cast<std::uint32_t>(out.instructions.size()),
+        .values = 0,
+        .size = static_cast<std::uint32_t>(out.values.size()) };
+    const Folded folded = fold(out.instructions, out.values);
+    out.material.surface = kernel::program::parameters(folded.values.data());
+    const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
+    out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
+    out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
+    const bool opaque = folded.constantFrom(kernel::program::kTransmissionWeight, 1U) && !(out.material.surface.transmissionWeight > 0.0F);
+    out.material.transmits = opaque ? 0U : 1U;
+    reportDispersion(held, scene.name(material), folded, out.material.surface);
+    out.material.layered = 1;
+}
+
 };  // namespace
 
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
@@ -404,42 +448,7 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
             held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it takes OpenPBR's defaults");
             out.material.layered = 1;
         } else {
-            internal::Emitter compiled(held, primvars, kernel::program::kParameterRegisters);
-            fill(compiled, held, true, true, internal::kOpenPbrInputs);
-            // a light's emission is made before rendering, so emission that varies is a default
-            const Folded emitted = fold(compiled.instructions(), compiled.values());
-            const bool varies = !compiled.overflowed() &&
-                !(emitted.constantFrom(kernel::program::kEmissionLuminance, 1U) && emitted.constantFrom(kernel::program::kEmissionColour, 3U));
-            internal::Emitter steady(held, primvars, kernel::program::kParameterRegisters);
-            if (varies) {
-                held.report("material " + scene.name(material) + "'s emission varies over its surface, so each node feeding it gives its default");
-                fill(steady, held, true, false, internal::kOpenPbrInputs);
-            }
-            const internal::Emitter & chosen = varies ? steady : compiled;
-            internal::Emitter constants(held, primvars, kernel::program::kParameterRegisters);
-            if (chosen.overflowed()) {
-                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its surface gives its default");
-                fill(constants, held, false, false, internal::kOpenPbrInputs);
-            }
-            const internal::Emitter & emitter = chosen.overflowed() ? constants : chosen;
-            out.instructions = emitter.instructions();
-            out.values = emitter.values();
-            out.colours = emitter.colours();
-            out.spaces = emitter.spaces();
-            out.images = emitter.images();
-            out.material.program = kernel::program::Program { .instructions = 0,
-                .count = static_cast<std::uint32_t>(out.instructions.size()),
-                .values = 0,
-                .size = static_cast<std::uint32_t>(out.values.size()) };
-            const Folded folded = fold(out.instructions, out.values);
-            out.material.surface = kernel::program::parameters(folded.values.data());
-            const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
-            out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
-            out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
-            const bool opaque = folded.constantFrom(kernel::program::kTransmissionWeight, 1U) && !(out.material.surface.transmissionWeight > 0.0F);
-            out.material.transmits = opaque ? 0U : 1U;
-            reportDispersion(held, scene.name(material), folded, out.material.surface);
-            out.material.layered = 1;
+            compileOpenPbr(held, scene, material, primvars, out);
         }
     } else if (scene.value(material, "volume").handleArray().front().valid()) {
         out.material.boundary = 1;

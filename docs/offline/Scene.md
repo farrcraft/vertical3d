@@ -53,8 +53,8 @@ then derived as RI derives it.
   which seeds the sampler. `camera`, the camera the render looks through. `edgeLength`, the
   longest a tessellated edge may be in pixels, 1 until a client sets it, and `dicingCamera`, the
   camera that length is measured from, which is the render camera while it names none.
-  `maxDepth`, `diffuseDepth`, `glossyDepth`, `specularDepth`, `transmissionDepth` and
-  `rouletteDepth` limit a path's bounces, as
+  `maxDepth`, `diffuseDepth`, `glossyDepth`, `specularDepth`, `transmissionDepth`,
+  `volumeDepth` and `rouletteDepth` limit a path's bounces, as
   [Integrator.md](Integrator.md#depth-limits-and-russian-roulette) says. `lightSampling` is
   how a path finds the lights: `mis`, the fallback, `light` or `bsdf`, as
   [Integrator.md](Integrator.md#lights) says. `lightPicking` is how a light sample draws its

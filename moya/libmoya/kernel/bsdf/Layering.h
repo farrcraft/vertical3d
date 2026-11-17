@@ -62,8 +62,10 @@ struct Layering {
      *   specular colour as its F82 tint, scaled by the specular weight.
      * - **The rest is a dielectric.** Its index is the specular index with its reflectance at
      *   normal incidence scaled by the specular weight. Of the transmission's weight, it is a
-     *   dielectric that transmits, tinted by the specular colour and the transmission colour. Its
-     *   index is relative to that of the medium outside, which the BSDF holds.
+     *   dielectric that transmits, tinted by the specular colour and the transmission colour. A
+     *   surface that is not thin-walled and has a transmission depth is not tinted by the
+     *   transmission colour, which the medium inside takes over that depth. Its index is relative
+     *   to that of the medium outside, which the BSDF holds.
      * - **The opaque rest** is a specular reflection over the diffuse base, its index relative to
      *   the coat's where the coat lies over it. The diffuse base is an Oren-Nayar lobe of the
      *   base's roughness, its colour the base colour times its weight, mixed with the subsurface
@@ -138,7 +140,8 @@ struct Layering {
             layer.ior = ior / bsdf.outside;
             layer.thin = surface.thinWalled != 0U;
             layer.colour = specularColour;
-            layer.transmitted = spectrum::reflectance(table, surface.transmissionColour, wavelengths);
+            const bool deep = surface.thinWalled == 0U && surface.transmissionDepth > 0.0F;
+            layer.transmitted = deep ? spectrum::SampledSpectrum(1.0F) : spectrum::reflectance(table, surface.transmissionColour, wavelengths);
             bsdf.add(layer);
         }
         const spectrum::SampledSpectrum opaque = dielectric * (1.0F - transmission);

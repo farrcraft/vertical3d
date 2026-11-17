@@ -8,7 +8,7 @@
 #include <moya/libmoya/kernel/bsdf/Layering.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
-#include <moya/libmoya/kernel/integrate/Enclosure.h>
+#include <moya/libmoya/kernel/integrate/media/Enclosure.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/sample/Hash.h>
 #include <moya/libmoya/kernel/surface/Material.h>
@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace v3d::moya::kernel::integrate {
+namespace v3d::moya::kernel::integrate::media {
 
 /** The most closed surfaces a path is inside at once. **/
 inline constexpr std::uint32_t kMediaDepth = 8;
@@ -69,6 +69,12 @@ struct Media {
         return at == kNotInside ? 1.0F : entries[at].index;
     }
 
+    /** The material whose medium the path is in, or surface::kNoMaterial in the air. **/
+    MOYA_KERNEL std::uint32_t medium() const {
+        const std::uint32_t at = winner(kNotInside);
+        return at == kNotInside ? surface::kNoMaterial : entries[at].material;
+    }
+
     /** Whether a hit on a surface of a priority lies inside a medium of higher priority. **/
     MOYA_KERNEL bool outranked(std::int32_t priority) const {
         const std::uint32_t at = winner(kNotInside);
@@ -89,8 +95,10 @@ struct Media {
             }
             drop(lowest);
         }
-        entries[count] = entered;
-        ++count;
+        if (count < kMediaDepth) {
+            entries[count] = entered;
+            ++count;
+        }
     }
 
     /** Leaves the closed surface of a key, when the path is inside it. **/
@@ -164,9 +172,9 @@ MOYA_KERNEL inline float indexOf(const surface::Material & material) {
     return 1.0F;
 }
 
-/** A closed surface a hit met, of a material. **/
-MOYA_KERNEL inline Enclosure enclosureOf(const surface::Surfaces & surfaces, const geometry::Hit & hit, const surface::Material & material) {
-    return Enclosure { .key = keyOf(hit), .priority = priorityOf(surfaces, hit), .index = indexOf(material) };
+/** A closed surface a hit met, of the material at a place among the surfaces' materials. **/
+MOYA_KERNEL inline Enclosure enclosureOf(const surface::Surfaces & surfaces, const geometry::Hit & hit, std::uint32_t material) {
+    return Enclosure { .key = keyOf(hit), .priority = priorityOf(surfaces, hit), .index = indexOf(surfaces.materials[material]), .material = material };
 }
 
-};  // namespace v3d::moya::kernel::integrate
+};  // namespace v3d::moya::kernel::integrate::media

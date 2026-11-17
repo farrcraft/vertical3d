@@ -31,6 +31,7 @@
 #include <moya/libmoya/kernel/geometry/primitive/TriangleHit.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/geometry/Trace.h>
+#include <moya/libmoya/kernel/integrate/Inputs.h>
 #include <moya/libmoya/kernel/integrate/Paths.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/texture/Texels.h>

@@ -127,6 +127,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 output "compositing-groups.exr"
     channels handle[3] = channel "key" channel "fill" channel "rest"
     compression string = "zip"

@@ -26,7 +26,9 @@ namespace v3d::moya::geometry::internal {
 /**
  * Every material of a scene whose surface node is a MaterialX node, compiled into its program
  * before any geometry is gathered. Each material's displacement whose node is a MaterialX node is
- * compiled too, and the names of the primvars the programs read are kept. The names
+ * compiled too, and the names of the primvars the programs read are kept. Each material holds the
+ * medium it encloses: its volume's, compiled from its volume terminal, or else the one its
+ * OpenPBR transmission gives. The names
  * begin with `N`, `Cs`, `tangent` and `st`, at the numbers kernel::surface gives them, which
  * shading reads whatever a program does. Each other name follows in the order a program first
  * reads it, and then each primvar a scene's output names a channel of, in the order the outputs

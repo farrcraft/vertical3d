@@ -156,6 +156,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "coat"
     base_color colour = (1, 1, 1)
     coat_roughness float = 0.3

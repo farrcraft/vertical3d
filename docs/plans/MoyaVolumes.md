@@ -161,7 +161,7 @@ listed as a number with no record, as the ADR index requires.
 | [8](#step-8--openvdb) | OpenVDB as a dependency | `vcpkg.json`, `ports`, `flatpak` | 0245 | done |
 | [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | done |
 | [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | done |
-| [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | open |
+| [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | done |
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | open |
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | open |
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | open |
@@ -515,19 +515,19 @@ surface is step 15's, since ADR-0246 settles its mapping.
 spheres give the overlap the medium the record says. A scene with no medium gives the same bytes
 as before.
 
-**Done.** `kernel/integrate/Media.h` holds the closed surfaces a path is inside, eight deep, each by
-a key of its chain of instances, its priority and its medium's index. The path state carries them
-as `media`. An instance gains `priority`, and a hit takes its innermost instance's that is not
+**Done.** `kernel/integrate/media/Media.h` holds the closed surfaces a path is inside, eight deep,
+each by a key of its chain of instances, its priority and its medium's index. The path state carries
+them as `media`. An instance gains `priority`, and a hit takes its innermost instance's that is not
 zero, so every committed scene description gains a line for each instance. A material encloses a
 medium when it is layered, not thin-walled and its transmission's weight may be more than zero, or
-names a dielectric closure that is not thin. A material of a volume terminal and no surface
-terminal is a boundary: it encloses, has no BSDF and is clear to shadow rays. A path passes by a
-boundary, and a surface of lower priority than its medium, as no bounce, and enters or leaves it as
-it does. A path that crosses a surface as it scatters enters or leaves its medium. A dielectric's
-index is taken over the index beyond it, and a ratio below one turns its frame over, so the
-albedo tables and the closure keep a ratio of at least one. A camera ray finds the surfaces it
-starts inside by tracing on through every hit, when any material encloses a medium. A shadow ray's
-copy of the media is step 11's, since nothing it carries depends on them until transmittance does.
+names a dielectric closure that is not thin. A material of a volume terminal and no surface terminal
+is a boundary: it encloses, has no BSDF and is clear to shadow rays. A path passes by a boundary,
+and a surface of lower priority than its medium, as no bounce, and enters or leaves it as it does. A
+path that crosses a surface as it scatters enters or leaves its medium. A dielectric's index is
+taken over the index beyond it, and a ratio below one turns its frame over, so the albedo tables and
+the closure keep a ratio of at least one. A camera ray finds the surfaces it starts inside by
+tracing on through every hit, when any material encloses a medium. A shadow ray's copy of the media
+is step 11's, since nothing it carries depends on them until transmittance does.
 
 ### Step 11 — Homogeneous media
 
@@ -549,6 +549,26 @@ copy of the media is step 11's, since nothing it carries depends on them until t
 scattering under a distant light matches its closed form. A non-absorbing medium in a white
 furnace returns the furnace's light. Henyey and Greenstein's samples pass chi-squared at several
 anisotropies. A chromatic medium renders its expected colour.
+
+**Done.** Each material holds the medium it encloses: its volume's, compiled from its volume
+terminal, or the one `volume::interior()` gives a layered material, and an enclosure names its
+material. `kernel/volume/` gains `Phase.h`, `PhaseSample.h`, `Coefficients.h` and `Homogeneous.h`.
+`kernel/integrate/media/` holds `Media.h` and `Enclosure.h`, and `Tracking.h` with the collision
+draws, `rescale()` and `track()`. A path is tracked by the
+extinction at its first wavelength, or at a hashed channel in the RGB build, and weighed at every
+wavelength by spectral MIS. The ADR's two rescaled spectra are one here, the path's `chances`:
+the light strategy's side of the MIS is carried by the scalar `density`, which grows along each
+ray, and the power heuristic is kept. A path that crosses no medium keeps chances of one, so its
+bytes are unchanged. A phase function's direction is drawn by each lobe's share of the
+scattering over all four wavelengths, so its density does not depend on the tracked wavelength. A
+shadow ray carries a copy of the media and passes by the surfaces a path passes by. A glass that
+is not thin-walled and has a `transmission_depth` is not tinted by its transmission colour at its
+surface. Each committed scene description gains `volumeDepth`, which defaults to four. Three
+things are left to the steps that own them. A scattering event in a medium records no event for
+light path expressions until step 12. A medium's emission is not gathered until step 14. A camera
+ray that scatters before any surface gives the outputs nothing until step 18. The cases are
+in `moya/tests/MediaTest.cxx`, where the slab of the closed forms is a sphere seen along its
+diameter by an orthographic camera.
 
 ### Step 12 — Volume events
 

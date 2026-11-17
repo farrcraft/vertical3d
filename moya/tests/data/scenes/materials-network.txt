@@ -96,6 +96,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "gold"
     base_metalness float = 1
     language string = "materialx"

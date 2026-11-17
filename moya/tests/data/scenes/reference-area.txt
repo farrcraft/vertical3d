@@ -207,6 +207,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "constant"
     Cs colour = (1, 1, 1)
     Os colour = (1, 1, 1)

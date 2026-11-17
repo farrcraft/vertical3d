@@ -202,6 +202,12 @@ from its transmission, as OpenPBR gives it.
   channel, every channel's absorption is raised by the same amount, so the least is zero.
 - **A depth of zero, or a thin wall, holds no medium.**
 
+Each material the scene gathers holds the medium it encloses, as `surface::Material::medium`: its
+volume's, compiled from its volume terminal, when it has one, and otherwise the one `interior()`
+gives a layered material. A volume that does not compile is reported, and the material encloses
+no medium. [Integrator.md](Integrator.md#tracking-through-a-medium) says how a path is tracked
+through it.
+
 ### The node program
 
 A layered material's program is a list of `kernel::program::Instruction` over a store of
@@ -531,7 +537,10 @@ surface keeps its energy. The whole is not reciprocal, though each lobe but fuzz
 - **The rest is a dielectric.** Its index is the specular index with its reflectance at normal
   incidence scaled by the specular weight, at most 0.9999. Of the transmission's weight, it is a
   `Dielectric` that transmits, thin-walled where the surface is. Its reflection is tinted by the
-  specular colour and its transmission by the transmission colour.
+  specular colour and its transmission by the transmission colour. A surface that is not
+  thin-walled and has a `transmission_depth` is not tinted by the transmission colour, which the
+  medium inside takes over that depth, as [the medium inside a glass](#the-medium-inside-a-glass)
+  says.
 - **The opaque rest** is a `Specular` reflection over the diffuse base, tinted by the specular
   colour. Its index is relative to the coat's, mixed in by the coat's weight, and its reciprocal
   where that falls below one. The diffuse base is an `OrenNayar` lobe of `baseDiffuseRoughness`.

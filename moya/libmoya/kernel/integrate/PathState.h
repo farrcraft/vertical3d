@@ -7,7 +7,7 @@
 
 #include <moya/libmoya/kernel/geometry/Cone.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
-#include <moya/libmoya/kernel/integrate/Media.h>
+#include <moya/libmoya/kernel/integrate/media/Media.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 
@@ -27,9 +27,15 @@
  * - throughput is what the path carries back to the camera from where it is.
  * - radiance is the light it has gathered so far.
  * - wavelengths are the four it carries, and weight is its pixel filter's weight.
- * - bounces counts its bounces, and each kind's count is kept apart for its depth limit.
- * - density is the last BSDF sample's, which multiple importance sampling weighs a light by, and
- *   from and normal are the shading point that sample was drawn at and its shading normal.
+ * - bounces counts its bounces, and each kind's count is kept apart for its depth limit. A
+ *   scattering event in a medium is a volume bounce.
+ * - chances are the densities with which the path so far would have been tracked through media at
+ *   each of its wavelengths, over a common scale, with an average of one. A path that crosses no
+ *   medium keeps them at one.
+ * - density is the last BSDF or phase function sample's, which multiple importance sampling
+ *   weighs a light by, times the chance the path then passed the media along its way. from and
+ *   normal are the point that sample was drawn at and its shading normal, which is zero in a
+ *   medium.
  *   linked is that shading point's set of linked lights. specular is one when that sample was
  *   specular, so no light sample could have drawn its direction.
  * - coverage is one once its camera ray meets anything, which the beauty's alpha adds.
@@ -52,6 +58,8 @@
     FIELD(std::uint32_t, glossyBounces)                        \
     FIELD(std::uint32_t, specularBounces)                      \
     FIELD(std::uint32_t, transmissionBounces)                  \
+    FIELD(std::uint32_t, volumeBounces)                        \
+    FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, chances)    \
     FIELD(float, density)                                      \
     FIELD(glm::vec3, from)                                     \
     FIELD(glm::vec3, normal)                                   \
@@ -59,7 +67,8 @@
     FIELD(std::uint32_t, specular)                             \
     FIELD(float, coverage)                                     \
     FIELD(std::uint32_t, featured)                             \
-    FIELD(std::uint32_t, expression)                               FIELD(::v3d::moya::kernel::integrate::Media, media)
+    FIELD(std::uint32_t, expression)                           \
+    FIELD(::v3d::moya::kernel::integrate::media::Media, media)
 
 namespace v3d::moya::kernel::integrate {
 

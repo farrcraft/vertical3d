@@ -76,6 +76,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = "data:"
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "paintedplastic"
     Cs colour = (1, 1, 1)
     Kd float = 1

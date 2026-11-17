@@ -115,6 +115,7 @@ options "options"
     textureMemory integer = 1048576
     textureSearchPath string = ""
     transmissionDepth integer = 12
+    volumeDepth integer = 4
 shader "lift"
     in2 float = -0.08
     language string = "materialx"
