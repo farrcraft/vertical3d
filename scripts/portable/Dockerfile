@@ -9,7 +9,9 @@ FROM ubuntu:26.04
 ARG CLANG=20
 
 # vcpkg builds ICU and libxcrypt with autotools, and libxcrypt's build needs the ltdl headers
-# from libltdl-dev. It builds thorvg with Meson, which needs Python. build-essential
+# from libltdl-dev. It builds thorvg with Meson, which needs Python. Some ports, libsystemd
+# among them, install their Python packages into a virtual environment, which on Ubuntu needs
+# python3-venv. build-essential
 # brings GCC and libstdc++, which Clang compiles against on Linux. libclang-rt holds the
 # sanitizer and libFuzzer runtimes, which Clang links but does not install itself. llvm holds the
 # symbolizer that names the functions in a sanitizer's report.
@@ -62,6 +64,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openbox \
     pkg-config \
     python3 \
+    python3-venv \
     tar \
     unzip \
     vulkan-validationlayers \
