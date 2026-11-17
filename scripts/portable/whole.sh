@@ -12,7 +12,9 @@ set -euo pipefail
 source /usr/local/bin/v3d-vcpkg
 
 "$CXX" --version
-build="/work/whole-$(basename "$CXX")"
+# The directory is named for the C compiler, because a "+" in the path breaks vcpkg: some ports
+# match the install path as a regular expression.
+build="/work/whole-$(basename "$CC")"
 
 cmake -S /src -B "$build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Debug \
