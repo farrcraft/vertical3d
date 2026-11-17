@@ -19,6 +19,7 @@ v3d_add_test(moya
 	"DisplacementTest.cxx"
 	"FuzzTest.cxx"
 	"GeometricNodesTest.cxx"
+	"GridTest.cxx"
 	"LayeringTest.cxx"
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"
@@ -79,9 +80,17 @@ v3d_add_test(moya
 # libmoya writes through OpenEXR and Imath, and checks colour conversions against OpenColorIO's own,
 # which libmoya links PRIVATE too. It flattens MaterialX documents through MaterialX itself, to
 # check the materials libmoya flattens against MaterialX's own. It denoises through OIDN, which
-# libmoya does not link yet.
+# libmoya links PRIVATE. It writes and reads grids through OpenVDB and converts them to NanoVDB,
+# which libmoya does not link yet.
 target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_asset v3dlib_image v3dlib_log v3dlib_rib
-	Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise TBB::tbb)
+	Imath::Imath MaterialXCore MaterialXFormat OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenImageDenoise OpenVDB::openvdb OpenVDB::nanovdb TBB::tbb)
+target_compile_definitions(v3dtest_moya PRIVATE NANOVDB_USE_OPENVDB)
+
+# NanoVDB chooses between the standard's old and new type traits by __cplusplus, which MSVC
+# reports as C++98 unless it is told to report the standard it compiles.
+if(MSVC)
+	target_compile_options(v3dtest_moya PRIVATE /Zc:__cplusplus)
+endif()
 
 # The command line cases run the moya executable itself, and the benchmark's case runs
 # moya_bench, each by its path in the build tree, so both are built before the suite.

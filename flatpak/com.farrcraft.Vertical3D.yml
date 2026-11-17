@@ -30,7 +30,7 @@ modules:
   - name: boost
     buildsystem: simple
     build-commands:
-      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=filesystem,json,program_options
+      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=filesystem,iostreams,json,program_options
       - ./b2 install variant=release link=shared threading=multi -j ${FLATPAK_BUILDER_N_JOBS}
     sources:
       - type: archive
@@ -364,6 +364,51 @@ modules:
       - type: archive
         url: https://github.com/RenderKit/oidn/releases/download/v2.5.1/oidn-2.5.1.src.tar.gz
         sha256: e71fd043a70f1cc80e301d1b90df6c1f536098c4dd94baa612742f6db3369c36
+
+  - name: blosc
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTS=OFF
+      - -DBUILD_FUZZERS=OFF
+      - -DBUILD_BENCHMARKS=OFF
+      - -DBUILD_STATIC=OFF
+      - -DPREFER_EXTERNAL_ZLIB=ON
+      - -DPREFER_EXTERNAL_ZSTD=ON
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/Blosc/c-blosc/archive/v1.21.6.tar.gz
+        sha256: 9fcd60301aae28f97f1301b735f966cc19e7c49b6b4321b839b4579a0c156f38
+
+  # NanoVDB's headers are built without CUDA, as the overlay port in ports/openvdb builds them
+  - name: openvdb
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DOPENVDB_BUILD_UNITTESTS=OFF
+      - -DOPENVDB_BUILD_PYTHON_MODULE=OFF
+      - -DOPENVDB_BUILD_AX=OFF
+      - -DOPENVDB_BUILD_VDB_PRINT=OFF
+      - -DOPENVDB_BUILD_VDB_VIEW=OFF
+      - -DOPENVDB_BUILD_VDB_RENDER=OFF
+      - -DOPENVDB_BUILD_VDB_LOD=OFF
+      - -DOPENVDB_CORE_STATIC=OFF
+      - -DUSE_EXR=ON
+      - -DUSE_IMATH_HALF=ON
+      - -DUSE_PKGCONFIG=OFF
+      - -DOPENVDB_BUILD_NANOVDB=ON
+      - -DNANOVDB_USE_CUDA=OFF
+      - -DNANOVDB_USE_OPENVDB=ON
+      - -DNANOVDB_BUILD_TOOLS=OFF
+    license-files:
+      - LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/openvdb/archive/v12.0.1.tar.gz
+        sha256: a3c8724ecadabaf558b6e1bd6f1d695e93b82a7cfdf144b8551e5253340ddce0
 
   - name: openusd
     buildsystem: cmake-ninja

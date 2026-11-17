@@ -29,6 +29,8 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['MaterialXCore', /^MaterialXCore\//],
     ['MaterialXFormat', /^MaterialXFormat\//],
     ['OpenImageDenoise', /^OpenImageDenoise\//],
+    ['OpenVDB::openvdb', /^openvdb\//],
+    ['OpenVDB::nanovdb', /^nanovdb\//],
 ];
 
 /**

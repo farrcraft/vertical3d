@@ -158,7 +158,7 @@ listed as a number with no record, as the ADR index requires.
 | [5](#step-5--the-record-subsurface) | The record: subsurface | `docs/adr` | **0246** | accepted |
 | [6](#step-6--the-record-a-hairs-model) | The record: a hair's model | `docs/adr` | **0247** | accepted |
 | [7](#step-7--the-record-a-volumes-light) | The record: a volume's light | `docs/adr` | **0248** | accepted |
-| [8](#step-8--openvdb) | OpenVDB as a dependency | `vcpkg.json`, `ports`, `flatpak` | 0245 | open |
+| [8](#step-8--openvdb) | OpenVDB as a dependency | `vcpkg.json`, `ports`, `flatpak` | 0245 | done |
 | [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | open |
 | [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | open |
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | open |
@@ -457,6 +457,17 @@ material's light is.
 * **[Dependencies.md](../contributing/Dependencies.md)** names it and why.
 
 **Tests:** a grid written through OpenVDB and read back holds the same values.
+
+**Done.** `ports/openvdb` is vcpkg's port of OpenVDB 12.0.1 with its features removed. It always
+builds NanoVDB 32.7, with CUDA off and its conversion from OpenVDB on, and none of the two
+libraries' tools. OpenVDB joins the `moya` feature and brings Blosc and boost's iostreams, which
+the Flatpak builds as modules beside OpenVDB's. libmoya does not link OpenVDB until step 13 reads
+a grid, so the moya suite links `OpenVDB::openvdb` and `OpenVDB::nanovdb` for `GridTest.cxx`. A
+grid written and read back holds every value, and its NanoVDB conversion holds them too, with its
+root's most the grid's most. NanoVDB chooses between the standard's old and new type traits by
+`__cplusplus`, which MSVC reports as C++98 unless it is given `/Zc:__cplusplus`, so the suite is
+compiled with it. MSVC also reports code it cannot reach in NanoVDB's headers once it inlines
+them, which its external-header level does not silence, so C4702 is switched off around them.
 
 ### Step 9 — Media in the scene
 

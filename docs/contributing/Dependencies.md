@@ -30,7 +30,7 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 builds TBB and OpenUSD from source, which takes a long time.
 
 What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
-Imath, OpenColorIO, OpenSubdiv, MaterialX and OIDN. No api library
+Imath, OpenColorIO, OpenSubdiv, MaterialX, OIDN and OpenVDB. No api library
 uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
 only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
 names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
@@ -53,6 +53,7 @@ names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
 | opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
 | opensubdiv | OpenSubdiv, in the `moya` feature, with none of its features, so it has no OpenGL or GPU backend. moya evaluates subdivision surfaces through it. vcpkg builds it static on Windows, and it is linked as the `OpenSubdiv::osdCPU_static` target on every platform, PRIVATE because only the subdivision surface's source includes it. Its scheme headers use `M_PI`, so that source is compiled with `_USE_MATH_DEFINES` on MSVC. The Flatpak builds it as a module |
 | openexr | OpenEXR, in the `moya` feature. moya writes its pictures through it. It is the `OpenEXR::OpenEXR` target. It brings libdeflate and OpenJPH, which the Flatpak builds as modules, and zstd, which it takes from the runtime |
+| openvdb | OpenVDB 12, in the `moya` feature, with NanoVDB. moya reads grids through OpenVDB and converts them to NanoVDB, whose headers kernel code reads them through. It comes from the tree's [overlay port](#the-openvdb-overlay-port), which builds NanoVDB without CUDA. It is the `OpenVDB::openvdb` and `OpenVDB::nanovdb` targets of `find_package(OpenVDB COMPONENTS openvdb nanovdb)`. A source that includes NanoVDB's headers is compiled with `/Zc:__cplusplus` on MSVC, since NanoVDB chooses its type traits by `__cplusplus`, and switches off C4702 around them, which MSVC reports from them once inlined. It brings Blosc and boost's iostreams, which the Flatpak builds as modules |
 | quickjs-ng | `v3dlib_script` runs scripts on it, as the `qjs` target of the `qjs` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
@@ -125,6 +126,18 @@ Clang cannot build the editor's USD reader. MSVC and GCC accept it.
 - When the baseline moves OpenUSD to a new version, copy the new port over `ports/usd/`, add the
   patch to its `PATCHES` again, and remake it if the header has changed. Drop the port once
   OpenUSD's release holds the fix.
+
+### The OpenVDB overlay port
+
+vcpkg's port builds NanoVDB only behind a feature that depends on CUDA, though NanoVDB's headers
+need none. moya reads grids through NanoVDB's headers on every device, and builds no CUDA.
+
+- The port in [ports/openvdb/](../../ports/openvdb/) is vcpkg's own, from the baseline commit,
+  with its features removed. It always builds NanoVDB, with CUDA off and its conversion from
+  OpenVDB on, and builds none of OpenVDB's or NanoVDB's tools.
+- When the baseline moves OpenVDB to a new version, copy the new port's patch and its other files
+  over `ports/openvdb/`, and set the new version and hash in the portfile. Change the Flatpak's
+  module to the same archive. Drop the port once vcpkg's builds NanoVDB without CUDA.
 
 ### The OIDN and ISPC overlay ports
 
