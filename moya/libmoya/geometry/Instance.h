@@ -50,6 +50,9 @@ struct Instance {
     /** Its material among the prototypes' materials, or kernel::surface::kNoMaterial. **/
     std::uint32_t material { kernel::surface::kNoMaterial };
 
+    /** Its priority where the media of closed surfaces overlap. **/
+    std::int32_t priority { 0 };
+
     /** Whether the instance's transformation moves over the shutter. **/
     bool moves() const {
         return keys.size() > 1;

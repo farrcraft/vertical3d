@@ -48,6 +48,9 @@ namespace v3d::moya::kernel::bsdf {
  * and it takes its index and whether it is thin-walled. A microfacet lobe reads the albedo
  * tables.
  *
+ * outside is the index of refraction of the medium on the side the surface's normal faces. A
+ * dielectric's index is taken relative to it.
+ *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
  * outgoing, of the parameters its program gives. The geometry's `Cs` primvar overrides its base
  * colour. The program reads its images through a device's texture access. The coat works in the
@@ -57,7 +60,7 @@ namespace v3d::moya::kernel::bsdf {
  **/
 template <texture::Texels X>
 MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
-    const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing) {
+    const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing, float outside = 1.0F) {
     const surface::Material none;
     const surface::Material & material = point.material != surface::kNoMaterial ? surfaces.materials[point.material] : none;
     glm::vec3 colour { 0.5F };
@@ -74,6 +77,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
     out.frame = point.frame;
     out.coatFrame = point.frame;
     out.geometric = point.geometric;
+    out.outside = outside;
     if (material.layered != 0U) {
         surface::OpenPbr layers = material.surface;
         if (material.program.count != 0U) {
@@ -106,7 +110,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
         } else if (named.model == Model::Conductor) {
             closure.fresnel = scattering::F82 { .normal = reflectance, .tint = spectrum::reflectance(table, named.tint, wavelengths) };
         } else {
-            closure.ior = named.ior;
+            closure.ior = named.ior / outside;
             closure.thin = named.thin;
         }
         out.add(closure);

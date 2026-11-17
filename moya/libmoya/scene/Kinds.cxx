@@ -303,7 +303,8 @@ Kind instance() {
             Declaration { .name = "camera", .type = Type::Integer, .fallback = Value::integer(1) },
             Declaration { .name = "shadow", .type = Type::Integer, .fallback = Value::integer(1) },
             Declaration { .name = "indirect", .type = Type::Integer, .fallback = Value::integer(1) },
-            Declaration { .name = "doubleSided", .type = Type::Integer, .fallback = Value::integer(0) } } };
+            Declaration { .name = "doubleSided", .type = Type::Integer, .fallback = Value::integer(0) },
+            Declaration { .name = "priority", .type = Type::Integer, .fallback = Value::integer(0) } } };
 }
 
 /**

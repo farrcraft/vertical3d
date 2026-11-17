@@ -21,7 +21,8 @@ The state holds the pixel and the sample, the ray traced next and its cone, the 
 the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
 count of bounces in all and of each kind. Last, it holds the last BSDF sample's density and
 whether it was specular, and the shading point it was drawn at with its shading normal and its
-set of linked lights. Its coverage is one once the camera ray has met something.
+set of linked lights. Its coverage is one once the camera ray has met something. Its media are
+the closed surfaces it is inside, as [nested media](#nested-media) says.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -175,6 +176,39 @@ passes any number of them in one traversal, with no limit on how many.
   that does. A ray from such a light meets each surface by a traversal of its own.
 
 Background: [ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md)
+
+## Nested media
+
+A path carries the closed surfaces it is inside, in `kernel/integrate/Media.h`, so a dielectric
+bends light by the media on its two sides and overlapping surfaces give one medium.
+
+- **A material encloses a medium** when a path may cross its surface into it. A layered material
+  does when it is not thin-walled and its transmission's weight may be more than zero. Any other
+  does when it names a dielectric closure that is not thin. A material with a volume terminal and
+  no surface terminal is a boundary, which encloses its volume and has no BSDF.
+- **A path enters a surface it crosses from the side its normal faces, and leaves one it crosses
+  back.** It records each surface by the chain of instances that placed it, its priority, and the
+  index of refraction of the medium inside. A layered material's index is its specular index,
+  scaled by its specular weight. A boundary's is one.
+- **The medium a path is in** is that of the surface of highest priority it is inside, and of
+  those the one it entered last. An instance's `priority` is 0 unless a client sets it. A hit
+  takes the priority of the innermost instance in its chain whose priority is not zero. A scene
+  that sets no priority behaves as a plain stack.
+- **A path passes by a surface of lower priority than its medium**, and a boundary, as no bounce.
+  It enters or leaves the surface's medium as it passes, and goes on from just past the hit. A
+  path passes by at most 256 surfaces.
+- **A dielectric's index is relative to the medium beyond it**: the medium the path is in, leaving
+  out the surface it met. A ratio below one turns the dielectric's frame over, so a glass of index
+  1.5 in water of 1.33 bends by their ratio from either side.
+- **A path holds at most eight surfaces.** One that enters a ninth leaves the one of lowest
+  priority first, and of those the one it entered first.
+- **A camera ray finds the surfaces it starts inside** when any material encloses a medium. It is
+  traced on through everything it meets, and it is inside each surface whose first face it meets
+  is a back face.
+- **A shadow ray passes a boundary**, whose opacity is zero. Any other surface it meets casts its
+  shadow as it would outside a medium.
+
+Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md)
 
 ## Depth limits and Russian roulette
 

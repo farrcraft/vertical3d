@@ -19,7 +19,8 @@ inline constexpr std::uint32_t kGroup = std::numeric_limits<std::uint32_t>::max(
 
 /**
  * An instance as shading reads it: its transformation from its prototype's space into the space
- * of the group that holds it, its keys when it moves, and the geometry it places.
+ * of the group that holds it, its keys when it moves, the geometry it places, its material and
+ * its priority.
  **/
 struct Instance {
     /** The transformation when it holds still, and at its first sample when it moves. **/
@@ -33,6 +34,12 @@ struct Instance {
 
     /** Its material among the surfaces', or kNoMaterial. **/
     std::uint32_t material { kNoMaterial };
+
+    /**
+     * Its priority where the media of closed surfaces overlap. A hit takes the priority of the
+     * innermost instance in its chain whose priority is not zero.
+     **/
+    std::int32_t priority { 0 };
 };
 
 };  // namespace v3d::moya::kernel::surface

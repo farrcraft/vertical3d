@@ -97,7 +97,8 @@ Surfaces::Surfaces(device::Device & device, const Prototypes & prototypes, const
             .keys = static_cast<std::uint32_t>(keys.size()),
             .keyCount = static_cast<std::uint32_t>(instance.keys.size()),
             .geometry = instance.kind == Prototype::Geometry ? instance.prototype : kernel::surface::kGroup,
-            .material = instance.material });
+            .material = instance.material,
+            .priority = instance.priority });
         keys.insert(keys.end(), instance.keys.begin(), instance.keys.end());
         most = instance.id + 1U > most ? instance.id + 1U : most;
     }
@@ -118,6 +119,9 @@ Surfaces::Surfaces(device::Device & device, const Prototypes & prototypes, const
     byId_ = uploaded(device, byId);
     const ConvertedMaterials converted = ConvertedMaterials::of(prototypes, config);
     materials_ = uploaded(device, converted.materials);
+    for (const Instance & instance : prototypes.instances) {
+        media_ = media_ || (instance.material < converted.materials.size() && converted.materials[instance.material].encloses());
+    }
     instructions_ = uploaded(device, prototypes.instructions);
     programValues_ = uploaded(device, converted.programValues);
     primvars_ = uploaded(device, prototypes.primvars);
@@ -142,7 +146,8 @@ kernel::surface::Surfaces Surfaces::view() const {
         .programValues = device::view<float>(*programValues_),
         .values = device::view<float>(*values_),
         .open = open_,
-        .close = close_ };
+        .close = close_,
+        .media = media_ ? 1U : 0U };
 }
 
 };  // namespace v3d::moya::geometry

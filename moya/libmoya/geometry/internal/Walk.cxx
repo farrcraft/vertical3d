@@ -258,6 +258,7 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         }
     }
     out.doubleSided = scene_.value(handle, "doubleSided").integerArray().front() != 0;
+    out.priority = scene_.value(handle, "priority").integerArray().front();
     const scene::Handle named = scene_.value(handle, "material").handleArray().front();
     if (named.valid() && scene_.contains(named)) {
         out.material = material(named);

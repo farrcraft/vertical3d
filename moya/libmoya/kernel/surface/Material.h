@@ -35,6 +35,12 @@ inline constexpr std::uint32_t kMostMaterialClosures = 8;
  * A layered material is cut out when its opacity may fall below one: when its program gives the
  * opacity, or the opacity it holds is less than one. A traversal asks about a hit on a surface
  * only when its material is cut out.
+ *
+ * A material encloses a medium when a path may cross its surface into it. A layered material
+ * does when it is not thin-walled and its transmission's weight may be more than zero, and any
+ * other when it names a dielectric closure that is not thin. A boundary is a material with a
+ * volume and no surface: it encloses its volume and has no BSDF, so a path passes its surface by.
+ * A traversal asks about a boundary's hits as it does a cut-out surface's.
  **/
 struct Material {
     glm::vec3 colour { 0.5F };
@@ -53,9 +59,31 @@ struct Material {
     /** One when the program gives the opacity, from a node that feeds it. **/
     std::uint32_t programmedOpacity { 0 };
 
-    /** Whether a surface of this material may be cut out anywhere. **/
+    /** One when the transmission's weight may be more than zero, from its value or a node. **/
+    std::uint32_t transmits { 0 };
+
+    /** One when the material has a volume and no surface. **/
+    std::uint32_t boundary { 0 };
+
+    /** Whether a surface of this material may be cut out anywhere, or is a boundary. **/
     MOYA_KERNEL bool cutOut() const {
-        return layered != 0U && (programmedOpacity != 0U || surface.geometryOpacity < 1.0F);
+        return boundary != 0U || (layered != 0U && (programmedOpacity != 0U || surface.geometryOpacity < 1.0F));
+    }
+
+    /** Whether a path may cross a surface of this material into a medium it encloses. **/
+    MOYA_KERNEL bool encloses() const {
+        if (boundary != 0U) {
+            return true;
+        }
+        if (layered != 0U) {
+            return transmits != 0U && surface.thinWalled == 0U;
+        }
+        for (std::uint32_t i = 0; i < count && i < kMostMaterialClosures; ++i) {
+            if (closures[i].model == bsdf::Model::Dielectric && !closures[i].thin) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 

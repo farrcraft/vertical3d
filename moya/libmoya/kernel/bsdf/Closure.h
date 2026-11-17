@@ -25,14 +25,15 @@ inline constexpr float kLeastBend = 1.0e-3F;
 /**
  * One lobe of a BSDF: its model, its weight at the path's wavelengths, the estimate of its albedo
  * that sampling picks it by, and what its model reads. A microfacet model reads its alphas along
- * the tangent and the bitangent, and a conductor its Fresnel factor. A dielectric reads the index
- * of refraction of the side the shading normal points away from, the outside's being one, and
- * whether it is a thin slab with the same medium on both sides. Its reflection is tinted by its
- * colour and its transmission by its transmitted colour. A specular reflection reads its index
- * and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness, and
- * fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel factor
- * is mixed towards a thin film's by the film's weight. A coated closure is the coat, which works in
- * the coat's frame.
+ * the tangent and the bitangent, and a conductor its Fresnel factor. A dielectric reads a ratio of
+ * indices of refraction: the side the shading normal points away from over the side it faces. It
+ * reads too whether it is a thin slab with the same medium on both sides. A flipped dielectric
+ * works in its frame turned over, so the ratio it reads is at least one. Its reflection is tinted
+ * by its colour and its transmission by its transmitted colour. A specular reflection reads its
+ * index and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness,
+ * and fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel
+ * factor is mixed towards a thin film's by the film's weight. A coated closure is the coat, which
+ * works in the coat's frame.
  **/
 struct Closure {
     Model model { Model::Diffuse };
@@ -48,6 +49,7 @@ struct Closure {
     scattering::ThinFilm film;
     float filmWeight { 0.0F };
     bool coated { false };
+    bool flipped { false };
 
     /** Whether a thin film changes its Fresnel factor. **/
     MOYA_KERNEL bool filmed() const {

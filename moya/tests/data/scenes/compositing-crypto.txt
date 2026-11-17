@@ -45,6 +45,7 @@ instance "floor"
     group handle = none
     indirect integer = 1
     material handle = material "material"
+    priority integer = 0
     prototype handle = mesh "floor"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -54,6 +55,7 @@ instance "floor 2"
     group handle = none
     indirect integer = 1
     material handle = material "material"
+    priority integer = 0
     prototype handle = mesh "floor 2"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -63,6 +65,7 @@ instance "front"
     group handle = none
     indirect integer = 1
     material handle = material "material 3"
+    priority integer = 0
     prototype handle = sphere "front"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 -0.7 -0.6 1]
@@ -72,6 +75,7 @@ instance "left"
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
+    priority integer = 0
     prototype handle = sphere "left"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -0.45 -0.5 0 1]
@@ -81,6 +85,7 @@ instance "right"
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
+    priority integer = 0
     prototype handle = sphere "right"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0.45 -0.5 0 1]

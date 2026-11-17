@@ -436,9 +436,13 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
             const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
             out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
             out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
+            const bool opaque = folded.constantFrom(kernel::program::kTransmissionWeight, 1U) && !(out.material.surface.transmissionWeight > 0.0F);
+            out.material.transmits = opaque ? 0U : 1U;
             reportDispersion(held, scene.name(material), folded, out.material.surface);
             out.material.layered = 1;
         }
+    } else if (scene.value(material, "volume").handleArray().front().valid()) {
+        out.material.boundary = 1;
     }
     out.reports = std::move(held.reports);
     return out;

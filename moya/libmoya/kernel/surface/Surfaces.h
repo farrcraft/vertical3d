@@ -96,6 +96,9 @@ struct Surfaces {
     float open { 0.0F };
     float close { 0.0F };
 
+    /** One when an instance's material encloses a medium. **/
+    std::uint32_t media { 0 };
+
     /** A time held to the shutter, as a traversal holds a ray's. **/
     MOYA_KERNEL float held(float time) const {
         if (!(time > open)) {

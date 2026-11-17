@@ -40,6 +40,11 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
         }
         const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
         if (!surface.valid() || !scene.contains(surface)) {
+            // a material of a volume and no surface is a boundary, which compiling marks
+            const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
+            if (volume.valid() && scene.contains(volume)) {
+                compiled_.emplace(handle.index, material::compile(material::Library::installed(), scene, handle, names_));
+            }
             continue;
         }
         const std::string & language = scene.value(surface, "language").stringArray().front();

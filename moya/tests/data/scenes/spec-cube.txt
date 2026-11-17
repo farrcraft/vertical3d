@@ -29,6 +29,7 @@ instance "unitcube"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -38,6 +39,7 @@ instance "unitcube 2"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube 2"
     shadow integer = 1
     transform matrix = [-4.37114e-08 0 -1 0 0 1 0 0 1 0 -4.37114e-08 0 0 0 0 1]
@@ -47,6 +49,7 @@ instance "unitcube 3"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube 3"
     shadow integer = 1
     transform matrix = [-1 0 8.74228e-08 0 0 1 0 0 -8.74228e-08 0 -1 0 0 0 0 1]
@@ -56,6 +59,7 @@ instance "unitcube 4"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube 4"
     shadow integer = 1
     transform matrix = [1.31134e-07 0 1 0 0 1 0 0 -1 0 1.31134e-07 0 0 0 0 1]
@@ -65,6 +69,7 @@ instance "unitcube 5"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube 5"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 -4.37114e-08 1 0 0 -1 -4.37114e-08 0 0 0 0 1]
@@ -74,6 +79,7 @@ instance "unitcube 6"
     group handle = none
     indirect integer = 1
     material handle = material "defaultsurface"
+    priority integer = 0
     prototype handle = mesh "unitcube 6"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 -4.37114e-08 -1 0 0 1 -4.37114e-08 0 0 0 0 1]

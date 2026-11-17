@@ -31,6 +31,7 @@ instance "Polygon 1"
     group handle = none
     indirect integer = 1
     material handle = material "material"
+    priority integer = 0
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -40,6 +41,7 @@ instance "Sphere 1"
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
+    priority integer = 0
     prototype handle = sphere "Sphere 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -1.6 -0.6 0 1]
@@ -49,6 +51,7 @@ instance "Sphere 2"
     group handle = none
     indirect integer = 1
     material handle = material "material 3"
+    priority integer = 0
     prototype handle = sphere "Sphere 2"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -0.8 -0.6 0 1]
@@ -58,6 +61,7 @@ instance "Sphere 3"
     group handle = none
     indirect integer = 1
     material handle = material "material 4"
+    priority integer = 0
     prototype handle = sphere "Sphere 3"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 -0.6 0 1]
@@ -67,6 +71,7 @@ instance "Sphere 4"
     group handle = none
     indirect integer = 1
     material handle = material "material 5"
+    priority integer = 0
     prototype handle = sphere "Sphere 4"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0.8 -0.6 0 1]
@@ -76,6 +81,7 @@ instance "Sphere 5"
     group handle = none
     indirect integer = 1
     material handle = material "material 6"
+    priority integer = 0
     prototype handle = sphere "Sphere 5"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 1.6 -0.6 0 1]

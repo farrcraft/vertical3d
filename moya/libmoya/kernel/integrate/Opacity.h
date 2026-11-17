@@ -31,8 +31,9 @@ inline constexpr float kFloatSteps = 16777216.0F;
 
 /**
  * The opacity of the surface a ray met, from zero where it is cut away to one. A surface whose
- * material is not cut out is opaque. A cut-out material's program gives it at the hit, reading its
- * images at their finest level, and otherwise the opacity the material holds gives it.
+ * material is not cut out is opaque, and a boundary is clear. A cut-out material's program gives
+ * it at the hit, reading its images at their finest level, and otherwise the opacity the material
+ * holds gives it.
  **/
 template <texture::Texels X>
 MOYA_KERNEL float opacityAt(const surface::Surfaces & surfaces, const X & textures, const geometry::Hit & hit, const geometry::Ray & ray) {
@@ -41,6 +42,9 @@ MOYA_KERNEL float opacityAt(const surface::Surfaces & surfaces, const X & textur
         return 1.0F;
     }
     const surface::Material & material = surfaces.materials[point.material];
+    if (material.boundary != 0U) {
+        return 0.0F;
+    }
     if (!material.cutOut()) {
         return 1.0F;
     }

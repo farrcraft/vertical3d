@@ -59,10 +59,12 @@
 #include <moya/libmoya/kernel/geometry/Traversal.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Covered.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Dimensions.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Enclosure.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Event.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Expressions.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/FirstHit.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Keeping.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/Media.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Opacity.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Passing.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Paths.h>  // IWYU pragma: keep

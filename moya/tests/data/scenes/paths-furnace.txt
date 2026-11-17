@@ -31,6 +31,7 @@ instance "Sphere 1"
     group handle = none
     indirect integer = 1
     material handle = material "matte"
+    priority integer = 0
     prototype handle = sphere "Sphere 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]

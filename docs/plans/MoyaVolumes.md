@@ -160,7 +160,7 @@ listed as a number with no record, as the ADR index requires.
 | [7](#step-7--the-record-a-volumes-light) | The record: a volume's light | `docs/adr` | **0248** | accepted |
 | [8](#step-8--openvdb) | OpenVDB as a dependency | `vcpkg.json`, `ports`, `flatpak` | 0245 | done |
 | [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | done |
-| [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | open |
+| [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | done |
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | open |
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | open |
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | open |
@@ -515,6 +515,20 @@ surface is step 15's, since ADR-0246 settles its mapping.
 spheres give the overlap the medium the record says. A scene with no medium gives the same bytes
 as before.
 
+**Done.** `kernel/integrate/Media.h` holds the closed surfaces a path is inside, eight deep, each by
+a key of its chain of instances, its priority and its medium's index. The path state carries them
+as `media`. An instance gains `priority`, and a hit takes its innermost instance's that is not
+zero, so every committed scene description gains a line for each instance. A material encloses a
+medium when it is layered, not thin-walled and its transmission's weight may be more than zero, or
+names a dielectric closure that is not thin. A material of a volume terminal and no surface
+terminal is a boundary: it encloses, has no BSDF and is clear to shadow rays. A path passes by a
+boundary, and a surface of lower priority than its medium, as no bounce, and enters or leaves it as
+it does. A path that crosses a surface as it scatters enters or leaves its medium. A dielectric's
+index is taken over the index beyond it, and a ratio below one turns its frame over, so the
+albedo tables and the closure keep a ratio of at least one. A camera ray finds the surfaces it
+starts inside by tracing on through every hit, when any material encloses a medium. A shadow ray's
+copy of the media is step 11's, since nothing it carries depends on them until transmittance does.
+
 ### Step 11 — Homogeneous media
 
 * **A path is tracked through a homogeneous medium** as the record of step 3 decides, at its four
@@ -523,7 +537,8 @@ as before.
   other the record names, each evaluated, sampled and given a density.
 * **A point in a medium draws a light sample**, weighed against the phase function's sample by
   MIS, as a shading point's is against its BSDF.
-* **A shadow ray carries the transmittance of the media it crosses**, beside the opacity of the
+* **A shadow ray carries a copy of the path's media and the transmittance of those it crosses**,
+  beside the opacity of the
   cut-out surfaces it passes.
 * **The options gain `volumeDepth`**, the most scattering events in media a path makes, and a
   volume bounce is counted against `maxDepth` too. Russian roulette treats it as any bounce.

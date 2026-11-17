@@ -27,9 +27,9 @@ inline constexpr float kLeastLoss = 1.0e-5F;
 
 /**
  * The interface between two dielectrics, in a frame whose z is the shading normal and whose x is
- * the tangent. The shading normal points outside, where the index is one, and the closure's index
- * is inside's. An index of one or below lets light straight through. It reflects light on the side
- * it leaves towards and transmits it to the other side.
+ * the tangent. The shading normal points outside, and the closure's index is inside's over
+ * outside's, at least one. An index of one lets light straight through. It reflects light on the
+ * side it leaves towards and transmits it to the other side.
  *
  * - **A single scattering** is GGX's, by the closure's alphas. Each microfacet reflects by
  *   Fresnel's equations at the angle between outgoing and its normal, and refracts the rest.

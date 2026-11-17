@@ -384,9 +384,12 @@ A conductor samples a visible normal by Heitz's method with the chance of outgoi
 reflects about it. Otherwise it samples by the cosine, as the compensation is shaped. Its
 estimated albedo is its weight's mean times its Fresnel factor's.
 
-A dielectric's closure holds the index of refraction inside, the side the shading normal points
-away from, and the outside's index is one. An index below one is taken as one. eta is the ratio
-of the index on incoming's side to the index on outgoing's.
+A dielectric's closure holds the ratio of the index of refraction inside, the side the shading
+normal points away from, to the index of the medium outside. The BSDF holds the outside's index,
+which is the medium a path is in beyond the surface, as
+[Integrator.md](Integrator.md#nested-media) says. A ratio below one turns the closure's frame
+over and takes the ratio's reciprocal, so the closure always holds a ratio of at least one. eta is
+the ratio of the index on incoming's side to the index on outgoing's.
 
 - **A smooth interface** reflects along the mirror direction by Fresnel's equations for
   unpolarised light, and refracts the rest by Snell's law. Beyond the critical angle it reflects

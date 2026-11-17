@@ -71,7 +71,10 @@ struct Compiled {
  * feeding it gives its default. A program that
  * needs more registers than a shading point holds is reported, and each connected input then
  * gives its default. The surface holds the parameters as material::fold() folds the program. The
- * material's program gives its opacity when the opacity varies over the surface.
+ * material's program gives its opacity when the opacity varies over the surface. The material
+ * transmits when its transmission's weight varies or is more than zero.
+ *
+ * A material with a volume terminal and no surface terminal is a boundary, which has no BSDF.
  *
  * A surface of any other definition is reported, and the material is layered with OpenPBR's
  * defaults. A dispersion that may be other than none is reported, because nothing renders one.

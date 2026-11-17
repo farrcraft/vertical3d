@@ -46,6 +46,7 @@ instance "Polygon 1"
     group handle = none
     indirect integer = 1
     material handle = material "material"
+    priority integer = 0
     prototype handle = mesh "Polygon 1"
     shadow integer = 1
     transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
@@ -55,6 +56,7 @@ instance "SubdivisionMesh 1"
     group handle = none
     indirect integer = 1
     material handle = material "material 2"
+    priority integer = 0
     prototype handle = subdivision "SubdivisionMesh 1"
     shadow integer = 1
     transform matrix = [1.03923 0 -0.6 0 0 1.2 0 0 0.6 0 1.03923 0 0 -0.25 0 1]

@@ -53,6 +53,7 @@ class Surfaces final {
     boost::shared_ptr<device::Buffer> values_;
     float open_ { 0.0F };
     float close_ { 0.0F };
+    bool media_ { false };
 };
 
 };  // namespace v3d::moya::geometry

@@ -24,6 +24,7 @@
 #include <moya/libmoya/kernel/integrate/Expressions.h>
 #include <moya/libmoya/kernel/integrate/FirstHit.h>
 #include <moya/libmoya/kernel/integrate/Keeping.h>
+#include <moya/libmoya/kernel/integrate/Media.h>
 #include <moya/libmoya/kernel/integrate/Opacity.h>
 #include <moya/libmoya/kernel/integrate/Passing.h>
 #include <moya/libmoya/kernel/integrate/PathState.h>
@@ -70,8 +71,14 @@ inline constexpr float kShadowShort = 1.0e-4F;
  **/
 inline constexpr float kFeaturedShare = 0.5F;
 
-/** The most surfaces a shadow ray from a light with a shadow link meets before it is blocked. **/
+/**
+ * The most surfaces a ray passes. A shadow ray from a light with a shadow link is blocked past
+ * them. A path ends past them, and a camera ray stops looking for the media it starts in.
+ **/
 inline constexpr std::uint32_t kMostPassed = 256;
+
+/** The most closed surfaces a camera ray tells apart as it finds the media it starts in. **/
+inline constexpr std::uint32_t kMostSeen = 2U * kMediaDepth;
 
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
@@ -245,10 +252,53 @@ MOYA_KERNEL void firstHit(const Paths<T, X> & paths, const PathState & state, co
 }
 
 /**
+ * The closed surfaces a camera ray starts inside, found by tracing it on through everything it
+ * meets. A ray is inside each surface whose first face it meets is a back face, and enters them
+ * innermost last. It looks at most kMostPassed hits, and tells apart at most kMostSeen surfaces.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL Media around(const Paths<T, X> & paths, geometry::Ray probe) {
+    Enclosure inside[kMediaDepth];
+    std::uint32_t found = 0;
+    std::uint32_t seen[kMostSeen] {};
+    std::uint32_t known = 0;
+    const geometry::EveryHit every;
+    for (std::uint32_t passed = 0; passed < kMostPassed; ++passed) {
+        const geometry::Hit hit = paths.traversal.nearest(probe, every);
+        if (!hit.found()) {
+            break;
+        }
+        const surface::ShadingPoint point = paths.surfaces.at(hit, probe);
+        if (point.found() && point.material != surface::kNoMaterial && paths.surfaces.materials[point.material].encloses()) {
+            const std::uint32_t key = keyOf(hit);
+            bool met = false;
+            for (std::uint32_t i = 0; i < known; ++i) {
+                met = met || seen[i] == key;
+            }
+            if (!met && known < kMostSeen) {
+                seen[known] = key;
+                ++known;
+                if (!point.front && found < kMediaDepth) {
+                    inside[found] = enclosureOf(paths.surfaces, hit, paths.surfaces.materials[point.material]);
+                    ++found;
+                }
+            }
+        }
+        probe.start = std::fmax(hit.distance * (1.0F + kShadowShort), hit.distance + std::numeric_limits<float>::min());
+    }
+    Media out;
+    for (std::uint32_t i = found; i > 0U; --i) {
+        out.enter(inside[i - 1U]);
+    }
+    return out;
+}
+
+/**
  * The generate stage: a camera sample's state. Its place in the pixel is drawn from the pixel
  * filter, with the filter's weight, and its point on the lens, its time and its wavelengths are
  * drawn after it. It carries a throughput of one and has gathered no light, and its cone is the
- * camera's for its ray. Its first event is the camera.
+ * camera's for its ray. It starts inside the closed surfaces around() finds, when any material
+ * encloses a medium. Its first event is the camera.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, std::uint32_t sample, PathState & state) {
@@ -265,6 +315,7 @@ MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, s
     MOYA_PATH(state, throughput) = spectrum::SampledSpectrum(1.0F);
     MOYA_PATH(state, radiance) = spectrum::SampledSpectrum(0.0F);
     MOYA_PATH(state, expression) = 0U;
+    MOYA_PATH(state, media) = paths.surfaces.media != 0U ? around(paths, MOYA_PATH(state, ray)) : Media {};
     advance(paths, state, Event {});
 }
 
@@ -672,6 +723,46 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
 }
 
 /**
+ * Whether a path passes by the surface a hit met, as no bounce. It passes a boundary, and a
+ * surface that encloses a medium of lower priority than the medium it is in. A surface it passes
+ * it enters or leaves, as it crosses it, and it goes on from just past the hit.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL bool passedBy(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, const surface::ShadingPoint & point) {
+    if (!point.found() || point.material == surface::kNoMaterial) {
+        return false;
+    }
+    const surface::Material & material = paths.surfaces.materials[point.material];
+    if (!material.encloses()) {
+        return false;
+    }
+    const Enclosure crossed = enclosureOf(paths.surfaces, hit, material);
+    Media & media = MOYA_PATH(state, media);
+    if (material.boundary == 0U && !media.outranked(crossed.priority)) {
+        return false;
+    }
+    media.cross(crossed, point.front);
+    geometry::Ray & ray = MOYA_PATH(state, ray);
+    ray.start = std::fmax(hit.distance * (1.0F + kShadowShort), hit.distance + std::numeric_limits<float>::min());
+    return true;
+}
+
+/**
+ * Enters or leaves the medium a surface encloses, when the ray a path leaves a shading point by
+ * crosses the surface.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void crossing(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, const surface::ShadingPoint & point) {
+    if (point.material == surface::kNoMaterial || !paths.surfaces.materials[point.material].encloses()) {
+        return;
+    }
+    const bool above = glm::dot(MOYA_PATH(state, ray).direction, point.geometric) > 0.0F;
+    if (above != point.front) {
+        MOYA_PATH(state, media).cross(enclosureOf(paths.surfaces, hit, paths.surfaces.materials[point.material]), point.front);
+    }
+}
+
+/**
  * One path, from the camera until it leaves the scene or ends. The intersect, shade, scatter and
  * accumulate stages run back to back. Each shading point holds the footprint the path's cone
  * makes there. At each shading point a path gathers its share of what
@@ -682,9 +773,15 @@ MOYA_KERNEL spectrum::SampledSpectrum leaving(const Paths<T, X> & paths, const g
  * with a chance of one minus its opacity, drawn from the bounce's own draw. A camera ray that
  * meets anything covers its sample, and one that leaves the scene does not. Each light the path
  * gathers records its event, after the event of the bounce it arrived by.
+ *
+ * A path passes by the surfaces passedBy() names, at most kMostPassed of them, and enters or
+ * leaves their media. A dielectric bends light by its own index over that of the medium beyond
+ * it, which is the medium the path is in leaving the surface out. A path that crosses a surface
+ * as it scatters enters or leaves the medium it encloses.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
+    std::uint32_t passes = 0;
     for (;;) {
         const geometry::Ray & ray = MOYA_PATH(state, ray);
         const Keeping<X> filter { .surfaces = paths.surfaces,
@@ -701,10 +798,21 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
             return;
         }
+        const std::uint32_t met = paths.lights.at(hit);
+        surface::ShadingPoint point;
+        if (met == geometry::kNoPrimitive) {
+            point = paths.surfaces.at(hit, ray);
+            if (passedBy(paths, state, hit, point)) {
+                ++passes;
+                if (passes >= kMostPassed) {
+                    return;
+                }
+                continue;
+            }
+        }
         if (MOYA_PATH(state, bounces) == 0U) {
             MOYA_PATH(state, coverage) = 1.0F;
         }
-        const std::uint32_t met = paths.lights.at(hit);
         if (met != geometry::kNoPrimitive) {
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
             cover(paths, state, geometry::Hit {}, surface::kNoMaterial, hit.distance);
@@ -718,7 +826,6 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             }
             return;
         }
-        surface::ShadingPoint point = paths.surfaces.at(hit, ray);
         firstHit(paths, state, hit, ray, point);
         cover(paths, state, hit, point.material, hit.distance);
         if (!point.found()) {
@@ -741,12 +848,15 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
         }
         MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
         const glm::vec3 outgoing = -glm::normalize(ray.direction);
-        const bsdf::Bsdf scattering = bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing);
+        const float outside = MOYA_PATH(state, media).outside(keyOf(hit));
+        const bsdf::Bsdf scattering =
+            bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing, outside);
         features(paths, state, scattering, point, hit.distance * length);
         MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
         if (!scatter(paths, point, scattering, outgoing, state)) {
             return;
         }
+        crossing(paths, state, hit, point);
         // a path that leaves through a lobe that is not singular gives a denoiser nothing past it
         if (MOYA_PATH(state, specular) == 0U) {
             MOYA_PATH(state, featured) = 1U;

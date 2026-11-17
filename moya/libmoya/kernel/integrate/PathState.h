@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/geometry/Cone.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/integrate/Media.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 
@@ -35,6 +36,7 @@
  * - featured is one once the path has given a denoiser its albedo and normal, or can no longer.
  * - expression is the state of the render's light path expressions' automaton after the path's
  *   events so far.
+ * - media are the closed surfaces the path is inside.
  **/
 #define MOYA_PATH_FIELDS(FIELD)                                \
     FIELD(glm::uvec2, pixel)                                   \
@@ -57,7 +59,7 @@
     FIELD(std::uint32_t, specular)                             \
     FIELD(float, coverage)                                     \
     FIELD(std::uint32_t, featured)                             \
-    FIELD(std::uint32_t, expression)
+    FIELD(std::uint32_t, expression)                               FIELD(::v3d::moya::kernel::integrate::Media, media)
 
 namespace v3d::moya::kernel::integrate {
 

@@ -73,6 +73,9 @@ struct Bsdf {
     surface::Frame frame;
     surface::Frame coatFrame;
     glm::vec3 geometric { 0.0F, 0.0F, 1.0F };
+
+    /** The index of refraction of the medium on the side the shading normal faces. **/
+    float outside { 1.0F };
     Albedos albedos;
     spectrum::SampledWavelengths wavelengths;
 
@@ -107,6 +110,10 @@ struct Bsdf {
                 break;
             case Model::Dielectric:
                 closure.albedo *= std::fmax(closure.colour.average(), closure.transmitted.average());
+                if (closure.ior > 0.0F && closure.ior < 1.0F) {
+                    closure.ior = 1.0F / closure.ior;
+                    closure.flipped = !closure.flipped;
+                }
                 break;
             case Model::Fuzz:
                 closure.albedo *= closure.colour.average() * scattering::Fuzz::albedo(0.5F, closure.roughness);
@@ -135,9 +142,17 @@ struct Bsdf {
         closures[place] = closure;
     }
 
-    /** The frame a closure works in: the coat's for the coat, and the shading frame otherwise. **/
-    MOYA_KERNEL const surface::Frame & frameOf(const Closure & closure) const {
-        return closure.coated ? coatFrame : frame;
+    /**
+     * The frame a closure works in: the coat's for the coat, and the shading frame otherwise. A
+     * flipped closure's is turned over, its normal and its bitangent reversed.
+     **/
+    MOYA_KERNEL surface::Frame frameOf(const Closure & closure) const {
+        surface::Frame out = closure.coated ? coatFrame : frame;
+        if (closure.flipped) {
+            out.bitangent = -out.bitangent;
+            out.normal = -out.normal;
+        }
+        return out;
     }
 
     /** The value for light coming in along incoming and leaving along outgoing. **/
@@ -161,7 +176,7 @@ struct Bsdf {
         float out = 0.0F;
         for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
             const Closure & closure = closures[i];
-            const Directions & local = closure.coated ? coated : shaded;
+            const Directions local = turned(closure, closure.coated ? coated : shaded);
             if (closure.singular() || !local.agree) {
                 continue;
             }
@@ -193,7 +208,7 @@ struct Bsdf {
         }
         const Closure & closure = closures[picked];
         out.closure = picked;
-        const surface::Frame & own = frameOf(closure);
+        const surface::Frame own = frameOf(closure);
         const glm::vec3 local = own.toLocal(outgoing);
         if (closure.singular()) {
             const Singular scattered = singular(closure, local, choice);
@@ -332,6 +347,17 @@ struct Bsdf {
         bool agree { false };
     };
 
+    /** Two directions in a closure's frame, from the same two in the frame it turns over. **/
+    MOYA_KERNEL static Directions turned(const Closure & closure, const Directions & unturned) {
+        if (!closure.flipped) {
+            return unturned;
+        }
+        Directions out = unturned;
+        out.outgoing = glm::vec3 { unturned.outgoing.x, -unturned.outgoing.y, -unturned.outgoing.z };
+        out.incoming = glm::vec3 { unturned.incoming.x, -unturned.incoming.y, -unturned.incoming.z };
+        return out;
+    }
+
     /** Two directions in world space, in a frame. **/
     MOYA_KERNEL Directions directionsIn(const surface::Frame & within, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
         Directions out;
@@ -384,7 +410,7 @@ struct Bsdf {
         spectrum::SampledSpectrum out(0.0F);
         for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
             const Closure & closure = closures[i];
-            const Directions & local = closure.coated ? coated : shaded;
+            const Directions local = turned(closure, closure.coated ? coated : shaded);
             if (closure.singular() || !local.agree) {
                 continue;
             }

@@ -42,6 +42,7 @@ v3d_add_test(moya
 	"LpeTest.cxx"
 	"MaterialCompileTest.cxx"
 	"MaterialLibraryTest.cxx"
+	"MediaTest.cxx"
 	"MotionTest.cxx"
 	"NormalMapTest.cxx"
 	"OpacityTest.cxx"
