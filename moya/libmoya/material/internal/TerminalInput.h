@@ -20,7 +20,7 @@ struct TerminalInput {
     std::uint32_t width { 1 };
 };
 
-/** Every input of open_pbr_surface that a program gives, but geometry_thin_walled. **/
+/** Every input of open_pbr_surface, which a program gives, but geometry_thin_walled. **/
 inline constexpr std::array kOpenPbrInputs {
     TerminalInput { .name = "base_weight", .at = kernel::program::kBaseWeight },
     TerminalInput { .name = "base_diffuse_roughness", .at = kernel::program::kBaseDiffuseRoughness },
@@ -43,6 +43,12 @@ inline constexpr std::array kOpenPbrInputs {
     TerminalInput { .name = "thin_film_ior", .at = kernel::program::kThinFilmIor },
     TerminalInput { .name = "emission_luminance", .at = kernel::program::kEmissionLuminance },
     TerminalInput { .name = "geometry_opacity", .at = kernel::program::kGeometryOpacity },
+    TerminalInput { .name = "transmission_depth", .at = kernel::program::kTransmissionDepth },
+    TerminalInput { .name = "transmission_scatter_anisotropy", .at = kernel::program::kTransmissionScatterAnisotropy },
+    TerminalInput { .name = "transmission_dispersion_scale", .at = kernel::program::kTransmissionDispersionScale },
+    TerminalInput { .name = "transmission_dispersion_abbe_number", .at = kernel::program::kTransmissionDispersionAbbe },
+    TerminalInput { .name = "subsurface_radius", .at = kernel::program::kSubsurfaceRadius },
+    TerminalInput { .name = "subsurface_scatter_anisotropy", .at = kernel::program::kSubsurfaceScatterAnisotropy },
     TerminalInput { .name = "base_color", .at = kernel::program::kBaseColour, .width = 3 },
     TerminalInput { .name = "specular_color", .at = kernel::program::kSpecularColour, .width = 3 },
     TerminalInput { .name = "transmission_color", .at = kernel::program::kTransmissionColour, .width = 3 },
@@ -54,6 +60,8 @@ inline constexpr std::array kOpenPbrInputs {
     TerminalInput { .name = "geometry_tangent", .at = kernel::program::kGeometryTangent, .width = 3 },
     TerminalInput { .name = "geometry_coat_normal", .at = kernel::program::kGeometryCoatNormal, .width = 3 },
     TerminalInput { .name = "geometry_coat_tangent", .at = kernel::program::kGeometryCoatTangent, .width = 3 },
+    TerminalInput { .name = "transmission_scatter", .at = kernel::program::kTransmissionScatter, .width = 3 },
+    TerminalInput { .name = "subsurface_radius_scale", .at = kernel::program::kSubsurfaceRadiusScale, .width = 3 },
 };
 
 /** The inputs of a displacement of a float, which moves a point along its normal. **/

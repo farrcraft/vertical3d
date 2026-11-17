@@ -62,11 +62,15 @@ material "checked"
     displacementOutput string = "out"
     surface handle = shader "checked"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "constant"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "constant"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.4, -1.1, 4) (-1.4, 1.1, 8) (1.4, 1.1, 8) (1.4, -1.1, 4)
     indices integer[4] = 0 1 2 3

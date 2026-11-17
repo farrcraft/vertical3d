@@ -82,6 +82,8 @@ material "defaultsurface"
     displacementOutput string = "out"
     surface handle = shader "defaultsurface"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "unitcube"
     P point[4] = (0.5, 0.5, 0.5) (-0.5, 0.5, 0.5) (-0.5, -0.5, 0.5) (0.5, -0.5, 0.5)
     indices integer[4] = 0 1 2 3

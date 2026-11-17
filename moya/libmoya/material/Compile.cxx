@@ -6,12 +6,15 @@
 #include <moya/libmoya/material/Compile.h>
 
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/program/Displacement.h>
+#include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/material/Fold.h>
 #include <moya/libmoya/material/internal/Definitions.h>
 #include <moya/libmoya/material/internal/Emitter.h>
+#include <moya/libmoya/material/internal/Medium.h>
 #include <moya/libmoya/material/internal/Network.h>
 #include <moya/libmoya/material/internal/TerminalInput.h>
 #include <moya/libmoya/material/internal/Translate.h>
@@ -55,6 +58,7 @@ using internal::TerminalInput;
 constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
 constexpr const char * kDisplacementFloat = "ND_displacement_float";
 constexpr const char * kDisplacementVector = "ND_displacement_vector3";
+constexpr const char * kVolume = "ND_volume";
 
 /** Whether a node is a shader, a closure or a material, whose inputs feed moya's BSDF library. **/
 bool shading(const mx::NodePtr & node) {
@@ -352,6 +356,13 @@ Network network(const Library & library, const scene::Scene & scene, const scene
     return out;
 }
 
+/** Reports a material whose dispersion may be other than none, since nothing renders one. **/
+void reportDispersion(Network & network, const std::string & name, const Folded & folded, const kernel::surface::OpenPbr & surface) {
+    if (!folded.constantFrom(kernel::program::kTransmissionDispersionScale, 1U) || surface.transmissionDispersionScale != 0.0F) {
+        network.report("material " + name + " may disperse light, which moya does not render, so it refracts every wavelength alike");
+    }
+}
+
 /** Whether an input of open_pbr_surface sets its emission, which a light gives as a constant. **/
 bool emits(const std::string & name) {
     return name.rfind("emission_", 0) == 0;
@@ -425,6 +436,7 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
             const mx::ValuePtr thin = held.terminal->getInputValue("geometry_thin_walled");
             out.material.surface.thinWalled = thin && thin->isA<bool>() && thin->asA<bool>() ? 1U : 0U;
             out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
+            reportDispersion(held, scene.name(material), folded, out.material.surface);
             out.material.layered = 1;
         }
     }
@@ -460,6 +472,39 @@ Compiled compileDisplacement(const Library & library, const scene::Scene & scene
                 .count = static_cast<std::uint32_t>(out.instructions.size()),
                 .values = 0,
                 .size = static_cast<std::uint32_t>(out.values.size()) };
+        }
+    }
+    out.reports = std::move(held.reports);
+    return out;
+}
+
+Compiled compileVolume(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
+    Network held = network(library, scene, material, "volume");
+    Compiled out;
+    if (held.terminal) {
+        const std::string definition = held.terminal->getNodeDefString();
+        if (definition != kVolume) {
+            held.report("material " + scene.name(material) + "'s volume is " + definition + ", which moya does not render, so it holds no medium");
+        } else {
+            held.terminal = internal::rewrittenMedium(held);
+            internal::Emitter compiled(held, primvars, kernel::program::kMediumRegisters);
+            fill(compiled, held, true, true, internal::kMediumInputs);
+            internal::Emitter constants(held, primvars, kernel::program::kMediumRegisters);
+            if (compiled.overflowed()) {
+                held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its volume gives its default");
+                fill(constants, held, false, false, internal::kMediumInputs);
+            }
+            const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
+            out.instructions = emitter.instructions();
+            out.values = emitter.values();
+            out.colours = emitter.colours();
+            out.spaces = emitter.spaces();
+            out.images = emitter.images();
+            out.material.program = kernel::program::Program { .instructions = 0,
+                .count = static_cast<std::uint32_t>(out.instructions.size()),
+                .values = 0,
+                .size = static_cast<std::uint32_t>(out.values.size()) };
+            out.medium = kernel::program::mediumOf(fold(out.instructions, out.values).values.data());
         }
     }
     out.reports = std::move(held.reports);

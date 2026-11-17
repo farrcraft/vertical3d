@@ -19,6 +19,14 @@ namespace v3d::moya::kernel::surface {
  * luminance in nits. Subsurface scatters as the diffuse base, its colour mixed in by its weight.
  * The opacity runs from zero, where the surface is cut away, to one.
  *
+ * The medium inside a surface that is not thin-walled comes from its transmission. The depth is
+ * the distance at which white light inside takes the transmission colour, the scatter is a
+ * scattering coefficient over that depth, and the anisotropy is the scatter's. A depth of zero is
+ * no medium. A
+ * subsurface's radius, times its scale in each channel, is the mean free path of the medium below
+ * the surface, and its anisotropy that medium's. The dispersion's scale and Abbe number are held,
+ * and nothing reads them.
+ *
  * The coat works about its own normal and tangent, and every other layer about the surface's.
  * Each is a direction in world space, and one of no length is the shading point's own.
  **/
@@ -63,6 +71,15 @@ struct OpenPbr {
     glm::vec3 geometryCoatNormal { 0.0F };
     glm::vec3 geometryCoatTangent { 0.0F };
     float geometryOpacity { 1.0F };
+
+    float transmissionDepth { 0.0F };
+    glm::vec3 transmissionScatter { 0.0F };
+    float transmissionScatterAnisotropy { 0.0F };
+    float transmissionDispersionScale { 0.0F };
+    float transmissionDispersionAbbe { 20.0F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
+    float subsurfaceRadius { 1.0F };
+    glm::vec3 subsurfaceRadiusScale { 1.0F, 0.5F, 0.25F };  // NOLINT(readability-magic-numbers) - OpenPBR's default
+    float subsurfaceScatterAnisotropy { 0.0F };
 
     /** One when the surface is a thin wall, with the same medium on both sides. **/
     std::uint32_t thinWalled { 0 };

@@ -84,31 +84,43 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "diffuse"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "metal"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 3"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "glass"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 4"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "coat"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 5"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "fuzz"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 6"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "film"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 options "options"
     background colour[0] =
     camera handle = camera "camera"

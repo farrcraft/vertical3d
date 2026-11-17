@@ -80,21 +80,29 @@ material "checked"
     displacementOutput string = "out"
     surface handle = shader "checked"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "glass"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "glass"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "matte"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "matte"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "shinymetal"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "shinymetal"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-4, -1, 2) (4, -1, 2) (4, -1, 12) (-4, -1, 12)
     indices integer[4] = 0 1 2 3

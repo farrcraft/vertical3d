@@ -59,6 +59,8 @@ BOOST_AUTO_TEST_CASE(moya_scene_a_material_network_describes_as_it_was_built_tes
         "    displacementOutput string = \"out\"\n"
         "    surface handle = shader \"plastic\"\n"
         "    surfaceOutput string = \"out\"\n"
+        "    volume handle = none\n"
+        "    volumeOutput string = \"out\"\n"
         "shader \"grid\"\n"
         "    file string = \"grid.exr\"\n"
         "    language string = \"materialx\"\n"

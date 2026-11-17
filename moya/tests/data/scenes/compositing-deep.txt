@@ -57,16 +57,22 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "grey"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "glass"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 3"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "red"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "card"
     P point[4] = (0.1, -0.8, -0.3) (1.2, -0.8, -0.3) (1.2, 0.6, -0.3) (0.1, 0.6, -0.3)
     indices integer[4] = 0 1 2 3

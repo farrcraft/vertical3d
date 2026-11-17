@@ -56,11 +56,15 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "gold"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "shading"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 options "options"
     background colour[0] =
     camera handle = camera "camera"

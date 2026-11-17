@@ -52,6 +52,9 @@ libraries `material::Library::installed()` reads once from beside the executable
   about a hit on such a material, as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
 - **A surface of any other definition is reported**, and the material is layered with OpenPBR's
   defaults.
+- **Every input of `open_pbr_surface` but `geometry_thin_walled` reaches the program**, and
+  `kOpenPbrInputs` lists them. A dispersion whose scale may be other than zero is reported, since
+  nothing renders one, and every wavelength refracts alike.
 - **The material holds its parameters as `material::fold()` folds its program.** A register is
   constant when it starts from a value and every instruction writing it reads only constant
   registers. An instruction that reads the shading point or an image varies. The constant
@@ -155,6 +158,49 @@ flattened alike, and its reports follow the same rules.
 - **The gather compiles each such displacement** with the materials' programs, numbering the
   primvars it reads with theirs, and runs it as [Geometry.md](Geometry.md#tessellation-and-displacement)
   says.
+
+### Compiling a volume
+
+`material::compileVolume()` compiles a material's `volume` terminal, the medium inside what the
+material is given to, as `compile()` compiles its surface. Its network is flattened alike, and its
+reports follow the same rules.
+
+- **A volume of `ND_volume` is rewritten into a medium's values**, by
+  `internal::rewrittenMedium()`. Its VDF and its EDF are trees of closures, which no program
+  runs, so each tree becomes ordinary nodes that feed a node of a medium's values, and the
+  program compiles those.
+- **The absorption is every VDF leaf's absorption**, an `absorption_vdf's` or an
+  `anisotropic_vdf's`, summed by each `add` and weighed by each `mix` above it. A `mix`
+  weighs its `fg` by its `mix` and its `bg` by one less it.
+- **Each `anisotropic_vdf` scatters as a lobe of its own**, by its scattering, weighed the same
+  way, and by its own anisotropy. The first in the tree's order, `in1` before `in2` and `fg`
+  before `bg`, is the first lobe, and the second the second. A third and every later one adds its
+  scattering to the second lobe, and is reported. `kernel::volume::kMostLobes` is two.
+- **The emission is every `uniform_edf's` colour**, summed and weighed alike. Its colours are
+  converted into ACEScg as every colour is. A coefficient is a `vector3`, and is not converted.
+- **A closure of any other kind is reported**, and adds nothing.
+- **The program's values begin with `kMediumRegisters`**, laid out as
+  `kernel/program/Medium.h` says, and `program::mediumOf()` reads them. The compiled medium holds
+  what the program gives where its values do not vary.
+- **A volume of any other definition is reported**, and holds no medium.
+
+A medium, `kernel::volume::Medium`, holds an absorption, each lobe's scattering and anisotropy,
+and an emission, each a coefficient per unit of length in each ACEScg channel. Its extinction is
+its absorption and every lobe's scattering together.
+
+### The medium inside a glass
+
+`kernel::volume::interior()` gives the medium inside an OpenPBR surface that is not thin-walled,
+from its transmission, as OpenPBR gives it.
+
+- **The extinction is the transmission colour's negative logarithm over the depth**, so white
+  light that travels `transmission_depth` inside takes the colour. A colour is held to at least
+  `kLeastTransmittance`.
+- **The scattering is `transmission_scatter` over the depth**, as one lobe of
+  `transmission_scatter_anisotropy`.
+- **The absorption is the extinction the scattering leaves.** Where that falls below zero in a
+  channel, every channel's absorption is raised by the same amount, so the least is zero.
+- **A depth of zero, or a thin wall, holds no medium.**
 
 ### The node program
 

@@ -53,6 +53,8 @@ material "bumpy"
     displacementOutput string = "out"
     surface handle = shader "bumpy"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.2, -0.9, 5) (-1.2, 0.9, 5) (1.2, 0.9, 5) (1.2, -0.9, 5)
     indices integer[4] = 0 1 2 3

@@ -259,6 +259,28 @@ std::vector<Kind> quadrics() {
             .primvars = true } };
 }
 
+/**
+ * A grid of an OpenVDB file, as UsdVol's OpenVDBAsset names one: the file, and the grid's name in
+ * it.
+ **/
+Kind openVdbAsset() {
+    return Kind { .name = "openVDBAsset",
+        .parameters = { Declaration { .name = "filePath", .type = Type::String, .fallback = Value::string("") },
+            Declaration { .name = "fieldName", .type = Type::String, .fallback = Value::string("") } } };
+}
+
+/**
+ * A volume, as UsdVol's Volume is: the fields it reads, each by the name its shader reads it by,
+ * fieldNames and fields holding one each in the same order. A field's name here and its grid's
+ * name in its file are two names.
+ **/
+Kind volume() {
+    return Kind { .name = "volume",
+        .parameters = { Declaration { .name = "fieldNames", .type = Type::String, .count = Declaration::kAny, .fallback = Value::strings({}) },
+            Declaration { .name = "fields", .type = Type::Handle, .count = Declaration::kAny, .fallback = Value::handles({}), .targets = { "openVDBAsset" } } },
+        .primvars = true };
+}
+
 /** A prototype made of instances. Each instance names the group it belongs to. **/
 Kind group() {
     return Kind { .name = "group" };
@@ -267,7 +289,7 @@ Kind group() {
 /** What an instance may place. **/
 const std::vector<std::string> & prototypes() {
     static const std::vector<std::string> kinds = { "mesh", "subdivision", "curves", "points", "sphere", "cone", "cylinder", "hyperboloid",
-        "paraboloid", "disk", "torus", "group" };
+        "paraboloid", "disk", "torus", "volume", "group" };
     return kinds;
 }
 
@@ -307,8 +329,8 @@ Kind connection() {
 }
 
 /**
- * A network's terminals: the node and output that give its surface, and those that give its
- * displacement.
+ * A network's terminals: the node and output that give its surface, those that give its
+ * displacement, and those that give its volume, the medium inside a volume or a closed surface.
  **/
 Kind material() {
     return Kind { .name = "material",
@@ -316,7 +338,9 @@ Kind material() {
             Declaration { .name = "surface", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
             Declaration { .name = "surfaceOutput", .type = Type::String, .fallback = Value::string("out") },
             Declaration { .name = "displacement", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
-            Declaration { .name = "displacementOutput", .type = Type::String, .fallback = Value::string("out") } } };
+            Declaration { .name = "displacementOutput", .type = Type::String, .fallback = Value::string("out") },
+            Declaration { .name = "volume", .type = Type::Handle, .fallback = Value::handle({}), .targets = { "shader" } },
+            Declaration { .name = "volumeOutput", .type = Type::String, .fallback = Value::string("out") } } };
 }
 
 /**
@@ -376,10 +400,11 @@ Declaration texture() {
     return Declaration { .name = "texture", .type = Type::String, .fallback = Value::string("") };
 }
 
-/** What a mesh light may take its shape from: any geometry, but not a group. **/
+/** What a mesh light may take its shape from: a geometry with a surface, not a group or volume. **/
 std::vector<std::string> shapes() {
     std::vector<std::string> kinds = prototypes();
     std::erase(kinds, "group");
+    std::erase(kinds, "volume");
     return kinds;
 }
 
@@ -419,6 +444,8 @@ Schema kinds() {
     for (const Kind & quadric : quadrics()) {
         schema.add(quadric);
     }
+    schema.add(openVdbAsset());
+    schema.add(volume());
     schema.add(group());
     schema.add(shader());
     schema.add(connection());

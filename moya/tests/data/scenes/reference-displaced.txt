@@ -83,6 +83,8 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "plain"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 options "options"
     background colour[0] =
     camera handle = camera "camera"

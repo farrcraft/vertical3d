@@ -159,7 +159,7 @@ listed as a number with no record, as the ADR index requires.
 | [6](#step-6--the-record-a-hairs-model) | The record: a hair's model | `docs/adr` | **0247** | accepted |
 | [7](#step-7--the-record-a-volumes-light) | The record: a volume's light | `docs/adr` | **0248** | accepted |
 | [8](#step-8--openvdb) | OpenVDB as a dependency | `vcpkg.json`, `ports`, `flatpak` | 0245 | done |
-| [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | open |
+| [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | done |
 | [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | open |
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | open |
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | open |
@@ -485,6 +485,20 @@ them, which its external-header level does not silence, so C4702 is switched off
 
 **Tests:** a volume's description names its fields. A volume shader of constant inputs compiles
 to the medium they give. An OpenPBR glass with a depth gives a medium of its colour at that depth.
+
+**Done.** The scene holds UsdVol's `openVDBAsset`, a `filePath` and a `fieldName`, and `volume`,
+whose `fields` and `fieldNames` pair each field with the name its shader reads it by. An instance
+places a volume, which the gather reports and leaves out until a step traces one, and a mesh light
+takes none. A material gains `volume` and `volumeOutput`, so every committed description of a
+scene with a material gains the two lines. `material::compileVolume()` compiles an `ND_volume`.
+`internal::rewrittenMedium()` turns its VDF and EDF trees into `add` and `mix` nodes of
+`vector3` and `color3`, which feed a node of a medium's values. A pattern feeding a closure then
+runs in the program. A `kernel::volume::Medium` holds an absorption, two lobes of Henyey and
+Greenstein's phase function, from the first two `anisotropic_vdf` leaves, and an emission. A third
+leaf joins the second lobe and is reported. Every input of `open_pbr_surface` but its thin wall now
+reaches the program, and a dispersion that may be set is reported. `kernel::volume::interior()`
+gives the medium inside a glass, as OpenPBR's text gives it. The medium below a subsurface
+surface is step 15's, since ADR-0246 settles its mapping.
 
 ### Step 10 — The medium a path is in
 

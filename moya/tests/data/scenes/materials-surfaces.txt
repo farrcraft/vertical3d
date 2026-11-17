@@ -130,21 +130,29 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "floor"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "painted"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 3"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "bumpy"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 4"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "card"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-3, -1, -2) (3, -1, -2) (3, -1, 2) (-3, -1, 2)
     indices integer[4] = 0 1 2 3

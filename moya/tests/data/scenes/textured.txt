@@ -39,6 +39,8 @@ material "paintedplastic"
     displacementOutput string = "out"
     surface handle = shader "paintedplastic"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-0.666667, -0.666667, 5) (0.666667, -0.666667, 5) (0.666667, 0.666667, 5) (-0.666667, 0.666667, 5)
     indices integer[4] = 0 1 2 3

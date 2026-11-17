@@ -90,6 +90,7 @@
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Displacement.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Instruction.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Medium.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Noise.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Op.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Parameters.h>  // IWYU pragma: keep
@@ -136,3 +137,6 @@
 #include <moya/libmoya/kernel/texture/Untextured.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitChannels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitView.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Interior.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Lobe.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Medium.h>  // IWYU pragma: keep

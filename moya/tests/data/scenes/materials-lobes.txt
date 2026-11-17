@@ -84,31 +84,43 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "floor"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "gold"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 3"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "glass"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 4"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "coated"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 5"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "fuzzed"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 6"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "film"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-3, -1, -2) (3, -1, -2) (3, -1, 2) (-3, -1, 2)
     indices integer[4] = 0 1 2 3

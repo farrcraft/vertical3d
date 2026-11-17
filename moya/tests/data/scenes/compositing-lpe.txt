@@ -94,16 +94,22 @@ material "material"
     displacementOutput string = "out"
     surface handle = shader "floor"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "mirror"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "material 3"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "glass"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-2, -1, -2) (2, -1, -2) (2, -1, 2) (-2, -1, 2)
     indices integer[4] = 0 1 2 3

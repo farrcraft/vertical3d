@@ -51,9 +51,17 @@ inline constexpr std::uint32_t kGeometryTangent = 44;
 inline constexpr std::uint32_t kGeometryCoatNormal = 47;
 inline constexpr std::uint32_t kGeometryCoatTangent = 50;
 inline constexpr std::uint32_t kGeometryOpacity = 53;
+inline constexpr std::uint32_t kTransmissionDepth = 54;
+inline constexpr std::uint32_t kTransmissionScatter = 55;
+inline constexpr std::uint32_t kTransmissionScatterAnisotropy = 58;
+inline constexpr std::uint32_t kTransmissionDispersionScale = 59;
+inline constexpr std::uint32_t kTransmissionDispersionAbbe = 60;
+inline constexpr std::uint32_t kSubsurfaceRadius = 61;
+inline constexpr std::uint32_t kSubsurfaceRadiusScale = 62;
+inline constexpr std::uint32_t kSubsurfaceScatterAnisotropy = 65;
 
 /** The registers the parameters take, which every program's values begin with. **/
-inline constexpr std::uint32_t kParameterRegisters = 54;
+inline constexpr std::uint32_t kParameterRegisters = 66;
 
 /** A colour or a direction held in three registers from a first. **/
 MOYA_KERNEL inline glm::vec3 colourAt(const float * registers, std::uint32_t first) {
@@ -95,6 +103,14 @@ MOYA_KERNEL inline surface::OpenPbr parameters(const float * registers) {
     out.geometryCoatNormal = colourAt(registers, kGeometryCoatNormal);
     out.geometryCoatTangent = colourAt(registers, kGeometryCoatTangent);
     out.geometryOpacity = registers[kGeometryOpacity];
+    out.transmissionDepth = registers[kTransmissionDepth];
+    out.transmissionScatter = colourAt(registers, kTransmissionScatter);
+    out.transmissionScatterAnisotropy = registers[kTransmissionScatterAnisotropy];
+    out.transmissionDispersionScale = registers[kTransmissionDispersionScale];
+    out.transmissionDispersionAbbe = registers[kTransmissionDispersionAbbe];
+    out.subsurfaceRadius = registers[kSubsurfaceRadius];
+    out.subsurfaceRadiusScale = colourAt(registers, kSubsurfaceRadiusScale);
+    out.subsurfaceScatterAnisotropy = registers[kSubsurfaceScatterAnisotropy];
     return out;
 }
 

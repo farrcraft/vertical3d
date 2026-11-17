@@ -32,11 +32,15 @@ material "constant"
     displacementOutput string = "out"
     surface handle = shader "constant"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "constant 2"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "constant 2"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.2, 0.1, 5) (-0.4, 0.1, 5) (-0.4, 0.8, 5) (-1.2, 0.8, 5)
     indices integer[4] = 0 1 2 3

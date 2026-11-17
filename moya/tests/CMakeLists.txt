@@ -69,6 +69,7 @@ v3d_add_test(moya
 	"TextureCacheTest.cxx"
 	"TextureLookupTest.cxx"
 	"TextureMakerTest.cxx"
+	"VolumeShaderTest.cxx"
 	"ZSobolTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image and writes

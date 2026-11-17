@@ -62,11 +62,15 @@ material "matte"
     displacementOutput string = "out"
     surface handle = shader "matte"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 material "plastic"
     displacement handle = none
     displacementOutput string = "out"
     surface handle = shader "plastic"
     surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
 mesh "Polygon 1"
     P point[4] = (-1.15, -1.2, 3) (1.15, -1.2, 3) (1.15, 1.2, 3) (-1.15, 1.2, 3)
     indices integer[4] = 0 1 2 3

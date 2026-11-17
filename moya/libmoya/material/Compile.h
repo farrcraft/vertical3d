@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/volume/Medium.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/texture/Request.h>
 
@@ -26,10 +27,12 @@ class Library;
  * A material compiled for shading, and what compiling it left out and why. A layered material's
  * program runs the instructions here from the values here, and names the first of each as zero.
  * The registers of each colour constant are named with the space the colour is in, and every
- * other value is as the program reads it.
+ * other value is as the program reads it. A volume's medium holds what its program gives where the
+ * program's values do not vary.
  **/
 struct Compiled {
     kernel::surface::Material material;
+    kernel::volume::Medium medium;
     std::vector<kernel::program::Instruction> instructions;
     std::vector<float> values;
     std::vector<std::uint32_t> colours;
@@ -71,7 +74,7 @@ struct Compiled {
  * material's program gives its opacity when the opacity varies over the surface.
  *
  * A surface of any other definition is reported, and the material is layered with OpenPBR's
- * defaults.
+ * defaults. A dispersion that may be other than none is reported, because nothing renders one.
  *
  * A colour constant is in the space its primvar names, or the space its document names for it.
  *
@@ -102,6 +105,17 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
  * definition is reported, and gives a material that does not displace, of no values.
  **/
 Compiled compileDisplacement(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
+
+/**
+ * Compiles a scene's material whose volume terminal is a MaterialX `volume` node, as compile()
+ * compiles its surface. The volume is rewritten into nodes that feed a medium's values, as
+ * internal::rewrittenMedium() says, and gives a program whose values begin with a medium's, as
+ * kernel/program/Medium.h lays them out. Its inputs are compiled as a surface's are, and a node
+ * the program does not compile is reported and gives its default. The medium holds the program's
+ * values as material::fold() folds them. A volume of any other definition is reported, and gives
+ * an empty medium of no values.
+ **/
+Compiled compileVolume(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
 
 /** The flattened MaterialX document that compile() reads a material's surface from, as XML. **/
 std::string flattened(const Library & library, const scene::Scene & scene, const scene::Handle & material);

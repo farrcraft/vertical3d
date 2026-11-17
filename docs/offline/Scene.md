@@ -101,6 +101,13 @@ then derived as RI derives it.
 - **The quadrics**, `sphere`, `cone`, `cylinder`, `hyperboloid`, `paraboloid`, `disk` and `torus`,
   take RI's dimensions, and each may move over the shutter. RI gives no defaults, so each is a
   unit shape until a client sets it.
+- **`openVDBAsset`**: a grid of an OpenVDB file, as UsdVol's `OpenVDBAsset` names one: its
+  `filePath`, and its `fieldName`, the grid's name in the file.
+- **`volume`**: a volume, as UsdVol's `Volume` is. `fields` names the `openVDBAsset` objects it
+  reads, and `fieldNames` the name its shader reads each by, one each in the same order. A field's
+  name here and its grid's name in its file are two names, as UsdVol keeps them. An instance
+  places a volume as it places any geometry. The gather traces no volume: it reports one and
+  leaves it out.
 - **`group`**: a prototype made of the instances that name it.
 - **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
   to, or none for the world. `transform` over the shutter, its `material`, and its visibility
@@ -114,7 +121,9 @@ then derived as RI derives it.
   language it is written in, `materialx`, `osl` or `ri`. Its inputs are declared on it as
   primvars of constant interpolation, so each node holds the inputs its shader takes.
 - **`connection`**: `from` one node's `output`, `to` another node's `input`.
-- **`material`**: its terminals, `surface` and `displacement`, each a node and an output. The
+- **`material`**: its terminals, `surface`, `displacement` and `volume`, each a node and an output.
+  The volume terminal names the medium inside a volume, or inside a closed surface, the material
+  is given to. The
   scene does not read the shaders a network names. Compiling them is the work of whatever is
   built from the scene.
 - **The lights** are UsdLux's, with its parameters and defaults: `rectLight`, `diskLight`,
@@ -138,7 +147,8 @@ then derived as RI derives it.
   `texture` and its `format`, UsdLux's `texture:format`: `automatic`, the fallback, `latlong`,
   `mirroredBall`, `angular` or `cubeMapVerticalCross`. A dome light also holds `camera`, which is 1,
   the fallback, for a dome camera rays see. A mesh light makes the geometry prototype its
-  `geometry` names emit, wherever an instance places it, as [Lights.md](Lights.md#mesh-lights) says.
+  `geometry` names emit, which may be any geometry but a volume, wherever an instance places it,
+  as [Lights.md](Lights.md#mesh-lights) says.
 - **Every geometry holds primvars.** Its points' count is the same at every time, so a deforming
   geometry keeps its topology.
 

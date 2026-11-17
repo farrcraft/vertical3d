@@ -134,4 +134,48 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
     BOOST_TEST(describe(scene) == expected);
 }
 
+// a volume names its fields by the names its shader reads them by, apart from each grid's name in
+// its file, as UsdVol's Volume does, and an instance places it as it places any geometry
+BOOST_AUTO_TEST_CASE(moya_scene_a_volume_names_its_fields_and_an_instance_places_it_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle smoke = scene.create("openVDBAsset", "smoke density");
+    const scene::Handle heat = scene.create("openVDBAsset", "smoke heat");
+    const scene::Handle volume = scene.create("volume", "smoke");
+    const scene::Handle placed = scene.create("instance", "smoke");
+    scene.set(smoke, "filePath", scene::Value::string("smoke.vdb"));
+    scene.set(smoke, "fieldName", scene::Value::string("dens"));
+    scene.set(heat, "filePath", scene::Value::string("smoke.vdb"));
+    scene.set(heat, "fieldName", scene::Value::string("temp"));
+    scene.set(volume, "fieldNames", scene::Value::strings({ "density", "temperature" }));
+    scene.set(volume, "fields", scene::Value::handles({ smoke, heat }));
+    scene.set(placed, "prototype", scene::Value::handle(volume));
+    BOOST_CHECK_THROW(scene.set(volume, "fields", scene::Value::handles({ placed })), std::invalid_argument);
+    scene.commit();
+    scene.apply();
+
+    const std::string described = describe(scene);
+    BOOST_TEST(described.find("openVDBAsset \"smoke density\"\n    fieldName string = \"dens\"\n    filePath string = \"smoke.vdb\"\n") != std::string::npos);
+    BOOST_TEST(described.find("volume \"smoke\"\n"
+                              "    fieldNames string[2] = \"density\" \"temperature\"\n"
+                              "    fields handle[2] = openVDBAsset \"smoke density\" openVDBAsset \"smoke heat\"\n") != std::string::npos);
+    BOOST_TEST(described.find("    prototype handle = volume \"smoke\"\n") != std::string::npos);
+}
+
+// a material names the medium inside what it is given to by its volume terminal, and a mesh light
+// makes only a geometry with a surface emit, never a volume
+BOOST_AUTO_TEST_CASE(moya_scene_a_material_has_a_volume_terminal_and_a_mesh_light_takes_no_volume_test) {
+    scene::Scene scene(scene::kinds());
+    const scene::Handle medium = scene.create("shader", "fog");
+    const scene::Handle look = scene.create("material", "fog");
+    const scene::Handle volume = scene.create("volume", "fog");
+    const scene::Handle light = scene.create("meshLight", "glow");
+    scene.set(look, "volume", scene::Value::handle(medium));
+    BOOST_CHECK_THROW(scene.set(light, "geometry", scene::Value::handle(volume)), std::invalid_argument);
+    scene.commit();
+    scene.apply();
+
+    BOOST_TEST((scene.value(look, "volume") == scene::Value::handle(medium)));
+    BOOST_TEST((scene.value(look, "volumeOutput") == scene::Value::string("out")));
+}
+
 };  // namespace
