@@ -55,6 +55,7 @@ reported, so the table lists only tags in use.
 | `textures` | textures and samplers |
 | `tooling` | the scripts, the gates and the developer tools |
 | `ui` | `api/ui` |
+| `volumes` | media, grids and the light that scatters through them |
 | `vulkan` | the Vulkan version and features the renderer requires |
 
 ## Records by tag
@@ -125,6 +126,7 @@ reported, so the table lists only tags in use.
 | [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
 | [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
 | [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
 
 ### camera
 
@@ -290,6 +292,9 @@ reported, so the table lists only tags in use.
 | [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
 | [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
 | [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0247](offline/0247-offline-hair-scatters-by-chiangs-model.md) | Offline: hair scatters by Chiang's model |
 
 ### lighting
 
@@ -306,6 +311,7 @@ reported, so the table lists only tags in use.
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 | [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
 | [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
 
 ### lit
 
@@ -419,6 +425,13 @@ reported, so the table lists only tags in use.
 | [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
 | [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
 | [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0244](offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md) | Offline: media are tracked by null scattering with spectral MIS |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
+| [0247](offline/0247-offline-hair-scatters-by-chiangs-model.md) | Offline: hair scatters by Chiang's model |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
 
 ### particles
 
@@ -584,6 +597,17 @@ reported, so the table lists only tags in use.
 | [0151](ui/0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree |
 | [0156](ui/0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own |
 | [0167](ui/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md) | UI: a chosen tab is marked as a place, not a toggle |
+
+### volumes
+
+| ADR | Decision |
+|---|---|
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0244](offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md) | Offline: media are tracked by null scattering with spectral MIS |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
 
 ### vulkan
 

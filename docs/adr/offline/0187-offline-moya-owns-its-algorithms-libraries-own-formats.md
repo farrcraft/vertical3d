@@ -1,8 +1,9 @@
 # ADR-0187: Offline: moya owns its algorithms, libraries own formats
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-06
 **Tags**: offline, build, interchange
+**Amended by**: [ADR-0245](0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
 **Documented in**: [roadmap/MoyaRebuild.md](../../roadmap/MoyaRebuild.md)
 
 ## Context

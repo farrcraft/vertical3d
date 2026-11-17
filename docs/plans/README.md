@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaVolumes](MoyaVolumes.md) | Offline rendering | The rebuilt moya's volumes: homogeneous media and OpenVDB grids tracked at four wavelengths, nested media, random-walk subsurface, a hair BSDF on curves, volumetric lights, volumes in the compositing outputs, and all of it named in RIB |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans
