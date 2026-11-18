@@ -365,10 +365,13 @@ modules:
         url: https://github.com/RenderKit/oidn/releases/download/v2.5.1/oidn-2.5.1.src.tar.gz
         sha256: e71fd043a70f1cc80e301d1b90df6c1f536098c4dd94baa612742f6db3369c36
 
+  # blosc asks for a CMake older than 3.5, which the SDK's CMake no longer accepts, so the policy
+  # minimum is raised, as vcpkg raises it for every port
   - name: blosc
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DBUILD_TESTS=OFF
       - -DBUILD_FUZZERS=OFF
       - -DBUILD_BENCHMARKS=OFF
