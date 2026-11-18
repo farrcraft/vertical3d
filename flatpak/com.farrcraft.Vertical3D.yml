@@ -385,7 +385,9 @@ modules:
         url: https://github.com/Blosc/c-blosc/archive/v1.21.6.tar.gz
         sha256: 9fcd60301aae28f97f1301b735f966cc19e7c49b6b4321b839b4579a0c156f38
 
-  # NanoVDB's headers are built without CUDA, as the overlay port in ports/openvdb builds them
+  # NanoVDB's headers are built without CUDA, as the overlay port in ports/openvdb builds them.
+  # Explicit instantiation is off, as in vcpkg's port: those sources include OpenVDB's threading
+  # header before oneTBB's version, and so fail to compile against oneTBB 2021 and newer
   - name: openvdb
     buildsystem: cmake-ninja
     builddir: true
@@ -402,6 +404,7 @@ modules:
       - -DUSE_EXR=ON
       - -DUSE_IMATH_HALF=ON
       - -DUSE_PKGCONFIG=OFF
+      - -DUSE_EXPLICIT_INSTANTIATION=OFF
       - -DOPENVDB_BUILD_NANOVDB=ON
       - -DNANOVDB_USE_CUDA=OFF
       - -DNANOVDB_USE_OPENVDB=ON
