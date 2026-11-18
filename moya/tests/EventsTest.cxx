@@ -21,8 +21,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -45,7 +47,7 @@ constexpr std::uint32_t kMiddleTo = 10;
 std::string spelled(const integrate::Trails & trails, std::uint32_t x, std::uint32_t y) {
     std::string out;
     for (const events::Step & step : trails.pixels[(y * kSide) + x]) {
-        static const char * const kTypes = "CRTLO";
+        static const char * const kTypes = "CRTVLO";
         static const char * const kScatterings = " DGS";
         out += out.empty() ? "" : " ";
         out += kTypes[static_cast<std::uint32_t>(step.event.type)];
@@ -160,6 +162,28 @@ BOOST_AUTO_TEST_CASE(moya_events_an_emitting_material_is_an_object_and_a_mesh_li
     staged.render(&trails);
     BOOST_TEST(spelled(trails, 4, kSide / 2U) == "C O*");
     BOOST_TEST(spelled(trails, 12, kSide / 2U) == "C L'glow'*");
+}
+
+// a camera ray into a dense fog under a sun behind the camera scatters in it. It takes a light
+// sample of the sun there, gathered after the event in the medium, and then goes on from that
+// event. Its depth limit in media ends it after that, so every pixel the fog fills reports those
+// events in that order
+BOOST_AUTO_TEST_CASE(moya_events_a_fog_reports_its_scattering_as_an_event_in_a_medium_test) {
+    Staged staged(8);
+    staged.made.set(staged.options, "volumeDepth", scene::Value::integer(1));
+    staged.fog("fog", 1.0F, glm::vec3 { 0.0F }, glm::vec3 { 0.0F }, glm::vec3 { 8.0F }, 0.0F);
+    const scene::Handle sun = staged.light("distantLight", "sun", "key");
+    staged.made.set(sun, "angle", scene::Value::number(0.0F));
+    staged.made.set(sun, "transform", scene::Value::matrix(glm::rotate(glm::mat4(1.0F), glm::radians(180.0F), glm::vec3 { 1.0F, 0.0F, 0.0F })));
+    integrate::Trails trails;
+    staged.render(&trails);
+    for (std::uint32_t y = kMiddleFrom; y < kMiddleTo; ++y) {
+        for (std::uint32_t x = kMiddleFrom; x < kMiddleTo; ++x) {
+            BOOST_TEST_CONTEXT("pixel " << x << ", " << y) {
+                BOOST_TEST(spelled(trails, x, y) == "C V* L'key'* V");
+            }
+        }
+    }
 }
 
 // recording the events changes nothing a path gathers, so the picture is the same, bit for bit

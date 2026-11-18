@@ -35,12 +35,16 @@ beside what the path gathers, and change nothing it gathers.
 | Camera | `C` | first, as the camera sample is generated |
 | Reflection | `R` | a bounce that leaves on the side of the surface it arrived from |
 | Transmission | `T` | a bounce that crosses the surface |
+| Volume | `V` | a scattering event in a medium |
 | Light | `L` | each light of the scene whose light it gathers |
 | Object | `O` | each emitting material whose light it gathers |
 
 - **A bounce's scattering** is singular, `S`, for a sample from a closure that scatters into one
   direction. It is diffuse, `D`, for a sample from a diffuse, Oren-Nayar or fuzz closure, and
   glossy, `G`, for any other. The camera, a light and an object scatter none.
+- **An event in a medium scatters none.** Its type alone tells it apart from a surface's bounce,
+  whatever the phase function's anisotropy. A collision that absorbs the path reports no event,
+  and neither does a surface a path passes by, such as a medium's boundary.
 - **A bounce reports its event** once its depth limits allow it, before Russian roulette.
 - **A light's event is reported wherever the path gathers its light.** That is at a light sample
   that brings some in, a light's shape the ray meets, and a mesh light at a shading point. It is
@@ -50,6 +54,9 @@ beside what the path gathers, and change nothing it gathers.
   closure would make towards the light, and then the light's. A diffuse wall lit by a light sample
   reports `<RD>` then `L`, as a bounce to the light would. Those events come after the bounce
   that arrived at the shading point and before the bounce that leaves it.
+- **A light sample in a medium** reports `V` and then the light's event. The path then reports
+  `V` again as it leaves along the phase function's direction. A fog's single scattering under a
+  sun reports `C`, `V`, `L`.
 - **A surface that is cut out** reports no event where a ray passes through it.
 
 `render()` fills an `integrate::Trails` when it is given one, for inspecting what paths do. It
@@ -67,17 +74,19 @@ them into one deterministic automaton, an `lpe::Automaton`. A path steps it once
 and a state names each expression the events so far match.
 
 - **Each event is one symbol**, which `kernel::integrate::symbolOf()` gives it. The symbols are
-  the camera, a reflection and a transmission of each scattering, an object, and a light in no
-  group. A light of each group follows, by its label, so a render of n groups reads 9 + n.
+  the camera, a reflection and a transmission of each scattering, an event in a medium, an
+  object, and a light in no group. A light of each group follows, by its label, so a render of n
+  groups reads 10 + n.
 - **An event is written `<type scattering label>`.** Each place is a letter, a quoted label, `.`
   for any, or a set in brackets, `[...]`, or of all but them, `[^...]`. Places left off match
   anything. The types are `C`, `R`, `T`, `V`, `L`, `O` and `B`, and the scatterings `D`, `G`,
-  `S` and `s`. Paths here have no volume, background or straight events, so `V`, `B` and `s`
-  match none.
+  `S` and `s`. Paths here have no background or straight events, so `B` and `s` match none.
+- **An event in a medium has no scattering**, so it matches a scattering's place only where that
+  place is left off or is `.`. `V` and `<V.>` match it, and `<VD>` matches nothing.
 - **A letter alone is one event**: a type's letter is any event of that type, and a scattering's
-  any event of that scattering. `RD` is a reflection and then a diffuse event, and a diffuse
-  reflection is `<RD>`. A quoted label alone, such as `'key'`, is a light of that group, and `.`
-  is any event.
+  any event of that scattering, so `D` matches no event in a medium. `RD` is a reflection and
+  then a diffuse event, and a diffuse reflection is `<RD>`. A quoted label alone, such as
+  `'key'`, is a light of that group, and `.` is any event.
 - **Patterns follow one another**, are grouped in parentheses, and are alternatives across `|`.
   A set of events in brackets matches any of them, and `[^...]` any event but them. A pattern
   repeats by `*`, `+`, `?`, `{n}`, `{n,}` or `{n,m}`, a count at most `lpe::kMostRepeats`, 32.

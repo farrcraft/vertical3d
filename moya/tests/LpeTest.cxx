@@ -37,6 +37,7 @@ constexpr std::uint32_t kRS = events::kReflectionSymbol + 2U;
 constexpr std::uint32_t kTD = events::kTransmissionSymbol;
 constexpr std::uint32_t kTG = events::kTransmissionSymbol + 1U;
 constexpr std::uint32_t kTS = events::kTransmissionSymbol + 2U;
+constexpr std::uint32_t kV = events::kVolumeSymbol;
 constexpr std::uint32_t kO = events::kObjectSymbol;
 constexpr std::uint32_t kL = events::kLightSymbol;
 
@@ -94,6 +95,21 @@ BOOST_AUTO_TEST_CASE(moya_lpe_letters_and_events_match_their_types_and_scatterin
         { "C.L", { { kC, kRG, kL }, { kC, kTS, kFill } }, { { kC, kL }, { kC, kRD, kRD, kL } } },
         { "C<.S>O", { { kC, kRS, kO }, { kC, kTS, kO } }, { { kC, kRS, kL } } },
         { "C L", { { kC, kL } }, { { kC, kRD, kL } } },
+    });
+}
+
+// an event in a medium is V, of no scattering. It matches V, '.' and <V.>, and no scattering's
+// letter, so D matches a diffuse reflection or transmission and no event in a medium
+BOOST_AUTO_TEST_CASE(moya_lpe_an_event_in_a_medium_is_v_of_no_scattering_test) {
+    check({
+        { "CVL", { { kC, kV, kL }, { kC, kV, kKey } }, { { kC, kRD, kL }, { kC, kTD, kL }, { kC, kV, kO } } },
+        { "C<V.>L", { { kC, kV, kL } }, { { kC, kTD, kL } } },
+        { "C<VD>L", {}, { { kC, kV, kL } } },
+        { "C<.D>L", { { kC, kRD, kL } }, { { kC, kV, kL } } },
+        { "CDL", { { kC, kTD, kL } }, { { kC, kV, kL } } },
+        { "C.L", { { kC, kV, kL } }, {} },
+        { "CV+L", { { kC, kV, kL }, { kC, kV, kV, kV, kL } }, { { kC, kL }, { kC, kV, kRD, kL } } },
+        { "C[^V]L", { { kC, kRD, kL } }, { { kC, kV, kL } } },
     });
 }
 

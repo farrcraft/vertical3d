@@ -162,7 +162,7 @@ listed as a number with no record, as the ADR index requires.
 | [9](#step-9--media-in-the-scene) | Media in the scene, and volume shaders compiled | `moya/libmoya/scene`, `material` | 0242 | done |
 | [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | done |
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | done |
-| [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | open |
+| [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | done |
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | open |
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | open |
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | open |
@@ -580,6 +580,18 @@ diameter by an orthographic camera.
 
 **Tests:** `C<V.>L` in a fog lit by one light matches a render of single scattering. A set of
 expressions split by whether the first event is a volume's sums to the beauty at each pixel.
+
+**Done.** ADR-0244 names no scattering for an event in a medium, so it has none, as the camera, a
+light and an object have none. Karma also reads `V` apart from `D`, as its `C[DV]A` shows.
+`EventType` gains `Volume`, and `symbolOf()` gives it `kVolumeSymbol`, one symbol after the
+transmissions. The object's, the light's and the labels' symbols each move up by one. `V`,
+`<V.>` and `.` match it, and `D`, `<.D>` and `<VD>` do not. `track()` advances the path by the
+event once the phase function draws a direction. `directInMedium()` gathers its light after the
+event, as `direct()` gathers a closure's after its bounce. A trail then reads `C V* L* V` for a
+fog's single scattering. The cases are in `LpeTest.cxx`, `EventsTest.cxx` and
+`LightPathsTest.cxx`. They use `Staged::fog()`, a sphere of one anisotropic VDF. `C<V.>L`
+matches a render whose `volumeDepth` is one at each pixel, within rounding. The room's splits by
+the first bounce's scattering, with `C<V.>.*` added, sum to the beauty with a fog in front of it.
 
 ### Step 13 — Grids
 

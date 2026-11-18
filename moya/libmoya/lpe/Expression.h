@@ -29,8 +29,10 @@ namespace v3d::moya::lpe {
  * - Patterns follow one another, are grouped in parentheses, and are alternatives across |.
  *   A pattern is repeated by *, +, ?, {n}, {n,} or {n,m}, a count at most kMostRepeats.
  *
- * Moya's paths have no volume, background or straight events, so V, B and s match none. A
- * label that no light group holds matches none too.
+ * An event in a medium, V, has no scattering, so it matches a scattering's place only where that
+ * place is left off or is '.'. A scattering's letter alone, such as D, matches no event in a
+ * medium. Moya's paths have no background or straight events, so B and s match none. A label
+ * that no light group holds matches none too.
  **/
 std::variant<Pattern, Failure> parse(const std::string & text, const std::vector<std::string> & labels);
 

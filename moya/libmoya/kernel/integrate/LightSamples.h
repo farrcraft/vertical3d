@@ -377,7 +377,7 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
  * the medium's phase function towards where the path came from. It is weighed against the phase
  * function's sample by the power heuristic, as direct() weighs a BSDF's. A point in a medium has
  * no normal, so a light is picked as for a point that faces every way. The shadow ray starts at
- * the point itself.
+ * the point itself. The light is gathered after the event in the medium.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, then the direction
@@ -433,7 +433,7 @@ MOYA_KERNEL spectrum::SampledSpectrum directInMedium(const Paths<T, X> & paths, 
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
     const float weight = weighed ? powerHeuristic(density, volume::phaseDensity(coefficients, cosine) * passed.chance) : 1.0F;
     const spectrum::SampledSpectrum out = value * emitted * passed.through * (passed.share * weight / density);
-    gathered(paths, state, litBy(chosen), MOYA_PATH(state, throughput) * out);
+    gathered(paths, state, scatteredInMedium(), litBy(chosen), MOYA_PATH(state, throughput) * out);
     return out;
 }
 

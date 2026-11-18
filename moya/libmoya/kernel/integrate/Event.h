@@ -16,20 +16,22 @@ namespace v3d::moya::kernel::integrate {
 
 /**
  * What happens at one vertex of a path, as OSL's light path expressions name it. A path starts at
- * the camera (C), and scatters by a reflection (R) or a transmission (T). It gathers the light of
- * a light (L) or of an emitting object (O).
+ * the camera (C), and scatters by a reflection (R), a transmission (T) or at a point in a medium
+ * (V). It gathers the light of a light (L) or of an emitting object (O).
  **/
 enum class EventType : std::uint8_t {
     Camera,
     Reflection,
     Transmission,
+    Volume,
     Light,
     Object
 };
 
 /**
  * How a reflection or a transmission scatters, as OSL's light path expressions name it: diffuse
- * (D), glossy (G) or singular (S). An event that does not scatter has none.
+ * (D), glossy (G) or singular (S). An event that does not scatter has none, and so does an event
+ * in a medium, which is told apart by its type alone.
  **/
 enum class Scattering : std::uint8_t {
     None,
@@ -51,15 +53,16 @@ struct Event {
 /**
  * The symbols a light path expression's automaton reads, one for each event. The camera comes
  * first, then a reflection and a transmission of each scattering, diffuse, glossy and singular,
- * then an object, then a light in no group. A light in a group follows those, at kLabelled plus
- * its label.
+ * then an event in a medium, then an object, then a light in no group. A light in a group follows
+ * those, at kLabelled plus its label.
  **/
 inline constexpr std::uint32_t kCameraSymbol = 0;
 inline constexpr std::uint32_t kReflectionSymbol = 1;
 inline constexpr std::uint32_t kTransmissionSymbol = 4;
-inline constexpr std::uint32_t kObjectSymbol = 7;
-inline constexpr std::uint32_t kLightSymbol = 8;
-inline constexpr std::uint32_t kLabelled = 9;
+inline constexpr std::uint32_t kVolumeSymbol = 7;
+inline constexpr std::uint32_t kObjectSymbol = 8;
+inline constexpr std::uint32_t kLightSymbol = 9;
+inline constexpr std::uint32_t kLabelled = 10;
 
 /**
  * The event of a bounce of a lobe from a closure: a transmission for one that crosses the surface
@@ -82,6 +85,13 @@ MOYA_KERNEL inline Event scatteredBy(const bsdf::Sample & drawn) {
     return scatteredBy(drawn.lobe, drawn.specular, drawn.diffuse);
 }
 
+/** The event of a path that scatters at a point in a medium, of no scattering. **/
+MOYA_KERNEL inline Event scatteredInMedium() {
+    Event out;
+    out.type = EventType::Volume;
+    return out;
+}
+
 /**
  * The event of a light whose light a path gathers, with its group's label. A light an emitting
  * material made is an object.
@@ -99,8 +109,9 @@ MOYA_KERNEL inline std::uint32_t symbolsOf(std::uint32_t labels) {
 }
 
 /**
- * The symbol of an event. A bounce of no scattering is read as a glossy one, and a light's label
- * is read only on a light.
+ * The symbol of an event. A reflection or a transmission of no scattering is read as a glossy one.
+ * An event in a medium has one symbol, whatever its scattering, and a light's label is read only
+ * on a light.
  **/
 MOYA_KERNEL inline std::uint32_t symbolOf(const Event & event) {
     const std::uint32_t scattered = event.scattering == Scattering::None ? 1U : static_cast<std::uint32_t>(event.scattering) - 1U;
@@ -111,6 +122,8 @@ MOYA_KERNEL inline std::uint32_t symbolOf(const Event & event) {
             return kReflectionSymbol + scattered;
         case EventType::Transmission:
             return kTransmissionSymbol + scattered;
+        case EventType::Volume:
+            return kVolumeSymbol;
         case EventType::Object:
             return kObjectSymbol;
         case EventType::Light:

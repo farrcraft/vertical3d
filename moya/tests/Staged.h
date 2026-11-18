@@ -21,7 +21,9 @@
 #include <utility>
 #include <vector>
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 
 #include "Tracing.h"
@@ -81,6 +83,38 @@ struct Staged {
             made.set(placed, "material", v3d::moya::scene::Value::handle(material));
         }
         return mesh;
+    }
+
+    /**
+     * A closed sphere of a radius about a centre, filled with a medium of one anisotropic VDF of an
+     * absorption, a scattering and an anisotropy. It is turned so a camera along z looks at its
+     * equator, away from its poles.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the absorption, then the scattering
+    void fog(const std::string & name, float radius, const glm::vec3 & centre, const glm::vec3 & absorption, const glm::vec3 & scattering, float anisotropy) {
+        namespace scene = v3d::moya::scene;
+        const scene::Handle vdf = made.create("shader", name + " vdf");
+        made.set(vdf, "shader", scene::Value::string("ND_anisotropic_vdf"));
+        const std::vector<std::pair<std::string, scene::Value>> inputs { { "absorption", scene::Value::vector(absorption) },
+            { "scattering", scene::Value::vector(scattering) }, { "anisotropy", scene::Value::number(anisotropy) } };
+        for (const auto & [input, value] : inputs) {
+            made.declare(vdf, scene::Declaration { .name = input, .type = value.type(), .count = static_cast<std::uint32_t>(value.size()), .fallback = value });
+            made.set(vdf, input, value);
+        }
+        const scene::Handle shader = made.create("shader", name);
+        made.set(shader, "shader", scene::Value::string("ND_volume"));
+        const scene::Handle connection = made.create("connection", name + " into volume");
+        made.set(connection, "from", scene::Value::handle(vdf));
+        made.set(connection, "to", scene::Value::handle(shader));
+        made.set(connection, "input", scene::Value::string("vdf"));
+        const scene::Handle material = made.create("material", name);
+        made.set(material, "volume", scene::Value::handle(shader));
+        const scene::Handle sphere = made.create("sphere", name);
+        made.set(sphere, "radius", scene::Value::number(radius));
+        made.set(sphere, "zmin", scene::Value::number(-radius));
+        made.set(sphere, "zmax", scene::Value::number(radius));
+        const glm::mat4 placed = glm::rotate(moved(centre.x, centre.y, centre.z), glm::radians(90.0F), glm::vec3 { 1.0F, 0.0F, 0.0F });
+        made.set(instanced(made, name, sphere, {}, placed), "material", scene::Value::handle(material));
     }
 
     /** A light of a kind, in a light group, or in none for an empty group. **/

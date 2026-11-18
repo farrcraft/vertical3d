@@ -75,8 +75,11 @@ class Reader final {
         if (symbol < kernel::integrate::kTransmissionSymbol) {
             return Described { .type = kTypes.find('R'), .scattering = 1U + symbol - kernel::integrate::kReflectionSymbol };
         }
-        if (symbol < kernel::integrate::kObjectSymbol) {
+        if (symbol < kernel::integrate::kVolumeSymbol) {
             return Described { .type = kTypes.find('T'), .scattering = 1U + symbol - kernel::integrate::kTransmissionSymbol };
+        }
+        if (symbol == kernel::integrate::kVolumeSymbol) {
+            return Described { .type = kTypes.find('V') };
         }
         if (symbol == kernel::integrate::kObjectSymbol) {
             return Described { .type = kTypes.find('O') };

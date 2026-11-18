@@ -119,7 +119,8 @@ MOYA_KERNEL inline float rescale(spectrum::SampledSpectrum & throughput, spectru
  *
  * A path that is absorbed ends there, as does one whose scattering a depth limit refuses. One
  * that scatters takes a light sample and draws a direction from the medium's phase function by
- * the bounce's draws, as a bounce off a surface does, and counts a volume bounce. The point is
+ * the bounce's draws, as a bounce off a surface does, and counts a volume bounce. A direction the
+ * phase function draws records an event in the medium, which the path goes on from. The point is
  * lit by the lights that light an instance of no links. Its cone spreads as a lobe of roughness
  * one spreads it. Russian roulette treats it as any bounce. It gives a denoiser nothing past it.
  **/
@@ -169,6 +170,7 @@ MOYA_KERNEL Tracked track(const Paths<T, X> & paths, PathState & state, float en
     if (!drawn.found()) {
         return Tracked::Ended;
     }
+    advance(paths, state, scatteredInMedium());
     ++MOYA_PATH(state, volumeBounces);
     throughput *= drawn.value / drawn.density;
     MOYA_PATH(state, density) = drawn.density;

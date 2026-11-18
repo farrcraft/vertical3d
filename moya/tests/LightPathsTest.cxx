@@ -119,24 +119,27 @@ void grouped(Staged & staged, float key) {
     staged.light("domeLight", "sky", "");
 }
 
-// light path expressions that split every path by its first bounce's scattering, and the light
-// the camera sees, take channels that sum to the beauty at each pixel. Each holds some light
-BOOST_AUTO_TEST_CASE(moya_lightpaths_the_first_bounces_lobes_sum_to_the_beauty_test) {
+/**
+ * Renders a scene that build() fills with a channel for each split, and checks that the channels
+ * sum to the beauty at each pixel and that each holds some light.
+ **/
+template <typename F>
+void sumsToTheBeauty(const std::vector<std::string> & splits, F && build) {
     Staged staged(8, 16);
-    room(staged);
+    build(staged);
     std::vector<scene::Handle> channels;
-    channels.reserve(std::size(kSplits));
-    for (std::size_t i = 0; i < std::size(kSplits); ++i) {
-        channels.push_back(expression(staged, "split" + std::to_string(i), kSplits[i]));
+    channels.reserve(splits.size());
+    for (std::size_t i = 0; i < splits.size(); ++i) {
+        channels.push_back(expression(staged, "split" + std::to_string(i), splits[i]));
     }
     written(staged, channels);
     const film::Snapshot picture = staged.render(nullptr);
-    std::vector<double> held(std::size(kSplits), 0.0);
+    std::vector<double> held(splits.size(), 0.0);
     for (std::uint32_t y = 0; y < kSide; ++y) {
         for (std::uint32_t x = 0; x < kSide; ++x) {
             for (std::uint32_t component = 0; component < 3U; ++component) {
                 float sum = 0.0F;
-                for (std::size_t i = 0; i < std::size(kSplits); ++i) {
+                for (std::size_t i = 0; i < splits.size(); ++i) {
                     const float part = at(picture, x, y, picture.offset("split" + std::to_string(i)) + component);
                     sum += part;
                     held[i] += part;
@@ -148,9 +151,27 @@ BOOST_AUTO_TEST_CASE(moya_lightpaths_the_first_bounces_lobes_sum_to_the_beauty_t
             }
         }
     }
-    for (std::size_t i = 0; i < std::size(kSplits); ++i) {
-        BOOST_TEST(held[i] > 0.0, kSplits[i]);
+    for (std::size_t i = 0; i < splits.size(); ++i) {
+        BOOST_TEST(held[i] > 0.0, splits[i]);
     }
+}
+
+// light path expressions that split every path by its first bounce's scattering, and the light
+// the camera sees, take channels that sum to the beauty at each pixel. Each holds some light
+BOOST_AUTO_TEST_CASE(moya_lightpaths_the_first_bounces_lobes_sum_to_the_beauty_test) {
+    sumsToTheBeauty({ std::begin(kSplits), std::end(kSplits) }, room);
+}
+
+// a fog in front of the room adds paths whose first event is in a medium. That event has no
+// scattering, so the splits by the first bounce's scattering leave it out. One more split, of the
+// paths that start with an event in a medium, makes the channels sum to the beauty again
+BOOST_AUTO_TEST_CASE(moya_lightpaths_a_fogs_events_and_the_first_bounces_lobes_sum_to_the_beauty_test) {
+    std::vector<std::string> splits { std::begin(kSplits), std::end(kSplits) };
+    splits.emplace_back("C<V.>.*");
+    sumsToTheBeauty(splits, [](Staged & staged) {
+        room(staged);
+        staged.fog("fog", 0.5F, glm::vec3 { -0.4F, 0.3F, -1.0F }, glm::vec3 { 0.1F }, glm::vec3 { 0.6F, 1.2F, 2.0F }, 0.3F);
+    });
 }
 
 /**
@@ -193,6 +214,49 @@ BOOST_AUTO_TEST_CASE(moya_lightpaths_one_diffuse_bounce_matches_a_render_of_one_
         }
     }
     BOOST_TEST(lit > 0.0);
+}
+
+/**
+ * A fog sphere of a medium that scatters by colour, under a sun of no angle that shines from
+ * behind the camera, with nothing else in the scene.
+ **/
+void fogged(Staged & staged, std::int32_t volumeDepth) {
+    staged.made.set(staged.options, "volumeDepth", scene::Value::integer(volumeDepth));
+    staged.fog("fog", 1.0F, glm::vec3 { 0.0F }, glm::vec3 { 0.1F, 0.2F, 0.1F }, glm::vec3 { 0.5F, 1.0F, 2.0F }, 0.3F);
+    const scene::Handle sun = staged.light("distantLight", "sun", "");
+    staged.made.set(sun, "angle", scene::Value::number(0.0F));
+    staged.made.set(sun, "intensity", scene::Value::number(3.0F));
+    staged.made.set(sun, "transform", scene::Value::matrix(glm::rotate(glm::mat4(1.0F), 2.0F * kQuarterTurn, glm::vec3 { 1.0F, 0.0F, 0.0F })));
+}
+
+// C<V.>L in a fog under one light collects the light of the first scattering in the medium alone,
+// by its light sample. A render whose paths scatter in media once at most gathers just that
+// light, from the same samples, so the two agree at each pixel. The deeper render's beauty holds
+// more, from the paths that scatter again
+BOOST_AUTO_TEST_CASE(moya_lightpaths_one_scattering_in_a_fog_matches_a_render_of_one_scattering_test) {
+    Staged deep(8, 16);
+    fogged(deep, 8);
+    written(deep, { expression(deep, "single", "C<V.>L") });
+    const film::Snapshot split = deep.render(nullptr);
+    Staged shallow(8, 16);
+    fogged(shallow, 1);
+    const film::Snapshot alone = shallow.render(nullptr);
+    double lit = 0.0;
+    double beauty = 0.0;
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            for (std::uint32_t component = 0; component < 3U; ++component) {
+                const float want = at(alone, x, y, component);
+                lit += want;
+                beauty += at(split, x, y, component);
+                BOOST_TEST_CONTEXT("pixel " << x << ", " << y << ", component " << component) {
+                    BOOST_TEST(std::fabs(at(split, x, y, split.offset("single") + component) - want) <= kRounding * std::fmax(want, 1.0F));
+                }
+            }
+        }
+    }
+    BOOST_TEST(lit > 0.0);
+    BOOST_TEST(beauty > lit);
 }
 
 /**
