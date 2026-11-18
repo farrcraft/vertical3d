@@ -300,7 +300,9 @@ modules:
   # MaterialX's core and format libraries and its standard libraries of node definitions, static
   # and position-independent as vcpkg builds them on Linux, with no shader generator or renderer.
   # moya installs the standard libraries beside itself, so the prefix's copy is removed, with the
-  # documents MaterialX installs at the prefix's root
+  # documents MaterialX installs at the prefix's root. MaterialX installs the standard libraries
+  # only when it builds a shader generator, so post-install copies them as that install would,
+  # without their CMakeLists.txt files. moya's configure reads them from the prefix
   - name: materialx
     buildsystem: cmake-ninja
     cleanup:
@@ -320,6 +322,11 @@ modules:
       - -DMATERIALX_BUILD_RENDER=OFF
       - -DMATERIALX_BUILD_SHARED_LIBS=OFF
       - -DMATERIALX_BUILD_TESTS=OFF
+    post-install:
+      - |
+        cd "${FLATPAK_BUILDER_BUILDDIR}"
+        cp -r libraries "${FLATPAK_DEST}/libraries"
+        find "${FLATPAK_DEST}/libraries" -name CMakeLists.txt -delete
     license-files:
       - LICENSE
     sources:
