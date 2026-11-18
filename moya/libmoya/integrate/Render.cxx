@@ -80,7 +80,7 @@ constexpr std::uint64_t kFnvOffset = 0xCBF29CE484222325ULL;
 constexpr std::uint64_t kFnvPrime = 0x100000001B3ULL;
 
 /** A parameter of the scene's options, or its fallback while the scene has none. **/
-const scene::Value & option(const scene::Scene & scene, const std::string & name) {
+const scene::Value & option(const scene::Scene & scene, const char * name) {
     const std::vector<scene::Handle> options = scene.objects("options");
     if (!options.empty()) {
         return scene.value(options.front(), name);
@@ -90,11 +90,11 @@ const scene::Value & option(const scene::Scene & scene, const std::string & name
             return declaration.fallback;
         }
     }
-    throw std::invalid_argument("the options have no parameter " + name);
+    throw std::invalid_argument(std::string("the options have no parameter ") + name);
 }
 
 /** An integer option, held to zero or more. **/
-std::uint32_t count(const scene::Scene & scene, const std::string & name) {
+std::uint32_t count(const scene::Scene & scene, const char * name) {
     return static_cast<std::uint32_t>(std::max(option(scene, name).integerArray().front(), 0));
 }
 
