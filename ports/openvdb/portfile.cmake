@@ -15,6 +15,28 @@ file(REMOVE "${SOURCE_PATH}/cmake/FindIlmBase.cmake")
 file(REMOVE "${SOURCE_PATH}/cmake/FindBlosc.cmake")
 file(REMOVE "${SOURCE_PATH}/cmake/FindOpenEXR.cmake")
 
+# The installed FindOpenVDB.cmake names Blosc and zlib only for a shared OpenVDB. A static one
+# needs them on the link line too, or every program that links it fails on blosc's symbols.
+vcpkg_replace_string("${SOURCE_PATH}/cmake/FindOpenVDB.cmake"
+[[
+    list(APPEND _OPENVDB_HIDDEN_DEPENDENCIES ZLIB::ZLIB)
+  endif()
+endif()
+]]
+[[
+    list(APPEND _OPENVDB_HIDDEN_DEPENDENCIES ZLIB::ZLIB)
+  endif()
+else()
+  if(OpenVDB_USES_BLOSC)
+    list(APPEND _OPENVDB_VISIBLE_DEPENDENCIES blosc_static)
+  endif()
+  if(OpenVDB_USES_ZLIB)
+    list(APPEND _OPENVDB_VISIBLE_DEPENDENCIES ZLIB::ZLIB)
+  endif()
+endif()
+]]
+)
+
 string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "static" OPENVDB_STATIC)
 string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "dynamic" OPENVDB_SHARED)
 

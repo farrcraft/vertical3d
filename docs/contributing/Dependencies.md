@@ -135,8 +135,13 @@ need none. moya reads grids through NanoVDB's headers on every device, and build
 - The port in [ports/openvdb/](../../ports/openvdb/) is vcpkg's own, from the baseline commit,
   with its features removed. It always builds NanoVDB, with CUDA off and its conversion from
   OpenVDB on, and builds none of OpenVDB's or NanoVDB's tools.
+- **A static OpenVDB must name Blosc and zlib as its own dependencies.** The `FindOpenVDB.cmake`
+  that vcpkg's port installs names them only for a shared library. The Linux triplet builds it
+  static, and every program that links it then fails on blosc's symbols. The portfile edits that
+  module so that a static `OpenVDB::openvdb` links `blosc_static` and `ZLIB::ZLIB`.
 - When the baseline moves OpenVDB to a new version, copy the new port's patch and its other files
-  over `ports/openvdb/`, and set the new version and hash in the portfile. Change the Flatpak's
+  over `ports/openvdb/`, and set the new version and hash in the portfile. Keep the edit for a
+  static library. Change the Flatpak's
   module to the same archive. Drop the port once vcpkg's builds NanoVDB without CUDA.
 
 ### The OIDN and ISPC overlay ports
