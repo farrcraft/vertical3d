@@ -31,9 +31,12 @@
  *   scattering event in a medium is a volume bounce.
  * - chances are the densities with which the path so far would have been tracked through media at
  *   each of its wavelengths, over a common scale, with an average of one. A path that crosses no
- *   medium keeps them at one.
+ *   medium keeps them at one. lightChances are the densities with which a light sample's shadow
+ *   ray would have tracked the path through volumes since its last scattering, at each
+ *   wavelength, starting from the chances there, with an average of one.
  * - density is the last BSDF or phase function sample's, which multiple importance sampling
- *   weighs a light by, times the chance the path then passed the media along its way. from and
+ *   weighs a light by, times the chance the path then passed the media along its way. That chance
+ *   is over the chance a shadow ray would have passed the volumes among them the same way. from and
  *   normal are the point that sample was drawn at and its shading normal, which is zero in a
  *   medium.
  *   linked is that shading point's set of linked lights. specular is one when that sample was
@@ -60,6 +63,7 @@
     FIELD(std::uint32_t, transmissionBounces)                  \
     FIELD(std::uint32_t, volumeBounces)                        \
     FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, chances)    \
+    FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, lightChances) \
     FIELD(float, density)                                      \
     FIELD(glm::vec3, from)                                     \
     FIELD(glm::vec3, normal)                                   \

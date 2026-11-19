@@ -14,9 +14,11 @@
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Primvar.h>
+#include <moya/libmoya/kernel/volume/Volume.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/texture/Request.h>
+#include <moya/libmoya/volume/Grid.h>
 
 #include <cstdint>
 #include <optional>
@@ -108,6 +110,13 @@ struct Prototypes {
     std::vector<Group> groups;
     std::vector<Instance> instances;
     Group world;
+
+    /**
+     * Every volume a chain of instances places, as kernel code reads it, each field naming its grid
+     * among grids. Each grid is read once a gather, or placed from a cache.
+     **/
+    std::vector<kernel::volume::Volume> volumes;
+    std::vector<boost::shared_ptr<const volume::Grid>> grids;
 
     /** Every rect, disk, sphere and cylinder light, in the order of their indices. **/
     std::vector<ShapedLight> lights;

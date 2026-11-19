@@ -21,7 +21,9 @@ The state holds the pixel and the sample, the ray traced next and its cone, the 
 the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
 count of bounces in all and of each kind, a scattering event in a medium being a volume bounce.
 Its chances are the densities with which it would have been tracked through media at each of its
-wavelengths, as [tracking through a medium](#tracking-through-a-medium) says. Last, it holds the
+wavelengths, as [tracking through a medium](#tracking-through-a-medium) says. Its lightChances
+are those with which a shadow ray would have tracked it through volumes, as
+[tracking through volumes](#tracking-through-volumes) says. Last, it holds the
 last BSDF or phase function sample's density and whether it was specular, and the point it was
 drawn at with its shading normal and its set of linked lights. Its coverage is one once the
 camera ray has met something. Its media are the closed surfaces it is inside, as
@@ -264,6 +266,61 @@ medium, or in one of no coefficients, carries its light unchanged from one surfa
   of roughness one spreads it. The event gives a denoiser nothing past it.
 
 Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md)
+
+## Tracking through volumes
+
+A volume is a medium read from grids, which an instance places and no surface bounds. It stays out
+of a path's media and adds itself to whatever medium the path is in. The gather turns each chain
+of instances that places a volume into a `kernel::volume::Volume`, and `volume::Volumes` holds
+them on the device beside the NanoVDB buffer of each grid they read.
+
+- **A volume's medium** is its material's volume program, run with the values of its fields at
+  the point, `program::mediumWithFields()`. A field is read as the primvar its name gives, so
+  `geompropvalue` reads it. A volume of no material, or whose material has no volume program,
+  scatters its field named `density`, the same at every wavelength and every way. A coefficient
+  below zero is taken as zero. The innermost instance that names a material gives it.
+- **The fields a volume reads** are its density and each field its program reads, in the order the
+  volume names them, at most `kernel::volume::kMostFields`. Each is read by trilinear
+  interpolation between the eight voxels around the point, `volume::valueAt()`. A volume that
+  would read more is reported and reads the first of them. One that would read none, such as a
+  volume of no program and no density, is reported and holds nothing.
+- **A volume's bounds** are those of the grids it reads, one voxel past their active voxels, in
+  its own space. A ray is clipped to them as its volume's instances stand at the ray's time, so a
+  volume moves with its instances over the shutter. A volume whose grids hold no active voxel is
+  left out. A ray sees a volume only when every instance in its chain is visible to rays of its
+  kind.
+- **A majorant bounds the extinction**, cell by cell of the volume's walked field: its density, or
+  its first field when it has none. A cell is the node or tile of the grid's tree around a voxel,
+  no smaller than a leaf, `volume::cellAt()`. A point reads voxels up to one past its floor, so a
+  cell's most is taken over the cell and the seven cells of its side beyond it. The majorant is
+  the program's extinction with the walked field at the cell's most and every other field at its
+  grid's most. A program that reads anything but its fields and constants, such as a position or
+  an image, cannot be bounded that way. Its volume takes that majorant over the whole volume, with
+  the walked field at its grid's most too. A node's most counts its active values alone.
+- **A path crossing volumes is tracked by null scattering**, `trackCrossed()`. The majorant is the
+  homogeneous medium's extinction and the sum of each crossed volume's over the cell the ray is
+  in, and a distance is drawn again wherever it changes. At a collision the coefficients of every
+  medium there are joined, each lobe joining one of the same anisotropy, an empty one, or the one
+  of nearest anisotropy, `volume::join()`. The collision scatters, is absorbed or is null with the
+  chance of the tracked wavelength's scattering, absorption or what is left of the majorant, over
+  the majorant. A null collision weighs each wavelength by what is left of the majorant times the
+  majorant's transmittance, by `rescale()`, and the path goes on. A stretch of ray that crosses
+  more than `kMostCrossed` volumes is tracked through the first of them, and a path that collides
+  more than `kMostCollisions` times on one stretch ends.
+- **A shadow ray takes a volume's transmittance by ratio tracking**, `passVolumes()`. It draws
+  collisions against the volumes' majorant alone, since it takes the homogeneous medium's by Beer
+  and Lambert's law. At each, every wavelength lets through what is left of the majorant there.
+  Its numbers come from the bounce's collision draws, counted on from `kShadowCollisions`.
+- **Multiple importance sampling counts the null collisions as part of a path.** A shadow ray
+  would have drawn a null collision with the density of the volumes' majorant, and a tracked path
+  with that of what is left of the whole majorant. The path's density is divided by the growth of
+  its lightChances, which grow by the shadow ray's densities, and a light sample's chance is
+  divided by the same. Both weigh the same path alike, so the weights sum to one. A path that
+  crosses no volume keeps its density as before.
+
+Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md),
+[ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
+[ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
 
 ## Depth limits and Russian roulette
 

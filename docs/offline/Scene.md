@@ -106,8 +106,9 @@ then derived as RI derives it.
 - **`volume`**: a volume, as UsdVol's `Volume` is. `fields` names the `openVDBAsset` objects it
   reads, and `fieldNames` the name its shader reads each by, one each in the same order. A field's
   name here and its grid's name in its file are two names, as UsdVol keeps them. An instance
-  places a volume as it places any geometry. The gather traces no volume: it reports one and
-  leaves it out.
+  places a volume as it places any geometry, and a path is tracked through it, as
+  [the integrator](Integrator.md#tracking-through-volumes) says. A field's grid must hold floats.
+  One that cannot be read is reported, and its volume holds nothing.
 - **`group`**: a prototype made of the instances that name it.
 - **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
   to, or none for the world. `transform` over the shutter, its `material`, and its visibility

@@ -55,6 +55,7 @@
 #include <moya/libmoya/view/Tracing.h>
 #include <moya/libmoya/texture/Options.h>
 #include <moya/libmoya/texture/Textures.h>
+#include <moya/libmoya/volume/Volumes.h>
 
 #include <algorithm>
 #include <chrono>
@@ -218,6 +219,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const accel::Assembly assembly = accel::assemble(device, prototypes);
     const view::Tracing tracing(device, prototypes, assembly);
     const geometry::Surfaces surfaces(device, prototypes, config);
+    const volume::Volumes volumes(device, prototypes);
     const texture::Textures textures(device, prototypes.images, texture::optionsOf(scene), config, logger);
     const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds), logger);
 
@@ -267,6 +269,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .traversal = tracing.hierarchy(),
                 .textures = textures.view(),
                 .surfaces = surfaces.view(),
+                .volumes = volumes.view(),
                 .lights = lights.view(),
                 .table = colour::acescgTable(),
                 .albedos = material::ggxAlbedos(),

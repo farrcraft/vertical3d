@@ -14,6 +14,7 @@
 #include <moya/libmoya/kernel/volume/Phase.h>
 #include <moya/libmoya/kernel/volume/PhaseSample.h>
 
+#include <cmath>
 #include <cstdint>
 
 #include <glm/geometric.hpp>
@@ -55,6 +56,43 @@ MOYA_KERNEL inline Coefficients coefficientsOf(const spectrum::RgbTable & table,
         out.anisotropy[lobe] = medium.lobes[lobe].anisotropy;
     }
     return out;
+}
+
+/**
+ * Adds the coefficients of a medium to those of the media it overlaps at a point. Each lobe that
+ * scatters joins the lobe that scatters with the same anisotropy, or else takes the first lobe
+ * that scatters nothing. Where every lobe scatters by another anisotropy, it joins the one whose
+ * anisotropy is nearest its own.
+ **/
+MOYA_KERNEL inline void join(Coefficients & into, const Coefficients & added) {
+    into.absorption += added.absorption;
+    for (std::uint32_t lobe = 0; lobe < kMostLobes; ++lobe) {
+        if (added.scattering[lobe].black()) {
+            continue;
+        }
+        const float anisotropy = added.anisotropy[lobe];
+        std::uint32_t chosen = kMostLobes;
+        for (std::uint32_t at = 0; at < kMostLobes && chosen == kMostLobes; ++at) {
+            if (!into.scattering[at].black() && into.anisotropy[at] == anisotropy) {
+                chosen = at;
+            }
+        }
+        for (std::uint32_t at = 0; at < kMostLobes && chosen == kMostLobes; ++at) {
+            if (into.scattering[at].black()) {
+                chosen = at;
+                into.anisotropy[at] = anisotropy;
+            }
+        }
+        if (chosen == kMostLobes) {
+            chosen = 0;
+            for (std::uint32_t at = 1; at < kMostLobes; ++at) {
+                if (std::fabs(into.anisotropy[at] - anisotropy) < std::fabs(into.anisotropy[chosen] - anisotropy)) {
+                    chosen = at;
+                }
+            }
+        }
+        into.scattering[chosen] += added.scattering[lobe];
+    }
 }
 
 /**

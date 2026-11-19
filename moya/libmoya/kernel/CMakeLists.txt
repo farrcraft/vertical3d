@@ -31,6 +31,7 @@ add_library("v3dlib_moya_kernel"
 	"bsdf/scattering/ThinFilm.h"
 	"integrate/Dimensions.h"
 	"program/Displacement.h"
+	"program/Fields.h"
 	"program/Instruction.h"
 	"program/Medium.h"
 	"program/Noise.h"
@@ -127,9 +128,17 @@ add_library("v3dlib_moya_kernel"
 	"texture/Untextured.h"
 	"view/HitChannels.h"
 	"view/HitView.h"
+	"volume/Block.h"
+	"volume/Cell.h"
+	"volume/Field.h"
+	"volume/Grid.h"
+	"volume/GridPlace.h"
 	"volume/Interior.h"
 	"volume/Lobe.h"
 	"volume/Medium.h"
+	"volume/Nano.h"
+	"volume/Volume.h"
+	"volume/Volumes.h"
 	"Kernel.cxx"
 )
 
@@ -137,9 +146,16 @@ add_library("v3dlib_moya_kernel"
 set_target_properties("v3dlib_moya_kernel" PROPERTIES CXX_STANDARD 20 V3D_KERNEL ON)
 
 # Kernel code includes its headers from the root of the tree, as the api libraries do. Its headers
-# name glm's vectors.
+# name glm's vectors, and read grids through NanoVDB's headers, which build nothing.
 target_include_directories("v3dlib_moya_kernel" PUBLIC "${V3D_ROOT}")
-target_link_libraries("v3dlib_moya_kernel" PUBLIC glm::glm)
+target_link_libraries("v3dlib_moya_kernel" PUBLIC glm::glm OpenVDB::nanovdb)
+
+# PUBLIC: NanoVDB chooses between the standard's old and new type traits by __cplusplus, which
+# MSVC reports as C++98 unless it is told to report the standard it compiles. Every source that
+# compiles a kernel header compiles NanoVDB's.
+if(MSVC)
+	target_compile_options("v3dlib_moya_kernel" PUBLIC /Zc:__cplusplus)
+endif()
 
 # PUBLIC: the colour type is fixed when moya is compiled, so every source that compiles a kernel
 # header sees the same one.

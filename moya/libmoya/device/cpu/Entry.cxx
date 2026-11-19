@@ -376,6 +376,7 @@ void profiledPaths(const ProfileParams & params, kernel::Item item) {
         .traversal = Profiled { .traversal = from.traversal, .tally = &tally },
         .textures = ProfiledTextures { .catalog = from.textures.catalog, .textures = from.textures, .tally = &tally },
         .surfaces = from.surfaces,
+        .volumes = from.volumes,
         .lights = from.lights,
         .table = from.table,
         .albedos = from.albedos,

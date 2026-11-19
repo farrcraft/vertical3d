@@ -13,6 +13,8 @@
 #include <moya/libmoya/kernel/integrate/Dimensions.h>
 #include <moya/libmoya/kernel/integrate/Event.h>
 #include <moya/libmoya/kernel/integrate/Inputs.h>
+#include <moya/libmoya/kernel/integrate/media/Collisions.h>
+#include <moya/libmoya/kernel/integrate/media/Crossings.h>
 #include <moya/libmoya/kernel/integrate/media/Enclosure.h>
 #include <moya/libmoya/kernel/integrate/media/Media.h>
 #include <moya/libmoya/kernel/integrate/Opacity.h>
@@ -50,8 +52,9 @@ namespace v3d::moya::kernel::integrate {
 /**
  * What passes along a shadow ray. share is what the surfaces it meets let through, and through
  * what the media it crosses let through at each wavelength. chance is the density with which a
- * path tracked through those media would have passed them all. A ray that crosses no medium lets
- * through one at each wavelength, with a chance of one.
+ * path tracked through those media would have passed them all, over the density with which the
+ * shadow ray tracked the volumes among them. A ray that crosses no medium lets through one at
+ * each wavelength, with a chance of one.
  **/
 struct Passed {
     float share { 0.0F };
@@ -237,6 +240,75 @@ MOYA_KERNEL void attenuate(const Paths<T, X> & paths, const media::Media & media
 }
 
 /**
+ * Takes what the volumes along a stretch of a shadow ray let through, from its start up to a
+ * parameter, into what passes it, by ratio tracking. False when nothing passes.
+ *
+ * Distances are drawn against the sum of each volume's bound over the cell of it the ray is in,
+ * at the wavelength the path is tracked by, and drawn again wherever that majorant changes. Each
+ * number comes from collisionDraw(), counted on from collisions, which starts at
+ * kShadowCollisions for each light sample. At each collision every wavelength lets through what
+ * is left of the majorant there, and over the last stretch the majorant's transmittance.
+ *
+ * tracked are the chances the path would have passed so far, and shadowed the chances the shadow
+ * ray tracked it by, which start from the path's chances. A collision's factor weighs the light by
+ * its value over the shadow ray's density, which lighten() takes into shadowed. tracked take the
+ * same factor over the same density, so the chance of passing is their average once shadowed have
+ * an average of one again.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL bool passVolumes(const Paths<T, X> & paths, const PathState & state, const geometry::Ray & shadow, float to, Passed & out,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path's chances, then the shadow's
+    spectrum::SampledSpectrum & tracked, spectrum::SampledSpectrum & shadowed, std::uint32_t & collisions) {
+    media::Crossings crossings = media::crossed(paths, shadow, shadow.start, to);
+    if (crossings.count == 0U) {
+        return true;
+    }
+    const spectrum::SampledWavelengths & wavelengths = MOYA_PATH(state, wavelengths);
+    const glm::uvec2 pixel = MOYA_PATH(state, pixel) + paths.sampler.origin;
+    const std::uint32_t sample = MOYA_PATH(state, sample);
+    const std::uint32_t bounce = MOYA_PATH(state, bounces);
+    const int chosen = media::trackedOf(pixel, sample);
+    const float length = glm::length(shadow.direction);
+    const auto weigh = [&](const spectrum::SampledSpectrum & value, const spectrum::SampledSpectrum & density) {
+        const float average = media::lighten(shadowed, density);
+        if (!(average > 0.0F)) {
+            return false;
+        }
+        out.through *= value / average;
+        tracked *= value / average;
+        return !out.through.black();
+    };
+    spectrum::SampledSpectrum passed(1.0F);
+    float t = shadow.start;
+    for (std::uint32_t step = 0; step < media::kMostCollisions; ++step) {
+        spectrum::SampledSpectrum majorant;
+        const float next = std::fmin(media::advanceTo(paths, crossings, t, wavelengths, shadow.time, majorant), to);
+        float flight = std::numeric_limits<float>::infinity();
+        if (majorant[chosen] > 0.0F) {
+            flight = volume::freeFlight(majorant[chosen], media::collisionDraw(pixel, sample, bounce, collisions).x) / length;
+            ++collisions;
+        }
+        if (!(t + flight < next)) {
+            passed *= volume::transmittance(majorant, (next - t) * length);
+            t = next;
+            if (t < to) {
+                continue;
+            }
+            return weigh(passed, passed);
+        }
+        passed *= volume::transmittance(majorant, flight * length);
+        t += flight;
+        volume::Coefficients here;
+        media::joinCrossed(paths, crossings, t, wavelengths, shadow.time, here);
+        if (!weigh(passed * media::leftOf(majorant, here.extinction()), passed * majorant)) {
+            return false;
+        }
+        passed = spectrum::SampledSpectrum(1.0F);
+    }
+    return false;
+}
+
+/**
  * The light that passes along a shadow ray, past everything that casts its shadows. Each surface
  * it meets lets one minus its opacity through, so a solid one lets none through.
  *
@@ -247,28 +319,34 @@ MOYA_KERNEL void attenuate(const Paths<T, X> & paths, const media::Media & media
  * Where any material encloses a medium, the ray carries a copy of the media of the path it
  * leaves, and passes by the surfaces passedBy() names, entering and leaving their media as a path
  * does. Each medium between lets through its transmittance at each wavelength, by Beer and
- * Lambert's law.
+ * Lambert's law, and each volume what passVolumes() gives.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state) {
     Passed out;
-    if (paths.surfaces.media == 0U && !light.shadowLinked) {
+    if (paths.surfaces.media == 0U && !paths.volumes.any() && !light.shadowLinked) {
         Passing<X> filter { .surfaces = paths.surfaces, .textures = paths.textures, .ray = shadow };
         out.share = paths.traversal.any(shadow, filter) ? 0.0F : filter.passing;
         return out;
     }
     media::Media media = MOYA_PATH(state, media);
     spectrum::SampledSpectrum tracked = MOYA_PATH(state, chances);
+    spectrum::SampledSpectrum shadowed = MOYA_PATH(state, chances);
+    std::uint32_t collisions = media::kShadowCollisions;
     const float length = glm::length(shadow.direction);
     geometry::EveryHit every;
     float through = 1.0F;
     for (std::uint32_t passed = 0; passed < kMostPassed; ++passed) {
         const geometry::Hit hit = paths.traversal.nearest(shadow, every);
+        const float reached = hit.found() ? hit.distance : shadow.end;
         if (paths.surfaces.media != 0U) {
-            attenuate(paths, media, ((hit.found() ? hit.distance : shadow.end) - shadow.start) * length, MOYA_PATH(state, wavelengths), out, tracked);
+            attenuate(paths, media, (reached - shadow.start) * length, MOYA_PATH(state, wavelengths), out, tracked);
             if (out.through.black()) {
                 return Passed {};
             }
+        }
+        if (paths.volumes.any() && !passVolumes(paths, state, shadow, reached, out, tracked, shadowed, collisions)) {
+            return Passed {};
         }
         if (!hit.found()) {
             out.share = through;

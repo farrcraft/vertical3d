@@ -163,7 +163,7 @@ listed as a number with no record, as the ADR index requires.
 | [10](#step-10--the-medium-a-path-is-in) | The medium a path is in | `moya/libmoya/kernel/integrate` | 0243 | done |
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | done |
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | done |
-| [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | open |
+| [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | done |
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | open |
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | open |
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | open |
@@ -609,6 +609,42 @@ the first bounce's scattering, with `C<V.>.*` added, sum to the beauty with a fo
 errors. A sphere of fog made through OpenVDB's own tools at run time matches its closed-form
 transmittance along rays through its centre. One grid exported by Blender 5.2 renders, to check a
 file another tool wrote.
+
+**Done.** `volume::read()` reads a field's grid through OpenVDB and converts it with NanoVDB's own
+tools, and `volume::Volumes` holds every grid's buffer on the device as blocks of NanoVDB's
+alignment. The kernel reads them through `kernel/volume/Nano.h`, and `kernel.ts` lets kernel code
+include `nanovdb/NanoVDB.h`. The kernel target links NanoVDB's headers and compiles with
+`/Zc:__cplusplus` publicly, so the suite no longer names either. An instance of a volume is
+gathered as `Prototype::Volume`, which no hierarchy is built over. Each chain of instances that
+reaches it becomes a `kernel::volume::Volume`, which holds the chain, so a volume moves with its
+instances over the shutter. A volume whose material has a volume program runs it with its fields,
+read as the primvars their names give. A material's volume program is appended after its
+surface's, and a closed surface's medium is folded from its converted values. A volume of no
+program scatters its density. A grid that cannot be read is reported and its volume holds
+nothing, and `geometry::Cache` keeps each grid by its field, so a changed field reads its grid
+again alone.
+
+The record leaves one thing open, which this step settles. A trilinear lookup reads one voxel past
+a node, so a cell's majorant is taken over the cell and the seven cells of its side beyond it,
+found by descending NanoVDB's tree. The walk steps from cell to cell by moya's own code rather
+than NanoVDB's HDDA class, since it needs each cell's bound as it enters it. A program that reads
+anything but its fields and constants takes one majorant over its volume, as the record says.
+Tracking against a majorant that sums the homogeneous medium's and every crossed volume's is
+`trackCrossed()`, and a ray that crosses no volume takes the homogeneous tracking of step 11, to
+the byte. A shadow ray takes a volume's transmittance by ratio tracking, `passVolumes()`. Null
+collisions are part of a path for multiple importance sampling, as pbrt-v4's are. The path state
+gains `lightChances`, the densities with which a shadow ray would have tracked the path. A path's
+density and a light sample's chance are each divided by their growth, so both strategies weigh a
+path alike. Overlapping media join their lobes by anisotropy, `volume::join()`.
+
+The cases are in `VolumeTest.cxx`. A cell bounds every lookup in a grid of scattered leaves and
+tiles. A box of constant density, read by a program that absorbs it times a colour, lets through
+Beer and Lambert's share. A scattering density returns a furnace's light. OpenVDB's fog sphere
+lets through e to the minus its diameter less its band. The smoke `make_blender_smoke.py` has
+Blender simulate and write lets through what OpenVDB's own sampler integrates along the axis.
+An unreadable grid renders the bare picture to the byte. A volume in a group placed twice is
+placed through both chains, and a cache reads a forgotten field's grid alone. The furnace and
+closed-form cases take 4096 samples, since a path's estimate of transmittance is one or zero.
 
 ### Step 14 — Volumetric lights
 

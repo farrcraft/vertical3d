@@ -194,8 +194,10 @@ Prototypes Walk::take() {
     lights();
     deepen(prototypes_.world, 0);
     cutSurfaces();
+    placeVolumes();
     if (cache_ != nullptr) {
         std::erase_if(cache_->pieces_, [&](const auto & held) { return !placed_.contains(held.first); });
+        std::erase_if(cache_->grids_, [&](const auto & held) { return !gridIndex_.contains(held.first); });
     }
     return std::move(prototypes_);
 }
@@ -272,6 +274,18 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         }
         out.kind = Prototype::Group;
         out.prototype = group(prototype);
+    } else if (kind == "volume") {
+        const std::optional<std::uint32_t> fields = volume(prototype);
+        if (!fields) {
+            return std::nullopt;
+        }
+        out.kind = Prototype::Volume;
+        out.prototype = *fields;
+        volumeInstances_.emplace_back(holder.valid() ? holder.index : Group::kWorld, static_cast<std::uint32_t>(prototypes_.instances.size()));
+        prototypes_.instances.push_back(out);
+        handles_.push_back(handle);
+        // a ray is tracked through a volume, so no hierarchy is built over it
+        return std::nullopt;
     } else {
         const std::optional<std::uint32_t> placed = geometry(prototype, kind);
         if (!placed) {

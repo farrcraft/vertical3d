@@ -16,11 +16,13 @@
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/geometry/Sampled.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/volume/Volume.h>
 #include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/volume/Grid.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -92,7 +94,11 @@ class Walk final {
     /** The instances a group holds, or the world for a handle that names none. **/
     Group members(const scene::Handle & group);
 
-    /** Gathers an instance a group holds, and gives its index, or nothing when it is left out. **/
+    /**
+     * Gathers an instance a group holds, and gives its index, or nothing when it is left out. An
+     * instance of a volume is kept among the instances but gives nothing, since no hierarchy is
+     * built over it.
+     **/
     std::optional<std::uint32_t> instance(const scene::Handle & handle, const scene::Handle & holder);
 
     /**
@@ -209,6 +215,52 @@ class Walk final {
     /** Reports each instance of a group that a chain of a depth would place too deep. **/
     void deepen(const Group & group, std::uint32_t depth);
 
+    /** A volume's fields: the name its shader reads each by, and its grid among the grids. **/
+    struct Fields {
+        scene::Handle handle;
+        std::vector<std::pair<std::string, std::uint32_t>> named;
+    };
+
+    /**
+     * The index of a volume's fields among those gathered, read once, or nothing when one of its
+     * grids cannot be read. A volume that names fewer names than fields, or more, reads as many as
+     * it names both of, and is reported.
+     **/
+    std::optional<std::uint32_t> volume(const scene::Handle & handle);
+
+    /**
+     * The index of a field's grid among the prototypes' grids, read once a gather or placed from
+     * the cache, or nothing when it cannot be read, which is reported.
+     **/
+    std::optional<std::uint32_t> grid(const scene::Handle & field);
+
+    /**
+     * Places each instance of a volume through every chain of instances that reaches it from the
+     * world, as placeVolume() says. A chain deeper than kernel::geometry::kInstanceDepth is left
+     * out, and reported.
+     **/
+    void placeVolumes();
+
+    /**
+     * Places an instance of a volume as kernel code reads it, at the end of a chain of the
+     * instances of groups that reach it. The chain names a material and the kinds of ray it is
+     * visible to. The innermost instance that names a material gives it.
+     *
+     * A volume whose material has a volume program reads its field named density, and each field
+     * that program reads, in the order the volume names them. It walks its density, or its first
+     * field when it has no density. Any other volume reads its density alone. A volume that would
+     * read more than kernel::volume::kMostFields reads the first of them, and one that would read
+     * none holds nothing. Each is reported. Its bounds are those of the grids it reads, and one
+     * whose grids hold no active voxel is left out.
+     **/
+    void placeVolume(const Instance & instance, std::vector<std::uint32_t> chain, std::uint32_t material, std::uint32_t visibility);
+
+    /**
+     * Bounds a volume by the grids its fields read among grids, skipping those of no active
+     * voxel. False when none of them holds one.
+     **/
+    static bool bound(const std::vector<boost::shared_ptr<const volume::Grid>> & grids, kernel::volume::Volume & placed);
+
     const scene::Scene & scene_;
     boost::shared_ptr<log::Logger> logger_;
     std::map<std::uint32_t, std::vector<scene::Handle>> groups_;
@@ -224,6 +276,19 @@ class Walk final {
 
     /** Each gathered instance's handle, by its index among the instances. **/
     std::vector<scene::Handle> handles_;
+
+    /** Each volume's fields by the scene's index of the volume, or nothing for one left out. **/
+    std::map<std::uint32_t, std::optional<std::uint32_t>> volumeIndex_;
+    std::vector<Fields> volumeFields_;
+
+    /** Each field's grid among the prototypes', by the scene's index of the field. **/
+    std::map<std::uint32_t, std::optional<std::uint32_t>> gridIndex_;
+
+    /**
+     * Each instance of a volume by its index among the instances, after the scene's index of the
+     * group that holds it, or Group::kWorld.
+     **/
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> volumeInstances_;
 
     std::vector<Uncut> uncut_;
 

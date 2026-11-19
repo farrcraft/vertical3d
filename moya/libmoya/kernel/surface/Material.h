@@ -72,6 +72,15 @@ struct Material {
      **/
     volume::Medium medium;
 
+    /**
+     * The volume's program, whose values begin with a medium's, run where a volume of this
+     * material reads its fields. mediumBounded is one when it reads nothing but its fields and
+     * constants, so a bound on its fields bounds the medium it gives. A material of no volume has
+     * a program of no values.
+     **/
+    program::Program mediumProgram;
+    std::uint32_t mediumBounded { 1 };
+
     /** Whether a surface of this material may be cut out anywhere, or is a boundary. **/
     MOYA_KERNEL bool cutOut() const {
         return boundary != 0U || (layered != 0U && (programmedOpacity != 0U || surface.geometryOpacity < 1.0F));

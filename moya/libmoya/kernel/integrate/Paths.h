@@ -69,6 +69,7 @@ MOYA_KERNEL void generate(const Paths<T, X> & paths, const glm::uvec2 & pixel, s
     MOYA_PATH(state, weight) = placed.weight;
     MOYA_PATH(state, throughput) = spectrum::SampledSpectrum(1.0F);
     MOYA_PATH(state, chances) = spectrum::SampledSpectrum(1.0F);
+    MOYA_PATH(state, lightChances) = spectrum::SampledSpectrum(1.0F);
     MOYA_PATH(state, radiance) = spectrum::SampledSpectrum(0.0F);
     MOYA_PATH(state, expression) = 0U;
     MOYA_PATH(state, media) = paths.surfaces.media != 0U ? around(paths, MOYA_PATH(state, ray)) : media::Media {};
@@ -134,6 +135,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     advance(paths, state, scatteredBy(drawn));
     MOYA_PATH(state, throughput) *= drawn.projected / drawn.density;
     MOYA_PATH(state, density) = drawn.density;
+    MOYA_PATH(state, lightChances) = MOYA_PATH(state, chances);
     MOYA_PATH(state, specular) = drawn.specular ? 1U : 0U;
     MOYA_PATH(state, from) = point.position;
     MOYA_PATH(state, normal) = point.shading;
@@ -364,7 +366,8 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             .sample = MOYA_PATH(state, sample),
             .dimension = bounceDimension(MOYA_PATH(state, bounces), kOpacity) };
         const geometry::Hit hit = paths.traversal.nearest(ray, filter);
-        const media::Tracked tracked = paths.surfaces.media != 0U ? media::track(paths, state, hit.found() ? hit.distance : ray.end, collisions) : media::Tracked::Reached;
+        const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
+        const media::Tracked tracked = tracks ? media::track(paths, state, hit.found() ? hit.distance : ray.end, collisions) : media::Tracked::Reached;
         switch (tracked) {
             case media::Tracked::Ended:
                 return;

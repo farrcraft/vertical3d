@@ -10,9 +10,9 @@
  *                A deleted function, = delete, is not an allocation.
  *   exception    throw, try or catch.
  *   rtti         dynamic_cast or typeid.
- *   include      an include of anything but a kernel header, a glm header, or one of the
- *                standard headers every device compiler provides: cfloat, climits, cmath,
- *                cstddef, cstdint, limits and type_traits.
+ *   include      an include of anything but a kernel header, a glm header, NanoVDB's grid
+ *                header, or one of the standard headers every device compiler provides:
+ *                cfloat, climits, cmath, cstddef, cstdint, limits and type_traits.
  *   uncompiled   a kernel header that no source of the kernel target includes, so the kernel's
  *                own rules never compile it.
  *
@@ -69,9 +69,12 @@ export function included(text: string): string | null {
     return INCLUDE.exec(text)?.[2] ?? null;
 }
 
+/** NanoVDB's header of grids, trees and their accessors, which kernel code reads grids through. */
+const NANOVDB = 'nanovdb/NanoVDB.h';
+
 /** Whether kernel code may include the path an include names. */
 export function allowed(header: string): boolean {
-    return header.startsWith(KERNEL) || header.startsWith('glm/') || STANDARD.has(header);
+    return header.startsWith(KERNEL) || header.startsWith('glm/') || header === NANOVDB || STANDARD.has(header);
 }
 
 /** The findings in one kernel file, from its text. */

@@ -72,11 +72,13 @@ test('kernel does not read an include inside a comment', () => {
     assert.deepEqual(kernel('// #include <vector>\n/*\n#include <string>\n*/\n'), []);
 });
 
-test('kernel allows only kernel paths, glm and the standard headers listed', () => {
+test("kernel allows only kernel paths, glm, NanoVDB's grid header and the standard headers listed", () => {
     assert.ok(allowed('moya/libmoya/kernel/spectrum/Spectrum.h'));
     assert.ok(allowed('glm/mat4x4.hpp'));
+    assert.ok(allowed('nanovdb/NanoVDB.h'));
     assert.ok(allowed('type_traits'));
     assert.ok(!allowed('moya/libmoya/scene/Scene.h'));
+    assert.ok(!allowed('nanovdb/tools/CreateNanoGrid.h'));
     assert.ok(!allowed('utility'));
 });
 

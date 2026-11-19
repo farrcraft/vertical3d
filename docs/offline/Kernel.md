@@ -17,7 +17,7 @@ GPU build exists.
 | No RTTI: no `dynamic_cast` or `typeid` | A GPU compiler has none | The target, and the gate |
 | No virtual functions | A GPU has no virtual call. A choice between kinds is a `switch` over a tag | The gate |
 | No allocation: no `new`, `delete`, `malloc` and its kin, and no type that allocates, such as `std::vector`, `std::function` or anything from boost | A GPU allocates nothing per thread. Memory comes from the device layer, sized before a launch | The gate |
-| Includes only kernel headers, glm, and `cfloat`, `climits`, `cmath`, `cstddef`, `cstdint`, `limits` and `type_traits` | These are what every device compiler provides | The gate |
+| Includes only kernel headers, glm, NanoVDB's `nanovdb/NanoVDB.h`, and `cfloat`, `climits`, `cmath`, `cstddef`, `cstdint`, `limits` and `type_traits` | These are what every device compiler provides, with the two libraries whose code runs on every device | The gate |
 | C++20 | The newest standard both HIP and nvcc accept. The rest of the tree is C++23 | The target |
 | No multiply and add fused into one rounding | MSVC, Clang and GCC then round kernel code alike | The target, for itself and for every source that links it |
 | Every function carries `MOYA_KERNEL` | A GPU compiler builds a function for the device only when it is marked | Review |
@@ -32,6 +32,26 @@ SIMD traversal are moya's own types.
 
 Background: [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md),
 [ADR-0197](../adr/offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md)
+
+## Reading a grid
+
+Kernel code reads a volume's grids through NanoVDB's own header, by way of
+`kernel/volume/Nano.h`, which a kernel header includes in its place. NanoVDB marks its functions
+for the same compilers `MOYA_KERNEL` marks moya's. MSVC reports code it cannot reach in NanoVDB's
+header once it inlines it, so `Nano.h` switches that warning off around it. NanoVDB chooses its
+type traits by `__cplusplus`, so the kernel target compiles with `/Zc:__cplusplus` on MSVC, and so
+does every source that links it.
+
+- **A grid is a NanoVDB buffer of floats.** The host reads it from its OpenVDB file and converts it
+  with NanoVDB's own tools, `volume::read()`, which keep each node's least and most. Each buffer
+  is held as `kernel::volume::Block`s, runs of NanoVDB's 32-byte alignment, and every grid's
+  follows the one before in one array.
+- **A lookup is trilinear**, `volume::valueAt()`, between the eight voxels from a point's floor to
+  one past it, in the grid's index space.
+- **A cell bounds the lookups in it**, `volume::cellAt()`, as
+  [the integrator](Integrator.md#tracking-through-volumes) says.
+
+Background: [ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
 
 ## Reaching a traversal
 

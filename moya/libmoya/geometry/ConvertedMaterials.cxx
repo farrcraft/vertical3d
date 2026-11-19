@@ -8,6 +8,7 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/material/Fold.h>
@@ -53,6 +54,12 @@ ConvertedMaterials ConvertedMaterials::of(const Prototypes & prototypes, const c
                 std::span<const float>(values).subspan(material.program.values, material.program.size));
             material.surface = kernel::program::parameters(folded.values.data());
             material.surface.thinWalled = thinWalled;
+        }
+        if (material.mediumProgram.size != 0U) {
+            const kernel::program::Program & medium = material.mediumProgram;
+            const material::Folded folded = material::fold(std::span(prototypes.instructions).subspan(medium.instructions, medium.count),
+                std::span<const float>(values).subspan(medium.values, medium.size));
+            material.medium = kernel::program::mediumOf(folded.values.data());
         }
     }
     return out;

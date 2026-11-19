@@ -52,7 +52,9 @@ class Programs final {
     /**
      * Appends a compiled material's program to the prototypes', after every other, and gives the
      * material as shading reads it, with its reports. Without the libraries the material is
-     * diffuse, and its one report says why.
+     * diffuse, and its one report says why. A material whose volume compiles appends the volume's
+     * program after its surface's, and is bounded when that program reads nothing but its fields
+     * and constants.
      **/
     kernel::surface::Material place(std::uint32_t material, Prototypes & prototypes, std::vector<std::string> & reports) const;
 
@@ -76,6 +78,7 @@ class Programs final {
     std::vector<std::string> names_;
     std::map<std::uint32_t, material::Compiled> compiled_;
     std::map<std::uint32_t, material::Compiled> displacements_;
+    std::map<std::uint32_t, material::Compiled> volumes_;
 };
 
 };  // namespace v3d::moya::geometry::internal

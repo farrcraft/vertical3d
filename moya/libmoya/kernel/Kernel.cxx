@@ -65,6 +65,9 @@
 #include <moya/libmoya/kernel/integrate/Inputs.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Keeping.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/LightSamples.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/media/Collisions.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/media/Crossing.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/media/Crossings.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Enclosure.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Media.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Tracking.h>  // IWYU pragma: keep
@@ -94,6 +97,7 @@
 #include <moya/libmoya/kernel/light/SphericalTriangle.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Tree.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Displacement.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Fields.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Instruction.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Medium.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Noise.h>  // IWYU pragma: keep
@@ -142,10 +146,18 @@
 #include <moya/libmoya/kernel/texture/Untextured.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitChannels.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/view/HitView.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Block.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Cell.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Coefficients.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Field.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Grid.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/GridPlace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Homogeneous.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Interior.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Lobe.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Medium.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Nano.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Phase.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/PhaseSample.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Volume.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/Volumes.h>  // IWYU pragma: keep

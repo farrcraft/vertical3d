@@ -22,7 +22,9 @@ struct Prototypes;
  * converted into ACEScg from the space it names: an RI material's colour, and each colour
  * constant of a program. A layered material's surface holds the parameters its program gives
  * from its converted values, each that is the same at every shading point folded as
- * material::fold() folds it, so what is drawn and what is lit agree.
+ * material::fold() folds it, so what is drawn and what is lit agree. A material with a volume
+ * program holds the medium that program gives from its converted values, folded the same way, so
+ * a closed surface encloses the medium a volume of the material reads.
  **/
 struct ConvertedMaterials {
     std::vector<kernel::surface::Material> materials;

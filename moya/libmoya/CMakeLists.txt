@@ -141,7 +141,7 @@ add_library("v3dlib_moya"
 	"geometry/internal/Piece.h"
 	"geometry/internal/Primvars.h" "geometry/internal/Primvars.cxx"
 	"geometry/internal/Programs.h" "geometry/internal/Programs.cxx"
-	"geometry/internal/Walk.h" "geometry/internal/Walk.cxx"
+	"geometry/internal/Walk.h" "geometry/internal/Walk.cxx" "geometry/internal/WalkVolumes.cxx"
 	"geometry/subdivision/Dicing.h" "geometry/subdivision/Dicing.cxx"
 	"geometry/subdivision/Surface.h" "geometry/subdivision/Surface.cxx"
 	"geometry/subdivision/Tessellation.h"
@@ -228,6 +228,9 @@ add_library("v3dlib_moya"
 	"view/Traced.h"
 	"view/Tracing.h" "view/Tracing.cxx"
 
+	"volume/Grid.h" "volume/Grid.cxx"
+	"volume/Volumes.h" "volume/Volumes.cxx"
+
 
 )
 
@@ -247,10 +250,12 @@ endif()
 # sources and the texture maker's include OpenEXR and Imath. Only the colour configuration's
 # source and its internal headers include OpenColorIO, only the subdivision surface's
 # OpenSubdiv, and only the material library's source and its internal header MaterialX, and
-# only the denoiser's source OIDN. OpenSubdiv is linked static on every platform, as vcpkg
-# builds it on Windows.
+# only the denoiser's source OIDN. Only the grid reader's source includes OpenVDB, and converts
+# its grids through NanoVDB's tools, which build from OpenVDB's grids only when they are told to.
+# OpenSubdiv is linked static on every platform, as vcpkg builds it on Windows.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_rib glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise TBB::tbb)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise OpenVDB::openvdb TBB::tbb)
+set_source_files_properties("volume/Grid.cxx" PROPERTIES COMPILE_DEFINITIONS NANOVDB_USE_OPENVDB)
 
 # PRIVATE: only the CPU device's library loader opens a shared library, which needs libdl on some
 # platforms, and finds it by its path.

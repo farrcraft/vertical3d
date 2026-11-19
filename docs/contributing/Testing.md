@@ -149,8 +149,10 @@ The glTF fixtures in `api/asset/tests/data/` are written by generators beside th
 generator's header says why its fixture is shaped as it is. A `make_*_fixture.ts` generator writes
 glTF by hand through `gltf_writer.ts`, and Node runs it from the root of the tree:
 `node api/asset/tests/data/make_skin_fixture.ts`. `make_blender_fixture.py` builds a rig in
-Blender and exports it with Blender's own exporter. Blender scripts only in Python, so it is the
-one Python file in the tree. Its header gives the command line.
+Blender and exports it with Blender's own exporter. moya's `make_blender_smoke.py` simulates a
+puff of smoke in Blender and keeps the grid Blender's own OpenVDB cache writes. Blender scripts
+only in Python, so its generators are written in Python. Each one's header gives the command
+line.
 
 ### Patterns the suites use
 

@@ -16,10 +16,15 @@
 
 namespace v3d::moya::geometry {
 
-/** What an instance places: a geometry, or a group of instances. **/
+/**
+ * What an instance places: a geometry, a group of instances, or a volume. No group holds an
+ * instance of a volume among the instances its hierarchy is built over, since a ray is tracked
+ * through a volume rather than traced to it.
+ **/
 enum class Prototype : std::uint8_t {
     Geometry,
-    Group
+    Group,
+    Volume
 };
 
 /**

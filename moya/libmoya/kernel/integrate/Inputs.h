@@ -37,6 +37,7 @@
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
 #include <moya/libmoya/kernel/texture/Texels.h>
+#include <moya/libmoya/kernel/volume/Volumes.h>
 
 #include <cmath>
 #include <cstdint>
@@ -67,7 +68,7 @@ inline constexpr std::uint32_t kMostSeen = 2U * media::kMediaDepth;
 
 /**
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
- * sampler, a traversal and a texture access. Then the scene's surfaces and lights, the
+ * sampler, a traversal and a texture access. Then the scene's surfaces, volumes and lights, the
  * RGB-to-spectrum table, the albedo table that energy compensation reads, and the settings. A
  * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
  * each camera ray fills where it first meets the scene, and features those a denoiser reads.
@@ -85,6 +86,7 @@ struct Paths {
     T traversal;
     X textures;
     surface::Surfaces surfaces;
+    volume::Volumes volumes;
     light::Lights lights;
     spectrum::RgbTable table;
     bsdf::Albedos albedos;

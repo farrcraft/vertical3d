@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -31,23 +32,38 @@ namespace {
 /**
  * Gives a compiled material the medium it encloses: its volume's, compiled from its volume
  * terminal when it has one, and otherwise the one a layered material's OpenPBR transmission
- * gives. A volume that does not compile is reported, and the material encloses no medium.
+ * gives. Gives back the volume's program, when it compiles. A volume that does not compile is
+ * reported, and the material encloses no medium.
  **/
-void enclose(const scene::Scene & scene, const scene::Handle & handle, material::Compiled & compiled, std::vector<std::string> & names) {
+std::optional<material::Compiled> enclose(const scene::Scene & scene, const scene::Handle & handle, material::Compiled & compiled, std::vector<std::string> & names) {
     const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
     if (!volume.valid() || !scene.contains(volume)) {
         if (compiled.material.layered != 0U) {
             compiled.material.medium = kernel::volume::interior(compiled.material.surface);
         }
-        return;
+        return std::nullopt;
     }
     try {
-        const material::Compiled medium = material::compileVolume(material::Library::installed(), scene, handle, names);
+        material::Compiled medium = material::compileVolume(material::Library::installed(), scene, handle, names);
         compiled.material.medium = medium.medium;
         compiled.reports.insert(compiled.reports.end(), medium.reports.begin(), medium.reports.end());
+        medium.reports.clear();
+        return medium;
     } catch (const std::runtime_error & refused) {
         compiled.reports.push_back("material " + scene.name(handle) + " encloses no medium, because " + refused.what());
+        return std::nullopt;
     }
+}
+
+/**
+ * Whether a volume's program reads nothing but its fields and constants, so that its medium is
+ * bounded where its fields are. Every operation up to Primvar reads only its operands.
+ **/
+bool boundedBy(const std::vector<kernel::program::Instruction> & instructions) {
+    return std::ranges::all_of(instructions, [](const kernel::program::Instruction & instruction) {
+        return static_cast<std::uint32_t>(instruction.op) <= static_cast<std::uint32_t>(kernel::program::Op::Primvar) &&
+            instruction.op != kernel::program::Op::Image;
+    });
 }
 
 /**
@@ -73,9 +89,11 @@ std::optional<material::Compiled> displacementOf(const scene::Scene & scene, con
 /**
  * A material compiled with the medium it encloses, when its surface node is a MaterialX or an RI
  * node, or it has a volume and no surface, which makes it a boundary. A surface that does not
- * compile is diffuse, and its report says why.
+ * compile is diffuse, and its report says why. The volume's program, when it compiles, goes into
+ * volumes by the material's index in the scene.
  **/
-std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const scene::Handle & handle, std::vector<std::string> & names) {
+std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const scene::Handle & handle, std::vector<std::string> & names,
+    std::map<std::uint32_t, material::Compiled> & volumes) {
     const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
     if (!surface.valid() || !scene.contains(surface)) {
         const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
@@ -90,7 +108,9 @@ std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const sc
     }
     try {
         material::Compiled out = material::compile(material::Library::installed(), scene, handle, names);
-        enclose(scene, handle, out, names);
+        if (std::optional<material::Compiled> volume = enclose(scene, handle, out, names)) {
+            volumes.insert_or_assign(handle.index, std::move(*volume));
+        }
         return out;
     } catch (const std::runtime_error & refused) {
         material::Compiled diffuse;
@@ -106,7 +126,7 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
         if (std::optional<material::Compiled> displaced = displacementOf(scene, handle, names_)) {
             displacements_.emplace(handle.index, std::move(*displaced));
         }
-        if (std::optional<material::Compiled> surfaced = surfaceOf(scene, handle, names_)) {
+        if (std::optional<material::Compiled> surfaced = surfaceOf(scene, handle, names_, volumes_)) {
             compiled_.emplace(handle.index, std::move(*surfaced));
         }
     }
@@ -124,7 +144,13 @@ Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", 
 kernel::surface::Material Programs::place(std::uint32_t material, Prototypes & prototypes, std::vector<std::string> & reports) const {
     const material::Compiled & held = compiled_.at(material);
     reports.insert(reports.end(), held.reports.begin(), held.reports.end());
-    return append(held, prototypes);
+    kernel::surface::Material out = append(held, prototypes);
+    const auto volume = volumes_.find(material);
+    if (volume != volumes_.end() && !volume->second.values.empty()) {
+        out.mediumProgram = append(volume->second, prototypes).program;
+        out.mediumBounded = boundedBy(volume->second.instructions) ? 1U : 0U;
+    }
+    return out;
 }
 
 kernel::surface::Material Programs::append(const material::Compiled & held, Prototypes & prototypes) {
