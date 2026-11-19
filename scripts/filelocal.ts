@@ -3,7 +3,8 @@
  * docs/contributing/Conventions.md under "What a source file keeps to itself" and "One class per
  * header".
  *
- * The script reads every tracked .h, .cpp and .cxx file but the vendored ones, and reports:
+ * The script reads every .h, .cpp and .cxx file but the vendored ones, tracked or new, and
+ * reports:
  *
  *   type-in-source       a class, struct, union or enum defined at namespace scope in a source
  *                        file. A test file is exempt.
@@ -43,7 +44,7 @@ import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { options, report, runGate } from './lib/cli.ts';
-import { tracked } from './lib/git.ts';
+import { tracked, untracked } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
 import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
@@ -464,9 +465,10 @@ export function findings(text: string, kind: Kind): Finding[] {
     return walk.found;
 }
 
-/** The tracked C++ files the check reads, relative to the root. */
+/** The C++ files the check reads, tracked or not yet added, relative to the root. */
 export function files(): string[] {
-    return tracked('*.h', '*.cpp', '*.cxx').filter((f) => !isThirdParty(f));
+    const added = untracked().filter((f) => /\.(h|cpp|cxx)$/.test(f));
+    return [...new Set([...tracked('*.h', '*.cpp', '*.cxx'), ...added])].filter((f) => !isThirdParty(f));
 }
 
 function main(): number {
