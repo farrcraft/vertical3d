@@ -8,6 +8,7 @@
 #include <moya/libmoya/kernel/geometry/Cone.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/integrate/media/Media.h>
+#include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 
@@ -28,7 +29,9 @@
  * - radiance is the light it has gathered so far.
  * - wavelengths are the four it carries, and weight is its pixel filter's weight.
  * - bounces counts its bounces, and each kind's count is kept apart for its depth limit. A
- *   scattering event in a medium is a volume bounce.
+ *   scattering event in a medium is a volume bounce. subsurfaceBounces counts the events of walks
+ *   below surfaces, which bounces counts too, so each event draws numbers of its own. A depth
+ *   limit other than the walk's reads bounces less subsurfaceBounces.
  * - chances are the densities with which the path so far would have been tracked through media at
  *   each of its wavelengths, over a common scale, with an average of one. A path that crosses no
  *   medium keeps them at one. lightChances are the densities with which a light sample's shadow
@@ -61,7 +64,7 @@
     FIELD(std::uint32_t, glossyBounces)                        \
     FIELD(std::uint32_t, specularBounces)                      \
     FIELD(std::uint32_t, transmissionBounces)                  \
-    FIELD(std::uint32_t, volumeBounces)                        \
+    FIELD(std::uint32_t, volumeBounces)                            FIELD(std::uint32_t, subsurfaceBounces)                    \
     FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, chances)    \
     FIELD(::v3d::moya::kernel::spectrum::SampledSpectrum, lightChances) \
     FIELD(float, density)                                      \
@@ -87,3 +90,12 @@ struct PathState {
 
 /** A field of a path's state, in the CPU's layout. **/
 #define MOYA_PATH(state, field) ((state).field)
+
+namespace v3d::moya::kernel::integrate {
+
+/** The bounces a path's depth limits count: all of them but its walks' events. **/
+MOYA_KERNEL inline std::uint32_t depthOf(const PathState & state) {
+    return MOYA_PATH(state, bounces) - MOYA_PATH(state, subsurfaceBounces);
+}
+
+};  // namespace v3d::moya::kernel::integrate

@@ -150,10 +150,16 @@ MOYA_KERNEL void glowAt(const Paths<T, X> & paths, PathState & state, const Glow
     }
 }
 
-/** Whether a path may scatter in a medium once more, within its depth limits. **/
+/**
+ * Whether a path may scatter in a medium once more, within its depth limits. A walk below a
+ * surface is held to the walk's limit alone.
+ **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL bool mayScatter(const Paths<T, X> & paths, const PathState & state) {
-    return MOYA_PATH(state, bounces) < paths.settings.maxDepth && MOYA_PATH(state, volumeBounces) < paths.settings.volumeDepth;
+    if (MOYA_PATH(state, media).walking()) {
+        return MOYA_PATH(state, subsurfaceBounces) < paths.settings.subsurfaceDepth;
+    }
+    return depthOf(state) < paths.settings.maxDepth && MOYA_PATH(state, volumeBounces) < paths.settings.volumeDepth;
 }
 
 /**
@@ -164,6 +170,10 @@ MOYA_KERNEL bool mayScatter(const Paths<T, X> & paths, const PathState & state) 
  * path goes on from. The point is lit by the lights that light an instance of no links. Its cone
  * spreads as a lobe of roughness one spreads it. Russian roulette treats it as any bounce. It
  * gives a denoiser nothing past it.
+ *
+ * A path that walks a subsurface takes no light sample there and no Russian roulette, and counts
+ * the event as one of its walk's. Since no light sample was drawn, the direction counts as
+ * specular for the light the path meets next.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, the direction, the distance
@@ -172,26 +182,33 @@ MOYA_KERNEL Tracked scatterAt(const Paths<T, X> & paths, PathState & state, cons
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
+    const bool walking = MOYA_PATH(state, media).walking();
     spectrum::SampledSpectrum & throughput = MOYA_PATH(state, throughput);
     MOYA_PATH(state, linked) = 0U;
-    MOYA_PATH(state, radiance) += throughput * directInMedium(paths, coefficients, point, forward, state);
+    if (!walking) {
+        MOYA_PATH(state, radiance) += throughput * directInMedium(paths, coefficients, point, forward, state);
+    }
     const volume::PhaseSample drawn = volume::phaseSample(coefficients, forward, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kScatter)),
         paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kScatterChoice)));
     if (!drawn.found()) {
         return Tracked::Ended;
     }
     advance(paths, state, scatteredInMedium());
-    ++MOYA_PATH(state, volumeBounces);
+    if (walking) {
+        ++MOYA_PATH(state, subsurfaceBounces);
+    } else {
+        ++MOYA_PATH(state, volumeBounces);
+    }
     throughput *= drawn.value / drawn.density;
     MOYA_PATH(state, density) = drawn.density;
     MOYA_PATH(state, lightChances) = MOYA_PATH(state, chances);
-    MOYA_PATH(state, specular) = 0U;
+    MOYA_PATH(state, specular) = walking ? 1U : 0U;
     MOYA_PATH(state, from) = point;
     MOYA_PATH(state, normal) = glm::vec3 { 0.0F };
     MOYA_PATH(state, featured) = 1U;
     MOYA_PATH(state, cone) = surface::bounced(MOYA_PATH(state, cone), MOYA_PATH(state, cone).widthAt(along), 0.0F, 1.0F, true);
     MOYA_PATH(state, bounces) = bounce + 1U;
-    if (bounce + 1U >= paths.settings.rouletteDepth) {
+    if (!walking && depthOf(state) >= paths.settings.rouletteDepth) {
         const float survival = std::fmin(1.0F, throughput.maximum());
         if (!(paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kRoulette)) < survival)) {
             return Tracked::Ended;
@@ -382,13 +399,13 @@ MOYA_KERNEL Tracked trackCrossed(const Paths<T, X> & paths, PathState & state, c
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the distance, then the count of draws
 MOYA_KERNEL Tracked track(const Paths<T, X> & paths, PathState & state, float end, std::uint32_t & collisions) {
-    const std::uint32_t at = MOYA_PATH(state, media).medium();
-    const bool inside = at != surface::kNoMaterial && !volume::empty(paths.surfaces.materials[at].medium);
+    const volume::Medium * medium = mediumOf(paths.surfaces, MOYA_PATH(state, media));
+    const bool inside = medium != nullptr && !volume::empty(*medium);
     volume::Coefficients around {};
     Glow glow;
     if (inside) {
-        around = volume::coefficientsOf(paths.table, paths.surfaces.materials[at].medium, MOYA_PATH(state, wavelengths));
-        glow.emission = paths.surfaces.materials[at].medium.emission;
+        around = volume::coefficientsOf(paths.table, *medium, MOYA_PATH(state, wavelengths));
+        glow.emission = medium->emission;
         glow.light = lightOfEnclosure(paths, MOYA_PATH(state, media).mediumKey());
     }
     if (paths.volumes.any()) {

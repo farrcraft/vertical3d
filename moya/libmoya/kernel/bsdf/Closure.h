@@ -34,6 +34,12 @@ inline constexpr float kLeastBend = 1.0e-3F;
  * and fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel
  * factor is mixed towards a thin film's by the film's weight. A coated closure is the coat, which
  * works in the coat's frame.
+ *
+ * A diffuse lobe that goes through scatters into the side of the surface opposite the one light
+ * leaves towards, as the lobe mirrored through the surface: a diffuse transmission. A dielectric
+ * that walks is a subsurface's, and a path it carries into the surface walks the medium the
+ * subsurface gives. seen is the colour that walk is seen to reflect, which a denoiser's albedo
+ * takes.
  **/
 struct Closure {
     Model model { Model::Diffuse };
@@ -50,6 +56,9 @@ struct Closure {
     float filmWeight { 0.0F };
     bool coated { false };
     bool flipped { false };
+    bool through { false };
+    bool walks { false };
+    spectrum::SampledSpectrum seen { 1.0F };
 
     /** Whether a thin film changes its Fresnel factor. **/
     MOYA_KERNEL bool filmed() const {

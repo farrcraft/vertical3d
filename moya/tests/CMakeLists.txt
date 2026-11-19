@@ -65,6 +65,7 @@ v3d_add_test(moya
 	"ShapesTest.cxx"
 	"SpectrumTest.cxx"
 	"SubdivisionTest.cxx"
+	"SubsurfaceTest.cxx"
 	"SurfaceShadersTest.cxx"
 	"SurfacesTest.cxx"
 	"TextureCacheTest.cxx"

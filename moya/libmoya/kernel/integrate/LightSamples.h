@@ -256,11 +256,11 @@ template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the media, then the distance
 MOYA_KERNEL void attenuate(const Paths<T, X> & paths, const media::Media & media, float distance, const spectrum::SampledWavelengths & wavelengths, Passed & out,
     spectrum::SampledSpectrum & tracked) {
-    const std::uint32_t at = media.medium();
-    if (at == surface::kNoMaterial || volume::empty(paths.surfaces.materials[at].medium)) {
+    const volume::Medium * medium = media::mediumOf(paths.surfaces, media);
+    if (medium == nullptr || volume::empty(*medium)) {
         return;
     }
-    const volume::Coefficients coefficients = volume::coefficientsOf(paths.table, paths.surfaces.materials[at].medium, wavelengths);
+    const volume::Coefficients coefficients = volume::coefficientsOf(paths.table, *medium, wavelengths);
     const spectrum::SampledSpectrum passes = volume::transmittance(coefficients.extinction(), distance);
     out.through *= passes;
     tracked *= passes;
@@ -348,9 +348,9 @@ template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void endIn(const Paths<T, X> & paths, const media::Media & media, const spectrum::SampledWavelengths & wavelengths,
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chances, then the majorant
     const spectrum::SampledSpectrum & tracked, spectrum::SampledSpectrum ending, Passed & out) {
-    const std::uint32_t at = media.medium();
-    if (at != surface::kNoMaterial && !volume::empty(paths.surfaces.materials[at].medium)) {
-        ending += volume::coefficientsOf(paths.table, paths.surfaces.materials[at].medium, wavelengths).extinction();
+    const volume::Medium * medium = media::mediumOf(paths.surfaces, media);
+    if (medium != nullptr && !volume::empty(*medium)) {
+        ending += volume::coefficientsOf(paths.table, *medium, wavelengths).extinction();
     }
     out.chance = tracked.average();
     out.colliding = (tracked * ending).average();
@@ -365,21 +365,21 @@ MOYA_KERNEL void endIn(const Paths<T, X> & paths, const media::Media & media, co
  * just past where it met it. One that meets more than kMostPassed surfaces, left out or cut out,
  * is taken as blocked.
  *
- * Where any material encloses a medium, the ray carries a copy of the media of the path it
+ * Where any material encloses a medium, the ray carries a copy of media, those of the path it
  * leaves, and passes by the surfaces passedBy() names, entering and leaving their media as a path
  * does. Each medium between lets through its transmittance at each wavelength, by Beer and
  * Lambert's law, and each volume what passVolumes() gives. At the ray's end, the majorant is the
  * extinction of the medium it ends in and the volumes' majorant over its last stretch.
  **/
 template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the state, then the media it starts in
+MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state, media::Media media) {
     Passed out;
     if (paths.surfaces.media == 0U && !paths.volumes.any() && !light.shadowLinked) {
         Passing<X> filter { .surfaces = paths.surfaces, .textures = paths.textures, .ray = shadow };
         out.share = paths.traversal.any(shadow, filter) ? 0.0F : filter.passing;
         return out;
     }
-    media::Media media = MOYA_PATH(state, media);
     spectrum::SampledSpectrum tracked = MOYA_PATH(state, chances);
     spectrum::SampledSpectrum shadowed = MOYA_PATH(state, chances);
     std::uint32_t collisions = media::kShadowCollisions;
@@ -438,6 +438,23 @@ MOYA_KERNEL inline bool inGlow(const light::Light & light, const Passed & passed
 }
 
 /**
+ * The media a shadow ray from a shading point starts in: a path's, having entered or left the
+ * medium the surface encloses where the ray crosses the surface.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL media::Media shadowMedia(const Paths<T, X> & paths, const geometry::Hit & hit, const surface::ShadingPoint & point, const geometry::Ray & shadow,
+    media::Media out) {
+    if (paths.surfaces.media == 0U || point.material == surface::kNoMaterial || !paths.surfaces.materials[point.material].encloses()) {
+        return out;
+    }
+    const bool above = glm::dot(shadow.direction, point.geometric) > 0.0F;
+    if (above != point.front) {
+        out.cross(media::enclosureOf(paths.surfaces, hit, point.material), point.front);
+    }
+    return out;
+}
+
+/**
  * Next event estimation at a shading point: the light a light sample brings in, weighed against
  * the BSDF's sample by the power heuristic. A light is drawn by pickLight(), then a point on it,
  * and a shadow ray towards the point says how much of its light passes what lies between. A
@@ -451,18 +468,19 @@ MOYA_KERNEL inline bool inGlow(const light::Light & light, const Passed & passed
  * weighed against that closure's own density. Each closure's light is gathered after its bounce's
  * event, so expressions split it by lobe.
  *
- * Light that crosses media is multiplied by their transmittance, and the closure's density is
- * multiplied by the chance a tracked path would have passed them, as passing() gives both. A
- * tracked path finds a volume light's point by colliding there, so the closure's density is
- * multiplied by passing()'s chance of that instead. The point of a closed surface's light emits
- * only where the shadow ray ends in its medium.
+ * A shadow ray that crosses the surface it leaves enters or leaves the medium the surface
+ * encloses, as a path that scatters across it does. Light that crosses media is multiplied by
+ * their transmittance, and the closure's density is multiplied by the chance a tracked path
+ * would have passed them, as passing() gives both. A tracked path finds a volume light's point by
+ * colliding there, so the closure's density is multiplied by passing()'s chance of that instead.
+ * The point of a closed surface's light emits only where the shadow ray ends in its medium.
  **/
 template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
+MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const geometry::Hit & hit, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
     const glm::vec3 & outgoing, const PathState & state) {
     const spectrum::SampledSpectrum none(0.0F);
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
-    if (bounce >= paths.settings.maxDepth || MOYA_PATH(state, diffuseBounces) >= paths.settings.diffuseDepth) {
+    if (depthOf(state) >= paths.settings.maxDepth || MOYA_PATH(state, diffuseBounces) >= paths.settings.diffuseDepth) {
         return none;
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
@@ -504,7 +522,7 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
         shadow.direction = drawn.point - shadow.origin;
         shadow.end = 1.0F - kShadowShort;
     }
-    const Passed passed = passing(paths, chosen, shadow, state);
+    const Passed passed = passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)));
     if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }
@@ -580,7 +598,7 @@ MOYA_KERNEL spectrum::SampledSpectrum directInMedium(const Paths<T, X> & paths, 
         shadow.direction = drawn.point - at;
         shadow.end = 1.0F - kShadowShort;
     }
-    const Passed passed = passing(paths, chosen, shadow, state);
+    const Passed passed = passing(paths, chosen, shadow, state, MOYA_PATH(state, media));
     if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }

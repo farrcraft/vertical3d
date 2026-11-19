@@ -20,6 +20,8 @@ A path's state is what one stage hands the next. Its fields are declared once, i
 The state holds the pixel and the sample, the ray traced next and its cone, the throughput and
 the light gathered so far. It also holds the wavelengths, the pixel filter's weight, and the
 count of bounces in all and of each kind, a scattering event in a medium being a volume bounce.
+Its subsurfaceBounces count the events of its walks below surfaces. The count of bounces in all
+holds them too, and no other depth limit counts them.
 Its chances are the densities with which it would have been tracked through media at each of its
 wavelengths, as [tracking through a medium](#tracking-through-a-medium) says. Its lightChances
 are those with which a shadow ray would have tracked it through volumes, as
@@ -47,6 +49,9 @@ Each draw takes its dimension of the sampler from a fixed place, in `kernel/inte
 - **A scattering event in a medium draws from its bounce's block** as a shading point does. The
   phase function's direction takes the BSDF's direction, and its lobe the BSDF's choice. Its
   light sample and Russian roulette take their own places.
+- **Each event of a walk below a surface draws from a block of its own**, since the count of
+  bounces in all counts it. A walk's events take the blocks after the bounce that entered the
+  surface, so a walk of any length draws numbers apart.
 - **A collision in a medium takes its numbers from a hash**, `collisionDraw()`, of the pixel in
   the image, the sample, the bounce and the collision's count within the bounce. A path meets a
   count of collisions no block could hold a place for. The numbers are the same on every run, but
@@ -199,13 +204,17 @@ A path carries the closed surfaces it is inside, in `kernel/integrate/media/Medi
 dielectric bends light by the media on its two sides and overlapping surfaces give one medium.
 
 - **A material encloses a medium** when a path may cross its surface into it. A layered material
-  does when it is not thin-walled and its transmission's weight may be more than zero. Any other
+  does when it is not thin-walled and its transmission's or its subsurface's weight may be more
+  than zero. Any other
   does when it names a dielectric closure that is not thin. A material with a volume terminal and
   no surface terminal is a boundary, which encloses its volume and has no BSDF.
 - **A path enters a surface it crosses from the side its normal faces, and leaves one it crosses
   back.** It records each surface by the chain of instances that placed it, its priority, and the
   index of refraction of the medium inside. A layered material's index is its specular index,
-  scaled by its specular weight. A boundary's is one.
+  scaled by its specular weight. A boundary's is one. It records too whether it walks the
+  surface's subsurface, which it does when it entered by the subsurface's closure. A path that
+  enters a surface any other way walks it when its material's subsurface weight may be more than
+  zero and its transmission's may not.
 - **The medium a path is in** is that of the surface of highest priority it is inside, and of
   those the one it entered last. An instance's `priority` is 0 unless a client sets it. A hit
   takes the priority of the innermost instance in its chain whose priority is not zero. A scene
@@ -222,9 +231,10 @@ dielectric bends light by the media on its two sides and overlapping surfaces gi
   traced on through everything it meets, and it is inside each surface whose first face it meets
   is a back face.
 - **A shadow ray carries a copy of the media of the path it leaves**, when any material encloses
-  a medium. It passes by the surfaces a path would pass by, entering and leaving their media as a
-  path does, and they cast no shadow. Any other surface it meets casts its shadow as it would
-  outside a medium.
+  a medium. One that crosses the surface it leaves first enters or leaves the medium that surface
+  encloses, as a path that scatters across it does. It passes by the surfaces a path would pass
+  by, entering and leaving their media as a path does, and they cast no shadow. Any other surface
+  it meets casts its shadow as it would outside a medium.
 
 Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md)
 
@@ -360,6 +370,26 @@ colliding in the medium as it tracks through, and by a light sample of a volume 
 Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
 [ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md)
 
+## Walking a subsurface
+
+A path that enters a surface through its subsurface's closure walks the medium below it, as
+[Materials.md](Materials.md#the-medium-below-a-subsurface) gives it, until it leaves the surface
+again. The walk is tracking through a medium, as [the section above](#tracking-through-a-medium)
+says, with these differences.
+
+- **The medium is the subsurface's**, not the one the material's transmission gives, while the
+  winning surface is one the path walks.
+- **A scattering event takes no light sample** and no Russian roulette. Its direction counts as
+  specular for a light the path meets next, since no light sample could have drawn it.
+- **The surface the path walks is met from inside as the subsurface's dielectric alone**, of
+  weight one, by `bsdf::Layering::walk()`. Its light sample is taken as at any shading point. A
+  sample that leaves the surface is a transmission, which counts against the depth limits as any
+  bounce does. One that reflects back in is an event of the walk.
+- **Each event of the walk counts against `subsurfaceDepth`**, and against no other limit. A walk
+  at its limit is absorbed.
+
+Background: [ADR-0246](../adr/offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md)
+
 ## Depth limits and Russian roulette
 
 The scene's options set the integrator's `Settings`, which `integrate::settingsOf()` reads.
@@ -376,6 +406,9 @@ The scene's options set the integrator's `Settings`, which `integrate::settingsO
   scattering event counts against `maxDepth` too. One a limit refuses ends the path there,
   before its light sample. Cycles' limit of zero lets a path scatter once in a medium, and moya
   counts that event, so its default is four rather than Cycles' zero.
+- **`subsurfaceDepth`** is the most events a walk below a surface makes, 256 by default, as
+  Cycles' walk makes. A walk's events count against no other limit, and `maxDepth` and
+  `rouletteDepth` count the bounces of a path but those events.
 - **`rouletteDepth`** is the bounce from which Russian roulette may end a path, the third by
   default. A scattering event in a medium counts as any bounce. A path survives with the chance
   of its largest throughput, held to one, and a

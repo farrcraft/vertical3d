@@ -38,11 +38,13 @@ constexpr float kFilterWidth = 2.0F;
  * The integrator's depth limits, as Cycles sets them: twelve bounces in all and of each kind but
  * four diffuse and four glossy, and Russian roulette from the third. A path scatters four times
  * in media, since Cycles' limit of zero lets it scatter once and moya's counts that scattering.
+ * A walk below a surface makes 256 events, as Cycles' does.
  **/
 constexpr int kMaxDepth = 12;
 constexpr int kDiffuseDepth = 4;
 constexpr int kGlossyDepth = 4;
 constexpr int kVolumeDepth = 4;
+constexpr int kSubsurfaceDepth = 256;
 constexpr int kRouletteDepth = 3;
 
 /** The most kilobytes of texture tiles a render holds, as RI's texturememory gives it: 1 GiB. **/
@@ -120,6 +122,7 @@ Kind options() {
             Declaration { .name = "specularDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "transmissionDepth", .type = Type::Integer, .fallback = Value::integer(kMaxDepth) },
             Declaration { .name = "volumeDepth", .type = Type::Integer, .fallback = Value::integer(kVolumeDepth) },
+            Declaration { .name = "subsurfaceDepth", .type = Type::Integer, .fallback = Value::integer(kSubsurfaceDepth) },
             Declaration { .name = "rouletteDepth", .type = Type::Integer, .fallback = Value::integer(kRouletteDepth) },
             Declaration { .name = "lightSampling", .type = Type::String, .fallback = Value::string("mis"), .choices = { "mis", "light", "bsdf" } },
             Declaration { .name = "deepTolerance", .type = Type::Float, .fallback = Value::number(kDeepTolerance) },

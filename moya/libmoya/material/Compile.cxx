@@ -11,6 +11,8 @@
 #include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Program.h>
+#include <moya/libmoya/kernel/volume/openpbr/Interior.h>
+#include <moya/libmoya/kernel/volume/openpbr/Subsurface.h>
 #include <moya/libmoya/material/Fold.h>
 #include <moya/libmoya/material/internal/Definitions.h>
 #include <moya/libmoya/material/internal/Emitter.h>
@@ -363,6 +365,18 @@ void reportDispersion(Network & network, const std::string & name, const Folded 
     }
 }
 
+/**
+ * Reports a material whose subsurface may scatter and whose subsurface colour, radius, radius
+ * scale or anisotropy varies over its surface, since the medium below it takes OpenPBR's default
+ * for each of those, as steadied() gives it.
+ **/
+void reportWalk(Network & network, const std::string & name, const Folded & folded, const kernel::surface::Material & material) {
+    kernel::surface::OpenPbr surface = material.surface;
+    if (material.subsurfaces != 0U && steadied(folded, surface)) {
+        network.report("material " + name + "'s subsurface varies over its surface, so the medium below it takes OpenPBR's default for each input that varies");
+    }
+}
+
 /** Whether an input of open_pbr_surface sets its emission, which a light gives as a constant. **/
 bool emits(const std::string & name) {
     return name.rfind("emission_", 0) == 0;
@@ -433,11 +447,43 @@ void compileOpenPbr(Network & held, const scene::Scene & scene, const scene::Han
     out.material.programmedOpacity = folded.constantFrom(kernel::program::kGeometryOpacity, 1U) ? 0U : 1U;
     const bool opaque = folded.constantFrom(kernel::program::kTransmissionWeight, 1U) && !(out.material.surface.transmissionWeight > 0.0F);
     out.material.transmits = opaque ? 0U : 1U;
+    const bool solid = folded.constantFrom(kernel::program::kSubsurfaceWeight, 1U) && !(out.material.surface.subsurfaceWeight > 0.0F);
+    out.material.subsurfaces = solid ? 0U : 1U;
+    reportWalk(held, scene.name(material), folded, out.material);
     reportDispersion(held, scene.name(material), folded, out.material.surface);
     out.material.layered = 1;
 }
 
 };  // namespace
+
+bool steadied(const Folded & folded, kernel::surface::OpenPbr & surface) {
+    const kernel::surface::OpenPbr defaults;
+    bool varies = false;
+    if (!folded.constantFrom(kernel::program::kSubsurfaceColour, 3U)) {
+        surface.subsurfaceColour = defaults.subsurfaceColour;
+        varies = true;
+    }
+    if (!folded.constantFrom(kernel::program::kSubsurfaceRadius, 1U)) {
+        surface.subsurfaceRadius = defaults.subsurfaceRadius;
+        varies = true;
+    }
+    if (!folded.constantFrom(kernel::program::kSubsurfaceRadiusScale, 3U)) {
+        surface.subsurfaceRadiusScale = defaults.subsurfaceRadiusScale;
+        varies = true;
+    }
+    if (!folded.constantFrom(kernel::program::kSubsurfaceScatterAnisotropy, 1U)) {
+        surface.subsurfaceScatterAnisotropy = defaults.subsurfaceScatterAnisotropy;
+        varies = true;
+    }
+    return varies;
+}
+
+void enclose(const Folded & folded, kernel::surface::Material & material) {
+    material.medium = kernel::volume::openpbr::interior(material.surface);
+    kernel::surface::OpenPbr steady = material.surface;
+    steadied(folded, steady);
+    material.walked = kernel::volume::openpbr::walked(steady);
+}
 
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars) {
     Network held = network(library, scene, material, "surface");

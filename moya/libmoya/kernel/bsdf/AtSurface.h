@@ -49,7 +49,8 @@ namespace v3d::moya::kernel::bsdf {
  * tables.
  *
  * outside is the index of refraction of the medium on the side the surface's normal faces. A
- * dielectric's index is taken relative to it.
+ * dielectric's index is taken relative to it. A path walking the subsurface of a layered
+ * material meets the surface from inside, as Layering::walk() gives it.
  *
  * A layered material's closures are OpenPBR's, as Layering adds them for light leaving along
  * outgoing, of the parameters its program gives. The geometry's `Cs` primvar overrides its base
@@ -60,7 +61,8 @@ namespace v3d::moya::kernel::bsdf {
  **/
 template <texture::Texels X>
 MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
-    const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing, float outside = 1.0F) {
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the index, then whether walking
+    const Albedos & albedos, const spectrum::SampledWavelengths & wavelengths, const glm::vec3 & outgoing, float outside = 1.0F, bool walking = false) {
     const surface::Material none;
     const surface::Material & material = point.material != surface::kNoMaterial ? surfaces.materials[point.material] : none;
     glm::vec3 colour { 0.5F };
@@ -90,6 +92,10 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
         const surface::Frame tangents = surfaces.tangentFrame(point);
         out.frame = surface::frameAbout(tangents, layers.geometryNormal, layers.geometryTangent, point.geometric, outgoing);
         out.coatFrame = surface::frameAbout(tangents, layers.geometryCoatNormal, layers.geometryCoatTangent, point.geometric, outgoing);
+        if (walking) {
+            Layering::walk(out, layers, table, wavelengths);
+            return out;
+        }
         Layering::add(out, layers, table, wavelengths, std::fabs(glm::dot(outgoing, out.frame.normal)), std::fabs(glm::dot(outgoing, out.coatFrame.normal)));
         return out;
     }

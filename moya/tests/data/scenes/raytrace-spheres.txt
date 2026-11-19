@@ -140,6 +140,7 @@ options "options"
     samples integer = 4
     shaderSearchPath string = "data:"
     specularDepth integer = 12
+    subsurfaceDepth integer = 256
     textureDirectory string = ""
     textureMemory integer = 1048576
     textureSearchPath string = ""

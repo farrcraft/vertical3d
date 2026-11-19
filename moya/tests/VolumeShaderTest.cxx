@@ -4,7 +4,7 @@
  */
 
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
-#include <moya/libmoya/kernel/volume/Interior.h>
+#include <moya/libmoya/kernel/volume/openpbr/Interior.h>
 #include <moya/libmoya/kernel/volume/Medium.h>
 #include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/material/Library.h>
@@ -221,7 +221,7 @@ kernel::surface::OpenPbr glass(const glm::vec3 & colour, float depth, const glm:
 BOOST_AUTO_TEST_CASE(moya_volume_shader_an_openpbr_glass_with_a_depth_holds_a_medium_of_its_colour_test) {
     const glm::vec3 colour(0.5F, 0.25F, 0.8F);
     const float depth = 2.0F;
-    const kernel::volume::Medium inside = kernel::volume::interior(glass(colour, depth, glm::vec3(0.2F)));
+    const kernel::volume::Medium inside = kernel::volume::openpbr::interior(glass(colour, depth, glm::vec3(0.2F)));
 
     const glm::vec3 extinct = kernel::volume::extinction(inside);
     const glm::vec3 passed { std::exp(-extinct.x * depth), std::exp(-extinct.y * depth), std::exp(-extinct.z * depth) };
@@ -233,16 +233,16 @@ BOOST_AUTO_TEST_CASE(moya_volume_shader_an_openpbr_glass_with_a_depth_holds_a_me
 // a scatter larger than the colour's extinction would leave a channel absorbing less than nothing,
 // so every channel's absorption is raised until the least is zero
 BOOST_AUTO_TEST_CASE(moya_volume_shader_an_openpbr_scatter_beyond_its_extinction_raises_the_absorption_test) {
-    const kernel::volume::Medium inside = kernel::volume::interior(glass(glm::vec3(0.5F, 1.0F, 1.0F), 1.0F, glm::vec3(0.1F, 0.4F, 0.1F)));
+    const kernel::volume::Medium inside = kernel::volume::openpbr::interior(glass(glm::vec3(0.5F, 1.0F, 1.0F), 1.0F, glm::vec3(0.1F, 0.4F, 0.1F)));
     BOOST_TEST(close(inside.absorption, glm::vec3(std::log(2.0F) - 0.1F + 0.4F, 0.0F, 0.3F)));
 }
 
 // a glass of no depth, or a thin wall, holds no medium, as OpenPBR gives it
 BOOST_AUTO_TEST_CASE(moya_volume_shader_an_openpbr_glass_of_no_depth_or_a_thin_wall_holds_no_medium_test) {
-    BOOST_TEST(kernel::volume::empty(kernel::volume::interior(glass(glm::vec3(0.5F), 0.0F, glm::vec3(0.2F)))));
+    BOOST_TEST(kernel::volume::empty(kernel::volume::openpbr::interior(glass(glm::vec3(0.5F), 0.0F, glm::vec3(0.2F)))));
     kernel::surface::OpenPbr thin = glass(glm::vec3(0.5F), 1.0F, glm::vec3(0.2F));
     thin.thinWalled = 1;
-    BOOST_TEST(kernel::volume::empty(kernel::volume::interior(thin)));
+    BOOST_TEST(kernel::volume::empty(kernel::volume::openpbr::interior(thin)));
 }
 
 // OpenPBR's subsurface radius, its scale and its anisotropy reach the surface's parameters, and a

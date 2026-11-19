@@ -10,7 +10,8 @@
 #include <moya/libmoya/kernel/program/Op.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/texture/Texture.h>
-#include <moya/libmoya/kernel/volume/Interior.h>
+#include <moya/libmoya/kernel/volume/openpbr/Interior.h>
+#include <moya/libmoya/kernel/volume/openpbr/Subsurface.h>
 #include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -31,15 +32,18 @@ namespace {
 
 /**
  * Gives a compiled material the medium it encloses: its volume's, compiled from its volume
- * terminal when it has one, and otherwise the one a layered material's OpenPBR transmission
- * gives. Gives back the volume's program, when it compiles. A volume that does not compile is
- * reported, and the material encloses no medium.
+ * terminal when it has one. A layered material of no volume terminal takes the medium its
+ * transmission gives and the one its subsurface gives, from its surface. Gives back the volume's
+ * program, when it compiles. A volume that does not compile is reported, and the material
+ * encloses no medium.
  **/
 std::optional<material::Compiled> enclose(const scene::Scene & scene, const scene::Handle & handle, material::Compiled & compiled, std::vector<std::string> & names) {
     const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
     if (!volume.valid() || !scene.contains(volume)) {
         if (compiled.material.layered != 0U) {
-            compiled.material.medium = kernel::volume::interior(compiled.material.surface);
+            compiled.material.surfaceMedia = 1U;
+            compiled.material.medium = kernel::volume::openpbr::interior(compiled.material.surface);
+            compiled.material.walked = kernel::volume::openpbr::walked(compiled.material.surface);
         }
         return std::nullopt;
     }

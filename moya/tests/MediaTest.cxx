@@ -28,7 +28,7 @@
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/volume/Coefficients.h>
 #include <moya/libmoya/kernel/volume/Homogeneous.h>
-#include <moya/libmoya/kernel/volume/Interior.h>
+#include <moya/libmoya/kernel/volume/openpbr/Interior.h>
 #include <moya/libmoya/kernel/volume/Lobe.h>
 #include <moya/libmoya/kernel/volume/Medium.h>
 #include <moya/libmoya/kernel/volume/Phase.h>
@@ -676,7 +676,7 @@ BOOST_AUTO_TEST_CASE(moya_media_a_deep_glass_absorbs_over_the_distance_inside_it
         v3d::moya::kernel::surface::OpenPbr surface;
         surface.transmissionColour = tint;
         surface.transmissionDepth = kDepth;
-        const volume::Coefficients coefficients = volume::coefficientsOf(colour::acescgTable(), volume::interior(surface), wavelengths);
+        const volume::Coefficients coefficients = volume::coefficientsOf(colour::acescgTable(), volume::openpbr::interior(surface), wavelengths);
         return volume::transmittance(coefficients.extinction(), 2.0F) * spectrum::illuminant(colour::acescgTable(), glm::vec3 { 1.0F }, wavelengths);
     });
     BOOST_TEST(near(meanColour(snapshot), expected, 0.02F), meanColour(snapshot).x << " " << meanColour(snapshot).y << " " << meanColour(snapshot).z << " against "

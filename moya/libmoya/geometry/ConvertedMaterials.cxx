@@ -11,6 +11,7 @@
 #include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/material/Compile.h>
 #include <moya/libmoya/material/Fold.h>
 
 #include <cstddef>
@@ -54,6 +55,9 @@ ConvertedMaterials ConvertedMaterials::of(const Prototypes & prototypes, const c
                 std::span<const float>(values).subspan(material.program.values, material.program.size));
             material.surface = kernel::program::parameters(folded.values.data());
             material.surface.thinWalled = thinWalled;
+            if (material.surfaceMedia != 0U) {
+                material::enclose(folded, material);
+            }
         }
         if (material.mediumProgram.size != 0U) {
             const kernel::program::Program & medium = material.mediumProgram;

@@ -7,7 +7,9 @@
 
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/volume/Medium.h>
+#include <moya/libmoya/material/Fold.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/texture/Request.h>
 
@@ -72,7 +74,10 @@ struct Compiled {
  * needs more registers than a shading point holds is reported, and each connected input then
  * gives its default. The surface holds the parameters as material::fold() folds the program. The
  * material's program gives its opacity when the opacity varies over the surface. The material
- * transmits when its transmission's weight varies or is more than zero.
+ * transmits when its transmission's weight varies or is more than zero, and subsurfaces when its
+ * subsurface's weight does. A material that subsurfaces and whose subsurface colour, radius,
+ * radius scale or anisotropy varies is reported, since the medium below it is made before
+ * rendering, as enclose() says.
  *
  * A material with a volume terminal and no surface terminal is a boundary, which has no BSDF.
  *
@@ -88,6 +93,21 @@ struct Compiled {
  * primvar by its number. A name read first is added at the end. texcoord reads `st`, and
  * geomcolor reads `Cs`.
  **/
+/**
+ * Sets each of an OpenPBR surface's subsurface colour, radius, radius scale and anisotropy that
+ * varies over the surface, as its program folds, to OpenPBR's default. Gives whether any varies.
+ **/
+bool steadied(const Folded & folded, kernel::surface::OpenPbr & surface);
+
+/**
+ * Gives a layered material the media its OpenPBR surface gives, from its surface as its program
+ * folds: the medium inside a glass that kernel::volume::openpbr::interior() gives, and the medium below a
+ * subsurface that kernel::volume::openpbr::walked() gives. Each subsurface input that varies over the
+ * surface takes OpenPBR's default in the second, as steadied() gives it, since both are made
+ * before rendering.
+ **/
+void enclose(const Folded & folded, kernel::surface::Material & material);
+
 Compiled compile(const Library & library, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars);
 
 /**

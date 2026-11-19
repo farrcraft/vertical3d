@@ -13,6 +13,7 @@
 #include <moya/libmoya/kernel/sample/Hash.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/kernel/volume/Medium.h>
 
 #include <cmath>
 #include <cstdint>
@@ -73,6 +74,18 @@ struct Media {
     MOYA_KERNEL std::uint32_t medium() const {
         const std::uint32_t at = winner(kNotInside);
         return at == kNotInside ? surface::kNoMaterial : entries[at].material;
+    }
+
+    /** Whether the path walks the medium a subsurface gives. **/
+    MOYA_KERNEL bool walking() const {
+        const std::uint32_t at = winner(kNotInside);
+        return at != kNotInside && entries[at].walk != 0U;
+    }
+
+    /** Whether the path walks the subsurface of the closed surface of a key. **/
+    MOYA_KERNEL bool walks(std::uint32_t key) const {
+        const std::uint32_t at = find(key);
+        return at != kNotInside && entries[at].walk != 0U;
     }
 
     /** The key of the closed surface whose medium the path is in, or kNotInside in the air. **/
@@ -186,9 +199,38 @@ MOYA_KERNEL inline float indexOf(const surface::Material & material) {
     return 1.0F;
 }
 
-/** A closed surface a hit met, of the material at a place among the surfaces' materials. **/
+/**
+ * Whether a path that enters a surface of a material walks its subsurface: when it enters through
+ * the subsurface's closure, or, where nothing says which closure, when the material subsurfaces
+ * and does not transmit.
+ **/
+MOYA_KERNEL inline bool walksInto(const surface::Material & material) {
+    return material.layered != 0U && material.subsurfaces != 0U && material.transmits == 0U;
+}
+
+/**
+ * A closed surface a hit met, of the material at a place among the surfaces' materials, and
+ * whether the path walks its subsurface.
+ **/
+MOYA_KERNEL inline Enclosure enclosureOf(const surface::Surfaces & surfaces, const geometry::Hit & hit, std::uint32_t material, bool walk) {
+    return Enclosure { .key = keyOf(hit), .priority = priorityOf(surfaces, hit), .index = indexOf(surfaces.materials[material]), .material = material, .walk = walk ? 1U : 0U };
+}
+
+/** A closed surface a hit met, which a path walks as walksInto() says. **/
 MOYA_KERNEL inline Enclosure enclosureOf(const surface::Surfaces & surfaces, const geometry::Hit & hit, std::uint32_t material) {
-    return Enclosure { .key = keyOf(hit), .priority = priorityOf(surfaces, hit), .index = indexOf(surfaces.materials[material]), .material = material };
+    return enclosureOf(surfaces, hit, material, walksInto(surfaces.materials[material]));
+}
+
+/**
+ * The homogeneous medium the path is in: the subsurface's of the closed surface it walks, or the
+ * medium its winning surface's material encloses, or nullptr in the air.
+ **/
+MOYA_KERNEL inline const volume::Medium * mediumOf(const surface::Surfaces & surfaces, const Media & media) {
+    const std::uint32_t at = media.medium();
+    if (at == surface::kNoMaterial || at >= surfaces.materials.size) {
+        return nullptr;
+    }
+    return media.walking() ? &surfaces.materials[at].walked : &surfaces.materials[at].medium;
 }
 
 };  // namespace v3d::moya::kernel::integrate::media

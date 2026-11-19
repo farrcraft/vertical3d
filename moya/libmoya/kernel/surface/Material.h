@@ -38,9 +38,10 @@ inline constexpr std::uint32_t kMostMaterialClosures = 8;
  * only when its material is cut out.
  *
  * A material encloses a medium when a path may cross its surface into it. A layered material
- * does when it is not thin-walled and its transmission's weight may be more than zero, and any
- * other when it names a dielectric closure that is not thin. A boundary is a material with a
- * volume and no surface: it encloses its volume and has no BSDF, so a path passes its surface by.
+ * does when it is not thin-walled and its transmission's or its subsurface's weight may be more
+ * than zero, and any other when it names a dielectric closure that is not thin. A boundary is a
+ * material with a volume and no surface: it encloses its volume and has no BSDF, so a path passes
+ * its surface by.
  * A traversal asks about a boundary's hits as it does a cut-out surface's.
  **/
 struct Material {
@@ -63,6 +64,9 @@ struct Material {
     /** One when the transmission's weight may be more than zero, from its value or a node. **/
     std::uint32_t transmits { 0 };
 
+    /** One when the subsurface's weight may be more than zero, from its value or a node. **/
+    std::uint32_t subsurfaces { 0 };
+
     /** One when the material has a volume and no surface. **/
     std::uint32_t boundary { 0 };
 
@@ -71,6 +75,18 @@ struct Material {
      * its OpenPBR transmission gives. A medium of no coefficients lets light through unchanged.
      **/
     volume::Medium medium;
+
+    /**
+     * The medium a layered material's subsurface gives, which a path walks once it enters the
+     * surface through the subsurface's closure.
+     **/
+    volume::Medium walked;
+
+    /**
+     * One when the media the material encloses come from its OpenPBR surface: when it is layered
+     * and has no volume terminal.
+     **/
+    std::uint32_t surfaceMedia { 0 };
 
     /**
      * The volume's program, whose values begin with a medium's, run where a volume of this
@@ -92,7 +108,7 @@ struct Material {
             return true;
         }
         if (layered != 0U) {
-            return transmits != 0U && surface.thinWalled == 0U;
+            return (transmits != 0U || subsurfaces != 0U) && surface.thinWalled == 0U;
         }
         for (std::uint32_t i = 0; i < count && i < kMostMaterialClosures; ++i) {
             if (closures[i].model == bsdf::Model::Dielectric && !closures[i].thin) {

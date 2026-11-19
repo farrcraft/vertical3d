@@ -165,7 +165,7 @@ listed as a number with no record, as the ADR index requires.
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | done |
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | done |
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | done |
-| [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | open |
+| [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | done |
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | open |
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | open |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233 | open |
@@ -690,6 +690,40 @@ power. `blackbody` matches a light's colour temperature from 1000 K to 12000 K.
 **Tests:** a white subsurface sphere in a white furnace returns the furnace's light. A slab's
 reflectance for a set radius matches the record's mapping within errors. Every reference render
 whose material sets `subsurface_weight` is committed again, once.
+
+**Done.** `kernel::volume::openpbr::walked()` gives the medium below a surface by OpenPBR's mapping,
+in `kernel/volume/openpbr/Subsurface.h`, and a material holds it as `walked` beside the medium its
+transmission gives. A material encloses a medium when its subsurface's weight may be more than zero,
+`subsurfaces`, as when its transmission's may. `openpbr::interior()` and `walked()` now run in
+`ConvertedMaterials`, once the surface's colours are in ACEScg. Before, they read a colour in its
+document's space, which only the default space hid. `material::enclose()` makes both, and a
+subsurface input that varies over the surface takes OpenPBR's default in the medium and is reported.
+An enclosure records `walk`, whether the path walks the subsurface's medium, and `media::mediumOf()`
+gives the medium a path is in. `bsdf::Layering` gives the subsurface's share of the opaque base, and
+that share of its specular reflection, to a `Dielectric` that walks. A path that crosses by it
+enters the walk. From inside, `Layering::walk()` makes the surface that dielectric alone. A walk's
+scattering events take no light sample and no roulette, and count as specular for the light met
+next. A light inside the surface is then found only by a walk's own directions, where ADR-0246's
+costs say it is not found at all. A reflection off its own boundary is an event of the walk too, not
+a glossy bounce. Its events count against `subsurfaceDepth`, 256 by default, and the other limits
+read `depthOf()`, the bounces less `subsurfaceBounces`. The count of bounces in all still counts
+them, so each event draws from a block of its own. A shadow ray that crosses the surface it leaves
+enters or leaves that surface's medium first. Without that, a light sample at a walk's exit is
+dimmed by the walk's medium all the way to the light. A walk's dielectric gives a denoiser the
+subsurface colour, and is not counted singular when smooth. A thin wall takes OpenPBR's sheet, a
+reflection and a transmission of Oren-Nayar's lobe split by the anisotropy. The transmission is a
+closure that goes `through`, which `Bsdf` mirrors through the surface. No reference render sets
+`subsurface_weight`, so none is committed again, and every one renders as before within its errors.
+Each committed description gains `subsurfaceDepth`.
+
+The test of a slab's reflectance compares with the closed form of a half-space rather than with
+the colour. The camera sees the half-space along its normal, where it reflects one less the root
+of one less the albedo times Chandrasekhar's H at one. OpenPBR fits its mapping to the albedo
+under diffuse light, which is larger, so a grey of a half reads 0.445 there. A white surface of
+a partial subsurface keeps a furnace's energy at the BSDF, counting the walk's light by its
+energy, since the renders of a full weight cannot see a share counted twice. The cases are in
+`SubsurfaceTest.cxx`. The subsurface's header took `kernel/volume` past the directory limit, so
+it and `Interior.h`, the media an OpenPBR surface gives, move to `kernel/volume/openpbr`.
 
 ### Step 16 — A curve's frame
 

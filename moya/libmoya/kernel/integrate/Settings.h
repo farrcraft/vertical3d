@@ -17,6 +17,9 @@ inline constexpr std::uint32_t kMaxDepth = 12;
 inline constexpr std::uint32_t kKindDepth = 4;
 inline constexpr std::uint32_t kRouletteDepth = 3;
 
+/** The most events a walk below a surface makes until the options set it: Cycles'. **/
+inline constexpr std::uint32_t kSubsurfaceDepth = 256;
+
 /**
  * How a path finds the lights with a shape: by multiple importance sampling of a light and the
  * BSDF at each bounce, by sampling a light alone, or by the BSDF alone.
@@ -40,8 +43,9 @@ enum class Picking : std::uint8_t {
  * What the scene's options set for the integrator. A path ends after maxDepth bounces in all, or
  * when a bounce of one kind would take that kind past its own limit. A scattering event in a
  * medium is a bounce of its own kind, which volumeDepth limits. From rouletteDepth bounces
- * on, Russian roulette may end it. The strategy says how it finds the lights, and picking how a
- * light sample draws one.
+ * on, Russian roulette may end it. A walk below a surface counts its events against
+ * subsurfaceDepth alone, and none of them against any other limit. The strategy says how it
+ * finds the lights, and picking how a light sample draws one.
  **/
 struct Settings {
     std::uint32_t maxDepth { kMaxDepth };
@@ -50,6 +54,7 @@ struct Settings {
     std::uint32_t specularDepth { kMaxDepth };
     std::uint32_t transmissionDepth { kMaxDepth };
     std::uint32_t volumeDepth { kKindDepth };
+    std::uint32_t subsurfaceDepth { kSubsurfaceDepth };
     std::uint32_t rouletteDepth { kRouletteDepth };
     Strategy strategy { Strategy::Mis };
     Picking picking { Picking::Tree };

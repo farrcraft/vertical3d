@@ -185,6 +185,7 @@ kernel::integrate::Settings settingsOf(const scene::Scene & scene) {
         .specularDepth = count(scene, "specularDepth"),
         .transmissionDepth = count(scene, "transmissionDepth"),
         .volumeDepth = count(scene, "volumeDepth"),
+        .subsurfaceDepth = count(scene, "subsurfaceDepth"),
         .rouletteDepth = count(scene, "rouletteDepth"),
         .strategy = strategyNamed(option(scene, "lightSampling").stringArray().front()),
         .picking = option(scene, "lightPicking").stringArray().front() == "power" ? kernel::integrate::Picking::Power : kernel::integrate::Picking::Tree };

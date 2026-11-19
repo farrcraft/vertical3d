@@ -62,6 +62,9 @@ inline constexpr float kBelowOne = 0x1.fffffep-1F;
  * - **The albedo tables** are what a microfacet lobe's energy compensation reads, and the
  *   wavelengths what a thin film's interference reads.
  *
+ * A diffuse lobe that goes through is evaluated, given a density and sampled as the lobe it
+ * mirrors, with incoming mirrored through the surface.
+ *
  * The geometric surface and a closure's frame have to agree on whether two directions lie on one
  * side or cross the surface. Where they disagree, the closure gives the pair no value, no density
  * and no sample, so a reflection never crosses the geometric surface and a transmission always
@@ -244,6 +247,7 @@ struct Bsdf {
         if (drawn.x == 0.0F && drawn.y == 0.0F && drawn.z == 0.0F) {
             return out;
         }
+        drawn = across(closure, drawn);
         out.incoming = own.toWorld(drawn);
         out.lobe = closure.lobe(drawn.z * local.z < 0.0F);
         out.roughness = closure.spread();
@@ -294,25 +298,31 @@ struct Bsdf {
         return out;
     }
 
-    /** The share of the closures' estimated albedos that its singular closures hold, or zero. **/
+    /**
+     * The share of the closures' estimated albedos that its singular closures hold, or zero. A
+     * dielectric that walks is not counted singular, since the walk below it spreads its light.
+     **/
     MOYA_KERNEL float singularShare() const {
         float all = 0.0F;
         float singular = 0.0F;
         for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
             all += closures[i].albedo;
-            singular += closures[i].singular() ? closures[i].albedo : 0.0F;
+            singular += closures[i].singular() && !closures[i].walks ? closures[i].albedo : 0.0F;
         }
         return all > 0.0F ? singular / all : 0.0F;
     }
 
     /**
      * The albedo of its closures that are not singular, at each wavelength: each one's weight
-     * times what its model reflects, as add() estimates them but at each wavelength apart.
+     * times what its model reflects, as add() estimates them but at each wavelength apart. A
+     * dielectric that walks gives its weight times the colour its walk is seen to reflect.
      **/
     MOYA_KERNEL spectrum::SampledSpectrum spreadAlbedo() const {
         spectrum::SampledSpectrum out(0.0F);
         for (std::uint32_t i = 0; i < count && i < kMostClosures; ++i) {
-            if (!closures[i].singular()) {
+            if (closures[i].walks) {
+                out += closures[i].weight * closures[i].seen;
+            } else if (!closures[i].singular()) {
                 out += closures[i].weight * reflects(closures[i]);
             }
         }
@@ -346,6 +356,11 @@ struct Bsdf {
         glm::vec3 incoming { 0.0F };
         bool agree { false };
     };
+
+    /** A direction in a closure's frame, mirrored through the surface when it goes through. **/
+    MOYA_KERNEL static glm::vec3 across(const Closure & closure, const glm::vec3 & direction) {
+        return closure.through ? glm::vec3 { direction.x, direction.y, -direction.z } : direction;
+    }
 
     /** Two directions in a closure's frame, from the same two in the frame it turns over. **/
     MOYA_KERNEL static Directions turned(const Closure & closure, const Directions & unturned) {
@@ -422,6 +437,12 @@ struct Bsdf {
 
     /** One closure's value, without its weight, for two directions in its frame. **/
     MOYA_KERNEL spectrum::SampledSpectrum valueOf(const Closure & closure, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
+        return valueAcross(closure, outgoing, across(closure, incoming));
+    }
+
+    /** One closure's value, without its weight, for directions on the sides its model reads. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - outgoing, then incoming
+    MOYA_KERNEL spectrum::SampledSpectrum valueAcross(const Closure & closure, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
         switch (closure.model) {
             case Model::Conductor:
                 return scattering::Conductor::evaluate(closure, albedos, wavelengths, outgoing, incoming);
@@ -442,6 +463,12 @@ struct Bsdf {
 
     /** One closure's density, for two directions in its frame. **/
     MOYA_KERNEL float densityOf(const Closure & closure, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
+        return densityAcross(closure, outgoing, across(closure, incoming));
+    }
+
+    /** One closure's density for two directions on the sides its model reads. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - outgoing, then incoming
+    MOYA_KERNEL float densityAcross(const Closure & closure, const glm::vec3 & outgoing, const glm::vec3 & incoming) const {
         switch (closure.model) {
             case Model::Conductor:
             case Model::Specular:

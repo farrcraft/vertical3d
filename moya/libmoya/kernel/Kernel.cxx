@@ -156,10 +156,11 @@
 #include <moya/libmoya/kernel/volume/Grid.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/GridPlace.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Homogeneous.h>  // IWYU pragma: keep
-#include <moya/libmoya/kernel/volume/Interior.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Lobe.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Medium.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Nano.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/openpbr/Interior.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/volume/openpbr/Subsurface.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Phase.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/PhaseSample.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/volume/Volume.h>  // IWYU pragma: keep

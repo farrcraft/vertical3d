@@ -117,21 +117,37 @@ MOYA_KERNEL inline bool counted(const Settings & settings, bsdf::Lobe lobe, Path
  *
  * From the settings' roulette depth on, a path survives with the chance of its largest throughput,
  * held to one, and a survivor's throughput is divided by that chance.
+ *
+ * A path walking the subsurface of the surface it met, and reflected back into it, makes an event
+ * of its walk: it counts against the walk's limit alone, and takes no Russian roulette. One that
+ * leaves the surface makes a transmission, as any bounce does. walks says whether the sample was
+ * drawn from a closure that enters the medium a subsurface gives.
  **/
 template <geometry::Traversal T, texture::Texels X>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - whether walking, then whether it walks on
 MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering, const glm::vec3 & outgoing,
-    PathState & state) {
+    PathState & state, bool walking, bool & walks) {
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
-    if (bounce >= paths.settings.maxDepth) {
+    if (!walking && depthOf(state) >= paths.settings.maxDepth) {
         return false;
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
     const bsdf::Sample drawn = scattering.sample(outgoing, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kScatter)),
         paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kScatterChoice)));
-    if (!drawn.found() || !counted(paths.settings, drawn.lobe, state)) {
+    if (!drawn.found()) {
         return false;
     }
+    const bool inWalk = walking && drawn.lobe != bsdf::Lobe::Transmission;
+    if (inWalk) {
+        if (MOYA_PATH(state, subsurfaceBounces) >= paths.settings.subsurfaceDepth) {
+            return false;
+        }
+        ++MOYA_PATH(state, subsurfaceBounces);
+    } else if (depthOf(state) >= paths.settings.maxDepth || !counted(paths.settings, drawn.lobe, state)) {
+        return false;
+    }
+    walks = scattering.closures[drawn.closure].walks;
     advance(paths, state, scatteredBy(drawn));
     MOYA_PATH(state, throughput) *= drawn.projected / drawn.density;
     MOYA_PATH(state, density) = drawn.density;
@@ -143,7 +159,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     MOYA_PATH(state, cone) =
         surface::bounced(MOYA_PATH(state, cone), point.footprint.width(), crossed ? 0.0F : paths.surfaces.curvature(point), drawn.roughness, crossed);
     MOYA_PATH(state, bounces) = bounce + 1U;
-    if (bounce + 1U >= paths.settings.rouletteDepth) {
+    if (!inWalk && depthOf(state) >= paths.settings.rouletteDepth) {
         const float survival = std::fmin(1.0F, MOYA_PATH(state, throughput).maximum());
         if (!(paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kRoulette)) < survival)) {
             return false;
@@ -246,16 +262,16 @@ MOYA_KERNEL bool passedBy(const Paths<T, X> & paths, PathState & state, const ge
 
 /**
  * Enters or leaves the medium a surface encloses, when the ray a path leaves a shading point by
- * crosses the surface.
+ * crosses the surface. A path that enters by a closure that walks walks the subsurface's medium.
  **/
 template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL void crossing(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, const surface::ShadingPoint & point) {
+MOYA_KERNEL void crossing(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, const surface::ShadingPoint & point, bool walks) {
     if (point.material == surface::kNoMaterial || !paths.surfaces.materials[point.material].encloses()) {
         return;
     }
     const bool above = glm::dot(MOYA_PATH(state, ray).direction, point.geometric) > 0.0F;
     if (above != point.front) {
-        MOYA_PATH(state, media).cross(media::enclosureOf(paths.surfaces, hit, point.material), point.front);
+        MOYA_PATH(state, media).cross(media::enclosureOf(paths.surfaces, hit, point.material, walks), point.front);
     }
 }
 
@@ -308,7 +324,9 @@ MOYA_KERNEL void glowAt(const Paths<T, X> & paths, PathState & state, const geom
  * A path's bounce at the shading point its ray met: the footprint its cone makes there, the light
  * of the mesh lights it meets, a light sample and the scatter stage. False when the path ends
  * there. A path that crosses the surface as it scatters enters or leaves the medium it encloses,
- * and one that leaves through a lobe that is not singular gives a denoiser nothing past it.
+ * and one that leaves through a lobe that is not singular gives a denoiser nothing past it. A path
+ * that walks the subsurface of the surface it met meets it from inside, as the subsurface's
+ * dielectric alone.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL bool bounce(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, surface::ShadingPoint & point) {
@@ -319,15 +337,18 @@ MOYA_KERNEL bool bounce(const Paths<T, X> & paths, PathState & state, const geom
     glowAt(paths, state, hit, point);
     MOYA_PATH(state, linked) = paths.lights.links.setOf(hit);
     const glm::vec3 outgoing = -glm::normalize(ray.direction);
-    const float outside = MOYA_PATH(state, media).outside(media::keyOf(hit));
+    const std::uint32_t key = media::keyOf(hit);
+    const float outside = MOYA_PATH(state, media).outside(key);
+    const bool walking = MOYA_PATH(state, media).walks(key);
     const bsdf::Bsdf scattering =
-        bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing, outside);
+        bsdf::atSurface(paths.surfaces, paths.textures, point, paths.table, paths.albedos, MOYA_PATH(state, wavelengths), outgoing, outside, walking);
     features(paths, state, scattering, point, hit.distance * length);
-    MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, point, scattering, outgoing, state);
-    if (!scatter(paths, point, scattering, outgoing, state)) {
+    MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, hit, point, scattering, outgoing, state);
+    bool walks = false;
+    if (!scatter(paths, point, scattering, outgoing, state, walking, walks)) {
         return false;
     }
-    crossing(paths, state, hit, point);
+    crossing(paths, state, hit, point, walks);
     if (MOYA_PATH(state, specular) == 0U) {
         MOYA_PATH(state, featured) = 1U;
     }

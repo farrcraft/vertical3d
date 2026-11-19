@@ -15,7 +15,7 @@
 #include <glm/common.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::volume {
+namespace v3d::moya::kernel::volume::openpbr {
 
 /** The least transmittance a transmission colour is taken at, so its logarithm stays finite. **/
 inline constexpr float kLeastTransmittance = 1.0e-6F;
@@ -47,4 +47,4 @@ MOYA_KERNEL inline Medium interior(const surface::OpenPbr & surface) {
     return out;
 }
 
-};  // namespace v3d::moya::kernel::volume
+};  // namespace v3d::moya::kernel::volume::openpbr

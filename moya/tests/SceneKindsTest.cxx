@@ -121,6 +121,7 @@ BOOST_AUTO_TEST_CASE(moya_scene_an_output_names_its_channels_test) {
         "    samples integer = 4\n"
         "    shaderSearchPath string = \"\"\n"
         "    specularDepth integer = 12\n"
+        "    subsurfaceDepth integer = 256\n"
         "    textureDirectory string = \"\"\n"
         "    textureMemory integer = 1048576\n"
         "    textureSearchPath string = \"\"\n"

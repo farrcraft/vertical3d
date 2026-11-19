@@ -46,6 +46,9 @@ libraries `material::Library::installed()` reads once from beside the executable
 - **A surface of `open_pbr_surface` makes the material layered**, and its program gives OpenPBR's
   parameters, as [The node program](#the-node-program) says. `geometry_thin_walled` sets
   `thinWalled`, and is read as a constant.
+- **A layered material transmits** when its transmission's weight varies or is more than zero,
+  and **subsurfaces** when its subsurface's weight does. Either lets it enclose a medium, as
+  [Integrator.md](Integrator.md#nested-media) says.
 - **A layered material is cut out** when its opacity may be less than one. That is when its
   opacity varies over the surface and the program gives it, which sets `programmedOpacity`, or
   when the constant it holds is less than one. `Material::cutOut()` says which. A traversal asks
@@ -190,8 +193,8 @@ its absorption and every lobe's scattering together.
 
 ### The medium inside a glass
 
-`kernel::volume::interior()` gives the medium inside an OpenPBR surface that is not thin-walled,
-from its transmission, as OpenPBR gives it.
+`kernel::volume::openpbr::interior()` gives the medium inside an OpenPBR surface that is not
+thin-walled, from its transmission, as OpenPBR gives it.
 
 - **The extinction is the transmission colour's negative logarithm over the depth**, so white
   light that travels `transmission_depth` inside takes the colour. A colour is held to at least
@@ -202,11 +205,31 @@ from its transmission, as OpenPBR gives it.
   channel, every channel's absorption is raised by the same amount, so the least is zero.
 - **A depth of zero, or a thin wall, holds no medium.**
 
+### The medium below a subsurface
+
+`kernel::volume::openpbr::walked()` gives the medium below an OpenPBR surface whose
+`subsurface_weight` is above zero and that is not thin-walled. A path walks it once it enters the
+surface through the subsurface's closure, as [Integrator.md](Integrator.md#walking-a-subsurface)
+says.
+
+- **The mean free path in each ACEScg channel is `subsurface_radius` times
+  `subsurface_radius_scale`**, and the extinction is one over it. A mean free path is held to at
+  least `kLeastFreePath`.
+- **The scattering is the extinction times the single-scattering albedo** that
+  `volume::openpbr::singleAlbedo()` gives `subsurface_color`, as one lobe of
+  `subsurface_scatter_anisotropy`. The absorption is the rest of the extinction.
+- **The albedo is OpenPBR's mapping**: one less s squared, over one less the anisotropy times s
+  squared. s is 4.09712 plus 4.20863 times the colour, less the root of 9.59217 plus 41.6808 times
+  the colour plus 17.7126 times its square. A colour of zero gives zero and a colour of one gives
+  one. The colour is held to [0, 1].
+- **A weight of zero, or a thin wall, holds no such medium.**
+
 Each material the scene gathers holds the medium it encloses, as `surface::Material::medium`: its
 volume's, compiled from its volume terminal, when it has one, and otherwise the one `interior()`
-gives a layered material. A volume that does not compile is reported, and the material encloses
-no medium. [Integrator.md](Integrator.md#tracking-through-a-medium) says how a path is tracked
-through it.
+gives a layered material. A layered material of no volume terminal holds the one `walked()`
+gives as `surface::Material::walked` beside it. A volume that does not compile is reported, and
+the material encloses no medium. [Integrator.md](Integrator.md#tracking-through-a-medium) says
+how a path is tracked through it.
 
 ### The node program
 
@@ -287,6 +310,10 @@ The gather appends each material's instructions and values after the one before.
 - **An emission input that varies over the surface gives that default too**, because a
   material's light is made on the host before rendering. It is reported. Emission that a chain of
   constant nodes feeds, as a translation's does, holds its value.
+- **A subsurface colour, radius, radius scale or anisotropy that varies over the surface** gives
+  OpenPBR's default to the medium below the surface, where the subsurface weight may be more than
+  zero. That medium is made on the host before rendering. It is reported. The program
+  still gives the varying colour to the coat's darkening and to a thin wall's lobes.
 - **A program that needs more than `kRegisters` registers is reported**, and every input a node
   feeds then gives the default of that node's output.
 - **Each colour constant is converted into ACEScg** from the space its primvar names, or the space
@@ -536,7 +563,8 @@ surface keeps its energy. The whole is not reciprocal, though each lobe but fuzz
   smooth base it is Fresnel's factor inside the coat, at the angle light refracts to. For a rough
   base it is one less the mean a smooth interface transmits over the coat's index squared. The two
   are mixed by the base's roughness, which is one for the diffuse base. The base's albedo is its
-  diffuse colour, or its metal's colour mixed in by the metalness.
+  diffuse colour mixed with the subsurface colour by the subsurface weight, or its metal's colour
+  mixed in by the metalness.
 - **The metal**, of the base's metalness, is a `Conductor` of the base's colour times its weight,
   with the specular colour as its F82 tint, scaled by the specular weight.
 - **The rest is a dielectric.** Its index is the specular index with its reflectance at normal
@@ -548,10 +576,20 @@ surface keeps its energy. The whole is not reciprocal, though each lobe but fuzz
   says.
 - **The opaque rest** is a `Specular` reflection over the diffuse base, tinted by the specular
   colour. Its index is relative to the coat's, mixed in by the coat's weight, and its reciprocal
-  where that falls below one. The diffuse base is an `OrenNayar` lobe of `baseDiffuseRoughness`.
-  Its colour is the base colour times its weight, mixed with the subsurface colour by the
-  subsurface weight, as subsurface scatters as the diffuse base. It takes one less the specular
-  layer's albedo, which is the table's reflection alone plus what the compensation returns.
+  where that falls below one. The diffuse base is an `OrenNayar` lobe of `baseDiffuseRoughness`,
+  its colour the base colour times its weight. It takes one less the specular layer's albedo,
+  which is the table's reflection alone plus what the compensation returns, and one less the
+  subsurface weight.
+- **The subsurface**, of its weight, takes the rest of the diffuse base's share. On a surface that
+  is not thin-walled it takes that share of the opaque rest's `Specular` reflection too, as a
+  `Dielectric` that walks. That dielectric has the specular layer's roughness and index, relative
+  to the medium outside, and its reflection is tinted by the specular colour. A path it carries
+  into the surface walks [the medium below a subsurface](#the-medium-below-a-subsurface). A
+  denoiser takes its albedo as the subsurface colour, and does not count it singular even when it
+  is smooth. On a thin wall the subsurface is OpenPBR's sheet, with no walk: two `OrenNayar` lobes
+  of `baseDiffuseRoughness`, coloured by the subsurface colour. One reflects with a weight of half
+  of one less `subsurface_scatter_anisotropy`. The other goes through the surface with a weight of
+  half of one plus it, as a diffuse transmission.
 - **A thin film**, of its weight, lies over the metal and the opaque specular layer. Its thickness
   is OpenPBR's in micrometres, and its index is relative to the coat's as the specular layer's is.
   The layer below the specular layer takes one less its albedo times the film's reflectance over
