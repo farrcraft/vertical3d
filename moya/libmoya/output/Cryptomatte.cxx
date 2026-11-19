@@ -42,6 +42,9 @@ constexpr std::size_t kBlock = 4;
 /** A 32-bit word's hex digits. **/
 constexpr std::size_t kHexDigits = 8;
 
+/** The most decimal digits a 32-bit word takes. **/
+constexpr std::size_t kDecimalDigits = 10;
+
 /** The hex digits of a layer's key. **/
 constexpr std::size_t kKeyDigits = 7;
 
@@ -148,7 +151,7 @@ std::vector<std::string> rankChannelsOf(const Cryptomatte & layer) {
     std::vector<std::string> out;
     const std::uint32_t channels = (layer.ranks + kRanksPerChannel - 1U) / kRanksPerChannel;
     for (std::uint32_t i = 0; i < channels; ++i) {
-        char number[11] {};
+        char number[kDecimalDigits + 1] {};
         std::snprintf(number, sizeof(number), "%02u", i);
         out.push_back(layer.name + number);
     }
