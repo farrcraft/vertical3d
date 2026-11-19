@@ -23,6 +23,7 @@
 #include <moya/libmoya/kernel/geometry/Motion.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/light/Bounds.h>
+#include <moya/libmoya/kernel/light/Brick.h>
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Image.h>
 #include <moya/libmoya/kernel/light/Light.h>
@@ -33,13 +34,16 @@
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/kernel/volume/Volume.h>
 #include <moya/libmoya/light/internal/Gathered.h>
+#include <moya/libmoya/light/internal/Glowing.h>
 #include <moya/libmoya/light/internal/Linking.h>
 #include <moya/libmoya/light/internal/Profiles.h>
 #include <moya/libmoya/light/internal/Subtree.h>
 #include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/internal/Tree.h>
 #include <moya/libmoya/light/Planckian.h>
+#include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -168,6 +172,7 @@ accel::Box localBox(const kernel::light::Light & light) {
         case kernel::light::Shape::Distant:
         case kernel::light::Shape::Mesh:
         case kernel::light::Shape::Dome:
+        case kernel::light::Shape::Volume:
             break;
     }
     return accel::Box { .lower = -half, .upper = half };
@@ -374,6 +379,7 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
             // a triangle that emits from both faces sends as much again from its other
             return light.scale * size * kPi * (light.twoSided ? 2.0F : 1.0F);
         case kernel::light::Shape::Cylinder:
+        case kernel::light::Shape::Volume:
             break;
     }
     return light.scale * size * kPi;
@@ -464,7 +470,7 @@ void chains(const geometry::Prototypes & prototypes, const std::vector<std::uint
         chain.push_back(member);
         if (instance.kind == geometry::Prototype::Group) {
             chains(prototypes, prototypes.groups[instance.prototype].instances, chain, found);
-        } else {
+        } else if (instance.kind == geometry::Prototype::Geometry) {
             found(chain, instance.prototype);
         }
         chain.pop_back();
@@ -715,6 +721,70 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
 }
 
 /**
+ * The scene's volume lights, appended to what is gathered with their powers. A volume whose program
+ * emits makes one, and each chain of instances that places a closed surface makes one where the
+ * surface's material encloses a medium that emits. Each is an object, which camera rays see, in no
+ * group. Its power is four pi times what it emits over its own space, times the volume the world
+ * gives a unit of that space as the shutter opens. Its box in the top tree holds its bricks where
+ * its chain places them over the shutter, and it emits along every direction. A volume whose chain
+ * the prototypes do not hold makes none.
+ **/
+void volumeLights(const geometry::Prototypes & prototypes, const Shading & shading, internal::Gathered & out) {
+    std::map<std::uint32_t, std::uint32_t> byId;
+    for (std::size_t i = 0; i < prototypes.instances.size(); ++i) {
+        byId.emplace(prototypes.instances[i].id, static_cast<std::uint32_t>(i));
+    }
+    const auto add = [&](internal::Glowing made, const std::vector<std::uint32_t> & placed) {
+        glm::mat4 toWorld { 1.0F };
+        for (const std::uint32_t member : placed) {
+            toWorld = toWorld * geometry::transformAt(prototypes.instances[member], prototypes.open);
+        }
+        accel::Box box = accel::moveBox(made.box, made.light.transform);
+        for (auto level = placed.rbegin(); level != placed.rend(); ++level) {
+            box = placedBox(box, prototypes.instances[*level], prototypes.open, prototypes.close);
+        }
+        made.light.depth = static_cast<std::uint32_t>(placed.size());
+        for (std::size_t level = 0; level < placed.size(); ++level) {
+            made.light.chain[level] = prototypes.instances[placed[level]].id;
+        }
+        const float stretch = std::fabs(glm::determinant(glm::mat3(toWorld * made.light.transform)));
+        internal::Leaf leaf { .bounds = internal::everyDirection(box.lower, box.upper), .held = static_cast<std::uint32_t>(out.lights.size()) };
+        leaf.bounds.power = kWholeSphere * made.emitted * stretch;
+        out.top.push_back(leaf);
+        out.lights.push_back(made.light);
+        out.handles.push_back(scene::Handle {});
+        out.powers.push_back(leaf.bounds.power);
+        return leaf.held;
+    };
+    out.glowing.assign(prototypes.volumes.size(), kernel::geometry::kNoPrimitive);
+    for (std::uint32_t volume = 0; volume < prototypes.volumes.size(); ++volume) {
+        const kernel::volume::Volume & placed = prototypes.volumes[volume];
+        std::vector<std::uint32_t> chain;
+        for (std::uint32_t level = 0; level < placed.depth && level < kernel::geometry::kInstanceDepth; ++level) {
+            const auto found = byId.find(placed.chain[level]);
+            if (found != byId.end()) {
+                chain.push_back(found->second);
+            }
+        }
+        internal::Glowing made;
+        if (chain.size() == placed.depth && internal::gridGlow(prototypes, shading, volume, out, made)) {
+            out.glowing[volume] = add(made, chain);
+        }
+    }
+    std::vector<std::uint32_t> chain;
+    chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
+        const std::uint32_t material = materialOf(prototypes, placed);
+        if (material == kernel::surface::kNoMaterial || material >= shading.surfaces.materials.size || !shading.surfaces.materials[material].encloses()) {
+            return;
+        }
+        internal::Glowing made;
+        if (internal::enclosedGlow(prototypes, at, shading.surfaces.materials[material].medium.emission, out, made)) {
+            out.enclosing.push_back(add(made, placed));
+        }
+    });
+}
+
+/**
  * The light a shaped light makes, with the size its power is measured by: its area in the world
  * as it stands when the shutter opens, weighed by its texture's average where it has one.
  **/
@@ -776,10 +846,24 @@ std::vector<std::string> labelled(const scene::Scene & scene, const std::vector<
     return out;
 }
 
+/**
+ * The place of each light by the index in the scene of the instance that places its shape, over
+ * indices up to most, or none for an index no light's shape has.
+ **/
+std::vector<std::uint32_t> placesById(const std::vector<kernel::light::Light> & lights, std::uint32_t most) {
+    std::vector<std::uint32_t> out(most, kernel::geometry::kNoPrimitive);
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+        if (lights[i].id != kernel::geometry::kNoPrimitive) {
+            out[lights[i].id] = static_cast<std::uint32_t>(i);
+        }
+    }
+    return out;
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
-    float reach, const boost::shared_ptr<log::Logger> & logger) {
+    const Shading & shading, float reach, const boost::shared_ptr<log::Logger> & logger) {
     internal::Gathered all;
     std::vector<kernel::light::Light> & lights = all.lights;
     std::vector<kernel::geometry::Key> keys;
@@ -842,15 +926,11 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
         add(sky, handle, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
     }
     meshLights(scene, prototypes, config, logger, all);
+    volumeLights(prototypes, shading, all);
     labels_ = labelled(scene, all.handles, lights);
     const internal::Linking links = internal::linking(scene, prototypes, all.handles, lights);
     treesBySet(links, all);
-    std::vector<std::uint32_t> byId(most, kernel::geometry::kNoPrimitive);
-    for (std::size_t i = 0; i < lights.size(); ++i) {
-        if (lights[i].id != kernel::geometry::kNoPrimitive) {
-            byId[lights[i].id] = static_cast<std::uint32_t>(i);
-        }
-    }
+    const std::vector<std::uint32_t> byId = placesById(lights, most);
     lights_ = uploaded(device, lights);
     keys_ = uploaded(device, keys);
     distant_ = uploaded(device, distant);
@@ -868,6 +948,10 @@ Lights::Lights(device::Device & device, const scene::Scene & scene, const geomet
     triangleLeaves_ = uploaded(device, all.triangleLeaves);
     infinite_ = uploaded(device, all.afar);
     infiniteFirst_ = uploaded(device, all.afarFirst);
+    bricks_ = uploaded(device, all.bricks);
+    cells_ = uploaded(device, all.cells);
+    glowing_ = uploaded(device, all.glowing);
+    enclosing_ = uploaded(device, all.enclosing);
     linkFirst_ = uploaded(device, links.first);
     linkSteps_ = uploaded(device, links.steps);
     lit_ = uploaded(device, links.lit);
@@ -899,6 +983,10 @@ kernel::light::Lights Lights::view() const {
         .triangleLeaves = device::view<std::uint32_t>(*triangleLeaves_),
         .infinite = device::view<std::uint32_t>(*infinite_),
         .infiniteFirst = device::view<std::uint32_t>(*infiniteFirst_),
+        .bricks = device::view<kernel::light::Brick>(*bricks_),
+        .cells = device::view<float>(*cells_),
+        .glowing = device::view<std::uint32_t>(*glowing_),
+        .enclosing = device::view<std::uint32_t>(*enclosing_),
         .links = kernel::light::link::Links { .first = device::view<std::uint32_t>(*linkFirst_),
             .steps = device::view<kernel::light::link::LinkStep>(*linkSteps_),
             .lit = device::view<std::uint8_t>(*lit_),

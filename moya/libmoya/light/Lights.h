@@ -10,6 +10,7 @@
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
@@ -52,16 +53,24 @@ namespace v3d::moya::light {
  *   half angle, or pi (2 - sin^2) past a quarter turn, so the irradiance stays the same at any
  *   angle.
  *
+ * - **A volume light** emits from a volume whose volume program emits, or from the medium inside a
+ *   closed surface, wherever a chain of instances places either. It emits what the medium emits
+ *   at each point, a radiance over each unit of length, along every direction. A volume's light
+ *   draws a brick, then a cell, then a point, each by what it emits, and a closed surface's draws
+ *   a point uniformly in its box. Shading runs a volume's program over the cells as the shutter
+ *   opens.
+ *
  * Each light is drawn in proportion to its power, which leaves its cone out. A light with a shape
  * has its radiance's luminance times its area times pi, and a point its intensity's times four
  * pi. A distant light has its irradiance's luminance times the area of a disk of the reach. A
  * mesh light has its radiance's luminance times its area times pi, and its triangle is then drawn
- * in proportion to its area.
+ * in proportion to its area. A volume light has four pi times its emission's luminance over its
+ * volume, and its brick is then drawn in proportion to its emission.
  *
  * The light tree is built over the lights with a place, with a subtree over the triangles of each
- * geometry a mesh light makes emit. Each light is bounded over the shutter by its power, its box
- * and the directions it emits along. It depends on the scene alone, so every run builds the same
- * tree.
+ * geometry a mesh light makes emit, and one over the bricks of each volume's light. Each light is
+ * bounded over the shutter by its power, its box and the directions it emits along. It depends on
+ * the scene alone, so every run builds the same tree.
  *
  * Light linking decides which lights light each shading point, as the scene's includeRoot and
  * instances say. Each set of lights that some shading point is lit by has a top tree of its own,
@@ -85,8 +94,8 @@ class Lights final {
      * @throws std::runtime_error, from OpenColorIO, when a light's colour names a space the
      *         configuration cannot convert into ACEScg
      **/
-    Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config, float reach,
-        const boost::shared_ptr<log::Logger> & logger);
+    Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
+        const Shading & shading, float reach, const boost::shared_ptr<log::Logger> & logger);
 
     /** The lights, as kernel code reads them. **/
     kernel::light::Lights view() const;
@@ -112,6 +121,10 @@ class Lights final {
     boost::shared_ptr<device::Buffer> triangleLeaves_;
     boost::shared_ptr<device::Buffer> infinite_;
     boost::shared_ptr<device::Buffer> infiniteFirst_;
+    boost::shared_ptr<device::Buffer> bricks_;
+    boost::shared_ptr<device::Buffer> cells_;
+    boost::shared_ptr<device::Buffer> glowing_;
+    boost::shared_ptr<device::Buffer> enclosing_;
     boost::shared_ptr<device::Buffer> linkFirst_;
     boost::shared_ptr<device::Buffer> linkSteps_;
     boost::shared_ptr<device::Buffer> lit_;

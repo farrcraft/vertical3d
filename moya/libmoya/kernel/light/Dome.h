@@ -11,7 +11,6 @@
 #include <moya/libmoya/kernel/light/LightSample.h>
 #include <moya/libmoya/kernel/light/Lights.h>
 #include <moya/libmoya/kernel/light/Sampling.h>
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>

@@ -80,6 +80,7 @@ std::optional<Operation> Operation::of(const std::string & category) {
         { "dotproduct", { Op::Dot, two } },
         { "crossproduct", { Op::Cross, two } },
         { "luminance", { Op::Luminance, { "in", "lumacoeffs" } } },
+        { "blackbody", { Op::Blackbody, { "temperature" } } },
         { "rgbtohsv", { Op::RgbToHsv, one } },
         { "hsvtorgb", { Op::HsvToRgb, one } },
         { "extract", { Op::Extract, { "in", "index" } } },

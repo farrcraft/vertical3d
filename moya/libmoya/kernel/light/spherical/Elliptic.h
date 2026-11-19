@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace v3d::moya::kernel::light {
+namespace v3d::moya::kernel::light::spherical {
 
 /*
  * Carlson's symmetric elliptic integrals, by duplication until the arguments agree within a
@@ -153,4 +153,4 @@ MOYA_KERNEL inline float ellipticPi(float n, float phi, float parameter) {
     return (s * carlsonRF(cosine * cosine, delta, 1.0F)) + ((n * kThird) * squared * s * carlsonRJ(cosine * cosine, delta, 1.0F, 1.0F - (n * squared)));
 }
 
-};  // namespace v3d::moya::kernel::light
+};  // namespace v3d::moya::kernel::light::spherical

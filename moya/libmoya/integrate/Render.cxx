@@ -41,6 +41,7 @@
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
+#include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Checkpoint.h>
@@ -221,7 +222,8 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     const geometry::Surfaces surfaces(device, prototypes, config);
     const volume::Volumes volumes(device, prototypes);
     const texture::Textures textures(device, prototypes.images, texture::optionsOf(scene), config, logger);
-    const light::Lights lights(device, scene, prototypes, config, reach(assembly.bounds), logger);
+    const light::Shading shading { .surfaces = surfaces.view(), .textures = textures.view(), .volumes = volumes.view() };
+    const light::Lights lights(device, scene, prototypes, config, shading, reach(assembly.bounds), logger);
 
     const film::Filter filter = filterOf(device, scene);
 

@@ -98,6 +98,7 @@ MOYA_KERNEL inline glm::vec3 emittingNormal(const Light & light, const glm::vec3
         case Shape::Distant:
         case Shape::Mesh:
         case Shape::Dome:
+        case Shape::Volume:
             break;
         case Shape::Sphere:
             return local;
@@ -189,6 +190,7 @@ MOYA_KERNEL inline spectrum::SampledSpectrum arriving(const Light & light, const
         case Shape::Cylinder:
         case Shape::Mesh:
         case Shape::Dome:
+        case Shape::Volume:
             break;
     }
     return radiance(light, toWorld, drawn, -incoming, tint, table, wavelengths);

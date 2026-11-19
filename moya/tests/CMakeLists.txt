@@ -71,6 +71,7 @@ v3d_add_test(moya
 	"TextureLookupTest.cxx"
 	"TextureMakerTest.cxx"
 	"VolumeTest.cxx"
+	"VolumeLightsTest.cxx"
 	"VolumeShaderTest.cxx"
 	"ZSobolTest.cxx")
 

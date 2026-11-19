@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/light/Brick.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Tree.h>
 #include <moya/libmoya/light/internal/Tree.h>
@@ -24,6 +25,10 @@ namespace v3d::moya::light::internal {
  *
  * Each set of linked lights has its tree's root in roots, its lights' leaves in leaves from the
  * set times the count of lights, and its distant and dome lights in afar from afarFirst[set].
+ *
+ * bricks and cells hold every volume light's bricks and the sums of their cells' chances. glowing
+ * holds the place of each volume's light, by the volume's place, and enclosing the places of the
+ * lights of closed surfaces.
  **/
 struct Gathered {
     std::vector<kernel::light::Light> lights;
@@ -39,6 +44,10 @@ struct Gathered {
     std::vector<std::uint32_t> leaves;
     std::vector<std::uint32_t> afar;
     std::vector<std::uint32_t> afarFirst;
+    std::vector<kernel::light::Brick> bricks;
+    std::vector<float> cells;
+    std::vector<std::uint32_t> glowing;
+    std::vector<std::uint32_t> enclosing;
 };
 
 };  // namespace v3d::moya::light::internal

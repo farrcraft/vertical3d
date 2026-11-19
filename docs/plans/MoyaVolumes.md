@@ -164,7 +164,7 @@ listed as a number with no record, as the ADR index requires.
 | [11](#step-11--homogeneous-media) | Homogeneous media | `moya/libmoya/kernel/volume`, `integrate` | 0244 | done |
 | [12](#step-12--volume-events) | Volume events | `moya/libmoya/kernel/integrate`, `lpe` | 0231 | done |
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | done |
-| [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | open |
+| [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | done |
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | open |
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | open |
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | open |
@@ -655,6 +655,27 @@ closed-form cases take 4096 samples, since a path's estimate of transmittance is
 
 **Tests:** a homogeneous emitting sphere's radiance seen through its centre matches its closed
 form. A scene lit by an emitting volume alone matches a render of tracking alone, within errors.
+
+**Done.** A volume light is a `kernel::light::Light` of shape `Volume`, which emits from bricks of
+its own space, `kernel::light::Brick`. A volume whose program emits makes one, and so does each
+chain that places a closed surface whose medium emits. `light::internal::gridGlow()` runs the
+volume's program on the host at each cell's centre, through `light::Shading`, the CPU device's
+views. A grid's bricks are its leaf nodes, its lower nodes' active tiles, and its upper nodes'
+active tiles cut to a leaf's size. A root's tiles make none, and their points are found by
+collisions alone. A closed surface's one brick is its box, and a light sample there emits only
+where its shadow ray ends in the surface's medium. `kernel/integrate/media/Glowing.h` draws a
+point in a brick and gives its density by solid angle and length, so it weighs against a
+collision. `glowAt()` gathers emission at every collision, as pbrt-v4 does, and weighs it
+against the light sample by the power heuristic. A shadow ray gives `Passed::colliding`, the
+density a tracked path would have had of colliding at its end, for the light sample's side.
+MaterialX's `blackbody` is `Op::Blackbody`, `spectrum::blackbody()`. It sums Planck's law through
+the observer at 5 nm, as MaterialX's OSL implementation does, since its GLSL implementation's
+cubic strays far from the locus below 1667 K. `chains()` in `light/Lights.cxx` called its callback
+for a volume's chain too, which then read a geometry of the volume's index. It now stops at a
+geometry. The cases are in `VolumeLightsTest.cxx`. An emitting sphere and a grid that glows by
+`blackbody` of a temperature field each match the closed form along their depth. A floor lit by
+either alone renders the same light under `bsdf`, `light` and `mis`, drawn by the tree and by
+power. `blackbody` matches a light's colour temperature from 1000 K to 12000 K.
 
 ### Step 15 — Random-walk subsurface
 

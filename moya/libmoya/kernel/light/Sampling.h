@@ -8,8 +8,8 @@
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/LightSample.h>
-#include <moya/libmoya/kernel/light/SphericalEllipse.h>
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>
+#include <moya/libmoya/kernel/light/spherical/SphericalEllipse.h>
+#include <moya/libmoya/kernel/light/spherical/SphericalRectangle.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 
@@ -89,6 +89,7 @@ MOYA_KERNEL inline float localArea(const Light & light) {
         case Shape::Distant:
         case Shape::Mesh:
         case Shape::Dome:
+        case Shape::Volume:
             break;
     }
     return 0.0F;
@@ -116,6 +117,7 @@ MOYA_KERNEL inline glm::vec3 areaPoint(const Light & light, const glm::vec2 & u)
         case Shape::Distant:
         case Shape::Mesh:
         case Shape::Dome:
+        case Shape::Volume:
             break;
     }
     return glm::vec3 { 0.0F };
@@ -149,22 +151,23 @@ MOYA_KERNEL inline Method methodOf(const Light & light, const glm::mat4 & toWorl
         case Shape::Distant:
         case Shape::Mesh:
         case Shape::Dome:
+        case Shape::Volume:
             break;
     }
     return Method::Area;
 }
 
 /** A rect light as a point sees it. **/
-MOYA_KERNEL inline SphericalRectangle rectangleOf(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from) {
+MOYA_KERNEL inline spherical::SphericalRectangle rectangleOf(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from) {
     const glm::mat3 map { toWorld };
     const glm::vec3 corner { toWorld * glm::vec4 { -0.5F * light.size.x, -0.5F * light.size.y, 0.0F, 1.0F } };
-    return SphericalRectangle::seen(from, corner, map[0] * light.size.x, map[1] * light.size.y);
+    return spherical::SphericalRectangle::seen(from, corner, map[0] * light.size.x, map[1] * light.size.y);
 }
 
 /** A disk light as a point sees it. **/
-MOYA_KERNEL inline SphericalEllipse ellipseOf(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from) {
+MOYA_KERNEL inline spherical::SphericalEllipse ellipseOf(const Light & light, const glm::mat4 & toWorld, const glm::vec3 & from) {
     const glm::mat3 map { toWorld };
-    return SphericalEllipse::fromDisk(from, glm::vec3(toWorld[3]), glm::normalize(glm::cross(map[0], map[1])), light.size.x * glm::length(map[0]));
+    return spherical::SphericalEllipse::fromDisk(from, glm::vec3(toWorld[3]), glm::normalize(glm::cross(map[0], map[1])), light.size.x * glm::length(map[0]));
 }
 
 /** One less the cosine of the half angle of the cone a sphere subtends, from the sine squared. **/
@@ -289,7 +292,7 @@ MOYA_KERNEL inline LightSample sample(const Light & light, const glm::mat4 & toW
     }
     switch (methodOf(light, toWorld, from)) {
         case Method::Rectangle: {
-            const SphericalRectangle seen = rectangleOf(light, toWorld, from);
+            const spherical::SphericalRectangle seen = rectangleOf(light, toWorld, from);
             if (!(seen.solidAngle >= kSmallestSolidAngle)) {
                 break;
             }
@@ -300,7 +303,7 @@ MOYA_KERNEL inline LightSample sample(const Light & light, const glm::mat4 & toW
             return out;
         }
         case Method::Ellipse: {
-            const SphericalEllipse seen = ellipseOf(light, toWorld, from);
+            const spherical::SphericalEllipse seen = ellipseOf(light, toWorld, from);
             if (!(seen.solidAngle() >= kSmallestSolidAngle)) {
                 break;
             }

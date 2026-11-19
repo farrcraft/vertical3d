@@ -16,6 +16,7 @@
 #include <moya/libmoya/kernel/integrate/media/Collisions.h>
 #include <moya/libmoya/kernel/integrate/media/Crossings.h>
 #include <moya/libmoya/kernel/integrate/media/Enclosure.h>
+#include <moya/libmoya/kernel/integrate/media/Glowing.h>
 #include <moya/libmoya/kernel/integrate/media/Media.h>
 #include <moya/libmoya/kernel/integrate/Opacity.h>
 #include <moya/libmoya/kernel/integrate/Passing.h>
@@ -27,7 +28,7 @@
 #include <moya/libmoya/kernel/light/LightSample.h>
 #include <moya/libmoya/kernel/light/Picked.h>
 #include <moya/libmoya/kernel/light/Sampling.h>
-#include <moya/libmoya/kernel/light/SphericalTriangle.h>
+#include <moya/libmoya/kernel/light/spherical/SphericalTriangle.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
@@ -55,11 +56,17 @@ namespace v3d::moya::kernel::integrate {
  * path tracked through those media would have passed them all, over the density with which the
  * shadow ray tracked the volumes among them. A ray that crosses no medium lets through one at
  * each wavelength, with a chance of one.
+ *
+ * colliding is the density, by length, with which such a path would then have collided at the
+ * ray's end, over the same: its chance times the majorant there. ended is the key of the closed
+ * surface whose medium the ray ends in, or media::kNotInside where it ends in none.
  **/
 struct Passed {
     float share { 0.0F };
     spectrum::SampledSpectrum through { 1.0F };
     float chance { 1.0F };
+    float colliding { 0.0F };
+    std::uint32_t ended { media::kNotInside };
 };
 
 /** The power heuristic's weight for a strategy of one density against another. **/
@@ -88,10 +95,19 @@ MOYA_KERNEL inline geometry::Ray leavingRay(const surface::ShadingPoint & point,
 }
 
 /**
+ * Whether a part of a light is drawn once the light is drawn: a mesh light's triangle, or a volume
+ * light's brick.
+ **/
+MOYA_KERNEL inline bool inParts(const light::Light & light) {
+    return light.shape == light::Shape::Mesh || light.shape == light::Shape::Volume;
+}
+
+/**
  * The light a light sample draws at a shading point of the path's set of linked lights, at a time
  * within the shutter. The set's light tree draws it, or the power of every light does, with a mesh
- * light's triangle then drawn in proportion to its area. Its chance holds the triangle's. A light
- * drawn by power that does not light the set draws nothing.
+ * light's triangle then drawn in proportion to its area, and a volume light's brick in proportion
+ * to its emission. Its chance holds the triangle's or the brick's. A light drawn by power that
+ * does not light the set draws nothing.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL light::Picked pickLight(const Paths<T, X> & paths, const surface::ShadingPoint & point, float time, const PathState & state) {
@@ -108,7 +124,7 @@ MOYA_KERNEL light::Picked pickLight(const Paths<T, X> & paths, const surface::Sh
         return light::Picked {};
     }
     out.chance = paths.lights.chance(out.place);
-    if (out.chance > 0.0F && paths.lights.lights[out.place].shape == light::Shape::Mesh) {
+    if (out.chance > 0.0F && inParts(paths.lights.lights[out.place])) {
         out.primitive = paths.lights.pickTriangle(out.place, paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kLightTriangle)));
         out.chance *= paths.lights.triangleChance(out.place, out.primitive);
     }
@@ -116,9 +132,9 @@ MOYA_KERNEL light::Picked pickLight(const Paths<T, X> & paths, const surface::Sh
 }
 
 /**
- * The chance that pickLight() draws the light at a place, and the triangle given of a mesh light.
- * It is drawn at a shading point of a set of linked lights with a normal, at a time within the
- * shutter.
+ * The chance that pickLight() draws the light at a place, and the triangle given of a mesh light
+ * or the brick given of a volume light. It is drawn at a shading point of a set of linked lights
+ * with a normal, at a time within the shutter.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the place, then the time
@@ -128,20 +144,24 @@ MOYA_KERNEL float pickChance(const Paths<T, X> & paths, std::uint32_t set, std::
         return paths.lights.chanceByTree(paths.surfaces, set, place, primitive, from, normal, time);
     }
     const float chance = paths.lights.chance(place);
-    return paths.lights.lights[place].shape == light::Shape::Mesh ? chance * paths.lights.triangleChance(place, primitive) : chance;
+    return inParts(paths.lights.lights[place]) ? chance * paths.lights.triangleChance(place, primitive) : chance;
 }
 
 /**
- * A point drawn on the light at a place from a point, at a time within the shutter. A mesh light's
- * point is drawn on the triangle given. A dome light is drawn by its image's compensated way under
- * multiple importance sampling, and by its other way under light samples alone, where nothing else
- * finds what compensation leaves out.
+ * A point drawn on the light at a place from a point, at a time within the shutter, by u. A mesh
+ * light's point is drawn on the triangle given, and a volume light's in the brick given, by more
+ * as well. A dome light is drawn by its image's compensated way under multiple importance
+ * sampling, and by its other way under light samples alone, where nothing else finds what
+ * compensation leaves out.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
 MOYA_KERNEL light::LightSample drawLight(const Paths<T, X> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, float time,
-    const glm::vec2 & u) {  // NOLINT(bugprone-easily-swappable-parameters)
+    const glm::vec2 & u, const glm::vec2 & more) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & chosen = paths.lights.lights[place];
+    if (chosen.shape == light::Shape::Volume) {
+        return media::glowingSample(paths, place, primitive, from, time, u, more);
+    }
     if (chosen.shape == light::Shape::Dome) {
         return light::domeSample(paths.lights, place, paths.lights.placement(place, time), from, u, paths.settings.strategy == Strategy::Mis);
     }
@@ -153,20 +173,24 @@ MOYA_KERNEL light::LightSample drawLight(const Paths<T, X> & paths, std::uint32_
     if (primitive == geometry::kNoPrimitive || !paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return light::LightSample {};
     }
-    light::faceTowards(chosen.twoSided, corners, from, normal);
-    return light::triangleSample(corners, normal, from, u);
+    light::spherical::faceTowards(chosen.twoSided, corners, from, normal);
+    return light::spherical::triangleSample(corners, normal, from, u);
 }
 
 /**
  * The density with which drawLight() draws a point of the light at a place from a point, at a
  * time within the shutter, under multiple importance sampling. A mesh light's point lies on one of
- * its triangles, which a hit names, and its density is on that triangle.
+ * its triangles, which a hit names, and its density is on that triangle. A volume light's lies in
+ * the brick given.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the triangle
 MOYA_KERNEL float lightDensity(const Paths<T, X> & paths, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & from, const glm::vec3 & met,
     float time) {  // NOLINT(bugprone-easily-swappable-parameters)
     const light::Light & light = paths.lights.lights[place];
+    if (light.shape == light::Shape::Volume) {
+        return media::glowingDensity(paths, place, primitive, from, met, time);
+    }
     if (light.shape == light::Shape::Dome) {
         return light::domeDensity(paths.lights, place, paths.lights.placement(place, time), glm::normalize(met - from), true);
     }
@@ -178,8 +202,8 @@ MOYA_KERNEL float lightDensity(const Paths<T, X> & paths, std::uint32_t place, s
     if (!paths.lights.triangleAt(paths.surfaces, place, primitive, time, corners, normal)) {
         return 0.0F;
     }
-    light::faceTowards(light.twoSided, corners, from, normal);
-    return light::triangleDensity(corners, normal, from, met);
+    light::spherical::faceTowards(light.twoSided, corners, from, normal);
+    return light::spherical::triangleDensity(corners, normal, from, met);
 }
 
 /** What the light at a place sends to a point from a point drawn on it, at a time. **/
@@ -190,6 +214,9 @@ MOYA_KERNEL spectrum::SampledSpectrum arrivingFrom(const Paths<T, X> & paths, st
     const light::Light & chosen = paths.lights.lights[place];
     if (chosen.shape == light::Shape::Mesh) {
         return light::glow(chosen, paths.table, wavelengths);
+    }
+    if (chosen.shape == light::Shape::Volume) {
+        return media::glowingEmission(paths, place, drawn.point, time, wavelengths);
     }
     const glm::mat4 toWorld = paths.lights.placement(place, time);
     if (chosen.shape == light::Shape::Dome) {
@@ -253,12 +280,14 @@ MOYA_KERNEL void attenuate(const Paths<T, X> & paths, const media::Media & media
  * ray tracked it by, which start from the path's chances. A collision's factor weighs the light by
  * its value over the shadow ray's density, which lighten() takes into shadowed. tracked take the
  * same factor over the same density, so the chance of passing is their average once shadowed have
- * an average of one again.
+ * an average of one again. ending takes the volumes' majorant over the last stretch, or none where
+ * the ray crosses no volume.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL bool passVolumes(const Paths<T, X> & paths, const PathState & state, const geometry::Ray & shadow, float to, Passed & out,
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path's chances, then the shadow's
-    spectrum::SampledSpectrum & tracked, spectrum::SampledSpectrum & shadowed, std::uint32_t & collisions) {
+    spectrum::SampledSpectrum & tracked, spectrum::SampledSpectrum & shadowed, std::uint32_t & collisions, spectrum::SampledSpectrum & ending) {
+    ending = spectrum::SampledSpectrum(0.0F);
     media::Crossings crossings = media::crossed(paths, shadow, shadow.start, to);
     if (crossings.count == 0U) {
         return true;
@@ -294,6 +323,7 @@ MOYA_KERNEL bool passVolumes(const Paths<T, X> & paths, const PathState & state,
             if (t < to) {
                 continue;
             }
+            ending = majorant;
             return weigh(passed, passed);
         }
         passed *= volume::transmittance(majorant, flight * length);
@@ -309,6 +339,25 @@ MOYA_KERNEL bool passVolumes(const Paths<T, X> & paths, const PathState & state,
 }
 
 /**
+ * Ends what passes along a shadow ray that reached its end in media. Its chance is the average of
+ * the chances a tracked path would have passed it by. Its chance of colliding there is the average
+ * of those times the majorant there: the extinction of the medium the ray ends in, and the
+ * volumes' majorant over its last stretch. It ends in the closed surface whose medium it is in.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL void endIn(const Paths<T, X> & paths, const media::Media & media, const spectrum::SampledWavelengths & wavelengths,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chances, then the majorant
+    const spectrum::SampledSpectrum & tracked, spectrum::SampledSpectrum ending, Passed & out) {
+    const std::uint32_t at = media.medium();
+    if (at != surface::kNoMaterial && !volume::empty(paths.surfaces.materials[at].medium)) {
+        ending += volume::coefficientsOf(paths.table, paths.surfaces.materials[at].medium, wavelengths).extinction();
+    }
+    out.chance = tracked.average();
+    out.colliding = (tracked * ending).average();
+    out.ended = media.mediumKey();
+}
+
+/**
  * The light that passes along a shadow ray, past everything that casts its shadows. Each surface
  * it meets lets one minus its opacity through, so a solid one lets none through.
  *
@@ -319,7 +368,8 @@ MOYA_KERNEL bool passVolumes(const Paths<T, X> & paths, const PathState & state,
  * Where any material encloses a medium, the ray carries a copy of the media of the path it
  * leaves, and passes by the surfaces passedBy() names, entering and leaving their media as a path
  * does. Each medium between lets through its transmittance at each wavelength, by Beer and
- * Lambert's law, and each volume what passVolumes() gives.
+ * Lambert's law, and each volume what passVolumes() gives. At the ray's end, the majorant is the
+ * extinction of the medium it ends in and the volumes' majorant over its last stretch.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state) {
@@ -336,6 +386,7 @@ MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light
     const float length = glm::length(shadow.direction);
     geometry::EveryHit every;
     float through = 1.0F;
+    spectrum::SampledSpectrum ending(0.0F);
     for (std::uint32_t passed = 0; passed < kMostPassed; ++passed) {
         const geometry::Hit hit = paths.traversal.nearest(shadow, every);
         const float reached = hit.found() ? hit.distance : shadow.end;
@@ -345,12 +396,12 @@ MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light
                 return Passed {};
             }
         }
-        if (paths.volumes.any() && !passVolumes(paths, state, shadow, reached, out, tracked, shadowed, collisions)) {
+        if (paths.volumes.any() && !passVolumes(paths, state, shadow, reached, out, tracked, shadowed, collisions, ending)) {
             return Passed {};
         }
         if (!hit.found()) {
             out.share = through;
-            out.chance = tracked.average();
+            endIn(paths, media, MOYA_PATH(state, wavelengths), tracked, ending, out);
             return out;
         }
         // a surface the ray passes by casts no shadow
@@ -364,6 +415,26 @@ MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light
         shadow.start = std::fmax(hit.distance * (1.0F + kShadowShort), hit.distance + std::numeric_limits<float>::min());
     }
     return Passed {};
+}
+
+/**
+ * The two numbers a light sample draws a point in a volume light by, beside its point's, from the
+ * hash collisionDraw() gives at kGlowDraws.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL glm::vec2 glowDraw(const Paths<T, X> & paths, const PathState & state) {
+    return media::collisionDraw(MOYA_PATH(state, pixel) + paths.sampler.origin, MOYA_PATH(state, sample), MOYA_PATH(state, bounces), media::kGlowDraws);
+}
+
+/**
+ * Whether the point a shadow ray reached in a light emits: anywhere in any light but a closed
+ * surface's, whose point emits where the ray ends in the surface's own medium.
+ **/
+MOYA_KERNEL inline bool inGlow(const light::Light & light, const Passed & passed) {
+    if (light.shape != light::Shape::Volume || light.geometry != geometry::kNoPrimitive) {
+        return true;
+    }
+    return passed.ended != media::kNotInside && passed.ended == media::keyOf(light.chain, light.depth);
 }
 
 /**
@@ -381,7 +452,10 @@ MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light
  * event, so expressions split it by lobe.
  *
  * Light that crosses media is multiplied by their transmittance, and the closure's density is
- * multiplied by the chance a tracked path would have passed them, as passing() gives both.
+ * multiplied by the chance a tracked path would have passed them, as passing() gives both. A
+ * tracked path finds a volume light's point by colliding there, so the closure's density is
+ * multiplied by passing()'s chance of that instead. The point of a closed surface's light emits
+ * only where the shadow ray ends in its medium.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering,
@@ -406,8 +480,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
     if (paths.settings.strategy == Strategy::Bsdf && !alone) {
         return none;
     }
-    const light::LightSample drawn =
-        drawLight(paths, place, picked.primitive, point.position, held, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)));
+    const light::LightSample drawn = drawLight(paths, place, picked.primitive, point.position, held,
+        paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)), glowDraw(paths, state));
     if (!drawn.found()) {
         return none;
     }
@@ -431,18 +505,19 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
         shadow.end = 1.0F - kShadowShort;
     }
     const Passed passed = passing(paths, chosen, shadow, state);
-    if (!(passed.share > 0.0F)) {
+    if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }
     const float density = chance * drawn.density;
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
+    const float found = chosen.shape == light::Shape::Volume ? passed.colliding : passed.chance;
     spectrum::SampledSpectrum out(0.0F);
     for (std::uint32_t i = 0; i < scattering.count && i < bsdf::kMostClosures; ++i) {
         const bsdf::Bsdf::Part & part = parts[i];
         if (part.projected.black()) {
             continue;
         }
-        const float weight = weighed ? powerHeuristic(density, part.density * passed.chance) : 1.0F;
+        const float weight = weighed ? powerHeuristic(density, part.density * found) : 1.0F;
         const spectrum::SampledSpectrum piece = part.projected * emitted * (passed.share * weight / density) * passed.through;
         out += piece;
         gathered(paths, state, scatteredBy(part.lobe, false, part.diffuse), litBy(chosen), MOYA_PATH(state, throughput) * piece);
@@ -455,7 +530,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const su
  * the medium's phase function towards where the path came from. It is weighed against the phase
  * function's sample by the power heuristic, as direct() weighs a BSDF's. A point in a medium has
  * no normal, so a light is picked as for a point that faces every way. The shadow ray starts at
- * the point itself. The light is gathered after the event in the medium.
+ * the point itself. The light is gathered after the event in the medium. A volume light's point is
+ * weighed as direct() weighs it.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, then the direction
@@ -479,7 +555,8 @@ MOYA_KERNEL spectrum::SampledSpectrum directInMedium(const Paths<T, X> & paths, 
     if (paths.settings.strategy == Strategy::Bsdf && !alone) {
         return none;
     }
-    const light::LightSample drawn = drawLight(paths, picked.place, picked.primitive, at, held, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)));
+    const light::LightSample drawn =
+        drawLight(paths, picked.place, picked.primitive, at, held, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kLightPoint)), glowDraw(paths, state));
     if (!drawn.found()) {
         return none;
     }
@@ -504,12 +581,13 @@ MOYA_KERNEL spectrum::SampledSpectrum directInMedium(const Paths<T, X> & paths, 
         shadow.end = 1.0F - kShadowShort;
     }
     const Passed passed = passing(paths, chosen, shadow, state);
-    if (!(passed.share > 0.0F)) {
+    if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }
     const float density = picked.chance * drawn.density;
     const bool weighed = paths.settings.strategy == Strategy::Mis && !alone;
-    const float weight = weighed ? powerHeuristic(density, volume::phaseDensity(coefficients, cosine) * passed.chance) : 1.0F;
+    const float found = chosen.shape == light::Shape::Volume ? passed.colliding : passed.chance;
+    const float weight = weighed ? powerHeuristic(density, volume::phaseDensity(coefficients, cosine) * found) : 1.0F;
     const spectrum::SampledSpectrum out = value * emitted * passed.through * (passed.share * weight / density);
     gathered(paths, state, scatteredInMedium(), litBy(chosen), MOYA_PATH(state, throughput) * out);
     return out;

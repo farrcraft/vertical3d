@@ -166,6 +166,8 @@ met where a ray that leaves the scene lies inside its cone. The options'
   sample is drawn by its image's compensated way under `mis`, and by its other way under
   `light`, as [Lights.md](Lights.md#dome-lights) says, so each strategy draws by the density it
   weighs by.
+- **A volume light is found by a light sample, or where a path collides in its medium**, as
+  [Emission in media](#emission-in-media) says.
 
 ## Surfaces that are cut out
 
@@ -321,6 +323,42 @@ them on the device beside the NanoVDB buffer of each grid they read.
 Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md),
 [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
 [ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
+
+## Emission in media
+
+A medium that emits adds a radiance over each unit of length, `Medium::emission`, in ACEScg,
+which a path reads as an illuminant's spectrum at its four wavelengths. A path finds it by
+colliding in the medium as it tracks through, and by a light sample of a volume light, as
+[Lights.md](Lights.md#volume-lights) says.
+
+- **A path gathers emission at every collision**, `glowAt()`, as pbrt-v4 gathers it: real or
+  null, before the collision scatters, absorbs or lets the path go on. It gathers its throughput
+  times the majorant's transmittance since the last collision times the emission, over the
+  average of its chances times that transmittance times the majorant. A homogeneous medium's
+  majorant is its extinction. Each source is gathered apart: the homogeneous medium the path is
+  in, and each volume it crosses.
+- **A medium that neither absorbs nor scatters at the tracked wavelength is never collided in**,
+  so no path gathers what it emits there.
+- **A light sample of a volume light** draws a point in it and sends a shadow ray to the point.
+  It gathers the emission there times what passes, as at a shading point or a point in a medium.
+  A closed surface's light emits at the point only where the shadow ray ends in that surface's
+  medium, as the medium a path would be in there.
+- **The two are weighed by the power heuristic.** A light sample's point has a density by solid
+  angle and by length. A path that collides at the same point does so with its own density, times
+  the majorant there and the majorant's transmittance since its last collision. That is over a
+  shadow ray's density for the volumes on the way, as for the null collisions before it. A light
+  sample's weight takes that from `passing()`'s `colliding`: the chance a tracked path would have
+  passed the media, times the majorant at the point. A collision's weight takes the chance of the
+  light, times its brick's, times the point's density, drawn from where the path last scattered,
+  of the set of linked lights there.
+- **A point in no brick of its light is found by collisions alone**, and they gather all of it. A
+  camera ray, a ray after a specular bounce and every ray under `bsdf` gather all of what they
+  collide in, and a ray under `light` gathers none of a volume light's emission.
+- **Each collision that gathers records the event of an emitting object**, after the path's
+  events so far, labelled as its light is.
+
+Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
+[ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md)
 
 ## Depth limits and Russian roulette
 

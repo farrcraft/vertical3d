@@ -20,6 +20,9 @@ namespace v3d::moya::kernel::light {
 /** A quarter turn, in radians: a cone this wide or wider, with no softness, shapes nothing. **/
 inline constexpr float kQuarterTurn = 1.57079632679489661923F;
 
+/** Half a turn, in radians. **/
+inline constexpr float kHalfTurn = 3.14159265358979323846F;
+
 /** The label of a light in no light group. **/
 inline constexpr std::uint32_t kNoLabel = 0xFFFFFFFFU;
 
@@ -27,7 +30,8 @@ inline constexpr std::uint32_t kNoLabel = 0xFFFFFFFFU;
  * The shape a light emits from. A point and a distant light have none that a ray can meet: a
  * point is a sphere light of no size, and a distant light lies beyond the scene. A mesh light
  * emits from the triangles of a geometry where a chain of instances places it. A dome light
- * surrounds the scene, and is met by every ray that leaves it.
+ * surrounds the scene, and is met by every ray that leaves it. A volume light emits from inside a
+ * volume, or from the medium inside a closed surface, where a chain of instances places either.
  **/
 enum class Shape : std::uint8_t {
     Rect,
@@ -37,7 +41,8 @@ enum class Shape : std::uint8_t {
     Point,
     Distant,
     Mesh,
-    Dome
+    Dome,
+    Volume
 };
 
 /**
@@ -73,6 +78,16 @@ enum class Shape : std::uint8_t {
  *   through its geometry's subtree, whose root is tree among the lights' nodes. The leaf of each
  *   triangle is held from leaves among the lights' triangle leaves. camera is whether camera rays
  *   see what it emits. Its transform, axis and cone are not read.
+ * - A volume light is one place of a volume, or of a closed surface whose material encloses a
+ *   medium that emits. chain and depth hold the instances that place it, as a mesh light's do.
+ *   geometry is the volume's place among the volumes, or kNoPrimitive for a closed surface. It
+ *   emits from bricks, count of them from bricks among the lights' bricks, each a box of its own
+ *   space. transform takes that space into the space of what the chain places: a volume's grid's
+ *   index space into the volume's own, or the identity for a closed surface. The light tree draws
+ *   a brick through its subtree, whose root is tree among the lights' nodes, or kNoPrimitive for a
+ *   light of one brick. Its bricks' chances by their emission are held from triangles among the
+ *   lights' triangle chances. It emits along every direction, and its colour, scale, axis and cone
+ *   are not read.
  * - image is the place among the lights' images of the image a rect light's texture or a dome
  *   light reads, or kNoPrimitive for none. A dome light's scale is its intensity times two to its
  *   exposure, a radiance, and its transform turns its image into the world. Its camera is whether
@@ -109,6 +124,7 @@ struct Light {
     std::uint32_t count { 0 };
     std::uint32_t tree { geometry::kNoPrimitive };
     std::uint32_t leaves { 0 };
+    std::uint32_t bricks { 0 };
     bool camera { false };
     std::uint32_t image { geometry::kNoPrimitive };
     std::uint32_t profile { geometry::kNoPrimitive };

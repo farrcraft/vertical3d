@@ -8,7 +8,6 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/light/Emission.h>
 #include <moya/libmoya/kernel/light/Light.h>
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cmath>

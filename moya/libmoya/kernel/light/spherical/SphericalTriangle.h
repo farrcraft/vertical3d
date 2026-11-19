@@ -6,7 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/light/LightSample.h>
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>
+#include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cmath>
@@ -15,7 +15,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::light {
+namespace v3d::moya::kernel::light::spherical {
 
 /*
  * A triangle of a mesh light is sampled from a point uniformly in the solid angle it subtends, by
@@ -188,4 +188,4 @@ MOYA_KERNEL inline float triangleDensity(const glm::vec3 (&corners)[3], const gl
     return triangleAreaDensity(corners, normal, from, point);
 }
 
-};  // namespace v3d::moya::kernel::light
+};  // namespace v3d::moya::kernel::light::spherical

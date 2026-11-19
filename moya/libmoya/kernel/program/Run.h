@@ -12,6 +12,7 @@
 #include <moya/libmoya/kernel/program/Pattern.h>
 #include <moya/libmoya/kernel/program/Program.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/spectrum/Blackbody.h>
 #include <moya/libmoya/kernel/surface/Normal.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
@@ -441,7 +442,10 @@ MOYA_KERNEL inline glm::vec3 heightToNormalOf(const Instruction & instruction, c
     return (glm::normalize(normal) * 0.5F) + 0.5F;
 }
 
-/** A vector operation: normalize, magnitude, dotproduct, crossproduct, luminance or a hue's. **/
+/**
+ * A vector operation: normalize, magnitude, dotproduct, crossproduct, luminance, blackbody or a
+ * hue's.
+ **/
 MOYA_KERNEL inline void vectorOf(const Instruction & instruction, const float * first, const float * second, float * out) {
     const std::uint32_t width = instruction.widths[0];
     switch (instruction.op) {
@@ -479,6 +483,13 @@ MOYA_KERNEL inline void vectorOf(const Instruction & instruction, const float * 
             out[1] = luminance;
             out[2] = luminance;
             out[3] = width > 3U ? first[3] : 0.0F;
+            return;
+        }
+        case Op::Blackbody: {
+            const glm::vec3 colour = spectrum::blackbody(first[0]);
+            out[0] = colour.x;
+            out[1] = colour.y;
+            out[2] = colour.z;
             return;
         }
         case Op::RgbToHsv:

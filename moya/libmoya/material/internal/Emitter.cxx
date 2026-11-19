@@ -160,6 +160,16 @@ bool normalMapShaped(const Instruction & instruction) {
     return instruction.width == 3U && widths[0] == 3U && scale && widths[2] == 3U && widths[3] == 3U && widths[4] == 3U;
 }
 
+/** Whether each of an instruction's operands is as wide as its output, or of one component. **/
+bool componentShaped(const Instruction & instruction, std::size_t operands) {
+    for (std::size_t i = 0; i < operands; ++i) {
+        if (instruction.widths[i] != instruction.width && instruction.widths[i] != 1U) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Whether an instruction's operands have the shapes its operation reads. **/
 bool shaped(const Instruction & instruction, std::size_t operands) {
     const std::uint32_t width = instruction.width;
@@ -173,12 +183,7 @@ bool shaped(const Instruction & instruction, std::size_t operands) {
         return width == 4U && first == 4U && (single || (instruction.widths[1] == 4U && instruction.widths[2] == 1U));
     }
     if (kernel::program::componentwise(instruction.op)) {
-        for (std::size_t i = 0; i < operands; ++i) {
-            if (instruction.widths[i] != width && instruction.widths[i] != 1U) {
-                return false;
-            }
-        }
-        return true;
+        return componentShaped(instruction, operands);
     }
     switch (instruction.op) {
         case Op::Normalize:
@@ -193,6 +198,8 @@ bool shaped(const Instruction & instruction, std::size_t operands) {
             return width == 3U && first == 3U && instruction.widths[1] == 3U;
         case Op::Luminance:
             return first == width && width >= 3U && instruction.widths[1] == 3U;
+        case Op::Blackbody:
+            return width == 3U && first == 1U;
         case Op::Extract:
             return instruction.widths[1] == 1U && (width == 1U || (first == kernel::program::kMatrix3 && width == 3U) || (first == kernel::program::kMatrix4 && width == 4U));
         case Op::Product:

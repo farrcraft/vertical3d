@@ -8,8 +8,8 @@
 #include <api/log/Logger.h>
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/Profile.h>
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>
 #include <moya/libmoya/light/Ies.h>
 
 #include <cmath>

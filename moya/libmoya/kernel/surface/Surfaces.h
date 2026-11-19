@@ -417,6 +417,17 @@ struct Surfaces {
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain, then the time
     MOYA_KERNEL bool chainAt(const std::uint32_t * chain, std::uint32_t depth, float time, glm::mat4 & toWorld, std::uint32_t & placed,
         std::uint32_t & material) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        return placedBy(chain, depth, time, toWorld, placed, material) && placed != kGroup && placed < geometries.size;
+    }
+
+    /**
+     * The transformation into the world at a time of a chain of instances, what its innermost
+     * instance places and the chain's material, as chainAt() gives them, whatever the chain
+     * places. False for a chain of no instances, or one the surfaces do not hold.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the chain, then the time
+    MOYA_KERNEL bool placedBy(const std::uint32_t * chain, std::uint32_t depth, float time, glm::mat4 & toWorld, std::uint32_t & placed,
+        std::uint32_t & material) const {  // NOLINT(bugprone-easily-swappable-parameters)
         if (depth == 0U || depth > geometry::kInstanceDepth) {
             return false;
         }
@@ -434,7 +445,7 @@ struct Surfaces {
                 material = instance.material;
             }
         }
-        return placed != kGroup && placed < geometries.size;
+        return true;
     }
 
     /** A triangle's corners at a time, in its geometry's own space. **/

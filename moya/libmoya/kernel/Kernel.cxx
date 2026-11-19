@@ -69,6 +69,7 @@
 #include <moya/libmoya/kernel/integrate/media/Crossing.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Crossings.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Enclosure.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/media/Glowing.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Media.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Tracking.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Opacity.h>  // IWYU pragma: keep
@@ -80,8 +81,8 @@
 #include <moya/libmoya/kernel/integrate/Trail.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/Launch.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Bounds.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/Brick.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Dome.h>  // IWYU pragma: keep
-#include <moya/libmoya/kernel/light/Elliptic.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Emission.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Image.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Light.h>  // IWYU pragma: keep
@@ -92,9 +93,10 @@
 #include <moya/libmoya/kernel/light/Picked.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Profile.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Sampling.h>  // IWYU pragma: keep
-#include <moya/libmoya/kernel/light/SphericalEllipse.h>  // IWYU pragma: keep
-#include <moya/libmoya/kernel/light/SphericalRectangle.h>  // IWYU pragma: keep
-#include <moya/libmoya/kernel/light/SphericalTriangle.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/spherical/Elliptic.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/spherical/SphericalEllipse.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/spherical/SphericalRectangle.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/light/spherical/SphericalTriangle.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/light/Tree.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Displacement.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Fields.h>  // IWYU pragma: keep
@@ -111,6 +113,7 @@
 #include <moya/libmoya/kernel/sample/Sobol.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/sample/ZSobol.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/Acescg.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/spectrum/Blackbody.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieD65.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieDaylight.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/spectrum/CieObserver.h>  // IWYU pragma: keep

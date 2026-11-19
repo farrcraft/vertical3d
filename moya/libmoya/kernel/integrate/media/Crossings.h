@@ -61,16 +61,9 @@ struct Crossings {
  * False for a chain the surfaces do not hold.
  **/
 MOYA_KERNEL inline bool placedAt(const surface::Surfaces & surfaces, const volume::Volume & placed, float time, glm::mat4 & toWorld) {
-    toWorld = glm::mat4(1.0F);
-    for (std::uint32_t level = 0; level < placed.depth && level < geometry::kInstanceDepth; ++level) {
-        const std::uint32_t id = placed.chain[level];
-        if (id >= surfaces.byId.size || surfaces.byId[id] == geometry::kNoPrimitive) {
-            return false;
-        }
-        const surface::Instance & instance = surfaces.instances[surfaces.byId[id]];
-        toWorld = toWorld * (instance.keyCount > 1U ? geometry::transformAt(&surfaces.keys[instance.keys], instance.keyCount, time) : instance.transform);
-    }
-    return placed.depth != 0U;
+    std::uint32_t prototype = 0;
+    std::uint32_t material = surface::kNoMaterial;
+    return surfaces.placedBy(placed.chain, placed.depth, time, toWorld, prototype, material);
 }
 
 /**
@@ -147,12 +140,12 @@ MOYA_KERNEL inline glm::vec3 indexDirectionOf(const nanovdb::FloatGrid & grid, c
  * walked field, its density, the same at every wavelength and every way. A coefficient below
  * zero is taken as zero.
  **/
-template <geometry::Traversal T, texture::Texels X>
+template <texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the values, then the point
-MOYA_KERNEL volume::Medium mediumFrom(const Paths<T, X> & paths, const volume::Volume & placed, const float (&values)[volume::kMostFields], const glm::vec3 & at,
-    const glm::mat4 & toWorld, float time) {
+MOYA_KERNEL volume::Medium mediumFrom(const surface::Surfaces & surfaces, const X & textures, const volume::Volume & placed,
+    const float (&values)[volume::kMostFields], const glm::vec3 & at, const glm::mat4 & toWorld, float time) {
     volume::Medium out;
-    const surface::Material * material = placed.material < paths.surfaces.materials.size ? &paths.surfaces.materials[placed.material] : nullptr;
+    const surface::Material * material = placed.material < surfaces.materials.size ? &surfaces.materials[placed.material] : nullptr;
     if (material == nullptr || material->mediumProgram.size == 0U) {
         out.lobes[0].scattering = glm::vec3(std::fmax(values[placed.walked], 0.0F));
         return out;
@@ -166,7 +159,7 @@ MOYA_KERNEL volume::Medium mediumFrom(const Paths<T, X> & paths, const volume::V
     point.shading = glm::vec3 { 0.0F };
     point.toWorld = toWorld;
     point.time = time;
-    out = program::mediumWithFields(paths.surfaces, paths.textures, point, material->mediumProgram, fields, placed.fieldCount);
+    out = program::mediumWithFields(surfaces, textures, point, material->mediumProgram, fields, placed.fieldCount);
     out.absorption = glm::max(out.absorption, glm::vec3(0.0F));
     for (volume::Lobe & lobe : out.lobes) {
         lobe.scattering = glm::max(lobe.scattering, glm::vec3(0.0F));
@@ -175,19 +168,28 @@ MOYA_KERNEL volume::Medium mediumFrom(const Paths<T, X> & paths, const volume::V
     return out;
 }
 
-/** The coefficients of the medium of a volume a ray crosses, at a parameter of the ray. **/
-template <geometry::Traversal T, texture::Texels X>
-MOYA_KERNEL volume::Coefficients coefficientsAt(const Paths<T, X> & paths, const Crossing & crossing, float t, const spectrum::SampledWavelengths & wavelengths,
-    float time) {
-    const volume::Volume & placed = paths.volumes.volumes[crossing.volume];
-    const glm::vec3 point = crossing.origin + (crossing.direction * t);
+/**
+ * The medium of a volume at a point of its own space, which a transformation takes into the world,
+ * at a time. Each field is looked up in its grid there.
+ **/
+template <texture::Texels X>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the volume, then the point
+MOYA_KERNEL volume::Medium mediumInside(const surface::Surfaces & surfaces, const X & textures, const volume::Volumes & volumes, const volume::Volume & placed,
+    const glm::vec3 & point, const glm::mat4 & toWorld, float time) {
     float values[volume::kMostFields] {};
     for (std::uint32_t field = 0; field < placed.fieldCount && field < volume::kMostFields; ++field) {
-        const nanovdb::FloatGrid & grid = paths.volumes.gridOf(placed, field);
+        const nanovdb::FloatGrid & grid = volumes.gridOf(placed, field);
         values[field] = volume::valueAt(grid, indexOf(grid, point));
     }
-    const glm::vec3 world = glm::vec3(crossing.toWorld * glm::vec4(point, 1.0F));
-    return volume::coefficientsOf(paths.table, mediumFrom(paths, placed, values, world, crossing.toWorld, time), wavelengths);
+    const glm::vec3 world = glm::vec3(toWorld * glm::vec4(point, 1.0F));
+    return mediumFrom(surfaces, textures, placed, values, world, toWorld, time);
+}
+
+/** The medium of a volume a ray crosses, at a parameter of the ray. **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL volume::Medium mediumAt(const Paths<T, X> & paths, const Crossing & crossing, float t, float time) {
+    return mediumInside(paths.surfaces, paths.textures, paths.volumes, paths.volumes.volumes[crossing.volume], crossing.origin + (crossing.direction * t),
+        crossing.toWorld, time);
 }
 
 /**
@@ -218,7 +220,8 @@ MOYA_KERNEL void enterCell(const Paths<T, X> & paths, Crossing & crossing, float
     crossing.cellEnd = end;
     const glm::vec3 point = crossing.origin + (crossing.direction * t);
     const glm::vec3 world = glm::vec3(crossing.toWorld * glm::vec4(point, 1.0F));
-    crossing.majorant = volume::coefficientsOf(paths.table, mediumFrom(paths, placed, values, world, crossing.toWorld, time), wavelengths).extinction();
+    crossing.majorant =
+        volume::coefficientsOf(paths.table, mediumFrom(paths.surfaces, paths.textures, placed, values, world, crossing.toWorld, time), wavelengths).extinction();
 }
 
 /**
@@ -250,14 +253,25 @@ MOYA_KERNEL float advanceTo(const Paths<T, X> & paths, Crossings & crossings, fl
     return next;
 }
 
-/** Joins into coefficients those of each volume a ray is inside at a parameter. **/
+/**
+ * Joins into coefficients those of each volume a ray is inside at a parameter. Where glows is
+ * given, it takes each crossing's emission there, in ACEScg, and none for a volume the ray is not
+ * inside.
+ **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void joinCrossed(const Paths<T, X> & paths, const Crossings & crossings, float t, const spectrum::SampledWavelengths & wavelengths, float time,
-    volume::Coefficients & into) {
+    volume::Coefficients & into, glm::vec3 * glows = nullptr) {
     for (std::uint32_t i = 0; i < crossings.count && i < kMostCrossed; ++i) {
         const Crossing & crossing = crossings.entries[i];
+        if (glows != nullptr) {
+            glows[i] = glm::vec3 { 0.0F };
+        }
         if (!(t < crossing.enter) && t < crossing.exit) {
-            volume::join(into, coefficientsAt(paths, crossing, t, wavelengths, time));
+            const volume::Medium medium = mediumAt(paths, crossing, t, time);
+            volume::join(into, volume::coefficientsOf(paths.table, medium, wavelengths));
+            if (glows != nullptr) {
+                glows[i] = medium.emission;
+            }
         }
     }
 }

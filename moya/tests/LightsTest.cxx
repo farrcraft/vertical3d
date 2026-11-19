@@ -31,12 +31,14 @@
 #include <moya/libmoya/light/Ies.h>
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/light/Planckian.h>
+#include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Placement.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <moya/libmoya/volume/Volumes.h>
 #include <OpenEXR/ImfEnvmap.h>
 #include <OpenEXR/ImfHeader.h>
 #include <OpenEXR/ImfRgba.h>
@@ -82,6 +84,7 @@ namespace integrate = v3d::moya::integrate;
 namespace kernel = v3d::moya::kernel;
 namespace light = v3d::moya::light;
 namespace scene = v3d::moya::scene;
+namespace volume = v3d::moya::volume;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
 constexpr float kPi = 3.14159265358979323846F;
@@ -99,19 +102,24 @@ constexpr std::uint32_t kDomeHeight = 32;
 constexpr std::uint32_t kLitColumn = 6;
 constexpr std::uint32_t kLitRow = 12;
 
-/** A scene's lights, built on a device of some threads, with the surfaces that place them. **/
+/**
+ * A scene's lights, built on a device of some threads, with the surfaces and volumes that place
+ * them. No case's volume reads a texture, so the lights are shaded with no texture access.
+ **/
 struct Built {
     colour::Config config;
     CpuDevice device;
     geometry::Prototypes prototypes;
     geometry::Surfaces surfaces;
+    volume::Volumes volumes;
     light::Lights lights;
 
     Built(const scene::Scene & scene, unsigned int threads)
         : device(threads),
           prototypes(geometry::gather(scene, {})),
           surfaces(device, prototypes, config),
-          lights(device, scene, prototypes, config, 10.0F, {}) {}
+          volumes(device, prototypes),
+          lights(device, scene, prototypes, config, light::Shading { .surfaces = surfaces.view(), .textures = {}, .volumes = volumes.view() }, 10.0F, {}) {}
 };
 
 /** A half turn about x, which turns -z onto +z. **/

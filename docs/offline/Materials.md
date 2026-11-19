@@ -239,6 +239,11 @@ The gather appends each material's instructions and values after the one before.
   out and disjointover, each as MaterialX's OSL implementations compute it. unpremult divides by
   the alpha whatever it is. It is ifgreater, ifgreatereq, ifequal, and, or and not, and it is
   constant, dot, convert, extract and combine.
+- **blackbody gives a Planckian radiator's colour at its temperature**, at a luminance of one, as
+  MaterialX's OSL implementation gives it. Planck's law is summed through the observer every
+  `kBlackbodyStep` nanometres, from a temperature held to 800 to 25000 kelvin as MaterialX holds
+  it. The colour is in ACEScg with no chromatic adaptation, as a light's colour temperature is,
+  and a component below zero is zero.
 - **The geometric nodes read the shading point.** geompropvalue reads the primvar it names, of up
   to four floats, and gives its `default` where the geometry has none. texcoord reads `st`, or
   `st1` and on for a later index, and geomcolor reads `Cs`, each giving zero where there is none.

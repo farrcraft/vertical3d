@@ -1,11 +1,13 @@
 # Lights
 
 This page is for anyone changing how moya places lights and what they emit. The
-kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. The
-host side is `light::Lights`, in `moya/libmoya/light/`, and the walk that places each light's
-shape is in `geometry::gather()`. A rect, disk, sphere or cylinder light has a shape. A point
-and a distant light have none. A mesh light makes a geometry of the scene emit, as an emitting
-material does, and a dome light surrounds the scene.
+kernel side is in `moya/libmoya/kernel/light/`, in the namespace `v3d::moya::kernel::light`. What
+samples a rectangle, an ellipse or a triangle uniformly in solid angle is in its subdirectory
+`spherical/`, in `light::spherical`. The host side is `light::Lights`, in `moya/libmoya/light/`,
+and the walk that places each light's shape is in `geometry::gather()`. A rect, disk, sphere or
+cylinder light has a shape. A point and a distant light have none. A mesh light makes a geometry
+of the scene emit, as an emitting material does, and a dome light surrounds the scene. A volume
+light emits from inside a volume, or from the medium inside a closed surface.
 [Scene.md](Scene.md) lists each light's parameters, and [Integrator.md](Integrator.md) covers the
 paths that meet them.
 
@@ -149,6 +151,43 @@ its winding faces, and `faceTowards()` turns that of a two-sided light to the si
 Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md),
 [ADR-0241](../adr/offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md)
 
+## Volume lights
+
+A volume light emits from the points of a medium, along every direction. `light::Lights` makes a
+`kernel::light::Light` of shape `Volume` for each chain of instances that places a volume or a
+closed surface that emits, after the mesh lights. What it emits at a point is the medium's
+emission there, a radiance added over each unit of length.
+
+- **A volume whose program emits makes one.** Its bricks are the leaf nodes of its walked field's
+  grid, each eight voxels a side, and each voxel of a brick is the corner of a cell one voxel a
+  side. An active tile of a lower node is a brick too, and an active tile of an upper node is cut
+  into bricks of a leaf's size. A tile of the root makes none, and its points are found by
+  collisions alone. The host runs the volume's program at the centre of each cell, with each field
+  looked up there, as the volume stands when the shutter opens. Each cell is weighed by its
+  emission's luminance there. A brick whose cells emit nothing is left out, and a volume none of
+  whose bricks emits makes no light. A volume of no volume program makes none.
+- **A closed surface whose material encloses a medium that emits makes one** for each chain of
+  instances that places it. Its one brick is its geometry's box over the shutter, a mesh's or a
+  quadric's. A point of the box that lies outside the surface emits nothing.
+- **A light's own space** is its grid's index space for a volume, which its `transform` takes
+  into the volume's own space, and its geometry's own space for a closed surface. Its chain takes
+  that into the world.
+- **It is an emitting object**, in no light group, as an emitting material's light is. It lights
+  everything and every instance casts its shadows. Camera rays see it as far as its volume's
+  visibility lets them.
+- **Its power** is four pi times its emission's luminance summed over its volume in the world as
+  the shutter opens. A volume's sums its cells' weights, each times a cell's volume in the world.
+  A closed surface's is its emission's luminance times its box's volume in the world.
+- **Its bricks are sorted by their lower corners**, z first, then y, then x, so
+  `media::brickAt()` finds the brick that holds a point by halving.
+
+`Lights::glowing` holds the light of each volume, by the volume's place among the volumes, and
+`enclosing` the lights of the closed surfaces. A path in a closed surface's medium finds its light
+by the surface's key. `bricks` holds every light's bricks, from its own `bricks`, and `cells` the
+sums of each brick's cells' chances, from the brick's own `cells`.
+
+Background: [ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md)
+
 ## Images
 
 A rect light's `texture` and a dome light's are EXR files. `light::internal::Textures` reads each
@@ -258,6 +297,9 @@ it was drawn with.
   chain places, times pi. `Lights::pickTriangle()` then draws one of its triangles in
   proportion to its area in the world when the shutter opens, and `Lights::triangleChance()`
   gives the chance. `triangles` holds each mesh light's sums of chances from its own first.
+- **A volume light** has the power [Volume lights](#volume-lights) gives. `Lights::pickTriangle()`
+  then draws one of its bricks in proportion to its emission, from its own first among
+  `triangles`, and `Lights::triangleChance()` gives the chance.
 - **A dome light** has the power [Dome lights](#dome-lights) gives.
 - **A distant light** has the luminance of the irradiance it gives a plane that faces it, times
   the area of a disk of the world's reach. The reach is the radius of a sphere about the box that
@@ -273,12 +315,17 @@ one random number. `Lights::chanceByTree()` gives the chance it draws a light wi
 triangle of a mesh light, at a shading point. `light::internal::build()` builds each tree on the
 host, in `kernel/light/Tree.h`'s nodes.
 
-- **The top tree holds every light with a place**: those with a shape, the points and the mesh
-  lights. A leaf holds one light.
+- **The top tree holds every light with a place**: those with a shape, the points, the mesh
+  lights and the volume lights. A leaf holds one light.
 - **Each geometry a mesh light makes emit has a subtree** over its triangles, in the geometry's
   own space. Every mesh light that places the geometry leads into the same subtree from its leaf.
   The walk takes the shading point and its normal into the geometry's space through the light's
   chain, at the time of the path.
+- **Each volume's light has a subtree** over its bricks, in the light's own space. A brick is
+  bounded by its box and every direction, and its power is the sum of its cells' weights. The walk
+  takes the shading point and its normal into the light's own space through its chain and its
+  `transform`, `Lights::pickBrick()`, and `Lights::brickChance()` gives the chance. A closed
+  surface's light has no subtree, and draws its one brick.
 - **Distant and dome lights are drawn beside the tree.** Each, and the tree as a whole, has the
   same chance: one over their count. A scene of no light with a place has no tree, and draws
   among the distant and dome lights alone.
@@ -293,7 +340,7 @@ host, in `kernel/light/Tree.h`'s nodes.
   mesh light's leaf in the top tree holds its triangles' normals in the world.
 - **What moves is bounded by every direction**: a light whose rotation or scale changes over the
   shutter, a mesh light whose chain turns, and a geometry whose points move. Their boxes hold
-  them at every time.
+  them at every time. A volume light is bounded by every direction wherever it stands.
 - **A walk draws each child by its importance at the shading point.** The importance is the
   node's power over the distance squared to its box's centre, times a cosine. That cosine's
   angle is the least between its cone and the direction to the point, less the angle its box
@@ -395,7 +442,16 @@ sends to the shading point from the point drawn.
 - **A rect or disk light draws nothing for a point behind its emitting face**, and its density
   there is zero.
 - **A mesh light's triangle is sampled uniformly in the solid angle it subtends**, by Arvo's
-  method as pbrt-v4 gives it, in `kernel/light/SphericalTriangle.h`. Its solid angle is Van
-  Oosterom and Strackee's. Below `kLeastTriangleAngle` its solid angle loses precision, and above
-  `kMostTriangleAngle` the method does, so it is sampled uniformly by area there. A triangle draws
-  nothing for a point behind it.
+  method as pbrt-v4 gives it, in `kernel/light/spherical/SphericalTriangle.h`. Its solid angle
+  is Van Oosterom and Strackee's. Below `kLeastTriangleAngle` its solid angle loses precision,
+  and above `kMostTriangleAngle` the method does, so it is sampled uniformly by area there. A
+  triangle draws nothing for a point behind it.
+- **A volume light's point is drawn in the brick drawn**, `media::glowingSample()`, in
+  `kernel/integrate/media/Glowing.h`. A volume's brick draws a cell by its chance, from the first
+  of the light sample's point numbers. It draws a point uniformly in the cell from the second and
+  from two of a hash, `collisionDraw()` at `kGlowDraws`. A closed surface's brick draws its point
+  uniformly in its box. The density, `media::glowingDensity()`, is the point's chance by the
+  volume of the light's own space, over the volume the world gives a unit of that space, times its
+  distance squared from the shading point. That is a density by solid angle and by length along
+  the direction, the measure in which a path that tracks through the medium finds the same point.
+  `media::glowingEmission()` gives the medium's emission there.

@@ -75,6 +75,12 @@ struct Media {
         return at == kNotInside ? surface::kNoMaterial : entries[at].material;
     }
 
+    /** The key of the closed surface whose medium the path is in, or kNotInside in the air. **/
+    MOYA_KERNEL std::uint32_t mediumKey() const {
+        const std::uint32_t at = winner(kNotInside);
+        return at == kNotInside ? kNotInside : entries[at].key;
+    }
+
     /** Whether a hit on a surface of a priority lies inside a medium of higher priority. **/
     MOYA_KERNEL bool outranked(std::int32_t priority) const {
         const std::uint32_t at = winner(kNotInside);
@@ -128,15 +134,23 @@ struct Media {
 };
 
 /**
+ * The key of a closed surface a chain of instances places, which names them by their indices in
+ * the scene, outermost first.
+ **/
+MOYA_KERNEL inline std::uint32_t keyOf(const std::uint32_t * chain, std::uint32_t depth) {
+    std::uint64_t value = sample::mix(depth);
+    for (std::uint32_t level = 0; level < depth && level < geometry::kInstanceDepth; ++level) {
+        value = sample::mix(value ^ chain[level]);
+    }
+    return static_cast<std::uint32_t>(value);
+}
+
+/**
  * The key of the surface a hit met: the chain of instances that placed it, so every primitive of
  * one placed geometry shares it.
  **/
 MOYA_KERNEL inline std::uint32_t keyOf(const geometry::Hit & hit) {
-    std::uint64_t value = sample::mix(hit.depth);
-    for (std::uint32_t level = 0; level < hit.depth && level < geometry::kInstanceDepth; ++level) {
-        value = sample::mix(value ^ hit.instances[level]);
-    }
-    return static_cast<std::uint32_t>(value);
+    return keyOf(hit.instances, hit.depth);
 }
 
 /** The priority of the surface a hit met: its innermost instance's that is not zero. **/

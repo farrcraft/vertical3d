@@ -7,7 +7,7 @@
 #include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/light/LightSample.h>
 #include <moya/libmoya/kernel/light/Sampling.h>
-#include <moya/libmoya/kernel/light/SphericalTriangle.h>
+#include <moya/libmoya/kernel/light/spherical/SphericalTriangle.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 
 #include <algorithm>
@@ -82,6 +82,7 @@ glm::vec2 parametersOf(const light::Light & shape, const glm::vec3 & local) {
         case light::Shape::Distant:
         case light::Shape::Mesh:
         case light::Shape::Dome:
+        case light::Shape::Volume:
             break;
     }
     return glm::vec2 { 0.0F };
@@ -323,7 +324,7 @@ BOOST_AUTO_TEST_CASE(moya_lightsampling_a_point_and_a_parallel_light_are_drawn_w
 /**
  * Draws points of a triangle from a point and bins them by their parameters: one less the first
  * corner's weight, and the third's share of what the other two hold. Each bin's expected share is
- * light::triangleDensity() over it, times the cosine over the distance squared, summed over the
+ * light::spherical::triangleDensity() over it, times the cosine over the distance squared, summed over the
  * bin's area, which is twice the triangle's area times the first parameter.
  **/
 Fit fittedTriangle(const glm::vec3 (&corners)[3], const glm::vec3 & from) {
@@ -339,7 +340,7 @@ Fit fittedTriangle(const glm::vec3 (&corners)[3], const glm::vec3 & from) {
             const glm::vec3 toPoint = point - from;
             const float squared = glm::dot(toPoint, toPoint);
             const float cosine = std::fabs(glm::dot(normal, toPoint)) / std::sqrt(squared);
-            const double share = static_cast<double>(light::triangleDensity(corners, normal, from, point)) * cosine / squared * twice * out * cell;
+            const double share = static_cast<double>(light::spherical::triangleDensity(corners, normal, from, point)) * cosine / squared * twice * out * cell;
             expected[((row / kSteps) * kBins) + (column / kSteps)] += share;
         }
     }
@@ -347,7 +348,7 @@ Fit fittedTriangle(const glm::vec3 (&corners)[3], const glm::vec3 & from) {
     Fit out;
     std::uint32_t seed = 7;
     for (std::size_t draw = 0; draw < kDraws; ++draw) {
-        const light::LightSample drawn = light::triangleSample(corners, normal, from, glm::vec2 { next(seed), next(seed) });
+        const light::LightSample drawn = light::spherical::triangleSample(corners, normal, from, glm::vec2 { next(seed), next(seed) });
         // the point's weights, from its place against two of the triangle's edges
         const glm::vec3 first = corners[1] - corners[0];
         const glm::vec3 second = corners[2] - corners[0];
@@ -381,15 +382,15 @@ Fit fittedTriangle(const glm::vec3 (&corners)[3], const glm::vec3 & from) {
 BOOST_AUTO_TEST_CASE(moya_lightsampling_a_mesh_lights_triangle_samples_follow_their_density_test) {
     const glm::vec3 corners[3] = { glm::vec3 { 0.0F, 0.0F, 0.0F }, glm::vec3 { 1.0F, 0.0F, 0.0F }, glm::vec3 { 0.2F, 0.9F, 0.0F } };
     const glm::vec3 near { 0.3F, 0.3F, 0.4F };
-    BOOST_TEST(light::bySolidAngle(light::triangleAngle(corners, near)));
+    BOOST_TEST(light::spherical::bySolidAngle(light::spherical::triangleAngle(corners, near)));
     holds(fittedTriangle(corners, near), "near");
     holds(fittedTriangle(corners, glm::vec3 { 2.0F, 1.5F, 0.3F }), "slanted");
     const glm::vec3 far { 0.4F, 0.3F, 40.0F };
-    BOOST_TEST(!light::bySolidAngle(light::triangleAngle(corners, far)));
+    BOOST_TEST(!light::spherical::bySolidAngle(light::spherical::triangleAngle(corners, far)));
     holds(fittedTriangle(corners, far), "far");
     const glm::vec3 normal { 0.0F, 0.0F, 1.0F };
-    BOOST_TEST(!light::triangleSample(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec2 { 0.3F, 0.6F }).found());
-    BOOST_TEST(light::triangleDensity(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec3 { 0.3F, 0.3F, 0.0F }) == 0.0F);
+    BOOST_TEST(!light::spherical::triangleSample(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec2 { 0.3F, 0.6F }).found());
+    BOOST_TEST(light::spherical::triangleDensity(corners, normal, glm::vec3 { 0.3F, 0.3F, -0.4F }, glm::vec3 { 0.3F, 0.3F, 0.0F }) == 0.0F);
 }
 
 // a rect or a disk draws nothing for a point behind it, and its density there is zero

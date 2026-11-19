@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <moya/libmoya/kernel/light/Light.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cmath>
@@ -13,10 +14,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::light {
-
-/** Half a turn, in radians. **/
-inline constexpr float kHalfTurn = 3.14159265358979323846F;
+namespace v3d::moya::kernel::light::spherical {
 
 /**
  * A rectangle as a point sees it, sampled uniformly in solid angle by Ureña, Fajardo and King's
@@ -109,4 +107,4 @@ struct SphericalRectangle {
     }
 };
 
-};  // namespace v3d::moya::kernel::light
+};  // namespace v3d::moya::kernel::light::spherical

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <moya/libmoya/kernel/light/Elliptic.h>
+#include <moya/libmoya/kernel/light/spherical/Elliptic.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 
 #include <cmath>
@@ -15,7 +15,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya::kernel::light {
+namespace v3d::moya::kernel::light::spherical {
 
 /**
  * The directions from a point to a disk: an elliptic cone, sampled uniformly in solid angle by
@@ -161,4 +161,4 @@ struct SphericalEllipse {
     }
 };
 
-};  // namespace v3d::moya::kernel::light
+};  // namespace v3d::moya::kernel::light::spherical

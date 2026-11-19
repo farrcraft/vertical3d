@@ -82,6 +82,7 @@ enum class Op : std::uint8_t {
     Dot,         /**< in1's dot product with in2 **/
     Cross,       /**< in1's cross product with in2 **/
     Luminance,   /**< in's dot product with lumacoeffs in each of its colour's components **/
+    Blackbody,   /**< the colour of a Planckian radiator at temperature, of a luminance of one **/
     RgbToHsv,
     HsvToRgb,
     Extract,     /**< in's component at index, or a matrix's row, held to those it has **/
