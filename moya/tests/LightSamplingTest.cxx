@@ -10,6 +10,7 @@
 #include <moya/libmoya/kernel/light/SphericalTriangle.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -89,7 +90,8 @@ glm::vec2 parametersOf(const light::Light & shape, const glm::vec3 & local) {
 /** The bin of a pair of parameters, or none outside the unit square. **/
 std::size_t binOf(const glm::vec2 & parameters) {
     const auto along = [](float value) {
-        const auto at = static_cast<std::size_t>(std::floor(value * static_cast<float>(kBins)));
+        // a value just below zero belongs to the first bin
+        const auto at = static_cast<std::size_t>(std::max(0.0F, std::floor(value * static_cast<float>(kBins))));
         return at < kBins ? at : kBins - 1;
     };
     // a parameter that is not a number lies outside too

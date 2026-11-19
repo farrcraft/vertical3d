@@ -148,7 +148,7 @@ std::vector<std::string> rankChannelsOf(const Cryptomatte & layer) {
     std::vector<std::string> out;
     const std::uint32_t channels = (layer.ranks + kRanksPerChannel - 1U) / kRanksPerChannel;
     for (std::uint32_t i = 0; i < channels; ++i) {
-        char number[3] {};
+        char number[11] {};
         std::snprintf(number, sizeof(number), "%02u", i);
         out.push_back(layer.name + number);
     }

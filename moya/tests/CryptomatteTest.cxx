@@ -106,7 +106,7 @@ struct Rank {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the pixel, then the rank
 Rank rankOf(const film::Snapshot & picture, const std::string & layer, std::uint32_t x, std::uint32_t y, std::uint32_t rank) {
-    char number[3] {};
+    char number[11] {};
     std::snprintf(number, sizeof(number), "%02u", rank / 2U);
     const std::uint32_t offset = picture.offset(layer + number) + (2U * (rank % 2U));
     return Rank { .id = picture.at(x, y, offset), .coverage = picture.at(x, y, offset + 1U) };

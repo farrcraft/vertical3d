@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_every_scene_renders_as_committed_test
             if (!(furthest.sigmas < kAllowed)) {
                 keep(name, picture);
             }
-            BOOST_TEST(furthest.sigmas < kAllowed, "pixel " << furthest.pixel.x << ", " << furthest.pixel.y);
+            BOOST_TEST(furthest.sigmas < kAllowed, "pixel " << furthest.pixel.x << ", " << furthest.pixel.y << " lies " << furthest.sigmas << " errors away");
             BOOST_TEST(furthest.unmeasured == 0U);
         }
     }

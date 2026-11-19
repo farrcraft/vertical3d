@@ -85,15 +85,22 @@ A colour from another space is converted into ACEScg first.
 **The table is fitted when moya is built.** `moya_rgbtable`, in `moya/tools/rgbtable/`, fits
 the coefficients at each of 64 × 64 × 64 points of each cube. A Gauss–Newton solve minimises the
 CIELAB difference between the point's colour and its reflectance's colour under ACES white. Each
-solve starts from its neighbour's solution along the largest channel's axis. The tool writes a C++
+solve starts from its neighbour's solution along the largest channel's axis. After each step,
+coefficients whose greatest exceeds 200, in the wavelength normalised to [0, 1], are scaled down
+to it. Without that bound, the coefficients of a colour near the edge of what a surface can
+reflect grow by orders of magnitude from one point to the next. Interpolating between such points
+gives a spectrum of neither colour, and where the solve stalls depends on rounding, so each
+compiler's table breaks at different colours. The tool writes a C++
 source of the coefficients, which libmoya compiles, and `colour::acescgTable()` returns a view
 of them. A device copies the table into its own memory. The source is generated, so clang-tidy
 and `/analyze` skip it.
 
 **Some ACEScg colours no reflectance has.** ACEScg's most saturated colours lie outside what a
-surface can reflect, and the fit gives the nearest it reaches. About one point in eight of the
+surface can reflect, and the fit gives the nearest it reaches. About one point in five of the
 table misses its colour by more than one CIELAB unit, and the tool prints the count when it runs.
-The colours of the sRGB gamut and moderate colours return to within 0.005 on each channel.
+The colours of the sRGB gamut and moderate colours return to within 0.005 on each channel. A
+colour with a channel at exactly one lies on the edge, and a near-white such as (0.9, 0.9, 1)
+returns a few CIELAB units from itself.
 
 ## The RGB build
 

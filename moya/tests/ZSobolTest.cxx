@@ -111,7 +111,9 @@ BOOST_AUTO_TEST_CASE(moya_zsobol_converges_faster_than_independent_samples_test)
             float randomSum = 0.0F;
             for (std::uint32_t index = 0; index < kSamples; ++index) {
                 sobolSum += inDisc(sampler.get2D({ x, y }, index, 2));
-                randomSum += inDisc({ independent(drawn++), independent(drawn++) });
+                const float across = independent(drawn++);
+                const float up = independent(drawn++);
+                randomSum += inDisc({ across, up });
             }
             const double sobolMiss = (sobolSum / kSamples) - exact;
             const double randomMiss = (randomSum / kSamples) - exact;

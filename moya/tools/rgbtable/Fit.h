@@ -9,6 +9,7 @@
 #include <moya/libmoya/kernel/spectrum/CieObserver.h>
 #include <moya/libmoya/kernel/spectrum/Colorimetry.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -27,6 +28,12 @@ using Matrix = std::array<Vector, 3>;
  * white, has a given colour. The polynomial is in the wavelength normalised to [0, 1] over the
  * observer's range. A Gauss-Newton solve minimises the CIELAB difference between the colour
  * wanted and the colour the reflectance gives.
+ *
+ * After each step, coefficients whose largest exceeds kLargest are scaled down to it. A colour
+ * with a channel at one lies on the edge of what a reflectance can reach, and the solve would
+ * otherwise grow its coefficients without bound. Points so fitted differ from their neighbours
+ * by orders of magnitude, and the table's interpolation between them gives a spectrum of neither
+ * colour. Where such a solve stalls depends on rounding, so the table differs between compilers.
  **/
 class Fit final {
  public:
@@ -34,6 +41,8 @@ class Fit final {
     static constexpr int kIterations = 15;
     /** The squared CIELAB difference the solve stops at. **/
     static constexpr double kConverged = 1e-6;
+    /** The most the greatest coefficient may grow to, in the normalised wavelength. **/
+    static constexpr double kLargest = 200.0;
 
     /**
      * Fit reads the observer's functions times ACES white, divided by the Y integral, at each
@@ -79,6 +88,12 @@ class Fit final {
             // the residual's Jacobian is minus the colour's, so the Newton step subtracts
             for (std::size_t i = 0; i < 3; ++i) {
                 (*coefficients)[i] -= step[i];
+            }
+            const double largest = std::max({ (*coefficients)[0], (*coefficients)[1], (*coefficients)[2] });
+            if (largest > kLargest) {
+                for (double & coefficient : *coefficients) {
+                    coefficient *= kLargest / largest;
+                }
             }
         }
         return squared;

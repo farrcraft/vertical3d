@@ -519,7 +519,9 @@ so a case over every pixel allows more than one over a region's mean.
   channel added to the beauty once more matches a render with that group's lights twice as
   bright, within the errors.
 - **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
-  commit and a PNG to look at. Copy the EXR over the reference to change it on purpose.
+  commit and a PNG to look at. Copy the EXR over the reference to change it on purpose. When
+  the Linux `whole` job fails, it uploads every suite's `data_out/` as the artifact
+  `data-out-<compiler>`.
 - **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone
   does not rebuild the suite, so copy it into the build's `data/` while working on a scene.
 

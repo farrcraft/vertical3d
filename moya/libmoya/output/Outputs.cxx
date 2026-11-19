@@ -130,7 +130,7 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
             }
             seen.push_back(channel);
             const Source source = sourceNamed(stringOf(scene, channel, "sourceType"));
-            const std::string & sourceName = stringOf(scene, channel, "sourceName");
+            const std::string sourceName = stringOf(scene, channel, "sourceName");
             channels.push_back(Channel { .film = { .name = scene.name(channel),
                                              .components = static_cast<std::uint32_t>(scene.value(channel, "components").integerArray().front()),
                                              .combine = combineOf(stringOf(scene, channel, "filter"), source, sourceName) },

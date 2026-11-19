@@ -44,7 +44,17 @@ if(V3D_BUILD_APPS OR V3D_BUILD_MOYA)
 	find_package(OpenSubdiv CONFIG REQUIRED)
 	find_package(MaterialX CONFIG REQUIRED)
 	find_package(OpenImageDenoise CONFIG REQUIRED)
-	find_package(OpenVDB CONFIG REQUIRED COMPONENTS openvdb nanovdb)
+	# OpenVDB installs a find module and no package configuration, so it resolves in module
+	# mode. vcpkg's wrapper puts the module on the module path itself. Any other install keeps it
+	# under lib/cmake/OpenVDB, beside the find modules it calls in turn, and that directory is on
+	# the module path for this one search only.
+	find_path(v3d_openvdb_modules FindOpenVDB.cmake PATH_SUFFIXES lib/cmake/OpenVDB share/openvdb)
+	set(v3d_module_path ${CMAKE_MODULE_PATH})
+	if(v3d_openvdb_modules)
+		list(PREPEND CMAKE_MODULE_PATH ${v3d_openvdb_modules})
+	endif()
+	find_package(OpenVDB REQUIRED COMPONENTS openvdb nanovdb)
+	set(CMAKE_MODULE_PATH ${v3d_module_path})
 endif()
 
 # Resolve the named packages.
