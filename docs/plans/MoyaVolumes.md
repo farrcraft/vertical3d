@@ -166,7 +166,7 @@ listed as a number with no record, as the ADR index requires.
 | [13](#step-13--grids) | Grids | `moya/libmoya/volume`, `kernel/volume` | 0244, 0245 | done |
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | done |
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | done |
-| [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | open |
+| [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | done |
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | open |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233 | open |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | open |
@@ -737,6 +737,17 @@ it and `Interior.h`, the media an OpenPBR surface gives, move to `kernel/volume/
 **Tests:** a straight curve's tangent lies along it at every hit. The offset is zero on the
 centre line and runs to the edges. An OpenPBR surface on a curve gives the same picture as
 before.
+
+**Done.** `geometry::primitive::curveDirection()` gives the direction a segment's centre line runs
+at the hit's v, and `surface::Surfaces::at()` holds it on the shading point as `fibre`, turned
+into the world. A cubic segment whose derivative vanishes where control points meet runs along
+its chord. `across` is twice the hit's u less one. A curve's frame keeps its shading normal and
+takes the fibre less its part along that normal as its tangent, by `Surfaces::alongside()`. A
+`tangent` primvar still overrides it where `tangentFrame()` reads one. No reference render holds
+a curve, so the picture before is checked where it would change. An isotropic OpenPBR surface at
+a curve's point gives the same values in the new frame as in the old, which turns about the same
+normal. The new frame changes a curve's noise and, with an anisotropic specular, the direction
+the highlight stretches, which now follows the fibre. The cases are in `CurvesTest.cxx`.
 
 ### Step 17 — The hair BSDF
 

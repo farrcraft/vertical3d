@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Isa.h>
 #include <moya/libmoya/device/CpuLibrary.h>
@@ -10,11 +12,21 @@
 #include <moya/libmoya/geometry/Curves.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Segments.h>
+#include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/kernel/bsdf/Bsdf.h>
+#include <moya/libmoya/kernel/bsdf/Layering.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/primitive/Curves.h>
 #include <moya/libmoya/kernel/geometry/primitive/ShapeHit.h>
 #include <moya/libmoya/kernel/geometry/primitive/Shapes.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/spectrum/Spectrum.h>
+#include <moya/libmoya/kernel/spectrum/Wavelengths.h>
+#include <moya/libmoya/kernel/surface/Frame.h>
+#include <moya/libmoya/kernel/surface/OpenPbr.h>
+#include <moya/libmoya/kernel/surface/ShadingPoint.h>
+#include <moya/libmoya/kernel/surface/Surfaces.h>
+#include <moya/libmoya/material/Albedos.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -37,8 +49,11 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
+#include <glm/trigonometric.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -634,6 +649,150 @@ BOOST_AUTO_TEST_CASE(moya_curves_the_hit_view_gives_a_curves_face_and_normal_tes
                 BOOST_TEST(std::fabs(rising - (0.8F / 1.5F)) < 1.0e-3F, rising);
                 BOOST_TEST(facing < -0.8F);
             }
+        }
+    }
+}
+
+// a curve's direction is its centre line's derivative: a linear segment's chord, and a cubic
+// one's slope, which a difference along it agrees with
+BOOST_AUTO_TEST_CASE(moya_curves_a_curves_direction_is_its_centre_lines_derivative_test) {
+    // room for a cubic's four points, of which a linear segment reads the first two
+    const glm::vec4 line[4] = { { -1.0F, 0.0F, 0.0F, 0.1F }, { 1.0F, 0.5F, 0.2F, 0.3F }, {}, {} };
+    for (const Form form : { Form::RoundLinearCurves, Form::FlatLinearCurves }) {
+        const glm::vec3 direction = primitive::curveDirection(form, line, 0.3F);
+        BOOST_TEST(glm::length(direction - glm::vec3 { 2.0F, 0.5F, 0.2F }) < 1.0e-6F);
+    }
+    const std::array<glm::vec4, 4> cubic = arch();
+    for (const float along : { 0.0F, 0.25F, 0.6F, 1.0F }) {
+        const float step = 1.0e-3F;
+        const float low = std::fmax(0.0F, along - step);
+        const float high = std::fmin(1.0F, along + step);
+        const glm::vec3 difference = glm::vec3(centreAt(cubic.data(), 4, high) - centreAt(cubic.data(), 4, low)) / (high - low);
+        for (const Form form : { Form::RoundCubicCurves, Form::FlatCubicCurves }) {
+            const glm::vec3 direction = primitive::curveDirection(form, cubic.data(), along);
+            BOOST_TEST(glm::length(direction - difference) < 2.0e-2F * glm::length(difference), along);
+        }
+    }
+    BOOST_TEST(glm::length(primitive::curveDirection(Form::Triangles, line, 0.5F)) == 0.0F);
+}
+
+/**
+ * The shading points of rays straight up through a straight curve of a type and profile, half a
+ * unit in radius and five units up. It runs from -2 to 2 along a line turned 30 degrees about z,
+ * and each ray passes a place along it, at an offset to its side.
+ **/
+std::vector<kernel::surface::ShadingPoint> acrossStraight(const std::string & type, const std::string & profile, const std::vector<glm::vec2> & places) {
+    scene::Scene scene(scene::kinds());
+    const std::vector<glm::vec3> points = type == "linear"
+        ? std::vector<glm::vec3> { { -2.0F, 0.0F, 0.0F }, { 2.0F, 0.0F, 0.0F } }
+        : std::vector<glm::vec3> { { -2.0F, 0.0F, 0.0F }, { -0.5F, 0.0F, 0.0F }, { 0.5F, 0.0F, 0.0F }, { 2.0F, 0.0F, 0.0F } };
+    const scene::Handle hair = curves(scene, "hair", points, { static_cast<std::int32_t>(points.size()) }, type, "bezier", profile);
+    scene.set(hair, "constantWidth", scene::Value::number(1.0F));
+    const glm::mat4 placed = glm::rotate(moved(0.0F, 0.0F, 5.0F), glm::radians(30.0F), glm::vec3 { 0.0F, 0.0F, 1.0F });
+    instanced(scene, "hair", hair, {}, placed);
+    scene.commit();
+    scene.apply();
+    const geometry::Prototypes prototypes = geometry::gather(scene, {});
+    const glm::vec3 axis = glm::mat3(placed) * glm::vec3 { 1.0F, 0.0F, 0.0F };
+    const glm::vec3 side = glm::mat3(placed) * glm::vec3 { 0.0F, 1.0F, 0.0F };
+    std::vector<kernel::geometry::Ray> rays;
+    rays.reserve(places.size());
+    for (const glm::vec2 & place : places) {
+        kernel::geometry::Ray ray;
+        ray.origin = (axis * place.x) + (side * place.y);
+        ray.direction = glm::vec3 { 0.0F, 0.0F, 1.0F };
+        rays.push_back(ray);
+    }
+    CpuDevice device;
+    const view::Traced traced = view::trace(device, prototypes, rays, view::Tracer::Hierarchy);
+    const geometry::Surfaces surfaces(device, prototypes, v3d::moya::colour::Config());
+    const kernel::surface::Surfaces held = surfaces.view();
+    std::vector<kernel::surface::ShadingPoint> out;
+    out.reserve(rays.size());
+    for (std::size_t i = 0; i < rays.size(); ++i) {
+        out.push_back(held.at(traced.nearest[i], rays[i]));
+    }
+    return out;
+}
+
+/** The axis acrossStraight()'s curve runs along. **/
+glm::vec3 straightAxis() {
+    return glm::mat3(glm::rotate(glm::mat4(1.0F), glm::radians(30.0F), glm::vec3 { 0.0F, 0.0F, 1.0F })) * glm::vec3 { 1.0F, 0.0F, 0.0F };
+}
+
+// a straight curve's shading point holds the direction it runs at every hit, turned into the
+// world with its instance, and its frame's tangent lies along it. The frame stays at right angles
+// about the shading normal. Linear and cubic, round and flat
+BOOST_AUTO_TEST_CASE(moya_curves_a_straight_curves_tangent_lies_along_it_test) {
+    const glm::vec3 axis = straightAxis();
+    const std::vector<glm::vec2> places { { -1.5F, 0.0F }, { -0.4F, 0.3F }, { 0.7F, -0.2F }, { 1.6F, 0.45F } };
+    for (const std::string type : { "linear", "cubic" }) {
+        for (const std::string profile : { "round", "flat" }) {
+            BOOST_TEST_CONTEXT(type << " " << profile) {
+                for (const kernel::surface::ShadingPoint & point : acrossStraight(type, profile, places)) {
+                    BOOST_TEST_REQUIRE(point.found());
+                    BOOST_TEST(glm::dot(point.fibre, axis) > 1.0F - 1.0e-5F);
+                    BOOST_TEST(glm::dot(point.frame.tangent, axis) > 1.0F - 1.0e-4F);
+                    BOOST_TEST(std::fabs(glm::dot(point.frame.tangent, point.frame.normal)) < 1.0e-5F);
+                    BOOST_TEST(glm::length(glm::cross(point.frame.tangent, point.frame.bitangent) - point.frame.normal) < 1.0e-5F);
+                    BOOST_TEST(glm::length(point.frame.normal - point.shading) < 1.0e-6F);
+                }
+            }
+        }
+    }
+}
+
+// a hit's place across a curve is zero on its centre line and runs to one at its edges. It is the
+// ray's distance from the centre line over the radius, of one sign on each side
+BOOST_AUTO_TEST_CASE(moya_curves_a_hits_place_across_runs_from_edge_to_edge_test) {
+    const std::vector<float> offsets { -0.45F, -0.25F, 0.0F, 0.1F, 0.25F, 0.45F };
+    std::vector<glm::vec2> places;
+    places.reserve(offsets.size());
+    for (const float offset : offsets) {
+        places.emplace_back(0.3F, offset);
+    }
+    for (const std::string type : { "linear", "cubic" }) {
+        for (const std::string profile : { "round", "flat" }) {
+            BOOST_TEST_CONTEXT(type << " " << profile) {
+                const std::vector<kernel::surface::ShadingPoint> points = acrossStraight(type, profile, places);
+                const float sign = points.back().across > 0.0F ? 1.0F : -1.0F;
+                for (std::size_t i = 0; i < points.size(); ++i) {
+                    BOOST_TEST_REQUIRE(points[i].found());
+                    BOOST_TEST(std::fabs(points[i].across - (sign * offsets[i] / 0.5F)) < 2.0e-3F, offsets[i] << ": " << points[i].across);
+                }
+            }
+        }
+    }
+}
+
+// an isotropic OpenPBR surface at a curve's point scatters the same in the curve's frame as in
+// the frame it had before, about the same shading normal. Turning the frame to the fibre then
+// changes no picture but its noise
+BOOST_AUTO_TEST_CASE(moya_curves_an_isotropic_surface_on_a_curve_scatters_as_before_test) {
+    const kernel::surface::ShadingPoint point = acrossStraight("cubic", "round", { { 0.4F, 0.2F } }).front();
+    BOOST_TEST_REQUIRE(point.found());
+    const auto built = [&](const kernel::surface::Frame & frame, const glm::vec3 & outgoing) {
+        kernel::bsdf::Bsdf out;
+        out.frame = frame;
+        out.coatFrame = frame;
+        out.geometric = point.geometric;
+        out.albedos = v3d::moya::material::ggxAlbedos();
+        kernel::surface::OpenPbr surface;
+        surface.specularRoughness = 0.4F;
+        surface.coatWeight = 0.5F;
+        kernel::bsdf::Layering::add(out, surface, colour::acescgTable(), kernel::spectrum::SampledWavelengths::visible(0.5F), glm::dot(outgoing, point.shading));
+        return out;
+    };
+    const glm::vec3 outgoing = glm::normalize(point.shading + (point.frame.tangent * 0.6F) + (point.frame.bitangent * 0.2F));
+    const kernel::bsdf::Bsdf now = built(point.frame, outgoing);
+    const kernel::bsdf::Bsdf then = built(kernel::surface::Frame::around(point.shading), outgoing);
+    std::uint32_t seed = 1601;
+    for (int i = 0; i < 64; ++i) {
+        const glm::vec3 incoming = glm::normalize(point.shading + glm::vec3 { next(seed) - 0.5F, next(seed) - 0.5F, next(seed) - 0.5F });
+        const kernel::spectrum::SampledSpectrum one = now.projected(outgoing, incoming);
+        const kernel::spectrum::SampledSpectrum other = then.projected(outgoing, incoming);
+        for (int w = 0; w < kernel::spectrum::kSamples; ++w) {
+            BOOST_TEST(std::fabs(one[w] - other[w]) <= 1.0e-4F * std::fmax(1.0F, std::fabs(other[w])));
         }
     }
 }

@@ -500,4 +500,28 @@ MOYA_KERNEL inline glm::vec3 curveNormal(Form form, const glm::vec4 * controls, 
     return -direction;
 }
 
+/**
+ * The direction a segment's centre line runs at a position along it, in the segment's own space
+ * and not of unit length: its derivative there. A cubic segment whose derivative vanishes, where
+ * control points meet, runs along its chord. Any other form has none.
+ **/
+MOYA_KERNEL inline glm::vec3 curveDirection(Form form, const glm::vec4 * controls, float along) {
+    switch (form) {
+        case Form::RoundLinearCurves:
+        case Form::FlatLinearCurves:
+            return glm::vec3(controls[1] - controls[0]);
+        case Form::RoundCubicCurves:
+        case Form::FlatCubicCurves: {
+            const glm::vec3 slope { bezierSlope(controls, along) };
+            return glm::dot(slope, slope) > 0.0F ? slope : glm::vec3(controls[3] - controls[0]);
+        }
+        case Form::Triangles:
+        case Form::RoundPoints:
+        case Form::FlatPoints:
+        case Form::Quadric:
+            break;
+    }
+    return glm::vec3 { 0.0F };
+}
+
 };  // namespace v3d::moya::kernel::geometry::primitive

@@ -43,8 +43,23 @@ struct ShadingPoint {
      **/
     glm::vec3 shading { 0.0F, 0.0F, 1.0F };
 
-    /** The frame around the shading normal. **/
+    /**
+     * The frame around the shading normal. A curve's tangent runs along the curve, as far as the
+     * shading normal leaves it room.
+     **/
     Frame frame;
+
+    /**
+     * The direction a curve runs at the point, in world space and of unit length, and zero on any
+     * other surface.
+     **/
+    glm::vec3 fibre { 0.0F };
+
+    /**
+     * Where the point lies across a curve's width, from -1 on its right to 1 on its left as the
+     * ray sees it, with zero on the centre line. Zero on any other surface.
+     **/
+    float across { 0.0F };
 
     /**
      * Where the path's cone met the surface, in the plane of the shading normal. A point no path

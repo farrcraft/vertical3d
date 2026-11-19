@@ -161,7 +161,9 @@ struct Surfaces {
     /**
      * A hit as a shading point, as its surface stood at the hit's time held to the shutter. A hit
      * that found nothing, or names an instance or a geometry the surfaces do not hold, gives a
-     * point that found nothing.
+     * point that found nothing. A curve's point holds the direction its centre line runs at the
+     * hit, from the segment's derivative there, and its frame's tangent follows it. It holds too
+     * where the hit lies across the width, as twice the hit's u less one.
      **/
     MOYA_KERNEL ShadingPoint at(const geometry::Hit & hit, const geometry::Ray & ray) const {
         ShadingPoint out;
@@ -183,6 +185,7 @@ struct Surfaces {
         glm::vec3 leave = point;
         glm::vec3 geometric { 0.0F, 0.0F, 1.0F };
         glm::vec3 shading { 0.0F };
+        glm::vec3 fibre { 0.0F };
         out.uv = hit.uv;
         out.face = hit.primitive;
         switch (shape.form) {
@@ -210,6 +213,8 @@ struct Surfaces {
                     segment[control] = geometry::sampleAt(shape.controls, controls.data, times.data, (hit.primitive * count) + control, time);
                 }
                 geometric = geometry::primitive::curveNormal(shape.form, segment, point, hit.uv.y, local.direction);
+                fibre = geometry::primitive::curveDirection(shape.form, segment, hit.uv.y);
+                out.across = (2.0F * hit.uv.x) - 1.0F;
                 out.face = faces[shape.faces + hit.primitive];
                 break;
             }
@@ -226,11 +231,33 @@ struct Surfaces {
             out.shading = -out.shading;
         }
         out.frame = Frame::around(out.shading);
+        const glm::vec3 running = glm::mat3(toWorld) * fibre;
+        if (glm::dot(running, running) > 0.0F) {
+            out.fibre = glm::normalize(running);
+            out.frame = alongside(out.shading, out.fibre, out.frame);
+        }
         out.front = glm::dot(ray.direction, out.geometric) < 0.0F;
         out.geometry = placed;
         out.primitive = hit.primitive;
         out.toWorld = toWorld;
         out.time = time;
+        return out;
+    }
+
+    /**
+     * The frame around a normal whose tangent lies along a direction, as far as the normal leaves
+     * it room: the direction less its part along the normal. The bitangent is the normal's cross
+     * product with the tangent. A direction that lies along the normal keeps the frame given.
+     **/
+    MOYA_KERNEL static Frame alongside(const glm::vec3 & normal, const glm::vec3 & direction, const Frame & given) {
+        const glm::vec3 flat = direction - (normal * glm::dot(normal, direction));
+        if (!(glm::dot(flat, flat) > kLeastTangent)) {
+            return given;
+        }
+        Frame out;
+        out.normal = normal;
+        out.tangent = glm::normalize(flat);
+        out.bitangent = glm::cross(normal, out.tangent);
         return out;
     }
 

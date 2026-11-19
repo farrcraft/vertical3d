@@ -146,6 +146,15 @@ Bézier when the scene is gathered, so there is one cubic test and one linear on
   segment's start to 1 at its end.
 - **`curveNormal()` gives the geometric normal**: from the centre line at the hit's v on a round
   curve, and back along the ray on a flat one.
+- **`curveDirection()` gives the direction the centre line runs** at the hit's v: a linear
+  segment's chord, and a cubic segment's derivative. Where a cubic's derivative vanishes, because
+  control points meet, it runs along the segment's chord.
+- **A curve's shading point holds that direction as `fibre`**, in world space and of unit length,
+  and its place across the width as `across`, twice the hit's u less one. `across` runs from -1
+  on the right to 1 on the left as the ray sees the curve, with zero on the centre line. The
+  frame's tangent is the fibre less its part along the shading normal, so a model that reads a
+  fibre's direction finds it there. The shading normal is unchanged. A surface that is not a
+  curve has a fibre and an `across` of zero.
 
 A segment's control points move linearly between their samples, as a point's centre and width
 do. `geometry::gather()` samples a set of curves' points and widths together at every time either
