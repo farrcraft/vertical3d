@@ -23,13 +23,13 @@ count of bounces in all and of each kind, a scattering event in a medium being a
 Its subsurfaceBounces count the events of its walks below surfaces. The count of bounces in all
 holds them too, and no other depth limit counts them.
 Its chances are the densities with which it would have been tracked through media at each of its
-wavelengths, as [tracking through a medium](#tracking-through-a-medium) says. Its lightChances
-are those with which a shadow ray would have tracked it through volumes, as
-[tracking through volumes](#tracking-through-volumes) says. Last, it holds the
+wavelengths, as [tracking through a medium](Volumes.md#tracking-through-a-medium) says. Its
+lightChances are those with which a shadow ray would have tracked it through volumes, as
+[tracking through volumes](Volumes.md#tracking-through-volumes) says. Last, it holds the
 last BSDF or phase function sample's density and whether it was specular, and the point it was
 drawn at with its shading normal and its set of linked lights. Its coverage is one once the
 camera ray has met something, as [Coverage](#coverage) says. Its media are the closed surfaces
-it is inside, as [nested media](#nested-media) says.
+it is inside, as [nested media](Volumes.md#nested-media) says.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -69,7 +69,8 @@ pixel in index order.
 - **Intersect** traces the ray through the traversal the launch was built with, passing through
   what is cut out as [Surfaces that are cut out](#surfaces-that-are-cut-out) says. A path in a
   medium is then tracked through it up to the hit, as
-  [tracking through a medium](#tracking-through-a-medium) says, and may scatter or end before it.
+  [tracking through a medium](Volumes.md#tracking-through-a-medium) says, and may scatter or end
+  before it.
 - **Shade** turns the hit into a shading point, with the footprint the path's cone makes there.
   A path whose ray leaves the scene gathers its share of the dome lights and the distant lights
   it meets, as [Lights](#lights) says, times its throughput. A path whose ray meets a light's
@@ -172,7 +173,7 @@ met where a ray that leaves the scene lies inside its cone. The options'
   `light`, as [Lights.md](Lights.md#dome-lights) says, so each strategy draws by the density it
   weighs by.
 - **A volume light is found by a light sample, or where a path collides in its medium**, as
-  [Emission in media](#emission-in-media) says.
+  [Emission in media](Volumes.md#emission-in-media) says.
 
 ## Surfaces that are cut out
 
@@ -198,183 +199,19 @@ passes any number of them in one traversal, with no limit on how many.
 
 Background: [ADR-0227](../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md)
 
-## Nested media
+## Media
 
-A path carries the closed surfaces it is inside, in `kernel/integrate/media/Media.h`, so a
-dielectric bends light by the media on its two sides and overlapping surfaces give one medium.
-
-- **A material encloses a medium** when a path may cross its surface into it. A layered material
-  does when it is not thin-walled and its transmission's or its subsurface's weight may be more
-  than zero. Any other
-  does when it names a dielectric closure that is not thin. A material with a volume terminal and
-  no surface terminal is a boundary, which encloses its volume and has no BSDF.
-- **A path enters a surface it crosses from the side its normal faces, and leaves one it crosses
-  back.** It records each surface by the chain of instances that placed it, its priority, and the
-  index of refraction of the medium inside. A layered material's index is its specular index,
-  scaled by its specular weight. A boundary's is one. It records too whether it walks the
-  surface's subsurface, which it does when it entered by the subsurface's closure. A path that
-  enters a surface any other way walks it when its material's subsurface weight may be more than
-  zero and its transmission's may not.
-- **The medium a path is in** is that of the surface of highest priority it is inside, and of
-  those the one it entered last. An instance's `priority` is 0 unless a client sets it. A hit
-  takes the priority of the innermost instance in its chain whose priority is not zero. A scene
-  that sets no priority behaves as a plain stack.
-- **A path passes by a surface of lower priority than its medium**, and a boundary, as no bounce.
-  It enters or leaves the surface's medium as it passes, and goes on from just past the hit. A
-  path passes by at most 256 surfaces.
-- **A dielectric's index is relative to the medium beyond it**: the medium the path is in, leaving
-  out the surface it met. A ratio below one turns the dielectric's frame over, so a glass of index
-  1.5 in water of 1.33 bends by their ratio from either side.
-- **A path holds at most eight surfaces.** One that enters a ninth leaves the one of lowest
-  priority first, and of those the one it entered first.
-- **A camera ray finds the surfaces it starts inside** when any material encloses a medium. It is
-  traced on through everything it meets, and it is inside each surface whose first face it meets
-  is a back face.
-- **A shadow ray carries a copy of the media of the path it leaves**, when any material encloses
-  a medium. One that crosses the surface it leaves first enters or leaves the medium that surface
-  encloses, as a path that scatters across it does. It passes by the surfaces a path would pass
-  by, entering and leaving their media as a path does, and they cast no shadow. Any other surface
-  it meets casts its shadow as it would outside a medium.
-
-Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md)
-
-## Tracking through a medium
-
-The medium a path is in is its winning surface's material's, in `kernel/volume/`. A path in no
-medium, or in one of no coefficients, carries its light unchanged from one surface to the next.
-
-- **A medium's coefficients** are absorption and up to two lobes of scattering, each with an
-  anisotropy, in ACEScg. A path reads each as the unbounded spectrum of its colour at its four
-  wavelengths, `volume::coefficientsOf()`. The extinction is the absorption and every lobe's
-  scattering.
-- **A homogeneous medium is tracked by its own extinction.** The distance to a collision is drawn
-  from the exponential distribution of the extinction at the tracked wavelength. A collision
-  scatters with the chance of that wavelength's scattering over its extinction, and is otherwise
-  absorbed, which ends the path. A path whose collision lies past the surface it meets reaches the
-  surface.
-- **The tracked wavelength** is a spectral path's first. Its four are drawn as one evenly spaced
-  set, so any of them is equally likely to come first. An RGB path is tracked by a channel drawn
-  from a hash of its pixel and sample.
-- **Every wavelength is weighed by spectral multiple importance sampling**, `rescale()`. An
-  event's value at each wavelength is also the density with which a path tracked there would have
-  made it. That is the transmittance for a path that reaches the surface, and the scattering
-  times the transmittance for one that scatters. The path's throughput is its value
-  over the average of those densities over the whole path, so a medium whose coefficients differ
-  by wavelength stays unbiased at each. A path that crosses no medium keeps chances of one, and
-  its throughput is what it would be without them.
-- **A scattering event takes a light sample**, `directInMedium()`, as a shading point does, with
-  the phase function in place of the BSDF and no normal. Its light is multiplied by the
-  transmittance of the media its shadow ray crosses, by Beer and Lambert's law. It is weighed
-  against the phase function's sample by the power heuristic, where the phase function's density
-  is multiplied by the chance a tracked path would have passed those media. A light a path meets
-  after a phase function's sample is weighed the same way, since a path's density grows by that
-  chance along every ray. The point is lit by the lights that light an instance of no links.
-- **The phase function** is each lobe's Henyey and Greenstein's, weighed at each wavelength by its
-  share of the scattering there, `volume::phaseValue()`. A direction is drawn from one lobe, picked
-  by its share of the scattering over all four wavelengths together, so its density is the same
-  whichever wavelength is tracked. The throughput is multiplied by the phase function over that
-  density.
-- **The ray that leaves a scattering event** starts at the point itself, its cone spread as a lobe
-  of roughness one spreads it. The event gives a denoiser nothing past it.
-
-Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md)
-
-## Tracking through volumes
-
-A volume is a medium read from grids, which an instance places and no surface bounds. It stays out
-of a path's media and adds itself to whatever medium the path is in. The gather turns each chain
-of instances that places a volume into a `kernel::volume::Volume`, and `volume::Volumes` holds
-them on the device beside the NanoVDB buffer of each grid they read.
-
-- **A volume's medium** is its material's volume program, run with the values of its fields at
-  the point, `program::mediumWithFields()`. A field is read as the primvar its name gives, so
-  `geompropvalue` reads it. A volume of no material, or whose material has no volume program,
-  scatters its field named `density`, the same at every wavelength and every way. A coefficient
-  below zero is taken as zero. The innermost instance that names a material gives it.
-- **The fields a volume reads** are its density and each field its program reads, in the order the
-  volume names them, at most `kernel::volume::kMostFields`. Each is read by trilinear
-  interpolation between the eight voxels around the point, `volume::valueAt()`. A volume that
-  would read more is reported and reads the first of them. One that would read none, such as a
-  volume of no program and no density, is reported and holds nothing.
-- **A volume's bounds** are those of the grids it reads, one voxel past their active voxels, in
-  its own space. A ray is clipped to them as its volume's instances stand at the ray's time, so a
-  volume moves with its instances over the shutter. A volume whose grids hold no active voxel is
-  left out. A ray sees a volume only when every instance in its chain is visible to rays of its
-  kind.
-- **A majorant bounds the extinction**, cell by cell of the volume's walked field: its density, or
-  its first field when it has none. A cell is the node or tile of the grid's tree around a voxel,
-  no smaller than a leaf, `volume::cellAt()`. A point reads voxels up to one past its floor, so a
-  cell's most is taken over the cell and the seven cells of its side beyond it. The majorant is
-  the program's extinction with the walked field at the cell's most and every other field at its
-  grid's most. A program that reads anything but its fields and constants, such as a position or
-  an image, cannot be bounded that way. Its volume takes that majorant over the whole volume, with
-  the walked field at its grid's most too. A node's most counts its active values alone.
-- **A path crossing volumes is tracked by null scattering**, `trackCrossed()`. The majorant is the
-  homogeneous medium's extinction and the sum of each crossed volume's over the cell the ray is
-  in, and a distance is drawn again wherever it changes. At a collision the coefficients of every
-  medium there are joined, each lobe joining one of the same anisotropy, an empty one, or the one
-  of nearest anisotropy, `volume::join()`. The collision scatters, is absorbed or is null with the
-  chance of the tracked wavelength's scattering, absorption or what is left of the majorant, over
-  the majorant. A null collision weighs each wavelength by what is left of the majorant times the
-  majorant's transmittance, by `rescale()`, and the path goes on. A stretch of ray that crosses
-  more than `kMostCrossed` volumes is tracked through the first of them, and a path that collides
-  more than `kMostCollisions` times on one stretch ends.
-- **A shadow ray takes a volume's transmittance by ratio tracking**, `passVolumes()`. It draws
-  collisions against the volumes' majorant alone, since it takes the homogeneous medium's by Beer
-  and Lambert's law. At each, every wavelength lets through what is left of the majorant there.
-  Its numbers come from the bounce's collision draws, counted on from `kShadowCollisions`.
-- **Multiple importance sampling counts the null collisions as part of a path.** A shadow ray
-  would have drawn a null collision with the density of the volumes' majorant, and a tracked path
-  with that of what is left of the whole majorant. The path's density is divided by the growth of
-  its lightChances, which grow by the shadow ray's densities, and a light sample's chance is
-  divided by the same. Both weigh the same path alike, so the weights sum to one. A path that
-  crosses no volume keeps its density as before.
-
-Background: [ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md),
-[ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
-[ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
-
-## Emission in media
-
-A medium that emits adds a radiance over each unit of length, `Medium::emission`, in ACEScg,
-which a path reads as an illuminant's spectrum at its four wavelengths. A path finds it by
-colliding in the medium as it tracks through, and by a light sample of a volume light, as
-[Lights.md](Lights.md#volume-lights) says.
-
-- **A path gathers emission at every collision**, `glowAt()`, as pbrt-v4 gathers it: real or
-  null, before the collision scatters, absorbs or lets the path go on. It gathers its throughput
-  times the majorant's transmittance since the last collision times the emission, over the
-  average of its chances times that transmittance times the majorant. A homogeneous medium's
-  majorant is its extinction. Each source is gathered apart: the homogeneous medium the path is
-  in, and each volume it crosses.
-- **A medium that neither absorbs nor scatters at the tracked wavelength is never collided in**,
-  so no path gathers what it emits there.
-- **A light sample of a volume light** draws a point in it and sends a shadow ray to the point.
-  It gathers the emission there times what passes, as at a shading point or a point in a medium.
-  A closed surface's light emits at the point only where the shadow ray ends in that surface's
-  medium, as the medium a path would be in there.
-- **The two are weighed by the power heuristic.** A light sample's point has a density by solid
-  angle and by length. A path that collides at the same point does so with its own density, times
-  the majorant there and the majorant's transmittance since its last collision. That is over a
-  shadow ray's density for the volumes on the way, as for the null collisions before it. A light
-  sample's weight takes that from `passing()`'s `colliding`: the chance a tracked path would have
-  passed the media, times the majorant at the point. A collision's weight takes the chance of the
-  light, times its brick's, times the point's density, drawn from where the path last scattered,
-  of the set of linked lights there.
-- **A point in no brick of its light is found by collisions alone**, and they gather all of it. A
-  camera ray, a ray after a specular bounce and every ray under `bsdf` gather all of what they
-  collide in, and a ray under `light` gathers none of a volume light's emission.
-- **Each collision that gathers records the event of an emitting object**, after the path's
-  events so far, labelled as its light is.
-
-Background: [ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md),
-[ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md)
+A path carries the media it is inside, and along each ray it tracks through them at its four
+wavelengths. It may scatter or be absorbed there, and gathers what they emit.
+[Volumes.md](Volumes.md) states the rules. It says which medium a path is in where surfaces
+nest, and how the path is tracked through a medium and through volumes. It says how a grid is
+read, and how emission and a volume's light are sampled.
 
 ## Walking a subsurface
 
 A path that enters a surface through its subsurface's closure walks the medium below it, as
 [Materials.md](Materials.md#the-medium-below-a-subsurface) gives it, until it leaves the surface
-again. The walk is tracking through a medium, as [the section above](#tracking-through-a-medium)
+again. The walk is tracking through a medium, as [Volumes.md](Volumes.md#tracking-through-a-medium)
 says, with these differences.
 
 - **The medium is the subsurface's**, not the one the material's transmission gives, while the

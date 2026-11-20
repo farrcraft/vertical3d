@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-16
 **Tags**: offline, volumes, interchange
-**Documented in**: [offline/Integrator.md](../../offline/Integrator.md)
+**Documented in**: [offline/Volumes.md](../../offline/Volumes.md)
 
 ## Context
 

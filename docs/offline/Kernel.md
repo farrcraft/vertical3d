@@ -42,14 +42,7 @@ header once it inlines it, so `Nano.h` switches that warning off around it. Nano
 type traits by `__cplusplus`, so the kernel target compiles with `/Zc:__cplusplus` on MSVC, and so
 does every source that links it.
 
-- **A grid is a NanoVDB buffer of floats.** The host reads it from its OpenVDB file and converts it
-  with NanoVDB's own tools, `volume::read()`, which keep each node's least and most. Each buffer
-  is held as `kernel::volume::Block`s, runs of NanoVDB's 32-byte alignment, and every grid's
-  follows the one before in one array.
-- **A lookup is trilinear**, `volume::valueAt()`, between the eight voxels from a point's floor to
-  one past it, in the grid's index space.
-- **A cell bounds the lookups in it**, `volume::cellAt()`, as
-  [the integrator](Integrator.md#tracking-through-volumes) says.
+[Volumes.md](Volumes.md#grids) states how a grid is held, looked up and bounded.
 
 Background: [ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
 

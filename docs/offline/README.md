@@ -27,6 +27,7 @@ therefore run in CI on machines with no GPU.
 | [Textures.md](Textures.md) | Change the texture files moya reads, and the maker that writes them from images |
 | [Integrator.md](Integrator.md) | Change how moya builds paths, samples lights, stops a pixel and resumes a render |
 | [Lights.md](Lights.md) | Change moya's lights, how a path meets and samples them, the light tree and linking |
+| [Volumes.md](Volumes.md) | Change media, how they nest, how a path tracks through them, grids, and a volume's light |
 | [Output.md](Output.md) | Change how moya writes its pictures to EXR and PNG files |
 | [Compositing.md](Compositing.md) | Change the channels, light groups, Cryptomatte layers and deep files moya writes beside the beauty |
 | [Colour.md](Colour.md) | Change how moya converts between colour spaces and shows a picture on a display |
@@ -204,6 +205,6 @@ built:
 - A device other than the CPU.
 - Displacement of any geometry but a subdivision surface, and shaders written in RenderMan's
   shading language. A surface shader moya cannot find shades as `matte`.
-- Volumes, and any request the reader does not recognise, such as `Orientation`, `ReadArchive`,
+- Any request the reader does not recognise, such as `Orientation`, `ReadArchive`,
   `Patch` and `NuPatch`.
 - Binary and gzipped RIB.

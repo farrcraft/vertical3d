@@ -4,7 +4,7 @@
 **Date**: 2026-11-16
 **Tags**: offline, volumes, build
 **Amends**: ADR-0187
-**Documented in**: [offline/Kernel.md](../../offline/Kernel.md)
+**Documented in**: [offline/Volumes.md](../../offline/Volumes.md)
 
 ## Context
 

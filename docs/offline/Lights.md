@@ -153,40 +153,10 @@ Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-
 
 ## Volume lights
 
-A volume light emits from the points of a medium, along every direction. `light::Lights` makes a
-`kernel::light::Light` of shape `Volume` for each chain of instances that places a volume or a
-closed surface that emits, after the mesh lights. What it emits at a point is the medium's
-emission there, a radiance added over each unit of length.
-
-- **A volume whose program emits makes one.** Its bricks are the leaf nodes of its walked field's
-  grid, each eight voxels a side, and each voxel of a brick is the corner of a cell one voxel a
-  side. An active tile of a lower node is a brick too, and an active tile of an upper node is cut
-  into bricks of a leaf's size. A tile of the root makes none, and its points are found by
-  collisions alone. The host runs the volume's program at the centre of each cell, with each field
-  looked up there, as the volume stands when the shutter opens. Each cell is weighed by its
-  emission's luminance there. A brick whose cells emit nothing is left out, and a volume none of
-  whose bricks emits makes no light. A volume of no volume program makes none.
-- **A closed surface whose material encloses a medium that emits makes one** for each chain of
-  instances that places it. Its one brick is its geometry's box over the shutter, a mesh's or a
-  quadric's. A point of the box that lies outside the surface emits nothing.
-- **A light's own space** is its grid's index space for a volume, which its `transform` takes
-  into the volume's own space, and its geometry's own space for a closed surface. Its chain takes
-  that into the world.
-- **It is an emitting object**, in no light group, as an emitting material's light is. It lights
-  everything and every instance casts its shadows. Camera rays see it as far as its volume's
-  visibility lets them.
-- **Its power** is four pi times its emission's luminance summed over its volume in the world as
-  the shutter opens. A volume's sums its cells' weights, each times a cell's volume in the world.
-  A closed surface's is its emission's luminance times its box's volume in the world.
-- **Its bricks are sorted by their lower corners**, z first, then y, then x, so
-  `media::brickAt()` finds the brick that holds a point by halving.
-
-`Lights::glowing` holds the light of each volume, by the volume's place among the volumes, and
-`enclosing` the lights of the closed surfaces. A path in a closed surface's medium finds its light
-by the surface's key. `bricks` holds every light's bricks, from its own `bricks`, and `cells` the
-sums of each brick's cells' chances, from the brick's own `cells`.
-
-Background: [ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md)
+A volume whose program emits, and a closed surface whose medium emits, each make a light of
+shape `Volume`, drawn from bricks of its medium. [Volumes.md](Volumes.md#volume-lights) states
+how it is made, what it emits and its power. A light sample draws it as
+[the light tree](#the-light-tree) and [drawing a light](#drawing-a-light) say.
 
 ## Images
 
@@ -297,9 +267,9 @@ it was drawn with.
   chain places, times pi. `Lights::pickTriangle()` then draws one of its triangles in
   proportion to its area in the world when the shutter opens, and `Lights::triangleChance()`
   gives the chance. `triangles` holds each mesh light's sums of chances from its own first.
-- **A volume light** has the power [Volume lights](#volume-lights) gives. `Lights::pickTriangle()`
-  then draws one of its bricks in proportion to its emission, from its own first among
-  `triangles`, and `Lights::triangleChance()` gives the chance.
+- **A volume light** has the power [Volumes.md](Volumes.md#volume-lights) gives.
+  `Lights::pickTriangle()` then draws one of its bricks in proportion to its emission, from its
+  own first among `triangles`, and `Lights::triangleChance()` gives the chance.
 - **A dome light** has the power [Dome lights](#dome-lights) gives.
 - **A distant light** has the luminance of the irradiance it gives a plane that faces it, times
   the area of a disk of the world's reach. The reach is the radius of a sphere about the box that

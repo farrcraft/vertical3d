@@ -1,7 +1,7 @@
 # Moya Volumes — Media, Subsurface, Hair and Volumetric Lights
 
 Drafted 2026-11-16 against `da1fdf28`. This plan takes up section 8 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, light in moya travels
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, light in moya travels
 through what lies between surfaces, not only from one surface to the next. A path scatters and is
 absorbed inside a medium: a homogeneous one, such as fog or coloured glass, or a grid read from an
 OpenVDB file, such as smoke or a cloud. Media nest, so a liquid in a glass is lit as both. A skin
@@ -11,18 +11,18 @@ fire lights the scene from its volume. RIB names all of it, and the compositing 
 The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its plans are ADR-0195 to
 ADR-0241, all accepted. This plan follows six of them:
 
-* [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-alone.md): moya is a
+* [ADR-0186](../../adr/offline/0186-offline-moya-renders-by-path-tracing-alone.md): moya is a
   unidirectional path tracer, so a medium is lit by paths through it, not by a pass of its own.
-* [ADR-0187](../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md): moya
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md): moya
   implements its own tracking, phase functions, random walk and hair model. OpenVDB reads the
   grid files.
-* [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a path carries
+* [ADR-0189](../../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a path carries
   four wavelengths, so a medium whose density differs by wavelength is tracked at all four.
-* [ADR-0191](../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md): tracking and
+* [ADR-0191](../../adr/offline/0191-offline-one-c-kernel-source-for-every-device.md): tracking and
   grid lookups are kernel code, so a grid's layout is one every device can read.
-* [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+* [ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
   the media a path is inside are fields of the path state, declared once.
-* [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): the hair model
+* [ADR-0222](../../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): the hair model
   is a closure of the BSDF library, beside OpenPBR's.
 
 The plan keeps the roadmap's order, with five changes:
@@ -53,13 +53,13 @@ The tree was read at `da1fdf28`.
 * **moya has no medium.** Nothing in `moya/libmoya` or `api/rib` tracks, absorbs or scatters
   between surfaces. A path carries light unchanged from one surface to the next.
 * **A dielectric's closure holds one index**, the one inside, with the outside's index being one
-  ([Materials.md](../offline/Materials.md#the-bsdf)). Nothing records what a path has entered,
+  ([Materials.md](../../offline/Materials.md#the-bsdf)). Nothing records what a path has entered,
   so a glass in water bends light as a glass in air does.
 * **The scene has no volume.** A `material` holds `surface` and `displacement` terminals alone,
-  and no geometry kind is a volume ([Scene.md](../offline/Scene.md#moyas-kinds)).
+  and no geometry kind is a volume ([Scene.md](../../offline/Scene.md#moyas-kinds)).
 * **The options have no volume depth.** The depth limits are `maxDepth`, `diffuseDepth`,
   `glossyDepth`, `specularDepth`, `transmissionDepth` and `rouletteDepth`.
-* **The path state has no medium field** ([Integrator.md](../offline/Integrator.md#the-path-state)).
+* **The path state has no medium field** ([Integrator.md](../../offline/Integrator.md#the-path-state)).
 * **A shadow ray is stopped or passed by surfaces alone.** `Passing` multiplies the opacity of
   the cut-out surfaces it meets.
 
@@ -89,7 +89,7 @@ The tree was read at `da1fdf28`.
 **Curves:**
 
 * **A curve's hit gives `uv` across the width and along the segment**, u from 0 to 1 with a half
-  on the centre line ([Traversal.md](../offline/Traversal.md#curves)). That is the offset across
+  on the centre line ([Traversal.md](../../offline/Traversal.md#curves)). That is the offset across
   the fibre a hair model reads.
 * **A curve's shading frame is built around its normal.** A round curve's normal points away from
   the centre line, and a flat one's back along the ray. No tangent along the curve reaches the
@@ -100,7 +100,7 @@ The tree was read at `da1fdf28`.
 **Lights:**
 
 * **A light is a `Shape`**: rect, disk, sphere, cylinder, point, distant, mesh or dome
-  ([Lights.md](../offline/Lights.md)). An emitting material makes a mesh light of its triangles.
+  ([Lights.md](../../offline/Lights.md)). An emitting material makes a mesh light of its triangles.
 * **The light tree holds lights with a place**, with a subtree over each emitting geometry's
   triangles. Distant and dome lights are drawn beside it.
 
@@ -119,7 +119,7 @@ is built with OpenVDB off.
 
 **The tests:** moya's suite holds 25 reference renders of the path tracer and 5 of compositing
 outputs, each a RIB file in `moya/tests/data/` with its committed EXR
-([Testing.md](../contributing/Testing.md#moya-references)). `moya_bench` times a scene of 32768
+([Testing.md](../../contributing/Testing.md#moya-references)). `moya_bench` times a scene of 32768
 round curves for the hierarchy, and the integrator over a lit room, a textured room and a room
 with outputs.
 
@@ -176,7 +176,7 @@ listed as a number with no record, as the ADR index requires.
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | done |
 | [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | **0252** | done |
 | [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | done |
-| [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | open |
+| [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | done |
 
 ## What blocks what
 
@@ -254,7 +254,7 @@ settles whether a volume's bounds come from its grids or from the geometry, and 
 `transmission_depth` and `subsurface_*` inputs become media under the chosen shape.
 
 **Drafted** as
-[ADR-0242](../adr/offline/0242-offline-media-follow-usdvols-volumes-and-fields.md): a volume is a
+[ADR-0242](../../adr/offline/0242-offline-media-follow-usdvols-volumes-and-fields.md): a volume is a
 geometry that names its fields by the names its shader reads them by, as UsdVol's `field:`
 relationships do. Each field is an object of a file and a grid. A material gains a volume
 terminal, a MaterialX volume shader that reads a field through `geompropvalue`. It fills the
@@ -287,7 +287,7 @@ shadow ray finds the media it crosses. It settles where a priority is set: on th
 RenderMan's intersection priority is an attribute, or on the material, as Arnold's is.
 
 **Drafted** as
-[ADR-0243](../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md): a path
+[ADR-0243](../../adr/offline/0243-offline-nested-media-are-resolved-by-instance-priority.md): a path
 carries a stack of the closed surfaces it is inside, eight deep, and each instance has a
 `priority`, 0 by default. A hit on a surface of lower priority than the path's medium is passed
 as no bounce. A dielectric bends light by the indices of the winning media on its two sides.
@@ -320,7 +320,7 @@ phase functions, Henyey and Greenstein's at least, and how a volume event's draw
 among a bounce's dimensions.
 
 **Drafted** as
-[ADR-0244](../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md):
+[ADR-0244](../../adr/offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md):
 a path is tracked by null scattering at its hero wavelength, and the other wavelengths are weighed
 by spectral MIS, as pbrt-v4's `VolPathIntegrator` runs it. A shadow ray takes the transmittance by
 ratio tracking inside the same MIS. A homogeneous medium is its own majorant. A grid's majorants
@@ -352,7 +352,7 @@ The record also settles how a lookup is filtered, trilinear or by a stochastic c
 and whether the majorant grid of step 3 is built from the same structure.
 
 **Drafted** as
-[ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md), which
+[ADR-0245](../../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md), which
 amends ADR-0187: each grid is converted on the host from OpenVDB to NanoVDB by NanoVDB's own
 tools, and kernel code reads its buffer through NanoVDB's headers. Those headers join what kernel
 code may include, beside glm, with NanoVDB's own host and device markers mapped onto
@@ -383,7 +383,7 @@ mean free path. It settles what a thin-walled or open surface does, and whether 
 nests with step 2's media.
 
 **Drafted** as
-[ADR-0246](../adr/offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md): a surface
+[ADR-0246](../../adr/offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md): a surface
 whose subsurface weight is above zero holds a homogeneous medium inside it, which a path walks by
 ADR-0244's tracking. The medium enters ADR-0243's stack as any interior medium does. The colour
 becomes a single-scattering albedo by the mapping OpenPBR's companion paper gives. The radius
@@ -411,7 +411,7 @@ The record also settles how a curve's frame gives the model its tangent and its 
 fibre, and what a flat curve does. It settles how a hair's material is told apart from a
 surface's when it is compiled.
 
-**Drafted** as [ADR-0247](../adr/offline/0247-offline-hair-scatters-by-chiangs-model.md): a hair
+**Drafted** as [ADR-0247](../../adr/offline/0247-offline-hair-scatters-by-chiangs-model.md): a hair
 scatters by Chiang and others' far-field model, a closure of the BSDF library. A material names it
 by MaterialX's `surface` node whose `bsdf` is `chiang_hair_bsdf`, and its inputs and its three
 helpers compile through the node program. `curve_direction` is the curve's tangent, which step 16
@@ -440,7 +440,7 @@ The record also settles how a temperature field becomes emission, by Planck's la
 out.
 
 **Drafted** as
-[ADR-0248](../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md): each
+[ADR-0248](../../adr/offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md): each
 emitting volume has a subtree of the light tree over its NanoVDB leaf nodes, as a mesh light has
 one over its triangles. Each brick's box and summed emission come from running the shader on the
 host. A light sample draws a brick by the tree, a voxel by its emission and a point in the voxel.
@@ -458,7 +458,7 @@ material's light is.
 * **An overlay port in `ports/` builds it**, if vcpkg's port cannot be had without a feature the
   record does not need, such as CUDA.
 * **The Flatpak builds it** as a module, with Blosc.
-* **[Dependencies.md](../contributing/Dependencies.md)** names it and why.
+* **[Dependencies.md](../../contributing/Dependencies.md)** names it and why.
 
 **Tests:** a grid written through OpenVDB and read back holds the same values.
 
@@ -798,13 +798,13 @@ OpenEXR's compositing to the flat beauty and alpha. A volume's Cryptomatte cover
 alpha.
 
 **Done.** Three records settle what the step's rules left open.
-[ADR-0251](../adr/offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) makes
+[ADR-0251](../../adr/offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) makes
 alpha one less the mean transmittance over a path's wavelengths, as Cycles does, estimated from
 the throughput of a camera path that leaves the scene.
-[ADR-0249](../adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md), amending
+[ADR-0249](../../adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md), amending
 ADR-0230, makes a camera ray's collision in a medium its first hit and what its sample covers, and
 gives a denoiser the medium's albedo and a normal back along the ray.
-[ADR-0250](../adr/offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md),
+[ADR-0250](../../adr/offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md),
 amending ADR-0233, joins a medium's collisions by the deep tolerance into spans. Tracking records a
 collision that scatters or absorbs through `media::collided()`, and in volumes picks the medium it
 names by its share of the extinction, from the number that chose the collision. A closed surface's
@@ -872,7 +872,7 @@ debug pass of moya's suite.
 
 The renders found that a smooth subsurface was lit by no light of zero size. A walk left through
 the surface's own refraction, and a camera path cannot join a delta light through one.
-[ADR-0252](../adr/offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md), amending
+[ADR-0252](../../adr/offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md), amending
 ADR-0246, makes the walk leave by a Lambertian lobe of the index's square, as Pixar's walk and
 Cycles' do. A smooth white marble under a distant light now reads 0.28 where a rough one reads
 0.31. `SubsurfaceTest.cxx` checks that light samples alone return a white furnace's light, and
@@ -913,26 +913,53 @@ the plan and the room with outputs about 14 percent, beyond a run's noise. TODO.
 
 * **A new reference page**, `docs/offline/Volumes.md`, for media, nesting, tracking, grids and
   volumetric lights. The docs site's summary lists it.
-* **[Materials.md](../offline/Materials.md)** names volume shaders, subsurface and the hair model.
-* **[Integrator.md](../offline/Integrator.md)** names the medium in the path state, volume
+* **[Materials.md](../../offline/Materials.md)** names volume shaders, subsurface and the hair model.
+* **[Integrator.md](../../offline/Integrator.md)** names the medium in the path state, volume
   bounces and `volumeDepth`.
-* **[Lights.md](../offline/Lights.md)** names volumetric lights.
-* **[Traversal.md](../offline/Traversal.md)** names a curve's tangent and offset.
-* **[Scene.md](../offline/Scene.md)** names the volume kind, the material's volume terminal and
+* **[Lights.md](../../offline/Lights.md)** names volumetric lights.
+* **[Traversal.md](../../offline/Traversal.md)** names a curve's tangent and offset.
+* **[Scene.md](../../offline/Scene.md)** names the volume kind, the material's volume terminal and
   the new options.
-* **[Rib.md](../offline/Rib.md)** names `Volume` and the requests the records map.
-* **[Compositing.md](../offline/Compositing.md)** names volume events and volumes' deep samples.
-* **[The offline README](../offline/README.md)** no longer lists volumes as not built.
-* **[Testing.md](../contributing/Testing.md)** names the volume references.
+* **[Rib.md](../../offline/Rib.md)** names `Volume` and the requests the records map.
+* **[Compositing.md](../../offline/Compositing.md)** names volume events and volumes' deep samples.
+* **[The offline README](../../offline/README.md)** no longer lists volumes as not built.
+* **[Testing.md](../../contributing/Testing.md)** names the volume references.
 * **Each record's `Documented in` line** names the reference page that states its rule.
 * **The roadmap's section 8** links here, and says so when this plan closes.
+
+**Done.** [Volumes.md](../../offline/Volumes.md) is the reference page for media. It takes the
+integrator's sections on nested media, tracking through a medium and through volumes, and
+emission in media, Kernel.md's account of a grid, and Lights.md's of a volume's light. Each of
+those pages keeps a short section that links to it. ADR-0243, ADR-0244, ADR-0245 and ADR-0248 are
+documented there. The other pages the step names already held what each step before it added:
+Materials.md, Integrator.md, Traversal.md, Scene.md, Rib.md, Compositing.md and Testing.md. The
+offline README lists the page and no longer lists volumes as not built, and the roadmap's section
+8 is done.
 
 ---
 
 ## Working beside the editor scripting plan
 
-[EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan takes
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan takes
 ADR-0242 to ADR-0248. Its one change to moya is step 16's thread count in `moya/moya.cxx`, which
 this plan does not touch. This plan changes nothing the editor sends moya: the editor has no
 volumes or hair to send, and its materials are a plan of their own. Each commit names its paths,
 with `git commit -- <paths>`, so neither plan's staged work lands in the other's commit.
+
+## Outcome
+
+Closed 2026-11-20. moya tracks light through homogeneous media and OpenVDB grids at four
+wavelengths by null scattering with spectral MIS. Media nest by instance priority, a subsurface
+scatters by a random walk, a hair by Chiang's model on round curves, and a volume lights the
+scene through the light tree. The compositing outputs see media, RIB names all of it, eight
+reference renders hold it, and `moya_bench` times it.
+
+- **What turned out differently.** The reference renders showed that a walk leaving through the
+  surface's own refraction left a smooth subsurface unlit by any light of zero size.
+  ADR-0252 amends ADR-0246 so a walk leaves by a Lambertian lobe. Steps 18 and 20 added three
+  records the plan did not foresee, ADR-0249 to ADR-0251, and step 20 ADR-0252. The reference
+  comparison gained a check of each picture's mean, since a medium seen through glass changes no
+  single noisy pixel by five errors.
+- **What was left open.** The plan slowed scenes that hold no medium by about 7 to 14 percent,
+  and TODO.md holds that. RI's `Interior`, `Exterior` and `Atmosphere` stay unread, as
+  ADR-0242 decided.

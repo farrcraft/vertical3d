@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-16
 **Tags**: offline, volumes, lighting
-**Documented in**: [offline/Lights.md](../../offline/Lights.md)
+**Documented in**: [offline/Volumes.md](../../offline/Volumes.md)
 
 ## Context
 

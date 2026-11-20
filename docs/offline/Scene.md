@@ -107,7 +107,7 @@ then derived as RI derives it.
   reads, and `fieldNames` the name its shader reads each by, one each in the same order. A field's
   name here and its grid's name in its file are two names, as UsdVol keeps them. An instance
   places a volume as it places any geometry, and a path is tracked through it, as
-  [the integrator](Integrator.md#tracking-through-volumes) says. A field's grid must hold floats.
+  [the integrator](Volumes.md#tracking-through-volumes) says. A field's grid must hold floats.
   One that cannot be read is reported, and its volume holds nothing.
 - **`group`**: a prototype made of the instances that name it.
 - **`instance`**: the `prototype` it places, any geometry or a group, and the `group` it belongs
@@ -116,7 +116,7 @@ then derived as RI derives it.
   client sets it, says whether a material that emits from the geometry it places emits from both
   faces, as [Lights.md](Lights.md#mesh-lights) says. `priority`, 0 unless a client sets it, says
   which medium fills the space where closed surfaces overlap, as
-  [Integrator.md](Integrator.md#nested-media) says. An instance of a group places every
+  [Integrator.md](Volumes.md#nested-media) says. An instance of a group places every
   instance in it, so instancing nests. An instance in a group with no material takes the
   material of the instance that places the group. Flattening it into placements is the work of
   whatever is built from the scene, which stops at a group that holds itself.

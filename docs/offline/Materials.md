@@ -48,7 +48,7 @@ libraries `material::Library::installed()` reads once from beside the executable
   `thinWalled`, and is read as a constant.
 - **A layered material transmits** when its transmission's weight varies or is more than zero,
   and **subsurfaces** when its subsurface's weight does. Either lets it enclose a medium, as
-  [Integrator.md](Integrator.md#nested-media) says.
+  [Integrator.md](Volumes.md#nested-media) says.
 - **A layered material is cut out** when its opacity may be less than one. That is when its
   opacity varies over the surface and the program gives it, which sets `programmedOpacity`, or
   when the constant it holds is less than one. `Material::cutOut()` says which. A traversal asks
@@ -241,7 +241,7 @@ Each material the scene gathers holds the medium it encloses, as `surface::Mater
 volume's, compiled from its volume terminal, when it has one, and otherwise the one `interior()`
 gives a layered material. A layered material of no volume terminal holds the one `walked()`
 gives as `surface::Material::walked` beside it. A volume that does not compile is reported, and
-the material encloses no medium. [Integrator.md](Integrator.md#tracking-through-a-medium) says
+the material encloses no medium. [Integrator.md](Volumes.md#tracking-through-a-medium) says
 how a path is tracked through it.
 
 ### The node program
@@ -441,7 +441,7 @@ estimated albedo is its weight's mean times its Fresnel factor's.
 A dielectric's closure holds the ratio of the index of refraction inside, the side the shading
 normal points away from, to the index of the medium outside. The BSDF holds the outside's index,
 which is the medium a path is in beyond the surface, as
-[Integrator.md](Integrator.md#nested-media) says. A ratio below one turns the closure's frame
+[Integrator.md](Volumes.md#nested-media) says. A ratio below one turns the closure's frame
 over and takes the ratio's reciprocal, so the closure always holds a ratio of at least one. eta is
 the ratio of the index on incoming's side to the index on outgoing's.
 
