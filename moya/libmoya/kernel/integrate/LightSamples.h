@@ -373,13 +373,14 @@ MOYA_KERNEL void endIn(const Paths<T, X> & paths, const media::Media & media, co
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the state, then the media it starts in
-MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state, media::Media media) {
+MOYA_KERNEL Passed passing(const Paths<T, X> & paths, const light::Light & light, geometry::Ray shadow, const PathState & state, const media::Media & from) {
     Passed out;
     if (paths.surfaces.media == 0U && !paths.volumes.any() && !light.shadowLinked) {
         Passing<X> filter { .surfaces = paths.surfaces, .textures = paths.textures, .ray = shadow };
         out.share = paths.traversal.any(shadow, filter) ? 0.0F : filter.passing;
         return out;
     }
+    media::Media media = from;
     spectrum::SampledSpectrum tracked = MOYA_PATH(state, chances);
     spectrum::SampledSpectrum shadowed = MOYA_PATH(state, chances);
     std::uint32_t collisions = media::kShadowCollisions;
@@ -530,7 +531,8 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const ge
     // tracking that reached that point, so only a surface's is timed here
     const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
     const std::uint64_t shadowing = texture::started(paths.textures);
-    const Passed passed = passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)));
+    const Passed passed = paths.surfaces.media != 0U ? passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)))
+                                                     : passing(paths, chosen, shadow, state, MOYA_PATH(state, media));
     if (tracks) {
         texture::finished(paths.textures, texture::Work::Tracking, shadowing);
     }

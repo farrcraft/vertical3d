@@ -94,13 +94,17 @@ in the integrator's other stages. Every surface there is diffuse, so the layered
 specular samples the plan added are the place to look. Bisect the plan's commits with the
 benchmark to find the one that slowed it.
 
-[] **The volumes plan slowed scenes that hold no medium.** Built at `da1fdf28`, before the plan,
-and at its end, timed back to back at SSE4.2, `moya_bench`'s lit room ran at 1.51 to 1.61
-million samples a second before and 1.28 to 1.50 after. The room with outputs ran at 1.42 to
-1.52 before and 1.21 to 1.30 after. Traversal's share fell from 34 to 32 percent, so the time is
-in the integrator's other stages. The plan added checks for media on every ray and shadow ray,
-and fields to the path state, which are the places to look. Bisect the plan's commits with the
-benchmark to find where the time went.
+[] **The volumes plan slowed scenes that hold no medium.** `paths-room.rib`, a diffuse room
+under a dome, rendered at 512 by 384 in a Release build, takes about 10 percent longer after the
+plan than at `da1fdf28`, before it. `moya_bench`'s lit room shows the same. A bisect puts 3
+percent at step 10, 4 at step 11 and the rest after step 13, so no one change holds it. A light
+sample copied the path's media into its shadow ray twice, which no longer happens, and that
+recovered about a third. The rest is in structures every sample and shading point builds, which
+the plan made larger. A path's state grew from 296 to 464 bytes, mostly the media stack and
+spectral MIS's chances. A BSDF grew from 1280 to 1536 bytes, the hair's fibre and the walk's
+fields, and every shading point builds all of it whether it holds a hair or not. Try keeping the
+fibre out of a BSDF that holds no hair, and building a path's media only where a material encloses
+one, each timed against `da1fdf28` on that scene.
 
 [] **A material's emission cannot vary over its surface.** An emitting material makes a light of
 its geometry on the host, from its emission inputs as constants, so an emission input that
