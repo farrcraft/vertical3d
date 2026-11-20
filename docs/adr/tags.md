@@ -162,6 +162,7 @@ reported, so the table lists only tags in use.
 | [0009](rendering/0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain |
 | [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
 | [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 
 ### compositing
 
@@ -175,6 +176,9 @@ reported, so the table lists only tags in use.
 | [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
 | [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
 | [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 
 ### docs
 
@@ -432,6 +436,9 @@ reported, so the table lists only tags in use.
 | [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
 | [0247](offline/0247-offline-hair-scatters-by-chiangs-model.md) | Offline: hair scatters by Chiang's model |
 | [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 
 ### particles
 
@@ -608,6 +615,9 @@ reported, so the table lists only tags in use.
 | [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
 | [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
 | [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 
 ### vulkan
 

@@ -76,6 +76,12 @@ struct Media {
         return at == kNotInside ? surface::kNoMaterial : entries[at].material;
     }
 
+    /** The closed surface whose medium the path is in, or none in the air. **/
+    MOYA_KERNEL const Enclosure * current() const {
+        const std::uint32_t at = winner(kNotInside);
+        return at == kNotInside ? nullptr : &entries[at];
+    }
+
     /** Whether the path walks the medium a subsurface gives. **/
     MOYA_KERNEL bool walking() const {
         const std::uint32_t at = winner(kNotInside);
@@ -213,7 +219,14 @@ MOYA_KERNEL inline bool walksInto(const surface::Material & material) {
  * whether the path walks its subsurface.
  **/
 MOYA_KERNEL inline Enclosure enclosureOf(const surface::Surfaces & surfaces, const geometry::Hit & hit, std::uint32_t material, bool walk) {
-    return Enclosure { .key = keyOf(hit), .priority = priorityOf(surfaces, hit), .index = indexOf(surfaces.materials[material]), .material = material, .walk = walk ? 1U : 0U };
+    const std::uint32_t innermost = hit.depth != 0U ? hit.instances[hit.depth - 1U] : 0U;
+    return Enclosure { .key = keyOf(hit),
+        .priority = priorityOf(surfaces, hit),
+        .index = indexOf(surfaces.materials[material]),
+        .material = material,
+        .walk = walk ? 1U : 0U,
+        .object = innermost,
+        .asset = hit.instances[0] };
 }
 
 /** A closed surface a hit met, which a path walks as walksInto() says. **/

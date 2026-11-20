@@ -67,6 +67,8 @@ constexpr const char * const kDeepPart = "moya.deep";
 /** Where the halves of a deep entry's weight, red, green and blue begin among its fields. **/
 constexpr std::size_t kDeepWeight = 3;
 constexpr std::size_t kDeepRed = 5;
+constexpr std::size_t kDeepBack = 11;
+constexpr std::size_t kDeepVolume = 12;
 constexpr std::size_t kDeepGreen = 7;
 constexpr std::size_t kDeepBlue = 9;
 
@@ -127,7 +129,7 @@ std::vector<std::string> coverageChannels() {
  * halves of the bits of its weight and of its red, green and blue.
  **/
 std::vector<std::string> deepChannels() {
-    return { "depth", "object", "material", "weight.high", "weight.low", "red.high", "red.low", "green.high", "green.low", "blue.high", "blue.low" };
+    return { "depth", "object", "material", "weight.high", "weight.low", "red.high", "red.low", "green.high", "green.low", "blue.high", "blue.low", "back", "volume" };
 }
 
 /** A double's bits, as its high half and then its low. **/
@@ -182,6 +184,8 @@ internal::Entries entriesOf(const std::vector<std::vector<film::DeepPoint>> & de
             push(out.fields, kDeepRed, entry.red);
             push(out.fields, kDeepGreen, entry.green);
             push(out.fields, kDeepBlue, entry.blue);
+            out.fields[kDeepBack].push_back(std::bit_cast<std::uint32_t>(entry.back));
+            out.fields[kDeepVolume].push_back(entry.volume);
         }
     }
     out.place();
@@ -274,7 +278,9 @@ std::vector<std::vector<film::DeepPoint>> deepOf(const std::string & path) {
                 .weight = doubleOf(entries->fields, kDeepWeight, at),
                 .red = doubleOf(entries->fields, kDeepRed, at),
                 .green = doubleOf(entries->fields, kDeepGreen, at),
-                .blue = doubleOf(entries->fields, kDeepBlue, at) });
+                .blue = doubleOf(entries->fields, kDeepBlue, at),
+                .back = std::bit_cast<float>(entries->fields[kDeepBack][at]),
+                .volume = entries->fields[kDeepVolume][at] });
         }
     }
     return out;

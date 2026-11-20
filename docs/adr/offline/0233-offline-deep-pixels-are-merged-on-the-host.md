@@ -1,8 +1,9 @@
 # ADR-0233: Offline: deep pixels are merged on the host
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-13
 **Tags**: offline, compositing
+**Amended by**: ADR-0250
 **Documented in**: [offline/Compositing.md](../../offline/Compositing.md)
 
 ## Context

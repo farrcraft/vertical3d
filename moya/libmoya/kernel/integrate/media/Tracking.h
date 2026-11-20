@@ -11,6 +11,7 @@
 #include <moya/libmoya/kernel/integrate/Event.h>
 #include <moya/libmoya/kernel/integrate/Inputs.h>
 #include <moya/libmoya/kernel/integrate/LightSamples.h>
+#include <moya/libmoya/kernel/integrate/media/Collided.h>
 #include <moya/libmoya/kernel/integrate/media/Collisions.h>
 #include <moya/libmoya/kernel/integrate/media/Crossings.h>
 #include <moya/libmoya/kernel/integrate/media/Glowing.h>
@@ -168,8 +169,8 @@ MOYA_KERNEL bool mayScatter(const Paths<T, X> & paths, const PathState & state) 
  * medium's phase function by the bounce's draws, as a bounce off a surface does, and counts a
  * volume bounce. A direction the phase function draws records an event in the medium, which the
  * path goes on from. The point is lit by the lights that light an instance of no links. Its cone
- * spreads as a lobe of roughness one spreads it. Russian roulette treats it as any bounce. It
- * gives a denoiser nothing past it.
+ * spreads as a lobe of roughness one spreads it. Russian roulette treats it as any bounce. A
+ * denoiser reads nothing past it.
  *
  * A path that walks a subsurface takes no light sample there and no Russian roulette, and counts
  * the event as one of its walk's. Since no light sample was drawn, the direction counts as
@@ -238,7 +239,7 @@ MOYA_KERNEL Tracked scatterAt(const Paths<T, X> & paths, PathState & state, cons
  * next is weighed by grows by what rescale() returns. A path that is absorbed ends there, as does
  * one whose scattering a depth limit refuses. One that scatters does as scatterAt() says. At a
  * collision, before any of these, the path gathers what the medium emits, of a glow, as glowAt()
- * says.
+ * says, and the collision is recorded in the closed surface's medium, as collided() says.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the distance, then the count of draws
@@ -264,6 +265,10 @@ MOYA_KERNEL Tracked trackHomogeneous(const Paths<T, X> & paths, PathState & stat
     const float along = (ray.start * length) + distance;
     const spectrum::SampledSpectrum passed = volume::transmittance(extinction, distance);
     glowAt(paths, state, glow, nullptr, nullptr, ray.origin + (forward * along), passed, passed * extinction, spectrum::SampledSpectrum(1.0F));
+    const Enclosure * inside = MOYA_PATH(state, media).current();
+    if (inside != nullptr) {
+        collided(paths, state, collisionHit(ray.start + (distance / length), *inside), inside->material, coefficients, forward, along);
+    }
     const spectrum::SampledSpectrum scattered = coefficients.scattered();
     if (!(u.y * extinction[tracked] < scattered[tracked])) {
         return Tracked::Ended;
@@ -316,7 +321,8 @@ MOYA_KERNEL inline bool weighPassing(PathState & state, const spectrum::SampledS
  * by what rescale() returns over what lighten() does. A path that is absorbed ends, as does one
  * whose scattering a depth limit refuses and one that collides more than kMostCollisions times.
  * One that scatters does as scatterAt() says. At every collision, before any of these, the path
- * gathers what the homogeneous medium of a glow and each volume emit there, as glowAt() says.
+ * gathers what the homogeneous medium of a glow and each volume emit there, as glowAt() says. A
+ * collision that is not null is then recorded in one of the media there, as collidedAmong() says.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the distance, then the count of draws
@@ -360,11 +366,18 @@ MOYA_KERNEL Tracked trackCrossed(const Paths<T, X> & paths, PathState & state, c
         t += flight;
         volume::Coefficients here = around;
         glm::vec3 glows[kMostCrossed] {};
-        joinCrossed(paths, crossings, t, wavelengths, ray.time, here, glows);
+        spectrum::SampledSpectrum extinctions[kMostCrossed] {};
+        joinCrossed(paths, crossings, t, wavelengths, ray.time, here, glows, extinctions);
         glowAt(paths, state, glow, &crossings, glows, ray.at(t), passed, passed * majorant, passedVolumes);
         const spectrum::SampledSpectrum scattered = here.scattered();
         const spectrum::SampledSpectrum extinction = here.extinction();
         const float chosen = u.y * majorant[tracked];
+        const glm::vec3 forward = ray.direction / length;
+        const float along = t * length;
+        if (chosen < extinction[tracked]) {
+            const Pick pick { .aroundShare = aroundExtinction[tracked], .chosen = chosen, .tracked = tracked };
+            collidedAmong(paths, state, crossings, extinctions, pick, t, here, forward, along);
+        }
         if (chosen < scattered[tracked]) {
             if (!mayScatter(paths, state)) {
                 return Tracked::Ended;
@@ -373,8 +386,6 @@ MOYA_KERNEL Tracked trackCrossed(const Paths<T, X> & paths, PathState & state, c
             if (throughput.black()) {
                 return Tracked::Ended;
             }
-            const glm::vec3 forward = ray.direction / length;
-            const float along = t * length;
             return scatterAt(paths, state, here, ray.origin + (forward * along), forward, along);
         }
         if (chosen < extinction[tracked]) {

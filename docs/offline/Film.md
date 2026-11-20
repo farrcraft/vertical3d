@@ -166,8 +166,9 @@ do that, since multiplying a pixel back by its weight does not give its sums exa
   weights. An entry of the layer `0xFFFFFFFF` holds the pixel's whole weight.
 - **A render of a deep output keeps its deep lists in its checkpoint** as the deep part
   `moya.deep`. Each entry's depth is its float's bits in `depth`, then `object` and `material`,
-  then the halves of the bits of its weight and of its weighted red, green and blue. An entry
-  whose object is `0xFFFFFFFF` holds the pixel's whole weight.
+  then the halves of the bits of its weight and of its weighted red, green and blue. Its back's
+  bits follow in `back`, and whether it is a medium's in `volume`. An entry whose object is
+  `0xFFFFFFFF` holds the pixel's whole weight.
 - **A checkpoint is written whole or not at all.** It is written to the path with `.partial`
   added, then renamed over the path, so a render stopped while it writes keeps the checkpoint
   before.

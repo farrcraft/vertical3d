@@ -140,6 +140,9 @@ says volumes and subsurface grow the path state.
 | 0246 | How subsurface scatters, and how OpenPBR's parameters become a medium | [5](#step-5--the-record-subsurface) |
 | 0247 | The model a hair takes, and how a material names it | [6](#step-6--the-record-a-hairs-model) |
 | 0248 | How a volume's light is sampled | [7](#step-7--the-record-a-volumes-light) |
+| 0249 | Whether a collision in a medium is a camera sample's first hit, amending ADR-0230 | [18](#step-18--volumes-in-the-outputs) |
+| 0250 | How a volume's deep samples are cut, amending ADR-0233 | [18](#step-18--volumes-in-the-outputs) |
+| 0251 | How alpha through a medium is made grey | [18](#step-18--volumes-in-the-outputs) |
 
 Each record step researches how production renderers make the choice, and the owner chooses
 among the options before the record is drafted. A record that a later step shows is not needed is
@@ -168,7 +171,7 @@ listed as a number with no record, as the ADR index requires.
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | done |
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | done |
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | done |
-| [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233 | open |
+| [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233, **0249**, **0250**, **0251** | done |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | open |
 | [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | open |
@@ -792,6 +795,23 @@ reference render holds hair, so no picture changes.
 **Tests:** a fog's alpha matches one less its transmittance. A deep file of a fog flattens through
 OpenEXR's compositing to the flat beauty and alpha. A volume's Cryptomatte coverage matches its
 alpha.
+
+**Done.** Three records settle what the step's rules left open.
+[ADR-0251](../adr/offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) makes
+alpha one less the mean transmittance over a path's wavelengths, as Cycles does, estimated from
+the throughput of a camera path that leaves the scene.
+[ADR-0249](../adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md), amending
+ADR-0230, makes a camera ray's collision in a medium its first hit and what its sample covers, and
+gives a denoiser the medium's albedo and a normal back along the ray.
+[ADR-0250](../adr/offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md),
+amending ADR-0233, joins a medium's collisions by the deep tolerance into spans. Tracking records a
+collision that scatters or absorbs through `media::collided()`, and in volumes picks the medium it
+names by its share of the extinction, from the number that chose the collision. A closed surface's
+medium names its innermost and outermost instances. Each camera sample's record now starts as one
+that met nothing, so a path that ends in a medium before any record no longer leaves the slot of a
+pass before. A checkpoint's deep part gains `back` and `volume`, and a deep file's `ZBack` is each
+sample's back depth. The cases are in `VolumeOutputsTest.cxx`, and one in `VolumeTest.cxx` checks
+the share two volumes take. No reference render holds a medium, so no picture changes.
 
 ### Step 19 — Media and hair from RIB
 

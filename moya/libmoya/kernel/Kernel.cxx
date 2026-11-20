@@ -67,6 +67,7 @@
 #include <moya/libmoya/kernel/integrate/Inputs.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/Keeping.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/LightSamples.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/integrate/media/Collided.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Collisions.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Crossing.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/integrate/media/Crossings.h>  // IWYU pragma: keep

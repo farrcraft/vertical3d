@@ -145,10 +145,15 @@ each with its share of the pixel. It is a raw channel of the source name `crypto
   instance that placed the surface, and a material's the name of the surface's material. An
   asset's is the name of the group the outermost instance places, or of that instance when it
   places a geometry. A sample that met nothing, or a light's shape, covers no ID.
+- **A camera ray that collides in a medium before any surface covers the medium.** Its object
+  and asset are the volume's, or those of the closed surface whose medium it is. Its material is
+  the volume's or that surface's. A fog's coverage is then its alpha.
 - **A camera sample keeps one surface**, so a surface that is cut out is covered by the samples
   it stops, and glass takes its own ID.
 - **Each camera sample records what it covers and its filter weight** in a buffer of the pass,
-  `kernel::integrate::Covered`. A stopped pixel's records are empty.
+  `kernel::integrate::Covered`. A record starts as one that met nothing, of the sample's weight,
+  so a path that ends before its camera ray meets anything holds its weight there. A stopped
+  pixel's records are empty.
 - **After each pass, the host adds each pixel's records in sample order**, in
   `integrate::internal::Coverage`. Each ID's weights are summed, and so is the weight of every
   sample the pixel took. An ID's coverage is its weight over that whole weight. Nothing is lost
@@ -161,7 +166,8 @@ each with its share of the pixel. It is a raw channel of the source name `crypto
   picture and each one's ID, by the layer's name in `manifests`.
 
 Background:
-[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md)
+[ADR-0232](../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md),
+[ADR-0249](../adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md)
 
 ### Files
 
@@ -193,15 +199,21 @@ the radiance it gathered, in ACEScg.
 - **An entry is a point sample at the depth of its first record.** A camera sample keeps one
   surface, so a surface that is cut out is a sample of its own, and a surface behind glass is part
   of the glass's sample.
-- **A snapshot resolves each pixel's entries front to back.** An entry's alpha is its weight over
-  the weight of the samples that reached its depth, and its colour its weighted radiance over that
+- **A collision in a medium records its depth as a surface's hit does**, and joins only an entry
+  of collisions. That entry spans from the least depth its records hold to the most. A medium
+  then gives a sample for each stretch of the ray the tolerance cuts it into, from a front depth
+  to a back one, and a surface inside the fog composites between them.
+- **A snapshot resolves each pixel's entries front to back**, by their front depths. An entry's
+  alpha is its weight over the weight of the samples that reached its front depth, and its
+  colour its weighted radiance over that
   weight, premultiplied. Compositing a pixel's samples over each other gives its flat beauty and
   alpha. The entry of what met nothing has an alpha of zero, and is left out when it holds no
   light. A pixel no record reached holds no sample.
 - **Each sample names its object's and material's IDs**, the MurmurHash3 of their names as
   Cryptomatte's IDs are, or zero for none.
 
-Background: [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md)
+Background: [ADR-0233](../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md),
+[ADR-0250](../adr/offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md)
 
 ### Deep files
 
@@ -210,8 +222,10 @@ An output of the format `deepexr` writes the snapshot's deep samples, as
 `output::writeDeepExr()`.
 
 - **Each sample is `R`, `G`, `B` and `A`**, its colour premultiplied by its alpha, at the
-  output's precision, then `Z` and `ZBack`, both its depth, as 32-bit floats. A pixel's samples
-  run front to back, so the file is tidy.
+  output's precision, then `Z` and `ZBack`, its front and back depths, as 32-bit floats. A
+  surface's sample is a point, whose two depths are one. A pixel's samples run front to back by
+  their front depths. A medium's sample may span a surface's depth, so the file is tidy only
+  where none does.
 - **`objectid` and `materialid` are unsigned integers**, the IDs of OpenEXR's Deep IDs. The
   header's `idManifest` names each by MurmurHash3, the object's under `objectid` and the
   material's under `materialid`.

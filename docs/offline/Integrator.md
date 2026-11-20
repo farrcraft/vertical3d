@@ -28,8 +28,8 @@ are those with which a shadow ray would have tracked it through volumes, as
 [tracking through volumes](#tracking-through-volumes) says. Last, it holds the
 last BSDF or phase function sample's density and whether it was specular, and the point it was
 drawn at with its shading normal and its set of linked lights. Its coverage is one once the
-camera ray has met something. Its media are the closed surfaces it is inside, as
-[nested media](#nested-media) says.
+camera ray has met something, as [Coverage](#coverage) says. Its media are the closed surfaces
+it is inside, as [nested media](#nested-media) says.
 
 Background: [ADR-0212](../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md)
 
@@ -444,6 +444,18 @@ can change what was gathered, such as a material's closures, before it renders.
   outputs, as [Output.md](Output.md#a-scenes-outputs) says.
   [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
 
+## Coverage
+
+A camera sample's coverage is what the beauty's alpha adds. It is one once the camera ray meets a
+surface, a light's shape, or a collision in a medium that scatters or absorbs. A camera ray that
+leaves the scene meeting nothing covers its sample by one less the mean of its throughput over
+its wavelengths. Tracking weighs that throughput by what each wavelength passed, so the expected
+alpha is one less the mean transmittance along the ray, and a grey fog over nothing composites
+over a plate. A camera ray that passes a cut-out surface or a medium's boundary covers nothing
+there.
+
+Background: [ADR-0251](../adr/offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md)
+
 ## Values at the first hit
 
 A raw channel names a value by its `sourceName`, which a camera ray reads where it first meets
@@ -462,6 +474,12 @@ the scene. Each is added to its channel by the channel's combine, as
 
 - **A light's shape the ray meets** has its depth and position, a zero normal, `st` and motion,
   and an instance and a face of -1.
+- **A collision in a medium is a first hit** when it comes before any surface: one that scatters
+  or absorbs, not a null collision. Its depth and position are the collision's. Its instance is
+  the volume's innermost instance, or that of the closed surface whose medium it is. Its normal,
+  `st` and motion are zero, its face -1, and a primvar reads nothing. Tracking picks the medium a
+  collision names with the chance its extinction at the tracked wavelength is of the whole there,
+  the closed surface's medium first and then each volume.
 - **A motion** is the hit's raster position as the shutter closes less its position as it opens,
   with y down the picture. The hit is found again at each time, as its geometry and its instances
   stand then. A triangle's hit follows its corners. A point's or a curve's follows its primitive's
@@ -476,10 +494,15 @@ the scene. Each is added to its channel by the channel's combine, as
   that is not singular, or meets no surface. The albedo is that of the surface's closures that
   are not singular, under ACES white, so a white surface's is one. The normal is the surface's
   shading normal.
+- **A collision in a medium gives a denoiser its albedo** when the path has given none yet: the
+  medium's scattering over its extinction there, times the path's throughput, under ACES white.
+  Its normal points back along the ray. The path gives nothing past it.
 - **Any other raw or primvar channel holds zero, and is reported**: a raw name not in the
   table, and a raw value of other components than its channel's. A light path expression's
   channel is filled as [Compositing.md](Compositing.md#channels-of-light-path-expressions)
   says.
+
+Background: [ADR-0249](../adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md)
 
 ## Light path expressions
 

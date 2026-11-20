@@ -20,6 +20,10 @@ inline constexpr std::uint32_t kUncovered = 0xFFFFFFFFU;
  * covers nothing and keeps its weight. depth is how far along its camera ray it met anything, and
  * infinite for a ray that met nothing. red, green and blue are its radiance in ACEScg. A sample a
  * stopped pixel did not take has a weight of zero.
+ *
+ * A camera ray that collides in a medium before any surface covers that medium there, and
+ * collided is one. Its depth is the collision's. Its object, asset and material are the volume's,
+ * or those of the closed surface that encloses the medium.
  **/
 struct Covered {
     std::uint32_t object { kUncovered };
@@ -30,6 +34,7 @@ struct Covered {
     float red { 0.0F };
     float green { 0.0F };
     float blue { 0.0F };
+    std::uint32_t collided { 0 };
 };
 
 };  // namespace v3d::moya::kernel::integrate

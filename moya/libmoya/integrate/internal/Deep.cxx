@@ -80,11 +80,16 @@ void Deep::join(std::size_t pixel, const kernel::integrate::Covered & record) {
     const std::uint32_t material = idAt(materials_, record.material);
     std::vector<film::DeepPoint> & list = lists_[pixel];
     auto found = std::find_if(list.begin(), list.end(), [&](const film::DeepPoint & entry) {
-        return entry.object == object && entry.material == material && near(entry.depth, record.depth, tolerance_);
+        return entry.object == object && entry.material == material && entry.volume == record.collided && near(entry.depth, record.depth, tolerance_);
     });
     if (found == list.end()) {
-        list.push_back(film::DeepPoint { .depth = record.depth, .object = object, .material = material });
+        list.push_back(film::DeepPoint { .depth = record.depth, .object = object, .material = material, .back = record.depth, .volume = record.collided });
         found = list.end() - 1;
+    }
+    // a medium's collisions spread its entry over the depths they hold
+    if (record.collided != 0U) {
+        found->depth = std::fmin(found->depth, record.depth);
+        found->back = std::fmax(found->back, record.depth);
     }
     found->weight += record.weight;
     found->red += static_cast<double>(record.weight) * record.red;
@@ -124,7 +129,8 @@ std::vector<film::DeepSample> Deep::resolved(std::size_t pixel) const {
             .blue = static_cast<float>(entry.blue / left),
             .alpha = behind ? 0.0F : static_cast<float>(entry.weight / left),
             .object = entry.object,
-            .material = entry.material };
+            .material = entry.material,
+            .back = entry.volume != 0U ? entry.back : entry.depth };
         if (!behind || sample.red != 0.0F || sample.green != 0.0F || sample.blue != 0.0F) {
             out.push_back(sample);
         }

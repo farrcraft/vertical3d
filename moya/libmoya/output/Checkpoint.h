@@ -34,8 +34,8 @@ class Refused : public std::runtime_error {
  * floats are the scanline part moya.film. The coverage is the deep part moya.coverage, each of a
  * pixel's entries a sample of unsigned channels: layer, id, and weight.high and weight.low, the
  * halves of its weight's 64 bits. The deep lists are the deep part moya.deep, each entry's depth's
- * bits as depth, then object, material, and the halves of its weight, red, green and blue. Every
- * value is kept exactly.
+ * bits as depth, then object, material, and the halves of its weight, red, green and blue, then
+ * its back's bits as back and volume. Every value is kept exactly.
  *
  * The file is written beside the path, with .partial added to its name, and then renamed over
  * the path, so a render stopped while it writes leaves the checkpoint before.

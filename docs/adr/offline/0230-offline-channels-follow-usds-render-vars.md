@@ -1,8 +1,9 @@
 # ADR-0230: Offline: channels follow USD's render vars
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-13
 **Tags**: offline, compositing, interchange
+**Amended by**: ADR-0249
 **Documented in**: [offline/Scene.md](../../offline/Scene.md)
 
 ## Context

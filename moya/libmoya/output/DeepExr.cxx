@@ -95,6 +95,7 @@ void writeDeepExr(const std::string & path, const film::Snapshot & snapshot, Pre
     internal::Field<half> halfColours[kColourCount];
     internal::Field<float> floatColours[kColourCount];
     internal::Field<float> depths;
+    internal::Field<float> backs;
     internal::Field<std::uint32_t> objects;
     internal::Field<std::uint32_t> materials;
     for (const std::vector<film::DeepSample> & pixel : snapshot.deep) {
@@ -109,6 +110,7 @@ void writeDeepExr(const std::string & path, const film::Snapshot & snapshot, Pre
                 }
             }
             depths.values.push_back(sample.depth);
+            backs.values.push_back(sample.back);
             objects.values.push_back(sample.object);
             materials.values.push_back(sample.material);
         }
@@ -126,10 +128,11 @@ void writeDeepExr(const std::string & path, const film::Snapshot & snapshot, Pre
         }
     }
     depths.place(counts);
+    backs.place(counts);
     objects.place(counts);
     materials.place(counts);
     frame.insert("Z", depths.slice(Imf::FLOAT, width, windows.data));
-    frame.insert("ZBack", depths.slice(Imf::FLOAT, width, windows.data));
+    frame.insert("ZBack", backs.slice(Imf::FLOAT, width, windows.data));
     frame.insert("objectid", objects.slice(Imf::UINT, width, windows.data));
     frame.insert("materialid", materials.slice(Imf::UINT, width, windows.data));
     Imf::DeepScanLineOutputFile file(path.c_str(), header);

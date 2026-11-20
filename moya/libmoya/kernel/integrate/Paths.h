@@ -275,6 +275,18 @@ MOYA_KERNEL void crossing(const Paths<T, X> & paths, PathState & state, const ge
     }
 }
 
+/**
+ * Covers a camera ray's sample by what its media held back when it leaves the scene meeting
+ * nothing: one less the mean of its throughput over its wavelengths. Tracking weighs the
+ * throughput by what each wavelength passed, so its expected alpha is one less the mean
+ * transmittance along the ray. A later ray leaves it.
+ **/
+MOYA_KERNEL inline void leavesCovering(PathState & state) {
+    if (MOYA_PATH(state, bounces) == 0U) {
+        MOYA_PATH(state, coverage) = 1.0F - MOYA_PATH(state, throughput).average();
+    }
+}
+
 /** Marks a camera ray's sample as covered once it meets anything. Later rays leave it. **/
 MOYA_KERNEL inline void covers(PathState & state) {
     if (MOYA_PATH(state, bounces) == 0U) {
@@ -364,8 +376,9 @@ MOYA_KERNEL bool bounce(const Paths<T, X> & paths, PathState & state, const geom
  * the dome and distant lights it meets. One that meets a light's shape gathers its share of what
  * the light emits towards it, and ends there. A ray passes through a surface that is cut out
  * with a chance of one minus its opacity, drawn from the bounce's own draw. A camera ray that
- * meets anything covers its sample, and one that leaves the scene does not. Each light the path
- * gathers records its event, after the event of the bounce it arrived by.
+ * meets anything covers its sample, and one that leaves the scene covers it by what the media it
+ * passed held back. A camera ray's collision in a medium is its first hit, as tracking records it.
+ * Each light the path gathers records its event, after the event of the bounce it arrived by.
  *
  * A path passes by the surfaces passedBy() names, at most kMostPassed of them, and enters or
  * leaves their media. A dielectric bends light by its own index over that of the medium beyond
@@ -398,6 +411,7 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
                 break;
         }
         if (!hit.found()) {
+            leavesCovering(state);
             firstHit(paths, state, hit, ray, surface::ShadingPoint {});
             cover(paths, state, hit, surface::kNoMaterial, std::numeric_limits<float>::infinity());
             MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * leaving(paths, ray, state);
@@ -431,7 +445,9 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
 /**
  * One pixel of a pass: each of its samples traced, and added to the pixel in index order. The
  * first half of the pass's samples, which are stratified as a whole run is, go to the half beauty
- * too. A pixel that has stopped takes none, and its records of what samples cover are empty.
+ * too. A pixel that has stopped takes none, and its records of what samples cover are empty. Each
+ * sample's record starts as one that met nothing, of its weight, so a path that ends before its
+ * camera ray meets anything still holds its weight there.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
@@ -445,6 +461,10 @@ MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
     for (std::uint32_t sample = params.first; sample < params.first + params.count; ++sample) {
         PathState state;
         generate(params, pixel, sample, state);
+        if (params.covered.size != 0U) {
+            params.covered[coveredFrom(params, item.x, item.y) + (sample - params.first)] =
+                Covered { .weight = MOYA_PATH(state, weight), .depth = std::numeric_limits<float>::infinity() };
+        }
         trace(params, state);
         if (params.covered.size != 0U) {
             const glm::vec3 rgb = spectrum::acescgFromXyz(spectrum::toXyz(MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths)));

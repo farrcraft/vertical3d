@@ -293,6 +293,42 @@ BOOST_AUTO_TEST_CASE(moya_volume_a_constant_grid_absorbs_as_a_homogeneous_medium
     BOOST_TEST(near(mean, expected, 0.02F), mean.x << " " << mean.y << " " << mean.z << " against " << expected.x << " " << expected.y << " " << expected.z);
 }
 
+// two volumes over one box, one absorbing three times as strongly as the other, each take that
+// share of the collisions of the camera rays that cross them. Cryptomatte then covers the
+// stronger by three quarters of the picture's alpha and the weaker by a quarter
+BOOST_AUTO_TEST_CASE(moya_volume_a_collision_names_a_volume_by_its_share_of_the_extinction_test) {
+    const std::string path = written(box(1.0F), "v3d_moya_volume_shares.vdb");
+    const film::Snapshot snapshot = pictured(1024, [&](scene::Scene & scene, const scene::Handle &) {
+        const scene::Handle density = field(scene, "density", path, "density");
+        scene.set(instanced(scene, "strong", smoke(scene, "strong", density), {}, glm::mat4(1.0F)), "material",
+            scene::Value::handle(absorbing(scene, "strong", glm::vec3 { 0.6F })));
+        scene.set(instanced(scene, "weak", smoke(scene, "weak", density), {}, glm::mat4(1.0F)), "material",
+            scene::Value::handle(absorbing(scene, "weak", glm::vec3 { 0.2F })));
+        const scene::Handle layer = scene.create("channel", "CryptoObject");
+        scene.set(layer, "sourceType", scene::Value::string("raw"));
+        scene.set(layer, "sourceName", scene::Value::string("crypto_object"));
+        scene.set(layer, "ranks", scene::Value::integer(2));
+        const scene::Handle out = scene.create("output", "picture");
+        scene.set(out, "file", scene::Value::string("v3d_moya_volume_shares.exr"));
+        scene.set(out, "channels", scene::Value::handles({ layer }));
+    });
+    boost::filesystem::remove(path);
+    const std::uint32_t offset = snapshot.offset("CryptoObject00");
+    double alpha = 0.0;
+    double strong = 0.0;
+    double weak = 0.0;
+    for (std::uint32_t y = 0; y < kSide; ++y) {
+        for (std::uint32_t x = 0; x < kSide; ++x) {
+            alpha += static_cast<double>(snapshot.at(x, y, 3U));
+            strong += static_cast<double>(snapshot.at(x, y, offset + 1U));
+            weak += static_cast<double>(snapshot.at(x, y, offset + 3U));
+        }
+    }
+    BOOST_TEST(alpha > 0.5 * kSide * kSide);
+    BOOST_TEST(strong / alpha == 0.75, boost::test_tools::tolerance(0.02));
+    BOOST_TEST(weak / alpha == 0.25, boost::test_tools::tolerance(0.06));
+}
+
 // a box of a volume of no material scatters its density, and absorbs nothing, so inside a white
 // dome it returns the dome's light however many times a path scatters in it. A light sample and
 // a phase sample weigh each other through the null collisions between

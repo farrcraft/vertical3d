@@ -14,6 +14,9 @@ namespace v3d::moya::film {
  * depth of its first sample, and its object's and material's IDs. It holds the filter weights of
  * the samples joined into it, and their weighted radiance in ACEScg. An entry whose object is
  * kWhole holds the weight of every sample the pixel took, and nothing else.
+ *
+ * An entry of collisions in a medium has a volume of one. Its depth is the least of its samples'
+ * and its back the most, where a surface's entry has a back equal to its depth.
  **/
 struct DeepPoint {
     /** The object of the entry that holds a pixel's whole weight. **/
@@ -26,6 +29,8 @@ struct DeepPoint {
     double red { 0.0 };
     double green { 0.0 };
     double blue { 0.0 };
+    float back { 0.0F };
+    std::uint32_t volume { 0 };
 };
 
 };  // namespace v3d::moya::film

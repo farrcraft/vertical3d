@@ -27,12 +27,15 @@ namespace v3d::moya::integrate::internal {
  * samples covered are joined in sample order. A record joins the first entry of its object and
  * material whose depth lies within the tolerance, a share of that entry's depth, of its own, and
  * starts an entry otherwise. Records of no surface join the entry of their depth in the same way,
- * and every record that met nothing joins one entry behind all the others.
+ * and every record that met nothing joins one entry behind all the others. A record of a collision
+ * in a medium joins only an entry of collisions, which spreads from the least depth its records
+ * hold to the most.
  *
- * An entry resolves to a point sample at its depth. Its alpha is its weight over the weight of
- * the samples that reached its depth, and its colour its weighted radiance over that weight.
- * Compositing a pixel's samples front to back then gives its flat beauty and alpha. The entry of
- * what met nothing has an alpha of zero, and is left out when it holds no light.
+ * An entry resolves to a sample from its depth to its back, a point for a surface's. Its alpha is
+ * its weight over the weight of the samples that reached its depth, and its colour its weighted
+ * radiance over that weight. Compositing a pixel's samples front to back then gives its flat
+ * beauty and alpha. The entry of what met nothing has an alpha of zero, and is left out when it
+ * holds no light.
  **/
 class Deep final {
  public:

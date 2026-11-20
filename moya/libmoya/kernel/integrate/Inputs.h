@@ -109,11 +109,13 @@ MOYA_KERNEL std::uint32_t coveredFrom(const Paths<T, X> & paths, std::uint32_t x
 /**
  * Records what a camera ray covers where it first meets the scene: how far along it met anything,
  * and the instances of a surface it met and the surface's material. A ray that met no surface, or
- * met a light's shape, covers nothing. A later ray records nothing.
+ * met a light's shape, covers nothing. A collision in a medium is recorded as collided, its hit
+ * naming the medium's instances. A later ray records nothing.
  **/
 template <geometry::Traversal T, texture::Texels X>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the material, then the distance
-MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, std::uint32_t material, float distance) {
+MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const geometry::Hit & hit, std::uint32_t material, float distance,
+    bool collided = false) {
     if (paths.covered.size == 0U || MOYA_PATH(state, bounces) != 0U) {
         return;
     }
@@ -121,6 +123,7 @@ MOYA_KERNEL void cover(const Paths<T, X> & paths, const PathState & state, const
     Covered out;
     out.weight = MOYA_PATH(state, weight);
     out.depth = distance;
+    out.collided = collided ? 1U : 0U;
     if (hit.found() && hit.depth != 0U) {
         out.object = hit.instances[hit.depth - 1U];
         out.asset = hit.instances[0];

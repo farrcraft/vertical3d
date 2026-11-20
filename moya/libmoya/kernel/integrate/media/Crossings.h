@@ -256,21 +256,29 @@ MOYA_KERNEL float advanceTo(const Paths<T, X> & paths, Crossings & crossings, fl
 /**
  * Joins into coefficients those of each volume a ray is inside at a parameter. Where glows is
  * given, it takes each crossing's emission there, in ACEScg, and none for a volume the ray is not
- * inside.
+ * inside. Where extinctions is given, it takes each crossing's extinction there, and none for a
+ * volume the ray is not inside.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void joinCrossed(const Paths<T, X> & paths, const Crossings & crossings, float t, const spectrum::SampledWavelengths & wavelengths, float time,
-    volume::Coefficients & into, glm::vec3 * glows = nullptr) {
+    volume::Coefficients & into, glm::vec3 * glows = nullptr, spectrum::SampledSpectrum * extinctions = nullptr) {
     for (std::uint32_t i = 0; i < crossings.count && i < kMostCrossed; ++i) {
         const Crossing & crossing = crossings.entries[i];
         if (glows != nullptr) {
             glows[i] = glm::vec3 { 0.0F };
         }
+        if (extinctions != nullptr) {
+            extinctions[i] = spectrum::SampledSpectrum(0.0F);
+        }
         if (!(t < crossing.enter) && t < crossing.exit) {
             const volume::Medium medium = mediumAt(paths, crossing, t, time);
-            volume::join(into, volume::coefficientsOf(paths.table, medium, wavelengths));
+            const volume::Coefficients own = volume::coefficientsOf(paths.table, medium, wavelengths);
+            volume::join(into, own);
             if (glows != nullptr) {
                 glows[i] = medium.emission;
+            }
+            if (extinctions != nullptr) {
+                extinctions[i] = own.extinction();
             }
         }
     }
