@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -12,6 +12,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The assets the media loaders give: a decoded image and a model.
+ **/
 namespace v3d::asset::media::kind {
 /**
  * A decoded image loaded from an image file, as the asset manager hands it out.

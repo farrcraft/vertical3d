@@ -4,12 +4,12 @@ In this tutorial you make a scene with a cube and a cone, move the cone, undo an
 look at the scene from different views, and save it as a project. Then you close the editor and
 open the project again. It takes about fifteen minutes.
 
-You need a built copy of the editor. [README.md](README.md#starting-the-editor) says where it
-is.
+You need the editor installed or built. [README.md](README.md#starting-the-editor) says how to
+start it.
 
 ## Start the editor
 
-1. Run `vertical3d.exe`.
+1. Start the editor.
 2. If a box asks "Recover the unsaved changes to project?", click **Discard**.
 3. In the bar at the top of the window, click the **Modelling** tab.
 
@@ -79,7 +79,7 @@ Translation shows its new position.
 
 ## Open the project again
 
-1. Run `vertical3d.exe`. It starts with an empty scene in the default project.
+1. Start the editor. It starts with an empty scene in the default project.
 2. Press **Ctrl+O**. The file chooser opens.
 3. In the list, click `first-scene` to open that directory.
 4. Click `project.json`, then click **Accept**.

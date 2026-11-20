@@ -22,7 +22,8 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [Releases](Releases.md) | Engine, apps, build, CI, documents | Apps that run from an install, a version in every app, install rules, a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |
+| [MoyaVolumes](MoyaVolumes.md) | Offline rendering | The rebuilt moya's volumes: homogeneous media and OpenVDB grids tracked at four wavelengths, nested media, random-walk subsurface, a hair BSDF on curves, volumetric lights, volumes in the compositing outputs, and all of it named in RIB |
+| [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans
 
@@ -30,6 +31,14 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaRetirement](completed/MoyaRetirement.md) | Offline rendering, editor | 2026-11-16 | moya with one renderer: RIB's built-in shaders as materials and lights, moya.exe and the editor rendering through the path tracer, RIB as a library of its own, and the reyes hider, the ray hider and the shading language deleted |
+| [MoyaCompositing](completed/MoyaCompositing.md) | Offline rendering | 2026-11-15 | The rebuilt moya's outputs for compositing: the scene's outputs in the render, alpha, values at the first hit, light path expressions, light groups, Cryptomatte, deep EXR and denoising through OIDN, all named in RIB |
+| [MoyaMaterials](completed/MoyaMaterials.md) | Offline rendering | 2026-11-13 | The rebuilt moya's materials: a BSDF library arranged as OpenPBR Surface, MaterialX graphs compiled into a node program every device runs, a texture cache filtered by a ray's footprint, displacement and opacity from the material, and materials named in RIB |
+| [MoyaPathTracer](completed/MoyaPathTracer.md) | Offline rendering | 2026-11-11 | The rebuilt moya's path tracer: the integrator's stages over a path state, next event estimation and MIS, every UsdLux light sampled by solid angle, a dome light, a light tree, light and shadow linking, IES profiles, RenderMan's lights from RIB, adaptive sampling, checkpoints, a statistical oracle and reference renders |
+| [MoyaGeometry](completed/MoyaGeometry.md) | Offline rendering | 2026-11-09 | The rebuilt moya's ray traversal: a wide hierarchy over every primitive the scene names, with motion and nested instances, SIMD on the CPU, OpenSubdiv, tessellation and displacement, rebuilding what changed, a hit view and a benchmark |
+| [MoyaScene](completed/MoyaScene.md) | Offline rendering, editor | 2026-11-07 | The rebuilt moya's retained scene: objects of declared kinds by handle, with samples over the shutter and versioned commits, read from RIB by a client and kept in step with the editor's |
+| [MoyaFoundation](completed/MoyaFoundation.md) | Offline rendering, build | 2026-11-07 | The rebuilt moya's foundation: kernel code on a CPU device over oneTBB, sampled spectra and a fitted RGB-to-spectrum table, a ZSobol sampler, a film of AOVs that filters by importance sampling, EXR and 8-bit output, and colour management through OpenColorIO |
+| [Releases](completed/Releases.md) | Engine, apps, build, CI, documents | 2026-11-06 | Vertical3D 0.1.0: apps that run from an install with a version in each, install rules, a changelog and a release workflow, a Windows installer, the whole tree on Linux, and a Flatpak |
 | [DocsSite](completed/DocsSite.md) | Documents, CI, editor, moya | 2026-11-05 | A searchable site of the documents on GitHub Pages with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps made by scripts |
 | [EditorDesignSync](completed/EditorDesignSync.md) | Editor, UI, design | 2026-11-04 | The editor and its mockups in agreement: chosen tabs, tab strips, Properties headings, visibility flags, the timeline's transport, views through a scene camera, and the mockups redrawn where the editor chose |
 | [ScriptTooling](completed/ScriptTooling.md) | Review gates, TypeScript, CI | 2026-11-03 | TypeScript type-checked through pinned npm tools, the review gates on shared modules and split by job with every rule tested, one output format, example editor scripts that run in a test, and a reference page for the gates |

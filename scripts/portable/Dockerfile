@@ -8,7 +8,10 @@ FROM ubuntu:26.04
 # job builds with the oldest, which is the nearest to the Clang a consumer on macOS has.
 ARG CLANG=20
 
-# vcpkg builds ICU with autotools, and thorvg with Meson, which needs Python. build-essential
+# vcpkg builds ICU and libxcrypt with autotools, and libxcrypt's build needs the ltdl headers
+# from libltdl-dev. It builds thorvg with Meson, which needs Python. Some ports, libsystemd
+# among them, install their Python packages into a virtual environment, which on Ubuntu needs
+# python3-venv. build-essential
 # brings GCC and libstdc++, which Clang compiles against on Linux. libclang-rt holds the
 # sanitizer and libFuzzer runtimes, which Clang links but does not install itself. llvm holds the
 # symbolizer that names the functions in a sanitizer's report.
@@ -16,7 +19,7 @@ ARG CLANG=20
 # The whole tree needs more. SDL3 builds its X11, Wayland and audio backends against the
 # system's headers. glslc compiles the shaders. mesa-vulkan-drivers holds lavapipe, the software
 # Vulkan driver the device suites draw with, and vulkan-validationlayers the layer they require to
-# be on. xvfb is the display the window suites open on, and openbox the window manager that
+# be on. MaterialX's installed package looks for X11 with its Xt library, which libxt-dev holds. xvfb is the display the window suites open on, and openbox the window manager that
 # carries out a window's request to go full screen, as a desktop's does.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
@@ -38,6 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libegl-dev \
     libgbm-dev \
     libgl-dev \
+    libltdl-dev \
     libpulse-dev \
     libtool \
     libudev-dev \
@@ -52,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon-dev \
     libxrandr-dev \
     libxss-dev \
+    libxt-dev \
     libxtst-dev \
     llvm-${CLANG} \
     mesa-vulkan-drivers \
@@ -59,6 +64,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openbox \
     pkg-config \
     python3 \
+    python3-venv \
     tar \
     unzip \
     vulkan-validationlayers \

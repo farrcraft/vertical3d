@@ -9,9 +9,11 @@ do, by the names the editor shows. It does not describe the source code.
 
 ## Starting the editor
 
-Run `vertical3d.exe`. A build of the repository puts it in `out/build/x64-Debug/vertical3d/`,
-and [Build.md](../../contributing/Build.md) says how to build it. The editor reads its settings
-from the `data` directory beside the program, so run the copy that has that directory.
+[Install.md](../Install.md) says how to install the editor from a release, or build it. On
+Windows, start it from **Vertical3D Editor** in the Start menu, or run `vertical3d.exe`. In the
+Flatpak, start it from the desktop's list of applications. The editor reads what it ships with,
+such as its menus and default bindings, from the `data` directory beside the program, so keep
+that directory with it.
 
 ## The pages
 

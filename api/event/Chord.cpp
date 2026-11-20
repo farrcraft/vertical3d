@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Chord.h"
 
@@ -34,14 +34,6 @@ std::string capitalised(std::string_view word) {
 }
 
 };  // namespace
-
-int Modifiers::count() const noexcept {
-    return (ctrl ? 1 : 0) + (shift ? 1 : 0) + (alt ? 1 : 0);
-}
-
-bool Modifiers::within(const Modifiers& held) const noexcept {
-    return (!ctrl || held.ctrl) && (!shift || held.shift) && (!alt || held.alt);
-}
 
 Chord chord(std::string_view name) {
     const std::size_t last = name.rfind('+');

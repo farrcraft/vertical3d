@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "GraphEditor.h"
 
@@ -10,10 +10,11 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/Dressing.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
-#include <vertical3d/src/view/ViewOverlay.h>
+#include <vertical3d/src/view/OverlayLook.h>
 
 #include <algorithm>
 #include <array>

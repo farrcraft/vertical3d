@@ -8,7 +8,19 @@ import * as path from 'node:path';
 
 import { GateError } from '../lib/git.ts';
 import { ROOT, isTestPath } from '../lib/tree.ts';
-import { dropArgument, dropCall, dropSource, listedSources, missingLinks, missingSources, sourceOf, unknownCommands } from './cmake.ts';
+import {
+    dropArgument,
+    dropArgumentHolding,
+    dropCall,
+    dropSource,
+    listedSources,
+    missingDependencies,
+    missingExpressions,
+    missingLinks,
+    missingSources,
+    sourceOf,
+    unknownCommands,
+} from './cmake.ts';
 import { runLogged, tail } from './environment.ts';
 import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types.ts';
 
@@ -16,17 +28,34 @@ import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types
 // names it and resolves to a file the worktree lacks, and the configure runs again. A list in
 // another directory that spells the name the same way names a different file, and keeps it. The
 // drops are added to dropped, marked with whether the change added the source. A call in a
-// tests/ CMakeLists.txt that the configure reports as an unknown command is removed, and the
-// configure runs again.
-export function configure(worktree: string, build: string, mainBuild: string, cache: Map<string, string>, env: Env,
-                   scratch: string, head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
+// tests/ CMakeLists.txt that the configure reports as an unknown command is removed. A target the
+// change added outside tests/ is removed where a tests/ CMakeLists.txt links it or depends on it,
+// and an argument there whose generator expression names it is removed too. The configure then
+// runs again.
+export function configure(
+    worktree: string,
+    build: string,
+    mainBuild: string,
+    cache: Map<string, string>,
+    env: Env,
+    scratch: string,
+    head: string,
+    added: Set<string>,
+    dropped: Map<string, Drop[]>,
+): void {
     let toolchain = cache.get('CMAKE_TOOLCHAIN_FILE') ?? 'vendor/vcpkg/scripts/buildsystems/vcpkg.cmake';
     if (!path.isAbsolute(toolchain)) {
         toolchain = path.join(ROOT, toolchain);
     }
     const installed = cache.get('VCPKG_INSTALLED_DIR') || path.join(mainBuild, 'vcpkg_installed');
     const command = [
-        'cmake', '-S', worktree, '-B', build, '-G', 'Ninja',
+        'cmake',
+        '-S',
+        worktree,
+        '-B',
+        build,
+        '-G',
+        'Ninja',
         '-DCMAKE_BUILD_TYPE=' + (cache.get('CMAKE_BUILD_TYPE') ?? 'Debug'),
         '-DCMAKE_TOOLCHAIN_FILE=' + toolchain.replaceAll('\\', '/'),
         '-DVCPKG_TARGET_TRIPLET=' + (cache.get('VCPKG_TARGET_TRIPLET') ?? 'x64-windows'),
@@ -54,8 +83,7 @@ export function configure(worktree: string, build: string, mainBuild: string, ca
             const named = name.replaceAll('\\', '/');
             for (const { suite, directory, source } of listed) {
                 // the configure prints the entry as the list spelled it, or as an absolute path
-                const full = path.isAbsolute(name) ?
-                    path.relative(worktree, name).split(path.sep).join('/') : sourceOf(directory, named);
+                const full = path.isAbsolute(name) ? path.relative(worktree, name).split(path.sep).join('/') : sourceOf(directory, named);
                 if (full !== source || fs.existsSync(path.join(worktree, ...source.split('/')))) {
                     continue;
                 }
@@ -66,39 +94,56 @@ export function configure(worktree: string, build: string, mainBuild: string, ca
                 }
             }
         }
-        // a head tests/CMakeLists.txt can call a helper the change added outside tests/
-        for (const { file, line, command: name } of unknownCommands(output)) {
-            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
-            if (!isTestPath(relative)) {
-                continue;
-            }
-            const full = path.join(worktree, ...relative.split('/'));
-            const text = fs.existsSync(full) ? dropCall(fs.readFileSync(full, 'utf8'), line, name) : null;
-            if (text !== null) {
-                fs.writeFileSync(full, text);
-                console.log(`dropped the call to ${name} from ${relative}: the base has no such command`);
-                progress = true;
-            }
-        }
-        // a head tests/CMakeLists.txt can link a package the change added, which the base does
-        // not find. The suite then fails to build against the base, if it needs the package
-        for (const { file, line, target } of missingLinks(output)) {
-            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
-            if (!isTestPath(relative)) {
-                continue;
-            }
-            const full = path.join(worktree, ...relative.split('/'));
-            const text = fs.existsSync(full) ? dropArgument(fs.readFileSync(full, 'utf8'), line, 'target_link_libraries', target) : null;
-            if (text !== null) {
-                fs.writeFileSync(full, text);
-                console.log(`dropped ${target} from the link in ${relative}: the base does not find it`);
-                progress = true;
-            }
-        }
+        // a head tests/CMakeLists.txt can call a helper the change added outside tests/, link a
+        // package it added, or depend on a tool it added and name the tool's file. Each is
+        // removed, and the suite then fails to build against the base if it needs what it named
+        progress = repairTests(worktree, output) || progress;
         if (!progress || attempt >= 10) {
             throw new GateError('the worktree did not configure:\n' + tail(output));
         }
     }
+}
+
+// Rewrites a tests/ CMakeLists.txt a failed configure named, and logs what it dropped and why.
+// False when the file lies outside tests/, or the rewrite finds nothing to remove.
+function rewriteTest(worktree: string, file: string, rewrite: (text: string) => string | null, what: string, why: string): boolean {
+    const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
+    if (!isTestPath(relative)) {
+        return false;
+    }
+    const full = path.join(worktree, ...relative.split('/'));
+    const text = fs.existsSync(full) ? rewrite(fs.readFileSync(full, 'utf8')) : null;
+    if (text === null) {
+        return false;
+    }
+    fs.writeFileSync(full, text);
+    console.log(`dropped ${what} from ${relative}: ${why}`);
+    return true;
+}
+
+// Removes from the tests/ CMakeLists.txt files what a failed configure reports the base lacks.
+// That is a call to an unknown command, a link to a target no package defines, a dependency on a
+// target that does not exist, or an argument whose generator expression names one. True when
+// anything was removed.
+function repairTests(worktree: string, output: string): boolean {
+    let progress = false;
+    for (const { file, line, command } of unknownCommands(output)) {
+        const drop = (text: string): string | null => dropCall(text, line, command);
+        progress = rewriteTest(worktree, file, drop, `the call to ${command}`, 'the base has no such command') || progress;
+    }
+    for (const { file, line, target } of missingLinks(output)) {
+        const drop = (text: string): string | null => dropArgument(text, line, 'target_link_libraries', target);
+        progress = rewriteTest(worktree, file, drop, `${target} from the link`, 'the base does not find it') || progress;
+    }
+    for (const { file, line, target } of missingDependencies(output)) {
+        const drop = (text: string): string | null => dropArgument(text, line, 'add_dependencies', target);
+        progress = rewriteTest(worktree, file, drop, `the dependency on ${target}`, 'the base has no such target') || progress;
+    }
+    for (const { file, line, command, expression } of missingExpressions(output)) {
+        const drop = (text: string): string | null => dropArgumentHolding(text, line, command, expression);
+        progress = rewriteTest(worktree, file, drop, `the argument holding ${expression}`, 'the base has no such target') || progress;
+    }
+    return progress;
 }
 
 // The suite's own sources that failed to compile, or whose objects name a symbol the link of the
@@ -117,8 +162,11 @@ export function failedSources(output: string, directory: string, suite: string, 
         if (!outputFile.includes(marker) || !outputFile.endsWith('.obj')) {
             return null;
         }
-        const relative = (outputFile.split(marker)[1] ?? '').slice(0, -'.obj'.length)
-            .split('/').map((part) => (part === '__' ? '..' : part)).join('/');
+        const relative = (outputFile.split(marker)[1] ?? '')
+            .slice(0, -'.obj'.length)
+            .split('/')
+            .map((part) => (part === '__' ? '..' : part))
+            .join('/');
         failed.push(path.posix.normalize(path.posix.join(directory, relative)));
     }
     if (!linked) {
@@ -194,14 +242,21 @@ export function buildAll(suites: string[], build: string, env: Env, scratch: str
 
 // Builds v3dtest_<suite>. Marks the cases that cannot be built or run, and returns the
 // executable, or null when there is none to run.
-export function buildSuite(suite: string, directory: string, sources: string[], cases: Case[], worktree: string,
-                    build: string, env: Env, scratch: string): string | null {
+export function buildSuite(
+    suite: string,
+    directory: string,
+    sources: string[],
+    cases: Case[],
+    worktree: string,
+    build: string,
+    env: Env,
+    scratch: string,
+): string | null {
     const target = 'v3dtest_' + suite;
     const dropped = new Set<string>();
     for (;;) {
         console.log(`building ${target}`);
-        const { code, output } = runLogged(['ninja', '-k', '0', '-C', build, target],
-                                           path.join(scratch, `build-${suite}.log`), env);
+        const { code, output } = runLogged(['ninja', '-k', '0', '-C', build, target], path.join(scratch, `build-${suite}.log`), env);
         if (code === 0) {
             break;
         }
@@ -241,7 +296,7 @@ export function buildSuite(suite: string, directory: string, sources: string[], 
     if (fs.existsSync(executable)) {
         return executable;
     }
-    for (const entry of fs.readdirSync(build, { recursive: true }) as string[]) {
+    for (const entry of fs.readdirSync(build, { recursive: true, encoding: 'utf8' })) {
         if (path.basename(entry) === target + '.exe') {
             return path.join(build, entry);
         }

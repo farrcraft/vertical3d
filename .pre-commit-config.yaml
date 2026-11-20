@@ -74,6 +74,12 @@ repos:
     language: system
     pass_filenames: false
     files: \.(h|cpp|cxx)$|^scripts/
+  - id: kernel
+    name: kernel.ts
+    entry: node scripts/kernel.ts
+    language: system
+    pass_filenames: false
+    files: ^moya/libmoya/kernel/|^scripts/
   - id: pinned
     name: pinned.ts
     entry: node scripts/pinned.ts

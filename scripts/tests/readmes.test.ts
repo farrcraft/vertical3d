@@ -11,7 +11,10 @@ import { test } from 'node:test';
 import { formatFinding } from '../lib/cli.ts';
 import { components, firstParagraph, problems, relativeLinks } from '../readmes.ts';
 
-const LIBRARIES = [{ name: 'grid', directory: 'grid' }, { name: 'asset_media', directory: 'asset/media' }];
+const LIBRARIES = [
+    { name: 'grid', directory: 'grid' },
+    { name: 'asset_media', directory: 'asset/media' },
+];
 
 /** The problems with one README, as the lines the gate prints. Only the listed paths exist. */
 function check(directory: string, text: string | null, description?: string, existing: string[] = []): string[] {
@@ -30,8 +33,15 @@ test('readmes finds the root directories, the demos and examples with a CMakeLis
         'examples/starter/CMakeLists.txt',
         'examples/notes/plan.txt',
     ];
-    assert.deepEqual(components(files, LIBRARIES),
-        ['api/asset/media', 'api/grid', 'demos', 'demos/pong', 'examples', 'examples/starter', 'moya']);
+    assert.deepEqual(components(files, LIBRARIES), [
+        'api/asset/media',
+        'api/grid',
+        'demos',
+        'demos/pong',
+        'examples',
+        'examples/starter',
+        'moya',
+    ]);
 });
 
 test('readmes reports a component with no README', () => {
@@ -48,8 +58,9 @@ test('readmes reports a README whose first line is not a heading', () => {
 });
 
 test('readmes reports a relative link to a path that does not exist', () => {
-    assert.deepEqual(check('moya', '# moya\n\nSee [the docs](../docs/Moya.md).\n'),
-        ['moya/README.md: broken-link: ../docs/Moya.md does not exist']);
+    assert.deepEqual(check('moya', '# moya\n\nSee [the docs](../docs/Moya.md).\n'), [
+        'moya/README.md: broken-link: ../docs/Moya.md does not exist',
+    ]);
 });
 
 test('readmes reads only relative links, without their anchors', () => {
@@ -58,8 +69,7 @@ test('readmes reads only relative links, without their anchors', () => {
 });
 
 test('readmes reads the first paragraph after the heading as one line of text', () => {
-    assert.deepEqual(firstParagraph('# grid\n\nTile boards: paths and\n[sight](x.md).\n\nMore.\n'),
-        'Tile boards: paths and sight.');
+    assert.deepEqual(firstParagraph('# grid\n\nTile boards: paths and\n[sight](x.md).\n\nMore.\n'), 'Tile boards: paths and sight.');
 });
 
 test('readmes accepts a library README whose first paragraph is its description', () => {
@@ -74,7 +84,8 @@ test('readmes compares a description with each link read as its text', () => {
 
 test('readmes reports a library README whose first paragraph differs from its description', () => {
     const text = '# grid\n\nTile boards.\n';
-    assert.deepEqual(check('api/grid', text, 'Tile boards and line of sight.'),
-        ['api/grid/README.md: stale-description: the first paragraph is not the description in docs/api/README.md: '
-            + '"Tile boards and line of sight."']);
+    assert.deepEqual(check('api/grid', text, 'Tile boards and line of sight.'), [
+        'api/grid/README.md: stale-description: the first paragraph is not the description in docs/api/README.md: ' +
+            '"Tile boards and line of sight."',
+    ]);
 });

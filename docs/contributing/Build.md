@@ -136,8 +136,8 @@ Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 im
   `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
   fuzz target after them. See [Testing.md](Testing.md#sanitizers).
   [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
-  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
-  render_offline and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
+  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log, rib
+  and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
   leaves out the manifest's `platform` and `usd` features.
 - **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
   older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's
@@ -199,6 +199,8 @@ than an imported target, so it never appears in a link line.
 |---|---|---|
 | `V3D_BUILD_APPS` | top level | Everything outside `api/` |
 | `V3D_BUILD_TESTS` | top level | The Boost.Test suites and their ctest entries |
+| `V3D_BUILD_MOYA` | `OFF` | moya and its suite in a build whose `V3D_BUILD_APPS` is off. See [Kernel.md](../offline/Kernel.md#building-moya-without-the-apps) |
+| `V3D_MOYA_RGB` | `OFF` | moya's colour as three ACEScg channels rather than four wavelengths. See [Spectra.md](../offline/Spectra.md#the-rgb-build) |
 | `V3D_RELEASE` | `OFF` | A release build, whose version is the bare number. See [api/engine/README.md](../api/engine/README.md#the-version) |
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
@@ -283,6 +285,7 @@ A release ships the install tree. `cmake --install out/build/x64-Release` writes
   lays it out;
 - one copy of each DLL the apps load, and the MSVC runtime from `InstallRequiredSystemLibraries`;
 - OpenUSD's plugins in `usd/`, beside its DLLs, where it looks for them;
+- MaterialX's standard libraries in `materialx/`, beside moya, where it reads them;
 - `NOTICES.txt`, which [scripts/notices.ts](../../scripts/notices.ts) writes as the tree is
   installed. Installing needs Node on the `PATH` for it.
 
@@ -476,6 +479,12 @@ to a temporary.
 - **Editing `vcpkg.json` re-runs the package install at the next configure.** Adding or removing
   a boost port can rebuild boost. Changing the `sdl3` feature list rebuilds SDL only, which takes
   about five minutes.
+- **A new baseline does not rebuild the tree's objects.** The packages' headers are on an
+  `/external:I` path, and ninja records no dependency on them, so an object compiled against an
+  older package is linked as it stands. A mismatch can then show as LNK2038 between two versions
+  of one package, as EnTT checks its own, or not at all. After the configure that installs the
+  new packages, run `ninja -C out/build/<config> -t clean`, configure again and build. It
+  deletes the build's outputs and leaves `vcpkg_installed/` alone.
 - **cgltf has no CMake config.** It is a single header. `cmake/v3dDependencies.cmake` finds it with
   `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_interchange` and `v3dlib_asset_media` each
   add that directory to their own include path. Its implementation is compiled once for every
@@ -484,6 +493,9 @@ to a temporary.
   excluded from both static analysers.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
+- **LNK1235 naming a static library the build has just written** is not a corrupt library.
+  The library on disk is sound, and building again links it, so build again before deleting
+  anything. It comes after a build that recompiles much of a large library.
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
   build again. If the same object fails again at the same section number, the corrupt object is
   another one that defines the same symbol. Run `dumpbin /headers` on the named object and read

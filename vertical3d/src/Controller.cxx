@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "Controller.h"
 
@@ -48,10 +48,12 @@
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/RenderSettingsEditor.h>
 #include <vertical3d/src/control/RenderView.h>
+#include <vertical3d/src/control/chrome/Status.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
 #include <vertical3d/src/scene/item/Item.h>
@@ -65,6 +67,7 @@
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/AxisEnd.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>

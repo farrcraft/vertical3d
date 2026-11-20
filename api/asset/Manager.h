@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,6 +20,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/pointer_cast.hpp>
 
+/**
+ * Finds files under a data directory and loads them through the loaders registered for their
+ * extensions. Also holds the manifest an app lists its documents in, atomic file writes and
+ * document migration.
+ **/
 namespace v3d::asset {
 /**
  * The Asset Manager provides an access point for mapping and loading assets

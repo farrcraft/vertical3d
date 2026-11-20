@@ -65,35 +65,41 @@ export function siteTarget(page: string, target: string, site: Site): string | n
 /** A page's Markdown, each link given its site target. A link that names nothing goes in broken. */
 export function rewrite(page: string, content: string, site: Site, broken: Broken[]): string {
     let fence: string | null = null;
-    return content.split('\n').map((line) => {
-        const opener = /^\s*(`{3,}|~{3,})/.exec(line);
-        if (opener !== null) {
-            const mark = opener[1] ?? '';
-            if (fence === null) {
-                fence = mark;
-            } else if (mark.startsWith(fence)) {
-                fence = null;
-            }
-            return line;
-        }
-        if (fence !== null) {
-            return line;
-        }
-        // the odd parts of the split are code spans, which hold no links
-        return line.split(/(`[^`]*`)/).map((part, index) => {
-            if (index % 2 === 1) {
-                return part;
-            }
-            return part.replace(/\]\(([^)\s]+)\)/g, (whole, target: string) => {
-                const resolved = siteTarget(page, target, site);
-                if (resolved === null) {
-                    broken.push({ page, target });
-                    return whole;
+    return content
+        .split('\n')
+        .map((line) => {
+            const opener = /^\s*(`{3,}|~{3,})/.exec(line);
+            if (opener !== null) {
+                const mark = opener[1] ?? '';
+                if (fence === null) {
+                    fence = mark;
+                } else if (mark.startsWith(fence)) {
+                    fence = null;
                 }
-                return `](${resolved})`;
-            });
-        }).join('');
-    }).join('\n');
+                return line;
+            }
+            if (fence !== null) {
+                return line;
+            }
+            // the odd parts of the split are code spans, which hold no links
+            return line
+                .split(/(`[^`]*`)/)
+                .map((part, index) => {
+                    if (index % 2 === 1) {
+                        return part;
+                    }
+                    return part.replace(/\]\(([^)\s]+)\)/g, (whole, target: string) => {
+                        const resolved = siteTarget(page, target, site);
+                        if (resolved === null) {
+                            broken.push({ page, target });
+                            return whole;
+                        }
+                        return `](${resolved})`;
+                    });
+                })
+                .join('');
+        })
+        .join('\n');
 }
 
 /** A chapter as mdBook's JSON gives it, with the fields this reads and writes. */
@@ -103,12 +109,27 @@ interface Chapter {
     sub_items: unknown[];
 }
 
+/** A field of a value read from JSON, or undefined when the value is not an object or lacks it. */
+function field(value: unknown, name: string): unknown {
+    return typeof value === 'object' && value !== null ? Reflect.get(value, name) : undefined;
+}
+
+/** Whether a value read from JSON has the fields of a chapter. */
+function isChapter(value: unknown): value is Chapter {
+    const source = field(value, 'source_path');
+    return (
+        typeof field(value, 'content') === 'string' &&
+        (source === null || typeof source === 'string') &&
+        Array.isArray(field(value, 'sub_items'))
+    );
+}
+
 /** Each chapter in a list of book items, depth first. */
 function chapters(items: readonly unknown[]): Chapter[] {
     const found: Chapter[] = [];
     for (const item of items) {
-        if (typeof item === 'object' && item !== null && 'Chapter' in item) {
-            const chapter = (item as { Chapter: Chapter }).Chapter;
+        const chapter = field(item, 'Chapter');
+        if (isChapter(chapter)) {
             found.push(chapter, ...chapters(chapter.sub_items));
         }
     }
@@ -131,16 +152,22 @@ async function main(): Promise<void> {
     }
     // on Linux, standard input from mdBook is a non-blocking pipe, and a synchronous read of one
     // fails with EAGAIN, so it is read as a stream
-    const [context, book] = JSON.parse(await text(process.stdin)) as [
-        { config: { preprocessor: { outside: { repository: string; branch: string } } } },
-        { items: unknown[] },
-    ];
-    const settings = context.config.preprocessor.outside;
-    const all = chapters(book.items);
+    const input: unknown = JSON.parse(await text(process.stdin));
+    const [context, book]: unknown[] = Array.isArray(input) ? input : [];
+    const settings = field(field(field(context, 'config'), 'preprocessor'), 'outside');
+    const repository = field(settings, 'repository');
+    const branch = field(settings, 'branch');
+    const items = field(book, 'items');
+    if (typeof repository !== 'string' || typeof branch !== 'string' || !Array.isArray(items)) {
+        process.stderr.write('mdBook gave no [preprocessor.outside] repository and branch, or no book items\n');
+        process.exitCode = 1;
+        return;
+    }
+    const all = chapters(items);
     const site: Site = {
-        pages: new Set(all.flatMap((chapter) => chapter.source_path === null ? [] : [chapter.source_path])),
-        repository: settings.repository,
-        branch: settings.branch,
+        pages: new Set(all.flatMap((chapter) => (chapter.source_path === null ? [] : [chapter.source_path]))),
+        repository,
+        branch,
         kind: diskKind,
     };
     const broken: Broken[] = [];

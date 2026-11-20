@@ -21,33 +21,33 @@ function comments(text: string): Array<[number, string]> {
 }
 
 test('a comment marker inside a string or character literal starts no comment', () => {
-    const text = 's = "a // b /* c"; t = \'//\'; u = \'/*\'; // real';
-    assert.deepEqual(codeLines(text), ['s = ""; t = \'\'; u = \'\'; ']);
+    const text = "s = \"a // b /* c\"; t = '//'; u = '/*'; // real";
+    assert.deepEqual(codeLines(text), ["s = \"\"; t = ''; u = ''; "]);
     assert.deepEqual(comments(text), [[1, ' real']]);
 });
 
 test('an escaped quote does not end its literal', () => {
-    const text = 'a = \'"\'; b = \'\\\'\'; c = "\\" // no"; // yes';
-    assert.deepEqual(codeLines(text), ['a = \'\'; b = \'\'; c = ""; ']);
+    const text = "a = '\"'; b = '\\''; c = \"\\\" // no\"; // yes";
+    assert.deepEqual(codeLines(text), ["a = ''; b = ''; c = \"\"; "]);
     assert.deepEqual(comments(text), [[1, ' yes']]);
 });
 
 test('a digit separator is code and opens no literal', () => {
-    for (const number of ['1\'000', '0x1\'F', '0b1\'0', '1.5\'0', '1\'000\'000']) {
+    for (const number of ["1'000", "0x1'F", "0b1'0", "1.5'0", "1'000'000"]) {
         const text = `int n = ${number};  // So it ends here.`;
         assert.deepEqual(codeLines(text), [`int n = ${number};  `], number);
         assert.deepEqual(comments(text), [[1, ' So it ends here.']], number);
     }
-    assert.equal(isDigitSeparator('1\'000', 1), true);
-    assert.equal(isDigitSeparator('0x1\'F', 3), true);
+    assert.equal(isDigitSeparator("1'000", 1), true);
+    assert.equal(isDigitSeparator("0x1'F", 3), true);
 });
 
 test('a quote after a prefix or a letter opens a character literal', () => {
-    const text = 'auto a = u8\'a\'; auto b = \'x\'; auto c = L\'"\'; // c';
-    assert.deepEqual(codeLines(text), ['auto a = u8\'\'; auto b = \'\'; auto c = L\'\'; ']);
+    const text = "auto a = u8'a'; auto b = 'x'; auto c = L'\"'; // c";
+    assert.deepEqual(codeLines(text), ["auto a = u8''; auto b = ''; auto c = L''; "]);
     assert.deepEqual(comments(text), [[1, ' c']]);
-    assert.equal(isDigitSeparator('u8\'a\'', 2), false);
-    assert.equal(isDigitSeparator('\'x\'', 0), false);
+    assert.equal(isDigitSeparator("u8'a'", 2), false);
+    assert.equal(isDigitSeparator("'x'", 0), false);
 });
 
 test('a raw string ends only at its own delimiter', () => {
@@ -71,15 +71,12 @@ test('an identifier ending in R before a quote is not a raw string prefix', () =
 });
 
 test('a raw string across lines hides the comment markers inside it', () => {
-    const text = [
-        'auto s = R"(',
-        '// not a comment',
-        '/* nor this',
-        ')";  // real',
-        'int x; /* also real */',
-    ].join('\n');
+    const text = ['auto s = R"(', '// not a comment', '/* nor this', ')";  // real', 'int x; /* also real */'].join('\n');
     assert.deepEqual(codeLines(text), ['auto s = ""', '', '', ';  ', 'int x;  ']);
-    assert.deepEqual(comments(text), [[4, ' real'], [5, ' also real ']]);
+    assert.deepEqual(comments(text), [
+        [4, ' real'],
+        [5, ' also real '],
+    ]);
 });
 
 test('a backslash before LF continues a literal onto the next line', () => {
@@ -95,37 +92,44 @@ test('a backslash before CRLF continues a literal onto the next line', () => {
 });
 
 test('a literal with no closing quote ends at its line break', () => {
-    const text = '#error don\'t\n// real';
-    assert.deepEqual(codeLines(text), ['#error don\'\'', '']);
+    const text = "#error don't\n// real";
+    assert.deepEqual(codeLines(text), ["#error don''", '']);
     assert.deepEqual(comments(text), [[2, ' real']]);
 });
 
 test('a block comment covers the lines after the one that opens it', () => {
     const text = 'int a; /* open\n*out = 1;\n\n*/ int b;';
     assert.deepEqual(codeLines(text), ['int a;  ', '', '', ' int b;']);
-    assert.deepEqual(comments(text), [[1, ' open'], [2, '*out = 1;'], [3, ''], [4, '']]);
+    assert.deepEqual(comments(text), [
+        [1, ' open'],
+        [2, '*out = 1;'],
+        [3, ''],
+        [4, ''],
+    ]);
 });
 
 test('a comment body keeps its column', () => {
     const line = 'int a;  // body';
     assert.deepEqual(commentLines(line), [[{ column: line.indexOf('//') + 2, text: ' body' }]]);
     const block = 'f(); /* one */ g(); /* two';
-    assert.deepEqual(commentLines(block), [[
-        { column: block.indexOf('/*') + 2, text: ' one ' },
-        { column: block.lastIndexOf('/*') + 2, text: ' two' },
-    ]]);
+    assert.deepEqual(commentLines(block), [
+        [
+            { column: block.indexOf('/*') + 2, text: ' one ' },
+            { column: block.lastIndexOf('/*') + 2, text: ' two' },
+        ],
+    ]);
 });
 
 test('every result has one entry per line, and a line keeps its number', () => {
     const text = [
-        'auto r = R"x(',     // 1
-        ')" no )x";',        // 2
-        's = "a \\',         // 3
-        'b";',               // 4
-        '/* one',            // 5
-        'two */',            // 6
-        'c = \'\\\'\';',     // 7
-        'marker();  // m',   // 8
+        'auto r = R"x(', // 1
+        ')" no )x";', // 2
+        's = "a \\', // 3
+        'b";', // 4
+        '/* one', // 5
+        'two */', // 6
+        "c = '\\'';", // 7
+        'marker();  // m', // 8
     ].join('\r\n');
     const count = text.split('\n').length;
     assert.equal(lex(text).length, count);

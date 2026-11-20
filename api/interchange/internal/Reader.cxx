@@ -1,11 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Reader.h"
 
 #include <api/interchange/Placement.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Imported.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <api/type/Transform.h>
 

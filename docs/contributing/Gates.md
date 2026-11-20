@@ -23,10 +23,11 @@ document for its subject, which the table links to.
 | `readmes.ts` | Each component has a README with a heading and links that resolve, and a library's README describes it as the table does | The tree | [Conventions.md](Conventions.md#readmes) |
 | `summary.ts` | `docs/SUMMARY.md` lists each page under `docs/` once, outside `completed/` directories | The tree | [Conventions.md](Conventions.md#the-documentation-site) |
 | `adr.ts` | Each decision record is in its area's folder, numbered, tagged and linked both ways, and the indexes made from the records are current. `--write` writes the indexes | The tree | [adr/README.md](../adr/README.md#how-the-records-are-kept) |
-| `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
+| `filelocal.ts` | What a source file keeps to itself, and one class per header | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself), [Conventions.md](Conventions.md#one-class-per-header) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
-| `namespaces.ts` | Each C++ file is in its directory's namespace | The tree | [Conventions.md](Conventions.md#language) |
+| `namespaces.ts` | Each C++ file is in its directory's namespace, and each namespace of the API reference is described once | The tree | [Conventions.md](Conventions.md#language), [Conventions.md](Conventions.md#doc-comments-in-a-public-header) |
+| `kernel.ts` | moya's kernel code has no virtual function, allocation, exception, RTTI or include a device compiler lacks, and every kernel header is compiled by the kernel target | The tree | [Kernel.md](../offline/Kernel.md#the-rules) |
 | `pinned.ts` | Every action a workflow uses is pinned to a full commit sha | The tree | [Linting.md](Linting.md#ci) |
 | `npm.ts` | npm brings only pinned development tools, and no script imports a package | The tree | [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) |
 | `notices.ts` | Every package that ships code has a copyright file, and every font has a licence. `--out` writes the notices file | A vcpkg install | [Dependencies.md](Dependencies.md#third-party-notices) |
@@ -42,9 +43,10 @@ sweep of comments. [Review.md](Review.md) says which class of review finding eac
 ## In CI
 
 [review-gates.yml](../../.github/workflows/review-gates.yml) runs on an Ubuntu runner with Node.
-It installs the TypeScript tooling with `npm ci` and type-checks every TypeScript file. Then it
-runs the gates' own tests, and then each gate as a step of its own. Every step runs even when
-one before it failed, so each gate reports.
+It installs the TypeScript tooling with `npm ci`, then type-checks, lints and checks the layout of
+every TypeScript file, as [Linting.md](Linting.md#typescript) describes. Then it runs the gates'
+own tests, and then each gate as a step of its own. Every step runs even when one before it
+failed, so each gate reports.
 
 The gates that read added lines compare against a base:
 
@@ -83,8 +85,9 @@ A gate whose rule covers only some files runs when one of them is staged, or any
 `prose.ts` and `readmes.ts` run on every commit, because a rename anywhere can break what they
 check. cpplint reads only the staged C++ files, with the version and the options CI uses.
 
-The type check, the gates' own tests, `failsfirst.ts` and the documentation build stay in CI.
-They need `npm ci`, a build or a download. CI runs every check again whatever ran locally.
+The type check, the lint, the format check, the gates' own tests, `failsfirst.ts` and the
+documentation build stay in CI. They need `npm ci`, a build or a download. CI runs every check
+again whatever ran locally.
 
 `pre-commit run --all-files` runs every hook on the whole tree. `SKIP=prose git commit` skips
 one hook, for a commit that has to land in a state a gate rejects, such as one step of a
@@ -102,8 +105,9 @@ Background: [ADR-0164](../adr/project/0164-tooling-commits-are-checked-locally-t
 From the repository root:
 
 ```
-npm ci                       # once, for the type checker
+npm ci                       # once, for the type checker, the linter and the formatter
 npm run typecheck            # every TypeScript file
+npm run lint                 # and npm run format, as Linting.md describes
 npm test                     # the gates' own tests
 node scripts/linkrule.ts     # any gate, by its file
 node scripts/prose.ts --base main
@@ -115,7 +119,8 @@ there is no `origin/main`. `--base REF` names another branch or commit. Untracke
 added. [Testing.md](Testing.md#checking-that-a-new-test-fails-first) covers the options of
 `failsfirst.ts`, which builds the affected suites and takes several minutes.
 
-Running a gate needs only Node. `npm ci` is needed only for the type check.
+Running a gate needs only Node. `npm ci` is needed only for the type check, the lint and
+the formatter.
 
 ## What a gate prints
 

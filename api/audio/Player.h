@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -34,6 +34,10 @@
 
 #include <glm/vec3.hpp>
 
+/**
+ * Sound playback over SDL3_mixer, with a listener and voices placed in the world, and FMOD Studio
+ * events when built with FMOD.
+ **/
 namespace v3d::audio {
 
 /**

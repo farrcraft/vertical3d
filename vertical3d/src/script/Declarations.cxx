@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Declarations.h"
 
@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-#include "Arguments.h"
+#include "Parameter.h"
 #include "Text.h"
 
 namespace v3d::editor::script {

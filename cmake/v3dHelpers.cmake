@@ -88,15 +88,14 @@ endfunction()
 #
 # OpenUSD reads usd/plugInfo.json beside its libraries, which names each plugin's directory
 # under it, and stops at a breakpoint when it finds none. vcpkg copies the libraries beside each
-# executable but not the plugins. It also installs the plugins beside the libraries, in bin/usd,
-# and that one file in lib/usd, so both are copied. The sources are found from the imported usd
-# target, so a Debug build copies the debug plugins.
+# executable but not the plugins. It installs the plugins and that file beside the libraries, in
+# bin/usd, which is copied whole. The source is found from the imported usd target, so a Debug
+# build copies the debug plugins.
 #
 # @param target the executable that links v3dlib_interchange_usd, directly or not
 function(v3d_copy_usd_plugins target)
 	add_custom_command(TARGET ${target} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_FILE_DIR:usd>/usd" "$<TARGET_FILE_DIR:${target}>/usd"
-		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE_DIR:usd>/../lib/usd/plugInfo.json" "$<TARGET_FILE_DIR:${target}>/usd/plugInfo.json"
 		COMMENT "Copying OpenUSD's plugins for ${target}"
 		VERBATIM)
 endfunction()

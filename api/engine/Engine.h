@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -36,6 +36,10 @@ namespace v3d::image {
 class Image;
 };  // namespace v3d::image
 
+/**
+ * The game engine: the app lifecycle, the main loop, config, input and settings, and the readers
+ * for the window and camera documents. It opens the window.
+ **/
 namespace v3d::engine {
 
 /**

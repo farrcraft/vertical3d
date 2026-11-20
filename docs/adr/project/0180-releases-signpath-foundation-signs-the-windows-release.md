@@ -44,6 +44,7 @@ unsigned.
 - **Gains**: signed releases at no cost, with the signing key held by SignPath rather than in CI.
 - **Costs**: SignPath Foundation, not the project, is named as the publisher. Every member with
   release rights needs two-factor login. A build with FMOD can never be signed this way. Releases
-  stay unsigned until the application is accepted, which may need a release first.
+  stay unsigned until the application is accepted, and the application asks for links that
+  establish the project's reputation.
 - **Revisit when**: SignPath's terms change, the release ships proprietary code, or the project
   gets a certificate of its own.

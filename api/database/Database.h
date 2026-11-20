@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -12,6 +12,9 @@
 
 struct sqlite3;
 
+/**
+ * A connection to a SQLite database, its statements and its transactions.
+ **/
 namespace v3d::database {
 
 /**

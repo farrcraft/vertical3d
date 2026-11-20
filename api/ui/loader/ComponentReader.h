@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -48,6 +48,9 @@ class Item;
 class Menu;
 };  // namespace v3d::ui::component::menu
 
+/**
+ * Reads a ui document: its containers, the components in them, and its themes.
+ **/
 namespace v3d::ui::loader {
 
 /**

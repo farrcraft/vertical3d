@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "Stacks.h"
+#include "TransformStack.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>

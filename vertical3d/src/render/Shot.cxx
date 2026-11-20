@@ -1,17 +1,18 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Shot.h"
 
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Writer.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Writer.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <ostream>
@@ -42,20 +43,25 @@ v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const b
 
 /**
  **/
-void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
+v3d::type::camera::Camera shotCamera(const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
+    v3d::type::camera::Profile profile(from);
+    profile.size(settings.size);
+    profile.pixelAspect(static_cast<float>(settings.size.x) / static_cast<float>(settings.size.y));
+    v3d::type::camera::Camera camera(profile);
+    camera.createProjection();
+    camera.createView();
+    return camera;
+}
+
+/**
+ **/
+void shoot(v3d::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
     const v3d::type::camera::Profile& from, const RIBExportVisitor::Output& output) {
     if (handler == nullptr) {
         return;
     }
-    v3d::type::camera::Profile profile(from);
-    profile.size(output.settings.size);
-    profile.pixelAspect(static_cast<float>(output.settings.size.x) / static_cast<float>(output.settings.size.y));
-    v3d::type::camera::Camera camera(profile);
-    camera.createProjection();
-    camera.createView();
-
     RIBExportVisitor visitor(handler);
-    visitor.begin(camera, output);
+    visitor.begin(shotCamera(from, output.settings), output);
     scene.accept(&visitor, evaluation, scene::Scene::Showing::Renders);
     visitor.end();
 }
@@ -68,7 +74,7 @@ void writeShot(std::ostream* stream, const scene::Scene& scene, const scene::Eva
         return;
     }
     *stream << "##RenderMan RIB-Structure 1.1" << "\n" << "##Creator Vertical3D" << "\n";
-    v3d::render::offline::rib::Writer writer(stream);
+    v3d::rib::Writer writer(stream);
     shoot(&writer, scene, evaluation, from, output);
 }
 

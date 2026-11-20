@@ -162,7 +162,7 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   whose pages reach the device through the `GlyphPages` given with the `CurvePages`, as are the
   pictures of colour glyphs. Call
   `beginFrame()` once a frame, so the store can make room for new fields.
-- The curves come from a `font::glyph::CurveStore`, read the first time a glyph is drawn at any
+- The curves come from a `font::glyph::curve::Store`, read the first time a glyph is drawn at any
   size. A variable face's glyph is read at its run's coordinates, and each point on its axes is kept
   apart.
   `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three

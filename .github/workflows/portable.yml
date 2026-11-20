@@ -1,10 +1,10 @@
 # Builds the tree on Linux, so it keeps building with compilers other than MSVC. The clang job
-# builds the api libraries that need neither a window nor a device with Clang, runs their suites
-# under the sanitizers, and fuzzes each fuzz target after them, through scripts/portable/build.sh.
-# The whole job builds the whole tree with Clang and with GCC, and runs every suite, through
-# scripts/portable/whole.sh. The rest of CI builds with MSVC on Windows. Both run in the image
-# scripts/portable/Dockerfile defines. scripts\portable.cmd runs either locally in the same
-# image.
+# builds the api libraries that need neither a window nor a device, and moya, with Clang, runs
+# their suites under the sanitizers, and fuzzes each fuzz target after them, through
+# scripts/portable/build.sh. The whole job builds the whole tree with Clang and with GCC, and
+# runs every suite, through scripts/portable/whole.sh. The rest of CI builds with MSVC on
+# Windows. Both run in the image scripts/portable/Dockerfile defines. scripts\portable.cmd runs
+# either locally in the same image.
 name: portable
 
 # push is filtered to the default branch and pull_request is not. A branch in this repository
@@ -125,6 +125,16 @@ jobs:
 
       - name: Build and test
         run: docker run --rm ${{ matrix.environment }} -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole
+
+      # A suite that compares against a committed picture leaves what it drew in data_out/ when
+      # the two differ. Only this job draws with Linux's compilers and its maths library, so its
+      # pictures are kept for a failure to be looked at.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: data-out-${{ matrix.compiler }}
+          path: ${{ env.WORK_DIR }}/whole-*/**/data_out/
+          if-no-files-found: ignore
 
       - name: Check for new vcpkg binaries
         id: vcpkg-new

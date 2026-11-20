@@ -1,10 +1,10 @@
 # ADR-0093: Offline: derivatives from neighbouring shading points
 
-**Status**: amended
+**Status**: superseded
 **Date**: 2026-10-18
 **Tags**: offline
 **Amended by**: ADR-0113, ADR-0114
-**Documented in**: [offline/ShadingLanguage.md](../../offline/ShadingLanguage.md)
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 
 ## Context
 

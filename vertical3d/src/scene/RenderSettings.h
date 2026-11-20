@@ -1,26 +1,19 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
-
-#include <cstdint>
 
 #include <glm/vec2.hpp>
 
 namespace v3d::editor::scene {
 
 /**
- * How a document's pictures are rendered: their size, how many samples each pixel takes along
- * each axis, and which hider decides what is seen.
+ * How a document's pictures are rendered: their size, and how many samples each pixel takes
+ * along each axis.
  **/
 struct RenderSettings final {
-    enum class Hider : std::uint8_t {
-        Hidden,    /**< reyes: dice into micropolygons and hide them per bucket **/
-        RayTrace   /**< trace rays from the camera through each pixel **/
-    };
-
     static constexpr unsigned int DEFAULT_WIDTH = 640;
     static constexpr unsigned int DEFAULT_HEIGHT = 480;
     /** The longest side the editor renders, a quarter of the longest moya takes. **/
@@ -30,7 +23,6 @@ struct RenderSettings final {
 
     glm::uvec2 size{ DEFAULT_WIDTH, DEFAULT_HEIGHT };
     unsigned int samples = 2;
-    Hider hider = Hider::Hidden;
 
     /**
      * @return whether both sides are between 1 and LARGEST_SIDE, and the samples between 1

@@ -17,6 +17,7 @@ add_library("v3dlib_editor"
 	"src/Renderer.h" "src/Renderer.cxx"
 
 	"src/document/Document.h" "src/document/Document.cxx"
+	"src/document/Outcome.h"
 
 	"src/control/Playback.h" "src/control/Playback.cxx"
 	"src/control/chrome/Area.h" "src/control/chrome/Area.cxx"
@@ -33,13 +34,19 @@ add_library("v3dlib_editor"
 	"src/control/RenderSettingsEditor.h" "src/control/RenderSettingsEditor.cxx"
 	"src/control/RenderView.h" "src/control/RenderView.cxx"
 	"src/control/chrome/StatusBar.h" "src/control/chrome/StatusBar.cxx"
+	"src/control/chrome/Status.h"
 	"src/control/Text.h" "src/control/Text.cxx"
 	"src/control/chrome/TopBar.h" "src/control/chrome/TopBar.cxx"
 	"src/control/Workspaces.h" "src/control/Workspaces.cxx"
 
 	"src/view/AreaLayout.h" "src/view/AreaLayout.cxx"
 	"src/view/AreaViews.h" "src/view/AreaViews.cxx"
-	"src/view/AreaFrame.h" "src/view/AreaFrame.cxx"
+	"src/view/frame/AreaFrame.h" "src/view/frame/AreaFrame.cxx"
+	"src/view/frame/Band.h"
+	"src/view/frame/Look.h"
+	"src/view/AxisEnd.h"
+	"src/view/OverlayLook.h"
+	"src/view/OverlayMetrics.h" "src/view/OverlayMetrics.cxx"
 	"src/view/ViewOverlay.h" "src/view/ViewOverlay.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/Through.h" "src/view/Through.cxx"
@@ -55,15 +62,21 @@ add_library("v3dlib_editor"
 	"src/scene/item/Group.h" "src/scene/item/Group.cxx"
 	"src/scene/item/Curve.h" "src/scene/item/Curve.cxx"
 	"src/scene/item/CurveParts.h" "src/scene/item/CurveParts.cxx"
+	"src/scene/item/CurveHandle.h"
+	"src/scene/item/CurvePoint.h"
 	"src/scene/Import.h" "src/scene/Import.cxx"
+	"src/scene/Into.h"
 	"src/scene/Importer.h" "src/scene/Importer.cxx"
 	"src/scene/Evaluation.h" "src/scene/Evaluation.cxx"
+	"src/scene/Placed.h"
 	"src/scene/Properties.h" "src/scene/Properties.cxx"
 	"src/scene/RenderSettings.h"
 	"src/scene/Timeline.h"
+	"src/scene/FrameKey.h"
 	"src/scene/Units.h" "src/scene/Units.cxx"
 	"src/scene/Scene.h" "src/scene/Scene.cxx"
 	"src/script/Arguments.h" "src/script/Arguments.cxx"
+	"src/script/Parameter.h"
 	"src/script/Declarations.h" "src/script/Declarations.cxx"
 	"src/script/Journal.h" "src/script/Journal.cxx"
 	"src/script/Text.h" "src/script/Text.cxx"
@@ -74,6 +87,7 @@ add_library("v3dlib_editor"
 	"src/view/Picture.h"
 	"src/view/WireframeVisitor.h" "src/view/WireframeVisitor.cxx"
 	"src/render/RIBExportVisitor.h" "src/render/RIBExportVisitor.cxx"
+	"src/render/SceneTranslator.h" "src/render/SceneTranslator.cxx"
 	"src/store/Project.h" "src/store/Project.cxx"
 	"src/store/Scene.h" "src/store/Scene.cxx"
 	"src/store/internal/Loaded.h"
@@ -84,6 +98,7 @@ add_library("v3dlib_editor"
 	"src/store/Cursor.h" "src/store/Cursor.cxx"
 	"src/store/Payload.h" "src/store/Payload.cxx"
 	"src/store/Codec.h" "src/store/Codec.cxx"
+	"src/store/Buffer.h"
 	"src/store/MeshCodec.h" "src/store/MeshCodec.cxx"
 	"src/store/CameraCodec.h" "src/store/CameraCodec.cxx"
 	"src/store/LightCodec.h" "src/store/LightCodec.cxx"
@@ -127,6 +142,7 @@ add_library("v3dlib_editor"
 
 	"src/manipulator/Manipulator.h" "src/manipulator/Manipulator.cxx"
 	"src/manipulator/Target.h" "src/manipulator/Target.cxx"
+	"src/manipulator/Motion.h"
 	"src/manipulator/Translate.h" "src/manipulator/Translate.cxx"
 	"src/manipulator/Rotate.h" "src/manipulator/Rotate.cxx"
 	"src/manipulator/Scale.h" "src/manipulator/Scale.cxx")
@@ -142,8 +158,9 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_image
 	v3dlib_interchange
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
-	v3dlib_render_offline
+	v3dlib_rib
 	v3dlib_script
 	v3dlib_type
 	v3dlib_shell
@@ -151,10 +168,11 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_window)
 
 # PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
-# store writes through the database, the document imports USD, moya renders the render window,
-# and the controller reads the mouse's held buttons and shows the version
+# store writes through the database, the document imports USD, and the controller reads the
+# mouse's held buttons and shows the version. moya is PUBLIC, since the moya delegate's header
+# holds moya's scene
 target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_input v3dlib_interchange_usd
-	v3dlib_moya v3dlib_version)
+	v3dlib_version)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")
@@ -165,6 +183,11 @@ target_link_libraries(vertical3d PRIVATE v3dlib_editor v3dlib_engine)
 
 # a batch render runs moya.exe, which the editor finds beside itself
 v3d_copy_program(vertical3d moya)
+
+# the render view renders through moya's CPU device, which loads its libraries from beside the
+# editor, and reads materials against MaterialX's standard libraries, which it finds there too
+v3d_moya_cpu_libraries(vertical3d)
+v3d_moya_materialx_libraries(vertical3d)
 
 # importing a USD stage reads OpenUSD's plugins from beside the editor
 v3d_copy_usd_plugins(vertical3d)

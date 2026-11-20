@@ -38,6 +38,19 @@ test('dirsize allows a listed directory over the limit', () => {
 });
 
 test('dirsize reports a listed directory within the limit, or gone, as stale', () => {
-    const findings = check(new Map([['api/a', 3]]), 3, new Map([['api/a', 'one family'], ['api/gone', 'one family']]));
-    assert.deepEqual(findings.map((f) => [f.directory, f.rule]), [['api/a', 'stale-listing'], ['api/gone', 'stale-listing']]);
+    const findings = check(
+        new Map([['api/a', 3]]),
+        3,
+        new Map([
+            ['api/a', 'one family'],
+            ['api/gone', 'one family'],
+        ]),
+    );
+    assert.deepEqual(
+        findings.map((f) => [f.directory, f.rule]),
+        [
+            ['api/a', 'stale-listing'],
+            ['api/gone', 'stale-listing'],
+        ],
+    );
 });

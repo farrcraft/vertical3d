@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Curves.h"
 
@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "Bezier.h"
 #include "Curve.h"
 
 #include <glm/vec3.hpp>

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,7 +9,7 @@
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/item/Item.h>
-#include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/FrameKey.h>
 
 #include <array>
 #include <cstddef>

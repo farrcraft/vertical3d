@@ -1,0 +1,8 @@
+{
+  "name": "vcpkg-tool-ispc",
+  "version": "1.32.0",
+  "description": "The Intel Implicit SPMD Program Compiler, as its release builds it, for ports that compile ISPC kernels",
+  "homepage": "https://ispc.github.io",
+  "license": "BSD-3-Clause",
+  "supports": "native & x64 & (windows | linux)"
+}

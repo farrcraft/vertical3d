@@ -12,6 +12,7 @@ v3d_add_api_library(event
  "Chord.h" "Chord.cpp"
  "Event.h" "Event.cpp"
  "Mapper.h" "Mapper.cpp"
+ "Modifiers.h" "Modifiers.cpp"
  "Router.h" "Router.cpp"
  "Bindings.h" "Bindings.cpp"
  "Commands.h" "Commands.cpp"
@@ -20,6 +21,7 @@ v3d_add_api_library(event
  "kind/MouseButton.h" "kind/MouseButton.cpp"
  "kind/MouseMotion.h" "kind/MouseMotion.cpp"
  "State.h"
+ "Unclaimed.h"
  "Type.h")
 
 # v3dlib_log and Boost::json: Bindings.h holds the logger it reports a document through, and

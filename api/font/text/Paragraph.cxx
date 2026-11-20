@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Paragraph.h"
 
@@ -11,6 +11,14 @@
 #include <api/font/text/internal/Measure.h>
 #include <api/font/text/internal/MetricsCache.h>
 #include <api/font/text/internal/Span.h>
+
+#include <api/font/text/shaping/Glyph.h>
+#include <api/font/text/shaping/Run.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
+#include <api/font/text/style/ParagraphStyle.h>
+#include <api/font/text/shaping/Text.h>
+#include <api/font/text/style/Range.h>
 
 #include <algorithm>
 #include <cmath>
@@ -25,10 +33,6 @@
 
 #include "Bidi.h"
 #include "Segmenter.h"
-#include "ShapedGlyph.h"
-#include "ShapedRun.h"
-#include "ShapingCache.h"
-#include "Style.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -51,7 +55,7 @@ constexpr float TOUCHING = 0.01F;
  * @return the stretches of text a paragraph is divided into, wrapping at a width when it is
  *         above 0
  **/
-std::vector<internal::Span> divide(const ShapedText& shaped, const internal::Measure& measure, float width) {
+std::vector<internal::Span> divide(const shaping::Text& shaped, const internal::Measure& measure, float width) {
     const bool bounded = width > 0.0F && std::isfinite(width);
     const std::size_t size = shaped.text.size();
     std::vector<internal::Span> spans;
@@ -60,7 +64,7 @@ std::vector<internal::Span> divide(const ShapedText& shaped, const internal::Mea
     bool endsInSeparator = false;
     std::size_t index = 0;
     while (index < shaped.breaks.size()) {
-        const LineBreak& found = shaped.breaks[index];
+        const Segmenter::LineBreak& found = shaped.breaks[index];
         if (bounded && measure.contentWidth(start, found.offset) > width) {
             if (fits > start) {
                 spans.push_back({start, fits});
@@ -96,7 +100,7 @@ std::vector<internal::Span> divide(const ShapedText& shaped, const internal::Mea
 /**
  * @return a style's first face, or null for a style with no fonts
  **/
-boost::shared_ptr<face::Face> firstFace(const Style& style) {
+boost::shared_ptr<face::Face> firstFace(const style::Style& style) {
     if (!style.fonts) {
         return boost::shared_ptr<face::Face>();
     }
@@ -119,9 +123,9 @@ std::size_t cutEnd(const internal::Measure& measure, const internal::Span& line,
  * @return the runs of a line's text, in the order they are drawn: its stretches of one level,
  *         reordered, each cut at the edges of the shaped runs in it
  **/
-std::vector<LineRun> placeRuns(const ShapedText& shaped, const internal::Span& visible) {
-    std::vector<LineRun> placed;
-    for (const LevelRun& level : shaped.bidi.line(visible.start, visible.end)) {
+std::vector<Paragraph::LineRun> placeRuns(const shaping::Text& shaped, const internal::Span& visible) {
+    std::vector<Paragraph::LineRun> placed;
+    for (const Bidi::LevelRun& level : shaped.bidi.line(visible.start, visible.end)) {
         std::vector<std::size_t> within;
         within.reserve(shaped.runs.size());
         for (std::size_t run = 0; run < shaped.runs.size(); run++) {
@@ -133,10 +137,10 @@ std::vector<LineRun> placeRuns(const ShapedText& shaped, const internal::Span& v
             std::reverse(within.begin(), within.end());
         }
         for (const std::size_t run : within) {
-            const ShapedRun& source = shaped.runs[run];
-            LineRun piece{ .face = source.face, .size = shaped.ranges[shaped.runRanges[run]].style.size, .rightToLeft = level.rightToLeft(),
+            const shaping::Run& source = shaped.runs[run];
+            Paragraph::LineRun piece{ .face = source.face, .size = shaped.ranges[shaped.runRanges[run]].style.size, .rightToLeft = level.rightToLeft(),
                 .start = std::max(source.start, level.start), .end = std::min(source.end, level.end), .coordinates = source.coordinates };
-            for (const ShapedGlyph& glyph : source.glyphs) {
+            for (const shaping::Glyph& glyph : source.glyphs) {
                 if (glyph.cluster >= piece.start && glyph.cluster < piece.end) {
                     piece.glyphs.push_back(glyph);
                     piece.advance += glyph.advance;
@@ -151,11 +155,11 @@ std::vector<LineRun> placeRuns(const ShapedText& shaped, const internal::Span& v
 /**
  * Put an ellipsis at a line's end edge: its right in a paragraph read left to right.
  **/
-void addEllipsis(const std::vector<ShapedRun>& ellipsis, float size, std::size_t at, bool rightToLeft, std::vector<LineRun>* runs) {
-    std::vector<LineRun> marks;
+void addEllipsis(const std::vector<shaping::Run>& ellipsis, float size, std::size_t at, bool rightToLeft, std::vector<Paragraph::LineRun>* runs) {
+    std::vector<Paragraph::LineRun> marks;
     marks.reserve(ellipsis.size());
-    for (const ShapedRun& run : ellipsis) {
-        marks.push_back(LineRun{ .face = run.face, .size = size, .rightToLeft = run.direction == ShapedRun::Direction::RightToLeft, .ellipsis = true,
+    for (const shaping::Run& run : ellipsis) {
+        marks.push_back(Paragraph::LineRun{ .face = run.face, .size = size, .rightToLeft = run.direction == shaping::Run::Direction::RightToLeft, .ellipsis = true,
             .start = at, .end = at, .coordinates = run.coordinates, .advance = run.advance, .glyphs = run.glyphs });
     }
     runs->insert(rightToLeft ? runs->begin() : runs->end(), marks.begin(), marks.end());
@@ -165,13 +169,13 @@ void addEllipsis(const std::vector<ShapedRun>& ellipsis, float size, std::size_t
  * @return the tallest ascender, descender and line gap of the faces a line's runs are in, or
  *         those of a style's first face for a line with none
  **/
-face::Metrics tallestOf(const std::vector<LineRun>& runs, const Style& empty, internal::MetricsCache* metrics) {
+face::Metrics tallestOf(const std::vector<Paragraph::LineRun>& runs, const style::Style& empty, internal::MetricsCache* metrics) {
     face::Metrics tallest;
     const boost::shared_ptr<face::Face> face = runs.empty() ? firstFace(empty) : boost::shared_ptr<face::Face>();
     if (face) {
         return metrics->of(face, empty.size, face->coordinates(empty.face, empty.size, empty.variations));
     }
-    for (const LineRun& run : runs) {
+    for (const Paragraph::LineRun& run : runs) {
         const face::Metrics& found = metrics->of(run.face, run.size, run.coordinates);
         tallest.ascender = std::max(tallest.ascender, found.ascender);
         tallest.descender = std::max(tallest.descender, found.descender);
@@ -183,8 +187,8 @@ face::Metrics tallestOf(const std::vector<LineRun>& runs, const Style& empty, in
 /**
  * @return the index of the cluster holding an offset, among a line's clusters
  **/
-std::size_t clusterOf(const std::vector<ClusterEdges>& clusters, std::size_t offset) {
-    const auto found = std::upper_bound(clusters.begin(), clusters.end(), offset, [](std::size_t value, const ClusterEdges& cluster) {
+std::size_t clusterOf(const std::vector<Paragraph::ClusterEdges>& clusters, std::size_t offset) {
+    const auto found = std::upper_bound(clusters.begin(), clusters.end(), offset, [](std::size_t value, const Paragraph::ClusterEdges& cluster) {
         return value < cluster.start;
     });
     return found == clusters.begin() ? 0 : static_cast<std::size_t>(found - clusters.begin() - 1);
@@ -195,12 +199,12 @@ std::size_t clusterOf(const std::vector<ClusterEdges>& clusters, std::size_t off
  * they share evenly. The first is at the left in a run read left to right, and at the right in
  * one read right to left.
  **/
-void share(const std::pair<float, float>& span, std::size_t first, std::size_t last, bool rightToLeft, std::vector<ClusterEdges>* clusters) {
+void share(const std::pair<float, float>& span, std::size_t first, std::size_t last, bool rightToLeft, std::vector<Paragraph::ClusterEdges>* clusters) {
     const float each = (span.second - span.first) / static_cast<float>(last - first + 1);
     for (std::size_t cluster = first; cluster <= last; cluster++) {
         const std::size_t order = rightToLeft ? last - cluster : cluster - first;
         const float left = span.first + (each * static_cast<float>(order));
-        ClusterEdges& edges = (*clusters)[cluster];
+        Paragraph::ClusterEdges& edges = (*clusters)[cluster];
         edges.left = std::min(edges.left, left);
         edges.right = std::max(edges.right, left + each);
         edges.rightToLeft = rightToLeft;
@@ -211,21 +215,21 @@ void share(const std::pair<float, float>& span, std::size_t first, std::size_t l
  * @return the edges of each cluster of a line, in the text's order, from the glyphs that came
  *         from it. A cluster with no glyph of its own sits where the one before it ends
  **/
-std::vector<ClusterEdges> edgesOf(const ShapedText& shaped, const internal::Span& visible, const std::vector<LineRun>& runs) {
-    std::vector<ClusterEdges> clusters;
+std::vector<Paragraph::ClusterEdges> edgesOf(const shaping::Text& shaped, const internal::Span& visible, const std::vector<Paragraph::LineRun>& runs) {
+    std::vector<Paragraph::ClusterEdges> clusters;
     const std::vector<std::size_t>& offsets = shaped.graphemes;
     for (auto at = std::lower_bound(offsets.begin(), offsets.end(), visible.start); at != offsets.end() && *at < visible.end; ++at) {
-        clusters.push_back(ClusterEdges{ .start = *at, .end = *std::next(at), .left = std::numeric_limits<float>::infinity(),
+        clusters.push_back(Paragraph::ClusterEdges{ .start = *at, .end = *std::next(at), .left = std::numeric_limits<float>::infinity(),
             .right = -std::numeric_limits<float>::infinity() });
     }
-    for (const LineRun& run : runs) {
+    for (const Paragraph::LineRun& run : runs) {
         if (run.ellipsis || clusters.empty()) {
             continue;
         }
         // the span of the glyphs from each character that starts a glyph
         std::map<std::size_t, std::pair<float, float>> spans;
         float x = run.x;
-        for (const ShapedGlyph& glyph : run.glyphs) {
+        for (const shaping::Glyph& glyph : run.glyphs) {
             const auto [found, added] = spans.emplace(glyph.cluster, std::make_pair(x, x + glyph.advance));
             if (!added) {
                 found->second = std::make_pair(std::min(found->second.first, x), std::max(found->second.second, x + glyph.advance));
@@ -241,7 +245,7 @@ std::vector<ClusterEdges> edgesOf(const ShapedText& shaped, const internal::Span
         }
     }
     float edge = 0.0F;
-    for (ClusterEdges& cluster : clusters) {
+    for (Paragraph::ClusterEdges& cluster : clusters) {
         if (!std::isfinite(cluster.left)) {
             cluster.left = edge;
             cluster.right = edge;
@@ -254,8 +258,8 @@ std::vector<ClusterEdges> edgesOf(const ShapedText& shaped, const internal::Span
 /**
  * @return the style of the character at an offset, or the last one's past the end
  **/
-const Style& styleIn(const std::vector<StyledRange>& styles, std::size_t offset) {
-    for (const StyledRange& range : styles) {
+const style::Style& styleIn(const std::vector<style::Range>& styles, std::size_t offset) {
+    for (const style::Range& range : styles) {
         if (offset < range.end) {
             return range.style;
         }
@@ -269,16 +273,16 @@ const Style& styleIn(const std::vector<StyledRange>& styles, std::size_t offset)
  *
  * @return the ellipsis, shaped, or none when the paragraph shows no ellipsis
  **/
-std::vector<ShapedRun> cutShort(ShapingCache* cache, const internal::Measure& measure, const std::vector<StyledRange>& styles, const ParagraphStyle& paragraph,
+std::vector<shaping::Run> cutShort(shaping::Cache* cache, const internal::Measure& measure, const std::vector<style::Range>& styles, const style::ParagraphStyle& paragraph,
     internal::Span* last) {
     const bool bounded = paragraph.width > 0.0F && std::isfinite(paragraph.width);
     float room = bounded ? paragraph.width : std::numeric_limits<float>::infinity();
-    std::vector<ShapedRun> ellipsis;
+    std::vector<shaping::Run> ellipsis;
     if (paragraph.ellipsis) {
         const std::size_t before = measure.contentEnd(last->start, measure.visibleEnd(last->start, last->end));
-        const StyledRange range{ .start = 0, .end = ELLIPSIS.size(), .style = styleIn(styles, before > last->start ? before - 1 : last->start) };
+        const style::Range range{ .start = 0, .end = ELLIPSIS.size(), .style = styleIn(styles, before > last->start ? before - 1 : last->start) };
         ellipsis = cache->shape(ELLIPSIS, { range }, paragraph.direction)->runs;
-        for (const ShapedRun& run : ellipsis) {
+        for (const shaping::Run& run : ellipsis) {
             room -= run.advance;
         }
     }
@@ -291,9 +295,9 @@ std::vector<ShapedRun> cutShort(ShapingCache* cache, const internal::Measure& me
  *
  * @return how far they reach
  **/
-float placeAlong(std::vector<LineRun>* runs) {
+float placeAlong(std::vector<Paragraph::LineRun>* runs) {
     float pen = 0.0F;
-    for (LineRun& run : *runs) {
+    for (Paragraph::LineRun& run : *runs) {
         run.x = pen;
         pen += run.advance;
     }
@@ -305,7 +309,7 @@ float placeAlong(std::vector<LineRun>* runs) {
  *
  * @param top where the line starts, moved to where the next one does
  **/
-void stack(const face::Metrics& tallest, float spacing, float* top, Line* line) {
+void stack(const face::Metrics& tallest, float spacing, float* top, Paragraph::Line* line) {
     const float natural = tallest.ascender + tallest.descender;
     line->top = *top;
     line->height = (natural + tallest.lineGap) * spacing;
@@ -316,16 +320,16 @@ void stack(const face::Metrics& tallest, float spacing, float* top, Line* line) 
 /**
  * @return how far right a line's text starts, for an alignment in a room
  **/
-float aligned(Alignment alignment, bool rightToLeft, float room, float width) {
-    if (alignment == Alignment::Start) {
-        alignment = rightToLeft ? Alignment::Right : Alignment::Left;
-    } else if (alignment == Alignment::End) {
-        alignment = rightToLeft ? Alignment::Left : Alignment::Right;
+float aligned(style::Alignment alignment, bool rightToLeft, float room, float width) {
+    if (alignment == style::Alignment::Start) {
+        alignment = rightToLeft ? style::Alignment::Right : style::Alignment::Left;
+    } else if (alignment == style::Alignment::End) {
+        alignment = rightToLeft ? style::Alignment::Left : style::Alignment::Right;
     }
-    if (alignment == Alignment::Right) {
+    if (alignment == style::Alignment::Right) {
         return room - width;
     }
-    if (alignment == Alignment::Center) {
+    if (alignment == style::Alignment::Center) {
         return (room - width) / 2.0F;
     }
     return 0.0F;
@@ -333,31 +337,31 @@ float aligned(Alignment alignment, bool rightToLeft, float room, float width) {
 
 };  // namespace
 
-Paragraph::Paragraph(const boost::shared_ptr<ShapingCache>& cache, const std::string& text, const Style& style, const ParagraphStyle& paragraph) :
+Paragraph::Paragraph(const boost::shared_ptr<shaping::Cache>& cache, const std::string& text, const style::Style& style, const style::ParagraphStyle& paragraph) :
     cache_(cache),
     text_(text),
     paragraph_(paragraph) {
-    styles_.push_back(StyledRange{ .start = 0, .end = text_.size(), .style = style });
+    styles_.push_back(style::Range{ .start = 0, .end = text_.size(), .style = style });
 }
 
 void Paragraph::setText(const std::string& text) {
-    const Style style = styles_.front().style;
+    const style::Style style = styles_.front().style;
     text_ = text;
-    styles_ = { StyledRange{ .start = 0, .end = text_.size(), .style = style } };
+    styles_ = { style::Range{ .start = 0, .end = text_.size(), .style = style } };
     shaped_.reset();
     laidOut_ = false;
 }
 
-void Paragraph::setStyle(std::size_t start, std::size_t end, const Style& style) {
+void Paragraph::setStyle(std::size_t start, std::size_t end, const style::Style& style) {
     end = std::min(end, text_.size());
     if (start >= end) {
         return;
     }
     bool reshape = false;
-    const StyledRange added{ .start = start, .end = end, .style = style };
+    const style::Range added{ .start = start, .end = end, .style = style };
     bool placed = false;
-    std::vector<StyledRange> styles;
-    for (const StyledRange& range : styles_) {
+    std::vector<style::Range> styles;
+    for (const style::Range& range : styles_) {
         if (range.end <= start || range.start >= end) {
             if (!placed && range.start >= end) {
                 styles.push_back(added);
@@ -379,8 +383,8 @@ void Paragraph::setStyle(std::size_t start, std::size_t end, const Style& style)
         }
     }
     // adjacent ranges in one style are one range
-    std::vector<StyledRange> joined;
-    for (const StyledRange& range : styles) {
+    std::vector<style::Range> joined;
+    for (const style::Range& range : styles) {
         if (!joined.empty() && joined.back().style == range.style) {
             joined.back().end = range.end;
         } else {
@@ -394,7 +398,7 @@ void Paragraph::setStyle(std::size_t start, std::size_t end, const Style& style)
     }
 }
 
-void Paragraph::setParagraphStyle(const ParagraphStyle& paragraph) {
+void Paragraph::setParagraphStyle(const style::ParagraphStyle& paragraph) {
     if (paragraph.direction != paragraph_.direction) {
         shaped_.reset();
     }
@@ -415,15 +419,15 @@ const std::string& Paragraph::text() const noexcept {
     return text_;
 }
 
-const std::vector<StyledRange>& Paragraph::styles() const noexcept {
+const std::vector<style::Range>& Paragraph::styles() const noexcept {
     return styles_;
 }
 
-const Style& Paragraph::styleAt(std::size_t offset) const {
+const style::Style& Paragraph::styleAt(std::size_t offset) const {
     return styleIn(styles_, offset);
 }
 
-const ParagraphStyle& Paragraph::paragraphStyle() const noexcept {
+const style::ParagraphStyle& Paragraph::paragraphStyle() const noexcept {
     return paragraph_;
 }
 
@@ -432,7 +436,7 @@ glm::vec2 Paragraph::size() const {
     return size_;
 }
 
-const std::vector<Line>& Paragraph::lines() const {
+const std::vector<Paragraph::Line>& Paragraph::lines() const {
     layout();
     return lines_;
 }
@@ -453,7 +457,7 @@ void Paragraph::layout() const {
         return;
     }
     shape();
-    const ShapedText& shaped = *shaped_;
+    const shaping::Text& shaped = *shaped_;
     const internal::Measure measure(shaped);
     const float width = paragraph_.width;
     const bool bounded = width > 0.0F && std::isfinite(width);
@@ -461,7 +465,7 @@ void Paragraph::layout() const {
 
     // a paragraph with more lines than it shows cuts its last line short, to make room for the
     // ellipsis in the style of the text before it
-    std::vector<ShapedRun> ellipsis;
+    std::vector<shaping::Run> ellipsis;
     // the empty line after a closing separator hides no text, so dropping it cuts nothing
     const bool emptyLast = spans.back().start == spans.back().end;
     if (paragraph_.maxLines > 0 && spans.size() == paragraph_.maxLines + 1 && emptyLast) {
@@ -535,7 +539,7 @@ std::size_t Paragraph::lineOf(std::size_t index, Affinity affinity) const {
     return lines_.size() - 1;
 }
 
-Caret Paragraph::caret(std::size_t index, Affinity affinity) const {
+Paragraph::Caret Paragraph::caret(std::size_t index, Affinity affinity) const {
     layout();
     const std::size_t line = lineOf(index, affinity);
     const Line& placed = lines_[line];
@@ -553,7 +557,7 @@ Caret Paragraph::caret(std::size_t index, Affinity affinity) const {
     return Caret{ .x = x, .top = placed.top, .height = placed.height };
 }
 
-Hit Paragraph::hitTest(const glm::vec2& point) const {
+Paragraph::Hit Paragraph::hitTest(const glm::vec2& point) const {
     layout();
     std::size_t line = lines_.size() - 1;
     for (std::size_t index = 0; index < lines_.size(); index++) {
@@ -584,7 +588,7 @@ Hit Paragraph::hitTest(const glm::vec2& point) const {
     return rightEdge(stops.back());
 }
 
-std::vector<SelectionRect> Paragraph::selection(std::size_t start, std::size_t end) const {
+std::vector<Paragraph::SelectionRect> Paragraph::selection(std::size_t start, std::size_t end) const {
     layout();
     if (start > end) {
         std::swap(start, end);

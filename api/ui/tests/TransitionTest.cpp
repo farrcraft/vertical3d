@@ -1,8 +1,9 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
+#include <api/ui/Opening.h>
 #include <api/ui/Transition.h>
 
 #include <cmath>

@@ -1,10 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
+#include <api/font/internal/SvgDocument.h>
 #include <api/font/internal/SvgReader.h>
 #include <thorvg.h>
 

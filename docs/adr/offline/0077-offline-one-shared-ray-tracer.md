@@ -4,7 +4,6 @@
 **Date**: 2026-10-04
 **Tags**: offline
 **Superseded by**: [ADR-0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
-**Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
 
 ## Context
 

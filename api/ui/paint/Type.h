@@ -1,12 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Style.h>
 
 #include <optional>
 #include <string>
@@ -90,7 +90,7 @@ class Type final {
     /**
      * @return the style it sets text in, from its renderer, with its features
      **/
-    font::text::Style style() const;
+    font::text::style::Style style() const;
 
     const boost::shared_ptr<TextRenderer>& renderer() const noexcept;
 
@@ -106,23 +106,6 @@ class Type final {
     float size_ = 0.0F;
     Weight weight_ = Weight::Regular;
     bool tabular_ = false;
-};
-
-/**
- * Text set in another weight or at another size than the body text.
- **/
-struct Setting final {
-    Type type;             /**< what it is set in. Unset sets the text as the body text is set **/
-    float scale { 1.0F };  /**< how large it is against the body text **/
-};
-
-/**
- * What a centred menu sets apart from the text of its items: its title, and the label of the
- * chosen item. A setting left unset is set as the body text is.
- **/
-struct Emphasis final {
-    Setting title;
-    Setting chosen;
 };
 
 };  // namespace v3d::ui::paint

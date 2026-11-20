@@ -40,8 +40,8 @@ import { crc32, deflateSync } from 'node:zlib';
 const UNITS = 1000;
 const ASCENDER = 800;
 const DESCENDER = -200;
-const FIRST = 0xE000;
-const FOREGROUND = 0xFFFF;
+const FIRST = 0xe000;
+const FOREGROUND = 0xffff;
 const STRIKE = 32;
 
 /** A big-endian byte writer. */
@@ -53,7 +53,7 @@ class Writer {
     }
 
     u8(value: number): this {
-        this.bytes.push(value & 0xFF);
+        this.bytes.push(value & 0xff);
         return this;
     }
 
@@ -103,17 +103,17 @@ class Writer {
 
     /** Overwrite a 24 bit value already written. */
     put24(at: number, value: number): void {
-        this.bytes[at] = (value >> 16) & 0xFF;
-        this.bytes[at + 1] = (value >> 8) & 0xFF;
-        this.bytes[at + 2] = value & 0xFF;
+        this.bytes[at] = (value >> 16) & 0xff;
+        this.bytes[at + 1] = (value >> 8) & 0xff;
+        this.bytes[at + 2] = value & 0xff;
     }
 
     /** Overwrite a 32 bit value already written. */
     put32(at: number, value: number): void {
-        this.bytes[at] = (value >>> 24) & 0xFF;
-        this.bytes[at + 1] = (value >> 16) & 0xFF;
-        this.bytes[at + 2] = (value >> 8) & 0xFF;
-        this.bytes[at + 3] = value & 0xFF;
+        this.bytes[at] = (value >>> 24) & 0xff;
+        this.bytes[at + 1] = (value >> 16) & 0xff;
+        this.bytes[at + 2] = (value >> 8) & 0xff;
+        this.bytes[at + 3] = value & 0xff;
     }
 
     done(): Uint8Array {
@@ -156,10 +156,22 @@ function glyf(box: Box | null): Uint8Array {
     if (box === null) {
         return new Uint8Array(0);
     }
-    const points: [number, number][] = [[box.x0, box.y0], [box.x0, box.y1], [box.x1, box.y1], [box.x1, box.y0]];
-    const w = new Writer().u16(1).u16(box.x0).u16(box.y0).u16(box.x1).u16(box.y1).u16(points.length - 1).u16(0);
+    const points: [number, number][] = [
+        [box.x0, box.y0],
+        [box.x0, box.y1],
+        [box.x1, box.y1],
+        [box.x1, box.y0],
+    ];
+    const w = new Writer()
+        .u16(1)
+        .u16(box.x0)
+        .u16(box.y0)
+        .u16(box.x1)
+        .u16(box.y1)
+        .u16(points.length - 1)
+        .u16(0);
     for (const _ of points) {
-        w.u8(0x01);  // on the curve, with whole 16 bit coordinates
+        w.u8(0x01); // on the curve, with whole 16 bit coordinates
     }
     let previous: [number, number] = [0, 0];
     for (const axis of [0, 1] as const) {
@@ -173,15 +185,49 @@ function glyf(box: Box | null): Uint8Array {
 }
 
 function head(): Uint8Array {
-    return new Writer().fixed(1).fixed(1).u32(0).u32(0x5F0F3CF5).u16(0x000B).u16(UNITS)
-        .u32(0).u32(0).u32(0).u32(0)
-        .u16(SQUARE.x0).u16(SQUARE.y0).u16(SQUARE.x1).u16(SQUARE.y1)
-        .u16(0).u16(8).u16(2).u16(1).u16(0).done();
+    return new Writer()
+        .fixed(1)
+        .fixed(1)
+        .u32(0)
+        .u32(0x5f0f3cf5)
+        .u16(0x000b)
+        .u16(UNITS)
+        .u32(0)
+        .u32(0)
+        .u32(0)
+        .u32(0)
+        .u16(SQUARE.x0)
+        .u16(SQUARE.y0)
+        .u16(SQUARE.x1)
+        .u16(SQUARE.y1)
+        .u16(0)
+        .u16(8)
+        .u16(2)
+        .u16(1)
+        .u16(0)
+        .done();
 }
 
 function hhea(count: number): Uint8Array {
-    return new Writer().fixed(1).u16(ASCENDER).u16(DESCENDER).u16(0).u16(UNITS).u16(0).u16(0).u16(UNITS)
-        .u16(1).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(count).done();
+    return new Writer()
+        .fixed(1)
+        .u16(ASCENDER)
+        .u16(DESCENDER)
+        .u16(0)
+        .u16(UNITS)
+        .u16(0)
+        .u16(0)
+        .u16(UNITS)
+        .u16(1)
+        .u16(0)
+        .u16(0)
+        .u16(0)
+        .u16(0)
+        .u16(0)
+        .u16(0)
+        .u16(0)
+        .u16(count)
+        .done();
 }
 
 function maxp(count: number): Uint8Array {
@@ -204,7 +250,9 @@ function os2(glyphs: Glyph[]): Uint8Array {
     }
     w.u32(0).u32(0).u32(0).u32(0).tag('V3D ');
     // regular, and measured by its typographic metrics
-    w.u16(0x40 | 0x80).u16(Math.min(...codes)).u16(Math.max(...codes));
+    w.u16(0x40 | 0x80)
+        .u16(Math.min(...codes))
+        .u16(Math.max(...codes));
     w.u16(ASCENDER).u16(DESCENDER).u16(0).u16(ASCENDER).u16(-DESCENDER).u32(1).u32(0);
     return w.u16(500).u16(700).u16(0).u16(32).u16(1).done();
 }
@@ -221,12 +269,20 @@ function hmtx(glyphs: Glyph[]): Uint8Array {
 function cmap(glyphs: Glyph[]): Uint8Array {
     const mapped = glyphs.flatMap((g, index) => (g.code === undefined ? [] : [{ code: g.code, index }]));
     mapped.sort((a, b) => a.code - b.code);
-    const segments = [...mapped.map((m) => ({ start: m.code, end: m.code, delta: (m.index - m.code) & 0xFFFF })),
-        { start: 0xFFFF, end: 0xFFFF, delta: 1 }];
+    const segments = [
+        ...mapped.map((m) => ({ start: m.code, end: m.code, delta: (m.index - m.code) & 0xffff })),
+        { start: 0xffff, end: 0xffff, delta: 1 },
+    ];
     const count = segments.length;
     const power = 2 ** Math.floor(Math.log2(count));
-    const sub = new Writer().u16(4).u16(16 + (count * 8)).u16(0).u16(count * 2)
-        .u16(power * 2).u16(Math.log2(power)).u16((count - power) * 2);
+    const sub = new Writer()
+        .u16(4)
+        .u16(16 + count * 8)
+        .u16(0)
+        .u16(count * 2)
+        .u16(power * 2)
+        .u16(Math.log2(power))
+        .u16((count - power) * 2);
     segments.forEach((s) => sub.u16(s.end));
     sub.u16(0);
     segments.forEach((s) => sub.u16(s.start));
@@ -237,15 +293,29 @@ function cmap(glyphs: Glyph[]): Uint8Array {
 
 /** The name table, with the family's names and any others by their name IDs. */
 function name(family: string, others: [number, string][] = []): Uint8Array {
-    const strings = [[1, family], [2, 'Regular'], [4, `${family} Regular`], [6, `${family.replaceAll(' ', '')}-Regular`], ...others] as const;
+    const strings = [
+        [1, family],
+        [2, 'Regular'],
+        [4, `${family} Regular`],
+        [6, `${family.replaceAll(' ', '')}-Regular`],
+        ...others,
+    ] as const;
     const text = new Writer();
-    const w = new Writer().u16(0).u16(strings.length).u16(6 + (strings.length * 12));
+    const w = new Writer()
+        .u16(0)
+        .u16(strings.length)
+        .u16(6 + strings.length * 12);
     for (const [id, value] of strings) {
         const start = text.length;
         for (const c of value) {
             text.u16(c.charCodeAt(0));
         }
-        w.u16(3).u16(1).u16(0x409).u16(id).u16(text.length - start).u16(start);
+        w.u16(3)
+            .u16(1)
+            .u16(0x409)
+            .u16(id)
+            .u16(text.length - start)
+            .u16(start);
     }
     return w.append(text.done()).done();
 }
@@ -263,8 +333,12 @@ const GREEN: Colour = [0, 255, 0, 255];
 
 function cpal(palettes: Colour[][]): Uint8Array {
     const entries = palettes[0]?.length ?? 0;
-    const w = new Writer().u16(0).u16(entries).u16(palettes.length).u16(entries * palettes.length)
-        .u32(12 + (palettes.length * 2));
+    const w = new Writer()
+        .u16(0)
+        .u16(entries)
+        .u16(palettes.length)
+        .u16(entries * palettes.length)
+        .u32(12 + palettes.length * 2);
     palettes.forEach((_, i) => w.u16(i * entries));
     for (const palette of palettes) {
         for (const [r, g, b, a] of palette) {
@@ -274,12 +348,20 @@ function cpal(palettes: Colour[][]): Uint8Array {
     return w.done();
 }
 
-const PALETTES = [[RED, BLUE, GREEN], [BLUE, RED, GREEN]];
+const PALETTES = [
+    [RED, BLUE, GREEN],
+    [BLUE, RED, GREEN],
+];
 
 /** A version 0 COLR table: each base glyph's layers, as glyph and palette entry. */
 function colr0(bases: { glyph: number; layers: [number, number][] }[]): Uint8Array {
     const layers = bases.flatMap((b) => b.layers);
-    const w = new Writer().u16(0).u16(bases.length).u32(14).u32(14 + (bases.length * 6)).u16(layers.length);
+    const w = new Writer()
+        .u16(0)
+        .u16(bases.length)
+        .u32(14)
+        .u32(14 + bases.length * 6)
+        .u16(layers.length);
     let first = 0;
     for (const base of bases) {
         w.u16(base.glyph).u16(first).u16(base.layers.length);
@@ -298,10 +380,10 @@ function colr0(bases: { glyph: number; layers: [number, number][] }[]): Uint8Arr
 type Paint = (w: Writer) => void;
 
 /** Write a paint whose last field is an offset to another paint, then that paint. */
-function pointing(head: (w: Writer) => number, child: Paint): Paint {
+function pointing(header: (w: Writer) => number, child: Paint): Paint {
     return (w) => {
         const start = w.length;
-        const at = head(w);
+        const at = header(w);
         w.put24(at, w.length - start);
         child(w);
     };
@@ -344,7 +426,10 @@ function radial(x0: number, y0: number, r0: number, x1: number, y1: number, r1: 
 /** A sweep between two angles in degrees, counter-clockwise from the positive x axis. */
 function sweep(cx: number, cy: number, start: number, end: number): Paint {
     return gradient(8, (w) => {
-        w.u16(cx).u16(cy).f2dot14((start / 180) - 1).f2dot14((end / 180) - 1);
+        w.u16(cx)
+            .u16(cy)
+            .f2dot14(start / 180 - 1)
+            .f2dot14(end / 180 - 1);
     });
 }
 
@@ -422,9 +507,12 @@ function png(): Uint8Array {
         return new Writer().u32(data.length).append(body).u32(crc32(body)).done();
     };
     const header = new Writer().u32(STRIKE).u32(STRIKE).u8(8).u8(6).u8(0).u8(0).u8(0).done();
-    return new Writer().append(Uint8Array.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
-        .append(chunk('IHDR', header)).append(chunk('IDAT', deflateSync(Uint8Array.from(rows))))
-        .append(chunk('IEND', new Uint8Array(0))).done();
+    return new Writer()
+        .append(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+        .append(chunk('IHDR', header))
+        .append(chunk('IDAT', deflateSync(Uint8Array.from(rows))))
+        .append(chunk('IEND', new Uint8Array(0)))
+        .done();
 }
 
 /** The strike's pixels above the baseline, rounded. */
@@ -438,13 +526,32 @@ function cbdt(glyph: number): { cblc: Uint8Array; cbdt: Uint8Array } {
     data.u8(STRIKE).u8(STRIKE).u8(0).u8(STRIKE_ASCENT).u8(STRIKE).u32(image.length).append(image);
 
     const lineMetrics = (w: Writer): void => {
-        w.u8(STRIKE_ASCENT).u8(STRIKE_ASCENT - STRIKE).u8(STRIKE).u8(1).u8(0).u8(0)
-            .u8(0).u8(0).u8(STRIKE_ASCENT).u8(STRIKE_ASCENT - STRIKE).u8(0).u8(0);
+        w.u8(STRIKE_ASCENT)
+            .u8(STRIKE_ASCENT - STRIKE)
+            .u8(STRIKE)
+            .u8(1)
+            .u8(0)
+            .u8(0)
+            .u8(0)
+            .u8(0)
+            .u8(STRIKE_ASCENT)
+            .u8(STRIKE_ASCENT - STRIKE)
+            .u8(0)
+            .u8(0);
     };
     const arrayAt = 8 + 48;
-    const subtable = new Writer().u16(1).u16(17).u32(imageAt).u32(0).u32(data.length - imageAt).done();
+    const subtable = new Writer()
+        .u16(1)
+        .u16(17)
+        .u32(imageAt)
+        .u32(0)
+        .u32(data.length - imageAt)
+        .done();
     const w = new Writer().u16(3).u16(0).u32(1);
-    w.u32(arrayAt).u32(8 + subtable.length).u32(1).u32(0);
+    w.u32(arrayAt)
+        .u32(8 + subtable.length)
+        .u32(1)
+        .u32(0);
     lineMetrics(w);
     lineMetrics(w);
     w.u16(glyph).u16(glyph).u8(STRIKE).u8(STRIKE).u8(32).u8(1);
@@ -455,9 +562,14 @@ function cbdt(glyph: number): { cblc: Uint8Array; cbdt: Uint8Array } {
 /** An sbix table with one strike, giving one glyph a PNG. */
 function sbix(glyph: number, count: number): Uint8Array {
     const image = png();
-    const data = new Writer().u16(0).u16(Math.round((DESCENDER * STRIKE) / UNITS)).tag('png ').append(image).done();
+    const data = new Writer()
+        .u16(0)
+        .u16(Math.round((DESCENDER * STRIKE) / UNITS))
+        .tag('png ')
+        .append(image)
+        .done();
     // each glyph's data runs from its offset to the next one's, so every other glyph holds none
-    const start = 4 + ((count + 1) * 4);
+    const start = 4 + (count + 1) * 4;
     const strike = new Writer().u16(STRIKE).u16(72);
     for (let i = 0; i <= count; i++) {
         strike.u32(i <= glyph ? start : start + data.length);
@@ -488,7 +600,15 @@ interface Instance {
 }
 
 function fvar(axes: Axis[], instances: Instance[]): Uint8Array {
-    const w = new Writer().u16(1).u16(0).u16(16).u16(2).u16(axes.length).u16(20).u16(instances.length).u16(4 + (axes.length * 4));
+    const w = new Writer()
+        .u16(1)
+        .u16(0)
+        .u16(16)
+        .u16(2)
+        .u16(axes.length)
+        .u16(20)
+        .u16(instances.length)
+        .u16(4 + axes.length * 4);
     for (const axis of axes) {
         w.tag(axis.tag).fixed(axis.min).fixed(axis.initial).fixed(axis.max).u16(0).u16(axis.nameId);
     }
@@ -536,7 +656,7 @@ function gvar(axes: number, glyphs: Tuple[][]): Uint8Array {
             return { tuple, bytes: t.done() };
         });
         // shared point numbers, 0 for every point, are the first byte of the serialized data
-        data.u16(0x8000 | tuples.length).u16(4 + (tuples.length * (4 + (axes * 2))));
+        data.u16(0x8000 | tuples.length).u16(4 + tuples.length * (4 + axes * 2));
         serialized.forEach(({ tuple, bytes }) => {
             data.u16(bytes.length).u16(0x8000);
             tuple.peak.forEach((value) => data.f2dot14(value));
@@ -546,7 +666,7 @@ function gvar(axes: number, glyphs: Tuple[][]): Uint8Array {
         data.pad();
     }
     offsets.push(data.length);
-    const header = 20 + (offsets.length * 4);
+    const header = 20 + offsets.length * 4;
     const w = new Writer().u16(1).u16(0).u16(axes).u16(0).u32(header).u16(glyphs.length).u16(1).u32(header);
     offsets.forEach((offset) => w.u32(offset));
     return w.append(data.done()).done();
@@ -586,11 +706,16 @@ function font(family: string, glyphs: Glyph[], own: Record<string, Uint8Array>, 
         name: name(family, names),
         post: post(),
     };
-    const sorted = Object.entries(tables).sort(([a], [b]) => (a < b ? -1 : 1));
+    const sorted = Object.entries(tables).toSorted(([a], [b]) => (a < b ? -1 : 1));
     const count = sorted.length;
     const power = 2 ** Math.floor(Math.log2(count));
-    const w = new Writer().u32(0x00010000).u16(count).u16(power * 16).u16(Math.log2(power)).u16((count - power) * 16);
-    const directory = 12 + (count * 16);
+    const w = new Writer()
+        .u32(0x00010000)
+        .u16(count)
+        .u16(power * 16)
+        .u16(Math.log2(power))
+        .u16((count - power) * 16);
+    const directory = 12 + count * 16;
     let offset = directory;
     const placed = sorted.map(([tag, table]) => {
         const at = offset;
@@ -607,7 +732,7 @@ function font(family: string, glyphs: Glyph[], own: Record<string, Uint8Array>, 
         }
         w.append(table).pad();
     });
-    w.put32(headAt + 8, (0xB1B0AFBA - checksum(w.done())) >>> 0);
+    w.put32(headAt + 8, (0xb1b0afba - checksum(w.done())) >>> 0);
     return w.done();
 }
 
@@ -619,38 +744,66 @@ function write(file: string, bytes: Uint8Array): void {
 
 {
     const glyphs = [...outlines(), { name: 'halves', box: SQUARE, code: FIRST }, { name: 'foreground', box: SQUARE, code: FIRST + 1 }];
-    write('colr0.ttf', font('V3D Colour COLR0', glyphs, {
-        COLR: colr0([{ glyph: 4, layers: [[2, 0], [3, 1]] }, { glyph: 5, layers: [[2, 0], [3, FOREGROUND]] }]),
-        CPAL: cpal(PALETTES),
-    }));
+    write(
+        'colr0.ttf',
+        font('V3D Colour COLR0', glyphs, {
+            COLR: colr0([
+                {
+                    glyph: 4,
+                    layers: [
+                        [2, 0],
+                        [3, 1],
+                    ],
+                },
+                {
+                    glyph: 5,
+                    layers: [
+                        [2, 0],
+                        [3, FOREGROUND],
+                    ],
+                },
+            ]),
+            CPAL: cpal(PALETTES),
+        }),
+    );
 }
 
 {
-    const glyphs = [...outlines(),
+    const glyphs = [
+        ...outlines(),
         { name: 'linear', box: SQUARE, code: FIRST },
         { name: 'layers', box: SQUARE, code: FIRST + 1 },
         { name: 'radial', box: SQUARE, code: FIRST + 2 },
         { name: 'sweep', box: SQUARE, code: FIRST + 3 },
-        { name: 'moved', box: SQUARE, code: FIRST + 4 }];
+        { name: 'moved', box: SQUARE, code: FIRST + 4 },
+    ];
     const middle = (ASCENDER + DESCENDER) / 2;
-    write('colr1.ttf', font('V3D Colour COLR1', glyphs, {
-        COLR: colr1([
-            { glyph: 4, paint: paintGlyph(1, linear(0, middle, UNITS, middle, 0, middle + UNITS)) },
-            { glyph: 5, paint: colrLayers(0, 2) },
-            { glyph: 6, paint: paintGlyph(1, radial(UNITS / 2, middle, 0, UNITS / 2, middle, UNITS / 2)) },
-            { glyph: 7, paint: paintGlyph(1, sweep(UNITS / 2, middle, 0, 360)) },
-            { glyph: 8, paint: translate(UNITS / 2, 0, paintGlyph(2, solid(2))) },
-        ], [paintGlyph(2, solid(0)), paintGlyph(3, solid(FOREGROUND))]),
-        CPAL: cpal(PALETTES),
-    }));
+    write(
+        'colr1.ttf',
+        font('V3D Colour COLR1', glyphs, {
+            COLR: colr1(
+                [
+                    { glyph: 4, paint: paintGlyph(1, linear(0, middle, UNITS, middle, 0, middle + UNITS)) },
+                    { glyph: 5, paint: colrLayers(0, 2) },
+                    { glyph: 6, paint: paintGlyph(1, radial(UNITS / 2, middle, 0, UNITS / 2, middle, UNITS / 2)) },
+                    { glyph: 7, paint: paintGlyph(1, sweep(UNITS / 2, middle, 0, 360)) },
+                    { glyph: 8, paint: translate(UNITS / 2, 0, paintGlyph(2, solid(2))) },
+                ],
+                [paintGlyph(2, solid(0)), paintGlyph(3, solid(FOREGROUND))],
+            ),
+            CPAL: cpal(PALETTES),
+        }),
+    );
 }
 
 {
-    const glyphs = [...outlines(),
+    const glyphs = [
+        ...outlines(),
         { name: 'halves', box: SQUARE, code: FIRST },
         { name: 'gradient', box: SQUARE, code: FIRST + 1 },
         { name: 'stroke', box: SQUARE, code: FIRST + 2 },
-        { name: 'frame', box: SQUARE, code: FIRST + 3 }];
+        { name: 'frame', box: SQUARE, code: FIRST + 3 },
+    ];
     const document = [
         '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">',
         '<defs>',
@@ -679,8 +832,7 @@ function write(file: string, bytes: Uint8Array): void {
 {
     const WEIGHT = 400;
     const SIDE = 100;
-    const glyphs = [...outlines(),
-        { name: 'bar', box: { x0: 0, y0: 0, x1: WEIGHT, y1: ASCENDER }, code: FIRST, advance: WEIGHT + SIDE }];
+    const glyphs = [...outlines(), { name: 'bar', box: { x0: 0, y0: 0, x1: WEIGHT, y1: ASCENDER }, code: FIRST, advance: WEIGHT + SIDE }];
     // the bar's points run from its lower left clockwise, so its right is points 2 and 3 and its
     // top points 1 and 2. Point 5 is the advance
     const wider = (d: number): Tuple['dx'] => [0, 0, d, d, 0, d, 0, 0];
@@ -692,9 +844,34 @@ function write(file: string, bytes: Uint8Array): void {
         { peak: [0, 1], dx: still, dy: taller(600 - ASCENDER) },
         { peak: [0, -1], dx: still, dy: taller(900 - ASCENDER) },
     ];
-    write('variable.ttf', font('V3D Variable', glyphs, {
-        fvar: fvar([{ tag: 'wght', min: 100, initial: WEIGHT, max: 900, nameId: 256 }, { tag: 'opsz', min: 8, initial: 16, max: 64, nameId: 257 }],
-            [{ nameId: 258, values: [100, 16] }, { nameId: 2, values: [WEIGHT, 16] }, { nameId: 259, values: [900, 16] }]),
-        gvar: gvar(2, glyphs.map((glyph) => (glyph.name === 'bar' ? bar : []))),
-    }, [[256, 'Weight'], [257, 'Optical size'], [258, 'Thin'], [259, 'Black']]));
+    write(
+        'variable.ttf',
+        font(
+            'V3D Variable',
+            glyphs,
+            {
+                fvar: fvar(
+                    [
+                        { tag: 'wght', min: 100, initial: WEIGHT, max: 900, nameId: 256 },
+                        { tag: 'opsz', min: 8, initial: 16, max: 64, nameId: 257 },
+                    ],
+                    [
+                        { nameId: 258, values: [100, 16] },
+                        { nameId: 2, values: [WEIGHT, 16] },
+                        { nameId: 259, values: [900, 16] },
+                    ],
+                ),
+                gvar: gvar(
+                    2,
+                    glyphs.map((glyph) => (glyph.name === 'bar' ? bar : [])),
+                ),
+            },
+            [
+                [256, 'Weight'],
+                [257, 'Optical size'],
+                [258, 'Thin'],
+                [259, 'Black'],
+            ],
+        ),
+    );
 }

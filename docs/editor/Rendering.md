@@ -25,16 +25,41 @@ what the editor drives:
 
 A render reads the scene when it starts, so an edit made while it runs is not in its picture.
 
-**moya is the first renderer behind it.** `MoyaDelegate` links `v3dlib_moya` into the editor.
-It records the scene's RIB requests in a `rib::Recorder` on the caller's thread, then replays
-them into a moya handler of its own on a thread of its own. No RIB text is written or parsed.
-The picture stays in that handler's framebuffer, with no file between them. moya reports its
-progress after each bucket of the reyes hider and each row of the ray-trace hider, and stops
-there when cancelled. moya resolves its samples into pixels only at
-the end of a frame, so the picture arrives when the render finishes, not bucket by bucket.
+**moya is the first renderer behind it.** `MoyaDelegate` links `v3dlib_moya` into the editor and
+renders with moya's path tracer on a thread of its own. No RIB text is written or parsed, and no
+file stands between the render and its picture.
+
+- **The retained scene changes only between renders.** Each render first brings moya's retained
+  scene in step with the editor's through a `SceneTranslator`, on the caller's thread, changing
+  only what moved. The render's thread then reads it until the render ends. A render already
+  running is cancelled first, so the scene is never changed while a render reads it.
+  [The scene](../offline/Scene.md) describes what it holds.
+- **Progress is counted in passes.** Before each pass the render reports the passes done over
+  the passes its samples take, which `integrate::passesOf()` gives. A cancel stops it there, so
+  a cancel waits for at most one pass. A render whose pixels all stop early ends at 1.
+- **The picture is the beauty as a display shows it**, through the colour configuration's
+  default display and view at 8 bits a channel, as moya writes a PNG output. It arrives when the
+  render finishes. A render of a scene and moya.exe's render of its RIB export give the same
+  bytes.
+- **The editor carries moya's CPU libraries and MaterialX's standard libraries beside it**, as
+  moya.exe does, since the device and the materials load them from there.
+
+- **The translator makes what the RIB export makes through moya's RIB client**, so the two
+  describe alike. The options, the camera and the output come first. Each mesh is a prototype
+  and an instance, each run of a curve's curves is a prototype and an instance, and each light
+  is one of UsdLux's. Every surface takes one `matte` material, and a scene with no light gets the
+  camera's distant light. Every instance is two-sided, as RI's default `Sides` is, since the
+  export names none.
+- **Each object is named after its item**, and kept by its kind and name from one render to the
+  next. A curve's second run is its name and `2`, and the camera's light is `camera light`.
+- **An update sets only what changed.** A parameter is set when its value differs from the one
+  set before, so moving one item sets its instance's transformation alone. An object no item
+  makes any more is removed. An update that changes nothing commits nothing.
 
 **A batch writes files and runs moya.exe.** `Batch` writes one RIB file per frame per camera,
-then runs `moya.exe` on each in turn on a thread of its own. The files stay, so a farm or another
+then runs `moya.exe --file <job>.rib --silent` on each in turn on a thread of its own. moya.exe
+renders each by path tracing and writes the PNG the file's `Display` names. A frame is rendered
+when moya.exe ends with 0 and its PNG exists. The files stay, so a farm or another
 RenderMan renderer can render them instead. `runProgram()` in `src/render/Process.h` starts the
 program, waits for it, and ends it when a stop is asked for.
 
@@ -49,7 +74,14 @@ The camera is the one selected scene camera, or the active view when there is no
 `shotFrom()` in `src/render/Shot.h` picks it, and `shoot()` sends the scene from it to a RIB
 handler as the settings say. `writeShot()` is `shoot()` into a `rib::Writer`, which makes a RIB
 file of it for a batch and for the export. The camera takes the picture's size and frame aspect
-from the settings, so the picture is not stretched to the shape of the view.
+from the settings, so the picture is not stretched to the shape of the view. `shotCamera()`
+gives the camera both a shot and the translator look through.
+
+- **Each item's block is named after the item**, by `Attribute "identifier"`. A light is
+  written at world level, so its name is set there before it, and the camera's light is named
+  `camera light`.
+- **A mesh is one `PointsPolygons`**: every vertex, and the triangles each face is cut into,
+  since RI draws a polygon only when it is flat and convex.
 
 **Render settings** belong to the document and are saved with it:
 
@@ -57,10 +89,6 @@ from the settings, so the picture is not stretched to the shape of the view.
 |---|---|---|
 | Width and height | 640 by 480 | 1 to `RenderSettings::LARGEST_SIDE`, 16384, each |
 | Samples along each side of a pixel | 2 | 1 to `RenderSettings::MOST_SAMPLES`, 16 |
-| Hider | `hidden`, reyes | `hidden` or `raytrace` |
-
-The reyes hider keeps every sample of the frame in memory at once, so a large picture at many
-samples takes a great deal of it. The ray-trace hider keeps nothing per sample.
 
 ## The Render menu
 
@@ -90,8 +118,8 @@ shows one, the editor brings the render up to date each tick, so an edit renders
 
 **The render settings** (`render-settings`) are an editor too. The width, the height and the
 samples are numbers that are dragged or typed. A change is taken when its drag or its typing
-ends, and a number that is not a whole one within its range is refused. The hider is chosen from
-a list and taken at once. Each change goes through the history, so one undo puts it back.
+ends, and a number that is not a whole one within its range is refused. Each change goes
+through the history, so one undo puts it back.
 `RenderSettingsEditor` in `src/control/` draws it.
 
 Background: [ADR-0154](../adr/editor/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md)

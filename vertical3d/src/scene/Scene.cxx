@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Scene.h"
 
@@ -16,6 +16,7 @@
 #include <vertical3d/src/scene/item/Mesh.h>
 
 #include "Evaluation.h"
+#include "Placed.h"
 #include "Properties.h"
 #include "RenderSettings.h"
 #include "Timeline.h"

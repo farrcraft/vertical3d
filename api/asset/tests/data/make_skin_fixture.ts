@@ -43,7 +43,17 @@
 import { Buffer } from 'node:buffer';
 
 import {
-    ARRAY_BUFFER, ASSET, ELEMENT_ARRAY_BUFFER, FLOAT, UNSIGNED_BYTE, UNSIGNED_SHORT, Writer, f32, floats, u16, u8,
+    ARRAY_BUFFER,
+    ASSET,
+    ELEMENT_ARRAY_BUFFER,
+    FLOAT,
+    UNSIGNED_BYTE,
+    UNSIGNED_SHORT,
+    Writer,
+    f32,
+    floats,
+    u16,
+    u8,
 } from './gltf_writer.ts';
 
 const ROWS = [0, 0.5, 1, 1.5, 2, 2.5, 3];
@@ -58,13 +68,19 @@ function influence(y: number): [number, number][] {
         return [[0, 1]];
     }
     if (y === 1) {
-        return [[0, 0.5], [1, 0.5]];
+        return [
+            [0, 0.5],
+            [1, 0.5],
+        ];
     }
     if (y < 2) {
         return [[1, 1]];
     }
     if (y === 2) {
-        return [[1, 0.5], [2, 0.5]];
+        return [
+            [1, 0.5],
+            [2, 0.5],
+        ];
     }
     return [[2, 1]];
 }
@@ -136,12 +152,20 @@ function strip(writer: Writer, z: number, skinIndex: number[], storage: Storage)
 
     const count = ROWS.length * COLUMNS.length;
     const attributes = {
-        POSITION: writer.accessor(f32(...positions), FLOAT, count, 'VEC3', ARRAY_BUFFER,
-            { min: floats([-1, 0, z]), max: floats([1, 3, z]) }),
+        POSITION: writer.accessor(f32(...positions), FLOAT, count, 'VEC3', ARRAY_BUFFER, {
+            min: floats([-1, 0, z]),
+            max: floats([1, 3, z]),
+        }),
         NORMAL: writer.accessor(f32(...normals), FLOAT, count, 'VEC3', ARRAY_BUFFER),
         JOINTS_0: writer.accessor(Buffer.concat(joints), storage.jointComponent, count, 'VEC4', ARRAY_BUFFER),
-        WEIGHTS_0: writer.accessor(Buffer.concat(weights), storage.weightComponent, count, 'VEC4', ARRAY_BUFFER,
-            storage.normalized ? { normalized: true } : {}),
+        WEIGHTS_0: writer.accessor(
+            Buffer.concat(weights),
+            storage.weightComponent,
+            count,
+            'VEC4',
+            ARRAY_BUFFER,
+            storage.normalized ? { normalized: true } : {},
+        ),
     };
     const index = writer.accessor(u16(...indices), UNSIGNED_SHORT, indices.length, 'SCALAR', ELEMENT_ARRAY_BUFFER);
     return { primitives: [{ attributes, indices: index, material: 0 }] };
@@ -170,10 +194,14 @@ function animations(writer: Writer): Record<string, unknown>[] {
     return [
         {
             name: 'bend',
-            samplers: [{ input: times, output: turn, interpolation: 'LINEAR' },
-                { input: times, output: lift, interpolation: 'LINEAR' }],
-            channels: [{ sampler: 0, target: { node: 3, path: 'rotation' } },
-                { sampler: 1, target: { node: 5, path: 'translation' } }],
+            samplers: [
+                { input: times, output: turn, interpolation: 'LINEAR' },
+                { input: times, output: lift, interpolation: 'LINEAR' },
+            ],
+            channels: [
+                { sampler: 0, target: { node: 3, path: 'rotation' } },
+                { sampler: 1, target: { node: 5, path: 'translation' } },
+            ],
         },
         {
             name: 'step',
@@ -191,28 +219,33 @@ function animations(writer: Writer): Record<string, unknown>[] {
 function plain(): void {
     const writer = new Writer();
     const skinOrder = [0, 1, 2];
-    const tip = writer.accessor(f32(0, 0, 0, 0.25, 0, 0, 0, 0.25, 0), FLOAT, 3, 'VEC3', ARRAY_BUFFER,
-        { min: floats([0, 0, 0]), max: floats([0.25, 0.25, 0]) });
+    const tip = writer.accessor(f32(0, 0, 0, 0.25, 0, 0, 0, 0.25, 0), FLOAT, 3, 'VEC3', ARRAY_BUFFER, {
+        min: floats([0, 0, 0]),
+        max: floats([0.25, 0.25, 0]),
+    });
     // built in the order the document lists them, so the accessors are numbered in that order
     const meshes = [strip(writer, 0, skinOrder, SHORTS_AND_FLOATS), { primitives: [{ attributes: { POSITION: tip }, material: 1 }] }];
     const skins = [{ joints: [2, 3, 4], inverseBindMatrices: inverseBinds(writer, skinOrder, 0) }];
-    writer.glb({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0, 1] }],
-        nodes: [
-            { name: 'strip', mesh: 0, skin: 0, translation: floats([0, 0, 7]) },
-            { name: 'armature', children: [2] },
-            { name: 'root', children: [3] },
-            { name: 'middle', translation: floats([0, 1, 0]), children: [4] },
-            { name: 'top', translation: floats([0, 1, 0]), children: [5] },
-            { name: 'tip', mesh: 1, translation: floats([0, 0.5, 0]) },
-        ],
-        meshes,
-        skins,
-        animations: animations(writer),
-        materials: MATERIALS,
-    }, 'bending_strip.glb');
+    writer.glb(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0, 1] }],
+            nodes: [
+                { name: 'strip', mesh: 0, skin: 0, translation: floats([0, 0, 7]) },
+                { name: 'armature', children: [2] },
+                { name: 'root', children: [3] },
+                { name: 'middle', translation: floats([0, 1, 0]), children: [4] },
+                { name: 'top', translation: floats([0, 1, 0]), children: [5] },
+                { name: 'tip', mesh: 1, translation: floats([0, 0.5, 0]) },
+            ],
+            meshes,
+            skins,
+            animations: animations(writer),
+            materials: MATERIALS,
+        },
+        'bending_strip.glb',
+    );
 }
 
 function shuffled(): void {
@@ -221,21 +254,24 @@ function shuffled(): void {
     const skinIndex = [0, 1, 2].map((joint) => skinOrder.indexOf(joint));
     const meshes = [strip(writer, 4, skinIndex, BYTES)];
     const skins = [{ joints: [4, 2, 3], inverseBindMatrices: inverseBinds(writer, skinOrder, 4) }];
-    writer.glb({
-        asset: ASSET,
-        scene: 0,
-        scenes: [{ nodes: [0, 1] }],
-        nodes: [
-            { name: 'strip', mesh: 0, skin: 0 },
-            { name: 'armature', translation: floats([0, 0, 4]), children: [2] },
-            { name: 'root', children: [3] },
-            { name: 'middle', translation: floats([0, 1, 0]), children: [4] },
-            { name: 'top', translation: floats([0, 1, 0]) },
-        ],
-        meshes,
-        skins,
-        materials: MATERIALS.slice(0, 1),
-    }, 'bending_strip_shuffled.glb');
+    writer.glb(
+        {
+            asset: ASSET,
+            scene: 0,
+            scenes: [{ nodes: [0, 1] }],
+            nodes: [
+                { name: 'strip', mesh: 0, skin: 0 },
+                { name: 'armature', translation: floats([0, 0, 4]), children: [2] },
+                { name: 'root', children: [3] },
+                { name: 'middle', translation: floats([0, 1, 0]), children: [4] },
+                { name: 'top', translation: floats([0, 1, 0]) },
+            ],
+            meshes,
+            skins,
+            materials: MATERIALS.slice(0, 1),
+        },
+        'bending_strip_shuffled.glb',
+    );
 }
 
 plain();

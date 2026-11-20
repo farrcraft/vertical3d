@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Capture.h"
 
@@ -12,6 +12,7 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/memory/BufferSpec.h>
 
 #include "Ring.h"
 #include "Swapchain.h"

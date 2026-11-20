@@ -42,7 +42,7 @@ is SDL3.
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
 | Changing `api/ui` | [docs/internals/ui/](docs/internals/ui/README.md) |
-| `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
+| `moya`, `api/rib`, RIB | [docs/offline/](docs/offline/README.md) |
 | `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
 | `demos/` (pong, tetris, voxel, odyssey, diorama) | [docs/Demos.md](docs/Demos.md) |
 | imagetool | [docs/Imagetool.md](docs/Imagetool.md) |
@@ -70,15 +70,17 @@ ninja -C out/build/x64-Debug                       # build; one target by name
 ctest --test-dir out/build/x64-Debug --output-on-failure
 cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --recursive .
 npm ci && npm run typecheck                        # type-check every TypeScript file
+npm run lint && npm run format:check               # oxlint and oxfmt over the same files
 node scripts/prose.ts                              # one review gate; Gates.md lists them all
 ```
 
 Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer
 environment, and `scripts\build.cmd` and `scripts\test.cmd` are the same commands with one
 entered. [docs/contributing/Build.md](docs/contributing/Build.md) covers configuring from a cold
-tree, the options, and what has to be installed first. The tree is clean at cpplint, at `/W4`
-with `/WX`, at `/analyze`, at the clang-tidy checks `.clang-tidy` enables, and at every review
-gate in `scripts/`, so **every finding is a new one**.
+tree, the options, and what has to be installed first. The C++ is clean at cpplint, at `/W4`
+with `/WX`, at `/analyze` and at the clang-tidy checks `.clang-tidy` enables. The TypeScript is
+clean at oxlint and oxfmt, and the tree at every review gate in `scripts/`. **Every finding is
+therefore a new one**.
 
 ## Rules that cost the most when broken
 

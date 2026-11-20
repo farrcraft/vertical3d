@@ -13,12 +13,14 @@ SERVER_BASED_SEARCH    = NO
 HAVE_DOT               = NO
 QUIET                  = YES
 
-# the public headers of each api library; a header under internal/ or tests/ is not public
-INPUT                  = ../../api
+# the public headers of each api library, and the descriptions of the namespaces no header can
+# describe; a header under internal/ or tests/ is not public
+INPUT                  = ../../api namespaces.dox
 FILE_PATTERNS          = *.h
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */internal/* */tests/*
-EXCLUDE_SYMBOLS        = *::internal::*
+# an internal namespace is not public, and FMOD is only forward-declared
+EXCLUDE_SYMBOLS        = *::internal *::internal::* FMOD FMOD::*
 
 # a header is shown by the path it is included by, <api/...>
 FULL_PATH_NAMES        = YES

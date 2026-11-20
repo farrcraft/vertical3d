@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // The Vulkan Memory Allocator ships as one header that is both the declaration and the
 // implementation, and the implementation half has to be compiled in exactly one translation

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/font/glyph/Store.h>
 
@@ -23,23 +23,23 @@ const v3d::font::glyph::Store::Spec kSmall{ .pageSize = 64, .plotSize = 32, .pag
 /**
  * @return a glyph of one shade filling a square of a size, its shade the key's index
  **/
-v3d::font::glyph::Bitmap square(const v3d::font::glyph::Key& key, std::uint32_t side) {
-    return v3d::font::glyph::Bitmap{ .size = glm::uvec2(side), .bearing = glm::ivec2(1, -static_cast<int>(side)),
+v3d::font::glyph::Store::Bitmap square(const v3d::font::glyph::Store::Key& key, std::uint32_t side) {
+    return v3d::font::glyph::Store::Bitmap{ .size = glm::uvec2(side), .bearing = glm::ivec2(1, -static_cast<int>(side)),
         .pixels = std::vector<unsigned char>(static_cast<std::size_t>(side) * side, static_cast<unsigned char>(key.index)) };
 }
 
 /**
  * @return a glyph that fills a plot of the small store but for its padding
  **/
-v3d::font::glyph::Bitmap large(const v3d::font::glyph::Key& key) {
+v3d::font::glyph::Store::Bitmap large(const v3d::font::glyph::Store::Key& key) {
     return square(key, 30);
 }
 
 /**
  * @return the key of a glyph by its index
  **/
-v3d::font::glyph::Key keyOf(unsigned int index) {
-    return v3d::font::glyph::Key{ .index = index, .size = 16.0F };
+v3d::font::glyph::Store::Key keyOf(unsigned int index) {
+    return v3d::font::glyph::Store::Key{ .index = index, .size = 16.0F };
 }
 
 BOOST_AUTO_TEST_SUITE(glyph_store_test)
@@ -50,20 +50,20 @@ BOOST_AUTO_TEST_SUITE(glyph_store_test)
  **/
 BOOST_AUTO_TEST_CASE(a_glyph_is_made_once) {
     v3d::font::glyph::Store store(kSmall);
-    const auto small = [](const v3d::font::glyph::Key& key) { return square(key, 4); };
-    const std::optional<v3d::font::glyph::StoredGlyph> found = store.glyph(keyOf(7), small);
-    const std::optional<v3d::font::glyph::StoredGlyph> again = store.glyph(keyOf(7), small);
+    const auto small = [](const v3d::font::glyph::Store::Key& key) { return square(key, 4); };
+    const std::optional<v3d::font::glyph::Store::StoredGlyph> found = store.glyph(keyOf(7), small);
+    const std::optional<v3d::font::glyph::Store::StoredGlyph> again = store.glyph(keyOf(7), small);
     BOOST_REQUIRE(found.has_value() && again.has_value());
-    const v3d::font::glyph::StoredGlyph first = found.value_or(v3d::font::glyph::StoredGlyph());
+    const v3d::font::glyph::Store::StoredGlyph first = found.value_or(v3d::font::glyph::Store::StoredGlyph());
     BOOST_CHECK_EQUAL(store.made(), 1U);
-    BOOST_CHECK(first.position == again.value_or(v3d::font::glyph::StoredGlyph()).position);
+    BOOST_CHECK(first.position == again.value_or(v3d::font::glyph::Store::StoredGlyph()).position);
     BOOST_CHECK(first.size == glm::uvec2(4));
     BOOST_CHECK_EQUAL(static_cast<int>(store.pixels(first.page)[(first.position.y * 64) + first.position.x]), 7);
 
-    v3d::font::glyph::Key stepped = keyOf(7);
+    v3d::font::glyph::Store::Key stepped = keyOf(7);
     stepped.subpixel = 2;
     store.glyph(stepped, small);
-    v3d::font::glyph::Key larger = keyOf(7);
+    v3d::font::glyph::Store::Key larger = keyOf(7);
     larger.size = 17.0F;
     store.glyph(larger, small);
     BOOST_CHECK_EQUAL(store.made(), 3U);
@@ -80,12 +80,12 @@ BOOST_AUTO_TEST_CASE(a_full_store_empties_the_plot_used_longest_ago) {
         store.beginFrame();
     }
     BOOST_CHECK_EQUAL(store.pages(), 1U);
-    const std::optional<v3d::font::glyph::StoredGlyph> fifth = store.glyph(keyOf(5), large);
+    const std::optional<v3d::font::glyph::Store::StoredGlyph> fifth = store.glyph(keyOf(5), large);
     BOOST_REQUIRE(fifth.has_value());
     BOOST_CHECK_EQUAL(store.pages(), 1U);
     BOOST_CHECK_EQUAL(store.made(), 5U);
     // the first glyph's plot was used longest ago, so the fifth took it
-    BOOST_CHECK(fifth.value_or(v3d::font::glyph::StoredGlyph()).position == glm::uvec2(1, 1));
+    BOOST_CHECK(fifth.value_or(v3d::font::glyph::Store::StoredGlyph()).position == glm::uvec2(1, 1));
     store.glyph(keyOf(2), large);
     BOOST_CHECK_EQUAL(store.made(), 5U);
     store.beginFrame();
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(changed_plots_are_given_once) {
     BOOST_CHECK_EQUAL(store.regions().size(), 4U);
     BOOST_CHECK(store.regions().empty());
     store.glyph(keyOf(2), large);
-    const std::vector<v3d::font::glyph::Region> changed = store.regions();
+    const std::vector<v3d::font::glyph::Store::Region> changed = store.regions();
     BOOST_REQUIRE_EQUAL(changed.size(), 1U);
     BOOST_CHECK(changed[0].position == glm::uvec2(32, 0));
     BOOST_CHECK(changed[0].size == glm::uvec2(32));
@@ -138,13 +138,13 @@ BOOST_AUTO_TEST_CASE(changed_plots_are_given_once) {
  **/
 BOOST_AUTO_TEST_CASE(a_glyph_that_cannot_fit_is_not_stored) {
     v3d::font::glyph::Store store(kSmall);
-    BOOST_CHECK(!store.glyph(keyOf(1), [](const v3d::font::glyph::Key& key) { return square(key, 31); }));
-    BOOST_CHECK(!store.glyph(keyOf(2), [](const v3d::font::glyph::Key&) {
-        return v3d::font::glyph::Bitmap{ .size = glm::uvec2(4), .pixels = std::vector<unsigned char>(3) };
+    BOOST_CHECK(!store.glyph(keyOf(1), [](const v3d::font::glyph::Store::Key& key) { return square(key, 31); }));
+    BOOST_CHECK(!store.glyph(keyOf(2), [](const v3d::font::glyph::Store::Key&) {
+        return v3d::font::glyph::Store::Bitmap{ .size = glm::uvec2(4), .pixels = std::vector<unsigned char>(3) };
     }));
-    const std::optional<v3d::font::glyph::StoredGlyph> space = store.glyph(keyOf(3), [](const v3d::font::glyph::Key&) { return v3d::font::glyph::Bitmap(); });
+    const std::optional<v3d::font::glyph::Store::StoredGlyph> space = store.glyph(keyOf(3), [](const v3d::font::glyph::Store::Key&) { return v3d::font::glyph::Store::Bitmap(); });
     BOOST_REQUIRE(space.has_value());
-    BOOST_CHECK(space.value_or(v3d::font::glyph::StoredGlyph{ .size = glm::uvec2(1) }).size == glm::uvec2(0));
+    BOOST_CHECK(space.value_or(v3d::font::glyph::Store::StoredGlyph{ .size = glm::uvec2(1) }).size == glm::uvec2(0));
 }
 
 /**
@@ -156,15 +156,15 @@ BOOST_AUTO_TEST_CASE(a_colour_store_keeps_four_bytes_a_pixel) {
     spec.channels = 4;
     v3d::font::glyph::Store store(spec);
     BOOST_CHECK(!store.glyph(keyOf(1), large));
-    const std::optional<v3d::font::glyph::StoredGlyph> stored = store.glyph(keyOf(2), [](const v3d::font::glyph::Key&) {
+    const std::optional<v3d::font::glyph::Store::StoredGlyph> stored = store.glyph(keyOf(2), [](const v3d::font::glyph::Store::Key&) {
         std::vector<unsigned char> pixels;
         for (int pixel = 0; pixel < 4; pixel++) {
             pixels.insert(pixels.end(), { 10, 20, 30, static_cast<unsigned char>(40 + pixel) });
         }
-        return v3d::font::glyph::Bitmap{ .size = glm::uvec2(2), .pixels = pixels, .channels = 4 };
+        return v3d::font::glyph::Store::Bitmap{ .size = glm::uvec2(2), .pixels = pixels, .channels = 4 };
     });
     BOOST_REQUIRE(stored.has_value());
-    const v3d::font::glyph::StoredGlyph at = stored.value_or(v3d::font::glyph::StoredGlyph());
+    const v3d::font::glyph::Store::StoredGlyph at = stored.value_or(v3d::font::glyph::Store::StoredGlyph());
     const std::vector<unsigned char>& page = store.pixels(at.page);
     BOOST_REQUIRE_EQUAL(page.size(), static_cast<std::size_t>(64) * 64 * 4);
     // the second row's first pixel, the glyph's third

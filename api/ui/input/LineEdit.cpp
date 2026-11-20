@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "LineEdit.h"
+
+#include "Clipboard.h"
 
 #include <api/font/text/Bidi.h>
 #include <api/font/text/Paragraph.h>
@@ -280,7 +282,7 @@ void LineEdit::at(float into, const paint::Type& type, bool extend) {
         caret(0, extend);
         return;
     }
-    const font::text::Hit hit = laid->hitTest(glm::vec2(into, 0.0F));
+    const font::text::Paragraph::Hit hit = laid->hitTest(glm::vec2(into, 0.0F));
     caret(hit.index, extend);
     affinity_ = hit.affinity;
 }
@@ -311,7 +313,7 @@ LineEdit::Layout LineEdit::layout(const paint::Type& type) const {
     }
     const auto runs = [&paragraph](std::size_t from, std::size_t to) {
         std::vector<glm::vec2> found;
-        for (const font::text::SelectionRect& rect : paragraph->selection(from, to)) {
+        for (const font::text::Paragraph::SelectionRect& rect : paragraph->selection(from, to)) {
             found.emplace_back(rect.position.x, rect.position.x + rect.size.x);
         }
         return found;

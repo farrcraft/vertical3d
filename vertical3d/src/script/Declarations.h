@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Arguments.h"
+#include "Parameter.h"
 
 namespace v3d::editor::script {
 

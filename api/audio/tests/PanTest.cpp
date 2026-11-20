@@ -1,10 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/audio/Player.h>
 #include <api/audio/Play.h>
+#include <api/audio/Stereo.h>
 #include <api/log/Logger.h>
 
 #include <limits>

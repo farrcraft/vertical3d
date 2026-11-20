@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -15,7 +15,7 @@
 #include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/entity/Poses.h>
 #include <api/render/realtime/lighting/Settings.h>
-#include <api/render/realtime/lighting/Shadow.h>
+#include <api/render/realtime/lighting/Cascades.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 
@@ -39,6 +39,9 @@ namespace v3d::render::realtime::frame {
 class Frame;
 };  // namespace v3d::render::realtime::frame
 
+/**
+ * Lit scenes: the light, the cel bands, the outline and the shadow map.
+ **/
 namespace v3d::render::realtime::lighting {
 
 /**

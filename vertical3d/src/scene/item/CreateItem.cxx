@@ -1,12 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "CreateItem.h"
 
+#include <api/curve/Bezier.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Nurbs.h>
+#include <api/curve/Poly.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Evaluation.h>
 

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/brep/BRep.h>
 #include <api/brep/HalfEdge.h>
@@ -390,7 +390,6 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a frame outside the range", "INSERT OR REPLACE INTO meta VALUES ('frame', 500)" },
         { "a picture with no width", "INSERT OR REPLACE INTO meta VALUES ('render_width', 0)" },
         { "a picture with too many samples", "INSERT OR REPLACE INTO meta VALUES ('render_samples', 99)" },
-        { "a hider this build does not have", "INSERT OR REPLACE INTO meta VALUES ('render_hider', 'scanline')" },
         { "tables at a version no build wrote", "PRAGMA user_version = 0" },
         { "another program's database", "PRAGMA application_id = 1" },
         { "an item that is its own parent", "UPDATE items SET parent = id WHERE kind = 'camera'" },
@@ -704,7 +703,6 @@ BOOST_AUTO_TEST_CASE(store_render_settings_test) {
     v3d::editor::scene::RenderSettings settings;
     settings.size = glm::uvec2(1280, 720);
     settings.samples = 5;
-    settings.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
     written->renderSettings(settings);
 
     // the render settings come back as they were written
@@ -713,6 +711,15 @@ BOOST_AUTO_TEST_CASE(store_render_settings_test) {
     v3d::editor::scene::Scene read;
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_CHECK(read.renderSettings() == settings);
+
+    // a hider an older build wrote is passed over, whatever it names, and the other settings
+    // read as they were
+    for (const char* const hider : { "hidden", "raytrace", "scanline" }) {
+        alter(scratch, std::string("INSERT OR REPLACE INTO meta VALUES ('render_hider', '") + hider + "')");
+        v3d::editor::scene::Scene older;
+        BOOST_REQUIRE_MESSAGE(store.read(scratch.path(), &older), hider);
+        BOOST_CHECK_MESSAGE(older.renderSettings() == settings, hider);
+    }
 
     // and a document that holds none reads with the defaults
     alter(scratch, "DELETE FROM meta WHERE key LIKE 'render_%'");

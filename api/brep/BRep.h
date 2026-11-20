@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -17,6 +17,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * Boundary representation meshes: faces, half-edges and vertices with their topology, and the
+ * operations the editor models with.
+ **/
 namespace v3d::brep {
 
 /**

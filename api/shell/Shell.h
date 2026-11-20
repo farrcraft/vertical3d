@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,6 +21,10 @@ namespace v3d::render::realtime {
 class WindowRenderer;
 };  // namespace v3d::render::realtime
 
+/**
+ * What every app builds around its own code: the ui and its document, the screen, the pause menu
+ * and the statistics overlay.
+ **/
 namespace v3d::shell {
 
 /**

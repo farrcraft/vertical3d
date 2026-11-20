@@ -2,12 +2,14 @@
  * Check that everything a release ships has a licence to show, and write the notices file that
  * shows them.
  *
- * A release ships the project's own code, the fonts under data/fonts/, and the libraries vcpkg
- * installs. The notices file holds the project's LICENSE, each font family's licence, and each
- * library's copyright file, in that order. The check reports:
+ * A release ships the project's own code, the fonts under data/fonts/, the third-party data
+ * tables in DATA, and the libraries vcpkg installs. The notices file holds the project's
+ * LICENSE, each font family's licence, each data table's notice, and each library's copyright
+ * file, in that order. The check reports:
  *
  *   no-copyright     a vcpkg package that installs code and has no copyright file.
  *   unlicensed-font  a font under data/fonts/ with no licence file named for its family.
+ *   no-data-notice   a data table in DATA whose notice file is not in the tree.
  *
  * A package that installs files only under share/ ships no code, and needs no notice: vcpkg's
  * build helpers and meta-packages are such packages. A font's family is named by the licence
@@ -32,6 +34,27 @@ const USAGE = 'usage: node scripts/notices.ts [--installed <dir>] [--out <file>]
 const FONTS = 'data/fonts/';
 const FONT_LICENCE = '-OFL.txt';
 const FONT_FILE = /\.(ttf|otf)$/i;
+
+/**
+ * The third-party data the tree carries in its own source, each with the heading its notice is
+ * shown under and the file that holds the notice: the attribution and licence its owner asks for.
+ */
+export const DATA: ReadonlyArray<{ heading: string; notice: string }> = [
+    { heading: 'The CIE colorimetric tables', notice: 'moya/libmoya/kernel/spectrum/CIE-NOTICE.txt' },
+];
+
+/** A finding for each data table whose notice file is not among the given files. */
+export function missingDataNotices(data: ReadonlyArray<{ notice: string }>, files: readonly string[]): Finding[] {
+    const present = new Set(files);
+    return data
+        .filter(({ notice }) => !present.has(notice))
+        .map(({ notice }) => ({
+            path: notice,
+            line: null,
+            rule: 'no-data-notice',
+            message: 'a data table names this notice, and it is not in the tree',
+        }));
+}
 
 /** One package vcpkg installed: its name, version and triplet. */
 export interface Package {
@@ -58,7 +81,7 @@ export function installed(status: string): Package[] {
             triplet: field('Architecture'),
         });
     }
-    return found.sort((a, b) => a.name.localeCompare(b.name));
+    return found.toSorted((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Whether a package's installed file list holds a file outside share/: whether it ships code. */
@@ -90,7 +113,7 @@ export function licenceOf(font: string, covering: ReadonlyMap<string, string>): 
             best = family;
         }
     }
-    return best === null ? null : covering.get(best) ?? null;
+    return best === null ? null : (covering.get(best) ?? null);
 }
 
 /** The fonts among the files that no licence covers. */
@@ -115,9 +138,10 @@ export interface Notice {
 
 /** The notices file: an opening paragraph, then each notice in the order given. */
 export function compose(notices: readonly Notice[]): string {
-    const opening = 'Third-party notices for Vertical3D\n\n'
-        + 'Vertical3D is under the MIT licence below. It ships the fonts and the libraries that\n'
-        + 'follow, each under the licence given with it.\n';
+    const opening =
+        'Third-party notices for Vertical3D\n\n' +
+        'Vertical3D is under the MIT licence below. It ships the fonts, the data tables and the\n' +
+        'libraries that follow, each under the licence given with it.\n';
     return [opening, ...notices.map((notice) => section(notice.heading, notice.text))].join('\n');
 }
 
@@ -141,8 +165,16 @@ function main(): number {
 
     const fonts = tracked(FONTS);
     findings.push(...unlicensedFonts(fonts));
-    for (const [family, file] of [...families(fonts)].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [family, file] of [...families(fonts)].toSorted(([a], [b]) => a.localeCompare(b))) {
         notices.push({ heading: `The ${family} fonts`, text: readFileSync(path.join(ROOT, file), 'utf8') });
+    }
+
+    const missing = missingDataNotices(DATA, tracked(...DATA.map(({ notice }) => notice)));
+    findings.push(...missing);
+    for (const { heading, notice } of DATA) {
+        if (!missing.some((finding) => finding.path === notice)) {
+            notices.push({ heading, text: readFileSync(path.join(ROOT, notice), 'utf8') });
+        }
     }
 
     for (const item of installed(readFileSync(status, 'utf8'))) {

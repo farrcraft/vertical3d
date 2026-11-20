@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -13,6 +13,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * A frame as data: its passes, their draw items and sort keys, the targets passes draw into, and
+ * the recorder that turns a frame into commands.
+ **/
 namespace v3d::render::realtime::frame {
 /**
  * Everything to be drawn for one image, as a list of passes.

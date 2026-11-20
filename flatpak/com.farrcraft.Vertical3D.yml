@@ -1,8 +1,9 @@
 # The Flatpak of every app: the editor, moya, imagetool and the five demos. It runs on the
 # Freedesktop runtime and uses the runtime's SDL3, ICU, FreeType, HarfBuzz, libpng, libjpeg,
-# SQLite, zlib and Vulkan loader. Each other dependency is a module below, pinned to its source
-# archive at the version vcpkg's baseline builds. thorvg and OpenUSD carry the patches of their
-# overlay ports in ports/. docs/contributing/Releasing.md says how it is built and published.
+# SQLite, zlib, zstd, expat and Vulkan loader. Each other dependency is a module below, pinned to
+# its source archive at the version vcpkg's baseline builds. thorvg and OpenUSD carry the patches
+# of their overlay ports in ports/. docs/contributing/Releasing.md says how it is built and
+# published.
 id: com.farrcraft.Vertical3D
 runtime: org.freedesktop.Platform
 runtime-version: '26.08'
@@ -29,12 +30,12 @@ modules:
   - name: boost
     buildsystem: simple
     build-commands:
-      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=filesystem,json,program_options
+      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=filesystem,iostreams,json,program_options
       - ./b2 install variant=release link=shared threading=multi -j ${FLATPAK_BUILDER_N_JOBS}
     sources:
       - type: archive
-        url: https://archives.boost.io/release/1.91.0/source/boost_1_91_0.tar.bz2
-        sha256: de5e6b0e4913395c6bdfa90537febd9028ea4c0735d2cdb0cd9b45d5f51264f5
+        url: https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2
+        sha256: 5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c
 
   - name: glm
     buildsystem: cmake-ninja
@@ -56,8 +57,8 @@ modules:
       - -DENTT_INSTALL=ON
     sources:
       - type: archive
-        url: https://github.com/skypjack/entt/archive/refs/tags/v3.16.0.tar.gz
-        sha256: 7d7b4037b737992342049ffab14f22fa10243e01664f8c3a0657aa247ac52f71
+        url: https://github.com/skypjack/entt/archive/refs/tags/v4.0.0.tar.gz
+        sha256: 32a2ff2c72cb047dfd57306006ef238820b70da7c6ce4e7e8a507ac63365212e
 
   - name: fmt
     buildsystem: cmake-ninja
@@ -67,8 +68,8 @@ modules:
       - -DBUILD_SHARED_LIBS=ON
     sources:
       - type: archive
-        url: https://github.com/fmtlib/fmt/archive/refs/tags/12.1.0.tar.gz
-        sha256: ea7de4299689e12b6dddd392f9896f08fb0777ac7168897a244a6d6085043fea
+        url: https://github.com/fmtlib/fmt/archive/refs/tags/12.2.1.tar.gz
+        sha256: 449374d74f31b67796dece454d59b93e6f1538efcce0e9ac78000c98142c139e
 
   - name: spdlog
     buildsystem: cmake-ninja
@@ -109,8 +110,8 @@ modules:
       - -Dtests=false
     sources:
       - type: archive
-        url: https://github.com/thorvg/thorvg/archive/refs/tags/v1.0.4.tar.gz
-        sha256: 1a60b794eaac5717ad79d0c7e3d189f46e21d469b3a0013d7804f348fbacdf17
+        url: https://github.com/thorvg/thorvg/archive/refs/tags/v1.1.3.tar.gz
+        sha256: ba9957aeeadb4151d4486f11c638ae118c00210fa4906daa7b30143aa341e690
       - type: patch
         path: ../ports/thorvg/no-global-operator-new.patch
 
@@ -123,8 +124,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/quickjs-ng/quickjs/archive/refs/tags/v0.14.0.tar.gz
-        sha256: 928e9406addd99eb8623348f2cfcd916eade9a263c60d42be79bc7aee4ee8453
+        url: https://github.com/quickjs-ng/quickjs/archive/refs/tags/v0.16.2.tar.gz
+        sha256: 97c80625b26775a4c7ca618c004d4ea24cf99cbf867e4eba78bd927a8b23d106
 
   - name: sdl3-mixer
     buildsystem: cmake-ninja
@@ -135,15 +136,15 @@ modules:
       - -DSDLMIXER_VENDORED=OFF
     sources:
       - type: archive
-        url: https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-3.2.0.tar.gz
-        sha256: 1077fef4a6e9513027da0a08e6f1b8645f8c88c8bef001c17befeb52b129b5dd
+        url: https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-3.2.4.tar.gz
+        sha256: f2ea848ccdf2f394cd4973ee0f6c482e04511044695cccfd46bab6dcd7f780aa
 
   - name: vulkan-memory-allocator
     buildsystem: cmake-ninja
     sources:
       - type: archive
-        url: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/refs/tags/v3.3.0.tar.gz
-        sha256: c4f6bbe6b5a45c2eb610ca9d231158e313086d5b1a40c9922cb42b597419b14e
+        url: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/refs/tags/v3.5.0.tar.gz
+        sha256: c5f3db848fca9cb9726b41f256cc3007773321fa92a86d1e0902e66474e8a9e3
 
   - name: onetbb
     buildsystem: cmake-ninja
@@ -152,8 +153,275 @@ modules:
       - -DTBB_STRICT=OFF
     sources:
       - type: archive
-        url: https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v2022.3.0.tar.gz
-        sha256: 01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a
+        url: https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v2023.2.0.tar.gz
+        sha256: 80cb62e62defeee67ea1885a6f72d97ac81404f8fde9cded62fb51524808a30c
+
+  - name: imath
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_TESTING=OFF
+      - -DIMATH_INSTALL_SYM_LINK=OFF
+    license-files:
+      - LICENSE.md
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/v3.2.3.tar.gz
+        sha256: e10c12b3f21f45bf08e09d4215d9c7691368d747beebd840de0b6fefed2df9f8
+
+  - name: libdeflate
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DLIBDEFLATE_BUILD_STATIC_LIB=OFF
+      - -DLIBDEFLATE_BUILD_GZIP=OFF
+    sources:
+      - type: archive
+        url: https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.26.tar.gz
+        sha256: bba03fffc5538576213675ce6968fcff6ce2e67d82e4d5febea2d05f9f13cf85
+
+  - name: openjph
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DOJPH_BUILD_TESTS=OFF
+      - -DOJPH_BUILD_EXECUTABLES=OFF
+      - -DOJPH_ENABLE_TIFF_SUPPORT=OFF
+    sources:
+      - type: archive
+        url: https://github.com/aous72/OpenJPH/archive/refs/tags/0.32.0.tar.gz
+        sha256: 5cb1ebe18e5ee1322d23ff2130b37562d447d1ad5586c3d16cf84be3ae30f719
+
+  - name: openexr
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_TESTING=OFF
+      - -DBUILD_WEBSITE=OFF
+      - -DCMAKE_REQUIRE_FIND_PACKAGE_libdeflate=ON
+      - -DOPENEXR_BUILD_EXAMPLES=OFF
+      - -DOPENEXR_BUILD_TOOLS=OFF
+      - -DOPENEXR_INSTALL_TOOLS=OFF
+    license-files:
+      - LICENSE.md
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.5.3.tar.gz
+        sha256: ff1de95f4031c1c57c633e647dc97c15282d3aa3bc7fb90745f00f74de4a054f
+
+  # OpenColorIO's own dependencies. Its configure would download any it does not find, which a
+  # Flatpak build cannot, so each is a module and OCIO_INSTALL_EXT_PACKAGES is NONE
+  - name: pystring
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+    sources:
+      - type: archive
+        url: https://github.com/imageworks/pystring/archive/refs/tags/v1.2.0.tar.gz
+        sha256: 020a603a757ba1e429f4b1ea6feb3afbe0fb34bcafa355032e1f1b8a0019d198
+
+  - name: yaml-cpp
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DYAML_BUILD_SHARED_LIBS=ON
+      - -DYAML_CPP_BUILD_TESTS=OFF
+      - -DYAML_CPP_BUILD_TOOLS=OFF
+    sources:
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+        sha256: 25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
+
+  - name: minizip-ng
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+      - -DMZ_FETCH_LIBS=OFF
+      - -DMZ_LIB_SUFFIX=-ng
+      - -DMZ_ZLIB=ON
+      - -DMZ_BZIP2=OFF
+      - -DMZ_LZMA=OFF
+      - -DMZ_ZSTD=OFF
+      - -DMZ_OPENSSL=OFF
+      - -DMZ_PKCRYPT=OFF
+      - -DMZ_WZAES=OFF
+      - -DMZ_ICONV=OFF
+      - -DCMAKE_DISABLE_FIND_PACKAGE_ZLIBNG=ON
+    sources:
+      - type: archive
+        url: https://github.com/zlib-ng/minizip-ng/archive/refs/tags/4.1.0.tar.gz
+        sha256: 85417229bb0cd56403e811c316150eea1a3643346d9cec7512ddb7ea291b06f2
+
+  - name: opencolorio
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DOCIO_BUILD_APPS=OFF
+      - -DOCIO_BUILD_DOCS=OFF
+      - -DOCIO_BUILD_GPU_TESTS=OFF
+      - -DOCIO_BUILD_JAVA=OFF
+      - -DOCIO_BUILD_NUKE=OFF
+      - -DOCIO_BUILD_OPENFX=OFF
+      - -DOCIO_BUILD_PYTHON=OFF
+      - -DOCIO_BUILD_TESTS=OFF
+      - -DOCIO_INSTALL_EXT_PACKAGES=NONE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.6.0.tar.gz
+        sha256: 784ac37bde5b9c6e5dc15f23d1235bd1452d376cdc03627d6d6dd310f375a735
+
+  # OpenSubdiv's CPU library alone, static and position-independent as vcpkg builds it, with
+  # every GPU and threading backend off
+  - name: opensubdiv
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DNO_CLEW=ON
+      - -DNO_CUDA=ON
+      - -DNO_DOC=ON
+      - -DNO_DX=ON
+      - -DNO_EXAMPLES=ON
+      - -DNO_GLEW=ON
+      - -DNO_GLFW=ON
+      - -DNO_GLTESTS=ON
+      - -DNO_METAL=ON
+      - -DNO_OMP=ON
+      - -DNO_OPENCL=ON
+      - -DNO_OPENGL=ON
+      - -DNO_PTEX=ON
+      - -DNO_REGRESSION=ON
+      - -DNO_TBB=ON
+      - -DNO_TESTS=ON
+      - -DNO_TUTORIALS=ON
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/PixarAnimationStudios/OpenSubdiv/archive/refs/tags/v3_5_0.tar.gz
+        sha256: 8f5044f453b94162755131f77c08069004f25306fd6dc2192b6d49889efb8095
+
+  # MaterialX's core and format libraries and its standard libraries of node definitions, static
+  # and position-independent as vcpkg builds them on Linux, with no shader generator or renderer.
+  # moya installs the standard libraries beside itself, so the prefix's copy is removed, with the
+  # documents MaterialX installs at the prefix's root. MaterialX installs the standard libraries
+  # only when it builds a shader generator, so post-install copies them as that install would,
+  # without their CMakeLists.txt files. moya's configure reads them from the prefix
+  - name: materialx
+    buildsystem: cmake-ninja
+    cleanup:
+      - /CHANGELOG.md
+      - /LICENSE
+      - /README.md
+      - /THIRD-PARTY.md
+      - /libraries
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DMATERIALX_BUILD_GEN_GLSL=OFF
+      - -DMATERIALX_BUILD_GEN_MDL=OFF
+      - -DMATERIALX_BUILD_GEN_MSL=OFF
+      - -DMATERIALX_BUILD_GEN_OSL=OFF
+      - -DMATERIALX_BUILD_GEN_SLANG=OFF
+      - -DMATERIALX_BUILD_RENDER=OFF
+      - -DMATERIALX_BUILD_SHARED_LIBS=OFF
+      - -DMATERIALX_BUILD_TESTS=OFF
+    post-install:
+      - |
+        cd "${FLATPAK_BUILDER_BUILDDIR}"
+        cp -r libraries "${FLATPAK_DEST}/libraries"
+        find "${FLATPAK_DEST}/libraries" -name CMakeLists.txt -delete
+    license-files:
+      - LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/MaterialX/archive/refs/tags/v1.39.5.tar.gz
+        sha256: c0d739b70a36f6f72888a0e8e66db5c83ae87c40737cc9b51c108166804f3a3b
+
+  # The ISPC compiler that OIDN's CPU device is compiled with, from its release, as vcpkg's tool
+  # port takes it. It runs while building and ships in nothing
+  - name: ispc
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/tools/ispc
+      - cp -r bin include lib /app/tools/ispc/
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/ispc/ispc/releases/download/v1.32.0/ispc-v1.32.0-linux.tar.gz
+        sha256: faf266bda2b702d68976ffd26bbd36c1ddba43424cc3c44f25b092cd1aa1f64a
+        only-arches:
+          - x86_64
+
+  # OIDN with its CPU device alone, static as the tree's overlay port builds it, from the
+  # release's source archive, which holds the trained weights. It builds out of source: built
+  # in its source tree, it writes the C++ generated from the weights to the filesystem root.
+  - name: oidn
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DOIDN_STATIC_LIB=ON
+      - -DOIDN_DEVICE_CPU=ON
+      - -DOIDN_FILTER_RT=ON
+      - -DOIDN_FILTER_RTLIGHTMAP=OFF
+      - -DOIDN_APPS=OFF
+      - -DISPC_EXECUTABLE=/app/tools/ispc/bin/ispc
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/RenderKit/oidn/releases/download/v2.5.1/oidn-2.5.1.src.tar.gz
+        sha256: e71fd043a70f1cc80e301d1b90df6c1f536098c4dd94baa612742f6db3369c36
+
+  # blosc asks for a CMake older than 3.5, which the SDK's CMake no longer accepts, so the policy
+  # minimum is raised, as vcpkg raises it for every port
+  - name: blosc
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DBUILD_TESTS=OFF
+      - -DBUILD_FUZZERS=OFF
+      - -DBUILD_BENCHMARKS=OFF
+      - -DBUILD_STATIC=OFF
+      - -DPREFER_EXTERNAL_ZLIB=ON
+      - -DPREFER_EXTERNAL_ZSTD=ON
+    license-files:
+      - LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/Blosc/c-blosc/archive/v1.21.6.tar.gz
+        sha256: 9fcd60301aae28f97f1301b735f966cc19e7c49b6b4321b839b4579a0c156f38
+
+  # NanoVDB's headers are built without CUDA, as the overlay port in ports/openvdb builds them.
+  # Explicit instantiation is off, as in vcpkg's port: those sources include OpenVDB's threading
+  # header before oneTBB's version, and so fail to compile against oneTBB 2021 and newer
+  - name: openvdb
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DOPENVDB_BUILD_UNITTESTS=OFF
+      - -DOPENVDB_BUILD_PYTHON_MODULE=OFF
+      - -DOPENVDB_BUILD_AX=OFF
+      - -DOPENVDB_BUILD_VDB_PRINT=OFF
+      - -DOPENVDB_BUILD_VDB_VIEW=OFF
+      - -DOPENVDB_BUILD_VDB_RENDER=OFF
+      - -DOPENVDB_BUILD_VDB_LOD=OFF
+      - -DOPENVDB_CORE_STATIC=OFF
+      - -DUSE_EXR=ON
+      - -DUSE_IMATH_HALF=ON
+      - -DUSE_PKGCONFIG=OFF
+      - -DUSE_EXPLICIT_INSTANTIATION=OFF
+      - -DOPENVDB_BUILD_NANOVDB=ON
+      - -DNANOVDB_USE_CUDA=OFF
+      - -DNANOVDB_USE_OPENVDB=ON
+      - -DNANOVDB_BUILD_TOOLS=OFF
+    license-files:
+      - LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/AcademySoftwareFoundation/openvdb/archive/v12.0.1.tar.gz
+        sha256: a3c8724ecadabaf558b6e1bd6f1d695e93b82a7cfdf144b8551e5253340ddce0
 
   - name: openusd
     buildsystem: cmake-ninja
@@ -174,8 +442,8 @@ modules:
       - -DPXR_PREFER_SAFETY_OVER_SPEED=ON
     sources:
       - type: archive
-        url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v26.03.tar.gz
-        sha256: 590ea75ffa3ac0c35fdd080df04d61a696733b8f3d6a79bdc3f13f8077162d36
+        url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v26.08.tar.gz
+        sha256: 4bccbb95cddda1dbeef2f74a08b9456352f2aa91bfd4578c0c613009c7950149
       - type: patch
         path: ../ports/usd/fix-schema-registry-incomplete-type.patch
 

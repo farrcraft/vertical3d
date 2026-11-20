@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Arguments.h"
+
+#include "Parameter.h"
 
 #include <algorithm>
 #include <cmath>

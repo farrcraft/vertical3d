@@ -1,13 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Recorder.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/Recorder.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/item/Group.h>
@@ -38,14 +41,15 @@ namespace v3d::editor::render {
  * shade. A scene with no light gets a distant light from the camera, shining the way it looks,
  * so that what it sees is lit.
  *
- * **The picture.** The render settings give the Format, the PixelSamples along each axis and the
- * Hider. A Display names the file the picture is written to, or a "framebuffer" display that
- * leaves it in the renderer.
+ * **The picture.** The render settings give the Format and the PixelSamples along each axis. No
+ * Hider is written, since moya renders by path tracing alone. A Display names the file the
+ * picture is written to, or a "framebuffer" display that leaves it in the renderer.
  *
- * **The hierarchy is kept.** Each item is an AttributeBegin block holding its local matrix,
- * and the blocks of the items beneath it nest inside. A block is written only when a mesh or a
- * curve that renders is inside it, so a group with neither beneath it, a camera and a light
- * write none. A light's
+ * **The hierarchy is kept.** Each item is an AttributeBegin block holding its local matrix and
+ * an identifier of its name, and the blocks of the items beneath it nest inside. A light, which
+ * is written at world level, has its identifier set there before it. A block is written only
+ * when a mesh or a curve that renders is inside it, so a group with neither beneath it, a camera
+ * and a light write none. A light's
  * own LightSource is written at world level from its world matrix, because RI turns off a
  * light declared in a block when that block ends.
  *
@@ -54,16 +58,15 @@ namespace v3d::editor::render {
  * many curves, after a Basis request when they are cubic. Each has the style's width as its
  * "constantwidth".
  *
- * Each face is written as it stands, as one Polygon. RI requires a polygon to be planar and
- * convex, and does no checking. moya dices a polygon's first four vertices and drops the
- * rest, so a face with more than four vertices renders as a quad.
+ * **A mesh is one PointsPolygons**: every vertex of the mesh, and the triangles each face is
+ * cut into, since RI draws a polygon only when it is flat and convex.
  **/
 class RIBExportVisitor final : public scene::Visitor {
  public:
     /**
      * @param handler where the requests go, which outlives the export
      **/
-    explicit RIBExportVisitor(v3d::render::offline::rib::Handler* handler);
+    explicit RIBExportVisitor(v3d::rib::Handler* handler);
 
     /**
      * What a render of the export makes: its settings, and where its picture goes.
@@ -85,13 +88,34 @@ class RIBExportVisitor final : public scene::Visitor {
     void begin(const v3d::type::camera::Camera& camera, const Output& output);
 
     /**
+     * The screen window a camera is sent with: its ortho zoom by its pixel aspect for an
+     * orthographic camera, and the pixel aspect by one for a perspective one.
+     **/
+    static v3d::rib::requests::ScreenWindow screen(const v3d::type::camera::Profile& profile);
+
+    /** The name of the light a scene with no light of its own is given. **/
+    static constexpr const char* CAMERA_LIGHT = "camera light";
+
+    /** The surface every mesh and curve takes: RI's "matte", which the lights shade. **/
+    static constexpr const char* SURFACE = "matte";
+
+    /** The name of the display a picture kept in the renderer is sent to. **/
+    static constexpr const char* FRAMEBUFFER = "vertical3d";
+
+    /**
+     * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
+     * approximated by. Four keep a circle within 0.05% of its radius.
+     **/
+    static constexpr unsigned int APPROXIMATION_PIECES = 4;
+
+    /**
      * Send the camera's light when the scene had none, then the meshes, and close the world
      * block. A render without this renders nothing.
      **/
     void end();
 
     /**
-     * One mesh: its block with its local matrix, then a Polygon per face. It is held until
+     * One mesh: its block with its local matrix, then one PointsPolygons. It is held until
      * end(), so that it comes after every light.
      **/
     void visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) override;
@@ -114,11 +138,8 @@ class RIBExportVisitor final : public scene::Visitor {
  private:
     /** The version of RIB the export is written in. **/
     static constexpr float RIB_VERSION = 3.03F;
-    /**
-     * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
-     * approximated by. Four keep a circle within 0.05% of its radius.
-     **/
-    static constexpr unsigned int APPROXIMATION_PIECES = 4;
+    /** An identifier attribute that names what follows. **/
+    static v3d::rib::ParameterList identifier(const std::string& name);
     static std::vector<float> floats(const glm::vec3& value);
 
     /**
@@ -141,16 +162,12 @@ class RIBExportVisitor final : public scene::Visitor {
      **/
     void open();
 
-    v3d::render::offline::rib::Handler* handler_;
+    v3d::rib::Handler* handler_;
     // the meshes, held until every light has been sent
-    v3d::render::offline::rib::Recorder body_;
+    v3d::rib::Recorder body_;
     // the blocks of the item being visited and of each item above it, outermost first
     std::vector<Block> blocks_;
-    unsigned int meshes_ = 0;
     unsigned int lights_ = 0;
-    unsigned int cameras_ = 0;
-    unsigned int groups_ = 0;
-    unsigned int curves_ = 0;
     // where the camera is and the way it looks, for the light a scene with none is given
     glm::vec3 eye_{ 0.0F };
     glm::vec3 looks_{ 0.0F, 0.0F, 1.0F };

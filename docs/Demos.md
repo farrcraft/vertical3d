@@ -20,9 +20,12 @@ The editor in `vertical3d/` has its own document, [editor/](editor/README.md). T
 
 ## Running a demo
 
-Build the demo's target, then run the executable from the build tree, for example
-`out/build/x64-Debug/demos/pong/pong.exe`. [contributing/Build.md](contributing/Build.md) covers
-the build.
+A release installs every demo, with a Start menu entry on Windows and a desktop entry in the
+Flatpak. [manual/Install.md](manual/Install.md) says how to install one.
+
+From the repository, build the demo's target, then run the executable from the build tree, for
+example `out/build/x64-Debug/demos/pong/pong.exe`. [contributing/Build.md](contributing/Build.md)
+covers the build.
 
 Every demo follows the same pattern:
 
@@ -394,9 +397,9 @@ node demos/diorama/assets/make_sounds.ts
   `ecs::component::Transform` and a `component::Mesh`. The nine trees draw one model, so they
   are drawn together. See [api/rendering/TexturesAndMeshes.md](api/rendering/TexturesAndMeshes.md).
 - **A shadow map that is fitted once.** Nothing moves, so `lighting::fitShadow()` fits the map
-  around the casters when the village is stood up. The ground casts nothing and stays out of the
-  fit. Each frame builds the light's matrix from where the sun is with `lighting::shadowLight()`,
-  so the shadows turn with it.
+  around the casters' models when the village is stood up. The ground casts nothing and stays
+  out of the fit. Each frame builds the light's matrix from where the sun is with
+  `lighting::shadowLight()`, so the shadows turn with it.
 - **The isometric camera controller.** `engine::IsometricController` drives a
   `type::camera::Isometric` from the camera commands and the wheel. The camera commands have no
   handler of their own, so each is registered with `addHeld()`, which the bindings check needs.

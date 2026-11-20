@@ -1,11 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/curve/Quadratic.h>
 #include <api/font/internal/CurveBuilder.h>
 
 #include <ft2build.h>
@@ -37,7 +37,7 @@ class OutlineReader final {
     /**
      * @return the outline's curves, or none when it cannot be read
      **/
-    std::vector<glyph::QuadraticCurve> read(FT_Outline* outline);
+    std::vector<glyph::curve::Quadratic> read(FT_Outline* outline);
 
  private:
     static int moveTo(const FT_Vector* to, void* user);

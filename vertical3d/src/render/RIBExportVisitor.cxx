@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "RIBExportVisitor.h"
 
@@ -11,13 +11,17 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Basis.h>
 #include <api/curve/Curves.h>
-#include <api/render/offline/rib/Bases.h>
-#include <api/render/offline/rib/Declaration.h>
-#include <api/render/offline/rib/Handler.h>
-#include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/rib/Requests.h>
+#include <api/rib/Bases.h>
+#include <api/rib/Declaration.h>
+#include <api/rib/Handler.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Basis.h>
+#include <api/rib/requests/Curves.h>
+#include <api/rib/requests/PointsPolygons.h>
+#include <api/rib/requests/ScreenWindow.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
@@ -42,8 +46,8 @@ namespace v3d::editor::render {
 
 namespace {
 
-typedef v3d::render::offline::rib::Declaration Declaration;
-typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::rib::Declaration Declaration;
+typedef v3d::rib::ParameterList ParameterList;
 
 const Declaration UNIFORM_FLOAT(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1);
 const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type::POINT, 1);
@@ -56,7 +60,7 @@ std::vector<float> RIBExportVisitor::floats(const glm::vec3& value) {
     return { value.x, value.y, value.z };
 }
 
-RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) : handler_(handler) {
+RIBExportVisitor::RIBExportVisitor(v3d::rib::Handler* handler) : handler_(handler) {
 }
 
 void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Output& output) {
@@ -69,9 +73,8 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     handler_->version(RIB_VERSION);
     handler_->format({.width = settings.size.x, .height = settings.size.y, .pixelAspect = 1.0F});
     handler_->pixelSamples(glm::uvec2(settings.samples));
-    handler_->hider(settings.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
     if (output.file.empty()) {
-        handler_->display({.name = "vertical3d", .type = "framebuffer", .mode = "rgb"}, ParameterList());
+        handler_->display({.name = FRAMEBUFFER, .type = "framebuffer", .mode = "rgb"}, ParameterList());
     } else {
         handler_->display({.name = output.file, .type = "file", .mode = "rgb"}, ParameterList());
     }
@@ -82,16 +85,13 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
         to derive the window from those.
     */
     if (profile.orthographic()) {
-        const float top = profile.orthoZoom();
-        const float right = top * profile.pixelAspect();
         handler_->projection("orthographic", ParameterList());
-        handler_->screenWindow({.left = -right, .right = right, .bottom = -top, .top = top});
     } else {
         ParameterList fov;
         fov.add("fov", UNIFORM_FLOAT, { profile.fov() }, {});
         handler_->projection("perspective", fov);
-        handler_->screenWindow({.left = -profile.pixelAspect(), .right = profile.pixelAspect(), .bottom = -1.0F, .top = 1.0F});
     }
+    handler_->screenWindow(screen(profile));
     handler_->clipping({.hither = clipping.x, .yon = clipping.y});
 
     // the transform set between Projection and WorldBegin is the world to camera
@@ -99,7 +99,7 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     handler_->transform(camera.view());  // NOLINT(build/include_what_you_use)
 
     handler_->worldBegin();
-    handler_->surface("matte", ParameterList());
+    handler_->surface(SURFACE, ParameterList());
 }
 
 void RIBExportVisitor::end() {
@@ -109,6 +109,7 @@ void RIBExportVisitor::end() {
         light.add("intensity", UNIFORM_FLOAT, { 1.0F }, {});
         light.add("from", UNIFORM_POINT, floats(eye_), {});
         light.add("to", UNIFORM_POINT, floats(eye_ + looks_), {});
+        handler_->attribute("identifier", identifier(CAMERA_LIGHT));
         handler_->lightSource({.shader = "distantlight", .handle = "1"}, light);
     }
     body_.replay(handler_);
@@ -119,13 +120,26 @@ void RIBExportVisitor::enter(const std::string& name, const glm::mat4x4& local) 
     blocks_.push_back({ .name = name, .local = local });
 }
 
+v3d::rib::requests::ScreenWindow RIBExportVisitor::screen(const v3d::type::camera::Profile& profile) {
+    if (profile.orthographic()) {
+        const float top = profile.orthoZoom();
+        const float right = top * profile.pixelAspect();
+        return {.left = -right, .right = right, .bottom = -top, .top = top};
+    }
+    return {.left = -profile.pixelAspect(), .right = profile.pixelAspect(), .bottom = -1.0F, .top = 1.0F};
+}
+
+ParameterList RIBExportVisitor::identifier(const std::string& name) {
+    ParameterList list;
+    list.add("name", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::STRING, 1), {}, { name });
+    return list;
+}
+
 void RIBExportVisitor::open() {
     for (Block& block : blocks_) {
         if (!block.written) {
-            ParameterList identifier;
-            identifier.add("name", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::STRING, 1), {}, { block.name });
             body_.attributeBegin();
-            body_.attribute("identifier", identifier);
+            body_.attribute("identifier", identifier(block.name));
             body_.concatTransform(block.local);
             block.written = true;
         }
@@ -144,50 +158,55 @@ void RIBExportVisitor::leave(const boost::shared_ptr<scene::item::Item>& /*item*
 
 void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) {
     // the scene calls leave() for every item it visits, so every visit enters a block
-    meshes_++;
-    enter("mesh" + std::to_string(meshes_), placed.local);
+    enter(item ? item->name() : "", placed.local);
     if (!item) {
         return;
     }
     open();
     const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
-    // RI draws a Polygon only when it is convex and flat, which a face with more than three
+    // RI draws a polygon only when it is convex and flat, which a face with more than three
     // corners need not be, so every face is sent as the triangles it is cut into. Those wind
     // the other way from the face's loop, and are turned back to wind as the loop does
+    v3d::rib::requests::PointsPolygons faces;
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
         for (const std::array<v3d::brep::Index, 3>& triangle : v3d::brep::triangulateFace(*mesh, face)) {
-            std::vector<float> points;
+            faces.counts.push_back(3);
             for (const v3d::brep::Index corner : { triangle[0], triangle[2], triangle[1] }) {
-                const glm::vec3 point = mesh->vertex(corner)->point();
-                points.insert(points.end(), { point.x, point.y, point.z });
+                faces.indices.push_back(static_cast<unsigned int>(corner));
             }
-            ParameterList list;
-            list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
-            body_.polygon(3, list);
         }
     }
+    if (faces.counts.empty()) {
+        return;
+    }
+    std::vector<float> points;
+    points.reserve(mesh->vertexCount() * 3);
+    for (v3d::brep::Index vertex = 0; vertex < mesh->vertexCount(); vertex++) {
+        const glm::vec3 point = mesh->vertex(vertex)->point();
+        points.insert(points.end(), { point.x, point.y, point.z });
+    }
+    ParameterList list;
+    list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
+    body_.pointsPolygons(faces, list);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Camera>& /*camera*/, const scene::Placed& placed, const scene::item::Camera::Lens& /*lens*/) {
-    cameras_++;
-    enter("camera" + std::to_string(cameras_), placed.local);
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& /*lens*/) {
+    enter(camera ? camera->name() : "", placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Group>& /*group*/, const scene::Placed& placed) {
-    groups_++;
-    enter("group" + std::to_string(groups_), placed.local);
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) {
+    enter(group ? group->name() : "", placed.local);
 }
 
 /**
  **/
 void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) {
-    curves_++;
-    enter("curve" + std::to_string(curves_), placed.local);
+    enter(curve ? curve->name() : "", placed.local);
     if (!curve || !curve->style().renders || curve->geometry()->empty()) {
         return;
     }
@@ -203,12 +222,12 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve,
         }
         const v3d::curve::BasisCurve& first = run.front();
         if (first.basis != v3d::curve::Basis::Linear) {
-            v3d::render::offline::rib::Basis basis;
-            v3d::render::offline::rib::namedBasis(first.basis == v3d::curve::Basis::Bezier ? "bezier" : "catmull-rom", &basis.v);
-            basis.vstep = first.basis == v3d::curve::Basis::Bezier ? v3d::render::offline::rib::Basis::BEZIER_STEP : 1;
+            v3d::rib::requests::Basis basis;
+            v3d::rib::namedBasis(first.basis == v3d::curve::Basis::Bezier ? "bezier" : "catmull-rom", &basis.v);
+            basis.vstep = first.basis == v3d::curve::Basis::Bezier ? v3d::rib::requests::Basis::BEZIER_STEP : 1;
             body_.basis(basis);
         }
-        v3d::render::offline::rib::Curves request{ .cubic = first.basis != v3d::curve::Basis::Linear, .periodic = first.periodic };
+        v3d::rib::requests::Curves request{ .cubic = first.basis != v3d::curve::Basis::Linear, .periodic = first.periodic };
         std::vector<float> points;
         for (const v3d::curve::BasisCurve& each : run) {
             request.vertices.push_back(static_cast<unsigned int>(each.points.size()));
@@ -236,7 +255,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve,
  **/
 void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) {
     lights_++;
-    enter("light" + std::to_string(lights_), placed.local);
+    enter(light ? light->name() : "", placed.local);
     if (!light) {
         return;
     }
@@ -267,6 +286,8 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Light>& light,
         list.add("coneangle", UNIFORM_FLOAT, { emission.cone }, {});
         list.add("conedeltaangle", UNIFORM_FLOAT, { emission.delta }, {});
     }
+    // a light is written at world level, so its name is set there and holds until the next one
+    handler_->attribute("identifier", identifier(light->name()));
     handler_->lightSource({.shader = shader, .handle = std::to_string(lights_)}, list);
 }
 

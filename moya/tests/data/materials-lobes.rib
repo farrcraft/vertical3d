@@ -1,0 +1,48 @@
+##RenderMan RIB-Structure 1.1
+##Scene A gold, a glass, a coated, a fuzzed and a thin-filmed sphere on a grey floor, under a rect light and a dim dome
+version 3.03
+Format 96 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -20 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.25]
+# the rect light faces its +z, turned to face down onto the floor from above and in front
+TransformBegin
+Translate 0 1.5 -1
+Rotate 70 1 0 0
+Scale 1.5 1 1
+Light "PxrRectLight" "rect" "float intensity" [6]
+TransformEnd
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.5 0.5 0.5] "float specular_roughness" [0.6]
+Polygon "P" [-3 -1 -2  3 -1 -2  3 -1 2  -3 -1 2]
+AttributeEnd
+AttributeBegin
+Translate -1.6 -0.6 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "gold" "color base_color" [0.94 0.78 0.37] "float base_metalness" [1] "float specular_roughness" [0.3]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Translate -0.8 -0.6 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "glass" "float transmission_weight" [1] "float specular_roughness" [0]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Translate 0 -0.6 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "coated" "color base_color" [0.7 0.1 0.1] "float coat_weight" [1] "float coat_roughness" [0.05] "float specular_roughness" [0.6]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Translate 0.8 -0.6 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "fuzzed" "color base_color" [0.1 0.2 0.6] "float fuzz_weight" [1] "color fuzz_color" [0.9 0.9 1] "float fuzz_roughness" [0.5]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Translate 1.6 -0.6 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "film" "color base_color" [0.05 0.05 0.05] "float specular_roughness" [0.1] "float thin_film_weight" [1] "float thin_film_thickness" [0.4]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+WorldEnd

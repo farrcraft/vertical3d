@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,23 +21,6 @@ class BreakHandle;
 namespace v3d::font::text {
 
 /**
- * A stretch of text between two word boundaries.
- **/
-struct WordSegment final {
-    std::size_t start = 0;  /**< the byte offset where it starts **/
-    std::size_t end = 0;    /**< and one past where it ends **/
-    bool word = false;      /**< whether it holds letters, digits or ideographs, rather than spaces or punctuation **/
-};
-
-/**
- * A place a line may end.
- **/
-struct LineBreak final {
-    std::size_t offset = 0;  /**< the byte offset where the next line would start **/
-    bool mandatory = false;  /**< whether the line has to end here, after a newline or a paragraph separator **/
-};
-
-/**
  * Divides UTF-8 text where Unicode's text segmentation divides it: into grapheme clusters and
  * words as UAX #29 defines them, and at the line break opportunities UAX #14 defines.
  *
@@ -50,6 +33,23 @@ struct LineBreak final {
  **/
 class Segmenter final {
  public:
+    /**
+     * A stretch of text between two word boundaries.
+     **/
+    struct WordSegment final {
+        std::size_t start = 0;  /**< the byte offset where it starts **/
+        std::size_t end = 0;    /**< and one past where it ends **/
+        bool word = false;      /**< whether it holds letters, digits or ideographs, rather than spaces or punctuation **/
+    };
+
+    /**
+     * A place a line may end.
+     **/
+    struct LineBreak final {
+        std::size_t offset = 0;  /**< the byte offset where the next line would start **/
+        bool mandatory = false;  /**< whether the line has to end here, after a newline or a paragraph separator **/
+    };
+
     /**
      * @param locale a BCP 47 language tag, such as "ja" or "en-US". An empty tag uses Unicode's
      *        rules untailored

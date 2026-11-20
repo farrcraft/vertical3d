@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Text.h"
 
@@ -15,7 +15,7 @@
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
-#include "Arguments.h"
+#include "Parameter.h"
 
 #include <algorithm>
 #include <array>

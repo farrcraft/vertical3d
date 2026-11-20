@@ -1,8 +1,10 @@
 /**
- * Check what a C++ file keeps to itself, against the rules in docs/contributing/Conventions.md
- * under "What a source file keeps to itself".
+ * Check what a C++ file keeps to itself, and that a header holds one class, against the rules in
+ * docs/contributing/Conventions.md under "What a source file keeps to itself" and "One class per
+ * header".
  *
- * The script reads every tracked .h, .cpp and .cxx file but the vendored ones, and reports:
+ * The script reads every .h, .cpp and .cxx file but the vendored ones, tracked or new, and
+ * reports:
  *
  *   type-in-source       a class, struct, union or enum defined at namespace scope in a source
  *                        file. A test file is exempt.
@@ -22,6 +24,11 @@
  *   internal-include     an include of a header under an internal/ directory, from a file
  *                        outside the directory that holds that internal/. Such a header belongs
  *                        to its library's own sources and tests.
+ *   second-class-in-header
+ *                        a class, struct or union defined at namespace scope in a header that
+ *                        already defines one, from Conventions.md "One class per header". An
+ *                        enum, a forward declaration, a nested class and an explicit
+ *                        specialization are not counted, and a header under tests is exempt.
  *
  * A file is a test file when its path has a tests directory in it. The check reads code through
  * scripts/lib/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor
@@ -37,12 +44,20 @@ import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { options, report, runGate } from './lib/cli.ts';
-import { tracked } from './lib/git.ts';
+import { tracked, untracked } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
 import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
-export type Rule = 'type-in-source' | 'mutable-variable' | 'mutable-static-local' | 'outside-anonymous' | 'second-anonymous' | 'anonymous-late'
-    | 'after-function' | 'internal-include';
+export type Rule =
+    | 'type-in-source'
+    | 'mutable-variable'
+    | 'mutable-static-local'
+    | 'outside-anonymous'
+    | 'second-anonymous'
+    | 'anonymous-late'
+    | 'after-function'
+    | 'internal-include'
+    | 'second-class-in-header';
 
 /** One report, and the line it is on. */
 export interface Finding {
@@ -133,8 +148,18 @@ function stripPrefixes(text: string): string {
 
 /** The name a type definition's head gives, such as Reader for `class Reader final : Base`. */
 function typeName(head: string): string | null {
-    const name = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(head)?.[1];
-    return name === undefined ? null : (name === '' ? '(unnamed)' : name);
+    const name = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(
+        head,
+    )?.[1];
+    return name === undefined ? null : name === '' ? '(unnamed)' : name;
+}
+
+/**
+ * A head without its alignas specifiers, whose parentheses do not make a type's head read as a
+ * function's.
+ */
+function withoutAlignment(head: string): string {
+    return head.replace(/\balignas\s*\([^)]*\)/g, '');
 }
 
 /** The name a variable declaration defines: the last identifier before its initialiser. */
@@ -198,39 +223,129 @@ function isConstant(declarator: string): boolean {
     return /\bconst\b/.test(outer);
 }
 
-/** Every finding in a file's text. */
-export function findings(text: string, kind: Kind): Finding[] {
-    const found: Finding[] = [];
-    const add = (line: number, rule: Rule, message: string): void => {
-        found.push({ line, rule, message });
-    };
-    const stack: Scope[] = [];
-    let head = '';
-    let headLine = 0;
-    let parens = 0;
-    let anonymous = 0;
-    let firstFunction = 0;
-    let afterTypedef = false;
-    // the text since the last brace or semicolon inside a class or a function
-    let inner = '';
-    const atNamespaceScope = (): boolean => stack.every((s) => s === 'namespace' || s === 'anonymous' || s === 'extern');
-    const inAnonymous = (): boolean => stack.includes('anonymous');
+/** One pass through a file's text: the scope it is in, and what it has found so far. */
+class Walk {
+    readonly found: Finding[] = [];
+    private readonly kind: Kind;
+    private readonly stack: Scope[] = [];
+    private head = '';
+    private headLine = 0;
+    private parens = 0;
+    private anonymous = 0;
+    private firstFunction = 0;
+    private afterTypedef = false;
+    /** The first class a header defines at namespace scope, and its line. */
+    private firstClass: { name: string; line: number } | null = null;
+    /** The text since the last brace or semicolon inside a class or a function. */
+    private inner = '';
+
+    constructor(kind: Kind) {
+        this.kind = kind;
+    }
+
+    /** Check a preprocessor line, given as it is written. */
+    directive(raw: string, line: number): void {
+        // a quoted include names a header beside the file, so only the root-relative form can
+        // reach another directory's internal/
+        const header = /^\s*#\s*include\s*<([^>]+)>/.exec(raw)?.[1];
+        if (header !== undefined && !mayInclude(this.kind.path, header)) {
+            this.add(line, 'internal-include', `${header} is internal to its library, and this file is outside it`);
+        }
+    }
+
+    /** Check a line of code, given with its comments and strings blanked and as it is written. */
+    code(code: string, raw: string, line: number): void {
+        // a static declared in a function body, rather than in a class
+        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code)?.[1];
+        if (local !== undefined && this.stack.at(-1) === 'body' && !isConstant(local) && !/\/\/\s*process-wide:/.test(raw)) {
+            this.add(line, 'mutable-static-local', `the static local ${variableName(local)} is mutable`);
+        }
+        for (const c of code) {
+            if (this.atNamespaceScope()) {
+                this.atScope(c, line);
+            } else {
+                this.inside(c);
+            }
+        }
+        this.head += ' ';
+    }
+
+    private add(line: number, rule: Rule, message: string): void {
+        this.found.push({ line, rule, message });
+    }
+
+    private atNamespaceScope(): boolean {
+        return this.stack.every((s) => s === 'namespace' || s === 'anonymous' || s === 'extern');
+    }
+
+    /** Follow a character inside a class or a function, where only the braces matter. */
+    private inside(c: string): void {
+        if (c === '{') {
+            // a class nested in a class holds members, not locals
+            const nested = stripPrefixes(this.inner.replace(/^\s*((public|protected|private)\s*:\s*)+/, ''));
+            this.stack.push(typeName(nested) !== null && !withoutAlignment(this.inner).includes('(') ? 'type' : 'body');
+            this.inner = '';
+        } else if (c === ';') {
+            this.inner = '';
+        } else if (c === '}') {
+            this.inner = '';
+            const closed = this.stack.pop();
+            if (closed === 'init' && this.atNamespaceScope()) {
+                this.head += '{}';
+            }
+        } else {
+            this.inner += c;
+        }
+    }
+
+    /** Follow a character at namespace scope, where each statement and head is checked. */
+    private atScope(c: string, line: number): void {
+        if (this.head.trim() === '' && /\S/.test(c)) {
+            this.headLine = line;
+        }
+        if (c === '(') {
+            this.parens++;
+            this.head += c;
+        } else if (c === ')') {
+            this.parens = Math.max(0, this.parens - 1);
+            this.head += c;
+        } else if (c === '{') {
+            const scope = this.opening(this.head, this.headLine);
+            this.stack.push(scope);
+            if (scope !== 'init') {
+                this.head = '';
+            }
+        } else if (c === '}') {
+            this.stack.pop();
+            this.head = '';
+        } else if (c === ';' && this.parens === 0) {
+            this.statement(this.head, this.headLine);
+            this.head = '';
+            this.afterTypedef = false;
+        } else {
+            this.head += c;
+        }
+    }
 
     /** Sort a statement that ended in a semicolon at namespace scope. */
-    const statement = (raw: string, line: number): void => {
+    private statement(raw: string, line: number): void {
         const text = stripPrefixes(raw);
         if (text === '' || /^(using\s+namespace|namespace|extern|friend|static_assert|concept)\b/.test(text)) {
             return;
         }
-        if (afterTypedef) {
-            return;  // the name a typedef gives the type defined just before it
+        if (this.afterTypedef) {
+            return; // the name a typedef gives the type defined just before it
         }
         if (/^(class|struct|union|enum)(\s+class|\s+struct)?\s+[\w:]+(\s*:\s*[\w:\s]+)?$/.test(text)) {
-            return;  // a forward declaration
+            return; // a forward declaration
         }
         if (/^(using|typedef)\b/.test(text)) {
-            if (firstFunction > 0) {
-                add(line, 'after-function', `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${firstFunction}`);
+            if (this.firstFunction > 0) {
+                this.add(
+                    line,
+                    'after-function',
+                    `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${this.firstFunction}`,
+                );
             }
             return;
         }
@@ -240,41 +355,67 @@ export function findings(text: string, kind: Kind): Finding[] {
         // next(1)`
         const initialised = paren >= 0 && /^\(\s*([-+]?[\d.]|""|''|true\b|false\b|nullptr\b)/.test(text.slice(paren));
         if (paren >= 0 && (equals < 0 || paren < equals) && !initialised) {
-            return;  // a function declaration, a macro invocation or a defaulted special member
+            return; // a function declaration, a macro invocation or a defaulted special member
         }
         const end = initialised && (equals < 0 || paren < equals) ? paren : equals;
         const declarator = (end >= 0 ? text.slice(0, end) : text).replace(/\{\}\s*$/, '').trim();
         const name = variableName(declarator);
-        if (kind.externs.has(name)) {
+        if (this.kind.externs.has(name)) {
             return;
         }
         const member = name.includes('::');
         if (!isConstant(declarator)) {
-            add(line, 'mutable-variable', member
-                ? `the static data member ${name} is mutable`
-                : `${name} is a mutable variable at namespace scope`);
+            this.add(
+                line,
+                'mutable-variable',
+                member ? `the static data member ${name} is mutable` : `${name} is a mutable variable at namespace scope`,
+            );
         }
         if (member) {
             return;
         }
-        if (kind.source && !kind.test && !inAnonymous()) {
-            add(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
+        if (this.kind.source && !this.kind.test && !this.stack.includes('anonymous')) {
+            this.add(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
         }
-        if (firstFunction > 0) {
-            add(line, 'after-function', `${name} is declared below the function definition on line ${firstFunction}`);
+        if (this.firstFunction > 0) {
+            this.add(line, 'after-function', `${name} is declared below the function definition on line ${this.firstFunction}`);
         }
-    };
+    }
+
+    /**
+     * Check that a header outside tests defines one class at namespace scope. An enum may sit
+     * beside the class that gives it meaning, and an explicit specialization, such as of
+     * std::hash, defines no new class.
+     */
+    private oneClass(raw: string, text: string, type: string, line: number): void {
+        if (this.kind.source || this.kind.test || /^(typedef\s+)?enum\b/.test(text) || /^\s*template\s*<\s*>/.test(raw)) {
+            return;
+        }
+        if (this.firstClass === null) {
+            this.firstClass = { name: type, line };
+            return;
+        }
+        this.add(
+            line,
+            'second-class-in-header',
+            `${type} is a second class in this header, after ${this.firstClass.name} on line ${this.firstClass.line}; give it a header of its own, or nest it in the class that owns it`,
+        );
+    }
 
     /** Sort a head that ended in an opening brace at namespace scope, and say what it opens. */
-    const opening = (raw: string, line: number): Scope => {
+    private opening(raw: string, line: number): Scope {
         const text = stripPrefixes(raw);
         if (/^namespace\s*$/.test(text)) {
-            anonymous++;
-            if (anonymous > 1) {
-                add(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
+            this.anonymous++;
+            if (this.anonymous > 1) {
+                this.add(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
             }
-            if (firstFunction > 0) {
-                add(line, 'anonymous-late', `the anonymous namespace opens below the function definition on line ${firstFunction}`);
+            if (this.firstFunction > 0) {
+                this.add(
+                    line,
+                    'anonymous-late',
+                    `the anonymous namespace opens below the function definition on line ${this.firstFunction}`,
+                );
             }
             return 'anonymous';
         }
@@ -285,102 +426,49 @@ export function findings(text: string, kind: Kind): Finding[] {
             return 'extern';
         }
         const type = typeName(text);
-        if (type !== null && !text.includes('(')) {
-            if (kind.source && !kind.test) {
-                add(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
+        if (type !== null && !withoutAlignment(text).includes('(')) {
+            if (this.kind.source && !this.kind.test) {
+                this.add(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
             }
-            if (firstFunction > 0) {
-                add(line, 'after-function', `${type} is defined below the function definition on line ${firstFunction}`);
+            if (this.firstFunction > 0) {
+                this.add(line, 'after-function', `${type} is defined below the function definition on line ${this.firstFunction}`);
             }
-            afterTypedef = /^typedef\b/.test(text);
+            this.afterTypedef = /^typedef\b/.test(text);
+            this.oneClass(raw, text, type, line);
             return 'type';
         }
-        if (parens > 0 || assigns(text) || !text.includes('(') || memberInitialiser(text)) {
+        if (this.parens > 0 || assigns(text) || !text.includes('(') || memberInitialiser(text)) {
             return 'init';
         }
-        if (firstFunction === 0) {
-            firstFunction = line;
+        if (this.firstFunction === 0) {
+            this.firstFunction = line;
         }
         return 'body';
-    };
+    }
+}
 
-    const lines = codeLines(text);
+/** Every finding in a file's text. */
+export function findings(text: string, kind: Kind): Finding[] {
+    const walk = new Walk(kind);
     const raw = text.split('\n');
     let continued = false;
-    lines.forEach((code, index) => {
+    codeLines(text).forEach((code, index) => {
         const line = index + 1;
         const preprocessor = continued || code.trimStart().startsWith('#');
         continued = preprocessor && code.trimEnd().endsWith('\\');
         if (preprocessor) {
-            // a quoted include names a header beside the file, so only the root-relative form
-            // can reach another directory's internal/
-            const header = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index] ?? '')?.[1];
-            if (header !== undefined && !mayInclude(kind.path, header)) {
-                add(line, 'internal-include', `${header} is internal to its library, and this file is outside it`);
-            }
-            return;
+            walk.directive(raw[index] ?? '', line);
+        } else {
+            walk.code(code, raw[index] ?? '', line);
         }
-        // a static declared in a function body, rather than in a class
-        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code)?.[1];
-        if (local !== undefined && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local)
-            && !/\/\/\s*process-wide:/.test(raw[index] ?? '')) {
-            add(line, 'mutable-static-local', `the static local ${variableName(local)} is mutable`);
-        }
-        for (const c of code) {
-            if (!atNamespaceScope()) {
-                if (c === '{') {
-                    // a class nested in a class holds members, not locals
-                    const nested = stripPrefixes(inner.replace(/^\s*((public|protected|private)\s*:\s*)+/, ''));
-                    stack.push(typeName(nested) !== null && !inner.includes('(') ? 'type' : 'body');
-                    inner = '';
-                } else if (c === ';') {
-                    inner = '';
-                } else if (c !== '}') {
-                    inner += c;
-                }
-                if (c === '}') {
-                    inner = '';
-                    const closed = stack.pop();
-                    if (closed === 'init' && atNamespaceScope()) {
-                        head += '{}';
-                    }
-                }
-                continue;
-            }
-            if (head.trim() === '' && /\S/.test(c)) {
-                headLine = line;
-            }
-            if (c === '(') {
-                parens++;
-                head += c;
-            } else if (c === ')') {
-                parens = Math.max(0, parens - 1);
-                head += c;
-            } else if (c === '{') {
-                const scope = opening(head, headLine);
-                stack.push(scope);
-                if (scope !== 'init') {
-                    head = '';
-                }
-            } else if (c === '}') {
-                stack.pop();
-                head = '';
-            } else if (c === ';' && parens === 0) {
-                statement(head, headLine);
-                head = '';
-                afterTypedef = false;
-            } else {
-                head += c;
-            }
-        }
-        head += ' ';
     });
-    return found;
+    return walk.found;
 }
 
-/** The tracked C++ files the check reads, relative to the root. */
+/** The C++ files the check reads, tracked or not yet added, relative to the root. */
 export function files(): string[] {
-    return tracked('*.h', '*.cpp', '*.cxx').filter((f) => !isThirdParty(f));
+    const added = untracked().filter((f) => /\.(h|cpp|cxx)$/.test(f));
+    return [...new Set([...tracked('*.h', '*.cpp', '*.cxx'), ...added])].filter((f) => !isThirdParty(f));
 }
 
 function main(): number {
@@ -388,9 +476,15 @@ function main(): number {
     options('usage: node scripts/filelocal.ts', {});
     const checked = files();
     const externs = new Set(checked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
-    const found = checked.flatMap((file) => findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))
-        .map(({ line, rule, message }) => ({ path: file, line, rule, message })));
-    return report(found, 'breaks "What a source file keeps to itself" in docs/contributing/Conventions.md.');
+    const found = checked.flatMap((file) =>
+        findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs)).map(({ line, rule, message }) => ({
+            path: file,
+            line,
+            rule,
+            message,
+        })),
+    );
+    return report(found, 'breaks "What a source file keeps to itself" or "One class per header" in docs/contributing/Conventions.md.');
 }
 
 runGate(import.meta.url, main);

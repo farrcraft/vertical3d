@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/asset/Manager.h>
 #include <api/asset/media/Loaders.h>
@@ -9,6 +9,7 @@
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
 #include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/frame/Pass.h>

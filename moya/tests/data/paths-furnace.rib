@@ -1,0 +1,14 @@
+##RenderMan RIB-Structure 1.1
+##Scene A white sphere under a white dome, which is white wherever it is seen
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+WorldBegin
+Light "PxrDomeLight" "sky"
+Color [1 1 1]
+Surface "matte"
+Sphere 1 -1 1 360
+WorldEnd

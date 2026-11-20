@@ -1,15 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
-#include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/item/Camera.h>

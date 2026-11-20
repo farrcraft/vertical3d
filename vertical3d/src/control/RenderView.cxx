@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "RenderView.h"
 
@@ -9,7 +9,7 @@
 #include <api/type/camera/Profile.h>
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
-#include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/Delegate.h>
 #include <vertical3d/src/scene/Scene.h>

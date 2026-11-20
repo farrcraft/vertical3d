@@ -1,13 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
+#include <vertical3d/src/view/AxisEnd.h>
+#include <vertical3d/src/view/OverlayLook.h>
+#include <vertical3d/src/view/OverlayMetrics.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 

@@ -1,10 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
+#include <api/interchange/Channel.h>
+#include <api/interchange/Imported.h>
+#include <api/interchange/Mesh.h>
 #include <api/interchange/Scene.h>
 #include <api/type/Transform.h>
 

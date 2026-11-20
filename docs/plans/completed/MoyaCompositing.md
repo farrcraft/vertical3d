@@ -1,0 +1,773 @@
+# Moya Compositing — Outputs, Light Paths, IDs, Deep Pixels and Denoising
+
+Drafted 2026-11-13 against `7cc2313a`. This plan takes up section 6 of
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core writes what a
+compositor needs, not only a beauty. The scene's outputs decide the film's channels and the files
+written. A channel collects the light a light path expression names, or a value at the first hit.
+Light groups let a light be changed after rendering. Cryptomatte channels give each object's and
+material's coverage, a deep file gives each pixel's samples in depth, and OIDN denoises the beauty
+from its albedo and normal. The reyes hider and the ray hider keep rendering every RIB scene and
+every editor render, and no picture they make changes.
+
+The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its first five plans are
+ADR-0195 to ADR-0229, all accepted. This plan follows four of them:
+
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+  moya implements its own light path expressions, coverage and deep samples. OpenEXR writes the
+  files, and OIDN denoises.
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+  gives one picture on every run, so every channel, ID and deep sample is the same under any
+  thread count.
+* [ADR-0199](../../adr/offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md): a
+  sample is added to the one pixel it was drawn for, so a pixel's coverage and deep samples come
+  from its own samples alone.
+* [ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+  what a light path expression adds to a path is declared once in the path state.
+
+The plan keeps the roadmap's order, with five changes:
+
+* **Six decisions the roadmap leaves open are steps of their own**, each before the step that
+  builds on it. Three are what a channel collects, how a light path expression runs on every
+  device, and how a bounce of several closures is weighed and labelled. Three are how a pixel's
+  IDs are covered, how deep samples are kept, and what the denoiser reads and writes.
+  [Decisions](#decisions).
+* **The scene's outputs reach the render first.** The path tracer makes its film with no channels
+  and `moya --paths` writes the beauty alone, whatever the scene names. Every later step needs a
+  film made from the scene's outputs. [Step 7](#step-7--the-scenes-outputs-reach-the-render).
+* **Coverage is a step of its own.** A compositor needs alpha, and the film has none. The roadmap
+  does not name it. [Step 8](#step-8--alpha).
+* **Values at the first hit come before light path expressions.** Depth, position, normal, albedo
+  and a primvar are the simplest channels, and the denoiser and the deep file read them.
+  [Step 9](#step-9--values-at-the-first-hit).
+* **RIB names every output.** A RIB file names its channels, light groups, Cryptomatte layers and
+  deep files, so `moya --paths` renders them and the reference renders are RIB files.
+  [Step 18](#step-18--outputs-from-rib).
+
+## What the survey found
+
+The tree was read at `7cc2313a`.
+
+**The film and its files:**
+
+* **The film holds a beauty and named channels**
+  ([Film.md](../../offline/Film.md#the-films-pixels)). Each channel is a name and one to four floats.
+  `Pixels::addChannel()` adds a sample's value with the beauty's weight, so every channel is
+  filtered as the beauty is. Its sums are floats, added in index order.
+* **A snapshot describes its channels**, and a checkpoint holds them, with the film's channels in
+  its fingerprint.
+* **`writeExr()` writes parts of chosen outputs**, each half or float and compressed as it says
+  ([Output.md](../../offline/Output.md#exr-files)). One part is a scanline file, and several a
+  multi-part file. A channel of several floats is written as `name.R`, `name.G` and so on.
+* **The beauty has no alpha**, and no file holds one.
+* **OpenEXR writes no deep file** through moya, though the library reads and writes deep
+  scanlines.
+
+**The scene and the render:**
+
+* **The scene holds `channel` and `output` objects** ([Scene.md](../../offline/Scene.md)). A channel
+  names its `source` and its `components`. An output names its `file`, its `format` of `exr`,
+  `png` or `framebuffer`, the channels it writes, its `precision` and its `compression`.
+* **The RIB client makes them from `Display`** ([Rib.md](../../offline/Rib.md#the-scene-client)). A
+  mode other than `rgb` or `rgba` adds a channel whose source is the mode.
+* **`integrate::render()` reads none of them.** It makes its film with an empty list of channels.
+* **`moya --paths` writes the beauty alone**, in floats, to `--output` or `paths.exr`.
+
+**The integrator:**
+
+* **A path gathers into one radiance** ([Integrator.md](../../offline/Integrator.md#the-stages)). The
+  shade stage adds what a light sample, a light's shape, a mesh light or a dome light gives, and
+  accumulate adds it to the pixel. Nothing records which kind of bounce or light gave it.
+* **A BSDF sample names its lobe**: diffuse, glossy, specular or transmission. The path keeps a
+  count of each, and whether the last sample was specular.
+* **A hit names the chain of instances that placed it**, up to four deep, and its primitive. The
+  instances and lights are scene objects with names, but no name reaches the device.
+* **Light linking keeps a set of linked lights on the path**, as one 32-bit field.
+
+**The editor:** `MoyaDelegate` renders through the reyes and ray hiders, from a RIB recording of
+the editor's scene. It writes 8-bit pictures.
+
+**Dependencies:** OIDN is not a dependency. OpenEXR, oneTBB and OpenColorIO are, in the `moya`
+feature of `vcpkg.json`.
+
+**The tests:** moya's suite has 34 RIB scenes, each with a committed description and hit view,
+and 11 reference renders of the path tracer held within five standard errors
+([Testing.md](../../contributing/Testing.md#moya-references)).
+
+---
+
+## Decisions
+
+| ADR | Decides | Step |
+|---|---|---|
+| 0230 | What a channel collects, and how it is named | [1](#step-1--the-record-what-a-channel-collects) |
+| 0231 | How a light path expression runs on every device | [2](#step-2--the-record-light-path-expressions) |
+| 0232 | How a pixel's IDs are covered | [3](#step-3--the-record-cryptomatte-coverage) |
+| 0233 | How a pixel's deep samples are kept | [4](#step-4--the-record-deep-samples) |
+| 0234 | What the denoiser reads and writes | [5](#step-5--the-record-denoising) |
+| 0235 | How a bounce of several closures is weighed and labelled | [12](#step-12--the-record-a-bounces-lobe) |
+
+Each record step researches how production renderers make the choice, and the owner chooses
+among the options before the record is drafted.
+
+---
+
+## The steps
+
+| | What | Where | ADR | State |
+|---|---|---|---|---|
+| [1](#step-1--the-record-what-a-channel-collects) | The record: what a channel collects | `docs/adr` | **0230** | accepted |
+| [2](#step-2--the-record-light-path-expressions) | The record: light path expressions | `docs/adr` | **0231** | accepted |
+| [3](#step-3--the-record-cryptomatte-coverage) | The record: Cryptomatte coverage | `docs/adr` | **0232** | accepted |
+| [4](#step-4--the-record-deep-samples) | The record: deep samples | `docs/adr` | **0233** | accepted |
+| [5](#step-5--the-record-denoising) | The record: denoising | `docs/adr` | **0234** | accepted |
+| [6](#step-6--oidn) | OIDN as a dependency | `vcpkg.json`, `ports` | — | done |
+| [7](#step-7--the-scenes-outputs-reach-the-render) | The scene's outputs reach the render | `moya/libmoya/integrate`, `moya` | 0230 | done |
+| [8](#step-8--alpha) | Alpha | `moya/libmoya/film`, `kernel` | — | done |
+| [9](#step-9--values-at-the-first-hit) | Values at the first hit | `moya/libmoya/kernel/integrate` | 0230 | done |
+| [10](#step-10--the-events-of-a-path) | The events of a path | `moya/libmoya/kernel/integrate` | 0231 | done |
+| [11](#step-11--compiling-a-light-path-expression) | Compiling a light path expression | `moya/libmoya/lpe` | 0231 | done |
+| [12](#step-12--the-record-a-bounces-lobe) | The record: a bounce's lobe | `docs/adr` | **0235** | accepted |
+| [13](#step-13--light-path-expressions-on-the-device) | Light path expressions on the device | `moya/libmoya/kernel` | 0231, 0235 | done |
+| [14](#step-14--light-groups) | Light groups | `moya/libmoya/light`, `scene` | 0231 | done |
+| [15](#step-15--cryptomatte) | Cryptomatte | `moya/libmoya/film`, `output` | 0232 | done |
+| [16](#step-16--deep-exr) | Deep EXR | `moya/libmoya/film`, `output` | 0233 | done |
+| [17](#step-17--denoising) | Denoising through OIDN | `moya/libmoya/denoise`, `moya` | 0234 | done |
+| [18](#step-18--outputs-from-rib) | Outputs from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | — | done |
+| [19](#step-19--the-reference-renders) | The reference renders | `moya/tests` | — | done |
+| [20](#step-20--speed) | Speed: outputs against the baseline | `moya/bench` | — | done |
+| [21](#step-21--the-documents) | The reference pages for outputs | `docs` | — | done |
+
+## What blocks what
+
+```
+1 ADR ──> 7 Outputs ──┬──> 8 Alpha ──────────────────────┬──> 16 Deep (after 4)
+                      ├──> 9 First hit ─────────────────┼──> 17 Denoise (after 5, 6)
+                      │                                  └──> 15 Cryptomatte (after 3)
+2 ADR ──> 10 Events ──> 11 Compile ──> 12 ADR ──> 13 Device (after 7) ──> 14 Light groups
+6 OIDN (after 5)
+
+(7 to 17) ──> 18 RIB ──> 19 References, 20 Speed ──> 21 Documents
+```
+
+Steps 1 to 5 depend on nothing but each other, and step 6 needs the record of step 5. Step 7
+needs the record of step 1, and every step after it needs a film made from the scene's outputs.
+Steps 8 and 9 need only step 7. Step 10 needs the record of step 2, step 11 the events it names,
+and step 12 the events too. Step 13 needs steps 11 and 12 and a film of channels. Step 14 is a
+label of step 13's expressions. Step 15 needs coverage and the record of step 3. Step 16 needs
+alpha, the first hit's depth and the record of step 4. Step 17 needs the first hit's albedo and
+normal, and OIDN. Step 18 names every output in RIB. Each step updates its own section of the
+reference documents, and step 21 checks that they read as a whole.
+
+## How every step is verified
+
+* **The build and the gates.** Everything compiles at `/W4 /WX`, and cpplint, `/analyze`,
+  clang-tidy and every review gate stay clean. Kernel code passes `kernel.ts`.
+* **The suites.** The offline suite, moya's suites and the editor's suite pass. Each step with
+  code adds cases, and `failsfirst.ts` is run on the change to show that each new case fails
+  without it.
+* **Channels that split the beauty add up to it.** A set of light path expressions that splits
+  every path one way, by the lobe of the first bounce for one, sums to the beauty at each pixel
+  within float rounding. A scene's light groups sum to it too.
+* **The statistical oracle.** A channel is compared with its expected value, or with another
+  picture, through the path tracer's comparison within standard errors.
+* **One picture on every run.** A render on one thread and on every thread gives the same bytes in
+  every channel, every ID and every deep sample.
+* **The files open in other readers.** Each file's layout is checked against what OpenEXR's own
+  readers give: its deep reader and compositor for a deep file, and the Cryptomatte
+  specification's decoding for its channels and manifest.
+* **Linux.** portable.yml's clang job builds `v3dlib_moya` and runs moya's suite under the
+  sanitizers, in the spectral and the RGB build.
+* **No old picture changes.** The old hiders read RIB as before, so every committed PNG in
+  `moya/tests/data/` stays as it is, and the editor's render window shows the same picture. A
+  render that names no channel writes the beauty it would without channels. The path tracer's
+  pictures change once, at step 13, as the record of step 12 says, and each reference render
+  stays within its errors.
+
+---
+
+### Step 1 — The record: what a channel collects
+
+**The question.** What a scene's channel can hold, how it names what it holds, and how its
+samples are combined into a pixel. The scene's `channel` names a `source` string today, which
+nothing reads.
+
+**The options:**
+
+* **USD's render vars**: a channel names a `sourceType` of `raw`, `primvar`, `lpe` or
+  `intrinsic` and a `sourceName`, as UsdRender's `RenderVar` does, and as Karma and Hydra
+  delegates read them. A Hydra delegate of section 12 then hands its vars through unchanged. RIB's
+  `DisplayChannel` maps onto it, as RenderMan's own Hydra delegate maps them.
+* **RenderMan's display channels**: a channel names its source as a string, `lpe:` followed by an
+  expression or the name of a built-in value, as RenderMan's `DisplayChannel` does. RIB reads as
+  written, and a USD var is translated.
+* **A fixed set of passes**, as Cycles' view layer gives diffuse, glossy and transmission light,
+  each direct and indirect, and its data passes. Each is cheap and known ahead, and none can be
+  written that the set lacks.
+
+The record also settles which values a channel can take at the first hit, such as depth, position,
+normal, albedo and motion. It settles how a channel's samples are combined into its pixel. They may
+be averaged by the pixel filter, or kept as the nearest, least or most, as RenderMan's channel
+`filter` and Arnold's AOV filters keep depth and IDs.
+
+**Drafted** as [ADR-0230](../../adr/offline/0230-offline-channels-follow-usds-render-vars.md): a
+channel names a kind of source and a name, as UsdRender's `RenderVar` does: a value the renderer
+computes, a primvar or a light path expression. Each channel names how its samples are combined:
+the filtered mean, the closest, the least, the most or the sum. Depth, position and IDs default
+to the closest, by a tie-break of sample index, and every other value to the filtered mean. The
+values the renderer computes are step 9's: the common set of depth, position, normal, albedo, the
+texture coordinates, motion and the IDs.
+
+### Step 2 — The record: light path expressions
+
+**The question.** How a channel that names a light path expression collects only the light of
+the paths it matches, on every device, within kernel code's rules: no allocation and no virtual
+call.
+
+**The options:**
+
+* **A deterministic automaton per expression**, compiled on the host from OSL's grammar and run
+  on the device, one state per expression held in the path state, as OSL's `accum` library,
+  Arnold and RenderMan run them. Any expression a compositor writes works. Each expression costs a
+  state on each path and a table lookup at each event.
+* **One automaton for every expression**, its states the tuples of each expression's states,
+  with each accepting state naming the channels it adds to. A path carries one state, and the
+  table grows with the product of the expressions.
+* **Fixed passes, recorded by the path's lobes**, as Cycles splits light by the first bounce's
+  lobe and whether it was direct. A path carries a few flags, and no other split can be asked for.
+
+The record also settles which events and labels a path reports, and the most expressions a render
+takes. It settles how a light sample is matched, since its light has not yet been met. Last, it
+settles how a light group is named: as a label in an expression, as OSL's grammar writes one, or
+as an attribute of the light, as Cycles' and RenderMan's `lightGroup` is.
+
+**Drafted** as
+[ADR-0231](../../adr/offline/0231-offline-light-path-expressions-run-as-one-automaton.md): every
+expression of a render compiles on the host into one deterministic automaton, as OSL's `accum`
+library builds one, whose accepting states name the channels they add to. A path carries one
+state, and a light sample is matched by stepping a copy of it, as OSL's `test()` does. A light
+names its group as a string, read as a label on its event, `<L.'key'>`, as Arnold, RenderMan and
+Karma read one. The host refuses a set whose automaton grows past a limit, which step 11 sets.
+Fixed splits by lobe are expressions written in advance.
+
+### Step 3 — The record: Cryptomatte coverage
+
+**The question.** How a pixel's coverage by each object and material ID is kept while samples
+arrive, within kernel code's rules, so that each pixel's IDs are ranked by coverage when it is
+written. The Cryptomatte specification fixes the hash, the channels and the manifest, but not how
+a renderer gathers coverage.
+
+**The options:**
+
+* **A bounded table of IDs in each pixel**, each ID with its weighted coverage, added to by the
+  pixel's own samples in index order, as Cycles keeps one in its film. Memory is a fixed number of
+  slots per pixel and layer. A pixel of more IDs than slots loses its smallest.
+* **Each sample's ID written out**, and the pixel's table built on the host after each pass, as
+  Arnold's Cryptomatte AOV shader gathers samples into a list. Nothing is lost, and memory grows
+  with the samples of a pass.
+* **The table kept on the host alone**, with the device reporting each camera hit's ID and
+  weight through a queue. The device side is smallest, and each GPU pass copies every hit back.
+
+The record also settles how many ranks a layer writes, and the names a layer takes its IDs from,
+as the specification's object, material and asset layers do. It settles how coverage meets a
+surface that is cut out or seen through glass.
+
+**Drafted** as
+[ADR-0232](../../adr/offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md): each
+camera sample records its IDs and filter weight in a buffer of the pass. After each pass, the host
+merges each pixel's records in sample order into an exact list, as Arnold keeps one. A camera
+sample keeps one surface, so a cut-out surface needs no rule of its own, and glass takes its own
+ID. A layer writes six ranks unless it asks for more, as the specification suggests. Its IDs come
+from the instance's name, the material's name, and the name of the outermost group that places
+it.
+
+### Step 4 — The record: deep samples
+
+**The question.** How a pixel's samples along depth are kept and merged, so that a deep file
+holds a bounded list of samples per pixel, each with its depth, colour, alpha and IDs. OpenEXR
+fixes the file, and not how a renderer builds its lists.
+
+**The options:**
+
+* **A bounded list in each pixel, merged by depth and ID**, as Arnold's and RenderMan's deep
+  outputs merge samples whose depths lie within a tolerance and whose IDs agree. Memory is fixed,
+  and the tolerance decides what is merged.
+* **Every camera hit kept, and merged on the host when the file is written.** Nothing is lost
+  until writing, and memory grows with the samples.
+* **The first hit alone, with volumes later adding their own samples.** One sample per hit
+  surface and pixel, and no transparency through glass.
+
+The record also settles what a sample's back depth is, and the channels a deep file holds beside
+depth and alpha. It settles whether a surface seen through glass or a cut-out card adds samples.
+
+**Drafted** as [ADR-0233](../../adr/offline/0233-offline-deep-pixels-are-merged-on-the-host.md): each
+camera sample records its depth and radiance beside the records of ADR-0232, and the host merges
+each pixel's records in sample order into a list. Samples are joined when their IDs agree and
+their depths lie within a tolerance, as Arnold, RenderMan and Redshift join them. A surface is a
+point sample, its back depth its depth, and its alpha its weight over the weight that reached its
+depth. A cut-out card is a sample of its own, and a surface behind glass is part of the glass's
+sample. IDs are OpenEXR's Deep IDs with an `idmanifest`, and the file is written tidy.
+
+### Step 5 — The record: denoising
+
+**The question.** What OIDN reads and what it writes, so that a denoised picture keeps the
+compositing outputs useful and meets ADR-0194's one picture per device.
+
+**The options:**
+
+* **The beauty alone, denoised into a channel of its own**, with the noisy beauty kept, as
+  Cycles' denoising data and Karma's denoised beauty are written. A compositor can choose either.
+* **Every light path expression and light group denoised as well**, as RenderMan's denoiser and
+  V-Ray's denoise their light selects. Changing a light group after rendering stays clean, and each
+  channel costs a filter run.
+* **The beauty denoised in place.** One picture, and the noisy one is lost.
+
+The record also settles whether OIDN cleans the albedo and normal before they guide the beauty,
+as its `cleanAux` allows, and in what space the normal is given. It settles whether a picture shown
+while sampling is denoised. Last, it settles whether OIDN on the CPU gives the same bytes under any
+thread count, and what moya does if it does not.
+
+**Drafted** as
+[ADR-0234](../../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md): OIDN denoises
+the beauty and any expression channel or light group a scene marks, each into a channel beside
+its noisy original. One albedo and normal, filtered first by OIDN with `cleanAux` set, guide every
+channel, and moya gives `inputScale` from its own sum. A denoised channel is held to one picture
+on every run, and OIDN runs on a fixed count of threads of its own if its output depends on its
+count. The normal is in world space, which OIDN accepts. Pictures shown while sampling are not
+denoised until section 9.
+
+### Step 6 — OIDN
+
+* **OIDN joins the `moya` feature** in `vcpkg.json`, on its CPU device alone. Its GPU devices wait
+  for sections 10 and 11.
+* **Overlay ports in `ports/` build it.** vcpkg's registry holds no port for OIDN or for the ISPC
+  compiler its CPU device needs. An overlay port builds OIDN 2.5 against the tree's oneTBB, and
+  ISPC 1.30 or newer comes from a port or a host tool of its own.
+* **Its weights are installed beside moya**, if the port keeps them apart from the library.
+* **The Flatpak builds it** as a module.
+* **[Dependencies.md](../../contributing/Dependencies.md)** names the port and why.
+
+**Tests:** a filter of OIDN's denoises a constant image to the same constant.
+
+**Done.** `ports/vcpkg-tool-ispc` installs ISPC 1.32's own release as a host tool, keeping its
+`bin`, `include` and `lib` folders, since the compiler reads its standard headers from beside
+itself. `ports/oidn` builds OIDN 2.5.1 from its release's source archive, which holds the
+weights, with the CPU device and the RT filter alone. It builds static, since a shared OIDN
+loads its CPU device from a module no executable's imports name, so the weights and the device
+are linked into whatever links OIDN. The Flatpak builds both as modules, ISPC for the build
+alone. libmoya does not link OIDN until step 17 uses it, so the moya suite links it for
+`DenoiserTest.cxx`. The default device is the CPU's, and a constant grey comes back within 1% of
+itself everywhere but the outermost four pixels, which the filter reads fewer neighbours for. The
+picture's mean holds within 0.1%.
+
+### Step 7 — The scene's outputs reach the render
+
+* **`integrate::render()` makes its film from the scene's channels**, as the record of step 1
+  decides, the channels every output names in the order the scene holds them.
+* **A channel of a source the render cannot fill** is reported once, and holds zero.
+* **`moya --paths` writes every output the scene names**, each to its file in its format and
+  precision. `--output` replaces the first output's file, as it replaces the file `Display` names
+  for the old hiders. A scene that names no output writes the beauty to `paths.exr`, as now.
+* **A checkpoint holds the channels**, and its fingerprint names them, as it does now for a film's
+  channels.
+
+**Tests:** a scene of two outputs writes two files, with the channels each names. A scene with
+no output writes what it writes now. A checkpoint of a render with channels resumes to the same
+bytes.
+
+**Done.** A `channel` now holds `sourceType`, `raw`, `primvar` or `lpe`, and `sourceName`, as
+UsdRender's `RenderVar` does, in place of its `source`. The RIB client reads a `Display` mode after
+`lpe:` as an expression, and any other as a raw value. `output/Outputs.h` reads the scene's channels
+and outputs, and writes an output. An EXR output is a part of the beauty and its channels at its
+precision and compression. A PNG goes through the default display and view, and a framebuffer is
+logged as not written. `integrate::render()` makes its film from the channels the outputs name, each
+once, and reports each one, since no source is filled until step 9. `moya --paths` writes every
+output after each frame. Its `--output` replaces the first one's file and may now end in `.png`. The
+combine rule ADR-0230 names joins the channel at step 9, where a value is first filled.
+
+### Step 8 — Alpha
+
+* **The film holds a coverage beside the beauty**: each sample's weight times one when its camera
+  ray met geometry or a light's shape, and zero when it left the scene.
+* **Coverage is the beauty's `A`**, so the beauty is written as R, G, B and A.
+* **A camera ray that passes a cut-out surface** counts the surface by the opacity it kept, as the
+  ray's own passing decides.
+* **A dome light the camera sees** leaves its pixels at zero coverage, so a compositor lays the
+  render over a plate.
+
+**Tests:** a sphere's coverage is one inside it, zero outside, and its share of the pixel at its
+edge, within errors. A card of half opacity has a coverage of a half, within errors.
+
+**Done.** The beauty is four floats, `kernel::film::kBeautyFloats`: ACEScg's red, green and blue,
+then the alpha. A path carries a `coverage`, one once its camera ray meets anything, and
+`Pixels::add()` adds it with the sample's weight, one when a caller gives none. The EXR writer and
+checkpoints write the beauty as R, G, B and A. The committed references read the beauty's first
+three floats and stay as they were. A square shows an alpha of one inside it and zero beyond it,
+and the picture's mean alpha is the square's share of the screen, which checks the edge pixels
+together. A card a quarter opaque has an alpha of a quarter, which a half would not tell from
+the red of the dome behind it. The cases use a square rather than a
+sphere, as the opacity cases' scenes are built of squares.
+
+### Step 9 — Values at the first hit
+
+* **Each value the record of step 1 names** is added at the camera ray's first hit: depth,
+  position, normal and the others it settles.
+* **A primvar's value at the first hit**, by name, as UsdRender's `primvar` source names one.
+* **Albedo and normal for the denoiser**, from the first hit that is not a perfect mirror or a
+  smooth transmission, as the roadmap names. The albedo is the BSDF's albedo at the outgoing
+  direction.
+* **Each value is filtered** as the record settles.
+
+**Tests:** a plane square to the camera gives the depth a closed form gives at each pixel. A
+mirror in front of a red wall gives the wall's albedo. A primvar of a constant reads back as
+the constant.
+
+**Done.** Each film channel has a combine, `kernel::film::Combine`: the filtered mean, the sum,
+the closest, the least or the most. A closest channel keeps its sample's depth in one more float,
+so a resumed render keeps the same sample, and a tie keeps the lower sample index. The scene's
+channel names it as its `filter`, whose default is the closest for a depth, a position or an ID
+and the mean for any other. The path tracer fills `depth`, `position`, `normal`, `st`,
+`instance`, `face` and `motion` at each camera ray's first hit, and a primvar by its name,
+which the gather then reads though no material does. A denoiser's `albedo` and
+`denoisingNormal` come from the first surface whose singular closures hold less than half its
+estimated albedo, tinted by the mirrors and glass a path passed. The albedo is the closures'
+estimate kept at each wavelength, under ACES white, rather than one taken at the outgoing
+direction. The ADR's IDs are the instance and the face. A saturated ACEScg red comes back from its
+reflectance spectrum a few percent darker, so the mirror case compares the wall seen through the
+mirror with the wall seen face on.
+
+### Step 10 — The events of a path
+
+* **Each bounce reports its event** as the record of step 2 decides: the camera, a reflection or
+  a transmission, with its lobe's kind of scattering, and a light, an emitting surface or the
+  background.
+* **A light reports its label**, and a light group, as the record settles, from its name on the
+  host.
+* **A light sample reports the event its light would give**, so the shade stage can match it.
+* **Nothing is gathered differently.** The events are recorded beside the radiance, and the
+  beauty is unchanged.
+
+**Tests:** a path of known bounces in a scene built for it reports the events in order. Every
+reference render of the path tracer is unchanged, byte for byte.
+
+**Done.** A path reports each event as a `kernel::integrate::Event` of a type, a scattering and a
+label, beside what it gathers. A bounce is a reflection or a transmission, singular for a closure
+that scatters into one direction, diffuse for a diffuse, Oren-Nayar or fuzz closure, and glossy
+otherwise. A BSDF sample now says whether its closure is diffuse, so a transmission is named
+too. Each light the path gathers reports its event, and a light an emitting material makes is an
+object. Every light of the scene holds `lightGroup`, which this step took from step 14. The host
+gives each light its group's place among the groups' names, sorted, as its label. The cases see
+the events through `integrate::Trails`: a render given one records the events of each pixel's
+sample zero, and gives the same picture as one that is not. Surfaces that are cut out report no
+event, and a ray that leaves the scene meets lights alone, so no event is the background.
+
+### Step 11 — Compiling a light path expression
+
+* **OSL's grammar of light path expressions**: events, scattering types and labels, groups,
+  alternatives, repetition and negation, as OSL's `accum` library reads them.
+* **An expression compiles to an automaton** as the record of step 2 decides, by subset
+  construction over the events step 10 names, and is minimised.
+* **An expression that does not parse** is reported with its place, and its channel holds zero.
+
+**Tests:** each construct of the grammar against strings of events it should and should not
+match. Two expressions OSL's documentation says are equal compile to the same automaton.
+
+**Done.** `lpe::parse()` reads OSL's grammar into a pattern over sets of symbols, one symbol to an
+event, which `kernel::integrate::symbolOf()` gives. `lpe::compile()` builds one automaton for a
+render's set by Thompson's construction and subset construction, makes it minimal by Moore's
+refinement, and numbers its states as a walk from the start reaches them. Each state names the
+expressions it accepts. The limit is 1024 states while the automaton is built, and a set past it
+is refused with `lpe::Refused`. A diffuse event eight events before the light compiles to 770
+states, and nine are refused. An event holds one label, as moya's events do, so an event of a
+fourth place is not read. A letter outside angle brackets is an event of its own, as in OSL.
+
+### Step 12 — The record: a bounce's lobe
+
+**The question.** How a bounce from a BSDF of several closures is weighed and labelled, so that
+a channel split by lobe converges to that lobe's light. `Bsdf::sample()` picks one closure and
+weighs the direction by every closure's value over the mixture's density. The weight then belongs
+to every lobe at once, and the bounce takes the picked closure's lobe alone.
+
+**The options:**
+
+* **One closure alone**: the bounce is weighed by the picked closure's value over its chance and
+  its own density, and takes its lobe. Each lobe's channel converges to its light, and split
+  channels add up to the beauty. Layered surfaces are noisier, and every picture changes once.
+* **The mixture's weight, labelled by the closure picked**, as now. Nothing changes, and a lobe's
+  channel holds part of the other lobes' light.
+* **The mixture's weight, and a ratio for the channels**: the path carries the ratio of the one
+  closure's weight to the mixture's. Each channel converges, and split channels add up to the
+  beauty only on average.
+* **The first bounce's share of each lobe**, as Cycles carries `pass_diffuse_weight` and
+  `pass_glossy_weight`. Splits at the first bounce are right, and later ones are not.
+
+A light sample is split by each closure's value towards the light under every option.
+
+**Drafted** as
+[ADR-0235](../../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md): a bounce is weighed
+by the closure it picked alone, and takes that closure's lobe. A light sample is split by each
+closure's value towards the light, each part weighed against that closure's own density.
+
+### Step 13 — Light path expressions on the device
+
+* **Each path carries its expressions' state**, declared once in the path state as the record
+  decides, and advanced at each event.
+* **Light the path gathers is added to each channel whose expression accepts** the path's events
+  with the light's.
+* **A bounce samples one closure alone**, as the record of step 12 decides, and a light sample
+  is gathered once for each closure towards the light, after that closure's event. The trail
+  records a light sample's closure event before the light's.
+* **The most expressions a render takes** is the record's, and a scene of more is reported.
+
+**Tests:** the lobes of the first bounce split the beauty into channels that sum to it at each
+pixel. `C<RD>L` in a diffuse box under one light matches a direct render's light alone, within
+errors. A render with five expressions gives the same beauty as one with none, byte for byte.
+
+**Done.** A bounce is weighed by the closure that drew it alone. `Bsdf::part()` gives each
+closure's part towards a light, so a light sample is gathered closure by closure, each part
+weighed against its closure's own density. The host's `internal::LightPaths` compiles a
+render's channels of expressions under its light groups' labels and uploads the automaton, with a
+flag for each expression in each state's accepts. The path state's `expression` steps at the
+camera and at each bounce, and each light gathered steps a copy, by a light sample's closure
+event first. `C<RD>L` in the box matches a render of one bounce to float rounding, since both
+draw the same samples, which is closer than the errors the plan asked for. The trail records a
+light sample's closure event before the light's.
+
+### Step 14 — Light groups
+
+* **A light's group comes through UsdLux's names** where they exist, as the scene's
+  `lightGroup` from step 10 does.
+* **A channel of each group** collects the light of that group's lights.
+* **A light with no group** belongs to none, and a channel of light no group names collects it.
+
+**Tests:** a scene's groups sum to the beauty at each pixel. A group's channel scaled by two
+matches a render whose lights in that group are twice as bright, within errors.
+
+**Done.** Steps 10, 11 and 13 had built everything a group needs: the scene's `lightGroup`, a
+label on the light's event, and a channel of an expression that names it. This step adds the
+cases. A scene's key and fill groups, the lights no group names and an emitting square sum to
+the beauty at each pixel. The key's channel added to the beauty once more lies 0.5 errors from a
+render of the key twice as bright, at its furthest pixel. The beauty alone lies 30 errors from it
+over the picture. No client reads a UsdLux group yet: USD has no core attribute for one, moya
+has no USD client, and the RIB client's `lightGroup` is step 18's.
+
+### Step 15 — Cryptomatte
+
+* **IDs are hashed from names** with MurmurHash3 as the Cryptomatte specification says, and
+  made a float that is not a NaN or an infinity, as it says.
+* **Each pixel's coverage** is kept as the record of step 3 decides, from each camera sample's
+  first hit and its weight.
+* **A layer of each kind the record settles**, written as `<layer>00`, `<layer>01` and on, each
+  holding two ranks of ID and coverage as `R`, `G`, `B` and `A`.
+* **The manifest is in the header**, as `cryptomatte/<key>/name`, `hash`, `conversion` and
+  `manifest`, with the key from the layer's name as the specification gives it.
+
+**Tests:** a pixel inside one object holds its ID at a coverage of one. A pixel on the edge
+between two holds both, with the shares their areas give, within errors. The manifest names every
+object in the picture, and each hash matches the specification's examples.
+
+**Done.** A raw channel of the source name `crypto_object`, `crypto_material` or `crypto_asset`
+is a layer, and the channel's `ranks` asks for more than six. Each camera sample records its first
+hit's innermost and outermost instance, its material and its filter weight, and the host adds
+each pixel's records after the pass in `integrate::internal::Coverage`. The film holds each
+layer's ranks as channels of four floats, which the EXR writer keeps in 32-bit floats beside a
+beauty of halves, and the header carries each layer's manifest. A checkpoint holds the coverage
+as a deep part with each weight's 64 bits, so a resumed render's ranks are the same bit for bit.
+The hash is checked against MurmurHash3's published values, since the specification's own
+examples could not be reached. The records take sixteen bytes for each sample of a pass, which a
+buffer of a band of rows would bound for large pictures.
+
+### Step 16 — Deep EXR
+
+* **An output of the format `deepexr`** writes a deep scanline file through OpenEXR.
+* **Each pixel's samples** are kept and merged as the record of step 4 decides, each with its
+  front and back depth, its colour, its alpha and its IDs.
+* **A pixel with no sample** holds none.
+
+**Tests:** flattening the deep file through OpenEXR's own compositing gives the flat beauty and
+alpha, within float rounding. A pixel behind half-opaque glass holds a sample for the glass and
+one for the surface behind it.
+
+**Done.** Each camera sample's record holds its depth and its radiance in ACEScg beside what
+Cryptomatte reads, in one buffer that `integrate::internal::Records` owns for both. The host
+joins each pixel's records in `integrate::internal::Deep`, by object, material and a depth within
+the options' `deepTolerance`, and resolves them front to back into premultiplied point samples.
+The samples of what met nothing are one entry of zero alpha behind everything, so a pixel that
+sees a dome flattens to its beauty, and one that sees nothing holds no sample. An output of the
+format `deepexr` writes them with `objectid` and `materialid` and an `idManifest`. A checkpoint
+holds the lists as a third part, exactly. The glass of the test is a card a quarter opaque, since
+a camera sample passes a cut-out surface by a draw and keeps glass as its own sample. OpenEXR
+takes only none, RLE and ZIPS for deep data, so any other compression is written as ZIPS.
+
+### Step 17 — Denoising
+
+* **A denoised output** as the record of step 5 decides, after the last pass, through OIDN's
+  `RT` filter, guided by the albedo and normal of step 9.
+* **`moya --paths --denoise`** denoises a render whose scene names no denoised output, and the
+  scene's options can ask for one.
+* **A failed filter** is reported, and the noisy picture is written.
+
+**Tests:** a denoised render of a few samples is nearer the converged picture than the noisy one,
+in each pixel's mean squared error. A render denoised twice gives the same bytes, under one thread
+and every thread, if the record settles that it must.
+
+**Done.** The options' `denoise` asks for the beauty, and a channel's `denoise` for that
+channel, each into a copy named with `_denoised` beside its original. `denoise::denoise()` runs
+OIDN's `RT` filter after the last pass, guided by the scene's albedo and normal, or by
+`denoiseAlbedo` and `denoiseNormal`, which a render that denoises adds when the scene names
+neither. The guides are filtered first, every copy then with `cleanAux`, and moya gives each
+input's scale from its log mean luminance. OIDN's filter gave the same floats on one thread and on
+every thread, which `DenoiserTest.cxx` now checks, so the record's fixed count of threads is not
+needed. A four-sample render denoised lies 0.00019 from the converged one in mean squared error,
+against the noisy one's 0.0011. `moya --paths --denoise` sets the option, and is refused
+without `--paths`. libmoya now links OIDN privately.
+
+### Step 18 — Outputs from RIB
+
+* **RIB's `DisplayChannel`** declares a channel, with its `source` of an expression or a value at
+  the first hit, as RenderMan names one. A `Display` mode names those channels.
+* **A light's group** is named as RenderMan's `lightGroup` parameter names it, on `Light` and on
+  `LightSource`.
+* **Cryptomatte and deep outputs** are named as RenderMan names them, through a `Display` of
+  their type, and a denoised one through the scene's options.
+* **`moya --scene` prints the outputs**, and their descriptions are committed with each scene.
+
+**Tests:** a RIB file of each output gives the scene the channels and outputs it names. A RIB
+file that names an expression and a light group renders both.
+
+**Done.** The RIB library reads, writes and records `DisplayChannel` and `SampleFilter`, which a
+handler ignores by default. The scene client makes a channel of each `DisplayChannel`, of its
+type's components. Its source is an expression after `lpe:` or a value at the first hit, with
+RenderMan's `z`, `P` and `Nn` read as the depth, the position and the normal. Its filter and its
+`denoise` carry over. A `Display` mode names channels apart by commas, `Ci` and `a` the beauty,
+and the type `deepexr` is a deep file. `PxrCryptomatte` is a sample filter in RenderMan, not a
+`Display`, so its `filename` and `layer` make a Cryptomatte output. A light's `lightGroup` is read
+on `LightSource` and `Light`, and `Option "moya"` sets `denoise` and `deepTolerance`. A display
+mode of `z` now reads the depth, where it made a channel of no source before. `moya --scene`
+already printed every output, so the committed descriptions are unchanged.
+
+### Step 19 — The reference renders
+
+* **A set of scenes made for compositing**, as RIB files in `moya/tests/data`. A room is split
+  into channels by light path expressions, and another into light groups. Overlapping objects test
+  Cryptomatte, and glass and cut-out cards in front of a wall test deep output. A render of few
+  samples is denoised.
+* **Each is rendered and committed** as the path tracer's references are, with each pixel's
+  standard error, and compared within five of them. IDs and the manifest are compared exactly.
+
+**Tests:** the committed renders, and a case that renders each with a light or an expression
+changed and checks that the comparison fails.
+
+**Done.** Five RIB scenes, `compositing-lpe`, `-groups`, `-crypto`, `-deep` and `-denoise`, each
+48 by 32 pixels, are rendered through the scene client by `CompositingReferenceTest.cxx`. Each
+committed EXR holds every float of a pixel, the beauty's standard errors, the deep samples
+flattened with their count, and the manifests. The beauty and every channel are held within five
+of the beauty's errors, Cryptomatte IDs bit for bit, coverage within 0.001, manifests and deep
+sample counts exactly. Every light twice as bright fails the comparison in each scene. Each
+channel is held to the beauty's error, the one each pixel keeps, so a channel of little light is
+held more loosely than its own noise would allow.
+
+### Step 20 — Speed
+
+* **`moya_bench` gains a pass of outputs**: the lit room with five light path expressions, two
+  light groups, both Cryptomatte layers and a deep output, beside the lit room alone. It reports
+  samples a second, and the share of time in each kind of output.
+* **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
+
+**Tests:** the benchmark's short pass times the room with its outputs.
+
+**Done.** `moya_bench` prints a third table, the lit room with its outputs beside the plain room
+in the same rounds. `integrate::Profile` gains `coverage` and `deep`, the host's seconds after
+each pass in merging coverage and joining deep lists. In `x64-Release` on the baseline's machine,
+the outputs keep about 94 percent of the plain room's rate. Coverage takes about one percent of
+the time and deep lists under two, so the rest of the cost is on the device.
+
+### Step 21 — The documents
+
+* **A new reference page**, `docs/offline/Compositing.md`, for light path expressions, light
+  groups, Cryptomatte and deep output. The docs site's summary lists it.
+* **[Film.md](../../offline/Film.md)** names alpha, the filters of channels and each pixel's IDs.
+* **[Output.md](../../offline/Output.md)** names RGBA, deep files, Cryptomatte's channels and header,
+  and the denoised output.
+* **[Integrator.md](../../offline/Integrator.md)** names the events of a path and the values at the
+  first hit.
+* **[Scene.md](../../offline/Scene.md)** names a channel's sources, the outputs' formats and a light's
+  group.
+* **[Rib.md](../../offline/Rib.md)** names `DisplayChannel`, a light's group and the outputs' types.
+* **[The offline README](../../offline/README.md)**'s section on the new core says it writes outputs
+  for compositing.
+* **The moya manual's [CommandLine.md](../../manual/moya/CommandLine.md)** names `--denoise`.
+* **[Testing.md](../../contributing/Testing.md)** names the output references and the checks that
+  channels add up.
+* **Each record's `Documented in` line** names the reference page that states its rule.
+* **The roadmap's section 6** links here, and says so when this plan closes.
+
+**Done.** `docs/offline/Compositing.md` holds the events of a path, light path expressions, light
+groups, Cryptomatte and deep output. Their sections moved there from `Integrator.md`, `Film.md` and
+`Output.md`, which keep a pointer to it, and the site's summary lists it after Output. ADR-0231,
+0232 and 0233 are documented in it, and ADR-0235 in `Materials.md`, which states the rule. The other
+pages had been brought up to date by the steps that changed them.
+
+---
+
+## Outcome
+
+Closed 2026-11-15. moya's new core writes what a compositor needs beside the beauty. The scene's
+outputs decide the film's channels and the files written, and the beauty carries alpha. A
+channel holds a value at the first hit, or the light of the paths a light path expression
+matches, compiled with every other expression into one automaton. A light's group labels its
+light, so a channel can hold one group's. Cryptomatte layers give each pixel's objects and
+materials by coverage, a deep file gives each pixel's samples in depth, and OIDN denoises the
+beauty and any marked channel. RIB names all of it. No picture the reyes and ray hiders make
+changed.
+
+**Delivered:**
+
+- What a channel collects (ADR-0230), light path expressions as one automaton (ADR-0231),
+  Cryptomatte coverage merged on the host (ADR-0232), deep pixels merged on the host (ADR-0233)
+  and denoised channels beside noisy ones (ADR-0234). A seventh came of the work: a bounce samples
+  one closure alone (ADR-0235).
+- OIDN and ISPC as dependencies, built from their releases through overlay ports.
+- The scene's outputs in the render and in `moya --paths`, alpha, and values at the first hit by
+  each channel's combine.
+- The events of a path, `lpe::compile()` and the automaton on the device, and light groups.
+- Cryptomatte layers with their manifests, deep EXR files with Deep IDs, and checkpoints that
+  keep both exactly.
+- Denoising through OIDN's `RT` filter, and `moya --paths --denoise`.
+- `DisplayChannel`, `Display` modes of several channels, `deepexr`, `PxrCryptomatte`, a light's
+  `lightGroup` and `Option "moya"` from RIB.
+- Five reference renders of outputs, and the lit room with outputs in `moya_bench`.
+- `Compositing.md`, and the film, output, integrator, scene, RIB, materials, testing and manual
+  pages brought up to date.
+
+**Different from the plan:**
+
+- A bounce of several closures is weighed by the closure that drew it alone, so light split by
+  lobe adds up to the beauty. The plan had not seen that the BSDF's sample mixed its closures.
+- A light's `lightGroup` came with the events of a path, ahead of the light groups' step, which
+  then only added the cases.
+- OIDN's `RT` filter gives the same floats on any count of threads, so the fixed count ADR-0234
+  names is not needed.
+- The deep case's glass is a card a quarter opaque. A camera sample keeps glass as its own
+  surface, and passes a cut-out one by a draw.
+- RenderMan writes Cryptomatte through a sample filter, `PxrCryptomatte`, not a `Display`.
+- The Cryptomatte hash is checked against MurmurHash3's published values, since the
+  specification's own examples could not be reached.
+- The reference renders' step left out its scenes' committed descriptions and hit views, which
+  two later commits added.
+
+**Left open**, each an entry in [TODO.md](../../TODO.md#offline-rendering):
+
+- A pass's records of what its samples cover grow with the picture.
+- A compositing reference holds each channel to the beauty's error.
+- The editor shows no outputs. Its render view is section 9's.
+
+---
+
+## Working beside the editor scripting plan
+
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, which are below
+this plan's records. Its step 16 adds a thread count to `moya/moya.cxx` and
+`docs/manual/moya/CommandLine.md`, where steps 7 and 17 change how `--paths` writes and add
+`--denoise`. Each lands as a commit of its own. This plan changes nothing the editor sends moya:
+the editor renders through the old hiders until section 7, and showing outputs in its render view
+is work for section 9.

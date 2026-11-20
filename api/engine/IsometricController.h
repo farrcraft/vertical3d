@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,8 +9,10 @@
 #include <api/type/camera/Isometric.h>
 
 #include <functional>
-#include <string>
 #include <string_view>
+
+#include "IsometricCommands.h"
+#include "IsometricSpeeds.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,31 +22,6 @@
 namespace v3d::engine {
 
 class Engine;
-
-/**
- * The commands an IsometricController answers to, each as "context::name".
- **/
-struct IsometricCommands final {
-    std::string rotateLeft = "camera::rotate_left";    /**< one step clockwise, seen from above **/
-    std::string rotateRight = "camera::rotate_right";  /**< one step counterclockwise **/
-    std::string panUp = "camera::pan_up";              /**< away from the eye, along forward() **/
-    std::string panDown = "camera::pan_down";
-    std::string panLeft = "camera::pan_left";
-    std::string panRight = "camera::pan_right";        /**< along right() **/
-    std::string zoomIn = "camera::zoom_in";
-    std::string zoomOut = "camera::zoom_out";
-};
-
-/**
- * How fast an IsometricController moves the orbit while a command is held.
- **/
-struct IsometricSpeeds final {
-    float pan = 10.0F;   /**< world units a second **/
-    float zoom = 10.0F;  /**< orthographic half height a second **/
-    /** orthographic half height a notch of the wheel zooms by. A notch away from the player
-     * zooms in. A negative value turns the wheel round, for a player who prefers it **/
-    float notch = 1.0F;
-};
 
 /**
  * Drives a type::camera::Isometric from commands: rotation in whole steps, and pan and zoom at

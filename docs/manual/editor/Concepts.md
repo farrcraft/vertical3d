@@ -77,7 +77,7 @@ are the editors:
 | Graph Editor | The animation curves of the selected items |
 | Console | A line for typing scripts, and a list of what has run |
 | Render View | The latest picture moya rendered |
-| Render Settings | The size, samples and hider of a render |
+| Render Settings | The size and samples of a render |
 
 An area can hold several editors as **tabs**, and shows one at a time.
 

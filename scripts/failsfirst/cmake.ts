@@ -104,8 +104,31 @@ export type MissingLink = { file: string; line: number; target: string };
 
 export function missingLinks(output: string): MissingLink[] {
     const links = output.matchAll(
-        /CMake Error at (\S[^\r\n]*?):(\d+) \(target_link_libraries\):\s*\r?\n\s*Target "[^"\r\n]+" links to:\s+(\S+)\s+but the target was not found/g);
+        /CMake Error at (\S[^\r\n]*?):(\d+) \(target_link_libraries\):\s*\r?\n\s*Target "[^"\r\n]+" links to:\s+(\S+)\s+but the target was not found/g,
+    );
     return [...links].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), target: m[3] ?? '' }));
+}
+
+// A dependency a failed configure reports on a target that does not exist: the file as the
+// configure printed it, the line its add_dependencies call starts on, and the target depended on.
+export type MissingDependency = { file: string; line: number; target: string };
+
+export function missingDependencies(output: string): MissingDependency[] {
+    const found = output.matchAll(
+        /CMake Error at (\S[^\r\n]*?):(\d+) \(add_dependencies\):\s*\r?\n\s*The dependency target "([^"\r\n]+)" of target "[^"\r\n]+" does not exist/g,
+    );
+    return [...found].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), target: m[3] ?? '' }));
+}
+
+// A generator expression a failed generate reports to name a target that does not exist: the
+// file as the generate printed it, the line its call starts on, the command, and the expression.
+export type MissingExpression = { file: string; line: number; command: string; expression: string };
+
+export function missingExpressions(output: string): MissingExpression[] {
+    const found = output.matchAll(
+        /CMake Error at (\S[^\r\n]*?):(\d+) \((\w+)\):\s*\r?\n\s*Error evaluating generator expression:\s+(\$<[^\r\n]+>)\s+No target "[^"\r\n]+"/g,
+    );
+    return [...found].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), command: m[3] ?? '', expression: (m[4] ?? '').trim() }));
 }
 
 // The text with the call to command that starts on the given line removed, up to its closing
@@ -125,6 +148,24 @@ export function dropArgument(text: string, line: number, command: string, item: 
     const call = text.slice(span.start, span.end);
     // the whitespace before the item goes with it, so a call keeps its other items' layout
     const found = new RegExp(`\\s+${escapeRegExp(item)}(?=[\\s)])`).exec(call);
+    if (!found) {
+        return null;
+    }
+    const at = span.start + found.index;
+    return text.slice(0, at) + text.slice(at + found[0].length);
+}
+
+// The text with the whole argument that holds a fragment removed from the call to command that
+// starts on the given line. The argument can be a definition whose value is a generator
+// expression. Null when that call holds no such argument.
+export function dropArgumentHolding(text: string, line: number, command: string, fragment: string): string | null {
+    const span = callSpan(text, line, command);
+    if (span === null) {
+        return null;
+    }
+    const call = text.slice(span.start, span.end);
+    // the whitespace before the argument goes with it, so a call keeps its other arguments' layout
+    const found = new RegExp(`\\s+[^\\s()]*${escapeRegExp(fragment)}[^\\s()]*(?=[\\s)])`).exec(call);
     if (!found) {
         return null;
     }

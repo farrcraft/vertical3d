@@ -1,15 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Immediate.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/Checked.h>
 #include <api/ui/Image.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Clock.h>
 #include <api/ui/immediate/Context.h>
+#include <api/ui/immediate/Reaction.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Palette.h>

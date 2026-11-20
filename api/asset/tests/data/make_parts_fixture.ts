@@ -25,24 +25,38 @@
 //   node api/asset/tests/data/make_parts_fixture.ts
 
 import {
-    ARRAY_BUFFER, ASSET, ELEMENT_ARRAY_BUFFER, FLOAT, UNSIGNED_SHORT, Writer, bounds, f32, float, floats, u16,
+    ARRAY_BUFFER,
+    ASSET,
+    ELEMENT_ARRAY_BUFFER,
+    FLOAT,
+    UNSIGNED_SHORT,
+    Writer,
+    bounds,
+    f32,
+    float,
+    floats,
+    u16,
 } from './gltf_writer.ts';
 
-const TRIANGLE: [number, number][] = [[0, 0], [1, 0], [0, 1]];
+const TRIANGLE: [number, number][] = [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+];
 const NORMAL = [1, 0, 0];
 const QUARTER_TURN_ABOUT_Z = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
 const writer = new Writer();
 
 /** One triangle at the given z, and the primitive drawing it. */
-function primitive(z: number, material: number, indexed: boolean): Record<string, unknown> {
+function primitive(z: number, materialIndex: number, indexed: boolean): Record<string, unknown> {
     const triangle = TRIANGLE.map(([x, y]) => [x, y, z]);
     const result: Record<string, unknown> = {
         attributes: {
             POSITION: writer.accessor(f32(...triangle.flat()), FLOAT, 3, 'VEC3', ARRAY_BUFFER, bounds(triangle)),
             NORMAL: writer.accessor(f32(...triangle.flatMap(() => NORMAL)), FLOAT, 3, 'VEC3', ARRAY_BUFFER),
         },
-        material,
+        material: materialIndex,
     };
     if (indexed) {
         result.indices = writer.accessor(u16(0, 1, 2), UNSIGNED_SHORT, 3, 'SCALAR', ELEMENT_ARRAY_BUFFER);
@@ -59,10 +73,7 @@ function material(colour: number[], texture?: number): Record<string, unknown> {
     return { pbrMetallicRoughness: pbr };
 }
 
-const meshes = [
-    { primitives: [primitive(0, 0, true)] },
-    { primitives: [primitive(1, 1, true), primitive(2, 0, false)] },
-];
+const meshes = [{ primitives: [primitive(0, 0, true)] }, { primitives: [primitive(1, 1, true), primitive(2, 0, false)] }];
 
 const document: Record<string, unknown> = {
     asset: ASSET,

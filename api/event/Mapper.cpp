@@ -1,12 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Mapper.h"
 
 #include "Chord.h"
 #include "Event.h"
+#include "Modifiers.h"
 #include "State.h"
 
 #include <algorithm>

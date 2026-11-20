@@ -43,7 +43,11 @@ export interface Area {
 
 /** Every area, in the order the index lists them. */
 export const AREAS: readonly Area[] = [
-    { folder: 'rendering', heading: 'Rendering', holds: 'the realtime renderer: Vulkan, frames, resources, shaders, lighting and textures' },
+    {
+        folder: 'rendering',
+        heading: 'Rendering',
+        holds: 'the realtime renderer: Vulkan, frames, resources, shaders, lighting and textures',
+    },
     { folder: 'text', heading: 'Text', holds: 'fonts, and shaping and drawing text' },
     { folder: 'offline', heading: 'Offline rendering', holds: 'moya, RIB and the offline renderer' },
     { folder: 'ui', heading: 'User interface', holds: '`api/ui`, and the shell a game shares' },
@@ -115,7 +119,13 @@ export function parseRecord(file: string, text: string): Record {
         title: titled?.[2] ?? '',
         area: titled?.[3] ?? '',
         status: header.get('Status') ?? '',
-        tags: tags === undefined ? null : tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0),
+        tags:
+            tags === undefined
+                ? null
+                : tags
+                      .split(',')
+                      .map((tag) => tag.trim())
+                      .filter((tag) => tag.length > 0),
         amends: numbers(header.get('Amends')),
         amendedBy: numbers(header.get('Amended by')),
         supersedes: numbers(header.get('Supersedes')),
@@ -167,12 +177,16 @@ export function expectedStatus(record: Record, records: readonly Record[]): stri
 
 /** Whether two lists of numbers hold the same numbers. */
 function same(first: readonly number[], second: readonly number[]): boolean {
-    return [...first].sort().join() === [...second].sort().join();
+    return first.toSorted((a, b) => a - b).join() === second.toSorted((a, b) => a - b).join();
 }
 
 /** What is wrong with one record's place, number, title, status and tags. */
-function recordProblems(record: Record, records: readonly Record[], tags: ReadonlyMap<string, string>,
-    removed: ReadonlySet<number>): Finding[] {
+function recordProblems(
+    record: Record,
+    records: readonly Record[],
+    tags: ReadonlyMap<string, string>,
+    removed: ReadonlySet<number>,
+): Finding[] {
     const found: Finding[] = [];
     const at = (rule: string, message: string) => found.push({ path: record.file, line: null, rule, message });
     if (!AREAS.some((area) => area.folder === record.folder)) {
@@ -216,10 +230,16 @@ function linkProblems(records: readonly Record[]): Finding[] {
             at('broken-link', `ADR-${String(missing).padStart(4, '0')} is no record`);
         }
         if (!same(record.amendedBy, amenders.get(record.number) ?? [])) {
-            at('one-way', `its Amended by line names ${record.amendedBy.join(', ') || 'nothing'}, and the records that amend it are ${(amenders.get(record.number) ?? []).join(', ') || 'none'}`);
+            at(
+                'one-way',
+                `its Amended by line names ${record.amendedBy.join(', ') || 'nothing'}, and the records that amend it are ${(amenders.get(record.number) ?? []).join(', ') || 'none'}`,
+            );
         }
         if (!same(record.supersededBy, superseders.get(record.number) ?? [])) {
-            at('one-way', `its Superseded by line names ${record.supersededBy.join(', ') || 'nothing'}, and the records that supersede it are ${(superseders.get(record.number) ?? []).join(', ') || 'none'}`);
+            at(
+                'one-way',
+                `its Superseded by line names ${record.supersededBy.join(', ') || 'nothing'}, and the records that supersede it are ${(superseders.get(record.number) ?? []).join(', ') || 'none'}`,
+            );
         }
     }
     return found;
@@ -243,8 +263,12 @@ function padded(number: number): string {
 /** A record's status as the index writes it, naming what amends or supersedes it. */
 function statusCell(record: Record, records: readonly Record[]): string {
     const by = (pick: (other: Record) => number[]) =>
-        records.filter((other) => pick(other).includes(record.number)).map((other) => other.number).sort((first, second) => first - second)
-            .map(padded).join(', ');
+        records
+            .filter((other) => pick(other).includes(record.number))
+            .map((other) => other.number)
+            .toSorted((first, second) => first - second)
+            .map(padded)
+            .join(', ');
     const status = expectedStatus(record, records);
     if (status === 'superseded') {
         return `superseded by ${by((other) => other.supersedes)}`;
@@ -255,7 +279,7 @@ function statusCell(record: Record, records: readonly Record[]): string {
 /** The records in index order: by area, then by number. */
 export function ordered(records: readonly Record[]): Record[] {
     const rank = (record: Record) => AREAS.findIndex((area) => area.folder === record.folder);
-    return [...records].sort((first, second) => rank(first) - rank(second) || first.number - second.number);
+    return [...records].toSorted((first, second) => rank(first) - rank(second) || first.number - second.number);
 }
 
 /** The index by area that README.md holds, between START and END. */
@@ -265,8 +289,12 @@ export function indexPart(records: readonly Record[], removed: ReadonlySet<numbe
     const areas = AREAS.map((area) => `| ${area.heading} | [${area.folder}/](${area.folder}/) | ${area.holds} |`);
     const parts = [`The next record is ADR-${padded(next)}.`, `| Area | Folder | Holds |\n|---|---|---|\n${areas.join('\n')}`];
     for (const area of AREAS) {
-        const rows = ordered(records).filter((record) => record.folder === area.folder).map((record) =>
-            `| [${padded(record.number)}](${path.posix.relative(ADR, record.file)}) | ${record.title} | ${statusCell(record, records)} | ${(record.tags ?? []).join(', ')} |`);
+        const rows = ordered(records)
+            .filter((record) => record.folder === area.folder)
+            .map(
+                (record) =>
+                    `| [${padded(record.number)}](${path.posix.relative(ADR, record.file)}) | ${record.title} | ${statusCell(record, records)} | ${(record.tags ?? []).join(', ')} |`,
+            );
         parts.push(`### ${area.heading}\n\n| ADR | Decision | Status | Tags |\n|---|---|---|---|\n${rows.join('\n')}`);
     }
     return parts.join('\n\n');
@@ -275,8 +303,10 @@ export function indexPart(records: readonly Record[], removed: ReadonlySet<numbe
 /** The records by tag that tags.md holds, between START and END. */
 export function tagPart(records: readonly Record[], tags: ReadonlyMap<string, string>): string {
     const parts: string[] = [];
-    for (const tag of [...tags.keys()].sort()) {
-        const carrying = records.filter((record) => (record.tags ?? []).includes(tag)).sort((first, second) => first.number - second.number);
+    for (const tag of [...tags.keys()].toSorted()) {
+        const carrying = records
+            .filter((record) => (record.tags ?? []).includes(tag))
+            .toSorted((first, second) => first.number - second.number);
         const rows = carrying.map((record) => `| [${padded(record.number)}](${path.posix.relative(ADR, record.file)}) | ${record.title} |`);
         parts.push(`### ${tag}\n\n| ADR | Decision |\n|---|---|\n${rows.join('\n')}`);
     }

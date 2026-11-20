@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
@@ -11,9 +11,12 @@
 #include <api/brep/Topology.h>
 #include <api/animation/Curve.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <vertical3d/src/command/Vertex.h>
+#include <vertical3d/src/manipulator/Motion.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Curve.h>

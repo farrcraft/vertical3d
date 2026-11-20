@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "SlotBitmap.h"
 
@@ -15,11 +15,11 @@
 
 namespace v3d::font::glyph::internal {
 
-font::glyph::Bitmap slotBitmap(const FT_GlyphSlotRec& slot) {
+font::glyph::Store::Bitmap slotBitmap(const FT_GlyphSlotRec& slot) {
     const FT_Bitmap& bitmap = slot.bitmap;
-    font::glyph::Bitmap made{ .size = glm::uvec2(bitmap.width, bitmap.rows), .bearing = glm::ivec2(slot.bitmap_left, -slot.bitmap_top) };
+    font::glyph::Store::Bitmap made{ .size = glm::uvec2(bitmap.width, bitmap.rows), .bearing = glm::ivec2(slot.bitmap_left, -slot.bitmap_top) };
     if (bitmap.pixel_mode != FT_PIXEL_MODE_GRAY) {
-        return font::glyph::Bitmap{ .bearing = made.bearing };
+        return font::glyph::Store::Bitmap{ .bearing = made.bearing };
     }
     made.pixels.resize(static_cast<std::size_t>(bitmap.width) * bitmap.rows);
     // a row may be padded, and with a negative pitch the rows are stored from the bottom up

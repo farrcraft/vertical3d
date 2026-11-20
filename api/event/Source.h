@@ -1,15 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <string>
 
 #include "Context.h"
-#include "Chord.h"
 #include "Event.h"
+#include "Modifiers.h"
 #include "State.h"
 
 #include <boost/make_shared.hpp>
@@ -52,14 +52,6 @@ class Source final : public Event {
     // reads the flag on the original
     boost::shared_ptr<bool> consumed_;
     Modifiers modifiers_;
-};
-
-/**
- * A source no listener consumed, for the event router to turn into the commands it is bound
- * to. Only the event router listens for this.
- **/
-struct Unclaimed final {
-    const Source* source;  // never null. A pointer, because a dispatcher stores its events by value
 };
 
 /**

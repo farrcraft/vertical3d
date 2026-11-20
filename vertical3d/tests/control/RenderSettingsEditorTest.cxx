@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
@@ -9,6 +9,7 @@
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/RenderSettingsEditor.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -136,17 +137,6 @@ BOOST_AUTO_TEST_CASE(samples_out_of_range_are_refused) {
     BOOST_CHECK_EQUAL(panel.document->history()->undoDepth(), 0U);
     BOOST_REQUIRE(!panel.reported.empty());
     BOOST_CHECK(!panel.reported.back().done);
-}
-
-/**
- * A choice of hider is taken as it is made.
- **/
-BOOST_AUTO_TEST_CASE(a_hider_is_chosen) {
-    Panel panel;
-    panel.drag(panel.on("Reyes"), panel.on("Reyes"));
-    panel.drag(panel.on("Ray trace"), panel.on("Ray trace"));
-    BOOST_CHECK(panel.settings().hider == RenderSettings::Hider::RayTrace);
-    BOOST_CHECK_EQUAL(panel.document->history()->undoDepth(), 1U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,12 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Palette.h>
+#include <api/ui/style/Overlay.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/style/Selector.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>

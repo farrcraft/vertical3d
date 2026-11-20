@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "StatusBar.h"
+
+#include "Status.h"
 
 #include <api/brep/BRep.h>
 #include <api/brep/HalfEdge.h>

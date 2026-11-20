@@ -1,13 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <cstdint>
 #include <string_view>
 
+/**
+ * The retained components a ui document lays out, such as boxes, buttons, labels, sliders, tabs,
+ * text boxes and toolbars.
+ **/
 namespace v3d::ui::component {
 
 /**

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Curve.h"
 
@@ -15,6 +15,11 @@
 #include <variant>
 #include <vector>
 
+#include "Bezier.h"
+#include "BezierPoint.h"
+#include "CatmullRom.h"
+#include "Nurbs.h"
+#include "Poly.h"
 #include "Segment.h"
 #include "Spline.h"
 

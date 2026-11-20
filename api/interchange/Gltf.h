@@ -1,13 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <string>
 
-#include "Scene.h"
+#include "Imported.h"
 
 namespace v3d::interchange {
 

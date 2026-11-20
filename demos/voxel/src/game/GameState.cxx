@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2024 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "GameState.h"
 

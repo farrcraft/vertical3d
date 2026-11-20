@@ -30,6 +30,33 @@ if(V3D_BUILD_TESTS)
 endif()
 find_package(Boost 1.76.0 REQUIRED COMPONENTS ${v3d_boost_components})
 
+# The packages only moya uses, which no api library names, so the manifest of the api does not
+# find them. They come from the manifest's moya feature, and are looked for only when moya is
+# built. oneTBB schedules moya's CPU device. OpenEXR writes its pictures, with Imath's half type,
+# OpenColorIO converts between colour spaces, OpenSubdiv evaluates subdivision surfaces, and
+# MaterialX reads material documents. OIDN denoises pictures. OpenVDB reads grids, and NanoVDB
+# holds them where kernel code reads them.
+if(V3D_BUILD_APPS OR V3D_BUILD_MOYA)
+	find_package(TBB CONFIG REQUIRED)
+	find_package(Imath CONFIG REQUIRED)
+	find_package(OpenEXR CONFIG REQUIRED)
+	find_package(OpenColorIO CONFIG REQUIRED)
+	find_package(OpenSubdiv CONFIG REQUIRED)
+	find_package(MaterialX CONFIG REQUIRED)
+	find_package(OpenImageDenoise CONFIG REQUIRED)
+	# OpenVDB installs a find module and no package configuration, so it resolves in module
+	# mode. vcpkg's wrapper puts the module on the module path itself. Any other install keeps it
+	# under lib/cmake/OpenVDB, beside the find modules it calls in turn, and that directory is on
+	# the module path for this one search only.
+	find_path(v3d_openvdb_modules FindOpenVDB.cmake PATH_SUFFIXES lib/cmake/OpenVDB share/openvdb)
+	set(v3d_module_path ${CMAKE_MODULE_PATH})
+	if(v3d_openvdb_modules)
+		list(PREPEND CMAKE_MODULE_PATH ${v3d_openvdb_modules})
+	endif()
+	find_package(OpenVDB REQUIRED COMPONENTS openvdb nanovdb)
+	set(CMAKE_MODULE_PATH ${v3d_module_path})
+endif()
+
 # Resolve the named packages.
 #
 # A macro rather than a function: find_package creates its imported targets in the scope it

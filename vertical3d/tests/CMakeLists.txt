@@ -26,6 +26,7 @@ v3d_add_test(vertical3d
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
+	"render/SceneTranslatorTest.cxx"
 	"store/ProjectTest.cxx"
 	"store/CodecTest.cxx"
 	"store/SceneTest.cxx"
@@ -91,14 +92,20 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_image
 	v3dlib_interchange
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
-	v3dlib_render_offline
+	v3dlib_rib
 	v3dlib_type
 	v3dlib_ui)
 
 # the batch cases run moya.exe where the build puts it, beside the libraries it loads
 add_dependencies(v3dtest_vertical3d moya)
 target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_MOYA="$<TARGET_FILE:moya>")
+
+# the delegate's cases render through moya's CPU device, which loads its libraries from beside
+# the suite, and read materials against MaterialX's standard libraries, which it finds there too
+v3d_moya_cpu_libraries(v3dtest_vertical3d)
+v3d_moya_materialx_libraries(v3dtest_vertical3d)
 
 # the import cases read the interchange suite's fixtures where they are kept
 target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_INTERCHANGE_DATA="${V3D_ROOT}/api/interchange/tests/data")

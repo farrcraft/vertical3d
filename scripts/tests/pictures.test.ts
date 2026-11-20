@@ -27,8 +27,14 @@ test('pictures makes each picture from files in the tree, into docs/', () => {
 
 test('pictures starts an app with its script, then the capture and its frame', () => {
     const picture: Capture = { kind: 'capture', image: 'docs/images/x.png', app: 'demos/x/x', after: 30, script: 'docs/x.ts' };
-    assert.deepEqual(captureArguments(picture),
-        ['--script', path.join(ROOT, 'docs/x.ts'), '--capture', path.join(ROOT, 'docs/images/x.png'), '--capture-after', '30']);
+    assert.deepEqual(captureArguments(picture), [
+        '--script',
+        path.join(ROOT, 'docs/x.ts'),
+        '--capture',
+        path.join(ROOT, 'docs/images/x.png'),
+        '--capture-after',
+        '30',
+    ]);
     const { script: _script, ...unscripted } = picture;
     assert.deepEqual(captureArguments(unscripted).slice(0, 1), ['--capture']);
 });
@@ -39,7 +45,9 @@ test('pictures writes each image to a path of its own', () => {
 });
 
 test('pictures puts the shaders first on the search path, before the scene', () => {
-    assert.equal(withShaders('version 3.03\n', path.join('C:', 'repo', 'shaders')).split('\n')[0],
-        `Option "searchpath" "shader" ["${path.join('C:', 'repo', 'shaders').split(path.sep).join('/')}:&"]`);
+    assert.equal(
+        withShaders('version 3.03\n', path.join('C:', 'repo', 'shaders')).split('\n')[0],
+        `Option "searchpath" "shader" ["${path.join('C:', 'repo', 'shaders').split(path.sep).join('/')}:&"]`,
+    );
     assert.ok(withShaders('version 3.03\n', 'shaders').endsWith('version 3.03\n'));
 });

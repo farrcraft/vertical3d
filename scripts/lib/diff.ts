@@ -15,8 +15,14 @@ import { ROOT } from './tree.ts';
  * configuration. They fix the a/ and b/ prefixes, and turn off colour, external and
  * text-converting drivers, and rename detection.
  */
-export const DIFF_OPTIONS: readonly string[] = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff',
-    '--no-textconv', '--no-renames'];
+export const DIFF_OPTIONS: readonly string[] = [
+    '--src-prefix=a/',
+    '--dst-prefix=b/',
+    '--no-color',
+    '--no-ext-diff',
+    '--no-textconv',
+    '--no-renames',
+];
 
 /** The escapes git's C-style quoting of a path uses, other than an octal byte. */
 const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
@@ -91,8 +97,10 @@ export function parseAdded(diff: string): Map<string, Set<number>> {
             if (match) {
                 const start = Number(match[1]);
                 newLeft = match[2] === undefined ? 1 : Number(match[2]);
-                for (let number = start; number < start + newLeft && current !== null; number++) {
-                    current.add(number);
+                if (current !== null) {
+                    for (let number = start; number < start + newLeft; number++) {
+                        current.add(number);
+                    }
                 }
             }
         }

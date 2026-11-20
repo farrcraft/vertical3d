@@ -1,4 +1,4 @@
-v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Player.h" "Player.cpp" "Play.h" "Play.cpp"
+v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Player.h" "Player.cpp" "Play.h" "Play.cpp" "Stereo.h" "Stereo.cpp"
 	"Listener.h" "Listener.cpp"
 	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp"
 	"Events.h" "Events.cpp" "NullEvents.h" "NullEvents.cpp")

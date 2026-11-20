@@ -86,14 +86,20 @@ export function files(root: string): string[] {
             }
         }
     }
-    return found.map((f) => path.relative(root, f).split(path.sep).join('/')).sort();
+    return found.map((f) => path.relative(root, f).split(path.sep).join('/')).toSorted();
 }
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/pinned.ts', {});
-    const found = files(ROOT).flatMap((file) => unpinned(readFileSync(path.join(ROOT, file), 'utf8'))
-        .map(({ line, value }) => ({ path: file, line, rule: 'unpinned', message: `uses: ${value === '' ? '(no value on the line)' : value}` })));
+    const found = files(ROOT).flatMap((file) =>
+        unpinned(readFileSync(path.join(ROOT, file), 'utf8')).map(({ line, value }) => ({
+            path: file,
+            line,
+            rule: 'unpinned',
+            message: `uses: ${value === '' ? '(no value on the line)' : value}`,
+        })),
+    );
     return report(found, 'names an action that is not pinned. Pin it to the full commit sha its tag points at.');
 }
 

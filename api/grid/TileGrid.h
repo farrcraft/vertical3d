@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -16,6 +16,9 @@
 
 #include <glm/vec3.hpp>
 
+/**
+ * Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry.
+ **/
 namespace v3d::grid {
 
 /**

@@ -1,0 +1,35 @@
+##RenderMan RIB-Structure 1.1
+##Scene A plastic floor and wall, a mirror sphere and a glass sphere under a rect light and a dim dome, split into channels by the first bounce's scattering
+version 3.03
+Format 48 32 1
+PixelSamples 4 4
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -20 1 0 0
+DisplayChannel "color diffuse" "string source" ["color lpe:C<.D>.*"]
+DisplayChannel "color glossy" "string source" ["color lpe:C<.G>.*"]
+DisplayChannel "color specular" "string source" ["color lpe:C<.S>.*"]
+DisplayChannel "color emission" "string source" ["color lpe:C[LO]"]
+Display "compositing-lpe.exr" "openexr" "Ci,a,diffuse,glossy,specular,emission"
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.5]
+TransformBegin
+Translate 0 1.4 0
+Rotate 90 1 0 0
+Light "PxrRectLight" "panel" "float intensity" [40]
+TransformEnd
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.6 0.6 0.6] "float specular_roughness" [0.4]
+Polygon "P" [-2 -1 -2  2 -1 -2  2 -1 2  -2 -1 2]
+Polygon "P" [-2 -1 2  2 -1 2  2 1.5 2  -2 1.5 2]
+AttributeBegin
+Translate -0.6 -0.6 0.2
+Bxdf "ND_open_pbr_surface_surfaceshader" "mirror" "color base_color" [1 1 1] "float base_metalness" [1] "float specular_roughness" [0]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Translate 0.6 -0.6 0.2
+Bxdf "ND_open_pbr_surface_surfaceshader" "glass" "float transmission_weight" [1] "float specular_roughness" [0.1]
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+WorldEnd

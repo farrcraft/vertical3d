@@ -1,0 +1,36 @@
+##RenderMan RIB-Structure 1.1
+##Scene A quad showing blocks.png, a normal-mapped sphere and a cut-out card casting its shadow, on a grey floor under a distant light and a dim dome
+version 3.03
+Format 96 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -20 1 0 0
+# the texture is a fixture beside this file
+Option "searchpath" "texture" ["data:&"]
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.25]
+LightSource "distantlight" 1 "intensity" [2] "from" [0 0 0] "to" [0.6 -1 0.8]
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.5 0.5 0.5] "float specular_roughness" [0.6]
+Polygon "P" [-3 -1 -2  3 -1 -2  3 -1 2  -3 -1 2]
+AttributeEnd
+# the upper left corner is st (0, 0), which shows the image upright
+AttributeBegin
+Pattern "ND_image_color3" "blocks" "string file" ["blocks.png"]
+Bxdf "ND_open_pbr_surface_surfaceshader" "painted" "reference color base_color" ["blocks:out"] "float specular_roughness" [0.4]
+Polygon "P" [-2 -1 0.3  -1 -1 0.3  -1 0 0.3  -2 0 0.3]
+        "st" [0 1  1 1  1 0  0 0]
+AttributeEnd
+AttributeBegin
+Translate 0 -0.55 0
+Bxdf "materialx" "bumped" "string file" ["data/materials-patterns.mtlx"] "string material" ["bumped"]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Bxdf "materialx" "cut" "string file" ["data/materials-patterns.mtlx"] "string material" ["cut"]
+Polygon "P" [1 -1 0  2 -1 0  2 0 0  1 0 0]
+        "st" [0 1  1 1  1 0  0 0]
+AttributeEnd
+WorldEnd

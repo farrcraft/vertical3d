@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,6 +20,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The frames in flight and the swapchain: command buffers, presentation, the depth buffer, streamed
+ * geometry, delayed destruction, timings and capture.
+ **/
 namespace v3d::render::realtime::vulkan::frame {
 
 /**

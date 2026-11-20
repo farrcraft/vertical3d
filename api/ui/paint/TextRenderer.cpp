@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "TextRenderer.h"
 
@@ -13,12 +13,13 @@
 #include <api/font/glyph/Store.h>
 #include <api/font/face/Library.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/glyph/ColourGlyph.h>
-#include <api/font/glyph/Paint.h>
+#include <api/font/glyph/colour/Glyph.h>
+#include <api/font/glyph/colour/Paint.h>
 #include <api/font/glyph/Rasterize.h>
-#include <api/font/text/ShapedGlyph.h>
-#include <api/font/text/ShapingCache.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Glyph.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
+#include <api/font/text/style/ParagraphStyle.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/internal/EffectQuad.h>
@@ -93,7 +94,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     GlyphPages pages,
     float size,
     const Faces& faces) :
-    shaping_(boost::make_shared<font::text::ShapingCache>("", logger)),
+    shaping_(boost::make_shared<font::text::shaping::Cache>("", logger)),
     colourStore_(colourPages()),
     pages_(pages),
     colourPages_(std::move(pages)),
@@ -161,8 +162,8 @@ void TextRenderer::beginFrame() {
 
 /**
  **/
-font::text::Style TextRenderer::style(float size, Weight weight) const {
-    font::text::Style style;
+font::text::style::Style TextRenderer::style(float size, Weight weight) const {
+    font::text::style::Style style;
     style.fonts = chain_;
     style.face.weight = weight == Weight::SemiBold ? SEMIBOLD_WEIGHT : font::face::Style::REGULAR;
     style.size = size > 0.0F ? size : size_;
@@ -171,7 +172,7 @@ font::text::Style TextRenderer::style(float size, Weight weight) const {
 
 /**
  **/
-const boost::shared_ptr<font::text::ShapingCache>& TextRenderer::shaping() const noexcept {
+const boost::shared_ptr<font::text::shaping::Cache>& TextRenderer::shaping() const noexcept {
     return shaping_;
 }
 
@@ -189,16 +190,16 @@ float TextRenderer::width(std::string_view text, float size, Weight weight) cons
 
 /**
  **/
-float TextRenderer::width(std::string_view text, const font::text::Style& styled) const {
+float TextRenderer::width(std::string_view text, const font::text::style::Style& styled) const {
     if (!loaded() || text.empty()) {
         return 0.0F;
     }
     // the runs reach past the space at a line's end, which a caret placed after it needs
     const font::text::Paragraph paragraph(shaping_, std::string(text), styled);
     float widest = 0.0F;
-    for (const font::text::Line& line : paragraph.lines()) {
+    for (const font::text::Paragraph::Line& line : paragraph.lines()) {
         float reach = 0.0F;
-        for (const font::text::LineRun& run : line.runs) {
+        for (const font::text::Paragraph::LineRun& run : line.runs) {
             reach += run.advance;
         }
         widest = std::max(widest, reach);
@@ -208,15 +209,15 @@ float TextRenderer::width(std::string_view text, const font::text::Style& styled
 
 /**
  **/
-std::vector<std::string> TextRenderer::rows(std::string_view text, float width, const font::text::Style& styled) const {
+std::vector<std::string> TextRenderer::rows(std::string_view text, float width, const font::text::style::Style& styled) const {
     std::vector<std::string> found;
     if (!loaded() || text.empty()) {
         return found;
     }
-    font::text::ParagraphStyle layout;
+    font::text::style::ParagraphStyle layout;
     layout.width = width;
     const font::text::Paragraph paragraph(shaping_, std::string(text), styled, layout);
-    for (const font::text::Line& line : paragraph.lines()) {
+    for (const font::text::Paragraph::Line& line : paragraph.lines()) {
         std::string_view row = std::string_view(paragraph.text()).substr(line.start, line.end - line.start);
         while (!row.empty() && (row.back() == ' ' || row.back() == '\n' || row.back() == '\r')) {
             row.remove_suffix(1);
@@ -235,14 +236,14 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
     if (text.empty() || canvas == nullptr || !loaded()) {
         return;
     }
-    font::text::Style drawn = style(size, weight);
+    font::text::style::Style drawn = style(size, weight);
     drawn.colour = colour;
     draw(canvas, text, pen, drawn);
 }
 
 /**
  **/
-void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::Style& styled) {
+void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::style::Style& styled) {
     if (text.empty() || canvas == nullptr || !loaded()) {
         return;
     }
@@ -255,22 +256,22 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const fon
     if (canvas == nullptr) {
         return;
     }
-    const std::vector<font::text::Line>& lines = paragraph.lines();
+    const std::vector<font::text::Paragraph::Line>& lines = paragraph.lines();
     placed_.clear();
     effects_.clear();
-    for (const font::text::Line& line : lines) {
+    for (const font::text::Paragraph::Line& line : lines) {
         const float baseline = pen.y + line.baseline - lines.front().baseline;
         report(paragraph, line, glm::vec2(pen.x + line.x, baseline));
-        for (const font::text::LineRun& run : line.runs) {
+        for (const font::text::Paragraph::LineRun& run : line.runs) {
             float x = pen.x + run.x;
-            for (const font::text::ShapedGlyph& glyph : run.glyphs) {
+            for (const font::text::shaping::Glyph& glyph : run.glyphs) {
                 // the pen is kept to a step of a pixel, and the glyph rasterized at that step
                 const float at = x + glyph.offset.x;
                 x += glyph.advance;
                 if (!std::isfinite(at) || !run.face) {
                     continue;
                 }
-                const font::text::Style& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
+                const font::text::style::Style& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
                 place(run, glyph.index, styled, glm::vec2(at, std::round(baseline + glyph.offset.y)));
             }
         }
@@ -316,7 +317,7 @@ void TextRenderer::drawPlaced(v3d::render::realtime::canvas::Canvas* canvas) {
 
 /**
  **/
-void TextRenderer::place(const font::text::LineRun& run, unsigned int index, const font::text::Style& styled, const glm::vec2& pen) {
+void TextRenderer::place(const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Style& styled, const glm::vec2& pen) {
     // an effect is drawn from the glyph's exact pen, since its field serves every step
     internal::placeEffects(&effects_, &store_, run, index, styled.effects, pen);
     const float whole = std::floor(pen.x);
@@ -324,8 +325,8 @@ void TextRenderer::place(const font::text::LineRun& run, unsigned int index, con
     const auto step = static_cast<std::uint8_t>(steps);  // checked: the pen is finite, so the step is from 0 to 3
     const Drawn how = drawn(*run.face, index, run.size);
     if (how == Drawn::Coverage) {
-        const font::glyph::Key key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .coordinates = run.coordinates };
-        const std::optional<font::glyph::StoredGlyph> stored = store_.glyph(key, font::glyph::rasterize);
+        const font::glyph::Store::Key key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .coordinates = run.coordinates };
+        const std::optional<font::glyph::Store::StoredGlyph> stored = store_.glyph(key, font::glyph::rasterize);
         if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
             const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
             placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour, .contrast = styled.contrast });
@@ -334,9 +335,9 @@ void TextRenderer::place(const font::text::LineRun& run, unsigned int index, con
     }
     // a glyph with no layer in the text's colour is the same in every colour, so it is kept once
     const glm::vec4 opaque(glm::vec3(styled.colour), 1.0F);
-    const font::glyph::Key key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .mode = font::glyph::Mode::Colour,
-        .foreground = how == Drawn::Foreground ? font::glyph::packColour(opaque) : 0, .coordinates = run.coordinates };
-    const std::optional<font::glyph::StoredGlyph> stored = colourStore_.glyph(key, [](const font::glyph::Key& asked) { return font::glyph::paint(asked); });
+    const font::glyph::Store::Key key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .mode = font::glyph::Mode::Colour,
+        .foreground = how == Drawn::Foreground ? font::glyph::colour::packColour(opaque) : 0, .coordinates = run.coordinates };
+    const std::optional<font::glyph::Store::StoredGlyph> stored = colourStore_.glyph(key, [](const font::glyph::Store::Key& asked) { return font::glyph::colour::paint(asked); });
     if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
         const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
         // a picture quad, not text: its texel is its colour, and the text's alpha fades it
@@ -355,7 +356,7 @@ TextRenderer::Drawn TextRenderer::drawn(const font::face::Face& face, unsigned i
     }
     Drawn how = Drawn::Coverage;
     if (face.coloured(index)) {
-        how = font::glyph::colour(face, index, 0, size).foreground() ? Drawn::Foreground : Drawn::Colour;
+        how = font::glyph::colour::read(face, index, 0, size).foreground() ? Drawn::Foreground : Drawn::Colour;
     }
     drawn_.emplace(key, how);
     return how;
@@ -363,7 +364,7 @@ TextRenderer::Drawn TextRenderer::drawn(const font::face::Face& face, unsigned i
 
 /**
  **/
-void TextRenderer::report(const font::text::Paragraph& paragraph, const font::text::Line& line, const glm::vec2& pen) const {
+void TextRenderer::report(const font::text::Paragraph& paragraph, const font::text::Paragraph::Line& line, const glm::vec2& pen) const {
     if (!trace_) {
         return;
     }
@@ -371,7 +372,7 @@ void TextRenderer::report(const font::text::Paragraph& paragraph, const font::te
     while (!shown.empty() && (shown.back() == ' ' || shown.back() == '\n' || shown.back() == '\r')) {
         shown.remove_suffix(1);
     }
-    const font::text::Style& styled = paragraph.styleAt(line.start);
+    const font::text::style::Style& styled = paragraph.styleAt(line.start);
     trace_(Traced{ .text = std::string(shown), .pen = pen, .colour = styled.colour, .weight = weight(static_cast<float>(styled.face.weight)),
         .size = styled.size });
 }

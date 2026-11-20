@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Font.h"
 
@@ -37,6 +37,9 @@ namespace v3d::font::texture {
 
 namespace {
 
+/** A linear advance is 16.16 fixed point, 65536 units to the pixel. **/
+constexpr float LINEAR_SCALE = 65536.0F;
+
 /**
  * The FreeType render mode for a run of glyphs.
  *
@@ -54,28 +57,22 @@ FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
  * The FT_LOAD flags for one glyph.
  *
  * A distance field is built from the outline unhinted, because it is drawn at sizes other than
- * the one it is built at. A coverage glyph is hinted as the face's own instructions say. For a
- * three channel atlas this also sets the library's LCD filter, because the filter only has an
- * effect with FT_LOAD_TARGET_LCD.
+ * the one it is built at. A coverage glyph is hinted lightly, to whole pixels vertically only,
+ * so it keeps its shape across. No load renders: the caller renders in the mode its atlas holds,
+ * which for a three channel atlas is subpixel coverage whatever the hinting. For that atlas this
+ * also sets the library's LCD filter, which the render applies.
  **/
 FT_Int32 glyphLoadFlags(FT_Library library, Font::OutlineType outline,
     unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
-    FT_Int32 flags = 0;
+    FT_Int32 flags = sdf ? FT_LOAD_NO_HINTING : FT_LOAD_TARGET_LIGHT;
     // a distance field and a stroked outline are both built from the glyph's outline, so the
-    // load must not render a bitmap. The caller renders afterwards, in the mode it needs
+    // load must not take a bitmap the face carries instead
     if (outline != Font::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
-    } else {
-        flags |= FT_LOAD_RENDER;
-    }
-
-    if (sdf) {
-        flags |= FT_LOAD_NO_HINTING;
     }
 
     if (depth == 3) {
         FT_Library_SetLcdFilter(library, FT_LCD_FILTER_LIGHT);
-        flags |= FT_LOAD_TARGET_LCD;
         if (lcdFiltering) {
             FT_Library_SetLcdFilterWeights(library, const_cast<unsigned char*>(lcdWeights));
         }
@@ -341,8 +338,9 @@ bool Font::packGlyph(char32_t charcode, bool sdf, unsigned int* missed) {
         logger_->get()->error("Error loading glyph!");
         return false;
     }
-    // the advance is the one the bitmap was loaded with, so the two agree
-    const FT_Vector advance = loaded->glyph->advance;
+    // the outline's own advance, in 16.16 fixed point: light hinting rounds the slot's advance to
+    // whole pixels, and this one keeps the fraction, as the shaped advances do
+    const FT_Fixed advance = loaded->glyph->linearHoriAdvance;
 
     // its destructor releases FT_Get_Glyph's copy whether the glyph is packed, skipped for a
     // full atlas, or fails to stroke
@@ -350,14 +348,12 @@ bool Font::packGlyph(char32_t charcode, bool sdf, unsigned int* missed) {
     internal::GlyphBitmap rendered;
     if (outline_ == OUTLINE_TYPE_NONE) {
         FT_GlyphSlot slot = loaded->glyph;
-        // the load left an outline rather than a bitmap when a distance field was
-        // asked for, so this is where it becomes one
-        if (sdf) {
-            error = FT_Render_Glyph(slot, mode);
-            if (error != 0) {
-                logger_->get()->error("Error rendering glyph to a distance field!");
-                return false;
-            }
+        // the load left the outline, so this is where it becomes coverage or a distance field.
+        // A bitmap the face carries is left as it is
+        error = FT_Render_Glyph(slot, mode);
+        if (error != 0) {
+            logger_->get()->error("Error rendering glyph!");
+            return false;
         }
         rendered.bitmap = slot->bitmap;
         rendered.width = static_cast<int>(slot->bitmap.width);
@@ -396,8 +392,9 @@ bool Font::packGlyph(char32_t charcode, bool sdf, unsigned int* missed) {
     glyph->st_[1].s = static_cast<float>(x + glyph->width_) / static_cast<float>(width);
     glyph->st_[1].t = static_cast<float>(y + glyph->height_) / static_cast<float>(height);
 
-    glyph->advance_.x = static_cast<float>(advance.x) / font::internal::FaceHandle::FIXED_POINT_SCALE;
-    glyph->advance_.y = static_cast<float>(advance.y) / font::internal::FaceHandle::FIXED_POINT_SCALE;
+    // text runs across, so a glyph advances along x alone
+    glyph->advance_.x = static_cast<float>(advance) / LINEAR_SCALE;
+    glyph->advance_.y = 0.0F;
 
     glyphs_.push_back(glyph);
     byCode_[charcode] = glyph;

@@ -1,9 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
+
+#include <api/font/text/shaping/Glyph.h>
+#include <api/font/text/style/ParagraphStyle.h>
+#include <api/font/text/style/Range.h>
+#include <api/font/text/style/Style.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -11,8 +16,6 @@
 #include <vector>
 
 #include "Bidi.h"
-#include "ShapedGlyph.h"
-#include "Style.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -23,76 +26,18 @@ class Face;
 
 };  // namespace v3d::font::face
 
+namespace v3d::font::text::shaping {
+
+class Cache;
+struct Text;
+
+};  // namespace v3d::font::text::shaping
+
+/**
+ * Text laid out: UTF-8, bidirectional levels, word and line boundaries, and paragraphs divided
+ * into lines.
+ **/
 namespace v3d::font::text {
-
-class ShapingCache;
-struct ShapedText;
-
-/**
- * A stretch of one line drawn in one face, at one size and one level, in the order it is drawn.
- **/
-struct LineRun final {
-    boost::shared_ptr<face::Face> face;
-    float size = 0.0F;
-    bool rightToLeft = false;
-    bool ellipsis = false;           /**< whether it is the ellipsis that ends a line cut short **/
-    std::size_t start = 0;           /**< the byte offset where its text starts. An ellipsis is at the cut **/
-    std::size_t end = 0;
-    std::vector<std::int32_t> coordinates;  /**< its face's normalized coordinates, or none at every axis's default **/
-    float x = 0.0F;                  /**< its left edge, from the paragraph's left **/
-    float advance = 0.0F;
-    std::vector<ShapedGlyph> glyphs{}; /**< left to right, each drawn at the sum of the advances before it **/
-};
-
-/**
- * One line of a paragraph. y grows downwards from the paragraph's top.
- **/
-struct Line final {
-    std::size_t start = 0;     /**< the byte offset where it starts **/
-    std::size_t end = 0;       /**< and one past where it ends, after any space and line separator **/
-    float top = 0.0F;
-    float height = 0.0F;
-    float baseline = 0.0F;
-    float x = 0.0F;            /**< the left edge of its text, without the space at its end **/
-    float width = 0.0F;        /**< the width of its text, without the space at its end **/
-    std::vector<LineRun> runs; /**< left to right **/
-};
-
-/**
- * Where a caret is drawn: a vertical line from top, height pixels down.
- **/
-struct Caret final {
-    float x = 0.0F;
-    float top = 0.0F;
-    float height = 0.0F;
-};
-
-/**
- * The place in the text a point is over: a caret position and the character it goes with.
- **/
-struct Hit final {
-    std::size_t index = 0;
-    Affinity affinity = Affinity::Downstream;
-};
-
-/**
- * One grapheme cluster on a line, with its left and right edges from the paragraph's left.
- **/
-struct ClusterEdges final {
-    std::size_t start = 0;
-    std::size_t end = 0;
-    float left = 0.0F;
-    float right = 0.0F;
-    bool rightToLeft = false;
-};
-
-/**
- * A rectangle a selection covers, from the paragraph's top left.
- **/
-struct SelectionRect final {
-    glm::vec2 position{ 0.0F };
-    glm::vec2 size{ 0.0F };
-};
 
 /**
  * A text with styles over its ranges, divided into lines and placed for drawing, which the ui
@@ -112,7 +57,73 @@ struct SelectionRect final {
  **/
 class Paragraph final {
  public:
-    Paragraph(const boost::shared_ptr<ShapingCache>& cache, const std::string& text, const Style& style, const ParagraphStyle& paragraph = {});
+    /**
+     * A stretch of one line drawn in one face, at one size and one level, in the order it is drawn.
+     **/
+    struct LineRun final {
+        boost::shared_ptr<face::Face> face;
+        float size = 0.0F;
+        bool rightToLeft = false;
+        bool ellipsis = false;           /**< whether it is the ellipsis that ends a line cut short **/
+        std::size_t start = 0;           /**< the byte offset where its text starts. An ellipsis is at the cut **/
+        std::size_t end = 0;
+        std::vector<std::int32_t> coordinates;  /**< its face's normalized coordinates, or none at every axis's default **/
+        float x = 0.0F;                  /**< its left edge, from the paragraph's left **/
+        float advance = 0.0F;
+        std::vector<shaping::Glyph> glyphs{}; /**< left to right, each drawn at the sum of the advances before it **/
+    };
+
+    /**
+     * One line of a paragraph. y grows downwards from the paragraph's top.
+     **/
+    struct Line final {
+        std::size_t start = 0;     /**< the byte offset where it starts **/
+        std::size_t end = 0;       /**< and one past where it ends, after any space and line separator **/
+        float top = 0.0F;
+        float height = 0.0F;
+        float baseline = 0.0F;
+        float x = 0.0F;            /**< the left edge of its text, without the space at its end **/
+        float width = 0.0F;        /**< the width of its text, without the space at its end **/
+        std::vector<LineRun> runs; /**< left to right **/
+    };
+
+    /**
+     * Where a caret is drawn: a vertical line from top, height pixels down.
+     **/
+    struct Caret final {
+        float x = 0.0F;
+        float top = 0.0F;
+        float height = 0.0F;
+    };
+
+    /**
+     * The place in the text a point is over: a caret position and the character it goes with.
+     **/
+    struct Hit final {
+        std::size_t index = 0;
+        Affinity affinity = Affinity::Downstream;
+    };
+
+    /**
+     * A rectangle a selection covers, from the paragraph's top left.
+     **/
+    struct SelectionRect final {
+        glm::vec2 position{ 0.0F };
+        glm::vec2 size{ 0.0F };
+    };
+
+    /**
+     * One grapheme cluster on a line, with its left and right edges from the paragraph's left.
+     **/
+    struct ClusterEdges final {
+        std::size_t start = 0;
+        std::size_t end = 0;
+        float left = 0.0F;
+        float right = 0.0F;
+        bool rightToLeft = false;
+    };
+
+    Paragraph(const boost::shared_ptr<shaping::Cache>& cache, const std::string& text, const style::Style& style, const style::ParagraphStyle& paragraph = {});
 
     /**
      * Replace the text, which takes the style of the first range.
@@ -122,9 +133,9 @@ class Paragraph final {
     /**
      * Set the style of the bytes from one offset to another, clamped to the text.
      **/
-    void setStyle(std::size_t start, std::size_t end, const Style& style);
+    void setStyle(std::size_t start, std::size_t end, const style::Style& style);
 
-    void setParagraphStyle(const ParagraphStyle& paragraph);
+    void setParagraphStyle(const style::ParagraphStyle& paragraph);
 
     void setWidth(float width);
 
@@ -133,14 +144,14 @@ class Paragraph final {
     /**
      * @return the styles over the text, in order, covering it with no gap
      **/
-    const std::vector<StyledRange>& styles() const noexcept;
+    const std::vector<style::Range>& styles() const noexcept;
 
     /**
      * @return the style of the character at an offset, or the last one's past the end
      **/
-    const Style& styleAt(std::size_t offset) const;
+    const style::Style& styleAt(std::size_t offset) const;
 
-    const ParagraphStyle& paragraphStyle() const noexcept;
+    const style::ParagraphStyle& paragraphStyle() const noexcept;
 
     /**
      * @return the width of its widest line and the height of all its lines
@@ -185,13 +196,13 @@ class Paragraph final {
     void layout() const;
     std::size_t lineOf(std::size_t index, Affinity affinity) const;
 
-    boost::shared_ptr<ShapingCache> cache_;
+    boost::shared_ptr<shaping::Cache> cache_;
     std::string text_;
-    std::vector<StyledRange> styles_;
-    ParagraphStyle paragraph_;
+    std::vector<style::Range> styles_;
+    style::ParagraphStyle paragraph_;
 
     // filled when first asked for, and emptied by a change that undoes them
-    mutable boost::shared_ptr<const ShapedText> shaped_;
+    mutable boost::shared_ptr<const shaping::Text> shaped_;
     mutable bool laidOut_ = false;
     mutable std::vector<Line> lines_;
     mutable std::vector<std::vector<ClusterEdges>> stops_;  // each line's clusters, in the text's order

@@ -30,7 +30,7 @@ const MANIFEST = 'cmake/v3dApiLibraries.cmake';
 const TABLE = 'docs/api/README.md';
 
 /** The directories whose subdirectories with a CMakeLists.txt are components too. */
-const PROJECT_PARENTS: readonly string[] = ['demos', 'examples'];
+const PROJECT_PARENTS: ReadonlySet<string> = new Set(['demos', 'examples']);
 
 /** Every component directory, relative to the root, sorted and without repeats. */
 export function components(files: readonly string[], libraries: readonly Library[]): string[] {
@@ -41,19 +41,22 @@ export function components(files: readonly string[], libraries: readonly Library
         if (parts.length > 1 && !top.startsWith('.')) {
             found.add(top);
         }
-        if (parts.length === 3 && PROJECT_PARENTS.includes(top) && parts[2] === 'CMakeLists.txt') {
+        if (parts.length === 3 && PROJECT_PARENTS.has(top) && parts[2] === 'CMakeLists.txt') {
             found.add(`${top}/${parts[1] ?? ''}`);
         }
     }
     for (const library of libraries) {
         found.add(`api/${library.directory}`);
     }
-    return [...found].sort();
+    return [...found].toSorted();
 }
 
 /** Markdown text with each link replaced by its text, and each run of whitespace made one space. */
 export function plain(text: string): string {
-    return text.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim();
+    return text
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 /** The first paragraph after the heading, as plain() gives it. */
@@ -85,8 +88,12 @@ export function relativeLinks(text: string): string[] {
  * description is the library's table description when the component is an api library.
  * exists says whether a path relative to the root exists.
  */
-export function problems(directory: string, text: string | null, description: string | undefined,
-    exists: (file: string) => boolean): Finding[] {
+export function problems(
+    directory: string,
+    text: string | null,
+    description: string | undefined,
+    exists: (file: string) => boolean,
+): Finding[] {
     const file = `${directory}/README.md`;
     if (text === null) {
         return [{ path: file, line: null, rule: 'missing', message: `${directory} has no README.md` }];
@@ -104,8 +111,12 @@ export function problems(directory: string, text: string | null, description: st
     if (description !== undefined) {
         const wanted = plain(description);
         if (firstParagraph(text) !== wanted) {
-            found.push({ path: file, line: null, rule: 'stale-description',
-                message: `the first paragraph is not the description in ${TABLE}: "${wanted}"` });
+            found.push({
+                path: file,
+                line: null,
+                rule: 'stale-description',
+                message: `the first paragraph is not the description in ${TABLE}: "${wanted}"`,
+            });
         }
     }
     return found;

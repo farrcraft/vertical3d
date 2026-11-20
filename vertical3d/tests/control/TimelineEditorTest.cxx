@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
@@ -13,6 +13,7 @@
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>

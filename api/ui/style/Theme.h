@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -12,6 +12,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * Themes, the styles they hold, and how a component's style is resolved.
+ **/
 namespace v3d::ui::style {
 /**
  * A named collection of styles.

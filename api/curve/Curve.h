@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,90 +11,18 @@
 #include <variant>
 #include <vector>
 
+#include "Bezier.h"
+#include "CatmullRom.h"
+#include "Nurbs.h"
+#include "Poly.h"
+
 #include <glm/vec3.hpp>
 
+/**
+ * Poly, Bezier, Catmull-Rom and NURBS curves, their evaluation, and their conversion to the basis
+ * curves a renderer takes.
+ **/
 namespace v3d::curve {
-
-/**
- * A curve of straight lines through its points.
- **/
-struct Poly final {
-    std::vector<glm::vec3> points;
-
-    bool operator==(const Poly& other) const = default;
-};
-
-/**
- * How a Bezier point's handle is placed.
- *
- * Automatic and Vector handles are placed from the points around them, and settle() places
- * them again whenever a point moves. Aligned and Free handles stay where they were put.
- **/
-enum class Handle : std::uint8_t {
-    Free,       /**< where it was put, in any direction **/
-    Aligned,    /**< where it was put, in line with the point's other handle **/
-    Vector,     /**< a third of the way toward the neighbouring point on its side **/
-    Automatic   /**< along the line through the neighbours, so the curve is smooth there **/
-};
-
-/**
- * A point a Bezier curve passes through, and the two handles that shape it.
- *
- * left shapes the segment that arrives at the point, and right the segment that leaves it.
- **/
-struct BezierPoint final {
-    glm::vec3 position{ 0.0F };
-    glm::vec3 left{ 0.0F };
-    glm::vec3 right{ 0.0F };
-    Handle leftType = Handle::Automatic;
-    Handle rightType = Handle::Automatic;
-
-    bool operator==(const BezierPoint& other) const = default;
-};
-
-/**
- * A curve of cubic segments between points, each shaped by the handles at its two ends.
- **/
-struct Bezier final {
-    std::vector<BezierPoint> points;
-
-    bool operator==(const Bezier& other) const = default;
-};
-
-/**
- * A smooth curve through every one of its points, each segment shaped by the points either side
- * of it.
- *
- * It is uniform Catmull-Rom. An open curve's two end segments treat the end point as its own
- * neighbour, so the curve starts and ends on its first and last points.
- **/
-struct CatmullRom final {
-    std::vector<glm::vec3> points;
-
-    bool operator==(const CatmullRom& other) const = default;
-};
-
-/**
- * A non-uniform rational B-spline.
- *
- * order is the degree plus one, so 2 is straight lines and 4 is cubic. weights is either empty,
- * when every point weighs 1, or one positive weight per point. knots is either empty or holds
- * the number of points plus the order, never falling.
- *
- * Empty knots are worked out. An open curve's are uniform and clamped, so the curve starts on
- * its first point and ends on its last. A closed curve's are uniform, and a closed curve cannot
- * be given knots of its own.
- **/
-struct Nurbs final {
-    static constexpr unsigned int CUBIC = 4;
-
-    std::vector<glm::vec3> points;
-    std::vector<float> weights;
-    std::vector<float> knots;
-    unsigned int order = CUBIC;
-
-    bool operator==(const Nurbs& other) const = default;
-};
 
 /**
  * One curve of any type.

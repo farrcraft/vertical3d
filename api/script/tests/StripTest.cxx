@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/script/Strip.h>
+
+#include <api/script/Stripped.h>
 
 #include <cstddef>
 #include <string>

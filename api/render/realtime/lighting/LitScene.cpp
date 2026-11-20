@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "LitScene.h"
+
+#include "Cascades.h"
 
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/frame/Frame.h>
@@ -14,7 +16,6 @@
 #include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
-#include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/renderer/Lit.h>
 
 #include <cstdint>

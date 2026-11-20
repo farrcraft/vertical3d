@@ -41,8 +41,14 @@ test('boundary reports any value_to, and a cast whose operand gives a float', ()
         'int d = static_cast<int>(2.5f);',
         'int e = static_cast<int>(static_cast<float>(y));',
     ].join('\n');
-    assert.deepEqual(boundary(text, [1, 2, 3, 4, 5, 6]),
-        ['1: value-to', '2: float-cast', '3: float-cast', '4: float-cast', '5: float-cast', '6: float-cast']);
+    assert.deepEqual(boundary(text, [1, 2, 3, 4, 5, 6]), [
+        '1: value-to',
+        '2: float-cast',
+        '3: float-cast',
+        '4: float-cast',
+        '5: float-cast',
+        '6: float-cast',
+    ]);
 });
 
 test('boundary does not report a cast of an integer, or a cast to a float', () => {
@@ -64,8 +70,7 @@ test('boundary reads only the added lines it is given', () => {
 
 test('boundary leaves out tests, the checked helpers, third-party code and other files', () => {
     const cast = 'int a = static_cast<int>(std::floor(x));\n';
-    for (const path of ['api/type/tests/CheckedTest.cxx', 'api/type/Checked.h', 'api/asset/Json.cpp', 'vendor/x/a.cpp',
-        'docs/a.md']) {
+    for (const path of ['api/type/tests/CheckedTest.cxx', 'api/type/Checked.h', 'api/asset/Json.cpp', 'vendor/x/a.cpp', 'docs/a.md']) {
         assert.deepEqual(boundary(cast, [1], path), [], path);
     }
     assert.deepEqual(boundary(cast, [1], 'demos/voxel/src/World.cpp'), ['1: float-cast']);

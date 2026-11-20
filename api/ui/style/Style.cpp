@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Style.h"
 
@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "Property.h"
+#include "Selector.h"
 
 namespace v3d::ui::style {
 

@@ -53,11 +53,7 @@ test('pinned reads a uses: inside a flow mapping', () => {
 });
 
 test('pinned reads a quoted value as the value inside the quotes', () => {
-    const lines = [
-        `  - uses: "actions/checkout@${SHA}"`,
-        `  - uses: 'actions/checkout@${SHA}'`,
-        '  - uses: "actions/checkout@v4"',
-    ];
+    const lines = [`  - uses: "actions/checkout@${SHA}"`, `  - uses: 'actions/checkout@${SHA}'`, '  - uses: "actions/checkout@v4"'];
     assert.deepEqual(reported(lines), ['3: actions/checkout@v4']);
 });
 
@@ -79,15 +75,15 @@ test('pinned reads .yml and .yaml workflows and the actions defined in the repos
     try {
         mkdirSync(join(root, '.github', 'workflows'), { recursive: true });
         mkdirSync(join(root, '.github', 'actions', 'build'), { recursive: true });
-        for (const name of ['.github/workflows/ci.yml', '.github/workflows/release.yaml',
-            '.github/workflows/notes.md', '.github/actions/build/action.yaml']) {
-            writeFileSync(join(root, name), '');
-        }
-        assert.deepEqual(files(root), [
-            '.github/actions/build/action.yaml',
+        for (const name of [
             '.github/workflows/ci.yml',
             '.github/workflows/release.yaml',
-        ]);
+            '.github/workflows/notes.md',
+            '.github/actions/build/action.yaml',
+        ]) {
+            writeFileSync(join(root, name), '');
+        }
+        assert.deepEqual(files(root), ['.github/actions/build/action.yaml', '.github/workflows/ci.yml', '.github/workflows/release.yaml']);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

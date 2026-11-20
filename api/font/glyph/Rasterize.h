@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -26,6 +26,6 @@ constexpr std::uint8_t SUBPIXEL_STEPS = 4;
  *         pixel from the pen. A key of another mode, a face that cannot be sized or set to the
  *         coordinates, or a glyph that cannot be loaded gives an empty bitmap
  **/
-Bitmap rasterize(const Key& key);
+Store::Bitmap rasterize(const Store::Key& key);
 
 };  // namespace v3d::font::glyph

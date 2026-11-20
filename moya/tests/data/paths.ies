@@ -1,0 +1,9 @@
+IESNA:LM-63-2002
+[TEST] moya
+[MANUFAC] a cone of light, brightest straight down and none above its horizon
+TILT=NONE
+1 -1 1 7 1 1 1 0 0 0
+1 1 0
+0 15 30 45 60 75 90
+0
+1000 950 700 300 80 10 0

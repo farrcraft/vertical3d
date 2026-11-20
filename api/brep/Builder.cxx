@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Builder.h"
 
@@ -23,8 +23,11 @@
 #include <vector>
 
 #include "BRep.h"
+#include "BuildOptions.h"
+#include "Built.h"
 #include "HalfEdge.h"
 #include "Index.h"
+#include "Polygons.h"
 #include "Topology.h"
 
 #include <boost/make_shared.hpp>

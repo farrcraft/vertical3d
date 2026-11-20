@@ -18,6 +18,11 @@ set(V3D_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "The root of the vertica
 # this repository and off for one that has nested it.
 option(V3D_BUILD_APPS "Build the applications as well as the api libraries" ${PROJECT_IS_TOP_LEVEL})
 option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest" ${PROJECT_IS_TOP_LEVEL})
+# moya needs neither a window nor a device, so a build of the api libraries alone can add it.
+option(V3D_BUILD_MOYA "Build moya and its suite, also when the other apps are off" OFF)
+# moya carries light as four sampled wavelengths. An RGB build carries three ACEScg channels
+# instead, so that a picture can be compared with the spectral one.
+option(V3D_MOYA_RGB "Build moya's colour as three ACEScg channels rather than four wavelengths" OFF)
 
 # A release build shows the bare version. Any other build adds the commit it was built from, so
 # a bug report names it.
@@ -49,6 +54,14 @@ if(MSVC)
 	# names two warning levels, so the default has to come out before /W4 goes in.
 	string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 	add_compile_options("/W4")
+
+	# CMake seeds CMAKE_CXX_FLAGS with /GR and /EHsc too. moya's kernel target compiles without
+	# exceptions or RTTI, and turning a seeded flag off draws D9025, so both come out here. RTTI
+	# is MSVC's default without /GR. /EHsc goes back on every target but one that sets
+	# V3D_KERNEL.
+	string(REGEX REPLACE "/GR( |$)" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+	string(REGEX REPLACE "/EHsc( |$)" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+	add_compile_options("$<$<NOT:$<BOOL:$<TARGET_PROPERTY:V3D_KERNEL>>>:/EHsc>")
 
 	# C4062 (an enumerator a switch does not handle) is off at /W4, so turn it on. A switch
 	# over an enum lists every enumerator and has no default label. When an enumerator is
@@ -187,6 +200,12 @@ if(V3D_LIBRARIES STREQUAL "all")
 	set(V3D_LIBRARIES ${V3D_API_LIBRARIES})
 endif()
 
+# The api libraries moya and its suite link, added to a narrowed selection that builds moya.
+if(V3D_BUILD_MOYA)
+	list(APPEND V3D_LIBRARIES asset image log rib type version)
+	list(REMOVE_DUPLICATES V3D_LIBRARIES)
+endif()
+
 v3d_api_closure()
 v3d_find_packages(${V3D_API_PACKAGES})
 list(JOIN V3D_API_BUILD " " v3d_summary)
@@ -201,8 +220,11 @@ endif()
 # Include sub-projects
 add_subdirectory("api")
 
-if(V3D_BUILD_APPS)
+if(V3D_BUILD_APPS OR V3D_BUILD_MOYA)
 	add_subdirectory("moya")
+endif()
+
+if(V3D_BUILD_APPS)
 	add_subdirectory("demos")
 	add_subdirectory("vertical3d")
 	add_subdirectory("imagetool")

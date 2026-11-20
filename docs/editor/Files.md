@@ -53,7 +53,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 
 | Table | Column | Holds |
 |---|---|---|
-| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `auto_key`: 1 when an edit sets a key, and off when it is 0 or missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing |
+| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `auto_key`: 1 when an edit sets a key, and off when it is 0 or missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing. `render_width`, `render_height` and `render_samples`: the render settings, each of which keeps its default when it is missing. A key the build does not read, such as the `render_hider` an older build wrote, is passed over |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
 | | `kind` | `mesh`, `camera`, `light`, `group` or `curve` |
@@ -294,10 +294,10 @@ the offline renderer reads RIB.
 `rib::Writer`:
 
 - RIB's structure comments, which `writeShot()` writes, then the picture: a `Format` of the
-  render settings' size, their `PixelSamples` along each axis, and their `Hider`. A `Display`
+  render settings' size and their `PixelSamples` along each axis, with no `Hider`. A `Display`
   names the file the picture is written to, which for the export is `export.png` beside it. A
-  `Display` of type `framebuffer` keeps the picture in the renderer, and Render View reads it
-  from there ([Rendering.md](Rendering.md))
+  `Display` of type `framebuffer` names no file, for a render whose picture stays in the editor
+  ([Rendering.md](Rendering.md))
 - the camera as a `Projection` (orthographic or perspective), `ScreenWindow`, `Clipping` and
   `Transform`. When exactly one camera item is selected the export renders from it, through
   `profile_of()`, from where the scene's evaluation puts it. Otherwise it renders from the

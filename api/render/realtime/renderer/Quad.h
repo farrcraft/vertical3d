@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -39,6 +39,10 @@ namespace v3d::render::realtime {
 class DeviceContext;
 };  // namespace v3d::render::realtime
 
+/**
+ * The device side of each primitive: batched quads, lines, world quads, lit meshes, full-screen
+ * passes and the colour grade.
+ **/
 namespace v3d::render::realtime::renderer {
 
 /**

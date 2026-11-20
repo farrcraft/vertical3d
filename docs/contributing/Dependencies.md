@@ -29,6 +29,12 @@ OpenUSD is in the manifest's `usd` feature, also a default one, for the same rea
 `v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
 builds TBB and OpenUSD from source, which takes a long time.
 
+What moya alone uses is in the manifest's `moya` feature, also a default one: oneTBB, OpenEXR,
+Imath, OpenColorIO, OpenSubdiv, MaterialX, OIDN and OpenVDB. No api library
+uses it, so a consumer of the api leaves it out, and `cmake/v3dDependencies.cmake` looks for it
+only when moya is built. A build of the api libraries with moya, as the Linux clang job is,
+names the feature with `-DVCPKG_MANIFEST_FEATURES=moya`.
+
 | Port | Notes |
 |---|---|
 | boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | One port per boost library the tree uses. The manifest does not use the `boost` metapackage. See [Adding a boost library](#adding-a-boost-library) |
@@ -37,17 +43,26 @@ builds TBB and OpenUSD from source, which takes a long time.
 | freetype | |
 | glm | |
 | harfbuzz | `v3dlib_font` shapes text through it, over the faces FreeType holds open. **It must have its `freetype` feature**, which builds the integration with FreeType. It is the `harfbuzz::harfbuzz` target of the `harfbuzz` config package, linked PRIVATE because no public header includes it |
+| imath | Imath, in the `moya` feature. OpenEXR's `half` type and its vectors come from it, and OpenEXR and OpenColorIO both depend on it. It is the `Imath::Imath` target |
 | icu | `v3dlib_font` finds grapheme clusters, words and line breaks through it. It comes from the tree's [overlay port](#the-icu-overlay-port), not vcpkg's own. It is the `ICU::uc` and `ICU::data` targets of `find_package(ICU COMPONENTS uc data)`, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
+| materialx | MaterialX, in the `moya` feature, with none of its features, so no shader generator or renderer of its own. moya reads material documents through it, as the `MaterialXCore` and `MaterialXFormat` targets, linked PRIVATE because only the material library's source and its internal header include it. Its standard libraries of node definitions are copied into `materialx/` beside moya and its suite, and installed there, without the shader generators' `gen*` folders and `targets`. moya reads them from there alone, not from MaterialX's install or its search path in the environment. Its `open_pbr_surface` is OpenPBR Surface 1.1.1. The Flatpak builds it as a module |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
+| oidn | Intel Open Image Denoise, in the `moya` feature, with its CPU device alone. It comes from the tree's [overlay port](#the-oidn-and-ispc-overlay-ports), which builds it static. It is the `OpenImageDenoise` target of the `OpenImageDenoise` config package. The Flatpak builds it as a module |
+| opencolorio | OpenColorIO, in the `moya` feature. moya converts between colour spaces through it. It is the `OpenColorIO::OpenColorIO` target. It brings expat, minizip-ng, pystring, yaml-cpp and zlib, which the Flatpak builds as modules, except expat and zlib from the runtime |
+| opensubdiv | OpenSubdiv, in the `moya` feature, with none of its features, so it has no OpenGL or GPU backend. moya evaluates subdivision surfaces through it. vcpkg builds it static on Windows, and it is linked as the `OpenSubdiv::osdCPU_static` target on every platform, PRIVATE because only the subdivision surface's source includes it. Its scheme headers use `M_PI`, so that source is compiled with `_USE_MATH_DEFINES` on MSVC. The Flatpak builds it as a module |
+| openexr | OpenEXR, in the `moya` feature. moya writes its pictures through it. It is the `OpenEXR::OpenEXR` target. It brings libdeflate and OpenJPH, which the Flatpak builds as modules, and zstd, which it takes from the runtime |
+| openvdb | OpenVDB 12, in the `moya` feature, with NanoVDB. moya reads grids through OpenVDB and converts them to NanoVDB, whose headers kernel code reads them through. It comes from the tree's [overlay port](#the-openvdb-overlay-port), which builds NanoVDB without CUDA. It is the `OpenVDB::openvdb` and `OpenVDB::nanovdb` targets of `find_package(OpenVDB COMPONENTS openvdb nanovdb)`. OpenVDB installs a find module and no package configuration, so the search is in module mode. vcpkg's wrapper puts that module on the module path, and any other install, such as the Flatpak's, is found through the module it installs under `lib/cmake/OpenVDB`. A source that includes NanoVDB's headers is compiled with `/Zc:__cplusplus` on MSVC, since NanoVDB chooses its type traits by `__cplusplus`, and switches off C4702 around them, which MSVC reports from them once inlined. It brings Blosc and boost's iostreams, which the Flatpak builds as modules |
 | quickjs-ng | `v3dlib_script` runs scripts on it, as the `qjs` target of the `qjs` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| tbb | oneTBB, in the `moya` feature. moya's CPU device schedules its work on it, through the `TBB::tbb` target, linked PRIVATE by `v3dlib_moya` because only the device's source includes it. OpenUSD needs it too, and the Flatpak builds it as a module for both |
 | thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
+| vcpkg-tool-ispc | The ISPC compiler, a host tool OIDN's port compiles its CPU device with. It comes from the tree's [overlay port](#the-oidn-and-ispc-overlay-ports), and nothing ships it |
 | vulkan | |
 | vulkan-loader | Linux only. On Windows the loader comes with the GPU driver. **It must have its `wayland`, `xcb` and `xlib` features.** Without them the loader has no surface for a window, and no app can present |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
@@ -112,6 +127,42 @@ Clang cannot build the editor's USD reader. MSVC and GCC accept it.
   patch to its `PATCHES` again, and remake it if the header has changed. Drop the port once
   OpenUSD's release holds the fix.
 
+### The OpenVDB overlay port
+
+vcpkg's port builds NanoVDB only behind a feature that depends on CUDA, though NanoVDB's headers
+need none. moya reads grids through NanoVDB's headers on every device, and builds no CUDA.
+
+- The port in [ports/openvdb/](../../ports/openvdb/) is vcpkg's own, from the baseline commit,
+  with its features removed. It always builds NanoVDB, with CUDA off and its conversion from
+  OpenVDB on, and builds none of OpenVDB's or NanoVDB's tools.
+- **A static OpenVDB must name Blosc and zlib as its own dependencies.** The `FindOpenVDB.cmake`
+  that vcpkg's port installs names them only for a shared library. The Linux triplet builds it
+  static, and every program that links it then fails on blosc's symbols. The portfile edits that
+  module so that a static `OpenVDB::openvdb` links `blosc_static` and `ZLIB::ZLIB`.
+- When the baseline moves OpenVDB to a new version, copy the new port's patch and its other files
+  over `ports/openvdb/`, and set the new version and hash in the portfile. Keep the edit for a
+  static library. Change the Flatpak's
+  module to the same archive. Drop the port once vcpkg's builds NanoVDB without CUDA.
+
+### The OIDN and ISPC overlay ports
+
+vcpkg's registry holds no port for OIDN or for ISPC, the compiler OIDN's CPU device is written
+for.
+
+- [ports/vcpkg-tool-ispc/](../../ports/vcpkg-tool-ispc/) installs ISPC's own release for Windows
+  or Linux on x64, as vcpkg's other tool ports install a tool's release. ISPC builds with its own
+  LLVM, which no port provides. The port keeps the release's `bin`, `include` and `lib` folders
+  under `tools/vcpkg-tool-ispc`, since the compiler finds its standard headers and, on Linux, its
+  libraries beside its own folder.
+- [ports/oidn/](../../ports/oidn/) builds OIDN from its release's source archive, which holds the
+  trained weights that GitHub's archive of a tag leaves out. It builds the CPU device alone and
+  the RT filter's weights, against the tree's oneTBB, with ISPC from the tool port.
+- **OIDN is built static.** A shared OIDN loads its CPU device from a module beside its own
+  library while running, a file an executable's imports do not name, so vcpkg would not copy it
+  beside moya. A static OIDN links the device in.
+- To update either, change the port's `version` and the hashes of its archives. vcpkg prints the
+  hash it found when one does not match. Change the Flatpak's two modules to the same archives.
+
 Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),
 [ADR-0053](../adr/rendering/0053-memory-optional-vma-suballocation.md)
@@ -163,11 +214,13 @@ CI has no SDK, so that case never runs there.
 
 The tree's TypeScript runs on Node 24 or later, which erases the types and checks none of them.
 That covers the review gates in `scripts/`, the fixture and asset generators, and the editor's
-scripts. The type checker comes from npm through [package.json](../../package.json):
+scripts. The type checker, the linter and the formatter come from npm through
+[package.json](../../package.json):
 
 ```
 npm ci              # install exactly what package-lock.json names
 npm run typecheck   # check every TypeScript file in the tree
+npm run lint        # lint it, and npm run format to lay it out (Linting.md)
 npm test            # the review gates' own tests
 ```
 
@@ -194,7 +247,9 @@ on QuickJS. Both extend [tsconfig.base.json](../../tsconfig.base.json), which ho
 options and allows only syntax that can be erased.
 
 To update a tool, run `npm install --save-dev <package>@<version>` with a version released at
-least two weeks earlier. Then run `npm run typecheck` and commit `package.json` with the lockfile.
+least two weeks earlier. Then run `npm run typecheck` and `npm run lint` and commit `package.json`
+with the lockfile. `oxlint-tsgolint` is built for one TypeScript version, so it moves with
+`typescript`. An update to oxfmt is followed by `npm run format`, in the same commit.
 
 Background: [ADR-0158](../adr/project/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
 
@@ -232,13 +287,18 @@ A release shows a licence for everything it ships, in one notices file.
 
 1. the project's [LICENSE](../../LICENSE);
 2. each font family's licence from `data/fonts/`;
-3. the copyright file of each vcpkg package that ships code.
+3. the notice of each third-party data table the tree carries in its source, from the file
+   `DATA` in `notices.ts` names for it;
+4. the copyright file of each vcpkg package that ships code.
 
 Without `--out` the script is a check, and CI runs it on the Debug build's install. It fails
 when:
 
 - **a package installs code and has no copyright file.** A package that installs files only
   under `share/` ships no code: vcpkg's build helpers and meta-packages are such packages.
+- **a data table's notice is missing.** Each entry in `DATA` names a notice file, which has to
+  be in the tree. The CIE's tables in `moya/libmoya/kernel/spectrum/` are the only entry.
+  [Spectra.md](../offline/Spectra.md#the-cies-tables) says why they are kept apart.
 - **a font has no licence.** A font's licence is the `<Family>-OFL.txt` file beside it whose
   family its name starts with. `Inter-OFL.txt` covers `Inter-Regular.ttf`. When two families
   match, the longer one wins.

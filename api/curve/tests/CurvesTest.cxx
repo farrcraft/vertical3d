@@ -1,10 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/curve/Curve.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
+#include <api/curve/CatmullRom.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
 
 #include <cstdint>
 #include <variant>

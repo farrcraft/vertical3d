@@ -1,8 +1,9 @@
 # ADR-0125: Offline: moya renders curves as ribbons
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-27
 **Tags**: offline
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 **Documented in**: [offline/README.md](../../offline/README.md)
 
 ## Context

@@ -23,10 +23,19 @@ function site(pages: string[], files: string[], directories: string[] = []): Sit
     };
 }
 
-const SITE = site(['README.md', 'api/README.md', 'api/Grid.md'],
-    ['docs/README.md', 'docs/api/README.md', 'docs/api/Grid.md', 'docs/plans/completed/Old.md',
-        'docs/images/editor.png', 'api/grid/Grid.h', 'CONTRIBUTING.md'],
-    ['docs/api', 'api/grid', 'docs/plans/completed']);
+const SITE = site(
+    ['README.md', 'api/README.md', 'api/Grid.md'],
+    [
+        'docs/README.md',
+        'docs/api/README.md',
+        'docs/api/Grid.md',
+        'docs/plans/completed/Old.md',
+        'docs/images/editor.png',
+        'api/grid/Grid.h',
+        'CONTRIBUTING.md',
+    ],
+    ['docs/api', 'api/grid', 'docs/plans/completed'],
+);
 
 test('outside keeps a link to a page of the site, with its anchor', () => {
     assert.equal(siteTarget('api/README.md', 'Grid.md#paths', SITE), 'Grid.md#paths');
@@ -68,8 +77,7 @@ test('outside finds nothing for a relative link to a path that does not exist', 
 test('outside rewrites each link of a page and lists each link that names nothing', () => {
     const broken: Broken[] = [];
     const content = 'See [the header](../../api/grid/Grid.h) and [gone](Gone.md).';
-    assert.equal(rewrite('api/Grid.md', content, SITE, broken),
-        `See [the header](${REPO}/blob/main/api/grid/Grid.h) and [gone](Gone.md).`);
+    assert.equal(rewrite('api/Grid.md', content, SITE, broken), `See [the header](${REPO}/blob/main/api/grid/Grid.h) and [gone](Gone.md).`);
     assert.deepEqual(broken, [{ page: 'api/Grid.md', target: 'Gone.md' }]);
 });
 

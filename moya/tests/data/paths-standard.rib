@@ -1,0 +1,21 @@
+##RenderMan RIB-Structure 1.1
+##Scene A grey floor and sphere under RI's distant, point and spot lights
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -30 1 0 0
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1.5] "from" [0 0 0] "to" [1 -2 1]
+LightSource "pointlight" 2 "intensity" [3] "from" [-1 0 -0.5] "lightcolor" [1 0.6 0.3]
+LightSource "spotlight" 3 "intensity" [10] "from" [1 1 -1] "to" [0.8 -1 0.5] "coneangle" [0.4] "conedeltaangle" [0.1] "lightcolor" [0.3 0.6 1]
+Color [0.6 0.6 0.6]
+Surface "matte"
+Polygon "P" [-2 -1 -2  2 -1 -2  2 -1 2  -2 -1 2]
+AttributeBegin
+Translate 0 -0.5 0
+Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

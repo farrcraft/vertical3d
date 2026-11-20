@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "Player.h"
 
@@ -15,6 +15,7 @@
 #include "Events.h"
 #include "Listener.h"
 #include "Play.h"
+#include "Stereo.h"
 
 #include <SDL3_mixer/SDL_mixer.h>
 

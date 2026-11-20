@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include <api/engine/Application.h>
 #include <api/engine/Main.h>

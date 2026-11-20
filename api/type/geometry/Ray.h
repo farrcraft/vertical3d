@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -13,6 +13,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * Geometry queries over boxes, rectangles, lines, planes, rays and frustums.
+ **/
 namespace v3d::type::geometry {
 
 /**

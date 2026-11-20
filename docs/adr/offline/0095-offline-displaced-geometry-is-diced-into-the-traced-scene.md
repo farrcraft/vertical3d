@@ -1,9 +1,9 @@
 # ADR-0095: Offline: displaced geometry is diced into the traced scene
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-18
 **Tags**: offline
-**Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 
 ## Context
 

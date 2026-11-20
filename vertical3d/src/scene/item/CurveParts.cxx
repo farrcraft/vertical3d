@@ -1,11 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "CurveParts.h"
 
+#include "CurveHandle.h"
+#include "CurvePoint.h"
+
 #include <api/brep/Index.h>
+#include <api/curve/Bezier.h>
+#include <api/curve/BezierPoint.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 

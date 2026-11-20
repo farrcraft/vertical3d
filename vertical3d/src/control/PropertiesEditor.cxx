@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "PropertiesEditor.h"
 
@@ -25,7 +25,7 @@
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Units.h>
-#include <vertical3d/src/view/ViewOverlay.h>
+#include <vertical3d/src/view/OverlayLook.h>
 
 #include <algorithm>
 #include <array>

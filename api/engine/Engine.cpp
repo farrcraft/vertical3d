@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Engine.h"
 
@@ -12,6 +12,7 @@
 #include <api/asset/media/Loaders.h>
 #include <api/event/Bindings.h>
 #include <api/event/Chord.h>
+#include <api/event/Modifiers.h>
 #include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/DisplayScale.h>

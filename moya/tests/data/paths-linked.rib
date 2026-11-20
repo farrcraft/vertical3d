@@ -1,0 +1,34 @@
+##RenderMan RIB-Structure 1.1
+##Scene Two grey spheres on a grey floor, each lit by its own light: the warm light is off for the right sphere, the cool for the left
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -30 1 0 0
+WorldBegin
+TransformBegin
+Translate -0.9 0.3 -0.3
+Scale 0.2 0.2 0.2
+Light "PxrSphereLight" "warm" "float intensity" [80] "color lightColor" [1 0.6 0.3]
+TransformEnd
+TransformBegin
+Translate 0.9 0.3 -0.3
+Scale 0.2 0.2 0.2
+Light "PxrSphereLight" "cool" "float intensity" [80] "color lightColor" [0.3 0.6 1]
+TransformEnd
+Color [0.6 0.6 0.6]
+Surface "matte"
+Polygon "P" [-2 -1 -2  2 -1 -2  2 -1 2  -2 -1 2]
+AttributeBegin
+Illuminate "cool" 0
+Translate -0.7 -0.6 0
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+AttributeBegin
+Illuminate "warm" 0
+Translate 0.7 -0.6 0
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+WorldEnd

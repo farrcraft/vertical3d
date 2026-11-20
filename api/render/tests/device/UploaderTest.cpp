@@ -1,11 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/memory/BufferSpec.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 

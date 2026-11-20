@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/vulkan/device/Device.h>

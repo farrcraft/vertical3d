@@ -1,9 +1,10 @@
 # ADR-0022: Offline: shared library with no Vulkan
 
-**Status**: amended
+**Status**: superseded
 **Date**: 2026-09-04
 **Tags**: offline
 **Amended by**: [ADR-0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
+**Superseded by**: [ADR-0240](0240-offline-rib-is-a-library-of-its-own.md)
 **Documented in**: [offline/](../../offline/README.md)
 
 ## Context

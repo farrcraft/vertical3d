@@ -15,12 +15,7 @@ export const MAX_BUFFER = 512 * 1024 * 1024;
 
 // The developer environment, as scripts\vcvars.cmd enters it, followed by a dump of the
 // environment it leaves, which the build steps below are given.
-const ENVIRONMENT_CMD = [
-    '@echo off',
-    `call "${path.join(ROOT, 'scripts', 'vcvars.cmd')}" || exit /b 1`,
-    'set',
-    '',
-].join('\r\n');
+const ENVIRONMENT_CMD = ['@echo off', `call "${path.join(ROOT, 'scripts', 'vcvars.cmd')}" || exit /b 1`, 'set', ''].join('\r\n');
 
 export function readCache(build: string): Map<string, string> {
     const file = path.join(build, 'CMakeCache.txt');

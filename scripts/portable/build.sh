@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds and tests the api libraries that need neither a window nor a device, with Clang on
-# Linux and under the sanitizers, then fuzzes the fuzz targets. It runs inside the image the
-# Dockerfile in this directory defines, in CI and locally.
+# Builds and tests the api libraries that need neither a window nor a device, and moya, with
+# Clang on Linux and under the sanitizers, then fuzzes the fuzz targets. It runs inside the image
+# the Dockerfile in this directory defines, in CI and locally.
 #
 # The tree is mounted read-only at /src. Everything the build writes goes under /work: the
 # vcpkg checkout, the binary cache, the build directory and the fuzzing corpus.
@@ -16,25 +16,44 @@ work=/work
 source /usr/local/bin/v3d-vcpkg
 
 # The libraries whose closure names neither SDL3, Vulkan nor OpenUSD
-libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;render_offline;type"
+libraries="asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;rib;type"
 
 "$CXX" --version
 
-# The manifest's default features are the window, the device, the audio and OpenUSD, which
-# these libraries do not use, so they are left out and never built. The tree is built under
-# AddressSanitizer and the undefined behaviour sanitizer, so every test runs under both, and
-# instrumented for libFuzzer, so the fuzz targets can run below.
+# The manifest's default features are moya's packages, the window, the device, the audio and
+# OpenUSD. Only moya's are used here, so the rest are left out and never built. The tree is
+# built under AddressSanitizer and the undefined behaviour sanitizer, so every test runs under
+# both, and instrumented for libFuzzer, so the fuzz targets can run below.
 cmake -S "$src" -B "$work/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" \
     -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
+    -DVCPKG_MANIFEST_FEATURES=moya \
     -DV3D_BUILD_APPS=OFF \
+    -DV3D_BUILD_MOYA=ON \
     -DV3D_BUILD_TESTS=ON \
     -DV3D_SANITIZE=ON \
     -DV3D_FUZZ=ON \
     "-DV3D_LIBRARIES=$libraries"
 cmake --build "$work/build"
 ctest --test-dir "$work/build" --output-on-failure
+
+# moya's RGB build, whose colour is ACEScg's three channels rather than four wavelengths, so that
+# both colour types keep building and moya's suite passes in each. It needs only moya and the
+# api libraries moya links, which the configure adds.
+cmake -S "$src" -B "$work/rgb" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" \
+    -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
+    -DVCPKG_MANIFEST_FEATURES=moya \
+    -DV3D_BUILD_APPS=OFF \
+    -DV3D_BUILD_MOYA=ON \
+    -DV3D_BUILD_TESTS=ON \
+    -DV3D_SANITIZE=ON \
+    -DV3D_MOYA_RGB=ON \
+    "-DV3D_LIBRARIES=log"
+cmake --build "$work/rgb" --target v3dtest_moya
+ctest --test-dir "$work/rgb" -R '^moya$' --output-on-failure
 
 # Each fuzz target runs for FUZZ_SECONDS, starting from its fixtures. What it finds that reaches
 # new code is kept under $work/corpus, so a local run carries on from the last one. A failure

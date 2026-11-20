@@ -1,13 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
+#include <api/render/realtime/lighting/CascadeFit.h>
+#include <api/render/realtime/lighting/Cascades.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
+#include <api/render/realtime/lighting/ShadowFit.h>
 #include <api/type/camera/Profile.h>
 
-#include <array>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -27,22 +30,13 @@ namespace v3d::render::realtime::lighting {
 inline constexpr float minimumShadowRadius = 0.01F;
 
 /**
- * A sphere a directional light's shadow map is fitted to.
+ * A sphere around a registered model where a matrix places it: the entry's bound moved by the
+ * matrix, and its radius scaled by the matrix's largest scale.
+ *
+ * @param bound resource::MeshRegistry::Entry::bound, the sphere in the model's own space
+ * @param model the matrix that places the model in the world
  **/
-struct ShadowBounds final {
-    glm::vec3 centre{0.0F};
-    float radius = 0.0F;
-};
-
-/**
- * How fitShadow() reads the casters. The margin is added to the radius around them. alpha is
- * engine::Engine::alpha(), the fraction of a step elapsed since the last one. At one, the
- * current step's positions are read.
- **/
-struct ShadowFit final {
-    float margin = 0.0F;
-    float alpha = 1.0F;
-};
+ShadowBounds placed(const glm::vec4& bound, const glm::mat4& model);
 
 /**
  * The matrix a directional light draws its shadow map through: an orthographic box around a
@@ -67,20 +61,26 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds,
  * A sphere around every entity carrying an ecs::component::Transform and a
  * component::Mesh that casts a shadow, and the extra points given.
  *
- * The centre is the mean of the positions and the radius the farthest of them from it, plus
- * the margin. The radius is at least minimumShadowRadius, which one caster with no margin, or a
- * negative margin, would otherwise take to zero or below. A position is an origin, not an
- * extent. The margin covers a caster's size and the length of the shadow it throws. What
- * casts nothing is left out, because a ground plane reaches past anything that shadows it
+ * Each caster is a sphere. With ShadowFit::meshes given, it is the sphere around the caster's
+ * model, placed by its transform as placed() places it. Without, or while the caster's mesh does
+ * not resolve, it is the caster's position alone. An extra point is a sphere of radius zero.
+ *
+ * The centre is the mean of the spheres' centres. The radius reaches the far side of the
+ * farthest sphere, plus the margin. It is at least minimumShadowRadius, which one point with no
+ * margin, or a negative margin, would otherwise take to zero or below. The margin covers the
+ * length of the shadow a caster throws, and a caster's size where no mesh is resolved. A skinned
+ * caster's sphere is its bind pose, so the margin also covers how far a pose reaches past it.
+ * What casts nothing is left out, because a ground plane reaches past anything that shadows it
  * and would spread the map's texels over ground no shadow falls on.
  *
- * Each position is the one drawn: alpha of the way from the caster's previous step to its
+ * Each caster is placed where it is drawn: alpha of the way from its previous step to its
  * current one, as the lit pass draws it.
  *
  * @param registry the entities whose casters are fitted
  * @param alsoCover points that should be inside the map whether or not anything stands there,
  *        such as where a character will walk to
- * @param fit the margin added to the radius, and the alpha positions are read at
+ * @param fit the margin added to the radius, the alpha casters are placed at, and where their
+ *        meshes resolve
  * @return nothing when no entity casts a shadow, so a caller keeps the bounds it had
  **/
 std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit);
@@ -107,11 +107,6 @@ std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<
 std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels);
 
 /**
- * The most cascades a shadow map has. SceneUniforms holds this many.
- **/
-inline constexpr uint32_t maximumCascades = 4;
-
-/**
  * Where each cascade of a shadow map ends, by the practical split scheme. Each split is a blend
  * of a logarithmic split and a uniform one. A logarithmic split gives every cascade the same
  * ratio of far to near, and a uniform split gives every cascade the same length.
@@ -128,41 +123,6 @@ inline constexpr uint32_t maximumCascades = 4;
  *         is out of range
  **/
 std::vector<float> splitView(float near, float distance, uint32_t count, float lambda);
-
-/**
- * How fitCascades() fits a shadow map's cascades.
- **/
-struct CascadeFit final {
-    /** each layer's width in texels, at least 4 **/
-    uint32_t texels = 2048;
-    /**
-     * The part of each cascade's far distance over which it blends into the next. The next
-     * cascade starts that much nearer, so both cover the band. Held between 0 and 0.5
-     **/
-    float blend = 0.1F;
-    /** the hand of the camera the scene is drawn through, as shadowLight() takes it **/
-    type::camera::Profile::Hand hand = type::camera::Profile::Hand::UpCrossDirection;
-};
-
-/**
- * A shadow map's cascades: a slice of the camera's view for each, and the matrix its layer is
- * drawn through. pack() writes them into SceneUniforms.
- **/
-struct Cascades final {
-    uint32_t count = 0;
-    /** the matrix each cascade's shadow pass draws through, from shadowLight() **/
-    std::array<glm::mat4, maximumCascades> lights{};
-    /** the sphere each cascade covers, which entity::casters() culls against **/
-    std::array<ShadowBounds, maximumCascades> bounds{};
-    /** where each cascade ends, measured from the near plane, as the splits were given **/
-    std::array<float, maximumCascades> far{};
-    /**
-     * The camera's near plane, as a normal along its view direction and an offset, so that
-     * dot(xyz, p) + w is a point's distance from the near plane
-     **/
-    glm::vec4 plane{0.0F};
-    float blend = 0.0F;
-};
 
 /**
  * Fit a cascade to each slice of the camera's view. Cascade i covers the view from the end of

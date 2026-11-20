@@ -1,11 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "CurvePages.h"
 
-#include <api/font/glyph/CurveStore.h>
+#include <api/font/glyph/curve/Store.h>
 #include <api/render/realtime/resource/Handle.h>
 
 #include <cstddef>
@@ -26,14 +26,14 @@ CurvePages::CurvePages(Create create, Update update, Release release) :
 
 /**
  **/
-void CurvePages::sync(font::glyph::CurveStore* store) {
+void CurvePages::sync(font::glyph::curve::Store* store) {
     sync(&curves_, store->curves().data(), store->curveRows(), store->changedCurves());
     sync(&bands_, store->bands().data(), store->bandRows(), store->changedBands());
 }
 
 /**
  **/
-void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::CurveStore::Changed& changed) {
+void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::curve::Store::Changed& changed) {
     if (rows == 0) {
         return;
     }
@@ -42,13 +42,13 @@ void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const
         if (page->texture.valid()) {
             release_(page->texture);
         }
-        page->texture = create_(floats, font::glyph::CurveStore::ROW, rows);
+        page->texture = create_(floats, font::glyph::curve::Store::ROW, rows);
         page->rows = rows;
         return;
     }
     if (changed.rows > 0) {
-        const std::size_t from = static_cast<std::size_t>(changed.first) * font::glyph::CurveStore::ROW * 4;
-        update_(page->texture, glm::uvec2(0, changed.first), floats + from, glm::uvec2(font::glyph::CurveStore::ROW, changed.rows));
+        const std::size_t from = static_cast<std::size_t>(changed.first) * font::glyph::curve::Store::ROW * 4;
+        update_(page->texture, glm::uvec2(0, changed.first), floats + from, glm::uvec2(font::glyph::curve::Store::ROW, changed.rows));
     }
 }
 

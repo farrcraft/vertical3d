@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	animation asset asset_media audio brep curve database ecs engine event font grid image input
-	interchange interchange_usd log model render render_offline script shell type ui version window)
+	interchange interchange_usd log model render rib script shell type ui version window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -104,11 +104,10 @@ set(V3D_API_render_PATH "render")
 set(V3D_API_render_REQUIRES log animation asset asset_media ecs image model type version window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
-# Under api/render but a separate library: the offline renderer is built on it. It names
-# neither Vulkan nor SDL, so it can be selected without them.
-set(V3D_API_render_offline_PATH "render/offline")
-set(V3D_API_render_offline_REQUIRES log image type)
-set(V3D_API_render_offline_PACKAGES glm)
+# RIB, which moya reads and the editor writes. It names neither Vulkan nor SDL.
+set(V3D_API_rib_PATH "rib")
+set(V3D_API_rib_REQUIRES log type)
+set(V3D_API_rib_PACKAGES glm)
 
 # TypeScript run on QuickJS. It names no window and no device.
 set(V3D_API_script_PATH "script")
@@ -285,7 +284,7 @@ function(v3d_api_verify_manifest)
 endfunction()
 
 # Which api library owns a path under api/: the one whose PATH is the longest prefix of it, so
-# render/offline/film/Film.h is render_offline's and render/realtime/canvas/Canvas.h is render's.
+# interchange/usd/Usd.h is interchange_usd's and interchange/Scene.h is interchange's.
 # Sets out_var to the library, or to nothing for a path no library owns.
 function(v3d_api_owner relative out_var)
 	set(owner)

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Buffer.h"
 
@@ -9,6 +9,7 @@
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include "Allocator.h"
+#include "BufferSpec.h"
 
 #include <cstring>
 #include <stdexcept>

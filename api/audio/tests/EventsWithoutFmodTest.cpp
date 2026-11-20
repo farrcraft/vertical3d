@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // the case is left out of a build with FMOD, and its includes with it
 #ifndef V3D_AUDIO_FMOD

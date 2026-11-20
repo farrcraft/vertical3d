@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,6 +21,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * What draw items name by handle, such as meshes, materials, textures and pipelines, and the
+ * registries that own them.
+ **/
 namespace v3d::render::realtime::resource {
 
 /**

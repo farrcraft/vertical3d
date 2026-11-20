@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/asset/Loader.h>
 
+/**
+ * The loader for WAV files.
+ **/
 namespace v3d::audio::loader {
 /**
  * Reads a WAV file into an AudioClip and gives a kind::Sound. A file that cannot be read gives

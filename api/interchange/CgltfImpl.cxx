@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // cgltf ships as one header that holds both the declarations and the implementation. The
 // implementation half has to be compiled in exactly one translation unit, and this is it.

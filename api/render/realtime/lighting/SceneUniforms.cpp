@@ -1,12 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "SceneUniforms.h"
 
 #include "Settings.h"
-#include "Shadow.h"
+#include "Cascades.h"
 
 #include <cstddef>
 #include <cstdint>

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,7 +11,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Clock.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>

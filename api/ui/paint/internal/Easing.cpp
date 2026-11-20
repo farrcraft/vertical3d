@@ -1,10 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Easing.h"
 
+#include <api/ui/Clock.h>
+#include <api/ui/Opening.h>
 #include <api/ui/Transition.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/style/Resolver.h>

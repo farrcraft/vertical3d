@@ -38,7 +38,10 @@ export interface Row {
 
 /** Every library the manifest names, in its order, with the directory it is in. */
 export function manifestLibraries(cmake: string): Library[] {
-    const code = cmake.split(/\r?\n/).map((line) => line.replace(/#.*$/, '')).join('\n');
+    const code = cmake
+        .split(/\r?\n/)
+        .map((line) => line.replace(/#.*$/, ''))
+        .join('\n');
     const list = /set\(\s*V3D_API_LIBRARIES\b([^)]*)\)/.exec(code);
     if (list === null) {
         return [];
@@ -121,7 +124,10 @@ function main(): number {
     options('usage: node scripts/librarytable.ts', {});
     const libraries = manifestLibraries(readFileSync(path.join(ROOT, MANIFEST), 'utf8'));
     const rows = tableRows(readFileSync(path.join(ROOT, TABLE), 'utf8'));
-    return report(problems(libraries, rows), `breaks the table of libraries in ${TABLE}. Give each library in ${MANIFEST} one row, in the manifest's order.`);
+    return report(
+        problems(libraries, rows),
+        `breaks the table of libraries in ${TABLE}. Give each library in ${MANIFEST} one row, in the manifest's order.`,
+    );
 }
 
 runGate(import.meta.url, main);

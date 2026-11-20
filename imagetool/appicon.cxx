@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 /**
  * appicon draws an app's SVG icon at each size an icon file holds, and writes the .ico the

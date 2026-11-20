@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/font/glyph/Store.h>
 #include <api/render/realtime/resource/Handle.h>
@@ -55,8 +55,8 @@ struct Recording {
      * Ask the store for a glyph filling a plot but for its padding, its shade its index.
      **/
     void glyph(unsigned int index) {
-        store.glyph(v3d::font::glyph::Key{ .index = index, .size = 16.0F }, [](const v3d::font::glyph::Key& key) {
-            return v3d::font::glyph::Bitmap{ .size = glm::uvec2(30), .pixels = std::vector<unsigned char>(std::size_t{30} * 30, static_cast<unsigned char>(key.index)) };
+        store.glyph(v3d::font::glyph::Store::Key{ .index = index, .size = 16.0F }, [](const v3d::font::glyph::Store::Key& key) {
+            return v3d::font::glyph::Store::Bitmap{ .size = glm::uvec2(30), .pixels = std::vector<unsigned char>(std::size_t{30} * 30, static_cast<unsigned char>(key.index)) };
         });
     }
 

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "TextureFactory.h"
 
@@ -18,6 +18,7 @@
 
 #include "Barriers.h"
 #include "Buffer.h"
+#include "BufferSpec.h"
 #include "Image.h"
 #include "Uploader.h"
 

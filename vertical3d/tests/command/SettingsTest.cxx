@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <vertical3d/src/command/Settings.h>
 #include <vertical3d/src/scene/RenderSettings.h>
@@ -21,7 +21,6 @@ BOOST_AUTO_TEST_CASE(settings_command_test) {
     v3d::editor::scene::RenderSettings after;
     after.size = glm::uvec2(320, 200);
     after.samples = 4;
-    after.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
 
     // the settings it is made from are the ones it puts back
     v3d::editor::command::Settings command(scene, after);

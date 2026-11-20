@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,10 @@
 
 #include <glm/gtc/quaternion.hpp>
 
+/**
+ * The components games share: where an entity stands, the animation it plays, and the particles it
+ * emits.
+ **/
 namespace v3d::ecs::component {
 
 /**

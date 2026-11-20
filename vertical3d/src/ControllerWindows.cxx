@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // The controller's other windows: opening one for an editor, keeping and reopening those a
 // workspace holds, drawing and closing them.
@@ -24,6 +24,7 @@
 #include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/AxisEnd.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 

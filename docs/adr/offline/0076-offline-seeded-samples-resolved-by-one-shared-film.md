@@ -1,9 +1,9 @@
 # ADR-0076: Offline: seeded samples resolved by one shared film
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-04
 **Tags**: offline
-**Documented in**: [offline/CamerasAndSampling.md](../../offline/CamerasAndSampling.md)
+**Superseded by**: [ADR-0194](0194-offline-stateless-samples-one-picture-per-device.md)
 
 ## Context
 
