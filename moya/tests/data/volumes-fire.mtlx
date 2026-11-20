@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!-- a fire of Mantaflow's grids: its smoke absorbs and scatters by its density, and its flame,
+       from 0 to 1, glows by blackbody's colour from 700 K at its edge to 2000 K at its heart -->
+  <geompropvalue name="density" type="float">
+    <input name="geomprop" type="string" value="density" />
+  </geompropvalue>
+  <geompropvalue name="flame" type="float">
+    <input name="geomprop" type="string" value="flame" />
+  </geompropvalue>
+  <multiply name="soot" type="vector3">
+    <input name="in1" type="vector3" value="1.5, 1.5, 1.5" />
+    <input name="in2" type="float" nodename="density" />
+  </multiply>
+  <multiply name="haze" type="vector3">
+    <input name="in1" type="vector3" value="1, 1, 1" />
+    <input name="in2" type="float" nodename="density" />
+  </multiply>
+  <multiply name="heated" type="float">
+    <input name="in1" type="float" nodename="flame" />
+    <input name="in2" type="float" value="1300" />
+  </multiply>
+  <add name="kelvin" type="float">
+    <input name="in1" type="float" nodename="heated" />
+    <input name="in2" type="float" value="700" />
+  </add>
+  <blackbody name="hot" type="color3">
+    <input name="temperature" type="float" nodename="kelvin" />
+  </blackbody>
+  <multiply name="bright" type="float">
+    <input name="in1" type="float" nodename="flame" />
+    <input name="in2" type="float" value="12" />
+  </multiply>
+  <multiply name="glowing" type="color3">
+    <input name="in1" type="color3" nodename="hot" />
+    <input name="in2" type="float" nodename="bright" />
+  </multiply>
+  <anisotropic_vdf name="smoky" type="VDF">
+    <input name="absorption" type="vector3" nodename="soot" />
+    <input name="scattering" type="vector3" nodename="haze" />
+  </anisotropic_vdf>
+  <uniform_edf name="glow" type="EDF">
+    <input name="color" type="color3" nodename="glowing" />
+  </uniform_edf>
+  <volume name="fire" type="volumeshader">
+    <input name="vdf" type="VDF" nodename="smoky" />
+    <input name="edf" type="EDF" nodename="glow" />
+  </volume>
+  <volumematerial name="burning" type="material">
+    <input name="volumeshader" type="volumeshader" nodename="fire" />
+  </volumematerial>
+</materialx>

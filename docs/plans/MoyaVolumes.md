@@ -174,7 +174,7 @@ listed as a number with no record, as the ADR index requires.
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | done |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233, **0249**, **0250**, **0251** | done |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | done |
-| [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | **0252** | open |
+| [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | **0252** | done |
 | [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | open |
 | [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | open |
 
@@ -859,6 +859,31 @@ dome light from RIB, and holds it to Beer and Lambert's share. No reference rend
 
 **Tests:** the committed renders, and a case that renders each with a light or a medium changed
 and checks that the comparison fails.
+
+**Done.** Eight scenes, `volumes-*.rib`, are committed with their renders, descriptions and hit
+views. Three are media: a ball of fog under a spot light, two balls of a chromatic medium that
+scatter evenly and forward, and a glass ball of amber liquid at a higher priority. Two are grids,
+Blender's puff of smoke and a fire. A marble ball and a back-lit slab, a skin-toned figure, and a
+lock of 64 hairs make the rest. The fire is a grid
+Blender simulated, `blender_fire.vdb`, which `make_blender_fire.py` makes as
+`make_blender_smoke.py` makes the smoke, and `volumes-fire.mtlx` gives it its glow, since RIB has
+no type for a VDF or an EDF. The scenes render at 6 by 6 samples, and add about two minutes to a
+debug pass of moya's suite.
+
+The renders found that a smooth subsurface was lit by no light of zero size. A walk left through
+the surface's own refraction, and a camera path cannot join a delta light through one.
+[ADR-0252](../adr/offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md), amending
+ADR-0246, makes the walk leave by a Lambertian lobe of the index's square, as Pixar's walk and
+Cycles' do. A smooth white marble under a distant light now reads 0.28 where a rough one reads
+0.31. `SubsurfaceTest.cxx` checks that light samples alone return a white furnace's light, and
+that a smooth walk under a distant light renders near a rough one.
+
+A change in a medium seen through glass, or in a walk, is smaller than five errors in any one
+pixel at these samples. Each committed render is therefore compared by its picture's mean
+luminance too, whose error is far smaller, and the cases that change a light, a material or a
+medium fail by either. A fourth case multiplies every VDF's coefficients by four and halves every
+subsurface colour in the scenes of media and subsurface. Each scene with a medium or subsurface
+fails it.
 
 ### Step 21 — Speed
 

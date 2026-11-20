@@ -150,7 +150,8 @@ generator's header says why its fixture is shaped as it is. A `make_*_fixture.ts
 glTF by hand through `gltf_writer.ts`, and Node runs it from the root of the tree:
 `node api/asset/tests/data/make_skin_fixture.ts`. `make_blender_fixture.py` builds a rig in
 Blender and exports it with Blender's own exporter. moya's `make_blender_smoke.py` simulates a
-puff of smoke in Blender and keeps the grid Blender's own OpenVDB cache writes. Blender scripts
+puff of smoke in Blender and keeps the grid Blender's own OpenVDB cache writes, and
+`make_blender_fire.py` does the same for a small fire, whose flame grid lights it. Blender scripts
 only in Python, so its generators are written in Python. Each one's header gives the command
 line.
 
@@ -458,6 +459,12 @@ The moya suite renders scenes on the CPU and compares them with committed pictur
   coated, a fuzzed and a thin-filmed sphere. The others hold a textured quad, a normal-mapped
   sphere, a cut-out card, and a subdivision surface its material displaces.
   `materials-patterns.mtlx` holds the materials they read from a document.
+- `volumes-*.exr` are rendered the same way, from scenes of media, subsurface and hair. They
+  hold a ball of fog under a spot light, two balls of a medium that scatters and absorbs each
+  channel differently, and a glass ball of amber liquid. A puff of smoke and a fire are grids
+  Blender simulated, `blender_smoke.vdb` and `blender_fire.vdb`. `volumes-fire.mtlx` gives the
+  fire its glow. A marble ball and slab and a skin-toned figure scatter below their surfaces, and
+  a lock of hair hangs under a key light and a light behind it.
 - `reference-*.exr`, `raytrace-*.exr`, `spec-cube.exr` and `textured.exr` are rendered the same
   way, from scenes written for RI's own surfaces and lights. `checked.mtlx` and `bumpy.mtlx`
   define two RI surfaces of their names, which the scenes read from the shader search path, and
@@ -503,12 +510,17 @@ so a case over every pixel allows more than one over a region's mean.
 [Film.md](../offline/Film.md#a-pixels-noise) states how a pixel's error is estimated.
 
 - **A path tracer's render is compared with its committed one this way**, every pixel within
-  five standard errors. The same samples are drawn on every run, so a render lies far less than
-  an error from its reference unless its light changed. Rounding between compilers stays inside
-  the bound. A second case renders each scene with every light twice as bright and checks that
+  five standard errors, and the mean luminance of the whole picture within five of its error. A
+  change too small to show in any one noisy pixel, such as one seen through glass, still moves
+  the mean. The same samples are drawn on every run, so a render lies far less than an error
+  from its reference unless its light changed. Rounding between compilers stays inside the
+  bound. A second case renders each scene with every light twice as bright and checks that
   the comparison fails it. RI's `constant` surface emits its colour, so that case doubles its
   colour too, and a scene lit by it alone fails as well. A third renders each material scene
-  with every surface's base at half its weight, and checks that the comparison fails it too.
+  with every surface's base at half its weight, and checks that the comparison fails it too. A
+  fourth renders each scene of media or subsurface with its media changed: every VDF's
+  absorption and scattering four times as large, and every subsurface colour halved. The
+  comparison fails that too.
 - **The compositing scenes, `compositing-*.rib`, are compared the same way**, channel by channel.
   Their committed EXR holds every float of each pixel, the beauty's errors, each pixel's deep
   samples flattened with their count, and each Cryptomatte layer's manifest. The beauty and

@@ -1,0 +1,165 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 0
+    focalLength float = 0
+    fov float = 40
+    fstop float = inf
+    near float = 0.01
+    projection string = "perspective"
+    screen float[0] =
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 0.965926 0.258819 0 0 -0.258819 0.965926 0 0 1.2941 -4.82963 1]
+distantLight "light 1"
+    angle float = 0
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 1.5
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    transform matrix = [-0.768221 0 0.640184 0 0.458079 0.69857 0.549694 0 -0.447214 0.715542 -0.536656 0 0 0 0 1]
+domeLight "light sky"
+    camera integer = 1
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    format string = "automatic"
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 0.15
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    texture string = ""
+    transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
+instance "Polygon 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material"
+    priority integer = 0
+    prototype handle = mesh "Polygon 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Sphere 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 2"
+    priority integer = 0
+    prototype handle = sphere "Sphere 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 -0.7 -0.25 0 1]
+instance "Sphere 2"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 2"
+    priority integer = 0
+    prototype handle = sphere "Sphere 2"
+    shadow integer = 1
+    transform matrix = [0.6 0 0 0 0 0.8 0 0 0 0 0.08 0 0.9 -0.2 0.2 1]
+material "material"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "floor"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+material "material 2"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "marble"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+mesh "Polygon 1"
+    P point[4] = (-4, -1, -3) (4, -1, -3) (4, -1, 3) (-4, -1, 3)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+options "options"
+    background colour[0] =
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    deepTolerance float = 0.001
+    denoise integer = 0
+    dicingCamera handle = none
+    diffuseDepth integer = 4
+    edgeLength float = 1
+    filter string = "gaussian"
+    filterWidth float[2] = 2 2
+    frame integer = 0
+    frameAspect float = 0
+    glossyDepth integer = 4
+    lightPicking string = "tree"
+    lightSampling string = "mis"
+    maxDepth integer = 12
+    minSamples integer = 16
+    noiseThreshold float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 96 64
+    rouletteDepth integer = 3
+    samples integer = 36
+    shaderSearchPath string = ""
+    specularDepth integer = 12
+    subsurfaceDepth integer = 256
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
+    transmissionDepth integer = 12
+    volumeDepth integer = 4
+rectLight "light behind"
+    camera integer = 0
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    coneAngle float = 90
+    coneSoftness float = 0
+    enableColorTemperature integer = 0
+    exposure float = 0
+    height float = 1
+    iesAngleScale float = 0
+    iesFile string = ""
+    iesNormalize integer = 0
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 6
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    texture string = ""
+    transform matrix = [1 0 -8.74228e-08 0 0 -1 0 0 8.74228e-08 0 1 0 0 0.6 2.5 1]
+    width float = 1
+shader "floor"
+    base_color colour = (0.4, 0.4, 0.4)
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+    specular_roughness float = 0.6
+shader "marble"
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+    specular_roughness float = 0.15
+    subsurface_color colour = (0.9, 0.88, 0.84)
+    subsurface_radius float = 0.3
+    subsurface_radius_scale colour = (1, 0.9, 0.8)
+    subsurface_weight float = 1
+sphere "Sphere 1"
+    radius float = 0.75
+    thetamax float = 360
+    zmax float = 0.75
+    zmin float = -0.75
+sphere "Sphere 2"
+    radius float = 1
+    thetamax float = 360
+    zmax float = 1
+    zmin float = -1

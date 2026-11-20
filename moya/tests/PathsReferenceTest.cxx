@@ -26,6 +26,8 @@
 #include <OpenEXR/ImfOutputFile.h>
 #include <OpenEXR/ImfPixelType.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -47,8 +49,8 @@ namespace film = v3d::moya::film;
 namespace scene = v3d::moya::scene;
 
 /**
- * The scenes made for the path tracer and its materials, and those written for RI's own
- * surfaces and lights, each a RIB file in data/ with its render beside it.
+ * The scenes made for the path tracer, its materials and its volumes, and those written for RI's
+ * own surfaces and lights, each a RIB file in data/ with its render beside it.
  **/
 constexpr const char * kScenes[] = {
     "paths-furnace",
@@ -62,6 +64,14 @@ constexpr const char * kScenes[] = {
     "materials-lobes",
     "materials-surfaces",
     "materials-displaced",
+    "volumes-fog",
+    "volumes-chromatic",
+    "volumes-glass",
+    "volumes-smoke",
+    "volumes-fire",
+    "volumes-marble",
+    "volumes-skin",
+    "volumes-hair",
     "raytrace-lit-quad",
     "raytrace-spheres",
     "raytrace-triangle",
@@ -85,6 +95,21 @@ constexpr const char * kMaterialScenes[] = {
     "materials-surfaces",
     "materials-displaced",
 };
+
+/** The scenes of media, and of surfaces whose subsurface a walk scatters below. **/
+constexpr const char * kMediaScenes[] = {
+    "volumes-fog",
+    "volumes-chromatic",
+    "volumes-glass",
+    "volumes-smoke",
+    "volumes-fire",
+    "volumes-marble",
+    "volumes-skin",
+};
+
+/** The definitions of MaterialX's VDFs, and the coefficients each takes. **/
+constexpr const char * kVdfs[] = { "ND_absorption_vdf", "ND_anisotropic_vdf" };
+constexpr const char * kCoefficients[] = { "absorption", "scattering" };
 
 /**
  * How many standard errors a pixel may lie from its committed render. The same samples are drawn
@@ -121,6 +146,56 @@ film::Snapshot rendered(const std::string & name, const std::function<void(scene
     v3d::rib::Reader reader(logger);
     BOOST_TEST_REQUIRE(reader.read("data/" + name + ".rib", &client), reader.error());
     return out;
+}
+
+/** Whether a node declares a parameter of a name. **/
+bool declares(const scene::Scene & scene, const scene::Handle & node, const std::string & name) {
+    const std::vector<scene::Declaration> & declared = scene.primvars(node);
+    return std::any_of(declared.begin(), declared.end(), [&](const scene::Declaration & declaration) {
+        return declaration.name == name;
+    });
+}
+
+/**
+ * Multiplies a VDF's coefficient by four. A coefficient a connection feeds is fed through a node
+ * that multiplies it, and one the node declares is set to four times its value. Any other is
+ * MaterialX's default of zero, which stays zero.
+ **/
+void quadrupled(scene::Scene & scene, const scene::Handle & vdf, const std::string & input) {
+    for (const scene::Handle & connection : scene.objects("connection")) {
+        if (!(scene.value(connection, "to").handleArray().front() == vdf) || scene.value(connection, "input").stringArray().front() != input) {
+            continue;
+        }
+        const scene::Handle times = scene.create("shader", scene.name(vdf) + " four times its " + input);
+        scene.set(times, "language", scene::Value::string("materialx"));
+        scene.set(times, "shader", scene::Value::string("ND_multiply_vector3FA"));
+        scene.declare(times, scene::Declaration { .name = "in2", .fallback = scene::Value::number(1.0F) });
+        scene.set(times, "in2", scene::Value::number(4.0F));
+        const scene::Handle feeding = scene.create("connection", scene.name(vdf) + " into four times its " + input);
+        scene.set(feeding, "from", scene.value(connection, "from"));
+        scene.set(feeding, "output", scene.value(connection, "output"));
+        scene.set(feeding, "to", scene::Value::handle(times));
+        scene.set(feeding, "input", scene::Value::string("in1"));
+        scene.set(connection, "from", scene::Value::handle(times));
+        scene.set(connection, "output", scene::Value::string("out"));
+        return;
+    }
+    if (!declares(scene, vdf, input)) {
+        return;
+    }
+    const std::vector<float> & value = scene.value(vdf, input).floatArray();
+    scene.set(vdf, input, scene::Value::vector(glm::vec3 { value[0], value[1], value[2] } * 2.0F));
+}
+
+/**
+ * How many standard errors a render lies from its committed one: the further of its furthest pixel
+ * and of its mean luminance over the whole picture. A change too small to show in any one noisy
+ * pixel still moves the mean, whose error is far smaller.
+ **/
+float apart(const film::Snapshot & picture, const film::Snapshot & reference) {
+    const glm::uvec2 whole = picture.resolution;
+    const float pixel = film::furthest(picture, reference).sigmas;
+    return std::fmax(pixel, film::sigmas(film::mean(picture, { 0, 0 }, whole), film::mean(reference, { 0, 0 }, whole)));
 }
 
 /** Writes a render as its committed EXR: the beauty's floats and each pixel's standard error. **/
@@ -181,8 +256,9 @@ void keep(const std::string & name, const film::Snapshot & snapshot) {
  **/
 #ifndef MOYA_RGB
 
-// each scene renders as its committed render, every pixel within kAllowed of it. A scene with no
-// committed render yet, or one that differs, leaves what it rendered in data_out/
+// each scene renders as its committed render, every pixel and the picture's mean within kAllowed
+// of it. A scene with no committed render yet, or one whose pixels differ, leaves what it
+// rendered in data_out/
 BOOST_AUTO_TEST_CASE(moya_paths_references_every_scene_renders_as_committed_test) {
     for (const char * name : kScenes) {
         BOOST_TEST_CONTEXT(name) {
@@ -198,6 +274,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_every_scene_renders_as_committed_test
                 keep(name, picture);
             }
             BOOST_TEST(furthest.sigmas < kAllowed, "pixel " << furthest.pixel.x << ", " << furthest.pixel.y << " lies " << furthest.sigmas << " errors away");
+            BOOST_TEST(apart(picture, readReference(reference)) < kAllowed, "the mean lies " << apart(picture, readReference(reference)) << " errors away");
             BOOST_TEST(furthest.unmeasured == 0U);
         }
     }
@@ -224,7 +301,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_a_brighter_light_fails_the_comparison
                     scene.set(node, "Cs", scene::Value::colour(glm::vec3 { cs[0], cs[1], cs[2] } * 2.0F, colour.space()));
                 }
             });
-            BOOST_TEST(film::furthest(brighter, readReference("data/" + std::string(name) + ".exr")).sigmas > kAllowed);
+            BOOST_TEST(apart(brighter, readReference("data/" + std::string(name) + ".exr")) > kAllowed);
         }
     }
 }
@@ -243,7 +320,38 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_a_changed_material_fails_the_comparis
                     scene.set(node, "base_weight", scene::Value::number(0.5F));
                 }
             });
-            BOOST_TEST(film::furthest(halved, readReference("data/" + std::string(name) + ".exr")).sigmas > kAllowed);
+            BOOST_TEST(apart(halved, readReference("data/" + std::string(name) + ".exr")) > kAllowed);
+        }
+    }
+}
+
+// a changed medium fails the comparison in every scene of media or subsurface, so the comparison
+// sees a change of medium and not only a change of light. Each VDF's coefficients are four times
+// as large, and each subsurface colour a surface sets is halved
+BOOST_AUTO_TEST_CASE(moya_paths_references_a_changed_medium_fails_the_comparison_test) {
+    for (const char * name : kMediaScenes) {
+        BOOST_TEST_CONTEXT(name) {
+            const film::Snapshot changed = rendered(name, [](scene::Scene & scene) {
+                for (const scene::Handle & node : scene.objects("shader")) {
+                    const std::string & shader = scene.value(node, "shader").stringArray().front();
+                    for (const char * vdf : kVdfs) {
+                        if (shader != vdf) {
+                            continue;
+                        }
+                        for (const char * input : kCoefficients) {
+                            if (shader != "ND_absorption_vdf" || std::string(input) == "absorption") {
+                                quadrupled(scene, node, input);
+                            }
+                        }
+                    }
+                    if (shader == "ND_open_pbr_surface_surfaceshader" && declares(scene, node, "subsurface_color")) {
+                        const scene::Value & colour = scene.value(node, "subsurface_color");
+                        const std::vector<float> & held = colour.floatArray();
+                        scene.set(node, "subsurface_color", scene::Value::colour(glm::vec3 { held[0], held[1], held[2] } * 0.5F, colour.space()));
+                    }
+                }
+            });
+            BOOST_TEST(apart(changed, readReference("data/" + std::string(name) + ".exr")) > kAllowed);
         }
     }
 }

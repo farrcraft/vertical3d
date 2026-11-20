@@ -677,7 +677,7 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_every_test_scene_reads_as_committed_test) 
         BOOST_TEST(read.described() == expected, entry.path().filename().string());
         scenes++;
     }
-    BOOST_TEST(scenes == 31U);
+    BOOST_TEST(scenes == 39U);
 }
 
 /** Where an instance's transformation takes a point. **/

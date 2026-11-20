@@ -1,0 +1,26 @@
+##RenderMan RIB-Structure 1.1
+##Scene A small fire Blender simulated, read from blender_fire.vdb, glowing by blackbody's colour of its flame over a dark floor under a faint dome
+version 3.03
+Format 96 64 1
+PixelSamples 6 6
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -15 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.02]
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.4 0.4 0.4] "float specular_roughness" [0.5]
+Polygon "P" [-4 -1 -3  4 -1 -3  4 -1 3  -4 -1 3]
+AttributeEnd
+# Blender's grid is z up and its fire stands over (0.94, 0.94), so it is turned y up and centred.
+# volumes-fire.mtlx gives its smoke and its glow
+AttributeBegin
+Translate 0 -1 0
+Scale 1.4 1.4 1.4
+Rotate -90 1 0 0
+Translate -0.94 -0.94 0
+Bxdf "materialx" "fire" "string file" ["data/volumes-fire.mtlx"] "string material" ["burning"]
+Volume "blobbydso:impl_openvdb" [0 2 0 2 0 2] [0 0 0] "constant string[2] blobbydso:stringargs" ["data/blender_fire.vdb" "density:fogvolume"] "varying float flame" []
+AttributeEnd
+WorldEnd
