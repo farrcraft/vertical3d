@@ -316,6 +316,7 @@ reported, so the table lists only tags in use.
 | [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
 | [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
 | [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
 
 ### lit
 
@@ -439,6 +440,7 @@ reported, so the table lists only tags in use.
 | [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
 | [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
 | [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
 
 ### particles
 
@@ -618,6 +620,7 @@ reported, so the table lists only tags in use.
 | [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
 | [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
 | [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
 
 ### vulkan
 

@@ -143,6 +143,7 @@ says volumes and subsurface grow the path state.
 | 0249 | Whether a collision in a medium is a camera sample's first hit, amending ADR-0230 | [18](#step-18--volumes-in-the-outputs) |
 | 0250 | How a volume's deep samples are cut, amending ADR-0233 | [18](#step-18--volumes-in-the-outputs) |
 | 0251 | How alpha through a medium is made grey | [18](#step-18--volumes-in-the-outputs) |
+| 0252 | How a walk leaves its surface, amending ADR-0246 | [20](#step-20--the-reference-renders) |
 
 Each record step researches how production renderers make the choice, and the owner chooses
 among the options before the record is drafted. A record that a later step shows is not needed is
@@ -173,7 +174,7 @@ listed as a number with no record, as the ADR index requires.
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | done |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233, **0249**, **0250**, **0251** | done |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | done |
-| [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | — | open |
+| [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | **0252** | open |
 | [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | open |
 | [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | open |
 

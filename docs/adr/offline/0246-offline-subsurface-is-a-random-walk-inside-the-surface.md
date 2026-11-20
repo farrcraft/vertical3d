@@ -1,8 +1,9 @@
 # ADR-0246: Offline: subsurface is a random walk inside the surface
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-16
 **Tags**: offline, volumes
+**Amended by**: ADR-0252
 **Documented in**: [offline/Materials.md](../../offline/Materials.md)
 
 ## Context

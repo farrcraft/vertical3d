@@ -381,14 +381,19 @@ says, with these differences.
   winning surface is one the path walks.
 - **A scattering event takes no light sample** and no Russian roulette. Its direction counts as
   specular for a light the path meets next, since no light sample could have drawn it.
-- **The surface the path walks is met from inside as the subsurface's dielectric alone**, of
-  weight one, by `bsdf::Layering::walk()`. Its light sample is taken as at any shading point. A
-  sample that leaves the surface is a transmission, which counts against the depth limits as any
-  bounce does. One that reflects back in is an event of the walk.
-- **Each event of the walk counts against `subsurfaceDepth`**, and against no other limit. A walk
-  at its limit is absorbed.
+- **The walk ends where it meets its surface from inside.** `bsdf::Layering::walk()` gives the
+  surface there as a white Lambertian lobe that goes through it, whatever the surface's
+  roughness and Fresnel factor. Its weight is the square of the subsurface's index relative to
+  the medium beyond the surface. A refraction into the surface divides radiance by that square,
+  so the lobe gives it back, and a white walk keeps a furnace's light. Its light sample is taken
+  as at any diffuse bounce, and its sample leaves the surface as a transmission, which counts
+  against the depth limits as any bounce does. The light that enters still passes the
+  subsurface's dielectric, so the walk is not reciprocal.
+- **Each scattering event of the walk counts against `subsurfaceDepth`**, and against no other
+  limit. A walk at its limit is absorbed.
 
-Background: [ADR-0246](../adr/offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md)
+Background: [ADR-0246](../adr/offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md),
+[ADR-0252](../adr/offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md)
 
 ## Depth limits and Russian roulette
 

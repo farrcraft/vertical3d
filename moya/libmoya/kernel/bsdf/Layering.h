@@ -191,15 +191,22 @@ struct Layering {
     }
 
     /**
-     * The closure a path walking an OpenPBR surface's subsurface meets the surface by from inside:
-     * the subsurface's dielectric alone, of weight one. Its index is relative to the medium beyond
-     * the surface, which the BSDF holds.
+     * The closure a path walking an OpenPBR surface's subsurface meets the surface by from inside.
+     * It is a white Lambertian lobe that goes through the surface, so the walk ends there and its
+     * light sample is a diffuse bounce's. Its weight is the square of the subsurface's index
+     * relative to the medium beyond the surface, which the BSDF holds. That gives back the share of
+     * radiance the path gave up to the index as it refracted in. The surface's roughness and
+     * Fresnel factor do not shape the light that leaves.
      **/
-    MOYA_KERNEL static void walk(Bsdf & bsdf, const surface::OpenPbr & surface, const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) {
+    MOYA_KERNEL static void walk(Bsdf & bsdf, const surface::OpenPbr & surface, const spectrum::SampledWavelengths & wavelengths) {
         bsdf.wavelengths = wavelengths;
-        const glm::vec2 alpha = scattering::Ggx::alphas(unit(surface.specularRoughness), unit(surface.specularAnisotropy));
-        const float ior = modulated(std::fmax(surface.specularIor, 1.0F), std::fmax(surface.specularWeight, 0.0F));
-        bsdf.add(walking(spectrum::SampledSpectrum(1.0F), alpha, ior / bsdf.outside, spectrum::reflectance(table, surface.specularColour, wavelengths)));
+        const float ior = modulated(std::fmax(surface.specularIor, 1.0F), std::fmax(surface.specularWeight, 0.0F)) / bsdf.outside;
+        Closure out;
+        out.model = Model::Diffuse;
+        out.weight = spectrum::SampledSpectrum(ior * ior);
+        out.colour = spectrum::SampledSpectrum(1.0F);
+        out.through = true;
+        bsdf.add(out);
     }
 
     /** OpenPBR's closures, for light leaving at one cosine to both frames' normals. **/

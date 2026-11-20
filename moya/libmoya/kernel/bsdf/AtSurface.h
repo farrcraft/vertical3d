@@ -115,7 +115,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
         out.frame = surface::frameAbout(tangents, layers.geometryNormal, layers.geometryTangent, point.geometric, outgoing);
         out.coatFrame = surface::frameAbout(tangents, layers.geometryCoatNormal, layers.geometryCoatTangent, point.geometric, outgoing);
         if (walking) {
-            Layering::walk(out, layers, table, wavelengths);
+            Layering::walk(out, layers, wavelengths);
             return out;
         }
         Layering::add(out, layers, table, wavelengths, std::fabs(glm::dot(outgoing, out.frame.normal)), std::fabs(glm::dot(outgoing, out.coatFrame.normal)));

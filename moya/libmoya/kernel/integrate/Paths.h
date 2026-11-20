@@ -118,17 +118,14 @@ MOYA_KERNEL inline bool counted(const Settings & settings, bsdf::Lobe lobe, Path
  * From the settings' roulette depth on, a path survives with the chance of its largest throughput,
  * held to one, and a survivor's throughput is divided by that chance.
  *
- * A path walking the subsurface of the surface it met, and reflected back into it, makes an event
- * of its walk: it counts against the walk's limit alone, and takes no Russian roulette. One that
- * leaves the surface makes a transmission, as any bounce does. walks says whether the sample was
- * drawn from a closure that enters the medium a subsurface gives.
+ * walks says whether the sample was drawn from a closure that enters the medium a subsurface
+ * gives.
  **/
 template <geometry::Traversal T, texture::Texels X>
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - whether walking, then whether it walks on
 MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint & point, const bsdf::Bsdf & scattering, const glm::vec3 & outgoing,
-    PathState & state, bool walking, bool & walks) {
+    PathState & state, bool & walks) {
     const std::uint32_t bounce = MOYA_PATH(state, bounces);
-    if (!walking && depthOf(state) >= paths.settings.maxDepth) {
+    if (depthOf(state) >= paths.settings.maxDepth) {
         return false;
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
@@ -138,13 +135,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     if (!drawn.found()) {
         return false;
     }
-    const bool inWalk = walking && drawn.lobe != bsdf::Lobe::Transmission;
-    if (inWalk) {
-        if (MOYA_PATH(state, subsurfaceBounces) >= paths.settings.subsurfaceDepth) {
-            return false;
-        }
-        ++MOYA_PATH(state, subsurfaceBounces);
-    } else if (depthOf(state) >= paths.settings.maxDepth || !counted(paths.settings, drawn.lobe, state)) {
+    if (!counted(paths.settings, drawn.lobe, state)) {
         return false;
     }
     walks = scattering.closures[drawn.closure].walks;
@@ -159,7 +150,7 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     MOYA_PATH(state, cone) =
         surface::bounced(MOYA_PATH(state, cone), point.footprint.width(), crossed ? 0.0F : paths.surfaces.curvature(point), drawn.roughness, crossed);
     MOYA_PATH(state, bounces) = bounce + 1U;
-    if (!inWalk && depthOf(state) >= paths.settings.rouletteDepth) {
+    if (depthOf(state) >= paths.settings.rouletteDepth) {
         const float survival = std::fmin(1.0F, MOYA_PATH(state, throughput).maximum());
         if (!(paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kRoulette)) < survival)) {
             return false;
@@ -337,8 +328,8 @@ MOYA_KERNEL void glowAt(const Paths<T, X> & paths, PathState & state, const geom
  * of the mesh lights it meets, a light sample and the scatter stage. False when the path ends
  * there. A path that crosses the surface as it scatters enters or leaves the medium it encloses,
  * and one that leaves through a lobe that is not singular gives a denoiser nothing past it. A path
- * that walks the subsurface of the surface it met meets it from inside, as the subsurface's
- * dielectric alone.
+ * that walks the subsurface of the surface it met meets it from inside, as a Lambertian lobe
+ * that leaves through the surface.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL bool bounce(const Paths<T, X> & paths, PathState & state, const geometry::Hit & hit, surface::ShadingPoint & point) {
@@ -357,7 +348,7 @@ MOYA_KERNEL bool bounce(const Paths<T, X> & paths, PathState & state, const geom
     features(paths, state, scattering, point, hit.distance * length);
     MOYA_PATH(state, radiance) += MOYA_PATH(state, throughput) * direct(paths, hit, point, scattering, outgoing, state);
     bool walks = false;
-    if (!scatter(paths, point, scattering, outgoing, state, walking, walks)) {
+    if (!scatter(paths, point, scattering, outgoing, state, walks)) {
         return false;
     }
     crossing(paths, state, hit, point, walks);

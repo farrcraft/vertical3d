@@ -641,7 +641,8 @@ surface keeps its energy. The whole is not reciprocal, though each lobe but fuzz
   is not thin-walled it takes that share of the opaque rest's `Specular` reflection too, as a
   `Dielectric` that walks. That dielectric has the specular layer's roughness and index, relative
   to the medium outside, and its reflection is tinted by the specular colour. A path it carries
-  into the surface walks [the medium below a subsurface](#the-medium-below-a-subsurface). A
+  into the surface walks [the medium below a subsurface](#the-medium-below-a-subsurface), and
+  leaves it by a Lambertian lobe, as [Integrator.md](Integrator.md#walking-a-subsurface) says. A
   denoiser takes its albedo as the subsurface colour, and does not count it singular even when it
   is smooth. On a thin wall the subsurface is OpenPBR's sheet, with no walk: two `OrenNayar` lobes
   of `baseDiffuseRoughness`, coloured by the subsurface colour. One reflects with a weight of half

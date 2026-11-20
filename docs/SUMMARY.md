@@ -257,6 +257,7 @@
     - [ADR-0249: Offline: a collision in a medium is a first hit](adr/offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md)
     - [ADR-0250: Offline: a volume's deep samples are cut by the tolerance](adr/offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md)
     - [ADR-0251: Offline: alpha through a medium is its mean transmittance](adr/offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md)
+    - [ADR-0252: Offline: a walk leaves its surface by a Lambertian lobe](adr/offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md)
     - [ADR-0020: UI: themes are data, apps load the images](adr/ui/0020-ui-themes-are-data-apps-load-the-images.md)
     - [ADR-0034: UI: layout is resolved while drawing](adr/ui/0034-ui-layout-is-resolved-while-drawing.md)
     - [ADR-0035: UI: immediate mode beside the retained tree](adr/ui/0035-ui-immediate-mode-beside-the-retained-tree.md)

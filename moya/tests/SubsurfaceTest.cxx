@@ -354,6 +354,56 @@ BOOST_AUTO_TEST_CASE(moya_subsurface_a_white_subsurface_returns_a_furnaces_light
     BOOST_TEST(near(sheet, bare, 0.02F), sheet.x << " " << sheet.y << " " << sheet.z << " against " << bare.x << " " << bare.y << " " << bare.z);
 }
 
+// a walk leaves its surface by a Lambertian lobe, so light samples alone find the light it carries
+// out. A white subsurface under light samples alone returns a white dome's light, smooth or rough
+BOOST_AUTO_TEST_CASE(moya_subsurface_light_samples_alone_find_a_walks_light_test) {
+    const glm::vec3 bare = furnaceOf({});
+    for (const float roughness : { 0.0F, 0.3F }) {
+        BOOST_TEST_CONTEXT("roughness " << roughness) {
+            const glm::vec3 white = meanColour(pictured(256, [&](scene::Scene & scene, const scene::Handle & options) {
+                for (const char * limit : { "maxDepth", "diffuseDepth", "glossyDepth", "transmissionDepth" }) {
+                    scene.set(options, limit, scene::Value::integer(1024));
+                }
+                scene.set(options, "lightSampling", scene::Value::string("light"));
+                ball(scene, "ball", 1.0F,
+                    openPbr(scene, "white", { { "subsurface_weight", scene::Value::number(1.0F) }, { "subsurface_color", scene::Value::colour(glm::vec3 { 1.0F }) },
+                                                { "subsurface_radius", scene::Value::number(0.5F) }, { "specular_roughness", scene::Value::number(roughness) } }));
+            }));
+            BOOST_TEST(near(white, bare, 0.03F), white.x << " " << white.y << " " << white.z << " against " << bare.x << " " << bare.y << " " << bare.z);
+        }
+    }
+}
+
+/**
+ * A white subsurface ball of a roughness, lit by a distant light behind the camera alone, as the
+ * mean of its picture.
+ **/
+glm::vec3 underSunOf(float roughness) {
+    return meanColour(pictured(256, [&](scene::Scene & scene, const scene::Handle &) {
+        // the dome is made before build() runs, and found once applied
+        scene.commit();
+        scene.apply();
+        scene.set(scene.objects("domeLight").front(), "intensity", scene::Value::number(0.0F));
+        // a distant light of no angle gives an irradiance of its intensity. It shines down its own
+        // -z, and a half turn about x turns it to shine along +z, as the camera looks
+        const scene::Handle sun = scene.create("distantLight", "sun");
+        scene.set(sun, "angle", scene::Value::number(0.0F));
+        scene.set(sun, "transform", scene::Value::matrix(glm::rotate(glm::mat4(1.0F), glm::radians(180.0F), glm::vec3 { 1.0F, 0.0F, 0.0F })));
+        ball(scene, "ball", 1.0F,
+            openPbr(scene, "white", { { "subsurface_weight", scene::Value::number(1.0F) }, { "subsurface_color", scene::Value::colour(glm::vec3 { 1.0F }) },
+                                        { "subsurface_radius", scene::Value::number(0.5F) }, { "specular_roughness", scene::Value::number(roughness) } }));
+    }));
+}
+
+// a smooth subsurface is lit by a light of no size, through the light sample where its walk leaves,
+// as a rough one is. The two differ only where light enters, so they lie near each other
+BOOST_AUTO_TEST_CASE(moya_subsurface_a_smooth_walk_is_lit_by_a_distant_light_test) {
+    const glm::vec3 rough = underSunOf(0.8F);
+    const glm::vec3 smooth = underSunOf(0.0F);
+    BOOST_TEST(rough.y > 0.05F, rough.y);
+    BOOST_TEST(near(smooth, rough, 0.1F), smooth.x << " " << smooth.y << " " << smooth.z << " against " << rough.x << " " << rough.y << " " << rough.z);
+}
+
 // a walk is absorbed at the options' limit, so a white subsurface that may not walk at all is dark
 // but for its reflection
 BOOST_AUTO_TEST_CASE(moya_subsurface_a_walk_is_absorbed_at_its_limit_test) {
@@ -455,4 +505,6 @@ BOOST_AUTO_TEST_CASE(moya_subsurface_the_options_limit_a_walk_test) {
 }
 
 };  // namespace
+
 };  // namespace v3d::moya::tracing
+
