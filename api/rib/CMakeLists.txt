@@ -37,6 +37,7 @@ v3d_add_api_library(rib
 	"requests/Sphere.h"
 	"requests/SubdivisionMesh.h"
 	"requests/Torus.h"
+	"requests/Volume.h"
 	"Handler.h"
 	"internal/Operands.h" "internal/Operands.cxx"
 	"internal/Primitives.h" "internal/Primitives.cxx"

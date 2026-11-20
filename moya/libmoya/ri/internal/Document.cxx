@@ -45,18 +45,26 @@ std::optional<Terminals> documentMaterial(scene::Scene & scene, Objects & made, 
         reason = material.empty() ? "it holds no material" : "it holds no material " + material;
         return std::nullopt;
     }
-    const mx::InputPtr surface = chosen->getInput("surfaceshader");
-    const mx::NodePtr shader = surface ? surface->getConnectedNode() : nullptr;
-    if (!shader) {
-        reason = "its material " + chosen->getName() + " names no surface shader";
+    const auto shaderOf = [&chosen](const char * input) {
+        const mx::InputPtr named = chosen->getInput(input);
+        return named ? named->getConnectedNode() : nullptr;
+    };
+    const mx::NodePtr surface = shaderOf("surfaceshader");
+    const mx::NodePtr volume = shaderOf("volumeshader");
+    if (!surface && !volume) {
+        reason = "its material " + chosen->getName() + " names neither a surface shader nor a volume shader";
         return std::nullopt;
     }
     DocumentReader reader(scene, made, boost::filesystem::path(file).parent_path());
-    Terminals out { .surface = reader.nodeOf(shader), .displacement = std::nullopt };
-    const mx::InputPtr displacement = chosen->getInput("displacementshader");
-    const mx::NodePtr displacer = displacement ? displacement->getConnectedNode() : nullptr;
-    if (displacer) {
+    Terminals out{};
+    if (surface) {
+        out.surface = reader.nodeOf(surface);
+    }
+    if (const mx::NodePtr displacer = shaderOf("displacementshader")) {
         out.displacement = reader.nodeOf(displacer);
+    }
+    if (volume) {
+        out.volume = reader.nodeOf(volume);
     }
     return out;
 }

@@ -32,11 +32,15 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
+#include <api/type/Checked.h>
 #include <moya/libmoya/ri/internal/Document.h>
+#include <moya/libmoya/ri/internal/Network.h>
 #include <moya/libmoya/ri/internal/Primvars.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
 #include <moya/libmoya/ri/internal/Shape.h>
 #include <moya/libmoya/ri/internal/Shapes.h>
+#include <moya/libmoya/ri/internal/Volumes.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kind.h>
@@ -561,7 +565,8 @@ void SceneClient::motionEnd() {
 
 void SceneClient::attribute(const std::string & name, const v3d::rib::ParameterList & parameters) {
     static const std::map<std::string, std::set<std::string>> kRead { { "identifier", { "name" } },
-        { "displacementbound", { "sphere", "coordinatesystem" } }, { "trace", { "bias" } }, { "light", { "nsamples" } } };
+        { "displacementbound", { "sphere", "coordinatesystem" } }, { "trace", { "bias" } }, { "light", { "nsamples" } },
+        { "shade", { "intersectpriority" } } };
     const auto read = kRead.find(name);
     unread("Attribute", name, parameters, read == kRead.end() ? std::set<std::string> {} : read->second);
 
@@ -570,6 +575,15 @@ void SceneClient::attribute(const std::string & name, const v3d::rib::ParameterL
     }
     if (name == "displacementbound" && parameters.has("sphere")) {
         displacementBound(parameters);
+    }
+    if (name == "shade" && parameters.has("intersectpriority")) {
+        const float given = parameters.number("intersectpriority", 0.0F);
+        const std::optional<std::int32_t> priority = v3d::type::toInteger(given, {.minimum = -2000000000, .maximum = 2000000000});
+        if (!priority) {
+            warnings_.once("priority " + std::to_string(given), "an intersection priority of " + std::to_string(given) + " is beyond what an integer holds, and is not used");
+        } else {
+            current_.priority = *priority;
+        }
     }
 }
 
@@ -603,9 +617,15 @@ std::string SceneClient::nameFor(const std::string & kind, const std::string & r
     return made_.name(kind, request, current_.name);
 }
 
-void SceneClient::place(const internal::Shape & shape) {
+bool SceneClient::inWorld() {
     if (!world_) {
         warnings_.once("outside", "a primitive outside WorldBegin and WorldEnd is not drawn");
+    }
+    return world_;
+}
+
+void SceneClient::place(const internal::Shape & shape) {
+    if (!inWorld()) {
         return;
     }
     const scene::Handle prototype = made_.make(shape.kind, nameFor(shape.kind, shape.request));
@@ -642,6 +662,9 @@ scene::Handle SceneClient::instance(const scene::Handle & prototype, const std::
     scene_.set(placed, "prototype", scene::Value::handle(prototype));
     current_.transformation.set(&scene_, placed, "transform", logger_);
     scene_.set(placed, "doubleSided", scene::Value::integer(current_.twoSided ? 1 : 0));
+    if (current_.priority != 0) {
+        scene_.set(placed, "priority", scene::Value::integer(current_.priority));
+    }
     if (current_.group.valid()) {
         // an object's geometry takes the material in force where the object is placed
         scene_.set(placed, "group", scene::Value::handle(current_.group));
@@ -662,105 +685,30 @@ scene::Handle SceneClient::shaderNode(const Shader & shader, const std::string &
     return node;
 }
 
-std::optional<internal::Terminals> SceneClient::networkTerminals() {
-    const std::vector<Node> & network = current_.network;
-    std::size_t last = network.size();
-    for (std::size_t place = network.size(); place > 0; --place) {
-        if (network[place - 1].bxdf) {
-            last = place - 1;
-            break;
-        }
-    }
-    std::map<std::size_t, scene::Handle> made;
-    const Node & surface = network[last];
-    if (surface.request.type != "materialx") {
-        return internal::Terminals { .surface = networkNode(last, made), .displacement = std::nullopt };
-    }
-    const std::optional<scene::Value> file = internal::valueOf(surface.parameters, "file");
-    const std::optional<scene::Value> named = internal::valueOf(surface.parameters, "material");
-    const std::string path = file && !file->stringArray().empty() ? file->stringArray().front() : std::string();
-    const std::string chosen = named && !named->stringArray().empty() ? named->stringArray().front() : std::string();
-    std::string reason;
-    const std::optional<internal::Terminals> read = internal::documentMaterial(scene_, made_, path, chosen, reason);
-    if (!read) {
-        warnings_.once("document " + path, "the MaterialX document \"" + path + "\" gives no material, because " + reason + ", so the surface is " + current_.surface.name);
-        return std::nullopt;
-    }
-    inputsOf(read->surface, surface.request.handle, surface, last, made, { "file", "material" });
-    return read;
-}
-
-scene::Handle SceneClient::networkNode(std::size_t place, std::map<std::size_t, scene::Handle> & made) {
-    const auto found = made.find(place);
-    if (found != made.end()) {
-        return found->second;
-    }
-    const Node & node = current_.network[place];
-    const std::string name = made_.unique("shader", node.request.handle.empty() ? node.request.type : node.request.handle);
-    const scene::Handle out = made_.make("shader", name);
-    made.emplace(place, out);
-    scene_.set(out, "shader", scene::Value::string(node.request.type));
-    scene_.set(out, "language", scene::Value::string("materialx"));
-    inputsOf(out, name, node, place, made, {});
-    return out;
-}
-
-void SceneClient::inputsOf(const scene::Handle & node, const std::string & name, const Node & request, std::size_t place,
-    std::map<std::size_t, scene::Handle> & made, const std::set<std::string> & except) {
-    std::set<std::string> constants = except;
-    for (const std::string & input : request.parameters.names()) {
-        if (!request.parameters.declaration(input)->reference()) {
-            continue;
-        }
-        constants.insert(input);
-        const std::vector<std::string> & values = request.parameters.strings(input);
-        const std::string value = values.empty() ? std::string() : values.front();
-        const std::size_t colon = value.find(':');
-        const std::string handle = value.substr(0, colon);
-        const std::string output = colon == std::string::npos ? std::string() : value.substr(colon + 1);
-        // a reference reads a node that came before it
-        std::size_t from = place;
-        for (std::size_t earlier = place; earlier > 0; --earlier) {
-            if (current_.network[earlier - 1].request.handle == handle) {
-                from = earlier - 1;
-                break;
-            }
-        }
-        if (from == place) {
-            std::string message = "a reference names ";
-            message.append(handle).append(", which no Pattern or Bxdf before it has as its handle, so ").append(input).append(" keeps its value");
-            warnings_.once("reference " + handle, message);
-            continue;
-        }
-        const scene::Handle source = networkNode(from, made);
-        std::string named = handle;
-        named.append(" to ").append(input).append(" of ").append(name);
-        const scene::Handle connection = made_.make("connection", made_.unique("connection", named));
-        scene_.set(connection, "from", scene::Value::handle(source));
-        scene_.set(connection, "to", scene::Value::handle(node));
-        scene_.set(connection, "input", scene::Value::string(input));
-        if (!output.empty()) {
-            scene_.set(connection, "output", scene::Value::string(output));
-        }
-    }
-    internal::declare(&scene_, node, request.parameters, constants, true);
-}
-
 scene::Handle SceneClient::material() {
     if (current_.material->valid()) {
         return *current_.material;
     }
-    const bool networked = std::ranges::any_of(current_.network, [](const Node & node) {
+    const bool networked = std::ranges::any_of(current_.network, [](const internal::Network::Node & node) {
         return node.bxdf;
     });
-    const std::optional<internal::Terminals> networkMade = networked ? networkTerminals() : std::nullopt;
+    std::optional<internal::Terminals> networkMade;
+    if (networked) {
+        internal::Network network(&scene_, &made_, &warnings_, current_.network);
+        networkMade = network.terminals(current_.surface.name);
+    }
     if (networkMade) {
         const scene::Handle made = made_.make("material", made_.unique("material", "material"));
-        scene_.set(made, "surface", scene::Value::handle(networkMade->surface));
+        if (networkMade->surface) {
+            scene_.set(made, "surface", scene::Value::handle(*networkMade->surface));
+        }
         if (networkMade->displacement) {
             scene_.set(made, "displacement", scene::Value::handle(*networkMade->displacement));
         } else if (!current_.displacement.name.empty()) {
             scene_.set(made, "displacement", scene::Value::handle(shaderNode(current_.displacement, made_.unique("shader", current_.displacement.name))));
+        }
+        if (networkMade->volume) {
+            scene_.set(made, "volume", scene::Value::handle(*networkMade->volume));
         }
         *current_.material = made;
         return made;
@@ -837,7 +785,7 @@ void SceneClient::pattern(const v3d::rib::requests::ShadingNode & request, const
     if (request.type.empty()) {
         return;
     }
-    current_.network.push_back(Node { .request = request, .parameters = parameters, .bxdf = false });
+    current_.network.push_back(internal::Network::Node { .request = request, .parameters = parameters, .bxdf = false });
     current_.material = boost::make_shared<scene::Handle>();
 }
 
@@ -845,7 +793,7 @@ void SceneClient::bxdf(const v3d::rib::requests::ShadingNode & request, const v3
     if (request.type.empty()) {
         return;
     }
-    current_.network.push_back(Node { .request = request, .parameters = parameters, .bxdf = true });
+    current_.network.push_back(internal::Network::Node { .request = request, .parameters = parameters, .bxdf = true });
     current_.material = boost::make_shared<scene::Handle>();
 }
 
@@ -965,6 +913,22 @@ void SceneClient::torus(const v3d::rib::requests::Torus & request, const v3d::ri
 
 void SceneClient::subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const v3d::rib::ParameterList & parameters) {
     place(internal::Shapes::subdivision(request, parameters, &warnings_));
+}
+
+void SceneClient::volume(const v3d::rib::requests::Volume & request, const v3d::rib::ParameterList & parameters) {
+    const std::optional<internal::Grids> grids = internal::openVdbGrids(request, parameters, &warnings_);
+    if (!grids || !inWorld()) {
+        return;
+    }
+    std::vector<scene::Handle> fields;
+    for (const std::string & name : grids->names) {
+        const scene::Handle field = made_.make("openVDBAsset", made_.unique("openVDBAsset", name));
+        scene_.set(field, "filePath", scene::Value::string(grids->file));
+        scene_.set(field, "fieldName", scene::Value::string(name));
+        fields.push_back(field);
+    }
+    place(internal::Shape { .kind = "volume", .request = "Volume",
+        .parameters = { { "fields", scene::Value::handles(fields) }, { "fieldNames", scene::Value::strings(grids->names) } } });
 }
 
 void SceneClient::objectBegin(const std::string & handle) {

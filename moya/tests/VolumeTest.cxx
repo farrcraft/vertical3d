@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  */
 
+#include <api/log/Logger.h>
+#include <api/rib/Reader.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/device/CpuDevice.h>
@@ -22,6 +24,7 @@
 #include <moya/libmoya/kernel/volume/Homogeneous.h>
 #include <moya/libmoya/kernel/volume/Medium.h>
 #include <moya/libmoya/kernel/volume/Volume.h>
+#include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Kinds.h>
@@ -47,11 +50,14 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <boost/filesystem.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/common.hpp>
@@ -287,6 +293,43 @@ BOOST_AUTO_TEST_CASE(moya_volume_a_constant_grid_absorbs_as_a_homogeneous_medium
     const glm::vec3 expected = passedOf([&](const spectrum::SampledWavelengths & wavelengths) {
         volume::Medium medium;
         medium.absorption = absorption * 1.5F;
+        return volume::transmittance(volume::coefficientsOf(colour::acescgTable(), medium, wavelengths).extinction(), depth);
+    });
+    const glm::vec3 mean = meanColour(snapshot);
+    BOOST_TEST(near(mean, expected, 0.02F), mean.x << " " << mean.y << " " << mean.z << " against " << expected.x << " " << expected.y << " " << expected.z);
+}
+
+// the same box and program, read from RIB as RenderMan's OpenVDB volume and a network of a VDF's
+// Bxdf under a dome light, lets through the same share
+BOOST_AUTO_TEST_CASE(moya_volume_a_fog_read_from_rib_absorbs_as_its_closed_form_test) {
+    const std::string path = boost::filesystem::path(written(box(1.5F), "v3d_moya_volume_rib.vdb")).generic_string();
+    const std::string requests = "Format 8 8 1\nPixelSamples 64 64\nProjection \"orthographic\"\nScreenWindow -0.05 0.05 -0.05 0.05\nTranslate 0 0 5\n"
+        "WorldBegin\n"
+        "Light \"PxrDomeLight\" \"sky\"\n"
+        "Pattern \"ND_geompropvalue_float\" \"density\" \"string geomprop\" [\"density\"]\n"
+        "Pattern \"ND_multiply_vector3FA\" \"scaled\" \"vector in1\" [0.2 0.6 1.2] \"reference float in2\" [\"density:out\"]\n"
+        "Bxdf \"ND_anisotropic_vdf\" \"fog\" \"reference vector absorption\" [\"scaled:out\"]\n"
+        "Volume \"blobbydso:impl_openvdb\" [-1 1 -1 1 -1 1] [0 0 0] \"constant string[2] blobbydso:stringargs\" [\"" + path + "\" \"density:fogvolume\"]\n"
+        "WorldEnd\n";
+    scene::Scene scene(scene::kinds());
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    {
+        v3d::moya::ri::SceneClient client(scene, logger);
+        client.frame([&scene]() {
+            scene.apply();
+        });
+        std::istringstream stream(requests);
+        v3d::rib::Reader reader(logger);
+        BOOST_TEST_REQUIRE(reader.read(stream, &client));
+        BOOST_TEST(reader.unrecognised().empty());
+    }
+    CpuDevice device;
+    const film::Snapshot snapshot = integrate::render(device, scene, {}, v3d::moya::colour::Config());
+    boost::filesystem::remove(path);
+    const float depth = 2.0F + static_cast<float>(kVoxel);
+    const glm::vec3 expected = passedOf([&](const spectrum::SampledWavelengths & wavelengths) {
+        volume::Medium medium;
+        medium.absorption = glm::vec3 { 0.2F, 0.6F, 1.2F } * 1.5F;
         return volume::transmittance(volume::coefficientsOf(colour::acescgTable(), medium, wavelengths).extinction(), depth);
     });
     const glm::vec3 mean = meanColour(snapshot);

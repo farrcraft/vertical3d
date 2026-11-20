@@ -23,9 +23,11 @@
 #include <api/rib/requests/ShadingNode.h>
 #include <api/rib/requests/Shutter.h>
 #include <api/rib/requests/Sphere.h>
+#include <api/rib/requests/Volume.h>
 
 #include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <map>
@@ -256,6 +258,19 @@ class CurveHandler final : public v3d::rib::Handler {
     std::vector<v3d::rib::requests::Curves> curves_;
     std::vector<std::size_t> points_;
     std::vector<std::vector<float>> widths_;
+};
+
+/**
+ * Takes the volumes a reader hands it, and the parameters of each.
+ **/
+class VolumeHandler final : public v3d::rib::Handler {
+ public:
+    void volume(const v3d::rib::requests::Volume & request, const v3d::rib::ParameterList & parameters) override {
+        volumes_.push_back(request);
+        parameters_.push_back(parameters);
+    }
+    std::vector<v3d::rib::requests::Volume> volumes_;
+    std::vector<v3d::rib::ParameterList> parameters_;
 };
 
 /**
@@ -666,6 +681,44 @@ BOOST_AUTO_TEST_CASE(ribreader_bad_basis_and_curves_test) {
         BOOST_CHECK_MESSAGE(!read(source, &handler, &reader), source);
         BOOST_CHECK(handler.curves_.empty());
         BOOST_CHECK(handler.bases_.empty());
+    }
+}
+
+/**
+ * A volume is its type, its box, its three voxel counts and its parameters. RenderMan's OpenVDB
+ * volume names its file and grid in its string arguments, and each grid it reads by an empty
+ * varying array. A shape's varying value is one per voxel, so a bare one has a length.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_volume_test) {
+    VolumeHandler handler;
+    v3d::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(
+        "Volume \"blobbydso:impl_openvdb\" [-1 1 -2 2 -3 3] [0 0 0]"
+        " \"constant string[2] blobbydso:stringargs\" [\"smoke.vdb\" \"density:fogvolume\"] \"varying float temperature\" []\n"
+        "Volume \"box\" [0 1 0 1 0 1] [2 1 1] \"varying float density\" 0.25 0.5\n", &handler, &reader));
+    BOOST_TEST(reader.unrecognised().empty());
+
+    BOOST_TEST_REQUIRE(handler.volumes_.size() == 2U);
+    BOOST_TEST(handler.volumes_[0].type == "blobbydso:impl_openvdb");
+    BOOST_TEST((handler.volumes_[0].bound == std::array<float, 6> { -1, 1, -2, 2, -3, 3 }));
+    BOOST_TEST((handler.volumes_[0].voxels == std::array<unsigned int, 3> { 0, 0, 0 }));
+    BOOST_TEST((handler.parameters_[0].strings("blobbydso:stringargs") == std::vector<std::string> { "smoke.vdb", "density:fogvolume" }));
+    BOOST_TEST(handler.parameters_[0].has("temperature"));
+    BOOST_TEST(handler.parameters_[0].floats("temperature").empty());
+    BOOST_TEST(handler.volumes_[1].type == "box");
+    BOOST_TEST((handler.volumes_[1].voxels == std::array<unsigned int, 3> { 2, 1, 1 }));
+    BOOST_TEST((handler.parameters_[1].floats("density") == std::vector<float> { 0.25F, 0.5F }));
+}
+
+/**
+ * A volume that gives two voxel counts, or four, is an error in the scene.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_volume_of_other_than_three_counts_test) {
+    for (const char* source : { "Volume \"box\" [0 1 0 1 0 1] [2 2]\n", "Volume \"box\" [0 1 0 1 0 1] [2 2 2 2]\n" }) {
+        VolumeHandler handler;
+        v3d::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+        BOOST_CHECK_MESSAGE(!read(source, &handler, &reader), source);
+        BOOST_CHECK(handler.volumes_.empty());
     }
 }
 

@@ -29,6 +29,7 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
 
 #include <string>
 #include <vector>
@@ -317,6 +318,14 @@ class Handler {
         (void)parameters;
     }
     virtual void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    /**
+     * RenderMan's `Volume`: a volume of a shape or a plugin. A varying or vertex parameter holds
+     * one value per voxel. RI has no such request, so the default body ignores it.
+     **/
+    virtual void volume(const requests::Volume & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }

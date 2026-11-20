@@ -31,6 +31,16 @@ BOOST_AUTO_TEST_CASE(moya_material_library_open_pbr_surface_is_version_1_1_1_tes
     BOOST_TEST(material::Library().version(kOpenPbr) == "1.1.1");
 }
 
+// a definition gives the type of its output, and one not defined gives none
+BOOST_AUTO_TEST_CASE(moya_material_library_a_definition_gives_its_output_type_test) {
+    const material::Library library;
+    BOOST_TEST(library.type(kOpenPbr) == "surfaceshader");
+    BOOST_TEST(library.type("ND_chiang_hair_bsdf") == "BSDF");
+    BOOST_TEST(library.type("ND_volume") == "volumeshader");
+    BOOST_TEST(library.type("ND_anisotropic_vdf") == "VDF");
+    BOOST_TEST(library.type("ND_no_such_node").empty());
+}
+
 BOOST_AUTO_TEST_CASE(moya_material_library_open_pbr_surface_resolves_to_its_node_graph_test) {
     BOOST_TEST(material::Library().graph(kOpenPbr) == "NG_open_pbr_surface_surfaceshader");
 }

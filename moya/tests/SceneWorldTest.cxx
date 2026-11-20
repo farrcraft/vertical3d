@@ -5,6 +5,7 @@
 
 #include <api/log/Logger.h>
 #include <api/rib/Reader.h>
+#include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/ri/SceneClient.h>
 #include <moya/libmoya/scene/Declaration.h>
 #include <moya/libmoya/scene/Description.h>
@@ -15,6 +16,7 @@
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <ios>
 #include <istream>
@@ -77,7 +79,8 @@ class Read final {
         });
         v3d::rib::Reader reader(logger_);
         BOOST_REQUIRE(reader.read(*stream, &client));
-        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by", "left open" }) {
+        for (const char * text : { "makes no light", "not drawn", "not made", "no ObjectBegin", "does not read", "left out", "subdivided by", "left open",
+                 "makes nothing", "does not hold floats", "beyond what an integer holds" }) {
             if (heard.said(text)) {
                 heard_ += std::string(text) + "\n";
             }
@@ -591,6 +594,63 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_a_new_world_replaces_the_one_before_test) 
     BOOST_TEST(read.scene().objects("disk").size() == 1U);
     BOOST_TEST(read.scene().objects("instance").size() == 1U);
     BOOST_TEST(read.scene().objects("camera").size() == 1U);
+}
+
+// RenderMan's OpenVDB volume is a volume of the file its string arguments name. Its fields are the
+// grid they name, before the class after its colon, then each other float grid a varying parameter
+// names, each read by its grid's name. A grid of colours is heard and not read
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_openvdb_volume_reads_its_grids_test) {
+    const Read read(world(
+        "Attribute \"identifier\" \"name\" \"smoke\"\n"
+        "Volume \"blobbydso:impl_openvdb\" [-1 1 -1 1 -1 1] [0 0 0] \"constant string[2] blobbydso:stringargs\" [\"data/blender_smoke.vdb\" \"density:fogvolume\"]"
+        " \"varying float density\" [] \"varying float temperature\" [] \"varying color Cd\" []\n"));
+    const scene::Handle volume = read.handle("volume", "smoke");
+    BOOST_TEST((read.value("volume", "smoke", "fieldNames") == scene::Value::strings({ "density", "temperature" })));
+    const std::vector<scene::Handle> & fields = read.value("volume", "smoke", "fields").handleArray();
+    BOOST_TEST_REQUIRE(fields.size() == 2U);
+    for (std::size_t i = 0; i < fields.size(); ++i) {
+        BOOST_TEST((read.scene().value(fields[i], "filePath") == scene::Value::string("data/blender_smoke.vdb")));
+        BOOST_TEST((read.scene().value(fields[i], "fieldName") == scene::Value::string(i == 0 ? "density" : "temperature")));
+    }
+    BOOST_TEST(read.scene().primvars(volume).empty());
+    BOOST_TEST((read.value("instance", "smoke", "prototype") == scene::Value::handle(volume)));
+    BOOST_TEST(read.heard("does not hold floats"));
+
+    // the volume reads its density from the file, with no material of a volume
+    const v3d::moya::geometry::Prototypes prototypes = v3d::moya::geometry::gather(read.scene(), {});
+    BOOST_TEST(prototypes.grids.size() == 2U);
+}
+
+// a Volume of a shape, of a level set, or of no grid makes nothing, and is heard
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_volume_moya_cannot_read_makes_nothing_test) {
+    for (const char * request : { "Volume \"box\" [-1 1 -1 1 -1 1] [1 1 1] \"varying float density\" [1]\n",
+             "Volume \"blobbydso:impl_openvdb\" [-1 1 -1 1 -1 1] [0 0 0] \"constant string[2] blobbydso:stringargs\" [\"sphere.vdb\" \"surface:levelset\"]\n",
+             "Volume \"blobbydso:impl_openvdb\" [-1 1 -1 1 -1 1] [0 0 0] \"constant string[1] blobbydso:stringargs\" [\"smoke.vdb\"]\n" }) {
+        const Read read(world(request));
+        BOOST_TEST(read.scene().objects("volume").empty(), request);
+        BOOST_TEST(read.scene().objects("openVDBAsset").empty(), request);
+        BOOST_TEST(read.heard("makes nothing"), request);
+    }
+}
+
+// RenderMan's intersection priority is the priority of each instance made after it in its block,
+// and one beyond what an integer holds is heard and changes nothing
+BOOST_AUTO_TEST_CASE(moya_sceneclient_an_intersection_priority_is_the_instances_test) {
+    const Read read(world(
+        "AttributeBegin\n"
+        "Attribute \"shade\" \"int intersectpriority\" [3]\n"
+        "Attribute \"identifier\" \"name\" \"liquid\"\n"
+        "Sphere 1 -1 1 360\n"
+        "Attribute \"shade\" \"float intersectpriority\" [1e12]\n"
+        "Attribute \"identifier\" \"name\" \"still liquid\"\n"
+        "Sphere 1 -1 1 360\n"
+        "AttributeEnd\n"
+        "Attribute \"identifier\" \"name\" \"glass\"\n"
+        "Sphere 1 -1 1 360\n"));
+    BOOST_TEST((read.value("instance", "liquid", "priority") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("instance", "still liquid", "priority") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("instance", "glass", "priority") == scene::Value::integer(0)));
+    BOOST_TEST(read.heard("beyond what an integer holds"));
 }
 
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_primitive_outside_the_world_is_not_drawn_test) {

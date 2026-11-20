@@ -158,6 +158,7 @@ Attributes belong to the objects that follow, until a block ends or the attribut
 | `Attribute "displacementbound" "float sphere" [d]` | How far a displacement can move a point. See [Displacement.md](Displacement.md#3-set-the-displacement-bound) |
 | `Attribute "trace" "bias" [d]` | Nothing |
 | `Attribute "light" "integer nsamples" [n]` | Nothing |
+| `Attribute "shade" "int intersectpriority" [n]` | Which object's material fills the space where closed objects overlap, such as a liquid pushed into its glass. The higher wins. Default 0 |
 
 - `Attribute` reads only the names in the table. Any other attribute is logged once by name.
 - A `Basis` name is `"bezier"`, `"b-spline"`, `"catmull-rom"`, `"hermite"` or `"power"`, or it is
@@ -171,7 +172,7 @@ Attributes belong to the objects that follow, until a block ends or the attribut
 | `Surface "name" params` | The material of the objects that follow. Default `matte`. See [Materials.md](Materials.md) |
 | `Displacement "name" params` | The displacement of the subdivision surfaces that follow. See [Displacement.md](Displacement.md) |
 | `Pattern "type" handle params` | A MaterialX node of the material, such as `ND_constant_color3` |
-| `Bxdf "type" handle params` | The surface node of the material, such as `ND_open_pbr_surface_surfaceshader`, or `materialx` with a `file` and a `material` to read one from a document. See [Materials.md](Materials.md#rendermans-bxdf-and-pattern) |
+| `Bxdf "type" handle params` | The surface node of the material, such as `ND_open_pbr_surface_surfaceshader` or a hair's `ND_chiang_hair_bsdf`, or `materialx` with a `file` and a `material` to read one from a document. A volume's node, such as `ND_anisotropic_vdf` or `ND_volume`, is the medium inside the object instead, and a surface's and a volume's `Bxdf` together give one material both. See [Materials.md](Materials.md#rendermans-bxdf-and-pattern) |
 | `LightSource "name" handle params` | Creates one of RI's lights and switches it on. See [Lights.md](Lights.md) |
 | `AreaLightSource "arealight" handle params` | Makes the polygons, meshes and subdivision surfaces after it in the same block glow |
 | `Light "name" handle params` | Creates one of RenderMan's lights, such as `PxrRectLight`, and switches it on |
@@ -197,6 +198,7 @@ Attributes belong to the objects that follow, until a block ends or the attribut
 | `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk`, `Torus` | RI's other quadrics, as RI defines each |
 | `Points params` | A small sphere at each point of `"P"`, as wide as `"width"` or `"constantwidth"` gives, or 1 |
 | `Curves "type" [counts] "wrap" params` | Ribbons along lines or cubic curves. See [Curves.md](Curves.md) |
+| `Volume "blobbydso:impl_openvdb" [bound] [0 0 0] params` | Smoke, a cloud or fire from an OpenVDB file. `"constant string[2] blobbydso:stringargs" ["file.vdb" "density"]` names the file and its density grid, and each `"varying float name" []` another grid the material reads by its name. With no volume's `Bxdf`, the density grid scatters light |
 | `ObjectBegin handle`, `ObjectEnd` | Keeps the geometry between them as an object, in its own space, and draws none of it there |
 | `ObjectInstance handle` | Places the object at the current transformation, with the current material |
 
@@ -214,10 +216,14 @@ Attributes belong to the objects that follow, until a block ends or the attribut
 - Any other subdivision scheme is logged, and the mesh is subdivided by
   `"catmull-clark"`. A tag moya does not read is logged.
 - An `ObjectInstance` of a handle no `ObjectBegin` made is logged.
+- A `Volume` of a shape such as `"box"` is logged and draws nothing: fog inside a shape is a
+  volume's `Bxdf` on that shape. A level set grid, a grid that does not hold floats, and the
+  options in a third string argument are logged too.
 - A primitive given again inside a motion block changes its shape over the shutter. See
   [Camera.md](Camera.md#change-an-objects-shape).
 
 ## What moya does not read
 
-Requests such as `Orientation`, `ReadArchive`, `Patch`, `NuPatch` and `Atmosphere` are skipped
-with a warning, as is every request this page does not list.
+Requests such as `Orientation`, `ReadArchive`, `Patch`, `NuPatch`, `Interior`, `Exterior` and
+`Atmosphere` are skipped with a warning, as is every request this page does not list. A medium
+is a volume's `Bxdf` on the closed object it fills.

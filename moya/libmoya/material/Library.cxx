@@ -89,6 +89,11 @@ bool Library::defines(const std::string & definition) const {
     return nodeDef(*definitions_, definition) != nullptr;
 }
 
+std::string Library::type(const std::string & definition) const {
+    const mx::NodeDefPtr def = nodeDef(*definitions_, definition);
+    return def ? def->getType() : std::string();
+}
+
 std::string Library::version(const std::string & definition) const {
     const mx::NodeDefPtr def = nodeDef(*definitions_, definition);
     return def ? def->getVersionString() : std::string();

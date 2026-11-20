@@ -179,6 +179,83 @@ BOOST_AUTO_TEST_CASE(moya_scenematerials_a_document_gives_its_displacement_test)
     BOOST_TEST(kept.text(ri, "shader") == "bumpy");
 }
 
+// a hair's Bxdf is a BSDF, so it is the material's surface through MaterialX's surface node, and
+// the material renders as a hair's
+BOOST_AUTO_TEST_CASE(moya_scenematerials_a_hairs_bxdf_is_its_materials_surface_test) {
+    const Read read("Bxdf \"ND_chiang_hair_bsdf\" \"hair\" \"color tint_R\" [0.8 0.6 0.4]\n"
+                    "Curves \"linear\" [2] \"nonperiodic\" \"P\" [0 0 0 0 1 0] \"constantwidth\" [0.1]\n");
+    const scene::Handle surface = read.surface();
+    BOOST_TEST(read.text(surface, "shader") == "ND_surface");
+    const std::optional<scene::Handle> connection = read.feeding(surface, "bsdf");
+    BOOST_TEST_REQUIRE(connection.has_value());
+    const scene::Handle hair = read.scene().value(*connection, "from").handleArray().front();
+    BOOST_TEST(read.text(hair, "shader") == "ND_chiang_hair_bsdf");
+    BOOST_TEST((read.scene().value(hair, "tint_R").floatArray() == std::vector<float> { 0.8F, 0.6F, 0.4F }));
+
+    const v3d::moya::geometry::Prototypes prototypes = v3d::moya::geometry::gather(read.scene(), {});
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+    BOOST_TEST(prototypes.materials.front().haired == 1U);
+}
+
+// a volume's Bxdf is a VDF, so it is the material's volume through MaterialX's volume node. With no
+// surface's Bxdf the material has no surface, and is a boundary of the medium the VDF gives
+BOOST_AUTO_TEST_CASE(moya_scenematerials_a_volumes_bxdf_is_its_materials_volume_test) {
+    const Read read("Bxdf \"ND_anisotropic_vdf\" \"fog\" \"vector absorption\" [0.5 0.5 0.5]\nSphere 1 -1 1 360\n");
+    const std::vector<scene::Handle> instances = read.scene().objects("instance");
+    BOOST_TEST_REQUIRE(instances.size() == 1U);
+    const scene::Handle material = read.scene().value(instances.front(), "material").handleArray().front();
+    BOOST_TEST(!read.scene().value(material, "surface").handleArray().front().valid());
+    const scene::Handle volume = read.scene().value(material, "volume").handleArray().front();
+    BOOST_TEST(read.text(volume, "shader") == "ND_volume");
+    const std::optional<scene::Handle> connection = read.feeding(volume, "vdf");
+    BOOST_TEST_REQUIRE(connection.has_value());
+    BOOST_TEST(read.text(read.scene().value(*connection, "from").handleArray().front(), "shader") == "ND_anisotropic_vdf");
+
+    const v3d::moya::geometry::Prototypes prototypes = v3d::moya::geometry::gather(read.scene(), {});
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+    BOOST_TEST(prototypes.materials.front().boundary == 1U);
+    BOOST_TEST(prototypes.materials.front().medium.absorption.x == 0.5F);
+}
+
+// a surface's Bxdf and a volume's both stand, so one material holds a glass and the liquid in it
+BOOST_AUTO_TEST_CASE(moya_scenematerials_a_surface_and_a_volume_share_a_material_test) {
+    const Read read("Bxdf \"ND_open_pbr_surface_surfaceshader\" \"glass\" \"float transmission_weight\" [1]\n"
+                    "Bxdf \"ND_anisotropic_vdf\" \"liquid\" \"vector absorption\" [0.25 0.5 1]\n"
+                    "Sphere 1 -1 1 360\n");
+    BOOST_TEST(read.text(read.surface(), "shader") == "ND_open_pbr_surface_surfaceshader");
+    const scene::Handle material = read.scene().value(read.scene().objects("instance").front(), "material").handleArray().front();
+    const scene::Handle volume = read.scene().value(material, "volume").handleArray().front();
+    BOOST_TEST(read.text(volume, "shader") == "ND_volume");
+    BOOST_TEST(read.feeding(volume, "vdf").has_value());
+
+    const v3d::moya::geometry::Prototypes prototypes = v3d::moya::geometry::gather(read.scene(), {});
+    BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
+    BOOST_TEST(prototypes.materials.front().layered == 1U);
+    BOOST_TEST(prototypes.materials.front().boundary == 0U);
+    BOOST_TEST(prototypes.materials.front().medium.absorption.z == 1.0F);
+}
+
+// a document's material of a volume shader alone gives the material that volume and no surface
+BOOST_AUTO_TEST_CASE(moya_scenematerials_a_document_gives_its_volume_test) {
+    const boost::filesystem::path file = boost::filesystem::temp_directory_path() / "v3d_scene_materials_volume.mtlx";
+    {
+        std::ofstream stream(file.string(), std::ios::binary);
+        stream << "<?xml version=\"1.0\"?>\n<materialx version=\"1.39\">\n"
+                  "  <anisotropic_vdf name=\"murk\" type=\"VDF\"><input name=\"absorption\" type=\"vector3\" value=\"0.3, 0.3, 0.3\" /></anisotropic_vdf>\n"
+                  "  <volume name=\"fog\" type=\"volumeshader\"><input name=\"vdf\" type=\"VDF\" nodename=\"murk\" /></volume>\n"
+                  "  <volumematerial name=\"foggy\" type=\"material\"><input name=\"volumeshader\" type=\"volumeshader\" nodename=\"fog\" /></volumematerial>\n"
+                  "</materialx>\n";
+    }
+    const Read read("Bxdf \"materialx\" \"foggy\" \"string file\" [\"" + file.generic_string() + "\"]\nSphere 1 -1 1 360\n");
+    boost::system::error_code ignored;
+    boost::filesystem::remove(file, ignored);
+    const scene::Handle material = read.scene().value(read.scene().objects("instance").front(), "material").handleArray().front();
+    BOOST_TEST(!read.scene().value(material, "surface").handleArray().front().valid());
+    const scene::Handle volume = read.scene().value(material, "volume").handleArray().front();
+    BOOST_TEST(read.text(volume, "shader") == "ND_volume");
+    BOOST_TEST(read.feeding(volume, "vdf").has_value());
+}
+
 // a document that cannot be read is heard, and the surface is RI's in force
 BOOST_AUTO_TEST_CASE(moya_scenematerials_a_document_that_cannot_be_read_is_heard_test) {
     const Read read("Bxdf \"materialx\" \"none\" \"string file\" [\"no_such_document.mtlx\"]\nSphere 1 -1 1 360\n", "gives no material");

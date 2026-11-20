@@ -11,10 +11,13 @@
 #include <api/rib/Token.h>
 #include <api/rib/requests/Hyperboloid.h>
 #include <api/rib/requests/SubdivisionMesh.h>
+#include <api/rib/requests/Volume.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,7 +42,7 @@ unsigned int Primitives::quadricArguments(const std::string & name) {
 
 bool Primitives::recognises(const std::string & name) {
     return name == "Polygon" || name == "PointsPolygons" || name == "Points" || name == "Curves" || name == "SubdivisionMesh" ||
-        quadricArguments(name) != 0;
+        name == "Volume" || quadricArguments(name) != 0;
 }
 
 bool Primitives::read(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -57,6 +60,9 @@ bool Primitives::read(const std::string & name, Lexer * lexer, Handler * handler
     }
     if (name == "SubdivisionMesh") {
         return subdivision(lexer, handler);
+    }
+    if (name == "Volume") {
+        return volume(lexer, handler);
     }
     return quadric(name, lexer, handler);
 }
@@ -155,6 +161,30 @@ bool Primitives::subdivision(Lexer * lexer, Handler * handler) {
         return false;
     }
     handler->subdivisionMesh(mesh, list);
+    return true;
+}
+
+bool Primitives::volume(Lexer * lexer, Handler * handler) {
+    requests::Volume request;
+    std::vector<float> bound;
+    std::vector<unsigned int> voxels;
+    const Token at = lexer->peek();
+    if (!operands_->text(lexer, &request.type) || !operands_->numbers(lexer, static_cast<unsigned int>(request.bound.size()), &bound) || !operands_->counts(lexer, &voxels)) {
+        return false;
+    }
+    if (voxels.size() != request.voxels.size()) {
+        return operands_->fail("a volume gives three voxel counts", at);
+    }
+    std::copy(bound.begin(), bound.end(), request.bound.begin());
+    std::copy(voxels.begin(), voxels.end(), request.voxels.begin());
+    // a varying value per voxel, unless there are too many to count, when no length is checked
+    const std::uint64_t each = static_cast<std::uint64_t>(voxels[0]) * voxels[1] * voxels[2];
+    const unsigned int count = each <= std::numeric_limits<unsigned int>::max() ? static_cast<unsigned int>(each) : 0U;
+    ParameterList list;
+    if (!operands_->parameters(lexer, count, &list)) {
+        return false;
+    }
+    handler->volume(request, list);
     return true;
 }
 

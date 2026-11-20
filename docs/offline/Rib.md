@@ -73,6 +73,11 @@ the reader and the handler.
   a matrix's name, which the writer uses to write a standard basis by name.
 - **A `Curves` request's varying parameters are not checked for length.** How many values one
   holds depends on the basis's step, which the reader does not track.
+- **RenderMan's `Volume` gives three voxel counts**, or the request is an error, and a varying or
+  vertex parameter holds a value per voxel, the three counts multiplied. A plugin's volume, such
+  as `blobbydso:impl_openvdb`, gives its own bounds and voxels, so its counts are zero and its
+  varying parameters are empty arrays. `Handler::volume()` ignores it by default, and the writer
+  and the recorder carry it.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying, vertex or facevarying parameter ends the parse instead of being guessed at.
@@ -181,21 +186,46 @@ requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the
   node whose handle its value names, written `handle:output`, or `handle` for a node's only output.
   A reference reads a node that came before it, and one that names no such node is logged and
   leaves its input as it was.
-- **The last `Bxdf` is the material's surface**, and the material holds it and every node it
-  reads. The later of a `Surface` and a `Bxdf` shades what follows, because a `Surface` clears
-  the network. The attribute state's `Displacement` stays RI's, unless a document's material
-  gives one.
+- **The last `Bxdf` of a surface is the material's surface, and the last of a volume its
+  volume**, the medium inside the geometry the material is given to. A `Bxdf` is a volume's when
+  its definition's output is a `volumeshader` or a `VDF`, as `ND_volume`'s and
+  `ND_anisotropic_vdf`'s are. One whose output is a `BSDF`, such as a hair's
+  `ND_chiang_hair_bsdf`, is read through MaterialX's `surface` node, and one whose output is a
+  `VDF` through its `volume` node, so a closure alone is a terminal. A network of no surface's
+  `Bxdf` gives a material of no surface, which is a boundary of its medium. The material holds
+  its terminals and every node they read. The later of a `Surface` and a `Bxdf` shades what
+  follows, because a `Surface` clears the network. The attribute state's `Displacement` stays
+  RI's, unless a document's material gives one.
 - **A `Bxdf` of type `materialx` reads a material from a MaterialX document.** Its `file` names
   the document, as a path from the working directory, and its `material` the material node, or
-  the document's first when it gives none. The material's `surfaceshader` and every node it
-  reads, through node graphs and their interface inputs, become the scene's nodes, each of the
-  definition MaterialX's libraries resolve it to. A colour keeps its document's space, and a
-  relative filename is taken from the document's directory. The `Bxdf`'s other parameters then
-  override the surface node's inputs, and its references connect them to the network's nodes.
-  When the material's `displacementshader` names a node, that node and every node it reads
-  become the material's displacement, in place of the attribute state's `Displacement`. A
-  document that cannot be read, or holds no such material, is logged, and the surface is the
-  attribute state's `Surface`.
+  the document's first when it gives none. The material's `surfaceshader` and `volumeshader`, and
+  every node they read, through node graphs and their interface inputs, become the scene's
+  nodes, each of the definition MaterialX's libraries resolve it to. A colour keeps its
+  document's space, and a relative filename is taken from the document's directory. The `Bxdf`'s
+  other parameters then override the surface node's inputs, or the volume node's when the
+  material has no surface, and its references connect them to the network's nodes. A volume's
+  `Bxdf` in the network gives the material's volume over the document's. When the material's
+  `displacementshader` names a node, that node and every node it reads become the material's
+  displacement, in place of the attribute state's `Displacement`. A document that cannot be
+  read, holds no such material, or whose material names neither a surface nor a volume shader, is
+  logged, and the surface is the attribute state's `Surface`.
+- **RenderMan's `Volume` of type `blobbydso:impl_openvdb` is a volume** of the OpenVDB file its
+  `"string blobbydso:stringargs"` names first, as a path from the working directory. Its fields
+  are the grid the arguments name second, before any `:` and the class after it, then each grid
+  a varying or vertex float parameter names, such as `"varying float temperature" []`. Each field
+  is read by its grid's name, so a volume of no volume's `Bxdf` reads a grid named `density` as
+  its density. Its box and counts are passed over, since the file gives the bounds. A grid of a
+  `levelset` class, which gives no density, a grid that does not hold floats, and a third string
+  argument's options are logged. A `Volume` of any other type, such as `"box"`, is logged and
+  makes nothing: a medium inside a shape is a volume's `Bxdf` given to the shape.
+- **`Attribute "shade" "intersectpriority"` sets each later instance's `priority`**, to the end of
+  its attribute block, with any fraction dropped, as RenderMan's intersection priority says which
+  medium fills the space where closed surfaces overlap. A priority beyond what an integer holds is
+  logged and changes nothing. An instance of no priority is not given one, so it keeps the
+  scene's 0.
+- **RI's `Interior`, `Exterior` and `Atmosphere` are not read.** A medium is the volume of the
+  material inside a closed surface, so the reader reports each as a request it does not
+  recognise.
 - **An object is a group.** `ObjectBegin` saves the attribute state and resets the
   transformation, so the object's geometry is placed in its own space, and its instances name
   the group and no material. `ObjectInstance` places the group at the current state. An
@@ -288,7 +318,9 @@ requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the
 - **The client's jobs are classes of their own**, in `moya/libmoya/ri/internal`. `Shapes`
   turns each primitive request into a scene kind and its parameters. `Deforming` takes a
   deforming primitive's later poses. `Lights` makes the lights and records what each lit.
-  `Objects` makes the world's objects and names them.
+  `Objects` makes the world's objects and names them. `Network` makes a material's terminals
+  from the `Pattern` and `Bxdf` requests in force, and `openVdbGrids()` gives the grids an
+  OpenVDB `Volume` reads.
 - **`moya --scene`** reads a file through the client and prints the scene's description after
   each frame, in place of rendering it.
 

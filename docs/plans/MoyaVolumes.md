@@ -172,7 +172,7 @@ listed as a number with no record, as the ADR index requires.
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | done |
 | [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | done |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233, **0249**, **0250**, **0251** | done |
-| [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | open |
+| [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | done |
 | [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | — | open |
 | [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | open |
 | [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | open |
@@ -828,6 +828,23 @@ the share two volumes take. No reference render holds a medium, so no picture ch
 
 **Tests:** a RIB file of each request gives the scene the objects it names. A RIB file of a fog
 and a light renders.
+
+**Done.** `rib::requests::Volume` holds RenderMan's `Volume`: its type, its box and three voxel
+counts, a varying parameter holding one value per voxel. The reader, the writer and the recorder
+carry it, and `Handler::volume()` ignores it. The scene client makes a volume of
+`blobbydso:impl_openvdb`: the file and grid of its `blobbydso:stringargs`, then each varying float
+grid, each a field read by its grid's name. A level set, a grid of colours and any other type of
+`Volume` are logged and make nothing. A `Bxdf` whose definition's output is a `volumeshader` or a
+`VDF` gives the material's volume terminal. One whose output is a `BSDF` or a `VDF` is read
+through MaterialX's `surface` or `volume` node, so `Bxdf "ND_chiang_hair_bsdf"` makes a hair's
+surface. `internal::Network` makes a network's terminals, and `internal::openVdbGrids()` reads a
+volume's grids. A surface's and a volume's `Bxdf` stand together in one material, and a document's
+`volumeshader` gives its volume. `material::Library::type()` gives a definition's output type.
+`Attribute "shade" "intersectpriority"` sets each later instance's priority. ADR-0242 maps no
+`Interior`, `Exterior` or `Atmosphere`, so the reader still reports them. The cases are in the
+RIB library's `ReaderTest.cxx` and `WriterTest.cxx`, and in moya's `SceneWorldTest.cxx`,
+`SceneMaterialsTest.cxx` and `MaterialLibraryTest.cxx`. `VolumeTest.cxx` reads a box of fog and a
+dome light from RIB, and holds it to Beer and Lambert's share. No reference render changes.
 
 ### Step 20 — The reference renders
 

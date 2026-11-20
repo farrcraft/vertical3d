@@ -14,10 +14,11 @@
 
 namespace v3d::moya::ri::internal {
 
-/** A document material's terminal nodes: its surface, and its displacement if it has one. **/
+/** A material's terminal nodes: its surface, displacement and volume, each if it has one. **/
 struct Terminals {
-    scene::Handle surface;
+    std::optional<scene::Handle> surface;
     std::optional<scene::Handle> displacement;
+    std::optional<scene::Handle> volume;
 };
 
 /**
@@ -25,13 +26,15 @@ struct Terminals {
  * language `materialx` and the connections between them, and its terminal nodes.
  *
  * The material is the material node of the name given, or the document's first material node
- * when the name is empty. Its network is the node its `surfaceshader` input names, the node its
- * `displacementshader` input names when it has one, and every node either reads, through node
+ * when the name is empty. Its network is the nodes its `surfaceshader`, `displacementshader` and
+ * `volumeshader` inputs name, each when it has one, and every node they read, through node
  * graphs and their interface inputs. Each becomes a shader node of the definition MaterialX's
  * standard libraries resolve it to, with each input that holds a value as a constant of that
  * value. A colour keeps the space the document names for it. A filename that is relative is taken
  * from the document's directory. Each connection between two nodes becomes a connection object,
  * naming the output it reads when the input names one.
+ *
+ * A material that names neither a surface shader nor a volume shader gives nothing.
  *
  * @return the terminal nodes, or nothing when the document cannot be read, the libraries are not
  *         installed, or the document holds no such material, with why in reason

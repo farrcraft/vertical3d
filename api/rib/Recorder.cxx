@@ -29,6 +29,7 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
 
 #include <string>
 #include <vector>
@@ -316,6 +317,10 @@ void Recorder::subdivisionMesh(const requests::SubdivisionMesh & request, const 
     requests_.emplace_back([request, parameters](Handler & to) { to.subdivisionMesh(request, parameters); });
 }
 
+void Recorder::volume(const requests::Volume & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.volume(request, parameters); });
+}
+
 void Recorder::objectBegin(const std::string & handle) {
     requests_.emplace_back([handle](Handler & to) { to.objectBegin(handle); });
 }
@@ -387,6 +392,10 @@ void Recorder::Deforming::torus(const requests::Torus & request, const Parameter
 
 void Recorder::Deforming::subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) {
     keep([request, parameters](Handler & to) { to.subdivisionMesh(request, parameters); });
+}
+
+void Recorder::Deforming::volume(const requests::Volume & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.volume(request, parameters); });
 }
 
 };  // namespace v3d::rib

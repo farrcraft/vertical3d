@@ -29,6 +29,7 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
 
 #include <array>
 #include <charconv>
@@ -463,6 +464,11 @@ void Writer::subdivisionMesh(const requests::SubdivisionMesh & request, const Pa
         strings(request.strings);
     }
     this->parameters(parameters).end();
+}
+
+void Writer::volume(const requests::Volume & request, const ParameterList & parameters) {
+    start("Volume").text(request.type).array({ request.bound.begin(), request.bound.end() })
+        .counts({ request.voxels.begin(), request.voxels.end() }).parameters(parameters).end();
 }
 
 void Writer::objectBegin(const std::string & handle) {

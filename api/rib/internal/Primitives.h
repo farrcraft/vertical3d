@@ -16,7 +16,7 @@ namespace v3d::rib::internal {
 
 /**
  * Reads RIB's geometric primitives and calls a handler for each: the polygons, the points and
- * the curves, the subdivision meshes, and the quadrics.
+ * the curves, the subdivision meshes, the quadrics, and RenderMan's volumes.
  **/
 class Primitives final {
  public:
@@ -53,6 +53,11 @@ class Primitives final {
      * parameters. The tags' arguments are checked against the counts each tag gives.
      **/
     bool subdivision(Lexer * lexer, Handler * handler);
+    /**
+     * A Volume request: its type, its box, its three voxel counts, and its parameters, of one
+     * varying value per voxel.
+     **/
+    bool volume(Lexer * lexer, Handler * handler);
     /**
      * A quadric: a fixed run of numbers, then a parameter list of one value per corner of its
      * parameter space.

@@ -55,6 +55,11 @@ class Library final {
     /** Whether a node definition is defined, such as ND_open_pbr_surface_surfaceshader. **/
     bool defines(const std::string & definition) const;
 
+    /**
+     * The type of a node definition's output, such as surfaceshader, BSDF or volumeshader, or
+     * empty when it is not defined.
+     **/
+    std::string type(const std::string & definition) const;
     /** A node definition's version, or empty when it gives none or is not defined. **/
     std::string version(const std::string & definition) const;
 

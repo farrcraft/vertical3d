@@ -29,6 +29,7 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
 
 #include <functional>
 #include <string>
@@ -143,6 +144,7 @@ class Recorder final : public Handler {
     void disk(const requests::Disk & request, const ParameterList & parameters) override;
     void torus(const requests::Torus & request, const ParameterList & parameters) override;
     void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) override;
+    void volume(const requests::Volume & request, const ParameterList & parameters) override;
     void objectBegin(const std::string & handle) override;
     void objectEnd() override;
     void objectInstance(const std::string & handle) override;
@@ -169,6 +171,7 @@ class Recorder final : public Handler {
         void disk(const requests::Disk & request, const ParameterList & parameters) override;
         void torus(const requests::Torus & request, const ParameterList & parameters) override;
         void subdivisionMesh(const requests::SubdivisionMesh & request, const ParameterList & parameters) override;
+        void volume(const requests::Volume & request, const ParameterList & parameters) override;
 
      private:
         /** Keep a primitive, for the deformation() of the handler replayed to. **/

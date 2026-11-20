@@ -67,6 +67,7 @@ void geometry(v3d::rib::Handler * to) {
         .arguments = { 2, 1, 1, 0 }, .integers = { 0, 1, 1 }, .floats = { 2.5F }}, one("P", VERTEX_POINT, quad));
     to->subdivisionMesh({.scheme = "loop", .counts = { 3 }, .indices = { 0, 1, 2 }, .tags = { "corner" }, .arguments = { 1, 1, 0 },
         .integers = { 2 }, .floats = { 4 }}, one("P", VERTEX_POINT, { 0, 0, 0, 1, 0, 0, 0, 1, 0 }));
+    to->volume({.type = "box", .bound = { 0, 1, -1, 2, 0.5F, 3 }, .voxels = { 2, 1, 1 }}, none);
 }
 
 /**
@@ -195,7 +196,8 @@ BOOST_AUTO_TEST_CASE(ribwriter_geometry_and_instancing_read_back_test) {
         "Torus 3 0.5 10 350 270\n"
         "SubdivisionMesh \"catmull-clark\" [ 4 ] [ 0 1 2 3 ] [ \"crease\" \"interpolateboundary\" ] [ 2 1 1 0 ] [ 0 1 1 ] [ 2.5 ]"
         " \"P\" [ 0 0 5 1 0 5 1 1 5 0 1 5 ]\n"
-        "SubdivisionMesh \"loop\" [ 3 ] [ 0 1 2 ] [ \"corner\" ] [ 1 1 0 ] [ 2 ] [ 4 ] [ ] \"P\" [ 0 0 0 1 0 0 0 1 0 ]\n";
+        "SubdivisionMesh \"loop\" [ 3 ] [ 0 1 2 ] [ \"corner\" ] [ 1 1 0 ] [ 2 ] [ 4 ] [ ] \"P\" [ 0 0 0 1 0 0 0 1 0 ]\n"
+        "Volume \"box\" [ 0 1 -1 2 0.5 3 ] [ 2 1 1 ]\n";
     BOOST_TEST(out.str() == expected);
     BOOST_TEST(written(out.str()) == out.str());
 }

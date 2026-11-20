@@ -30,10 +30,11 @@
 #include <api/rib/requests/Sphere.h>
 #include <api/rib/requests/SubdivisionMesh.h>
 #include <api/rib/requests/Torus.h>
+#include <api/rib/requests/Volume.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/ri/internal/Deforming.h>
-#include <moya/libmoya/ri/internal/Document.h>
 #include <moya/libmoya/ri/internal/Lights.h>
+#include <moya/libmoya/ri/internal/Network.h>
 #include <moya/libmoya/ri/internal/Objects.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
 #include <moya/libmoya/ri/internal/Shape.h>
@@ -42,6 +43,7 @@
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
@@ -90,11 +92,17 @@ namespace v3d::moya::ri {
  * network, each of the node definition its type names, such as `ND_image_color3`. A `reference`
  * parameter connects its input to the output of the node of the handle its value names, written
  * `handle:output`, or `handle` alone for a node's only output. Each other parameter is a constant
- * input. The last `Bxdf` is the surface of the material the network makes, and the material holds
- * that node and every node it reads. A `Bxdf` of type `materialx` reads the network of the
- * material its `material` names, or the first, from the MaterialX document its `file` names, and
- * its other parameters override the surface node's inputs. A `Surface` request clears the
- * network, and the later of the two shades what follows.
+ * input. The last `Bxdf` of a surface is the surface of the material the network makes, and the
+ * last `Bxdf` of a volume is its volume, the medium inside the geometry it is given to. A `Bxdf` is
+ * a volume's when its definition's output is a `volumeshader` or a `VDF`. A `Bxdf` whose output is
+ * a `BSDF`, such as a hair's `ND_chiang_hair_bsdf`, is read through MaterialX's `surface` node,
+ * and one whose output is a `VDF` through its `volume` node. A network of no surface's `Bxdf`
+ * gives a material of no surface. The material holds its terminals and every node they read. A
+ * `Bxdf` of type `materialx` reads the network of the material its `material` names, or the
+ * first, from the MaterialX document its `file` names, with the document's volume unless a
+ * volume's `Bxdf` gives one. Its other parameters override the inputs of the document's surface
+ * node, or of its volume node when it has no surface. A `Surface` request clears the network,
+ * and the later of the two shades what follows.
  *
  * **Lights.** RI's `pointlight`, `distantlight` and `spotlight` become a sphere light of radius
  * zero, a distant light and a sphere light of radius zero shaped by a cone. Each points down its
@@ -110,6 +118,12 @@ namespace v3d::moya::ri {
  * geometry after it in its attribute block, as `AreaLightSource` does. Another shader is logged
  * and makes no light.
  *
+ * **Volumes.** RenderMan's `Volume` of type `blobbydso:impl_openvdb` makes a volume of the
+ * OpenVDB file its `blobbydso:stringargs` names first. Its fields are the grid they name second,
+ * before any `:` and the class after it, then each grid a varying or vertex float parameter names.
+ * Each field is read by its grid's name, so a volume of no volume's `Bxdf` reads a grid named
+ * `density` as its density. A grid of a level set, a grid that does not hold floats, and a
+ * `Volume` of any other type are logged, and make nothing.
  * **Names.** An object takes its name from RI's `Attribute "identifier" "name"`, or from its
  * request and its place in the file. A name a kind already holds gets a number after it. A
  * display's output is named after its file, and a light without a name after its handle.
@@ -240,6 +254,10 @@ class SceneClient final : public v3d::rib::Handler {
      * `"displacementbound"`'s `"sphere"` bounds the displacement of the subdivision surfaces
      * made after it, in the `"coordinatesystem"` it names.
      *
+     * `"shade"`'s `"intersectpriority"` is the priority of the instances made after it in the
+     * attribute block, with any fraction dropped. A priority beyond what an integer holds is
+     * logged, and changes nothing.
+     *
      * `"trace"`'s `"bias"` is passed over, since a ray leaving a surface starts off it by the
      * core's own rule. `"light"`'s `"nsamples"` is passed over, since a path samples one light at
      * each bounce. Any other parameter is logged once by its attribute and name, and changes
@@ -290,6 +308,7 @@ class SceneClient final : public v3d::rib::Handler {
      * parameters. Another tag is logged.
      **/
     void subdivisionMesh(const v3d::rib::requests::SubdivisionMesh & request, const v3d::rib::ParameterList & parameters) override;
+    void volume(const v3d::rib::requests::Volume & request, const v3d::rib::ParameterList & parameters) override;
 
     void objectBegin(const std::string & handle) override;
     void objectEnd() override;
@@ -331,13 +350,6 @@ class SceneClient final : public v3d::rib::Handler {
         std::string light{};
     };
 
-    /** A Pattern or a Bxdf request: its node, its parameters, and whether it is a Bxdf. **/
-    struct Node {
-        v3d::rib::requests::ShadingNode request{};
-        v3d::rib::ParameterList parameters{};
-        bool bxdf { false };
-    };
-
     /** What AttributeBegin saves and AttributeEnd restores. **/
     struct Attributes {
         internal::Sampled transformation{};
@@ -353,8 +365,11 @@ class SceneClient final : public v3d::rib::Handler {
         /** How far a displacement may move a subdivision surface's points, in object space. **/
         float displacementBound { 0.0F };
 
+        /** Which medium fills the space where closed surfaces overlap, RenderMan's priority. **/
+        std::int32_t priority { 0 };
+
         /** The Pattern and Bxdf requests in force, in the order they came. **/
-        std::vector<Node> network{};
+        std::vector<internal::Network::Node> network{};
 
         /**
          * The material the state above makes, or none until a geometry needs it. AttributeBegin
@@ -372,6 +387,9 @@ class SceneClient final : public v3d::rib::Handler {
         /** The group an object's geometry goes in, or none in the world. **/
         scene::Handle group{};
     };
+
+    /** Whether the requests are inside the world. A primitive outside it is logged once. **/
+    bool inWorld();
 
     /**
      * Make a shape's prototype and an instance of it at the current state. A primitive outside
@@ -394,26 +412,6 @@ class SceneClient final : public v3d::rib::Handler {
 
     /** A shader node of a request's shader, language and parameters. **/
     scene::Handle shaderNode(const Shader & shader, const std::string & name);
-
-    /**
-     * The terminal nodes of the material the attribute state's network makes, with every node
-     * they read, or nothing when a document it names cannot be read. Only a document gives a
-     * displacement.
-     **/
-    std::optional<internal::Terminals> networkTerminals();
-
-    /**
-     * The shader node of the network's node at a place, made with the nodes it reads, each once
-     * by its place.
-     **/
-    scene::Handle networkNode(std::size_t place, std::map<std::size_t, scene::Handle> & made);
-
-    /**
-     * Sets a node's inputs from a request's parameters but those named, and connects each
-     * reference to the node of the handle it names, among the network's nodes before a place.
-     **/
-    void inputsOf(const scene::Handle & node, const std::string & name, const Node & request, std::size_t place,
-        std::map<std::size_t, scene::Handle> & made, const std::set<std::string> & except);
 
     /** A name for a new object of a kind: the attribute state's, or the request's and a count. **/
     std::string nameFor(const std::string & kind, const std::string & request);
