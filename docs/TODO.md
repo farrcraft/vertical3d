@@ -99,12 +99,11 @@ under a dome, rendered at 512 by 384 in a Release build, takes about 10 percent 
 plan than at `da1fdf28`, before it. `moya_bench`'s lit room shows the same. A bisect puts 3
 percent at step 10, 4 at step 11 and the rest after step 13, so no one change holds it. A light
 sample copied the path's media into its shadow ray twice, which no longer happens, and that
-recovered about a third. The rest is in structures every sample and shading point builds, which
-the plan made larger. A path's state grew from 296 to 464 bytes, mostly the media stack and
-spectral MIS's chances. A BSDF grew from 1280 to 1536 bytes, the hair's fibre and the walk's
-fields, and every shading point builds all of it whether it holds a hair or not. Try keeping the
-fibre out of a BSDF that holds no hair, and building a path's media only where a material encloses
-one, each timed against `da1fdf28` on that scene.
+recovered about a third. The rest, about 7 percent, is not in the size of what a sample or a
+shading point builds. A BSDF of half as many closures, and a media stack of one entry, each
+render that scene no faster. It is in the code the path's loop runs, so profile it. Build both
+commits with symbols, record the scene with `xperf`'s CPU sampling from an elevated prompt, and
+compare where each spends its time.
 
 [] **A material's emission cannot vary over its surface.** An emitting material makes a light of
 its geometry on the host, from its emission inputs as constants, so an emission input that
