@@ -94,6 +94,14 @@ in the integrator's other stages. Every surface there is diffuse, so the layered
 specular samples the plan added are the place to look. Bisect the plan's commits with the
 benchmark to find the one that slowed it.
 
+[] **The volumes plan slowed scenes that hold no medium.** Built at `da1fdf28`, before the plan,
+and at its end, timed back to back at SSE4.2, `moya_bench`'s lit room ran at 1.51 to 1.61
+million samples a second before and 1.28 to 1.50 after. The room with outputs ran at 1.42 to
+1.52 before and 1.21 to 1.30 after. Traversal's share fell from 34 to 32 percent, so the time is
+in the integrator's other stages. The plan added checks for media on every ray and shadow ray,
+and fields to the path state, which are the places to look. Bisect the plan's commits with the
+benchmark to find where the time went.
+
 [] **A material's emission cannot vary over its surface.** An emitting material makes a light of
 its geometry on the host, from its emission inputs as constants, so an emission input that
 varies over the surface gives its node's default and is reported. Camera rays see the light's

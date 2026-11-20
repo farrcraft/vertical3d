@@ -175,7 +175,7 @@ listed as a number with no record, as the ADR index requires.
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233, **0249**, **0250**, **0251** | done |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | done |
 | [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | **0252** | done |
-| [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | open |
+| [21](#step-21--speed) | Speed: volumes, subsurface and hair against the baseline | `moya/bench` | — | done |
 | [22](#step-22--the-documents) | The reference pages for volumes, subsurface and hair | `docs` | — | open |
 
 ## What blocks what
@@ -893,6 +893,21 @@ fails it.
 * **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
 
 **Tests:** the benchmark's short pass times each scene.
+
+**Done.** `moya_bench` prints a fourth table of three scenes. The lit room is filled with ground
+fog from a grid of 128 voxels along the floor, which it writes through OpenVDB. The lit room holds
+a statue of three stacked subsurface balls. A lock of 16384 hairs hangs under a key light.
+`kernel::texture::Work` gains `Tracking`, `Grid` and `Hair`, timed through the texture access as
+programs and lookups are, and `integrate::Profile` gives their shares. Tracking holds a surface's
+shadow rays in a scene of media, and the traversal, grid lookups and light samples it makes. A
+shadow ray from a point in a medium is timed with the tracking that reached it, not again.
+`BenchTest.cxx` checks that each scene's time falls in its own shares. `Baseline.md` gains the
+three scenes from one run. The fog room renders at about a fifth of the lit room's rate, with
+four fifths of its time in tracking. The statue renders at about three fifths of it, and the
+lock at about four fifths.
+
+Timed back to back against a build of `da1fdf28`, the lit room runs about 7 percent slower after
+the plan and the room with outputs about 14 percent, beyond a run's noise. TODO.md holds it.
 
 ### Step 22 — The documents
 

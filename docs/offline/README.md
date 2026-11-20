@@ -179,8 +179,9 @@ Background: [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-
 - **A pixel stops at a noise threshold**, measured from two halves of its samples. A render keeps
   a checkpoint it resumes from, and gives the same picture as one that never stopped.
   [Integrator.md](Integrator.md#adaptive-sampling)
-- **`moya_bench` times the hierarchies** over fixed scenes, and the integrator over a lit room,
-  a textured one and one with outputs, against a committed baseline. [Traversal.md](Traversal.md#speed)
+- **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline. It
+  times the integrator over a lit room, a textured one, one with outputs, one of fog, one with a
+  statue of subsurface and a lock of hair. [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through

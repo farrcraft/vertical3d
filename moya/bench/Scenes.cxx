@@ -12,6 +12,7 @@
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
+#include <openvdb/openvdb.h>
 
 #include <algorithm>
 #include <cmath>
@@ -119,6 +120,53 @@ constexpr float kImageShade = 0.6F;
 
 /** The roughness of the textured room's coat. **/
 constexpr float kCoatRoughness = 0.1F;
+
+/**
+ * The fog room's grid: its voxels along the floor's side, in a full run and in a short pass. Its
+ * density at the floor, the height over which it falls to 1/e, how much it varies across the
+ * floor and in how many waves. The coefficients its density scatters and absorbs by.
+ **/
+constexpr std::int32_t kFogCells = 128;
+constexpr std::int32_t kQuickFogCells = 8;
+constexpr float kFogDensity = 4.0F;
+constexpr float kFogFalloff = 0.25F;
+constexpr float kFogVariation = 0.5F;
+constexpr float kFogWaves = 5.0F;
+constexpr float kFogScattering = 0.9F;
+constexpr float kFogAbsorption = 0.1F;
+
+/**
+ * The subsurface room's statue: the radius of each ball from the bottom, its subsurface colour,
+ * and its subsurface radius, the mean free path.
+ **/
+constexpr float kStatueRadii[] = { 0.3F, 0.2F, 0.12F };
+constexpr glm::vec3 kStatueColour { 0.9F, 0.85F, 0.8F };
+constexpr float kStatueRadius = 0.1F;
+
+/**
+ * The hair lock: how many strands at a scale of 1 and at least, the vertices of each, the band
+ * they hang from, how far they fall and sway, and their width. The camera's field of view, how
+ * far it stands from the lock and its height. The key light's and the dome's intensity, and the
+ * hair's absorption.
+ **/
+constexpr float kStrands = 16384.0F;
+constexpr std::int32_t kFewestStrands = 64;
+constexpr std::int32_t kStrandVertices = 8;
+constexpr float kBandWide = 0.15F;
+constexpr float kBandDeep = 0.05F;
+constexpr float kBandHeight = 0.9F;
+constexpr float kFall = 0.85F;
+constexpr float kSway = 0.12F;
+constexpr float kStrandWidth = 0.004F;
+constexpr float kLockFov = 40.0F;
+constexpr float kLockDistance = 2.5F;
+constexpr float kLockEye = 0.45F;
+constexpr float kKeyIntensity = 2.0F;
+constexpr float kLockDome = 0.2F;
+constexpr glm::vec3 kHairAbsorption { 0.4F, 0.7F, 1.4F };
+
+/** A quarter turn, in degrees. **/
+constexpr float kQuarterTurn = 90.0F;
 
 /** How many cells a side of a grid has at a scale, at least two. **/
 std::int32_t cellsAt(std::int32_t full, float scale) {
@@ -418,6 +466,50 @@ void writeImage(const std::string & path, std::uint32_t side) {
     output::writeExr(path, image, { { .name = "", .outputs = { std::string(output::kBeauty) } } }, {});
 }
 
+/**
+ * Writes the fog room's grid, cells voxels to the floor's side: a density that falls to 1/e over
+ * kFogFalloff above the floor, and varies across it by kFogVariation in waves. Its index space
+ * starts at the room's corner, -1 along x and y and 0 along z, and runs up to the walls' height.
+ **/
+void writeFog(const std::string & path, std::int32_t cells) {
+    openvdb::initialize();
+    const double voxel = 2.0 / static_cast<double>(cells);
+    const openvdb::FloatGrid::Ptr fog = openvdb::FloatGrid::create(0.0F);
+    fog->setName("density");
+    const openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(voxel);
+    transform->postTranslate(openvdb::Vec3d(-1.0, -1.0, 0.0));
+    fog->setTransform(transform);
+    const auto high = static_cast<std::int32_t>(std::ceil(static_cast<double>(kWallHeight) / voxel));  // checked: the benchmark's own, small and finite
+    openvdb::FloatGrid::Accessor accessor = fog->getAccessor();
+    for (std::int32_t z = 0; z < high; ++z) {
+        for (std::int32_t y = 0; y < cells; ++y) {
+            for (std::int32_t x = 0; x < cells; ++x) {
+                const openvdb::Vec3d at = fog->indexToWorld(openvdb::Vec3d(x + 0.5, y + 0.5, z + 0.5));
+                const auto across = static_cast<float>(at.x());
+                const auto along = static_cast<float>(at.y());
+                const float varied = 1.0F + (kFogVariation * std::sin(kFogWaves * across) * std::cos(kFogWaves * along));
+                accessor.setValue(openvdb::Coord(x, y, z), kFogDensity * varied * std::exp(-static_cast<float>(at.z()) / kFogFalloff));
+            }
+        }
+    }
+    openvdb::io::File file(path);
+    file.write({ fog });
+    file.close();
+}
+
+/** A closed ball of a radius, placed at a centre, with a material. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the ball's name, then its material
+void ball(scene::Scene & scene, const std::string & name, float radius, const glm::vec3 & centre, const scene::Handle & material) {
+    const scene::Handle sphere = scene.create("sphere", name);
+    scene.set(sphere, "radius", scene::Value::number(radius));
+    scene.set(sphere, "zmin", scene::Value::number(-radius));
+    scene.set(sphere, "zmax", scene::Value::number(radius));
+    const scene::Handle instance = scene.create("instance", name);
+    scene.set(instance, "prototype", scene::Value::handle(sphere));
+    scene.set(instance, "transform", scene::Value::matrix(glm::translate(glm::mat4(1.0F), centre)));
+    scene.set(instance, "material", scene::Value::handle(material));
+}
+
 };  // namespace
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
@@ -481,6 +573,114 @@ boost::shared_ptr<scene::Scene> outputRoom(float scale, std::uint32_t side, std:
     const scene::Handle deep = made.create("output", "deep");
     made.set(deep, "file", scene::Value::string("outputs-deep.exr"));
     made.set(deep, "format", scene::Value::string("deepexr"));
+    made.commit();
+    made.apply();
+    return out;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> fogRoom(float scale, std::uint32_t side, std::uint32_t samples, const std::string & grid) {
+    writeFog(grid, scale < 1.0F ? kQuickFogCells : kFogCells);
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    scene::Scene & made = *out;
+    const scene::Handle density = node(made, "density", "ND_geompropvalue_float", { { "geomprop", scene::Value::string("density") } });
+    const scene::Handle scatters = node(made, "scatters", "ND_multiply_vector3FA", { { "in1", scene::Value::vector(glm::vec3 { kFogScattering }) } });
+    const scene::Handle absorbs = node(made, "absorbs", "ND_multiply_vector3FA", { { "in1", scene::Value::vector(glm::vec3 { kFogAbsorption }) } });
+    const scene::Handle vdf = node(made, "fog vdf", "ND_anisotropic_vdf", {});
+    const scene::Handle shader = node(made, "fog", "ND_volume", {});
+    connect(made, "density into scatters", density, scatters, "in2");
+    connect(made, "density into absorbs", density, absorbs, "in2");
+    connect(made, "scatters into vdf", scatters, vdf, "scattering");
+    connect(made, "absorbs into vdf", absorbs, vdf, "absorption");
+    connect(made, "vdf into fog", vdf, shader, "vdf");
+    const scene::Handle material = made.create("material", "fog");
+    made.set(material, "volume", scene::Value::handle(shader));
+    const scene::Handle field = made.create("openVDBAsset", "density");
+    made.set(field, "filePath", scene::Value::string(grid));
+    made.set(field, "fieldName", scene::Value::string("density"));
+    const scene::Handle fog = made.create("volume", "fog");
+    made.set(fog, "fieldNames", scene::Value::strings({ "density" }));
+    made.set(fog, "fields", scene::Value::handles({ field }));
+    const scene::Handle instance = made.create("instance", "fog");
+    made.set(instance, "prototype", scene::Value::handle(fog));
+    made.set(instance, "transform", scene::Value::matrix(glm::mat4(1.0F)));
+    made.set(instance, "material", scene::Value::handle(material));
+    made.commit();
+    made.apply();
+    return out;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> subsurfaceRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    scene::Scene & made = *out;
+    const scene::Handle surface = node(made, "marble", "ND_open_pbr_surface_surfaceshader",
+        { { "subsurface_weight", scene::Value::number(1.0F) }, { "subsurface_color", scene::Value::colour(kStatueColour) },
+            { "subsurface_radius", scene::Value::number(kStatueRadius) } });
+    const scene::Handle material = made.create("material", "marble");
+    made.set(material, "surface", scene::Value::handle(surface));
+    // the balls stand on one another, from the floor up
+    float height = kGroundRipple;
+    for (std::size_t i = 0; i < std::size(kStatueRadii); ++i) {
+        height += kStatueRadii[i];
+        ball(made, "statue " + std::to_string(i), kStatueRadii[i], glm::vec3 { 0.0F, 0.0F, height }, material);
+        height += kStatueRadii[i];
+    }
+    made.commit();
+    made.apply();
+    return out;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> hairLock(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = boost::make_shared<scene::Scene>(scene::kinds());
+    scene::Scene & made = *out;
+    const scene::Handle options = made.create("options", "options");
+    const scene::Handle camera = made.create("camera", "camera");
+    made.set(options, "camera", scene::Value::handle(camera));
+    made.set(options, "resolution", scene::Value::integers({ static_cast<std::int32_t>(side), static_cast<std::int32_t>(side) }));
+    made.set(options, "samples", scene::Value::integer(static_cast<std::int32_t>(samples)));
+    made.set(camera, "fov", scene::Value::number(kLockFov));
+    // the camera looks along its +z, so a quarter turn about x has it look along -y, with +z up
+    made.set(camera, "transform",
+        scene::Value::matrix(glm::rotate(glm::translate(glm::mat4(1.0F), glm::vec3 { 0.0F, kLockDistance, kLockEye }), glm::radians(kQuarterTurn),
+            glm::vec3 { 1.0F, 0.0F, 0.0F })));
+    const scene::Handle sky = made.create("domeLight", "sky");
+    made.set(sky, "intensity", scene::Value::number(kLockDome));
+    // a distant light of no angle shines down its -z, from above, at an irradiance of its intensity
+    const scene::Handle key = made.create("distantLight", "key");
+    made.set(key, "angle", scene::Value::number(0.0F));
+    made.set(key, "intensity", scene::Value::number(kKeyIntensity));
+
+    // NOLINTNEXTLINE(bugprone-random-generator-seed) - every run builds the same scene
+    std::mt19937 random(kSeed);
+    std::uniform_real_distribution<float> unit(-1.0F, 1.0F);
+    const auto count = std::max(kFewestStrands, static_cast<std::int32_t>(kStrands * scale));
+    std::vector<glm::vec3> points;
+    for (std::int32_t strand = 0; strand < count; ++strand) {
+        const glm::vec3 root { kBandWide * unit(random), kBandDeep * unit(random), kBandHeight };
+        const glm::vec3 sway { kSway * unit(random), kSway * unit(random), 0.0F };
+        for (std::int32_t vertex = 0; vertex < kStrandVertices; ++vertex) {
+            const float along = static_cast<float>(vertex) / static_cast<float>(kStrandVertices - 1);
+            points.push_back(root + (sway * along * along) - glm::vec3 { 0.0F, 0.0F, kFall * along });
+        }
+    }
+    const scene::Handle lock = made.create("curves", "lock");
+    made.set(lock, "P", scene::Value::points(points));
+    made.set(lock, "vertices", scene::Value::integers(std::vector<std::int32_t>(static_cast<std::size_t>(count), kStrandVertices)));
+    made.set(lock, "type", scene::Value::string("cubic"));
+    made.set(lock, "basis", scene::Value::string("b-spline"));
+    made.set(lock, "constantWidth", scene::Value::number(kStrandWidth));
+    made.set(lock, "profile", scene::Value::string("round"));
+    const scene::Handle fibre = node(made, "hair bsdf", "ND_chiang_hair_bsdf", { { "absorption_coefficient", scene::Value::vector(kHairAbsorption) } });
+    const scene::Handle surface = node(made, "hair", "ND_surface", {});
+    connect(made, "fibre into hair", fibre, surface, "bsdf");
+    const scene::Handle material = made.create("material", "hair");
+    made.set(material, "surface", scene::Value::handle(surface));
+    const scene::Handle instance = made.create("instance", "lock");
+    made.set(instance, "prototype", scene::Value::handle(lock));
+    made.set(instance, "transform", scene::Value::matrix(glm::mat4(1.0F)));
+    made.set(instance, "material", scene::Value::handle(material));
     made.commit();
     made.apply();
     return out;

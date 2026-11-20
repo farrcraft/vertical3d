@@ -36,6 +36,9 @@ void Tallies::into(Profile & profile) const {
     std::uint64_t traversing = 0;
     std::uint64_t programs = 0;
     std::uint64_t lookups = 0;
+    std::uint64_t tracking = 0;
+    std::uint64_t grids = 0;
+    std::uint64_t hair = 0;
     std::uint64_t whole = 0;
     for (const device::cpu::Tally & tally : tallies) {
         profile.nearest += tally.nearest;
@@ -43,6 +46,9 @@ void Tallies::into(Profile & profile) const {
         traversing += tally.traversing;
         programs += tally.programs;
         lookups += tally.lookups;
+        tracking += tally.tracking;
+        grids += tally.grids;
+        hair += tally.hair;
         whole += tally.whole;
     }
     const auto share = [whole](std::uint64_t part) {
@@ -51,6 +57,9 @@ void Tallies::into(Profile & profile) const {
     profile.traversal = share(traversing);
     profile.programs = share(programs);
     profile.lookups = share(lookups);
+    profile.tracking = share(tracking);
+    profile.grids = share(grids);
+    profile.hair = share(hair);
 }
 
 };  // namespace v3d::moya::integrate::internal

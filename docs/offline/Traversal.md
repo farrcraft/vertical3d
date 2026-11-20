@@ -559,9 +559,20 @@ out/build/x64-Release/moya/bench/moya_bench.exe --isa avx2 # one
   It renders with the plain lit room in each of three rounds, and keeps the fastest of each. It
   gives the samples a second and that rate as a share of the plain room's. It also gives the
   shares of the time the host takes after each pass to merge Cryptomatte coverage and deep lists.
+- **A fourth table times scenes of media, subsurface and hair**, at the lit room's pixels and
+  samples. It gives what the second table gives, but for the textures' shares, and the shares of
+  the time in tracking, grid lookups, programs and the hair model. Tracking's share holds the
+  traversal, grid lookups and programs it makes.
+  - The fog room is the lit room filled with ground fog. Its grid is 128 voxels along the floor's
+    side, up to the walls' height, written to an OpenVDB file the benchmark makes. Its density
+    falls to 1/e over a quarter unit above the floor, and varies across it by half in waves.
+  - The subsurface room is the lit room with a statue of three balls stacked in its middle, whose
+    OpenPBR surface walks a subsurface below it.
+  - The hair lock is 16384 round cubic b-spline strands hanging from a band, under a distant key
+    light from above and a dim dome, seen from the side.
 - **`--quick` is a short pass**, the scenes 256 times smaller and 1024 rays of each kind traced
   once, and the rooms at 16 by 16 pixels and 4 samples. The textured room's image is then 64
-  texels to a side. moya's suite runs it in every build so
+  texels to a side, and the fog's grid 8 voxels. moya's suite runs it in every build so
   the benchmark does not rot.
 - **`moya/bench/Baseline.md` holds a run** on one machine, so a later change is measured against
   it on the same machine. Two runs differ by up to a tenth in their rates.

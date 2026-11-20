@@ -68,4 +68,26 @@ boost::shared_ptr<scene::Scene> texturedRoom(float scale, std::uint32_t side, st
  **/
 boost::shared_ptr<scene::Scene> outputRoom(float scale, std::uint32_t side, std::uint32_t samples);
 
+/**
+ * The lit room filled with fog: a grid of a density that thins with height and varies across
+ * the floor, written to the OpenVDB file at the path grid names, the same on every run. Its
+ * medium scatters and absorbs the density times a coefficient, read through the volume's program.
+ * The scene is committed and applied.
+ **/
+boost::shared_ptr<scene::Scene> fogRoom(float scale, std::uint32_t side, std::uint32_t samples, const std::string & grid);
+
+/**
+ * The lit room with a statue in its middle, three balls stacked on the floor, whose OpenPBR
+ * surface scatters below it by a random walk. The scene is committed and applied.
+ **/
+boost::shared_ptr<scene::Scene> subsurfaceRoom(float scale, std::uint32_t side, std::uint32_t samples);
+
+/**
+ * A lock of hair, 16384 round cubic b-spline strands at a scale of 1, hanging from a band above
+ * the origin, in a hair's material. A distant key light shines down on it and a dim dome lights it
+ * from every side. A camera looks at it from the side, at side by side pixels and samples per
+ * pixel. The scene is committed and applied, and is the same on every run.
+ **/
+boost::shared_ptr<scene::Scene> hairLock(float scale, std::uint32_t side, std::uint32_t samples);
+
 };  // namespace v3d::moya::bench

@@ -447,10 +447,22 @@ std::uint64_t ProfiledTextures::started() {
 
 void ProfiledTextures::finished(kernel::texture::Work work, std::uint64_t mark) const {
     const std::uint64_t ticks = __rdtsc() - mark;
-    if (work == kernel::texture::Work::Program) {
-        tally->programs += ticks;
-    } else {
-        tally->lookups += ticks;
+    switch (work) {
+        case kernel::texture::Work::Program:
+            tally->programs += ticks;
+            break;
+        case kernel::texture::Work::Lookup:
+            tally->lookups += ticks;
+            break;
+        case kernel::texture::Work::Tracking:
+            tally->tracking += ticks;
+            break;
+        case kernel::texture::Work::Grid:
+            tally->grids += ticks;
+            break;
+        case kernel::texture::Work::Hair:
+            tally->hair += ticks;
+            break;
     }
 }
 

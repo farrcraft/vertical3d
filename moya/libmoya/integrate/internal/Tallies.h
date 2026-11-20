@@ -31,8 +31,9 @@ class Tallies final {
     kernel::Array<device::cpu::Tally> view() const;
 
     /**
-     * Adds every pixel's rays to a profile, and gives it the shares of every pixel's ticks that
-     * traversal, programs and texture lookups took, each zero when no pixel took any.
+     * Adds every pixel's rays to a profile. It gives the profile the shares of every pixel's ticks
+     * that traversal, programs, texture lookups, tracking, grid lookups and the hair model took,
+     * each zero when no pixel took any.
      **/
     void into(Profile & profile) const;
 

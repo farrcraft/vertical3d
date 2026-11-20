@@ -562,17 +562,24 @@ fallback, a render keeps no checkpoint.
   place of `paths`. It wraps the traversal in `device::cpu::Profiled`, which counts each ray into
   its pixel's `device::cpu::Tally` and reads the processor's time-stamp counter around it, and the
   whole pixel's time around that. Each pixel has a tally of its own, so no two threads write one.
-- **The textures are wrapped too**, in `device::cpu::ProfiledTextures`. The kernel tells a texture
-  access when a material's program and a texture lookup start and end, through
-  `kernel::texture::started()` and `finished()`. Only a texture access that defines both is told,
-  so an ordinary render reads no counter.
+- **The textures are wrapped too**, in `device::cpu::ProfiledTextures`. The texture access is
+  the one timer every stage of a path reaches, so the kernel tells it when each kind of
+  `kernel::texture::Work` starts and ends, through `kernel::texture::started()` and
+  `finished()`. These are a material's program, a texture lookup, tracking through media, a
+  volume's grid lookups, and the hair model. Only a texture access that defines both is told, so
+  an ordinary render reads no counter.
 - **The counts are the rays traced** for their nearest hit, `nearest`, and for whether they meet
   anything, `any`. `traversal` is the share of every thread's time in the passes that traversal
   took, from 0 to 1. `programs` and `lookups` are the shares that materials' programs and
   texture lookups took. A program's share holds the lookups it makes.
+- **`tracking`, `grids` and `hair` are the shares of media and hair.** `tracking` is a path's
+  tracking along each ray, and a surface's shadow rays in a scene of media. It holds the
+  traversal, grid lookups and programs it makes, and the light samples taken in a medium.
+  `grids` is reading a volume's grids at a point and bounding them over a cell. `hair` is the
+  time a hair's BSDF is made, sampled and evaluated.
 - **A counted render gives the same picture** as one that is not counted. Reading the counter
   around every ray makes it slower, so its `seconds` is not the render's speed. A benchmark times
   one render and counts another.
 
-`moya_bench` times the integrator this way over a lit room, a textured one and one with outputs, as
-[Traversal.md](Traversal.md#speed) describes.
+`moya_bench` times the integrator this way over a lit room, a textured one and one with outputs,
+and over scenes of fog, subsurface and hair, as [Traversal.md](Traversal.md#speed) describes.

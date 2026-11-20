@@ -27,12 +27,24 @@ concept Texels = requires(const X & texels, std::uint32_t texture, std::uint32_t
     requires std::is_same_v<decltype(texels.texel(texture, level, column, row)), glm::vec4>;
 };
 
-/** The work a device's texture access may time, for a profiled render. **/
+/**
+ * The work a device's texture access may time, for a profiled render. The texture access is the
+ * one timer every stage of a path reaches, so it times work other than textures' too.
+ **/
 enum class Work : std::uint8_t {
     /** A material's program, with the texture lookups it makes. **/
     Program,
     /** One texture lookup. **/
     Lookup,
+    /**
+     * Tracking a path through media along a ray, or a shadow ray through them, with the
+     * traversal, grid lookups and programs it makes.
+     **/
+    Tracking,
+    /** Reading a volume's grids at a point, or bounding them over a cell. **/
+    Grid,
+    /** Making, sampling or evaluating a hair's BSDF. **/
+    Hair,
 };
 
 /**

@@ -16,7 +16,10 @@ namespace v3d::moya::integrate {
  * own.
  **/
 struct Profile {
-    /** Whether to count the rays, and the time in traversal, programs and texture lookups. **/
+    /**
+     * Whether to count the rays, and the time in traversal, programs, texture lookups, tracking,
+     * grid lookups and the hair model.
+     **/
     bool counted { false };
 
     /** The seconds the passes took, summed, without the noise checks and checkpoints between. **/
@@ -35,6 +38,16 @@ struct Profile {
      **/
     double programs { 0.0 };
     double lookups { 0.0 };
+
+    /**
+     * The shares of the passes' time on every thread that tracking through media, the volumes'
+     * grid lookups and the hair model took, from 0 to 1. Tracking holds a surface's shadow rays
+     * in a scene of media, and the traversal, grid lookups, programs and light samples it makes.
+     * The hair model's share is the time a hair's BSDF is made, sampled and evaluated.
+     **/
+    double tracking { 0.0 };
+    double grids { 0.0 };
+    double hair { 0.0 };
 
     /**
      * The seconds the host took after each pass, summed, to add its samples' Cryptomatte coverage

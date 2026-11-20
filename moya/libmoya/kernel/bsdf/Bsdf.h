@@ -308,6 +308,11 @@ struct Bsdf {
         return out;
     }
 
+    /** Whether the BSDF is a hair's, whose one closure is the hair model. **/
+    MOYA_KERNEL bool haired() const {
+        return count != 0U && closures[0].model == Model::Hair;
+    }
+
     /** The sum of the closures' estimated albedos. **/
     MOYA_KERNEL float albedo() const {
         float out = 0.0F;

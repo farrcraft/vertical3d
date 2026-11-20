@@ -10,10 +10,14 @@
  * set the processor runs. It prints that as one Markdown table. A second table times the
  * integrator over a lit room, and over the same room with a material of textures. It gives the
  * samples a second, the rays a second over the paths, and the shares of the time in traversal, in
- * materials' programs and in texture lookups.
+ * materials' programs and in texture lookups. A third times the lit room with a compositor's
+ * outputs. A fourth times the room filled with fog, the room with a statue that scatters below its
+ * surface, and a lock of hair. It gives the shares of the time in tracking through media, in grid
+ * lookups and in the hair model.
  */
 
 #include <api/log/Logger.h>
+#include <moya/bench/Measured.h>
 #include <moya/bench/Rays.h>
 #include <moya/bench/Scenes.h>
 #include <moya/libmoya/accel/Assembly.h>
@@ -189,12 +193,39 @@ std::vector<cpu::Isa> isasOf(const std::string & named) {
 }
 
 /**
- * Times the integrator over a lit scene at each instruction set, and prints a row of the second
- * table for each. The scene is rendered some times, timed, and the fastest gives the samples a
- * second. It is rendered once more, counted, for its rays and the shares of its time in
- * traversal, programs and texture lookups. The counted render times every ray, program and
- * lookup, so its own time is not used. The rays a second are the counted render's rays over the
+ * Times the integrator over a scene at an instruction set. The scene is rendered some times,
+ * timed, and the fastest gives the samples a second. It is rendered once more, counted, for its
+ * rays and the shares of its time. The counted render times every ray and every piece of work it
+ * tallies, so its own time is not used. The rays a second are the counted render's rays over the
  * fastest timed render's time.
+ **/
+Measured measured(const scene::Scene & scene, cpu::Isa isa, std::uint32_t repeats, const boost::shared_ptr<log::Logger> & logger) {
+    device::CpuDevice device(0, isa);
+    integrate::Profile timed { .seconds = std::numeric_limits<double>::infinity() };
+    film::Snapshot picture;
+    for (std::uint32_t repeat = 0; repeat < repeats; ++repeat) {
+        integrate::Profile once;
+        picture = integrate::render(device, scene, logger, colour::Config(), {}, &once);
+        timed.seconds = std::min(timed.seconds, once.seconds);
+    }
+    Measured out;
+    out.counted.counted = true;
+    integrate::render(device, scene, logger, colour::Config(), {}, &out.counted);
+    std::uint64_t taken = 0;
+    for (const std::uint32_t count : picture.samples) {
+        taken += count;
+    }
+    const auto rays = static_cast<double>(out.counted.nearest + out.counted.any);
+    out.samples = static_cast<double>(taken) / timed.seconds / kMillion;
+    out.rays = rays / timed.seconds / kMillion;
+    out.perSample = rays / static_cast<double>(taken);
+    return out;
+}
+
+/**
+ * Times the integrator over a lit scene at each instruction set, as measured() does, and prints a
+ * row of the second table for each. It gives the shares of the counted render's time in
+ * traversal, programs and texture lookups.
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the samples per pixel
 void lit(const std::string & name, const scene::Scene & room, const std::vector<cpu::Isa> & isas, std::uint32_t side, std::uint32_t samples,
@@ -203,25 +234,33 @@ void lit(const std::string & name, const scene::Scene & room, const std::vector<
     const boost::shared_ptr<log::Logger> logger = boost::make_shared<log::Logger>();
     const std::size_t primitives = primitivesOf(geometry::gather(room, logger));
     for (const cpu::Isa isa : isas) {
-        device::CpuDevice device(0, isa);
-        integrate::Profile timed { .seconds = std::numeric_limits<double>::infinity() };
-        film::Snapshot picture;
-        for (std::uint32_t repeat = 0; repeat < repeats; ++repeat) {
-            integrate::Profile once;
-            picture = integrate::render(device, room, logger, colour::Config(), {}, &once);
-            timed.seconds = std::min(timed.seconds, once.seconds);
-        }
-        integrate::Profile counted { .counted = true };
-        integrate::render(device, room, logger, colour::Config(), {}, &counted);
-        std::uint64_t taken = 0;
-        for (const std::uint32_t count : picture.samples) {
-            taken += count;
-        }
-        const auto rays = static_cast<double>(counted.nearest + counted.any);
+        const Measured got = measured(room, isa, repeats, logger);
         std::cout << "| " << name << " | " << device::isaName(isa) << " | " << primitives << " | " << (side * side) << " | " << samples << " | "
-                  << fixed(static_cast<double>(taken) / timed.seconds / kMillion, 3) << " | " << fixed(rays / timed.seconds / kMillion, 3) << " | "
-                  << fixed(rays / static_cast<double>(taken), 2) << " | " << fixed(100.0 * counted.traversal, 1) << " | "
-                  << fixed(100.0 * counted.programs, 1) << " | " << fixed(100.0 * counted.lookups, 1) << " |\n";
+                  << fixed(got.samples, 3) << " | " << fixed(got.rays, 3) << " | " << fixed(got.perSample, 2) << " | "
+                  << fixed(100.0 * got.counted.traversal, 1) << " | " << fixed(100.0 * got.counted.programs, 1) << " | "
+                  << fixed(100.0 * got.counted.lookups, 1) << " |\n";
+    }
+}
+
+/**
+ * Times the integrator over a scene of media, subsurface or hair at each instruction set, as
+ * measured() does, and prints a row of the fourth table for each. It gives the shares of the
+ * counted render's time in traversal, tracking through media, the volumes' grid lookups,
+ * materials' programs and the hair model. Tracking's share holds the traversal, grid lookups and
+ * programs it makes.
+ **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the side, then the samples per pixel
+void media(const std::string & name, const scene::Scene & scene, const std::vector<cpu::Isa> & isas, std::uint32_t side, std::uint32_t samples,
+    std::uint32_t repeats) {
+    const boost::shared_ptr<log::Logger> logger = boost::make_shared<log::Logger>();
+    const std::size_t primitives = primitivesOf(geometry::gather(scene, logger));
+    for (const cpu::Isa isa : isas) {
+        const Measured got = measured(scene, isa, repeats, logger);
+        std::cout << "| " << name << " | " << device::isaName(isa) << " | " << primitives << " | " << (side * side) << " | " << samples << " | "
+                  << fixed(got.samples, 3) << " | " << fixed(got.rays, 3) << " | " << fixed(got.perSample, 2) << " | "
+                  << fixed(100.0 * got.counted.traversal, 1) << " | " << fixed(100.0 * got.counted.tracking, 1) << " | "
+                  << fixed(100.0 * got.counted.grids, 1) << " | " << fixed(100.0 * got.counted.programs, 1) << " | "
+                  << fixed(100.0 * got.counted.hair, 1) << " |\n";
     }
 }
 
@@ -312,6 +351,14 @@ int run(int argc, char * argv[]) {
     std::cout << "\n| outputs | isa | Msamples/s | rate of the lit room % | coverage % | deep % |\n";
     std::cout << "|---|---|---:|---:|---:|---:|\n";
     outputs(*litRoom(scale, pixels, samples), *outputRoom(scale, pixels, samples), isas, pixels, samples, repeats);
+    std::cout << "\n| media scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % | tracking % | "
+                 "grid % | program % | hair % |\n";
+    std::cout << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n";
+    // the fog room's grid is written where the system keeps temporary files
+    const std::string grid = (boost::filesystem::temp_directory_path() / "moya_bench_fog.vdb").string();
+    media("fog room", *fogRoom(scale, pixels, samples, grid), isas, pixels, samples, repeats);
+    media("subsurface room", *subsurfaceRoom(scale, pixels, samples), isas, pixels, samples, repeats);
+    media("hair lock", *hairLock(scale, pixels, samples), isas, pixels, samples, repeats);
     return EXIT_SUCCESS;
 }
 

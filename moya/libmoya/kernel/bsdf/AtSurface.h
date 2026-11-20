@@ -91,6 +91,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
     out.outside = outside;
     if (material.haired != 0U) {
         const surface::Hair hair = material.program.count != 0U ? program::evaluateHair(surfaces, textures, point, material.program) : material.hair;
+        const std::uint64_t mark = texture::started(textures);
         const bool curved = glm::dot(point.fibre, point.fibre) > 0.0F;
         out.frame = curved ? point.frame : surfaces.tangentFrame(point);
         out.coatFrame = out.frame;
@@ -100,6 +101,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
         closure.weight = spectrum::SampledSpectrum(1.0F);
         closure.roughness = std::sqrt(out.fibre.variance[0]);
         out.add(closure);
+        texture::finished(textures, texture::Work::Hair, mark);
         return out;
     }
     if (material.layered != 0U) {

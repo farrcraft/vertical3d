@@ -177,10 +177,12 @@ template <texture::Texels X>
 MOYA_KERNEL volume::Medium mediumInside(const surface::Surfaces & surfaces, const X & textures, const volume::Volumes & volumes, const volume::Volume & placed,
     const glm::vec3 & point, const glm::mat4 & toWorld, float time) {
     float values[volume::kMostFields] {};
+    const std::uint64_t mark = texture::started(textures);
     for (std::uint32_t field = 0; field < placed.fieldCount && field < volume::kMostFields; ++field) {
         const nanovdb::FloatGrid & grid = volumes.gridOf(placed, field);
         values[field] = volume::valueAt(grid, indexOf(grid, point));
     }
+    texture::finished(textures, texture::Work::Grid, mark);
     const glm::vec3 world = glm::vec3(toWorld * glm::vec4(point, 1.0F));
     return mediumFrom(surfaces, textures, placed, values, world, toWorld, time);
 }
@@ -200,6 +202,7 @@ template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void enterCell(const Paths<T, X> & paths, Crossing & crossing, float t, const spectrum::SampledWavelengths & wavelengths, float time) {
     const volume::Volume & placed = paths.volumes.volumes[crossing.volume];
     float values[volume::kMostFields] {};
+    const std::uint64_t mark = texture::started(paths.textures);
     for (std::uint32_t field = 0; field < placed.fieldCount && field < volume::kMostFields; ++field) {
         values[field] = volume::mostOf(paths.volumes.gridOf(placed, field));
     }
@@ -217,6 +220,7 @@ MOYA_KERNEL void enterCell(const Paths<T, X> & paths, Crossing & crossing, float
             end = std::fmin(crossing.exit, t + (kCellNudge / std::fmax(across.x, std::fmax(across.y, across.z))));
         }
     }
+    texture::finished(paths.textures, texture::Work::Grid, mark);
     crossing.cellEnd = end;
     const glm::vec3 point = crossing.origin + (crossing.direction * t);
     const glm::vec3 world = glm::vec3(crossing.toWorld * glm::vec4(point, 1.0F));

@@ -148,6 +148,37 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_textured_room_test) {
     BOOST_TEST(std::stod(cells[11]) < std::stod(cells[10]));
 }
 
+// a short pass times the integrator over the scenes of media, subsurface and hair, and each one's
+// time falls in its own shares. The fog room's tracking holds its grid lookups, the statue's walk
+// is tracking through a medium of no grid, and the lock's time is in the hair model and not in
+// tracking
+BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_media_subsurface_and_hair_test) {
+    const Run run = bench("--quick --isa sse42");
+    BOOST_TEST_REQUIRE(run.succeeded, run.printed);
+    // the cells after the leading bar: as the lit room's to the share in traversal, then the
+    // shares in tracking, grid lookups, programs and the hair model
+    const auto cellsOf = [&](const std::string & scene) {
+        const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, scene);
+        BOOST_TEST_REQUIRE(rows.size() == 1U, scene);
+        BOOST_TEST_REQUIRE(rows.front().size() >= 14U, scene);
+        BOOST_TEST(std::stod(rows.front()[6]) > 0.0, scene);
+        return rows.front();
+    };
+    const std::vector<std::string> fog = cellsOf("fog room");
+    BOOST_TEST(std::stod(fog[11]) > 0.0);
+    BOOST_TEST(std::stod(fog[11]) < std::stod(fog[10]));
+    BOOST_TEST(std::stod(fog[10]) < 100.0);
+    BOOST_TEST(std::stod(fog[13]) == 0.0);
+    const std::vector<std::string> statue = cellsOf("subsurface room");
+    BOOST_TEST(std::stod(statue[10]) > 0.0);
+    BOOST_TEST(std::stod(statue[11]) == 0.0);
+    BOOST_TEST(std::stod(statue[13]) == 0.0);
+    const std::vector<std::string> lock = cellsOf("hair lock");
+    BOOST_TEST(std::stod(lock[13]) > 0.0);
+    BOOST_TEST(std::stod(lock[13]) < 100.0);
+    BOOST_TEST(std::stod(lock[10]) == 0.0);
+}
+
 // an instruction set the processor does not run, or one that has no such name, is refused
 BOOST_AUTO_TEST_CASE(moya_bench_refuses_an_instruction_set_it_cannot_run_test) {
     const Run run = bench("--quick --isa mmx");

@@ -130,8 +130,12 @@ MOYA_KERNEL bool scatter(const Paths<T, X> & paths, const surface::ShadingPoint 
     }
     const glm::uvec2 pixel = MOYA_PATH(state, pixel);
     const std::uint32_t sample = MOYA_PATH(state, sample);
+    const std::uint64_t mark = texture::started(paths.textures);
     const bsdf::Sample drawn = scattering.sample(outgoing, paths.sampler.get2D(pixel, sample, bounceDimension(bounce, kScatter)),
         paths.sampler.get1D(pixel, sample, bounceDimension(bounce, kScatterChoice)));
+    if (scattering.haired()) {
+        texture::finished(paths.textures, texture::Work::Hair, mark);
+    }
     if (!drawn.found()) {
         return false;
     }
@@ -392,7 +396,12 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
             .dimension = bounceDimension(MOYA_PATH(state, bounces), kOpacity) };
         const geometry::Hit hit = paths.traversal.nearest(ray, filter);
         const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
-        const media::Tracked tracked = tracks ? media::track(paths, state, hit.found() ? hit.distance : ray.end, collisions) : media::Tracked::Reached;
+        media::Tracked tracked = media::Tracked::Reached;
+        if (tracks) {
+            const std::uint64_t mark = texture::started(paths.textures);
+            tracked = media::track(paths, state, hit.found() ? hit.distance : ray.end, collisions);
+            texture::finished(paths.textures, texture::Work::Tracking, mark);
+        }
         switch (tracked) {
             case media::Tracked::Ended:
                 return;

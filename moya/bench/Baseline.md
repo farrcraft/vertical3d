@@ -52,3 +52,21 @@ after each pass to merge Cryptomatte coverage and to join deep lists.
 |---|---|---:|---:|---:|---:|
 | lit room with outputs | sse42 | 1.574 | 93.9 | 1.0 | 1.4 |
 | lit room with outputs | avx2 | 1.650 | 94.6 | 1.1 | 1.7 |
+
+## The scenes of media, subsurface and hair
+
+The fog room, the subsurface room and the hair lock, run at `e49b17d9` with them added, on the
+same machine in the same build. Each rate is of the fastest of three timed renders, and the
+shares are of a fourth, counted, as the lit and textured rooms' are. Tracking's share holds the
+traversal, grid lookups and programs it makes. The lit room ran at 1.366 Msamples/s at sse42 and
+1.420 at avx2 in the same run, so each scene can be read against it. Two runs differ by up to a
+tenth in the rates.
+
+| media scene | isa | primitives | pixels | samples per pixel | Msamples/s | Mrays/s | rays per sample | traversal % | tracking % | grid % | program % | hair % |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| fog room | sse42 | 1048364 | 65536 | 16 | 0.273 | 2.105 | 7.70 | 12.2 | 80.8 | 19.4 | 18.7 | 0.0 |
+| fog room | avx2 | 1048364 | 65536 | 16 | 0.297 | 2.288 | 7.70 | 11.1 | 81.5 | 17.3 | 20.1 | 0.0 |
+| subsurface room | sse42 | 1048367 | 65536 | 16 | 0.783 | 6.147 | 7.85 | 40.2 | 18.8 | 0.0 | 0.0 | 0.0 |
+| subsurface room | avx2 | 1048367 | 65536 | 16 | 0.840 | 6.597 | 7.85 | 38.9 | 19.3 | 0.0 | 0.0 | 0.0 |
+| hair lock | sse42 | 81920 | 65536 | 16 | 1.130 | 1.620 | 1.43 | 56.1 | 0.0 | 0.0 | 0.0 | 14.1 |
+| hair lock | avx2 | 81920 | 65536 | 16 | 1.151 | 1.650 | 1.43 | 55.6 | 0.0 | 0.0 | 0.0 | 14.2 |

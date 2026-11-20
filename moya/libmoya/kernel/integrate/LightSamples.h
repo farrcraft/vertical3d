@@ -505,9 +505,13 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const ge
     }
     bsdf::Bsdf::Part parts[bsdf::kMostClosures];
     bool any = false;
+    const std::uint64_t evaluating = texture::started(paths.textures);
     for (std::uint32_t i = 0; i < scattering.count && i < bsdf::kMostClosures; ++i) {
         parts[i] = scattering.part(i, outgoing, drawn.incoming);
         any = any || !parts[i].projected.black();
+    }
+    if (scattering.haired()) {
+        texture::finished(paths.textures, texture::Work::Hair, evaluating);
     }
     if (!any) {
         return none;
@@ -522,7 +526,14 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const ge
         shadow.direction = drawn.point - shadow.origin;
         shadow.end = 1.0F - kShadowShort;
     }
+    // a shadow ray through media is tracking. One from a point in a medium is timed with the
+    // tracking that reached that point, so only a surface's is timed here
+    const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
+    const std::uint64_t shadowing = texture::started(paths.textures);
     const Passed passed = passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)));
+    if (tracks) {
+        texture::finished(paths.textures, texture::Work::Tracking, shadowing);
+    }
     if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }
