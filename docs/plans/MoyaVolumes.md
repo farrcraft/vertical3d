@@ -167,7 +167,7 @@ listed as a number with no record, as the ADR index requires.
 | [14](#step-14--volumetric-lights) | Volumetric lights | `moya/libmoya/light`, `kernel/light` | 0248 | done |
 | [15](#step-15--random-walk-subsurface) | Random-walk subsurface | `moya/libmoya/kernel/bsdf`, `integrate` | 0246 | done |
 | [16](#step-16--a-curves-frame) | A curve's frame | `moya/libmoya/kernel/surface`, `geometry` | — | done |
-| [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | open |
+| [17](#step-17--the-hair-bsdf) | The hair BSDF | `moya/libmoya/kernel/bsdf`, `material` | 0247 | done |
 | [18](#step-18--volumes-in-the-outputs) | Volumes in the outputs | `moya/libmoya/kernel/integrate`, `integrate` | 0233 | open |
 | [19](#step-19--media-and-hair-from-rib) | Media and hair from RIB | `api/rib`, `moya/libmoya/ri` | 0242, 0243 | open |
 | [20](#step-20--the-reference-renders) | The reference renders | `moya/tests` | — | open |
@@ -764,6 +764,19 @@ the highlight stretches, which now follows the fibre. The cases are in `CurvesTe
 **Tests:** samples pass chi-squared against the density at several roughnesses and offsets. A white
 hair of no absorption in a white furnace returns its light. The model's values match pbrt-v4's
 published implementation at fixed directions.
+
+**Done.** `bsdf::scattering::Hair` is pbrt-v4's model with MaterialX's tints and a roughness for
+each lobe, of the `scattering::Fibre` the BSDF holds, and `Model::Hair` names it. A `surface` node
+over `chiang_hair_bsdf` compiles to a hair's program, laid out by `kernel/program/Hair.h`, and the
+material holds the folded `surface::Hair`. MaterialX implements the three helper nodes only in its
+shader generators, so `material::Library` reads moya's graphs of them, from standard nodes, in
+`HairGraphs.cxx`. MaterialX's cuticle angle a tilts by pi (1/2 - a) in pbrt-v4's terms, which
+places R's peak where MaterialX's GLSL places it. The model's offset is minus the shading point's
+`across`, as MaterialX derives it from a round curve's normal. A hair's material on what is not a
+curve is reported once, by the gather. A sample's bounce is TT's transmission or a glossy
+reflection, and a light sample's part takes the kind of the lobe that carries most of its light.
+The cases are in `HairTest.cxx`, against a double-precision port of pbrt-v4's `HairBxDF`. No
+reference render holds hair, so no picture changes.
 
 ### Step 18 — Volumes in the outputs
 

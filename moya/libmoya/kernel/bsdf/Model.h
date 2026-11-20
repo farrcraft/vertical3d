@@ -24,6 +24,8 @@ namespace v3d::moya::kernel::bsdf {
  * - Specular is a dielectric's GGX reflection alone, by Fresnel's equations, as a layer over a
  *   base reflects, with the energy a single scattering loses given back.
  * - Fuzz is OpenPBR's fuzz, Zeltner, Burley and Chiang's sheen of a layer of fibres.
+ * - Hair is Chiang and others' far-field model of a hair fibre, in a frame whose tangent runs
+ *   along the fibre. It scatters by the fibre its BSDF holds.
  **/
 enum class Model : std::uint8_t {
     Diffuse,
@@ -32,7 +34,8 @@ enum class Model : std::uint8_t {
     Dielectric,
     OrenNayar,
     Specular,
-    Fuzz
+    Fuzz,
+    Hair
 };
 
 };  // namespace v3d::moya::kernel::bsdf

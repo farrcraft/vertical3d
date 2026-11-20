@@ -154,7 +154,8 @@ Bézier when the scene is gathered, so there is one cubic test and one linear on
   on the right to 1 on the left as the ray sees the curve, with zero on the centre line. The
   frame's tangent is the fibre less its part along the shading normal, so a model that reads a
   fibre's direction finds it there. The shading normal is unchanged. A surface that is not a
-  curve has a fibre and an `across` of zero.
+  curve has a fibre and an `across` of zero. A hair meets the fibre at minus `across`, as
+  [Materials.md](Materials.md#hair) says.
 
 A segment's control points move linearly between their samples, as a point's centre and width
 do. `geometry::gather()` samples a set of curves' points and widths together at every time either

@@ -8,6 +8,7 @@
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/OpenPbr.h>
 #include <moya/libmoya/kernel/program/Displacement.h>
+#include <moya/libmoya/kernel/program/Hair.h>
 #include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/program/Program.h>
@@ -61,6 +62,8 @@ constexpr const char * kOpenPbr = "ND_open_pbr_surface_surfaceshader";
 constexpr const char * kDisplacementFloat = "ND_displacement_float";
 constexpr const char * kDisplacementVector = "ND_displacement_vector3";
 constexpr const char * kVolume = "ND_volume";
+constexpr const char * kSurface = "ND_surface";
+constexpr const char * kHair = "ND_chiang_hair_bsdf";
 
 /** Whether a node is a shader, a closure or a material, whose inputs feed moya's BSDF library. **/
 bool shading(const mx::NodePtr & node) {
@@ -454,6 +457,69 @@ void compileOpenPbr(Network & held, const scene::Scene & scene, const scene::Han
     out.material.layered = 1;
 }
 
+/** The node an input of a node is connected to, or none. **/
+mx::NodePtr feeding(const mx::NodePtr & node, const std::string & name) {
+    const mx::InputPtr input = node->getInput(name);
+    return input ? input->getConnectedNode() : nullptr;
+}
+
+/**
+ * Reports each input of a hair's surface node and of its BSDF that a hair does not take. Those are
+ * the surface's emission and an opacity other than one, and the BSDF's normal and direction, since
+ * a fibre runs along its curve.
+ **/
+void reportHair(Network & network, const std::string & name, const mx::NodePtr & surface, const mx::NodePtr & hair) {
+    if (feeding(surface, "edf")) {
+        network.report("material " + name + "'s hair emits, which a hair does not, so it gives no light");
+    }
+    const mx::ValuePtr opacity = surface->getInputValue("opacity");
+    if (feeding(surface, "opacity") || (opacity && opacity->isA<float>() && opacity->asA<float>() != 1.0F)) {
+        network.report("material " + name + "'s hair has an opacity, which a hair does not take, so it is opaque");
+    }
+    for (const char * direction : { "normal", "curve_direction" }) {
+        if (feeding(hair, direction)) {
+            network.report(joined({ "material ", name, "'s hair is given its ", direction, ", which a hair does not take, so it runs along its curve" }));
+        }
+    }
+}
+
+/**
+ * Compiles a surface node over a chiang_hair_bsdf into a hair's program and the material's
+ * parameters, as compile() says. A surface node over any other BSDF is reported, and the
+ * material takes OpenPBR's defaults.
+ **/
+void compileHair(Network & held, const scene::Scene & scene, const scene::Handle & material, std::vector<std::string> & primvars, Compiled & out) {
+    const mx::NodePtr surface = held.terminal;
+    const mx::NodePtr hair = feeding(surface, "bsdf");
+    if (!hair || hair->getNodeDefString() != kHair) {
+        const std::string over = hair ? hair->getNodeDefString() : std::string("no BSDF");
+        held.report("material " + scene.name(material) + "'s surface is a surface node over " + over + ", which moya does not render, so it takes OpenPBR's defaults");
+        out.material.layered = 1;
+        return;
+    }
+    reportHair(held, scene.name(material), surface, hair);
+    held.terminal = hair;
+    internal::Emitter compiled(held, primvars, kernel::program::kHairRegisters);
+    fill(compiled, held, true, true, internal::kHairInputs);
+    internal::Emitter constants(held, primvars, kernel::program::kHairRegisters);
+    if (compiled.overflowed()) {
+        held.report("material " + scene.name(material) + " needs more registers than a program holds, so each node feeding its hair gives its default");
+        fill(constants, held, false, false, internal::kHairInputs);
+    }
+    const internal::Emitter & emitter = compiled.overflowed() ? constants : compiled;
+    out.instructions = emitter.instructions();
+    out.values = emitter.values();
+    out.colours = emitter.colours();
+    out.spaces = emitter.spaces();
+    out.images = emitter.images();
+    out.material.program = kernel::program::Program { .instructions = 0,
+        .count = static_cast<std::uint32_t>(out.instructions.size()),
+        .values = 0,
+        .size = static_cast<std::uint32_t>(out.values.size()) };
+    out.material.hair = kernel::program::hairOf(fold(out.instructions, out.values).values.data());
+    out.material.haired = 1;
+}
+
 };  // namespace
 
 bool steadied(const Folded & folded, kernel::surface::OpenPbr & surface) {
@@ -490,7 +556,9 @@ Compiled compile(const Library & library, const scene::Scene & scene, const scen
     Compiled out;
     if (held.terminal) {
         const std::string definition = held.terminal->getNodeDefString();
-        if (definition != kOpenPbr) {
+        if (definition == kSurface) {
+            compileHair(held, scene, material, primvars, out);
+        } else if (definition != kOpenPbr) {
             held.report("material " + scene.name(material) + "'s surface is " + definition + ", which moya does not render, so it takes OpenPBR's defaults");
             out.material.layered = 1;
         } else {

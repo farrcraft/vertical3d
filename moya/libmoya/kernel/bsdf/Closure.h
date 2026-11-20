@@ -31,9 +31,10 @@ inline constexpr float kLeastBend = 1.0e-3F;
  * works in its frame turned over, so the ratio it reads is at least one. Its reflection is tinted
  * by its colour and its transmission by its transmitted colour. A specular reflection reads its
  * index and its colour. An Oren-Nayar lobe reads its colour as its reflectance, and its roughness,
- * and fuzz reads its colour and its roughness. A conductor's or a specular reflection's Fresnel
- * factor is mixed towards a thin film's by the film's weight. A coated closure is the coat, which
- * works in the coat's frame.
+ * and fuzz reads its colour and its roughness. A hair reads the fibre its BSDF holds, and its
+ * roughness is the root of its R lobe's longitudinal variance. A conductor's or a specular
+ * reflection's Fresnel factor is mixed towards a thin film's by the film's weight. A coated
+ * closure is the coat, which works in the coat's frame.
  *
  * A diffuse lobe that goes through scatters into the side of the surface opposite the one light
  * leaves towards, as the lobe mirrored through the surface: a diffuse transmission. A dielectric
@@ -84,14 +85,16 @@ struct Closure {
             case Model::Diffuse:
             case Model::OrenNayar:
             case Model::Fuzz:
+            case Model::Hair:
                 break;
         }
         return false;
     }
 
     /**
-     * How rough a lobe it is, to widen a ray's cone by: its GGX alpha, the geometric mean of an
-     * anisotropic lobe's two, one for a diffuse lobe, and zero for a singular one.
+     * How rough a lobe it is, to widen a ray's cone by. It is its GGX alpha, or the geometric
+     * mean of an anisotropic lobe's two. A hair's is its roughness, a diffuse lobe's one, and a
+     * singular lobe's zero.
      **/
     MOYA_KERNEL float spread() const {
         if (singular()) {
@@ -104,6 +107,8 @@ struct Closure {
                 return std::sqrt(alpha.x * alpha.y);
             case Model::Mirror:
                 return 0.0F;
+            case Model::Hair:
+                return roughness;
             case Model::Diffuse:
             case Model::OrenNayar:
             case Model::Fuzz:

@@ -53,6 +53,19 @@ libraries `material::Library::installed()` reads once from beside the executable
   opacity varies over the surface and the program gives it, which sets `programmedOpacity`, or
   when the constant it holds is less than one. `Material::cutOut()` says which. A traversal asks
   about a hit on such a material, as [Integrator.md](Integrator.md#surfaces-that-are-cut-out) says.
+- **A surface of MaterialX's `surface` node over a `chiang_hair_bsdf` makes the material a
+  hair's**, and sets `haired`. Its program gives the hair's parameters, laid out as
+  `kernel/program/Hair.h` says, and `kHairInputs` lists them. They are compiled as OpenPBR's are,
+  and the material holds them folded in `hair`. The surface node's emission, an opacity other
+  than one, and the hair's `normal` or `curve_direction` are reported, and a hair takes none of
+  them, since a fibre runs along its curve. A `surface` node over any other BSDF is reported, and
+  the material is layered with OpenPBR's defaults.
+- **The nodes that give a hair's parameters are flattened by moya's own graphs.** MaterialX
+  implements `chiang_hair_roughness`, `chiang_hair_absorption_from_color` and
+  `deon_hair_absorption_from_melanin` only in its shader generators, which moya does not install.
+  `material::Library` reads moya's graphs of them from standard nodes, with the formulas of
+  MaterialX's GLSL implementation. The two melanins' colours are in linear Rec. 709, as MaterialX
+  declares their defaults.
 - **A surface of any other definition is reported**, and the material is layered with OpenPBR's
   defaults.
 - **Every input of `open_pbr_surface` but `geometry_thin_walled` reaches the program**, and
@@ -397,6 +410,9 @@ The library's models:
 - **`Fuzz` is OpenPBR's fuzz**, Zeltner, Burley and Chiang's sheen of a layer of fibres, on
   either side, and its bounces are diffuse. It is the one lobe that is not reciprocal. It is set
   out after the Oren-Nayar lobe.
+- **`Hair` is Chiang and others' far-field model of a hair fibre**, as pbrt-v4 gives it, with
+  MaterialX's tints and a roughness for each lobe. Its bounces are glossy, but for TT's, which
+  are transmissions. It is set out [below](#hair).
 
 A conductor's or a specular reflection's Fresnel factor can carry a thin film, mixed in by the
 film's weight. The film is set out after fuzz. The BSDF holds the path's wavelengths, which the
@@ -526,6 +542,45 @@ The tool writes a C++ source, which libmoya compiles, and `material::ggxAlbedos(
 `bsdf::Albedos` view of it. The source is generated, so clang-tidy and `/analyze` skip it. Tables
 of no points read an albedo of one, which compensates nothing.
 
+### Hair
+
+A hair scatters by `scattering::Hair`, of the `scattering::Fibre` the BSDF holds. A BSDF holds
+one fibre, and a hair's material gives it one closure.
+
+- **It works in a frame whose tangent runs along the fibre.** A direction's longitudinal sine is
+  its part along the tangent, and its azimuth its angle about it, from the bitangent towards the
+  normal. On a curve the shading frame's tangent is the fibre, as
+  [Traversal.md](Traversal.md#curves) says. On any other surface the model works in the tangent
+  frame the surface gives, met at an offset of zero, and the material is reported once.
+- **Its lobes are R, TT, TRT and the rest.** R reflects off the cuticle, TT passes through the
+  fibre, TRT reflects once inside it, and every longer path is one last lobe. Each is a
+  longitudinal term, times an azimuthal term, times an attenuation. The last lobe's azimuthal
+  term is uniform.
+- **The attenuations** are Fresnel's equations at the fibre's index, at the cosine of the angle
+  light meets the cuticle, and the absorption along each pass through the fibre. Each is times its
+  lobe's tint, and the last lobe takes TRT's.
+- **Each lobe has its own roughness**: MaterialX's longitudinal variance and azimuthal
+  roughness, held to [0.001, 1]. The azimuthal roughness times the root of pi over eight is the
+  scale of a logistic trimmed to [-pi, pi].
+- **The cuticle's tilt** turns the outgoing direction of R by 2 pi (a - 1/2), TT's by
+  pi (1/2 - a) and TRT's by four times that, for MaterialX's cuticle angle a. A half tilts
+  nothing, and R's peak lies at minus the outgoing longitudinal angle less 2 (a pi - pi/2), as
+  MaterialX's GLSL implementation places it.
+- **The offset across the fibre** is minus the shading point's `across`. The model's offset is
+  positive where the normal leans towards the bitangent, away from the direction light leaves,
+  which is the side `across` takes as negative.
+- **Its value is the sum of its lobes over the cosine of incoming to the frame's normal**, so its
+  projected value is the far-field model's own. A white fibre that absorbs nothing returns a
+  white furnace's light, since its attenuations then sum to one.
+- **A sample picks a lobe by the mean of its tinted attenuation**, by the third random number,
+  which is then stretched over the lobe's share to draw the azimuth. The first two draw the
+  longitudinal term exactly. A sample from TT is a transmission, and one from any other lobe is
+  glossy. A light sample's part takes the kind of the lobe that carries most of its light.
+- **Its estimated albedo** is the mean of what the fibre scatters of light leaving at right
+  angles to it. Its roughness, which widens a ray's cone, is the root of R's variance.
+
+The model is not reciprocal once the cuticle tilts, as pbrt-v4's is not.
+
 `bsdf::atSurface(surfaces, point, table, albedos, wavelengths, outgoing)` gives the BSDF at a
 shading point: the closures its material names, or one diffuse closure for a surface with no
 material. Its colour is the geometry's `Cs` primvar, which overrides its material's as RI's does, or
@@ -537,10 +592,12 @@ reflectance is its reflectance at normal incidence. Its roughness, anisotropy an
 material closure's, the tint becoming a reflectance through the same table. A dielectric's weight is
 its scale, and its roughness, anisotropy, index and whether it is thin-walled are its material
 closure's. A layered material's closures are OpenPBR's for light leaving along outgoing, and the
-`Cs` primvar overrides its base colour.
+`Cs` primvar overrides its base colour. A hair's material is one hair closure of weight one, its
+tints reflectances through the same table and its absorption an unbounded spectrum.
 
 Background: [ADR-0222](../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md),
-[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md)
+[ADR-0235](../adr/offline/0235-offline-a-bounce-samples-one-closure-alone.md),
+[ADR-0247](../adr/offline/0247-offline-hair-scatters-by-chiangs-model.md)
 
 ## Layering
 

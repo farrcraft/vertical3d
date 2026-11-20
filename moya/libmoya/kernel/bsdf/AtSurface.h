@@ -10,14 +10,17 @@
 #include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Hair.h>
 #include <moya/libmoya/kernel/bsdf/Layering.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
+#include <moya/libmoya/kernel/program/Hair.h>
 #include <moya/libmoya/kernel/program/Run.h>
 #include <moya/libmoya/kernel/Qualifiers.h>
 #include <moya/libmoya/kernel/spectrum/Rgb.h>
 #include <moya/libmoya/kernel/spectrum/RgbTable.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
+#include <moya/libmoya/kernel/surface/Hair.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>
 #include <moya/libmoya/kernel/surface/Normal.h>
@@ -58,6 +61,12 @@ namespace v3d::moya::kernel::bsdf {
  * frame about the coat's normal and tangent, and every other closure in the frame about the
  * surface's, each as surface::frameAbout() makes it from the tangent frame Surfaces gives the
  * point.
+ *
+ * A hair's material is one hair closure of weight one, of the parameters its program gives. It
+ * meets the fibre at minus the point's place across a curve, since the model's offset is positive
+ * where the normal leans towards the bitangent away from the direction light leaves. On a curve it
+ * works in the point's frame, whose tangent runs along the fibre. On any other surface it works in
+ * the tangent frame Surfaces gives the point, at an offset of zero.
  **/
 template <texture::Texels X>
 MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & textures, const surface::ShadingPoint & point, const spectrum::RgbTable & table,
@@ -80,6 +89,19 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
     out.coatFrame = point.frame;
     out.geometric = point.geometric;
     out.outside = outside;
+    if (material.haired != 0U) {
+        const surface::Hair hair = material.program.count != 0U ? program::evaluateHair(surfaces, textures, point, material.program) : material.hair;
+        const bool curved = glm::dot(point.fibre, point.fibre) > 0.0F;
+        out.frame = curved ? point.frame : surfaces.tangentFrame(point);
+        out.coatFrame = out.frame;
+        out.fibre = scattering::Hair::fibre(hair, table, wavelengths, -point.across);
+        Closure closure;
+        closure.model = Model::Hair;
+        closure.weight = spectrum::SampledSpectrum(1.0F);
+        closure.roughness = std::sqrt(out.fibre.variance[0]);
+        out.add(closure);
+        return out;
+    }
     if (material.layered != 0U) {
         surface::OpenPbr layers = material.surface;
         if (material.program.count != 0U) {

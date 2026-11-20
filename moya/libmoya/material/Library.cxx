@@ -7,6 +7,7 @@
 
 #include <moya/libmoya/Executable.h>
 #include <moya/libmoya/material/internal/Definitions.h>
+#include <moya/libmoya/material/internal/HairGraphs.h>
 #include <moya/libmoya/material/internal/TranslationGraphs.h>
 #include <MaterialXCore/Definition.h>
 #include <MaterialXCore/Document.h>
@@ -70,6 +71,11 @@ Library::Library(const boost::filesystem::path & directory) {
     const mx::DocumentPtr translations = mx::createDocument();
     mx::readFromXmlString(translations, internal::translationGraphs());
     document->importLibrary(translations);
+    // moya's graphs of the nodes that give a hair's parameters, which MaterialX implements only
+    // in its shader generators
+    const mx::DocumentPtr hair = mx::createDocument();
+    mx::readFromXmlString(hair, internal::hairGraphs());
+    document->importLibrary(hair);
     definitions_ = boost::make_shared<const internal::Definitions>(document);
 }
 

@@ -18,14 +18,15 @@ namespace v3d::moya::geometry {
 struct Prototypes;
 
 /**
- * The prototypes' materials and the values their programs start from, with every colour
- * converted into ACEScg from the space it names: an RI material's colour, and each colour
- * constant of a program. A layered material's surface holds the parameters its program gives
- * from its converted values, each that is the same at every shading point folded as
- * material::fold() folds it, so what is drawn and what is lit agree. A layered material of no
- * volume terminal holds the media material::enclose() gives that surface. A material with a
- * volume program holds the medium that program gives from its converted values, folded the same
- * way, so a closed surface encloses the medium a volume of the material reads.
+ * The prototypes' materials and the values their programs start from, with every colour converted
+ * into ACEScg from the space it names: an RI material's colour, and each colour constant of a
+ * program. A layered material's surface holds the parameters its program gives from its converted
+ * values, each that is the same at every shading point folded as material::fold() folds it, so
+ * what is drawn and what is lit agree. A layered material of no volume terminal holds the media
+ * material::enclose() gives that surface. A hair's material holds the parameters its program gives
+ * from its converted values, folded the same way. A material with a volume program holds the
+ * medium that program gives from its converted values, folded the same way, so a closed surface
+ * encloses the medium a volume of the material reads.
  **/
 struct ConvertedMaterials {
     std::vector<kernel::surface::Material> materials;

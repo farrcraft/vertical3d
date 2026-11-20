@@ -79,6 +79,14 @@ struct Compiled {
  * radius scale or anisotropy varies is reported, since the medium below it is made before
  * rendering, as enclose() says.
  *
+ * A surface of MaterialX's `surface` node whose BSDF is a `chiang_hair_bsdf` makes the material a
+ * hair's, and its program gives the hair's parameters, as kernel/program/Hair.h lays them out.
+ * Its inputs are compiled as OpenPBR's are, and the hair holds them as material::fold() folds the
+ * program. The nodes that give a hair's roughness and absorption are flattened into standard
+ * nodes by moya's graphs of them. A surface node's emission, an opacity other than one, and a
+ * hair's normal or curve direction are reported, and a hair takes none of them. A surface node
+ * over any other BSDF is reported, and the material is layered with OpenPBR's defaults.
+ *
  * A material with a volume terminal and no surface terminal is a boundary, which has no BSDF.
  *
  * A surface of any other definition is reported, and the material is layered with OpenPBR's

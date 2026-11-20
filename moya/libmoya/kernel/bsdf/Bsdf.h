@@ -12,6 +12,8 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Dielectric.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fibre.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Hair.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Mirror.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
 #include <moya/libmoya/kernel/bsdf/scattering/OrenNayar.h>
@@ -65,6 +67,10 @@ inline constexpr float kBelowOne = 0x1.fffffep-1F;
  * A diffuse lobe that goes through is evaluated, given a density and sampled as the lobe it
  * mirrors, with incoming mirrored through the surface.
  *
+ * A hair closure scatters by the fibre the BSDF holds, in the shading frame, whose tangent runs
+ * along a curve. Its sample's kind of bounce is the kind its model draws, and its part's the kind
+ * of the lobe that carries most of the light between the two directions.
+ *
  * The geometric surface and a closure's frame have to agree on whether two directions lie on one
  * side or cross the surface. Where they disagree, the closure gives the pair no value, no density
  * and no sample, so a reflection never crosses the geometric surface and a transmission always
@@ -82,6 +88,9 @@ struct Bsdf {
     Albedos albedos;
     spectrum::SampledWavelengths wavelengths;
 
+    /** The fibre a hair closure scatters by. A BSDF holds one. **/
+    scattering::Fibre fibre;
+
     /** Adds a closure of a model and a weight, as add() adds any closure. **/
     MOYA_KERNEL void add(Model model, const spectrum::SampledSpectrum & weight) {
         Closure closure;
@@ -92,12 +101,14 @@ struct Bsdf {
 
     /**
      * Adds a closure, estimating its albedo as the mean of its weight over the wavelengths, times
-     * what its model reflects. That is a conductor's Fresnel factor's mean, or an Oren-Nayar lobe's
-     * colour's. A specular reflection's is its colour's mean times the mean a smooth interface
-     * reflects, and a dielectric's the larger mean of its two colours. Fuzz's is its colour's mean
-     * times its albedo at a cosine of one half. A closure of no albedo is
-     * left out. A BSDF that holds kMostClosures replaces the one of the smallest albedo with it,
-     * while that is smaller. The albedo tables are set before a specular reflection is added.
+     * what its model reflects. That is a conductor's Fresnel factor's mean, or an Oren-Nayar
+     * lobe's colour's. A specular reflection's is its colour's mean times the mean a smooth
+     * interface reflects, and a dielectric's the larger mean of its two colours. Fuzz's is its
+     * colour's mean times its albedo at a cosine of one half. A hair's is the mean of what its
+     * fibre scatters at right angles to its length, so its fibre is set before it is added. A
+     * closure of no albedo is left out. A BSDF that holds kMostClosures replaces the one of the
+     * smallest albedo with it, while that is smaller. The albedo tables are set before a specular
+     * reflection is added.
      **/
     MOYA_KERNEL void add(Closure closure) {
         closure.albedo = closure.weight.average();
@@ -120,6 +131,9 @@ struct Bsdf {
                 break;
             case Model::Fuzz:
                 closure.albedo *= closure.colour.average() * scattering::Fuzz::albedo(0.5F, closure.roughness);
+                break;
+            case Model::Hair:
+                closure.albedo *= scattering::Hair::albedo(fibre).average();
                 break;
             case Model::Diffuse:
             case Model::Mirror:
@@ -227,6 +241,7 @@ struct Bsdf {
         }
         const glm::vec2 stretched { std::fmin((u.x - below) / chance, kBelowOne), u.y };
         glm::vec3 drawn { 0.0F };
+        Lobe kind = Lobe::Glossy;
         switch (closure.model) {
             case Model::Conductor:
             case Model::Specular:
@@ -237,6 +252,9 @@ struct Bsdf {
                 break;
             case Model::Fuzz:
                 drawn = scattering::Fuzz::sample(closure, local, stretched);
+                break;
+            case Model::Hair:
+                drawn = scattering::Hair::sample(fibre, local, stretched, choice, kind);
                 break;
             case Model::Diffuse:
             case Model::Mirror:
@@ -249,7 +267,7 @@ struct Bsdf {
         }
         drawn = across(closure, drawn);
         out.incoming = own.toWorld(drawn);
-        out.lobe = closure.lobe(drawn.z * local.z < 0.0F);
+        out.lobe = closure.model == Model::Hair ? kind : closure.lobe(drawn.z * local.z < 0.0F);
         out.roughness = closure.spread();
         out.diffuse = closure.diffuse();
         if (agrees(outgoing, out.incoming, local, drawn)) {
@@ -278,7 +296,8 @@ struct Bsdf {
         Part out;
         const Closure & closure = closures[place];
         const Directions local = directionsIn(frameOf(closure), outgoing, incoming);
-        out.lobe = closure.lobe(local.outgoing.z * local.incoming.z < 0.0F);
+        out.lobe = closure.model == Model::Hair ? scattering::Hair::dominant(fibre, local.outgoing, local.incoming)
+                                                 : closure.lobe(local.outgoing.z * local.incoming.z < 0.0F);
         out.diffuse = closure.diffuse();
         const float total = albedo();
         if (closure.singular() || !local.agree || !(total > 0.0F)) {
@@ -343,6 +362,8 @@ struct Bsdf {
                 return closure.colour.average() >= closure.transmitted.average() ? closure.colour : closure.transmitted;
             case Model::Fuzz:
                 return closure.colour * scattering::Fuzz::albedo(0.5F, closure.roughness);
+            case Model::Hair:
+                return scattering::Hair::albedo(fibre);
             case Model::Diffuse:
             case Model::Mirror:
                 break;
@@ -409,6 +430,7 @@ struct Bsdf {
             case Model::Mirror:
             case Model::OrenNayar:
             case Model::Fuzz:
+            case Model::Hair:
                 break;
         }
         out.direction = scattering::Mirror::sample(outgoing);
@@ -454,6 +476,8 @@ struct Bsdf {
                 return scattering::Fuzz::evaluate(closure, outgoing, incoming);
             case Model::OrenNayar:
                 return scattering::OrenNayar::evaluate(closure, outgoing, incoming);
+            case Model::Hair:
+                return scattering::Hair::evaluate(fibre, outgoing, incoming);
             case Model::Diffuse:
             case Model::Mirror:
                 break;
@@ -477,6 +501,8 @@ struct Bsdf {
                 return scattering::Dielectric::density(closure, albedos, outgoing, incoming);
             case Model::Fuzz:
                 return scattering::Fuzz::density(closure, outgoing, incoming);
+            case Model::Hair:
+                return scattering::Hair::density(fibre, outgoing, incoming);
             case Model::Diffuse:
             case Model::Mirror:
             case Model::OrenNayar:

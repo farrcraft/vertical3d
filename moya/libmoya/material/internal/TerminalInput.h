@@ -6,6 +6,7 @@
 #pragma once
 
 #include <moya/libmoya/kernel/program/Displacement.h>
+#include <moya/libmoya/kernel/program/Hair.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 
 #include <array>
@@ -62,6 +63,19 @@ inline constexpr std::array kOpenPbrInputs {
     TerminalInput { .name = "geometry_coat_tangent", .at = kernel::program::kGeometryCoatTangent, .width = 3 },
     TerminalInput { .name = "transmission_scatter", .at = kernel::program::kTransmissionScatter, .width = 3 },
     TerminalInput { .name = "subsurface_radius_scale", .at = kernel::program::kSubsurfaceRadiusScale, .width = 3 },
+};
+
+/** Every input of chiang_hair_bsdf that a hair's program gives: all but its two directions. **/
+inline constexpr std::array kHairInputs {
+    TerminalInput { .name = "tint_R", .at = kernel::program::kHairTintR, .width = 3 },
+    TerminalInput { .name = "tint_TT", .at = kernel::program::kHairTintTT, .width = 3 },
+    TerminalInput { .name = "tint_TRT", .at = kernel::program::kHairTintTRT, .width = 3 },
+    TerminalInput { .name = "ior", .at = kernel::program::kHairIor },
+    TerminalInput { .name = "roughness_R", .at = kernel::program::kHairRoughnessR, .width = 2 },
+    TerminalInput { .name = "roughness_TT", .at = kernel::program::kHairRoughnessTT, .width = 2 },
+    TerminalInput { .name = "roughness_TRT", .at = kernel::program::kHairRoughnessTRT, .width = 2 },
+    TerminalInput { .name = "cuticle_angle", .at = kernel::program::kHairCuticleAngle },
+    TerminalInput { .name = "absorption_coefficient", .at = kernel::program::kHairAbsorption, .width = 3 },
 };
 
 /** The inputs of a displacement of a float, which moves a point along its normal. **/

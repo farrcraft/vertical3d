@@ -20,9 +20,11 @@
 #include <moya/libmoya/kernel/bsdf/scattering/Dielectric.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Diffuse.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/F82.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/scattering/Fibre.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Fresnel.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Fuzz.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Ggx.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/bsdf/scattering/Hair.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Mirror.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/OrenNayar.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/bsdf/scattering/Specular.h>  // IWYU pragma: keep
@@ -100,6 +102,7 @@
 #include <moya/libmoya/kernel/light/Tree.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Displacement.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Fields.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/program/Hair.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Instruction.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Medium.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/program/Noise.h>  // IWYU pragma: keep
@@ -128,6 +131,7 @@
 #include <moya/libmoya/kernel/surface/Footprint.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Frame.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Geometry.h>  // IWYU pragma: keep
+#include <moya/libmoya/kernel/surface/Hair.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Instance.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/Material.h>  // IWYU pragma: keep
 #include <moya/libmoya/kernel/surface/MaterialClosure.h>  // IWYU pragma: keep

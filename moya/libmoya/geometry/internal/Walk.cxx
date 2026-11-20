@@ -291,6 +291,9 @@ std::optional<std::uint32_t> Walk::instance(const scene::Handle & handle, const 
         if (!placed) {
             return std::nullopt;
         }
+        if (kind != "curves" && out.material != kernel::surface::kNoMaterial && prototypes_.materials[out.material].haired != 0U) {
+            report("material " + scene_.name(named) + " is a hair's, and shades what is not a curve by its tangent, met at the middle of a fibre");
+        }
         out.kind = Prototype::Geometry;
         out.prototype = *placed;
     }

@@ -8,6 +8,7 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/kernel/program/Hair.h>
 #include <moya/libmoya/kernel/program/Medium.h>
 #include <moya/libmoya/kernel/program/Parameters.h>
 #include <moya/libmoya/kernel/surface/Material.h>
@@ -58,6 +59,11 @@ ConvertedMaterials ConvertedMaterials::of(const Prototypes & prototypes, const c
             if (material.surfaceMedia != 0U) {
                 material::enclose(folded, material);
             }
+        }
+        if (material.haired != 0U && material.program.size != 0U) {
+            const material::Folded folded = material::fold(std::span(prototypes.instructions).subspan(material.program.instructions, material.program.count),
+                std::span<const float>(values).subspan(material.program.values, material.program.size));
+            material.hair = kernel::program::hairOf(folded.values.data());
         }
         if (material.mediumProgram.size != 0U) {
             const kernel::program::Program & medium = material.mediumProgram;
