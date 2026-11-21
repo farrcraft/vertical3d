@@ -9,6 +9,7 @@
 #include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/Transform.h>
+#include <moya/libmoya/denoise/Denoiser.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Film.h>
@@ -133,6 +134,8 @@ class Session final {
      * holds twice the samples after each, and kSamplesPerPass after that. A picture follows a pass
      * once the interval has passed since the last. The first pass of a version and the pass that
      * fills the film always give one, and so does an end that leaves samples no picture shows.
+     * A picture whose pixels hold the samples the pictures name is denoised too, at OIDN's fast
+     * quality but for the last of a version, which is denoised as a batch render's beauty is.
      * Called while no thread of the session's runs.
      *
      * @throws std::runtime_error, from OpenColorIO, when the configuration lacks the display or
@@ -212,8 +215,11 @@ class Session final {
      **/
     bool coarse(const std::function<bool()> & during);
 
-    /** Makes a picture of the film, when one is due or when forced. **/
-    void pictured(bool forced);
+    /**
+     * Makes a picture of the film, when one is due or when forced. The last picture of a version
+     * is denoised as a batch render denoises its beauty, and any other at OIDN's fast quality.
+     **/
+    void pictured(bool forced, bool last);
 
     /** Hands a picture to the caller. **/
     void shown(const Picture & picture);
@@ -280,6 +286,7 @@ class Session final {
     /** How pictures are made, and the transform to their display. **/
     std::optional<Pictures> pictures_;
     std::optional<colour::Transform> display_;
+    std::optional<denoise::Denoiser> denoiser_;
 
     /** The frame the sampler is seeded from. **/
     std::uint32_t frame_ { 0 };
@@ -292,6 +299,9 @@ class Session final {
 
     /** Whether the film holds samples that no picture shows. **/
     bool unseen_ { false };
+
+    /** Whether the last picture is the last of its version. **/
+    bool settled_ { false };
 
     /** When the last picture was made. **/
     std::chrono::steady_clock::time_point pictured_ {};

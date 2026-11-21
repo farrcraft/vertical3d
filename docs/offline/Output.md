@@ -80,7 +80,8 @@ Every part's header holds:
 ## Denoised channels
 
 A render denoises its beauty, and each channel the scene marks, after its last pass, through
-OIDN's `RT` filter on its CPU device, in `denoise::denoise()`.
+OIDN's `RT` filter on its CPU device, in `denoise::denoise()`. A `denoise::Denoiser` keeps that
+device for the pictures it denoises, and `denoise()` is one denoiser's `into()`.
 
 - **What is denoised.** The beauty is denoised while the options' `denoise` is 1, or under
   `moya --denoise`. A channel is denoised while its own `denoise` is 1, which suits a
@@ -98,6 +99,9 @@ OIDN's `RT` filter on its CPU device, in `denoise::denoise()`.
 - **A denoised copy is the same on every run.** OIDN's `RT` filter gives the same floats on one
   thread and on every thread, so it runs on its own count of threads.
 - **A filter that fails is reported**, and its copy holds the noisy picture.
+- **`Denoiser::beauty()` denoises the beauty alone**, for a render session's pictures. A preview
+  is filtered at OIDN's fast quality from the guides as they are, without `cleanAux`. Any other
+  is filtered as `into()` filters the beauty, and gives the same bytes as `beauty_denoised`.
 
 Background:
 [ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md)

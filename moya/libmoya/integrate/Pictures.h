@@ -34,6 +34,13 @@ struct Pictures {
      **/
     std::uint32_t coarsest { 64 };
 
+    /**
+     * Whether pictures are denoised, and the samples a picture's pixels hold before it is. A
+     * coarse picture is not denoised, and the picture that ends a version always is.
+     **/
+    bool denoised { false };
+    std::uint32_t denoiseFrom { 16 };
+
     /** Takes each picture, on the thread that runs the session's passes. **/
     std::function<void(const Picture &)> shown;
 };

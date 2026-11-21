@@ -16,6 +16,7 @@
 #include <moya/libmoya/colour/RgbTables.h>
 #include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/denoise/Denoise.h>
+#include <moya/libmoya/denoise/Denoiser.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Module.h>
 #include <moya/libmoya/device/cpu/ProfileParams.h>
@@ -257,6 +258,7 @@ void Session::build() {
     }
     fresh_ = true;
     unseen_ = done_ != 0U;
+    settled_ = false;
     version_ = scene_.version();
     built_ = true;
     if (edits_ != nullptr) {
@@ -286,8 +288,9 @@ bool Session::advance() {
     const auto end = [this] {
         ended_ = true;
         written();
-        if (unseen_) {
-            pictured(true);
+        // the version ends on a picture of every sample, denoised as a batch render is
+        if (first_ != 0U && (unseen_ || (denoiser_ && !settled_))) {
+            pictured(true, true);
         }
     };
     // a pass only adds samples that the noise check after the pass before it left sampling, and
@@ -368,7 +371,7 @@ bool Session::advance() {
         written_ = done_;
         last_ = now;
     }
-    pictured(fresh_ || first_ >= total);
+    pictured(fresh_ || first_ >= total, first_ >= total);
     return true;
 }
 
@@ -430,18 +433,25 @@ bool Session::coarse(const std::function<bool()> & during) {
     return true;
 }
 
-void Session::pictured(bool forced) {
+void Session::pictured(bool forced, bool last) {
     if (!pictures_ || (!forced && std::chrono::duration<double>(std::chrono::steady_clock::now() - pictured_).count() < pictures_->interval)) {
         return;
     }
-    unseen_ = false;
-    shown(Picture { .version = version_,
+    const film::Snapshot snapshot = film_->snapshot();
+    Picture out { .version = version_,
         .samples = first_,
         .block = 1,
         .resolution = window_.size,
         .image = image_,
         .origin = window_.origin,
-        .rgb = output::displayed(film_->snapshot(), *display_) });
+        .rgb = output::displayed(snapshot, *display_) };
+    if (denoiser_ && (last || first_ >= pictures_->denoiseFrom)) {
+        const film::Snapshot denoised { .resolution = snapshot.resolution, .stride = 3, .values = denoiser_->beauty(snapshot, outputs_, !last) };
+        out.denoised = output::displayed(denoised, *display_);
+    }
+    unseen_ = false;
+    settled_ = last;
+    shown(out);
 }
 
 void Session::shown(const Picture & picture) {
@@ -456,6 +466,10 @@ void Session::show(const Pictures & pictures) {
     const std::string display = pictures.display.empty() ? config_.defaultDisplay() : pictures.display;
     display_.emplace(config_.display(display, pictures.view.empty() ? config_.defaultView(display) : pictures.view));
     pictures_ = pictures;
+    denoiser_.reset();
+    if (pictures.denoised) {
+        denoiser_.emplace(logger_);
+    }
 }
 
 void Session::written() {

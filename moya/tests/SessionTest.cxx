@@ -11,6 +11,8 @@
 #include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Session.h>
+#include <moya/libmoya/output/Exr.h>
+#include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Handle.h>
@@ -18,6 +20,7 @@
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -220,6 +223,52 @@ std::vector<std::uint8_t> inBlocks(std::uint32_t side) {
         }
     }
     return out;
+}
+
+/** Asks for the beauty denoised, which adds the albedo and normal that guide it. **/
+void denoising(Staged & staged) {
+    staged.made.set(staged.options, "denoise", scene::Value::integer(1));
+}
+
+/** Stops every pixel at the first check, after the first whole pass. **/
+void settledEarly(Staged & staged) {
+    staged.made.set(staged.options, "noiseThreshold", scene::Value::number(1000.0F));
+}
+
+/** Samples each pixel enough that it holds little noise. **/
+void converged(Staged & staged) {
+    staged.made.set(staged.options, "samples", scene::Value::integer(1024));
+}
+
+/** Pictures into a list, as every() makes them, denoised once their pixels hold some samples. **/
+integrate::Pictures denoisedFrom(std::vector<integrate::Picture> & into, std::uint32_t samples) {
+    integrate::Pictures out = every(into);
+    out.denoised = true;
+    out.denoiseFrom = samples;
+    return out;
+}
+
+/** A snapshot's three floats at an offset of each pixel, as the default display shows them. **/
+std::vector<std::uint8_t> shownAt(const film::Snapshot & snapshot, std::uint32_t offset) {
+    film::Snapshot moved = snapshot;
+    const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        for (std::size_t i = 0; i < 3U; ++i) {
+            moved.values[(pixel * snapshot.stride) + i] = snapshot.values[(pixel * snapshot.stride) + offset + i];
+        }
+    }
+    const colour::Config config;
+    const std::string display = config.defaultDisplay();
+    return output::displayed(moved, config.display(display, config.defaultView(display)));
+}
+
+/** The mean distance of one picture's bytes from another's. **/
+double distanceOf(const std::vector<std::uint8_t> & one, const std::vector<std::uint8_t> & other) {
+    double sum = 0.0;
+    for (std::size_t i = 0; i < one.size(); ++i) {
+        sum += std::abs(static_cast<double>(one[i]) - static_cast<double>(other[i]));
+    }
+    return sum / static_cast<double>(one.size());
 }
 
 };  // namespace
@@ -530,6 +579,90 @@ BOOST_AUTO_TEST_CASE(moya_session_pictures_end_on_a_render_that_made_none_test) 
     const std::string display = config.defaultDisplay();
     BOOST_TEST_REQUIRE(!pictures.empty());
     BOOST_TEST((pictures.back().rgb == output::displayed(want, config.display(display, config.defaultView(display)))));
+}
+
+// a session denoises the pictures whose pixels hold the samples the caller sets, and the raw
+// pictures are the same bytes whether it denoises or not
+BOOST_AUTO_TEST_CASE(moya_session_pictures_are_denoised_from_the_samples_set_test) {
+    std::vector<std::vector<integrate::Picture>> runs(2);
+    for (std::size_t run = 0; run < runs.size(); ++run) {
+        Staged made = staged();
+        lit(made);
+        made.made.apply();
+        denoising(made);
+        made.made.commit();
+        CpuDevice device;
+        const colour::Config config;
+        integrate::Session session(device, made.made, {}, config);
+        session.show(run == 0 ? every(runs[run]) : denoisedFrom(runs[run], 8U));
+        while (session.advance()) {
+        }
+    }
+    const std::vector<integrate::Picture> & raw = runs[0];
+    const std::vector<integrate::Picture> & denoised = runs[1];
+    BOOST_TEST_REQUIRE(raw.size() == denoised.size());
+    for (std::size_t i = 0; i < raw.size(); ++i) {
+        BOOST_TEST((raw[i].rgb == denoised[i].rgb), "picture " << i);
+        BOOST_TEST(raw[i].denoised.empty());
+        const bool due = denoised[i].block == 1U && denoised[i].samples >= 8U;
+        BOOST_TEST(denoised[i].denoised.empty() == !due, "picture " << i << " of " << denoised[i].samples << " samples");
+        if (due) {
+            BOOST_TEST(denoised[i].denoised.size() == denoised[i].rgb.size());
+            BOOST_TEST((denoised[i].denoised != denoised[i].rgb));
+        }
+    }
+}
+
+// a denoised picture of a few samples lies nearer the converged picture than the raw one
+BOOST_AUTO_TEST_CASE(moya_session_pictures_a_denoised_picture_is_nearer_the_converged_one_test) {
+    Staged made = staged();
+    lit(made);
+    made.made.apply();
+    denoising(made);
+    made.made.commit();
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    std::vector<integrate::Picture> pictures;
+    session.show(denoisedFrom(pictures, 4U));
+    while (session.advance()) {
+    }
+    const auto found = std::find_if(pictures.begin(), pictures.end(), [](const integrate::Picture & each) { return each.samples == 8U; });
+    BOOST_TEST_REQUIRE((found != pictures.end()));
+    const std::vector<std::uint8_t> reference = shownAt(fresh({ denoising, converged }), 0);
+    const double before = distanceOf(found->rgb, reference);
+    const double after = distanceOf(found->denoised, reference);
+    BOOST_TEST_MESSAGE("raw " << before << ", denoised " << after);
+    BOOST_TEST(after < before);
+}
+
+// the picture that ends a version is denoised as a batch render denoises its beauty, even when
+// adaptive sampling ends it after a picture denoised for a preview
+BOOST_AUTO_TEST_CASE(moya_session_pictures_the_last_is_denoised_as_a_render_is_test) {
+    for (const bool early : { false, true }) {
+        Staged made = staged();
+        lit(made);
+        made.made.apply();
+        denoising(made);
+        if (early) {
+            settledEarly(made);
+        }
+        made.made.commit();
+        CpuDevice device;
+        const colour::Config config;
+        integrate::Session session(device, made.made, {}, config);
+        std::vector<integrate::Picture> pictures;
+        session.show(denoisedFrom(pictures, 1U));
+        while (session.advance()) {
+        }
+        const film::Snapshot want = early ? fresh({ denoising, settledEarly }) : fresh({ denoising });
+        BOOST_TEST_REQUIRE(pictures.size() >= 2U);
+        const integrate::Picture & last = pictures.back();
+        BOOST_TEST(last.samples == (early ? 16U : 64U));
+        BOOST_TEST((last.rgb == shownAt(want, 0)), "early " << early);
+        BOOST_TEST((last.denoised == shownAt(want, want.offset(output::denoisedOf(std::string(output::kBeauty))))), "early " << early);
+        BOOST_TEST((pictures[pictures.size() - 2U].denoised != last.denoised), "early " << early);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

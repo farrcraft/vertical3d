@@ -355,9 +355,19 @@ hold, and the side of the block each sample stands for.
 - **Pictures are made on the thread that runs the passes**, which is the session's own after
   `start()`, and `shown` is called there. An edit drops a coarse pass as it drops any pass, and
   the dropped pass gives no picture.
+- **A picture can be denoised beside the raw one**, once `denoised` is set and its pixels hold
+  `denoiseFrom` samples, 16 unless the caller gives another. A coarse picture is not denoised.
+  The guides are the albedo and normal the film holds, as
+  [Output.md](Output.md#denoised-channels) says, so a scene that asks for no denoising gives
+  none, and its beauty is denoised alone. A picture is denoised at OIDN's fast quality from the
+  guides as they are. The last picture of a version is denoised as a batch render denoises its
+  beauty, and its bytes are those of `beauty_denoised`. A version that adaptive sampling ends
+  after a preview gives its last picture again, denoised so. The raw picture's bytes are the
+  same whether pictures are denoised or not.
 - **A session without `show()`** runs no coarse passes, and samples in whole passes.
 
-Background: [ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md)
+Background: [ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md),
+[ADR-0255](../adr/offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md)
 
 ## Coverage
 

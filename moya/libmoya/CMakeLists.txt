@@ -71,6 +71,9 @@ add_library("v3dlib_moya"
 	"${V3D_MOYA_ACESCG_TABLE}"
 
 	"denoise/Denoise.h" "denoise/Denoise.cxx"
+	"denoise/Denoiser.h" "denoise/Denoiser.cxx"
+	"denoise/internal/Device.h"
+	"denoise/internal/Guides.h"
 	"device/Buffer.h"
 	"device/CpuDevice.h" "device/CpuDevice.cxx"
 	"device/CpuLibrary.h" "device/CpuLibrary.cxx"
@@ -260,10 +263,11 @@ endif()
 # texture maker reads one with image. Only the scene client's primitive variables include type.
 # Only the CPU device's and the texture maker's sources include TBB, and only the EXR files'
 # sources and the texture maker's include OpenEXR and Imath. Only the colour configuration's
-# source and its internal headers include OpenColorIO, only the subdivision surface's
-# OpenSubdiv, and only the material library's source and its internal header MaterialX, and
-# only the denoiser's source OIDN. Only the grid reader's source includes OpenVDB, and converts
-# its grids through NanoVDB's tools, which build from OpenVDB's grids only when they are told to.
+# source and its internal headers include OpenColorIO, and only the subdivision surface's
+# OpenSubdiv. Only the material library's source and its internal header include MaterialX, and
+# only the denoiser's source and its internal header OIDN. Only the grid reader's source includes
+# OpenVDB, and converts its grids through NanoVDB's tools, which build from OpenVDB's grids only
+# when they are told to.
 # OpenSubdiv is linked static on every platform, as vcpkg builds it on Windows.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_moya_cpu v3dlib_moya_kernel v3dlib_rib glm::glm)
 target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image v3dlib_type Imath::Imath OpenColorIO::OpenColorIO OpenEXR::OpenEXR OpenSubdiv::osdCPU_static MaterialXCore MaterialXFormat OpenImageDenoise OpenVDB::openvdb TBB::tbb)

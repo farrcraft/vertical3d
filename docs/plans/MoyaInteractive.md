@@ -124,7 +124,7 @@ listed as a number with no record, as the ADR index requires.
 | [7](#step-7--lights-kept-across-versions) | Lights kept across versions | `moya/libmoya/light` | 0203, 0214 | done |
 | [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | done |
 | [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | done |
-| [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | open |
+| [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | done |
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | open |
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | open |
 | [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | open |
@@ -429,6 +429,15 @@ Under the rule step 3 settles.
 
 **Tests:** a denoised picture of a noisy scene is closer to a converged reference than the raw
 picture at the same samples. Turning denoising on changes no byte of the raw picture.
+
+**Done.** `integrate::Pictures` gains `denoised` and `denoiseFrom`, and `integrate::Picture` a
+`denoised` beside `rgb`. `denoise::Denoiser` keeps OIDN's device for a session's pictures, and
+`denoise()` is now one denoiser's `into()`. A picture is denoised at OIDN's fast quality from the
+guides as they are. The last picture of a version is denoised as a batch render's beauty is, and
+its bytes are `beauty_denoised`'s. The guides are those the film holds. A scene that asks for no
+denoising gives none, and its beauty is denoised alone, so step 11's delegate sets the scene's
+`denoise` for guided pictures. Denoising runs between passes on the thread that runs
+them, and each denoised picture takes a snapshot's worth of OIDN time from the samples.
 
 ### Step 11 — The editor's delegate on a session
 

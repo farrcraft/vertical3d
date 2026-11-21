@@ -39,6 +39,9 @@ struct Picture {
 
     /** Red, green and blue for each pixel, row by row from the top left, as output::displayed(). **/
     std::vector<std::uint8_t> rgb;
+
+    /** The beauty denoised, as rgb shows the beauty, or empty for a picture not denoised. **/
+    std::vector<std::uint8_t> denoised;
 };
 
 };  // namespace v3d::moya::integrate
