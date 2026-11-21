@@ -8,6 +8,7 @@
 #include <moya/libmoya/accel/Assembler.h>
 #include <moya/libmoya/accel/Assembly.h>
 #include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Film.h>
@@ -15,6 +16,8 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/integrate/Picture.h>
+#include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Trails.h>
@@ -40,6 +43,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <thread>
@@ -69,6 +73,9 @@ namespace v3d::moya::integrate {
  * **The scene's owner is the session.** It applies the scene and reads it, so while a session
  * lives nothing else applies or reads the scene. Clients edit and commit it from any thread. Once
  * the session has built past a version it forgets the scene's removals up to it.
+ *
+ * **It makes pictures as it samples**, once show() says how, so that an edit is seen within a
+ * moment and the picture improves as samples arrive.
  *
  * **It runs on a thread of its own, or on its caller's.** advance(), picture() and the counts
  * are called by one thread while no thread of the session's runs. start() runs passes on a thread
@@ -118,6 +125,20 @@ class Session final {
      * deep samples, and the denoised copies the scene asks for.
      **/
     film::Snapshot picture() const;
+
+    /**
+     * Makes pictures as the session samples, from the next advance(). After each new version it
+     * renders coarse pictures first, which add nothing to the film, each block half the side of
+     * the one before. Its passes then take one sample, one, two, four and eight, so that the film
+     * holds twice the samples after each, and kSamplesPerPass after that. A picture follows a pass
+     * once the interval has passed since the last. The first pass of a version and the pass that
+     * fills the film always give one, and so does an end that leaves samples no picture shows.
+     * Called while no thread of the session's runs.
+     *
+     * @throws std::runtime_error, from OpenColorIO, when the configuration lacks the display or
+     *         the view
+     **/
+    void show(const Pictures & pictures);
 
     /** The scene's version the session renders. **/
     std::uint64_t version() const {
@@ -175,8 +196,27 @@ class Session final {
     /** Brings every structure up to the scene's version, and starts the film again. **/
     void build();
 
-    /** Writes the checkpoint when the passes since it was last written are not in it. **/
+    /**
+     * Writes the checkpoint when the passes since it was last written are not in it, and the film
+     * holds whole passes of kSamplesPerPass.
+     **/
     void written();
+
+    /** Whether a pass in progress stops before its next tile. **/
+    bool stopping();
+
+    /**
+     * Runs the next coarse pass, into a film of its own, and makes its picture.
+     *
+     * @return whether the pass ran to its end
+     **/
+    bool coarse(const std::function<bool()> & during);
+
+    /** Makes a picture of the film, when one is due or when forced. **/
+    void pictured(bool forced);
+
+    /** Hands a picture to the caller. **/
+    void shown(const Picture & picture);
 
     /** Fills the profile and the trails, and reports the textures read. **/
     void finish();
@@ -232,6 +272,29 @@ class Session final {
     bool ended_ { false };
     double passing_ { 0.0 };
     std::chrono::steady_clock::time_point last_ {};
+
+    /** Whether the checkpoints' stop answered true in this pass, and the lock it is asked in. **/
+    bool asked_ { false };
+    std::mutex asking_;
+
+    /** How pictures are made, and the transform to their display. **/
+    std::optional<Pictures> pictures_;
+    std::optional<colour::Transform> display_;
+
+    /** The frame the sampler is seeded from. **/
+    std::uint32_t frame_ { 0 };
+
+    /** The side of the next coarse pass's blocks, or one once none is left. **/
+    std::uint32_t block_ { 1 };
+
+    /** Whether no picture shows this version yet. **/
+    bool fresh_ { false };
+
+    /** Whether the film holds samples that no picture shows. **/
+    bool unseen_ { false };
+
+    /** When the last picture was made. **/
+    std::chrono::steady_clock::time_point pictured_ {};
 
     /** Set by edited(), and taken by the next apply. **/
     std::atomic<bool> edited_ { false };

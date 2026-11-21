@@ -14,6 +14,7 @@
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
+#include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/denoise/Denoise.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/device/cpu/Module.h>
@@ -25,6 +26,8 @@
 #include <moya/libmoya/film/State.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/integrate/Picture.h>
+#include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Trails.h>
@@ -38,6 +41,7 @@
 #include <moya/libmoya/integrate/internal/Records.h>
 #include <moya/libmoya/integrate/internal/Tallies.h>
 #include <moya/libmoya/integrate/internal/TrailSteps.h>
+#include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
 #include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
@@ -48,6 +52,7 @@
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
+#include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/texture/Options.h>
 #include <moya/libmoya/texture/Textures.h>
@@ -68,6 +73,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <glm/geometric.hpp>
+#include <glm/common.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::moya::integrate {
@@ -99,9 +105,13 @@ std::uint32_t resumed(const std::string & path, const std::vector<film::Channel>
     return state.passes;
 }
 
-/** A film's state for a checkpoint, with every pixel's coverage and deep list. **/
-film::State stateOf(const film::Film & picture, const internal::Kept & kept) {
+/**
+ * A film's state for a checkpoint, with every pixel's coverage and deep list, and the passes of
+ * kSamplesPerPass its samples make.
+ **/
+film::State stateOf(const film::Film & picture, const internal::Kept & kept, std::uint32_t passes) {
     film::State out = picture.state();
+    out.passes = passes;
     kept.coverage.into(out);
     kept.deep.into(out);
     return out;
@@ -201,7 +211,8 @@ void Session::build() {
     window_ = internal::windowOf(internal::option(scene_, "crop").floatArray(), image_, logger_);
     // the film holds the window's pixels alone
     const glm::uvec2 resolution = window_.size;
-    sampler_.emplace(std::max(internal::count(scene_, "samples"), 1U), image_, 0, internal::count(scene_, "frame"), window_.origin);
+    frame_ = internal::count(scene_, "frame");
+    sampler_.emplace(std::max(internal::count(scene_, "samples"), 1U), image_, 0, frame_, window_.origin);
     settings_ = settingsOf(scene_);
     threshold_ = internal::option(scene_, "noiseThreshold").floatArray().front();
     least_ = internal::count(scene_, "minSamples");
@@ -238,11 +249,31 @@ void Session::build() {
     last_ = std::chrono::steady_clock::now();
     first_ = static_cast<std::uint32_t>(std::min<std::uint64_t>(std::uint64_t { done_ } * kSamplesPerPass, sampler_->samplesPerPixel()));
     ended_ = false;
+    // the first coarse pass's blocks are the least power of two that makes the film coarse enough
+    block_ = 1U;
+    const std::uint32_t longer = std::max(resolution.x, resolution.y);
+    while (pictures_ && pictures_->coarsest != 0U && (longer + block_ - 1U) / block_ > pictures_->coarsest) {
+        block_ *= 2U;
+    }
+    fresh_ = true;
+    unseen_ = done_ != 0U;
     version_ = scene_.version();
     built_ = true;
     if (edits_ != nullptr) {
         edits_->forget(version_);
     }
+}
+
+bool Session::stopping() {
+    if (edited_.load() || quitting_.load()) {
+        return true;
+    }
+    if (!checkpoints_.stop) {
+        return false;
+    }
+    const std::scoped_lock lock(asking_);
+    asked_ = asked_ || checkpoints_.stop(done_);
+    return asked_;
 }
 
 bool Session::advance() {
@@ -251,36 +282,48 @@ bool Session::advance() {
         return false;
     }
     const std::uint32_t total = sampler_->samplesPerPixel();
-    // a pass only adds samples that the noise check after the pass before it left sampling.
-    // A resumed render repeats the check the render it continues made before this pass
-    if (first_ >= total || (checkpoints_.stop && checkpoints_.stop(done_)) ||
-        (first_ != 0 && threshold_ > 0.0F && first_ >= least_ && film_->converge(threshold_) == 0U)) {
+    const std::uint32_t run = std::min(kSamplesPerPass, total);
+    const auto end = [this] {
         ended_ = true;
         written();
+        if (unseen_) {
+            pictured(true);
+        }
+    };
+    // a pass only adds samples that the noise check after the pass before it left sampling, and
+    // the check runs once the film holds whole passes. A resumed render repeats the check the
+    // render it continues made before this pass
+    if (first_ >= total || (checkpoints_.stop && checkpoints_.stop(done_)) ||
+        (first_ != 0 && first_ % run == 0 && threshold_ > 0.0F && first_ >= least_ && film_->converge(threshold_) == 0U)) {
+        end();
         return false;
     }
-    const std::uint32_t samples = std::min(kSamplesPerPass, total - first_);
-    const std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
 
-    // an edit, a stop of the thread and the checkpoints' stop are asked before each tile, the
-    // last one thread at a time
-    const bool stoppable = checkpoints_.stop || edits_ != nullptr;
-    std::mutex asking;
-    bool asked = false;
+    // an edit, a stop of the thread and the checkpoints' stop are asked before each tile
+    asked_ = false;
     std::function<bool()> during;
-    if (stoppable) {
-        during = [&] {
-            if (edited_.load() || quitting_.load()) {
-                return true;
-            }
-            if (!checkpoints_.stop) {
-                return false;
-            }
-            const std::scoped_lock lock(asking);
-            asked = asked || checkpoints_.stop(done_);
-            return asked;
-        };
+    if (checkpoints_.stop || edits_ != nullptr) {
+        during = [this] { return stopping(); };
     }
+    // an edit or a stop of the thread drops a pass, and the next advance goes on
+    const auto dropped = [&] {
+        if (asked_) {
+            end();
+        }
+        return !asked_;
+    };
+    if (block_ > 1U) {
+        if (!coarse(during)) {
+            return dropped();
+        }
+        block_ /= 2U;
+        return true;
+    }
+
+    // a session that makes pictures doubles the samples the film holds with each pass, until it
+    // holds a whole pass
+    const std::uint32_t samples = std::min(pictures_ && first_ < run ? std::max(first_, 1U) : run, total - first_);
+    const std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
     const auto launch = [&](const kernel::film::Pixels & pixels) {
         const device::cpu::PathParams params { .pixels = pixels,
             .filter = filter_->view(),
@@ -296,6 +339,7 @@ bool Session::advance() {
             .settings = settings_,
             .first = first_,
             .count = samples,
+            .run = run,
             .firstHits = firstHits_->view(),
             .features = firstHits_->features(),
             .trail = trail_->view(),
@@ -308,32 +352,116 @@ bool Session::advance() {
         return device_.launch(window_.size.x, window_.size.y, params, device_.module().paths, during);
     };
     // a session that cannot stop keeps no copy of the film to go back to
-    if (!stoppable) {
+    if (!during) {
         film_->pass([&](const kernel::film::Pixels & pixels) { launch(pixels); });
     } else if (!film_->attempt(launch)) {
-        // an edit or a stop of the thread drops the pass, and the next advance goes on
-        if (asked) {
-            ended_ = true;
-            written();
-        }
-        return !asked;
+        return dropped();
     }
     kept_->add(records_->taken(samples), samples);
     ++done_;
-    first_ += kSamplesPerPass;
+    first_ += samples;
+    unseen_ = true;
     const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
     passing_ += std::chrono::duration<double>(now - began).count();
-    if (!checkpoints_.path.empty() && std::chrono::duration<double>(now - last_).count() >= checkpoints_.interval) {
-        output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_), print_);
+    if (!checkpoints_.path.empty() && first_ % run == 0 && std::chrono::duration<double>(now - last_).count() >= checkpoints_.interval) {
+        output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_, first_ / run), print_);
         written_ = done_;
         last_ = now;
     }
+    pictured(fresh_ || first_ >= total);
     return true;
 }
 
+bool Session::coarse(const std::function<bool()> & during) {
+    // the blocks the window covers, of a grid that starts at the image's top left
+    const std::uint32_t block = block_;
+    const glm::uvec2 low = window_.origin / block;
+    const glm::uvec2 high = (window_.origin + window_.size + (block - 1U)) / block;
+    const glm::uvec2 size = high - low;
+    film::Film film(device_, size, {});
+    const internal::FirstHits hits(device_, {}, film, prototypes().primvarNames, logger_);
+    const internal::LightPaths paths(device_, {}, film, lights_->labels(), logger_);
+    const internal::Records records(device_, size, 1, false);
+    const internal::TrailSteps trail(device_, size, false);
+    kernel::camera::Camera camera = camera_;
+    camera.resolution /= static_cast<float>(block);
+    const kernel::sample::ZSobol sampler(1, (image_ + (block - 1U)) / block, 0, frame_, low);
+    bool ran = true;
+    film.pass([&](const kernel::film::Pixels & pixels) {
+        const device::cpu::PathParams params { .pixels = pixels,
+            .filter = filter_->view(),
+            .camera = camera,
+            .sampler = sampler,
+            .traversal = tracing_->hierarchy(),
+            .textures = textures_->view(),
+            .surfaces = surfaces_->view(),
+            .volumes = volumes_->view(),
+            .lights = lights_->view(),
+            .table = colour::acescgTable(),
+            .albedos = material::ggxAlbedos(),
+            .settings = settings_,
+            .first = 0,
+            .count = 1,
+            .run = 1,
+            .firstHits = hits.view(),
+            .features = hits.features(),
+            .trail = trail.view(),
+            .expressions = paths.view(),
+            .covered = records.view() };
+        ran = device_.launch(size.x, size.y, params, device_.module().paths, during);
+    });
+    if (!ran) {
+        return false;
+    }
+
+    // each pixel of the picture takes the colour of the block it is in
+    const std::vector<std::uint8_t> blocks = output::displayed(film.snapshot(), *display_);
+    Picture out { .version = version_, .samples = 1, .block = block, .resolution = window_.size, .image = image_, .origin = window_.origin };
+    out.rgb.resize(static_cast<std::size_t>(window_.size.x) * window_.size.y * 3U);
+    for (std::uint32_t y = 0; y < window_.size.y; ++y) {
+        const std::size_t row = ((window_.origin.y + y) / block) - low.y;
+        for (std::uint32_t x = 0; x < window_.size.x; ++x) {
+            const std::size_t from = ((row * size.x) + ((window_.origin.x + x) / block) - low.x) * 3U;
+            const std::size_t to = ((static_cast<std::size_t>(y) * window_.size.x) + x) * 3U;
+            std::copy_n(blocks.begin() + static_cast<std::ptrdiff_t>(from), 3, out.rgb.begin() + static_cast<std::ptrdiff_t>(to));
+        }
+    }
+    shown(out);
+    return true;
+}
+
+void Session::pictured(bool forced) {
+    if (!pictures_ || (!forced && std::chrono::duration<double>(std::chrono::steady_clock::now() - pictured_).count() < pictures_->interval)) {
+        return;
+    }
+    unseen_ = false;
+    shown(Picture { .version = version_,
+        .samples = first_,
+        .block = 1,
+        .resolution = window_.size,
+        .image = image_,
+        .origin = window_.origin,
+        .rgb = output::displayed(film_->snapshot(), *display_) });
+}
+
+void Session::shown(const Picture & picture) {
+    fresh_ = false;
+    if (pictures_->shown) {
+        pictures_->shown(picture);
+    }
+    pictured_ = std::chrono::steady_clock::now();
+}
+
+void Session::show(const Pictures & pictures) {
+    const std::string display = pictures.display.empty() ? config_.defaultDisplay() : pictures.display;
+    display_.emplace(config_.display(display, pictures.view.empty() ? config_.defaultView(display) : pictures.view));
+    pictures_ = pictures;
+}
+
 void Session::written() {
-    if (!checkpoints_.path.empty() && written_ != done_) {
-        output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_), print_);
+    const std::uint32_t run = std::min(kSamplesPerPass, sampler_->samplesPerPixel());
+    if (!checkpoints_.path.empty() && written_ != done_ && first_ % run == 0) {
+        output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_, first_ / run), print_);
         written_ = done_;
     }
 }

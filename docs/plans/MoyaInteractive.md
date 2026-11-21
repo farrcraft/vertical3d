@@ -123,7 +123,7 @@ listed as a number with no record, as the ADR index requires.
 | [6](#step-6--materials-textures-and-volumes-kept-across-versions) | Materials, textures and volumes kept across versions | `moya/libmoya/geometry`, `texture`, `volume` | 0203 | done |
 | [7](#step-7--lights-kept-across-versions) | Lights kept across versions | `moya/libmoya/light` | 0203, 0214 | done |
 | [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | done |
-| [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | open |
+| [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | done |
 | [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | open |
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | open |
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | open |
@@ -407,6 +407,16 @@ Under the schedule step 2 settles.
 **Tests:** a session gives a picture before its last pass, and each picture holds more samples than
 the last. A picture after an edit names the new version. The final picture's bytes are those of a
 render that made no pictures.
+
+**Done.** `Session::show()` takes an `integrate::Pictures`: the display and view, the least
+interval between pictures, the longer side of the first coarse picture, and the function that
+takes each `integrate::Picture`. After each version the session runs coarse passes into a film of
+their own, then full passes of one, one, two, four and eight samples before whole passes. The
+kernel now puts a sample in the half beauty by its place in its run of `kSamplesPerPass`, not its
+place in its pass. The noise check and the checkpoints wait for whole runs, so the film is the
+same however the passes are split. A picture is made from the film's snapshot on the thread that
+runs the passes. It costs a snapshot of the whole film and a display transform. It is not
+denoised, and is not composited over the outputs' background.
 
 ### Step 10 — Denoised pictures
 

@@ -330,6 +330,35 @@ from one version of the scene to the next, and rebuilds only what the edits touc
 
 Background: [ADR-0253](../adr/offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md)
 
+## Pictures as a session samples
+
+`Session::show(pictures)` makes the session hand its caller an `integrate::Picture` as it samples.
+A picture is the film's beauty through a display and its view, at 8 bits a channel, as
+`output::displayed()` gives it. It names the scene's version it shows, the samples its pixels
+hold, and the side of the block each sample stands for.
+
+- **Coarse pictures come first after each new version.** Each renders one sample for each block of
+  pixels, into a film of its own, and every pixel of the picture takes its block's colour. The
+  first block is the least power of two that leaves the window's longer side at most `coarsest`
+  blocks, 64 unless the caller gives another. Each coarse pass halves it, until the next would be
+  a pixel. A window no longer than `coarsest` has none. Their samples are never added to the
+  film.
+- **The full passes then grow.** They take one sample a pixel, then one, two, four and eight, so
+  the film holds twice the samples after each, and `kSamplesPerPass` after that. The film is the
+  same as one sampled in whole passes, so an edited session still ends where a fresh render does.
+- **A picture follows a pass** once `interval` seconds have passed since the last picture. The
+  first pass of each version and the pass that fills the film always give one. A session that
+  ends with samples no picture shows, by adaptive sampling or the checkpoints' `stop`, gives one
+  as it ends.
+- **The last picture is the render's.** Its bytes are those `output::displayed()` gives for the
+  snapshot `render()` makes of the same scene.
+- **Pictures are made on the thread that runs the passes**, which is the session's own after
+  `start()`, and `shown` is called there. An edit drops a coarse pass as it drops any pass, and
+  the dropped pass gives no picture.
+- **A session without `show()`** runs no coarse passes, and samples in whole passes.
+
+Background: [ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md)
+
 ## Coverage
 
 A camera sample's coverage is what the beauty's alpha adds. It is one once the camera ray meets a
@@ -402,8 +431,9 @@ the options name are the most a pixel takes. A threshold of zero, the fallback, 
 pixel to the most. [Film.md](Film.md#stopping-a-pixel) says how a pixel's noise is measured.
 
 - **The threshold is in the working space**, ACEScg, so it means the same under every view.
-- **A pixel is checked only between passes**, from the samples of the passes before. The same
-  pixels then stop on every run and on any thread count.
+- **A pixel is checked only between passes**, once the film holds whole runs of
+  `kSamplesPerPass`, from the samples of the passes before. The same pixels then stop on every run,
+  on any thread count, and however the samples are split into passes.
 - **The first check comes once a pixel holds `minSamples`**, 16 unless the options give
   another, so both halves hold a few samples before they are compared. A check comes before each
   pass from then on.
@@ -418,7 +448,8 @@ Background: [ADR-0215](../adr/offline/0215-offline-a-pixels-noise-is-the-differe
 fallback, a render keeps no checkpoint.
 
 - **A checkpoint is written after each pass**, or after the first pass once `interval` seconds
-  have passed since the last write. The last pass a render runs is always written.
+  have passed since the last write. The last pass a render runs is always written. Only a film of
+  whole runs of `kSamplesPerPass` is written, and the checkpoint counts those runs as its passes.
   [Film.md](Film.md#checkpoints) describes the file.
 - **`resume` continues the render the checkpoint holds**, at the pass after its last. Its
   picture is the same, byte for byte, as that of a render that never stopped, on any thread

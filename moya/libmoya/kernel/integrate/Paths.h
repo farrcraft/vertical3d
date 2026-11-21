@@ -444,10 +444,10 @@ MOYA_KERNEL void trace(const Paths<T, X> & paths, PathState & state) {
 
 /**
  * One pixel of a pass: each of its samples traced, and added to the pixel in index order. The
- * first half of the pass's samples, which are stratified as a whole run is, go to the half beauty
- * too. A pixel that has stopped takes none, and its records of what samples cover are empty. Each
- * sample's record starts as one that met nothing, of its weight, so a path that ends before its
- * camera ray meets anything still holds its weight there.
+ * first half of each run of samples, which is stratified as a whole run is, goes to the half
+ * beauty too. A pixel that has stopped takes none, and its records of what samples cover are
+ * empty. Each sample's record starts as one that met nothing, of its weight, so a path that ends
+ * before its camera ray meets anything still holds its weight there.
  **/
 template <geometry::Traversal T, texture::Texels X>
 MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
@@ -473,7 +473,7 @@ MOYA_KERNEL void paths(const Paths<T, X> & params, Item item) {
             covered.green = rgb.y;
             covered.blue = rgb.z;
         }
-        const bool half = (sample - params.first) < (params.count / 2U);
+        const bool half = (sample % params.run) < (params.run / 2U);
         params.pixels.add(item, MOYA_PATH(state, weight), MOYA_PATH(state, radiance), MOYA_PATH(state, wavelengths), half, MOYA_PATH(state, coverage));
     }
 }

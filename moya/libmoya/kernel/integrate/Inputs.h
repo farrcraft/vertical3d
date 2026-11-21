@@ -70,7 +70,9 @@ inline constexpr std::uint32_t kMostSeen = 2U * media::kMediaDepth;
  * What the integrator's kernel function reads: the film, the pixel filter, the camera, the
  * sampler, a traversal and a texture access. Then the scene's surfaces, volumes and lights, the
  * RGB-to-spectrum table, the albedo table that energy compensation reads, and the settings. A
- * pass adds the samples from first, count of them, to each pixel. firstHits names the channels
+ * pass adds the samples from first, count of them, to each pixel. The samples fall in runs of
+ * run, counted from sample zero. The first half of each run goes to the half beauty too, so the
+ * film is the same however the samples are split into passes. firstHits names the channels
  * each camera ray fills where it first meets the scene, and features those a denoiser reads.
  * trail holds kTrailSteps steps for each pixel, row by row, where sample zero records its events,
  * or is empty to record none. expressions are the render's light path expressions. covered holds
@@ -93,6 +95,7 @@ struct Paths {
     Settings settings;
     std::uint32_t first { 0 };
     std::uint32_t count { 0 };
+    std::uint32_t run { 1 };
     Array<FirstHit> firstHits;
     Array<FirstHit> features;
     Array<Step> trail;

@@ -96,10 +96,12 @@ luminance, times the luminance, and alone.
 Adaptive sampling stops each pixel once its noise falls below a threshold.
 [Integrator.md](Integrator.md#adaptive-sampling) says when a render checks.
 
-- **The half beauty holds half of each pass's samples.** A pass's samples are a run of a power of
-  two, and the first half of a run is stratified as the whole run is. `add()` given `half` adds
-  the sample to the half beauty too, as weighted sums of red, green and blue and a sum of their
-  weights.
+- **The half beauty holds the first half of each run of samples.** A pixel's samples fall in runs
+  of `kSamplesPerPass`, or of the samples per pixel when they are fewer, counted from sample zero.
+  The first half of a run is stratified as the whole run is. A sample's place in its run decides,
+  not its place in its pass, so the film is the same however the samples are split into passes.
+  `add()` given `half` adds the sample to the half beauty too, as weighted sums of red, green and
+  blue and a sum of their weights.
 - **A pixel's noise is `Film::noise()`**, as Cycles measures it. It is the distance of the half
   beauty's mean from the beauty's, summed over red, green and blue. That is divided by the square
   root of the beauty's sum of red, green and blue, held to zero or more. 0.0001 is added to the

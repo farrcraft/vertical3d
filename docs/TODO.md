@@ -44,6 +44,12 @@ heap reporting one 72 byte block. The other FMOD cases, each run alone, report n
 is allocated on the CRT heap, not FMOD's, so it is something `FmodEvents` or the case allocates
 around `start()` and `stop()`.
 
+[] **Leak: moya's edited scenes leave blocks behind.** In the Debug build, `v3dtest_moya`
+run on `moya_scene*` or `moya_sceneclient*` ends with the debug heap reporting 11 blocks, and on
+`moya_session` or `moya_kept*` 4 blocks, of 16 and 48 bytes. Each run gives the same count. A
+render of a RIB file, `moya_foundation_a_colour_chart_renders_its_reference_test`, reports none,
+so it is something an edited `scene::Scene` allocates and never frees.
+
 [] **Validation: the editor and voxel leave a surface when they quit.** Closing either app, or
 ending it with `--capture`, prints `VUID-vkDestroyInstance-instance-00629` with one
 `VkSurfaceKHR` not destroyed. The layer writes it to standard output as the instance is

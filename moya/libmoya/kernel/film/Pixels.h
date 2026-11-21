@@ -52,7 +52,7 @@ inline constexpr std::uint32_t kTailFloats = kHalfFloats + 1U + kMomentFloats + 
  * The host divides the sums by the weights when it reads them, and gives the standard error of
  * the beauty's luminance from the moments.
  *
- * The half beauty holds the samples a pass marks as the first half of its run. Its distance from
+ * The half beauty holds the samples a pass marks as the first half of their run. Its distance from
  * the beauty measures the pixel's noise, which decides when the pixel stops.
  *
  * Each pixel belongs to one work item, which adds the pixel's samples in index order, so its sums
@@ -83,7 +83,7 @@ struct Pixels {
     /**
      * Adds a camera sample's radiance, with its filter weight, to the beauty, its luminance to the
      * beauty's moments, and the weight to the pixel's sum of weights. The radiance is converted to
-     * ACEScg through the observer. A sample of the first half of its pass's run is added to the
+     * ACEScg through the observer. A sample of the first half of its run is added to the
      * half beauty as well. Every sample adds one to the pixel's count. The coverage, one for a
      * sample whose camera ray met something and zero for one that left the scene, is added with
      * the same weight, and becomes the beauty's alpha.

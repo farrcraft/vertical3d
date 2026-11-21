@@ -4,16 +4,21 @@
  */
 
 #include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
+#include <moya/libmoya/integrate/Picture.h>
+#include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Session.h>
+#include <moya/libmoya/output/Png.h>
 #include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -33,6 +38,7 @@ namespace {
 namespace colour = v3d::moya::colour;
 namespace film = v3d::moya::film;
 namespace integrate = v3d::moya::integrate;
+namespace output = v3d::moya::output;
 namespace scene = v3d::moya::scene;
 typedef v3d::moya::device::CpuDevice CpuDevice;
 
@@ -176,6 +182,44 @@ void objectRemoved(Staged & staged) {
 /** Halves the picture's side. **/
 void resolutionChanged(Staged & staged) {
     staged.made.set(staged.options, "resolution", scene::Value::integers({ Staged::kSide / 2, Staged::kSide / 2 }));
+}
+
+/**
+ * Stops each pixel once its noise falls below a threshold some pixels reach before the end, checked
+ * from four samples on, so that a check could come between the passes that grow.
+ **/
+void adaptive(Staged & staged) {
+    staged.made.set(staged.options, "noiseThreshold", scene::Value::number(0.1F));
+    staged.made.set(staged.options, "minSamples", scene::Value::integer(4));
+}
+
+/** Pictures into a list: coarse ones from blocks of four pixels, then one after every pass. **/
+integrate::Pictures every(std::vector<integrate::Picture> & into) {
+    return integrate::Pictures { .coarsest = 4, .shown = [&into](const integrate::Picture & picture) { into.push_back(picture); } };
+}
+
+/**
+ * The lit scene rendered with one sample for each block of a side, as the display shows it, with
+ * each block's colour given to every pixel in it.
+ **/
+std::vector<std::uint8_t> inBlocks(std::uint32_t side) {
+    const std::int32_t blocks = Staged::kSide / static_cast<std::int32_t>(side);
+    const film::Snapshot small = fresh({ [blocks](Staged & staged) {
+        staged.made.set(staged.options, "resolution", scene::Value::integers({ blocks, blocks }));
+        staged.made.set(staged.options, "samples", scene::Value::integer(1));
+    } });
+    const colour::Config config;
+    const std::string display = config.defaultDisplay();
+    const std::vector<std::uint8_t> shown = output::displayed(small, config.display(display, config.defaultView(display)));
+    const auto pixels = static_cast<std::size_t>(Staged::kSide);
+    std::vector<std::uint8_t> out(pixels * pixels * 3U);
+    for (std::size_t y = 0; y < pixels; ++y) {
+        for (std::size_t x = 0; x < pixels; ++x) {
+            const std::size_t from = (((y / side) * static_cast<std::size_t>(blocks)) + (x / side)) * 3U;
+            std::copy_n(shown.begin() + static_cast<std::ptrdiff_t>(from), 3, out.begin() + static_cast<std::ptrdiff_t>(((y * pixels) + x) * 3U));
+        }
+    }
+    return out;
 }
 
 };  // namespace
@@ -356,6 +400,136 @@ BOOST_AUTO_TEST_CASE(moya_session_forgets_the_removals_it_built_past_test) {
     BOOST_TEST_REQUIRE(session.advance());
     const std::vector<scene::Change> changes = made.made.changes(built);
     BOOST_TEST(std::none_of(changes.begin(), changes.end(), [](const scene::Change & change) { return change.what == scene::Change::What::Removed; }));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(moya_session_pictures)
+
+// a session that makes pictures shows coarse blocks first, then passes that double the samples the
+// film holds, and each picture holds more than the one before
+BOOST_AUTO_TEST_CASE(moya_session_pictures_come_before_the_last_pass_and_each_holds_more_test) {
+    Staged made = staged();
+    lit(made);
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    std::vector<integrate::Picture> pictures;
+    session.show(every(pictures));
+    while (session.advance()) {
+    }
+    std::vector<std::uint32_t> blocks;
+    std::vector<std::uint32_t> samples;
+    for (const integrate::Picture & picture : pictures) {
+        blocks.push_back(picture.block);
+        samples.push_back(picture.samples);
+        BOOST_TEST(picture.version == session.version());
+        BOOST_TEST(picture.resolution.x == static_cast<std::uint32_t>(Staged::kSide));
+        BOOST_TEST(picture.rgb.size() == static_cast<std::size_t>(Staged::kSide * Staged::kSide * 3));
+    }
+    const std::vector<std::uint32_t> wantBlocks { 4, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
+    const std::vector<std::uint32_t> wantSamples { 1, 1, 1, 2, 4, 8, 16, 32, 48, 64 };
+    BOOST_TEST(blocks == wantBlocks, boost::test_tools::per_element());
+    BOOST_TEST(samples == wantSamples, boost::test_tools::per_element());
+    BOOST_TEST(session.passes() == 8U);
+    BOOST_TEST_REQUIRE(pictures.size() >= 3U);
+    // a coarse picture is a render of one sample a block
+    BOOST_TEST((pictures[0].rgb == inBlocks(4U)));
+    BOOST_TEST((pictures[1].rgb == inBlocks(2U)));
+    BOOST_TEST((pictures[2].rgb != inBlocks(2U)));
+}
+
+// the pictures after an edit name the new version, and start again from coarse blocks
+BOOST_AUTO_TEST_CASE(moya_session_pictures_after_an_edit_name_the_new_version_test) {
+    Staged made = staged();
+    lit(made);
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    std::vector<integrate::Picture> pictures;
+    session.show(every(pictures));
+    for (std::uint32_t i = 0; i < 4U; ++i) {
+        BOOST_TEST_REQUIRE(session.advance());
+    }
+    const std::uint64_t before = session.version();
+    BOOST_TEST_REQUIRE(!pictures.empty());
+    BOOST_TEST(pictures.back().version == before);
+    BOOST_TEST(pictures.back().samples == 2U);
+    materialChanged(made);
+    made.made.commit();
+    session.edited();
+    pictures.clear();
+    BOOST_TEST_REQUIRE(session.advance());
+    BOOST_TEST_REQUIRE(pictures.size() == 1U);
+    BOOST_TEST(pictures.front().version == before + 1U);
+    BOOST_TEST(pictures.front().block == 4U);
+    while (session.advance()) {
+    }
+    BOOST_TEST(pictures.back().version == before + 1U);
+    BOOST_TEST(pictures.back().samples == 64U);
+    BOOST_TEST(sameBytes(session.picture(), fresh({ materialChanged })));
+}
+
+// an edit said during a coarse pass drops it, and its picture is not made
+BOOST_AUTO_TEST_CASE(moya_session_pictures_an_edit_drops_a_coarse_pass_test) {
+    Staged made = staged();
+    lit(made);
+    made.made.apply();
+    const scene::Handle red = found(made, "shader", "red");
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session * held = nullptr;
+    bool said = false;
+    // the stop is first asked before the first pass, which the edit then drops at its one tile
+    const integrate::Checkpoints checkpoints { .stop = [&](std::uint32_t) {
+        if (!said) {
+            made.made.set(red, "base_color", scene::Value::colour(glm::vec3 { 0.1F, 0.8F, 0.1F }));
+            made.made.commit();
+            held->edited();
+            said = true;
+        }
+        return false;
+    } };
+    integrate::Session session(device, made.made, {}, config, checkpoints);
+    held = &session;
+    std::vector<integrate::Picture> pictures;
+    session.show(every(pictures));
+    const std::uint64_t before = made.made.version();
+    BOOST_TEST_REQUIRE(session.advance());
+    BOOST_TEST(said);
+    BOOST_TEST(pictures.empty());
+    BOOST_TEST(session.version() == before);
+    BOOST_TEST_REQUIRE(session.advance());
+    BOOST_TEST_REQUIRE(pictures.size() == 1U);
+    BOOST_TEST(pictures.front().version == before + 1U);
+    BOOST_TEST(pictures.front().block == 4U);
+    while (session.advance()) {
+    }
+    BOOST_TEST(sameBytes(session.picture(), fresh({ materialChanged })));
+}
+
+// the last picture, and the film, are those of a render that made no pictures, though pixels stop
+// on their noise as the passes of growing size end
+BOOST_AUTO_TEST_CASE(moya_session_pictures_end_on_a_render_that_made_none_test) {
+    Staged made = staged();
+    lit(made);
+    made.made.apply();
+    adaptive(made);
+    made.made.commit();
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    std::vector<integrate::Picture> pictures;
+    session.show(every(pictures));
+    while (session.advance()) {
+    }
+    const film::Snapshot want = fresh({ adaptive });
+    BOOST_TEST(std::any_of(want.samples.begin(), want.samples.end(), [](std::uint32_t count) { return count < 64U; }));
+    BOOST_TEST(std::any_of(want.samples.begin(), want.samples.end(), [](std::uint32_t count) { return count > 16U; }));
+    BOOST_TEST(sameBytes(session.picture(), want));
+    const std::string display = config.defaultDisplay();
+    BOOST_TEST_REQUIRE(!pictures.empty());
+    BOOST_TEST((pictures.back().rgb == output::displayed(want, config.display(display, config.defaultView(display)))));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
