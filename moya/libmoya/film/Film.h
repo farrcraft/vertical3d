@@ -90,6 +90,14 @@ class Film final {
      **/
     void restore(const State & state);
 
+    /** Empties every pixel, starts every pixel sampling, and counts no passes. **/
+    void clear();
+
+    /** The channels the film holds beside the beauty, in order. **/
+    const std::vector<Channel> & channels() const {
+        return channels_;
+    }
+
     /**
      * Stops each pixel whose noise and whose four neighbours' noise are all below a threshold.
      * A pixel's noise is noise() of its sums as the last pass left them. A pixel that has stopped

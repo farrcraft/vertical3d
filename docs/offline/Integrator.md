@@ -282,9 +282,53 @@ can change what was gathered, such as a material's closures, before it renders.
   camera sees it there, so a pixel of a crop is the same, bit for bit, as that pixel of the whole
   image. The snapshot names the image and the window's place in it. A window of no pixels is
   logged, and the whole image is rendered.
+- **A render is a session that takes no edits**, run to its end, as
+  [the next section](#a-render-session) says, so a batch and an interactive render take one path.
 - **`moya`** reads a RIB file through the scene client and writes each of the scene's
   outputs, as [Output.md](Output.md#a-scenes-outputs) says.
   [CommandLine.md](../manual/moya/CommandLine.md) lists its options.
+
+## A render session
+
+`integrate::Session` renders a scene while clients edit it. It keeps every structure it builds
+from one version of the scene to the next, and rebuilds only what the edits touched.
+
+- **A session owns its scene.** It applies the scene's batches and reads it, so while a session
+  lives nothing else applies or reads the scene. Clients edit and commit from any thread, as
+  [Scene.md](Scene.md#edits-commits-and-versions) says.
+- **`advance()` applies, rebuilds and runs one pass.** It applies every batch committed since the
+  last. At a new version it brings the structures up to it, and starts the film again at the
+  first sample. It gives false once the film holds every sample the version takes, every pixel
+  has stopped, or the checkpoints' `stop` answered true.
+- **What is kept.** The hierarchies, through an `accel::Assembler`
+  ([Traversal.md](Traversal.md#rebuilding-what-changed)), the compiled materials, the textures
+  ([Textures.md](Textures.md#textures-kept-across-versions)), the volumes' blocks and the lights
+  ([Lights.md](Lights.md#lights-kept-across-versions)). The tracing view, the surfaces' buffers,
+  the pixel filter and the records of the outputs are made again at each version.
+- **The film keeps its storage** while its resolution and channels are the same, and is emptied.
+  It is made again when either changes. `madeFilm()` says which the last build did.
+- **A pass never sees half a batch.** A batch committed during a pass is applied after it, so
+  its samples are not in the pass. `edited()` says that a batch was committed. A pass in progress
+  then stops before its next tile and is dropped, so the film holds the passes before it, and the
+  next `advance()` applies the batch.
+- **An edited session ends where a fresh render does.** A session that took edits, and sampled to
+  its end, gives the bytes in every channel that `render()` gives for the edited scene.
+- **Every new version starts the film again**, even one whose edits change nothing a picture
+  shows.
+- **A session forgets the scene's removals** up to each version it builds, so the scene's record
+  of them does not grow while the session lives.
+- **It runs on a thread of its own, or on its caller's.** `advance()`, `picture()` and the counts
+  are called by one thread while no thread of the session's runs. `start()` runs passes on a
+  thread of the session's, which waits for `edited()` once a version has every sample. `wait()`
+  returns once that thread runs no pass and nothing was said since. `stop()` drops the pass in
+  progress and ends the thread. What the thread threw is thrown again by `wait()` and `stop()`.
+- **A checkpoint describes the version the session renders**, counted from the edit that last
+  started the film. A session resumes from its checkpoint only when it first builds.
+- **`render()` is a session that takes no edits.** It never applies the scene, and runs
+  `advance()` until it gives false. Its overload that takes prototypes builds one assembly over
+  them in place of the assembler.
+
+Background: [ADR-0253](../adr/offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md)
 
 ## Coverage
 
@@ -383,8 +427,10 @@ fallback, a render keeps no checkpoint.
 - **A checkpoint of another scene or film is refused** with `output::Refused`, by its
   fingerprint. The sampler's samples depend on the samples per pixel, so a render resumed to more
   samples than it began with is another render, and is refused too.
-- **`stop` is asked before each pass** with the passes the film holds. A render it answers true
-  for writes its checkpoint and returns the snapshot of what it holds.
+- **`stop` is asked before each pass and before each tile** with the passes the film holds, one
+  thread at a time. A render it answers true for before a pass stops there. One it answers true
+  for during a pass lets the tiles already running end and drops the pass, so the film holds the
+  passes before it. Either writes its checkpoint and returns the snapshot of what it holds.
 
 ## Profiling a render
 

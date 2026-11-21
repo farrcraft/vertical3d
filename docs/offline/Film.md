@@ -125,6 +125,9 @@ uses it.
 - **Samples are added in passes.** `pass(launch)` hands the function the film's
   `kernel::film::Pixels`. The function launches kernel code over the film's resolution, which
   adds each pixel's next samples, and returns when every pixel has run.
+- **`clear()` empties the film.** Every pixel is emptied and samples again, and the film counts
+  no passes. A render session clears its film for a new version of the scene in place of making
+  another of the same resolution and channels.
 - **`snapshot()` can be called from any thread at any time.** It waits for a pass in progress to
   end, so a snapshot holds every sample of the passes before it, and none of the next.
 - **A snapshot is resolved.** The beauty's sums and each mean channel's are divided by the

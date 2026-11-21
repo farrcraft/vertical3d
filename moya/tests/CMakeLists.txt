@@ -57,6 +57,7 @@ v3d_add_test(moya
 	"TraversalTest.cxx"
 	"RgbTest.cxx"
 	"SceneClientTest.cxx"
+	"SessionTest.cxx"
 	"SceneDescriptionTest.cxx"
 	"SceneGeometryTest.cxx"
 	"SceneHitsTest.cxx"

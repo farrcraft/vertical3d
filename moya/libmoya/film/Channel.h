@@ -21,6 +21,8 @@ struct Channel {
 
     /** How its samples are combined into its pixel. **/
     kernel::film::Combine combine { kernel::film::Combine::Mean };
+
+    bool operator==(const Channel &) const = default;
 };
 
 };  // namespace v3d::moya::film

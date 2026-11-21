@@ -52,18 +52,25 @@ Film::Film(device::Device & device, const glm::uvec2 & resolution, const std::ve
     }
 
     // the moments and the weight follow the channels
-    const std::size_t floats = static_cast<std::size_t>(resolution.x) * resolution.y * stored();
+    const std::size_t count = static_cast<std::size_t>(resolution.x) * resolution.y;
+    pixels_ = device_.allocate(count * stored() * sizeof(float));
+    stopped_ = device_.allocate(count * sizeof(std::uint32_t));
+    clear();
+}
+
+void Film::clear() {
+    const std::size_t count = static_cast<std::size_t>(resolution_.x) * resolution_.y;
+    const std::size_t floats = count * stored();
     const std::vector<float> empty = emptyPixel();
     std::vector<float> start(floats);
     for (std::size_t i = 0; i < floats; i += empty.size()) {
         std::copy(empty.begin(), empty.end(), start.begin() + static_cast<std::ptrdiff_t>(i));
     }
-    pixels_ = device_.allocate(floats * sizeof(float));
+    const std::scoped_lock lock(mutex_);
     device_.upload(*pixels_, start.data(), floats * sizeof(float));
-
-    stops_.assign(static_cast<std::size_t>(resolution.x) * resolution.y, 0U);
-    stopped_ = device_.allocate(stops_.size() * sizeof(std::uint32_t));
+    stops_.assign(count, 0U);
     device_.upload(*stopped_, stops_.data(), stops_.size() * sizeof(std::uint32_t));
+    passes_ = 0;
 }
 
 glm::uvec2 Film::resolution() const {

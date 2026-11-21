@@ -121,8 +121,8 @@ listed as a number with no record, as the ADR index requires.
 | [4](#step-4--the-record-a-rendered-view) | The record: a rendered view | `docs/adr` | **0256** | accepted |
 | [5](#step-5--a-pass-that-stops-between-tiles) | A pass that stops between tiles | `moya/libmoya/device`, `film` | 0194 | done |
 | [6](#step-6--materials-textures-and-volumes-kept-across-versions) | Materials, textures and volumes kept across versions | `moya/libmoya/geometry`, `texture`, `volume` | 0203 | done |
-| [7](#step-7--lights-kept-across-versions) | Lights kept across versions | `moya/libmoya/light` | 0203, 0214 | open |
-| [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | open |
+| [7](#step-7--lights-kept-across-versions) | Lights kept across versions | `moya/libmoya/light` | 0203, 0214 | done |
+| [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | done |
 | [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | open |
 | [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | open |
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | open |
@@ -382,6 +382,16 @@ Under the shape step 1 settles.
 the bytes of a render of the edited scene from nothing. A session edited many times before a pass
 ends takes every batch. A commit made during a pass is not in that pass's samples. Every
 reference render gives the same bytes as before.
+
+**Done.** `integrate::Session` keeps the assembler, textures, volumes and lights, and the film
+while its resolution and channels are the same. It makes the tracing view, the surfaces' buffers,
+the filter and the outputs' records again at each version. `advance()` applies, rebuilds and
+runs one pass on its caller's thread. `start()` runs passes on a thread of the session's, and
+`edited()` drops a pass in progress so the edit is applied next. Every new version starts the
+film again, including one whose edits change nothing a picture shows. `render()` is a session
+that never applies the scene, and its overload that takes prototypes builds one assembly over
+them. A session that can take an edit copies the film before each pass, so that a dropped pass
+can be put back.
 
 ### Step 9 — Pictures while sampling continues
 
