@@ -182,7 +182,8 @@ The rebuild's sections up to output for compositing are closed, the last by
 [MoyaCompositing](completed/MoyaCompositing.md), which changed nothing the editor sends moya.
 [MoyaMaterials](completed/MoyaMaterials.md) left the editor's surfaces on RI's `matte`. The
 retirement of the old hiders (section 7) was [MoyaRetirement](completed/MoyaRetirement.md), which
-says where it met this plan. Interactive rendering (section 9) reaches the editor too.
+says where it met this plan. Interactive rendering (section 9) reaches the editor too, and
+[MoyaInteractive](MoyaInteractive.md) is its plan, which says where it meets this one.
 Giving the editor materials is work for a plan of its own.
 
 **Where the two meet:**
@@ -194,9 +195,9 @@ Giving the editor materials is work for a plan of its own.
 | `src/control/RenderView.*`, `src/render/MoyaDelegate.*` | Sections 7 and 9 | Step 14 |
 | `moya/moya.cxx`, `docs/manual/moya/CommandLine.md` | Nothing open. MoyaRetirement's step 9 made the path tracer moya.exe's default and removed `--paths`, `--grid` and `--bucket` | Step 16 |
 | The scene document's schema and kind versions | The plan that gives the editor materials, if it brings them into the document | Step 8 |
-| `src/scene/RenderSettings.h` and its codec | Section 9, the AOVs the render view shows. MoyaRetirement's step 11 removed the hider list | Nothing |
+| `src/scene/RenderSettings.h` and its codec | Nothing open. MoyaRetirement's step 11 removed the hider list, and MoyaInteractive keeps the render view's channel out of the settings | Nothing |
 | `docs/editor/Rendering.md` | Sections 7 and 9 | Steps 14, 17 and 19 |
-| ADR numbers | MoyaRetirement, 0236 to 0240 | 0217 to 0221 |
+| ADR numbers | MoyaRetirement, 0236 to 0240. MoyaInteractive, 0253 to 0256 | 0217 to 0221 |
 
 **The rules:**
 

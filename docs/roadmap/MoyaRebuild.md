@@ -194,6 +194,8 @@ Done. [MoyaVolumes](../plans/completed/MoyaVolumes.md) was its plan, and
 
 ### 9. Interactive rendering
 
+[MoyaInteractive](../plans/MoyaInteractive.md) is its plan.
+
 - **Edits while rendering**: the editor's changes reach the scene interface, and sampling
   restarts with only the touched structures rebuilt.
 - **Progressive pictures** at a rate the editor's render view sets.

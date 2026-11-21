@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [MoyaInteractive](MoyaInteractive.md) | Offline rendering, editor | Renders that take edits while they run: a session that keeps its structures across versions, passes that stop between tiles, pictures and denoised pictures as samples arrive, a render view that shows them, and a 3D view that shows moya's picture |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
 ## Completed plans

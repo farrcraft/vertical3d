@@ -239,6 +239,10 @@ reported, so the table lists only tags in use.
 | [0219](editor/0219-editor-a-placement-is-set-in-the-parents-space-or-the-scenes.md) | Editor: a placement is set in the parent's space or the scene's |
 | [0220](editor/0220-editor-a-headless-run-is-a-console-program-of-its-own.md) | Editor: a headless run is a console program of its own |
 | [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
+| [0253](offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md) | Offline: a render is a session that takes edits between passes |
+| [0254](offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md) | Offline: first pictures are coarse, then passes grow |
+| [0255](offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md) | Offline: each picture is denoised once it holds enough samples |
+| [0256](editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md) | Editor: a rendered view has its own session and raster depth |
 
 ### files
 
@@ -441,6 +445,10 @@ reported, so the table lists only tags in use.
 | [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
 | [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 | [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
+| [0253](offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md) | Offline: a render is a session that takes edits between passes |
+| [0254](offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md) | Offline: first pictures are coarse, then passes grow |
+| [0255](offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md) | Offline: each picture is denoised once it holds enough samples |
+| [0256](editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md) | Editor: a rendered view has its own session and raster depth |
 
 ### particles
 
