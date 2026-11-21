@@ -34,6 +34,8 @@ struct Options {
     std::vector<std::string> searchPath;
     std::size_t memory { kDefaultMemory };
     std::string directory;
+
+    bool operator==(const Options &) const = default;
 };
 
 /**

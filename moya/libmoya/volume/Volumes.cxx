@@ -31,6 +31,15 @@ boost::shared_ptr<device::Buffer> Volumes::uploaded(device::Device & device, con
 }
 
 Volumes::Volumes(device::Device & device, const geometry::Prototypes & prototypes) {
+    update(device, prototypes);
+}
+
+void Volumes::update(device::Device & device, const geometry::Prototypes & prototypes) {
+    volumes_ = uploaded(device, prototypes.volumes);
+    laidOut_ = !blocks_ || laid_ != prototypes.grids;
+    if (!laidOut_) {
+        return;
+    }
     std::vector<kernel::volume::GridPlace> places;
     std::vector<kernel::volume::Block> blocks;
     places.reserve(prototypes.grids.size());
@@ -38,9 +47,9 @@ Volumes::Volumes(device::Device & device, const geometry::Prototypes & prototype
         places.push_back(kernel::volume::GridPlace { .first = static_cast<std::uint32_t>(blocks.size()), .count = static_cast<std::uint32_t>(grid->blocks.size()) });
         blocks.insert(blocks.end(), grid->blocks.begin(), grid->blocks.end());
     }
-    volumes_ = uploaded(device, prototypes.volumes);
     grids_ = uploaded(device, places);
     blocks_ = uploaded(device, blocks);
+    laid_ = prototypes.grids;
 }
 
 kernel::volume::Volumes Volumes::view() const {

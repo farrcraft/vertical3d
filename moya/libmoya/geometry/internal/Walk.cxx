@@ -174,7 +174,7 @@ std::size_t widthOf(std::uint32_t number) {
 };  // namespace
 
 Walk::Walk(const scene::Scene & scene, const boost::shared_ptr<log::Logger> & logger, Cache * cache) :
-    scene_(scene), logger_(logger), groups_(byGroup(scene)), cache_(cache), programs_(scene) {
+    scene_(scene), logger_(logger), groups_(byGroup(scene)), cache_(cache), programs_(scene, cache) {
     prototypes_.primvarNames = programs_.names();
     if (cache_ != nullptr) {
         cache_->made_.clear();

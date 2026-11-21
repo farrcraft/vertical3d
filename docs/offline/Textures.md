@@ -116,6 +116,21 @@ file input names, and whether its output is a colour.
   it reads, and the cache's own lock while it finds or adds a tile.
 - **A texel that cannot be read is zero**, and the render logs each file that failed once it
   ends.
+- **A closed texture's tiles leave the cache**, and its file is released. Its number is never
+  given to another texture, and a texel of it is zero.
+
+## Textures kept across versions
+
+`texture::Textures` can be kept from one version of a scene to the next, while the options are
+unchanged. `update(device, images)` brings it to another set of images, between passes.
+
+- **A texture read before is kept**, with its number and the tiles the cache holds of it. Only a
+  file no image read before is found, made and opened.
+- **A texture no image reads any more is closed**, so its tiles leave the cache.
+- **A kept texture is read from its file as it was when it was opened.** A file written again
+  under the same name is read again only by textures made anew.
+- **Every texel is the one textures made from nothing give**, though a texture's number may
+  differ.
 
 ## Looking up a texture
 

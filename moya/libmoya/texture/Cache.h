@@ -54,6 +54,16 @@ class Cache final {
      **/
     std::uint32_t open(const std::string & path);
 
+    /**
+     * Closes a texture: its file is released, and its tiles leave the cache. Its number is not
+     * given to another texture. A texel of a closed texture is zero. No texel may be read
+     * meanwhile.
+     **/
+    void close(std::uint32_t texture);
+
+    /** How many textures are open, not counting those closed. **/
+    std::size_t opened() const;
+
     /** Each texture's size, by its number. **/
     const std::vector<kernel::texture::Texture> & textures() const {
         return textures_;

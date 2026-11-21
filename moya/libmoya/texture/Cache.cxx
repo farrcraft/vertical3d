@@ -92,7 +92,9 @@ void Cache::fetch(void * cache, std::uint32_t texture, std::uint32_t level, std:
         std::fill(out, out + kHeld, 0.0F);
         try {
             const std::lock_guard<std::mutex> lock(held->mutex_);
-            held->failures_.insert(held->files_.at(texture)->path + ": " + error.what());
+            if (held->files_.at(texture)) {
+                held->failures_.insert(held->files_.at(texture)->path + ": " + error.what());
+            }
         } catch (...) {  // NOLINT(bugprone-empty-catch) - a failure that cannot be recorded leaves the texel zero
         }
     }
@@ -103,12 +105,35 @@ std::vector<std::string> Cache::failures() const {
     return { failures_.begin(), failures_.end() };
 }
 
+void Cache::close(std::uint32_t texture) {
+    const std::scoped_lock lock(mutex_);
+    files_.at(texture).reset();
+    textures_.at(texture) = kernel::texture::Texture {};
+    for (auto it = tiles_.begin(); it != tiles_.end();) {
+        if (it->first.texture != texture) {
+            ++it;
+            continue;
+        }
+        held_ -= it->second.texels.size() * sizeof(float);
+        used_.erase(it->second.used);
+        it = tiles_.erase(it);
+    }
+}
+
+std::size_t Cache::opened() const {
+    return static_cast<std::size_t>(std::ranges::count_if(files_, [](const boost::shared_ptr<internal::Opened> & file) { return file != nullptr; }));
+}
+
 std::uint64_t Cache::loads() const {
     const std::lock_guard<std::mutex> lock(mutex_);
     return loads_;
 }
 
 void Cache::read(std::uint32_t texture, std::uint32_t level, std::uint32_t column, std::uint32_t row, float * out) {
+    if (!files_.at(texture)) {
+        std::fill(out, out + kHeld, 0.0F);
+        return;
+    }
     const internal::Opened & opened = *files_.at(texture);
     const internal::TileKey key { .texture = texture, .level = level, .column = column / opened.tileWidth, .row = row / opened.tileHeight };
     const std::uint32_t across = column % opened.tileWidth;

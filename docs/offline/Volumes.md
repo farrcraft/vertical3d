@@ -163,6 +163,12 @@ A volume's fields are grids of floats, which kernel code reads on every device.
   one past it, in the grid's index space.
 - **A cell bounds the lookups in it**, `volume::cellAt()`, as
   [tracking through volumes](#tracking-through-volumes) says.
+- **A grid is read once while it is kept.** `geometry::Cache` keeps each field's grid, and reads
+  it again only when its field changed. A grid's majorants come from its nodes' least and most,
+  so a kept grid keeps them.
+- **`volume::Volumes` can be kept across versions.** `update(device, prototypes)` lays the
+  blocks out again only when the prototypes' grids are not the ones laid out before, in the same
+  order. `laidOut()` says whether the last update did.
 
 Background: [ADR-0245](../adr/offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md)
 

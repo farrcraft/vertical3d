@@ -5,6 +5,7 @@
 
 #include <moya/libmoya/geometry/internal/Programs.h>
 
+#include <moya/libmoya/geometry/Cache.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/program/Instruction.h>
 #include <moya/libmoya/kernel/program/Op.h>
@@ -21,6 +22,7 @@
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -123,16 +125,118 @@ std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const sc
     }
 }
 
+/** The scene's shader search path, or empty while it has no options. **/
+std::string shaderSearchPathOf(const scene::Scene & scene) {
+    const std::vector<scene::Handle> options = scene.objects("options");
+    return options.empty() ? std::string() : scene.value(options.front(), "shaderSearchPath").stringArray().front();
+}
+
+/**
+ * The scene's index of every node of a material's network and of every connection between them:
+ * its terminals, and each node that feeds one, directly or through others.
+ **/
+std::set<std::uint32_t> networkOf(const scene::Scene & scene, const scene::Handle & material, const std::multimap<std::uint32_t, scene::Handle> & feeding) {
+    std::set<std::uint32_t> out;
+    std::vector<scene::Handle> nodes;
+    for (const char * terminal : { "surface", "displacement", "volume" }) {
+        const scene::Handle node = scene.value(material, terminal).handleArray().front();
+        if (node.valid() && scene.contains(node)) {
+            nodes.push_back(node);
+        }
+    }
+    while (!nodes.empty()) {
+        const scene::Handle node = nodes.back();
+        nodes.pop_back();
+        if (!out.insert(node.index).second) {
+            continue;
+        }
+        const auto [first, last] = feeding.equal_range(node.index);
+        for (auto it = first; it != last; ++it) {
+            out.insert(it->second.index);
+            const scene::Handle from = scene.value(it->second, "from").handleArray().front();
+            if (from.valid() && scene.contains(from)) {
+                nodes.push_back(from);
+            }
+        }
+    }
+    return out;
+}
+
+/** Every connection of the scene, by the scene's index of the node it feeds. **/
+std::multimap<std::uint32_t, scene::Handle> feedingOf(const scene::Scene & scene) {
+    std::multimap<std::uint32_t, scene::Handle> out;
+    for (const scene::Handle & connection : scene.objects("connection")) {
+        const scene::Handle to = scene.value(connection, "to").handleArray().front();
+        if (to.valid()) {
+            out.emplace(to.index, connection);
+        }
+    }
+    return out;
+}
+
 };  // namespace
 
-Programs::Programs(const scene::Scene & scene) : names_ { "N", "Cs", "tangent", "st" } {
+Programs::Programs(const scene::Scene & scene, Cache * cache) : names_ { "N", "Cs", "tangent", "st" } {
+    std::map<std::uint32_t, Cache::Program> kept;
+    std::multimap<std::uint32_t, scene::Handle> feeding;
+    if (cache != nullptr) {
+        cache->compiled_.clear();
+        const std::string searchPath = shaderSearchPathOf(scene);
+        if (searchPath != cache->shaderSearchPath_) {
+            cache->programs_.clear();
+            cache->shaderSearchPath_ = searchPath;
+        }
+        feeding = feedingOf(scene);
+    }
     for (const scene::Handle & handle : scene.objects("material")) {
-        if (std::optional<material::Compiled> displaced = displacementOf(scene, handle, names_)) {
-            displacements_.emplace(handle.index, std::move(*displaced));
+        Cache::Program program { .handle = handle };
+        bool keep = false;
+        if (cache != nullptr) {
+            program.network = networkOf(scene, handle, feeding);
+            const auto held = cache->programs_.find(handle.index);
+            const auto touched = [&](const std::set<std::uint32_t> & indices) {
+                return std::ranges::any_of(indices, [&](std::uint32_t index) { return cache->forgotten_.contains(index); });
+            };
+            keep = held != cache->programs_.end() && held->second.handle == handle && held->second.before == names_ &&
+                !cache->forgotten_.contains(handle.index) && !touched(held->second.network) && !touched(program.network);
+            if (keep) {
+                program.before = std::move(held->second.before);
+                program.after = std::move(held->second.after);
+                program.displacement = std::move(held->second.displacement);
+                program.surface = std::move(held->second.surface);
+                program.volume = std::move(held->second.volume);
+                names_ = program.after;
+            }
         }
-        if (std::optional<material::Compiled> surfaced = surfaceOf(scene, handle, names_, volumes_)) {
-            compiled_.emplace(handle.index, std::move(*surfaced));
+        if (!keep) {
+            program.before = names_;
+            program.displacement = displacementOf(scene, handle, names_);
+            std::map<std::uint32_t, material::Compiled> volume;
+            program.surface = surfaceOf(scene, handle, names_, volume);
+            if (!volume.empty()) {
+                program.volume = std::move(volume.begin()->second);
+            }
+            program.after = names_;
+            if (cache != nullptr) {
+                cache->compiled_.insert(handle.index);
+            }
         }
+        if (program.displacement) {
+            displacements_.emplace(handle.index, *program.displacement);
+        }
+        if (program.surface) {
+            compiled_.emplace(handle.index, *program.surface);
+        }
+        if (program.volume) {
+            volumes_.emplace(handle.index, *program.volume);
+        }
+        if (cache != nullptr) {
+            kept.emplace(handle.index, std::move(program));
+        }
+    }
+    if (cache != nullptr) {
+        cache->programs_ = std::move(kept);
+        cache->forgotten_.clear();
     }
     // a channel can read a primvar that no program reads
     for (const scene::Handle & output : scene.objects("output")) {

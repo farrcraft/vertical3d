@@ -33,6 +33,7 @@
 #include <ios>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -137,6 +138,13 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
 Textures::Textures(device::Device & device, const std::vector<Request> & images, const Options & options, const colour::Config & config,
     const boost::shared_ptr<log::Logger> & logger) :
     options_(options), config_(config), logger_(logger), cache_(boost::make_shared<Cache>(options.memory)) {
+    update(device, images);
+}
+
+void Textures::update(device::Device & device, const std::vector<Request> & images) {
+    images_.clear();
+    tiles_.clear();
+    read_.clear();
     for (const Request & request : images) {
         kernel::texture::Image grid;
         grid.first = static_cast<std::uint32_t>(tiles_.size());
@@ -168,6 +176,17 @@ Textures::Textures(device::Device & device, const std::vector<Request> & images,
         tiles_.insert(tiles_.end(), udims.begin(), udims.begin() + (static_cast<std::ptrdiff_t>(rows) * kUdimColumns));
         images_.push_back(grid);
     }
+    // a texture no image reads any more is closed
+    for (auto it = opened_.begin(); it != opened_.end();) {
+        if (read_.contains(it->first)) {
+            ++it;
+            continue;
+        }
+        if (it->second != kernel::texture::kNoTexture) {
+            cache_->close(it->second);
+        }
+        it = opened_.erase(it);
+    }
     imageBuffer_ = uploaded(device, images_);
     tileBuffer_ = uploaded(device, tiles_);
     textureBuffer_ = uploaded(device, cache_->textures());
@@ -194,6 +213,7 @@ std::uint32_t Textures::textureOf(const std::string & file, const Request & requ
         return kernel::texture::kNoTexture;
     }
     const std::pair<std::string, std::string> key { *path, readingOf(request) };
+    read_.insert(key);
     const auto held = opened_.find(key);
     if (held != opened_.end()) {
         return held->second;

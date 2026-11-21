@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,6 +49,10 @@ namespace v3d::moya::texture {
  *   so its node gives its default.
  *
  * Images of one file, colour space and kind share their texture.
+ *
+ * Textures can be kept from one version of a scene to the next, under the same options. An update
+ * opens only the textures no image read before, and closes each texture no image reads any more,
+ * so its tiles leave the cache. A texture kept is read from its file as it was when it was opened.
  **/
 class Textures final {
  public:
@@ -58,6 +63,16 @@ class Textures final {
         const boost::shared_ptr<log::Logger> & logger);
     Textures(const Textures &) = delete;
     Textures & operator=(const Textures &) = delete;
+
+    /**
+     * Brings the textures up to another set of images, under the options they were made with.
+     * No texel may be read meanwhile.
+     **/
+    void update(device::Device & device, const std::vector<Request> & images);
+
+    const Options & options() const {
+        return options_;
+    }
 
     /** The CPU's texture access, reading through the cache. Valid while this object lives. **/
     device::cpu::Textures view() const;
@@ -83,6 +98,9 @@ class Textures final {
 
     /** Each texture opened, by its file and how it is read. **/
     std::map<std::pair<std::string, std::string>, std::uint32_t> opened_;
+
+    /** The textures the images of the update in progress read, by their file and how. **/
+    std::set<std::pair<std::string, std::string>> read_;
 
     std::vector<kernel::texture::Image> images_;
     std::vector<std::uint32_t> tiles_;

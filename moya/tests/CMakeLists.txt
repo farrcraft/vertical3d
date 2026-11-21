@@ -21,6 +21,7 @@ v3d_add_test(moya
 	"GeometricNodesTest.cxx"
 	"GridTest.cxx"
 	"HairTest.cxx"
+	"KeptTest.cxx"
 	"LayeringTest.cxx"
 	"ThinFilmTest.cxx"
 	"CurvesTest.cxx"

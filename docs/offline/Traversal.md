@@ -450,6 +450,12 @@ prototypes. `prototypes()` and `assembly()` give what the last update made.
   changed object's geometry first, so the gather makes that geometry again and places every other
   as it was made. A subdivision surface is also cut again when its dicing camera, its edge length
   or its nearest placement moved.
+- **The cache keeps each material's programs too.** A gather compiles a material again when its
+  object changed, when a node or connection of its network changed, was made or was removed, or
+  when the shader search path changed. It compiles it again too when the primvars the materials
+  before it read are not those it was compiled after, so a kept material is numbered as a gather
+  of no cache numbers it. A camera's or an option's edit compiles nothing. `compiled()` names the
+  materials the last gather compiled, by the scene's index.
 - **A geometry's hierarchy is built again only when its geometry was made again.** Its nodes
   count from its own first node and its leaves name its own primitives, so the same nodes are
   placed wherever its geometry lands.

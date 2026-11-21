@@ -18,6 +18,7 @@ class Scene;
 };  // namespace v3d::moya::scene
 
 namespace v3d::moya::geometry {
+class Cache;
 struct Prototypes;
 };  // namespace v3d::moya::geometry
 
@@ -33,11 +34,15 @@ namespace v3d::moya::geometry::internal {
  * shading reads whatever a program does. Each other name follows in the order a program first
  * reads it, and then each primvar a scene's output names a channel of, in the order the outputs
  * name them.
+ *
+ * Given a cache, each material is taken from it when the cache kept it, as Cache says, and
+ * compiled otherwise. The cache then keeps every material of the scene, and forgets what it
+ * was told to forget.
  **/
 class Programs final {
  public:
     /** Compiles each such material through the libraries installed beside moya. **/
-    explicit Programs(const scene::Scene & scene);
+    explicit Programs(const scene::Scene & scene, Cache * cache = nullptr);
 
     /** The name of each primvar shading reads, by its number. **/
     const std::vector<std::string> & names() const {
