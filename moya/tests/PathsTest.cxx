@@ -352,6 +352,40 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_resumed_render_is_the_same_as_one_that_never_s
     boost::filesystem::remove(path, ignored);
 }
 
+/**
+ * checkpointed()'s scene at 96 by 64 pixels, nine tiles of the CPU device's, rendered on a number
+ * of threads.
+ **/
+film::Snapshot tiled(unsigned int threads, const integrate::Checkpoints & checkpoints) {
+    scene::Scene scene(scene::kinds());
+    buildSphereOnPlane(scene, 128, 3, 0.0F);
+    scene.set(scene.objects("options").front(), "resolution", scene::Value::integers({ 96, 64 }));
+    scene.commit();
+    scene.apply();
+    CpuDevice device(threads);
+    return integrate::render(device, scene, {}, colour::Config(), checkpoints);
+}
+
+// a render stopped part way through its third pass holds the bytes of one stopped before it, and
+// resumed it ends on the bytes of one that never stopped
+BOOST_AUTO_TEST_CASE(moya_paths_a_render_stopped_during_a_pass_drops_it_test) {
+    const std::string path = checkpointNamed("during");
+    const film::Snapshot whole = tiled(0, {});
+    const film::Snapshot before = tiled(0, { .path = path, .stop = [](std::uint32_t passes) { return passes == 2U; } });
+    // on one thread, asked before the third pass and before each of its tiles, it answers true at
+    // the third tile, so two of the pass's tiles have run
+    std::uint32_t asked = 0;
+    const film::Snapshot during = tiled(1, { .path = path, .stop = [&](std::uint32_t passes) { return passes == 2U && ++asked == 4U; } });
+    BOOST_TEST(asked == 4U);
+    BOOST_TEST(during.passes == 2U);
+    BOOST_TEST(sameBytes(during, before));
+    const film::Snapshot resumed = tiled(0, { .path = path, .resume = true });
+    BOOST_TEST(resumed.passes == 8U);
+    BOOST_TEST(sameBytes(resumed, whole));
+    boost::system::error_code ignored;
+    boost::filesystem::remove(path, ignored);
+}
+
 // a render that adaptive sampling stopped pixels of keeps them stopped in its checkpoint, and
 // resumed it stops the same pixels after the same samples as one that never stopped
 BOOST_AUTO_TEST_CASE(moya_paths_a_resumed_render_keeps_its_stopped_pixels_test) {

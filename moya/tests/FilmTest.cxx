@@ -341,6 +341,31 @@ BOOST_AUTO_TEST_CASE(moya_film_a_restored_film_continues_as_its_original_test) {
     BOOST_TEST(restored.state().stopped == original.state().stopped, boost::test_tools::per_element());
 }
 
+// a pass that stops part way leaves every float as it stood before it, and is not counted, and a
+// pass that runs to its end is counted as pass() counts it
+BOOST_AUTO_TEST_CASE(moya_film_a_stopped_pass_is_not_in_the_film_test) {
+    CpuDevice device;
+    film::Film film = withChannels(device, { 5, 3 });
+    film.pass([&](const kernel::film::Pixels & pixels) { device.launch(5, 3, paramsFor(film, pixels), &weighted); });
+    const film::State before = film.state();
+    const bool stopped = film.attempt([&](const kernel::film::Pixels & pixels) {
+        device.launch(5, 3, paramsFor(film, pixels), &weighted);
+        return false;
+    });
+    BOOST_TEST(!stopped);
+    const film::State after = film.state();
+    BOOST_TEST(after.passes == 1U);
+    BOOST_TEST(after.sums == before.sums, boost::test_tools::per_element());
+    BOOST_TEST(film.snapshot().passes == 1U);
+    const bool ran = film.attempt([&](const kernel::film::Pixels & pixels) {
+        device.launch(5, 3, paramsFor(film, pixels), &weighted);
+        return true;
+    });
+    BOOST_TEST(ran);
+    BOOST_TEST(film.state().passes == 2U);
+    BOOST_TEST(film.state().sums != before.sums);
+}
+
 BOOST_AUTO_TEST_CASE(moya_film_refuses_a_state_of_another_film_test) {
     CpuDevice device;
     const film::State state = withChannels(device, { 5, 3 }).state();

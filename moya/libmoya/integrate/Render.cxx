@@ -62,6 +62,8 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -251,6 +253,7 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
     }
     const internal::TrailSteps trail(device, resolution, trails != nullptr);
     double passing = 0.0;
+    std::mutex asking;
     const std::uint32_t start =
         static_cast<std::uint32_t>(std::min<std::uint64_t>(std::uint64_t { done } * kSamplesPerPass, sampler.samplesPerPixel()));
     for (std::uint32_t first = start; first < sampler.samplesPerPixel(); first += kSamplesPerPass) {
@@ -264,7 +267,15 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
             break;
         }
         const std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
-        picture.pass([&](const kernel::film::Pixels & pixels) {
+        // the stop is asked before each tile as well, one thread at a time
+        std::function<bool()> during;
+        if (checkpoints.stop) {
+            during = [&] {
+                const std::scoped_lock lock(asking);
+                return checkpoints.stop(done);
+            };
+        }
+        const auto launch = [&](const kernel::film::Pixels & pixels) {
             const device::cpu::PathParams params { .pixels = pixels,
                 .filter = filter.view(),
                 .camera = camera,
@@ -285,11 +296,17 @@ film::Snapshot render(device::CpuDevice & device, const scene::Scene & scene, co
                 .expressions = lightPaths.view(),
                 .covered = records.view() };
             if (tallies) {
-                device.launch(resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled);
-                return;
+                return device.launch(
+                    resolution.x, resolution.y, device::cpu::ProfileParams { .paths = params, .tallies = tallies->view() }, device.module().profiled, during);
             }
-            device.launch(resolution.x, resolution.y, params, entry);
-        });
+            return device.launch(resolution.x, resolution.y, params, entry, during);
+        };
+        // a render that cannot stop keeps no copy of the film to go back to
+        if (!checkpoints.stop) {
+            picture.pass([&](const kernel::film::Pixels & pixels) { launch(pixels); });
+        } else if (!picture.attempt(launch)) {
+            break;
+        }
         kept.add(records.taken(samples), samples);
         ++done;
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();

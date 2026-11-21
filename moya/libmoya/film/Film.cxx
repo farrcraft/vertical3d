@@ -79,13 +79,29 @@ std::uint32_t Film::offset(const std::string & name) const {
     throw std::out_of_range("the film has no channel named " + name);
 }
 
-void Film::pass(const std::function<void(const kernel::film::Pixels &)> & launch) {
-    const std::scoped_lock lock(mutex_);
-    launch(kernel::film::Pixels { .values = device::view<float>(*pixels_),
+kernel::film::Pixels Film::pixels() const {
+    return kernel::film::Pixels { .values = device::view<float>(*pixels_),
         .width = resolution_.x,
         .stride = stored(),
-        .stopped = device::view<std::uint32_t>(*stopped_) });
+        .stopped = device::view<std::uint32_t>(*stopped_) };
+}
+
+void Film::pass(const std::function<void(const kernel::film::Pixels &)> & launch) {
+    const std::scoped_lock lock(mutex_);
+    launch(pixels());
     ++passes_;
+}
+
+bool Film::attempt(const std::function<bool(const kernel::film::Pixels &)> & launch) {
+    const std::scoped_lock lock(mutex_);
+    before_.resize(static_cast<std::size_t>(resolution_.x) * resolution_.y * stored());
+    device_.download(*pixels_, before_.data(), before_.size() * sizeof(float));
+    if (!launch(pixels())) {
+        device_.upload(*pixels_, before_.data(), before_.size() * sizeof(float));
+        return false;
+    }
+    ++passes_;
+    return true;
 }
 
 std::uint32_t Film::converge(float threshold) {

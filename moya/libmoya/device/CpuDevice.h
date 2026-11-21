@@ -86,7 +86,20 @@ class CpuDevice final : public Device {
     template <typename Params>
     void launch(std::uint32_t width, std::uint32_t height, const Params & params, kernel::Function<Params> function) {
         const Bound<Params> bound { &params, function };
-        run(width, height, &Bound<Params>::call, &bound);
+        run(width, height, &Bound<Params>::call, &bound, nullptr);
+    }
+
+    /**
+     * Runs a kernel function as launch() does, but asks stop before each tile starts. Once stop
+     * has answered true, no tile starts, and the launch returns when the tiles already running
+     * end. stop is asked from any of the device's threads, and from several at once.
+     *
+     * @return whether every pixel ran
+     **/
+    template <typename Params>
+    bool launch(std::uint32_t width, std::uint32_t height, const Params & params, kernel::Function<Params> function, const std::function<bool()> & stop) {
+        const Bound<Params> bound { &params, function };
+        return run(width, height, &Bound<Params>::call, &bound, stop ? &stop : nullptr);
     }
 
  private:
@@ -105,8 +118,11 @@ class CpuDevice final : public Device {
     /** @throws std::out_of_range when a copy of bytes is larger than the buffer **/
     static void check(const Buffer & buffer, std::size_t bytes);
 
-    /** Runs call for each pixel, over tiles on the arena's threads. **/
-    void run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound);
+    /**
+     * Runs call for each pixel, over tiles on the arena's threads, asking stop before each tile
+     * when there is one. Returns whether every tile ran.
+     **/
+    bool run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound, const std::function<bool()> * stop);
 
     boost::shared_ptr<internal::Arena> arena_;
     cpu::Isa isa_;

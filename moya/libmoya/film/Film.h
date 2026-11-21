@@ -66,6 +66,15 @@ class Film final {
      **/
     void pass(const std::function<void(const kernel::film::Pixels &)> & launch);
 
+    /**
+     * Runs one pass that may stop part way. The function launches kernel code as pass() takes it,
+     * and returns whether every pixel ran. A pass that stopped leaves every pixel's floats as they
+     * stood before it, and is not counted, so a snapshot shows the passes before it alone.
+     *
+     * @return whether the pass ran to its end
+     **/
+    bool attempt(const std::function<bool(const kernel::film::Pixels &)> & launch);
+
     /** The film as it stood after the last pass to end. **/
     Snapshot snapshot() const;
 
@@ -117,6 +126,9 @@ class Film final {
     /** The floats each pixel holds on the device: the snapshot's, the moments and the weight. **/
     std::uint32_t stored() const;
 
+    /** The pixels as kernel code takes them. **/
+    kernel::film::Pixels pixels() const;
+
     /**
      * The standard error of a pixel's mean luminance, from its weight and its moments, or
      * infinity when its samples weigh less than two of equal weight.
@@ -130,6 +142,9 @@ class Film final {
     std::uint32_t stride_ { kernel::film::kBeautyFloats };
     boost::shared_ptr<device::Buffer> pixels_;
     std::uint32_t passes_ { 0 };
+
+    /** The pixels' floats as they stood before the pass that attempt() runs. **/
+    std::vector<float> before_;
 
     /** Each pixel's flag, which is not zero once it has stopped, on the device and on the host. **/
     boost::shared_ptr<device::Buffer> stopped_;

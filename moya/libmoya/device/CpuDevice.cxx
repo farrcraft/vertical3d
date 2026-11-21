@@ -18,6 +18,7 @@
 #include <tbb/partitioner.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -95,21 +96,30 @@ void CpuDevice::each(std::size_t count, const std::function<void(std::size_t)> &
     });
 }
 
-void CpuDevice::run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound) {
+bool CpuDevice::run(std::uint32_t width, std::uint32_t height, void (*call)(const void *, kernel::Item), const void * bound, const std::function<bool()> * stop) {
     if (width == 0 || height == 0) {
-        return;
+        return true;
     }
     // the range is over tiles, not pixels, and a grain of one with the simple partitioner gives
     // each task one tile, so a tile's pixels never split between threads
     const std::uint32_t rows = (height + kTile - 1) / kTile;
     const std::uint32_t columns = (width + kTile - 1) / kTile;
     const tbb::blocked_range2d<std::uint32_t> tiles(0, rows, 1, 0, columns, 1);
+    // once set, every tile not yet started is passed over
+    std::atomic<bool> stopped { false };
     arena_->get().execute([&] {
         tbb::parallel_for(
             tiles,
             [&](const tbb::blocked_range2d<std::uint32_t> & range) {
                 for (std::uint32_t row = range.rows().begin(); row != range.rows().end(); ++row) {
                     for (std::uint32_t column = range.cols().begin(); column != range.cols().end(); ++column) {
+                        if (stopped.load(std::memory_order_relaxed)) {
+                            return;
+                        }
+                        if (stop != nullptr && (*stop)()) {
+                            stopped.store(true, std::memory_order_relaxed);
+                            return;
+                        }
                         const std::uint32_t top = row * kTile;
                         const std::uint32_t left = column * kTile;
                         const std::uint32_t bottom = std::min(top + kTile, height);
@@ -124,6 +134,7 @@ void CpuDevice::run(std::uint32_t width, std::uint32_t height, void (*call)(cons
             },
             tbb::simple_partitioner());
     });
+    return !stopped.load(std::memory_order_relaxed);
 }
 
 };  // namespace v3d::moya::device

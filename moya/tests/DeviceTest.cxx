@@ -8,8 +8,10 @@
 #include <moya/libmoya/kernel/Array.h>
 #include <moya/libmoya/kernel/Launch.h>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -110,6 +112,66 @@ BOOST_AUTO_TEST_CASE(moya_device_an_image_with_no_pixels_runs_nothing_test) {
     std::uint32_t out = 1;
     device.download(*buffer, &out, sizeof(out));
     BOOST_TEST(out == 0U);
+}
+
+/**
+ * How often a launch over an image of the given size runs each of its pixels when it may stop,
+ * with whether every pixel ran.
+ **/
+std::pair<std::vector<std::uint32_t>, bool> stoppable(CpuDevice & device, std::uint32_t width, std::uint32_t height, const std::function<bool()> & stop) {
+    const std::vector<std::uint32_t> zeros(static_cast<std::size_t>(width) * height, 0U);
+    auto buffer = device.allocate(zeros.size() * sizeof(std::uint32_t));
+    device.upload(*buffer, zeros.data(), zeros.size() * sizeof(std::uint32_t));
+    const bool ran = device.launch(width, height, Counts { v3d::moya::device::view<std::uint32_t>(*buffer), width }, &count, stop);
+    std::vector<std::uint32_t> out(zeros.size());
+    device.download(*buffer, out.data(), out.size() * sizeof(std::uint32_t));
+    return { out, ran };
+}
+
+// a launch whose stop never answers true runs every pixel once, and says so
+BOOST_AUTO_TEST_CASE(moya_device_a_launch_that_is_not_stopped_runs_every_pixel_test) {
+    CpuDevice device;
+    const auto [counts, ran] = stoppable(device, 67, 45, [] { return false; });
+    BOOST_TEST(ran);
+    for (const std::uint32_t runs : counts) {
+        BOOST_TEST(runs == 1U);
+    }
+}
+
+// a launch stopped at its start runs no tile
+BOOST_AUTO_TEST_CASE(moya_device_a_launch_stopped_at_its_start_runs_no_tile_test) {
+    CpuDevice device;
+    const auto [counts, ran] = stoppable(device, 67, 45, [] { return true; });
+    BOOST_TEST(!ran);
+    for (const std::uint32_t runs : counts) {
+        BOOST_TEST(runs == 0U);
+    }
+}
+
+// a launch on one thread stopped at its third tile runs the two before it whole, and no pixel of
+// any other
+BOOST_AUTO_TEST_CASE(moya_device_a_launch_stops_between_tiles_test) {
+    CpuDevice device(1);
+    std::atomic<std::uint32_t> asked { 0 };
+    const auto [counts, ran] = stoppable(device, 96, 64, [&] { return ++asked == 3U; });
+    BOOST_TEST(!ran);
+    std::size_t runs = 0;
+    for (const std::uint32_t each : counts) {
+        BOOST_TEST(each <= 1U);
+        runs += each;
+    }
+    BOOST_TEST(runs == 2U * CpuDevice::kTile * CpuDevice::kTile);
+    // each tile ran whole or not at all
+    for (std::uint32_t tile = 0; tile < 6U; ++tile) {
+        const std::uint32_t left = (tile % 3U) * CpuDevice::kTile;
+        const std::uint32_t top = (tile / 3U) * CpuDevice::kTile;
+        const std::uint32_t first = counts[(static_cast<std::size_t>(top) * 96U) + left];
+        for (std::uint32_t y = top; y < top + CpuDevice::kTile; ++y) {
+            for (std::uint32_t x = left; x < left + CpuDevice::kTile; ++x) {
+                BOOST_TEST(counts[(static_cast<std::size_t>(y) * 96U) + x] == first);
+            }
+        }
+    }
 }
 
 BOOST_AUTO_TEST_CASE(moya_device_one_thread_and_every_thread_give_one_picture_test) {

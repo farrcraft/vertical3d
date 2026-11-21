@@ -60,8 +60,12 @@ struct Checkpoints {
     bool resume { false };
 
     /**
-     * Asked before each pass with the passes the film holds. A render it answers true for stops
-     * there, writes its checkpoint, and returns what it holds. Empty asks nothing.
+     * Asked with the passes the film holds, before each pass and before each tile of a pass, from
+     * any thread but never from two at once. A render it answers true for before a pass stops
+     * there. One it answers true for during a pass lets the tiles already running end, and drops
+     * the pass, so the film holds the passes before it. Either writes its checkpoint and returns
+     * what the film holds. A counted render's tallies and a render's trails keep what the dropped
+     * pass's tiles added. Empty asks nothing.
      **/
     std::function<bool(std::uint32_t)> stop;
 };
