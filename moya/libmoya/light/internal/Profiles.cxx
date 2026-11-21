@@ -13,10 +13,12 @@
 #include <moya/libmoya/light/Ies.h>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <ios>
 #include <iterator>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -57,6 +59,7 @@ std::uint32_t Profiles::load(const std::string & path, float angleScale, bool no
             photometry_.insert(photometry_.end(), photometry.horizontal.begin(), photometry.horizontal.end());
             read.candela = static_cast<std::uint32_t>(photometry_.size());
             photometry_.insert(photometry_.end(), photometry.candela.begin(), photometry.candela.end());
+            blocks_.emplace(read.vertical, static_cast<std::uint32_t>(photometry_.size()) - read.vertical);
         }
         if (read.verticalCount == 0U && logger_) {
             logger_->get()->warn("the IES file {} cannot be read, since {}, so its light is not shaped by it", path, why);
@@ -80,12 +83,24 @@ float Profiles::mean(std::uint32_t profile) const {
     return meanOf(profiles_[profile]);
 }
 
-const std::vector<kernel::light::Profile> & Profiles::profiles() const {
-    return profiles_;
-}
-
-const std::vector<float> & Profiles::photometry() const {
-    return photometry_;
+Profiles::Packed Profiles::pack(const std::vector<std::uint32_t> & uses) const {
+    Packed out;
+    std::map<std::uint32_t, std::uint32_t> moved;
+    for (const std::uint32_t use : uses) {
+        kernel::light::Profile made = profiles_[use];
+        const std::uint32_t first = made.vertical;
+        auto found = moved.find(first);
+        if (found == moved.end()) {
+            const auto begin = photometry_.begin() + static_cast<std::ptrdiff_t>(first);
+            found = moved.emplace(first, static_cast<std::uint32_t>(out.photometry.size())).first;
+            out.photometry.insert(out.photometry.end(), begin, begin + static_cast<std::ptrdiff_t>(blocks_.at(first)));
+        }
+        made.vertical = found->second;
+        made.horizontal = found->second + (made.horizontal - first);
+        made.candela = found->second + (made.candela - first);
+        out.profiles.push_back(made);
+    }
+    return out;
 }
 
 float Profiles::meanOf(const kernel::light::Profile & profile) const {

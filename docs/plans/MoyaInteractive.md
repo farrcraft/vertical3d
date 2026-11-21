@@ -119,8 +119,8 @@ listed as a number with no record, as the ADR index requires.
 | [2](#step-2--the-record-the-first-pictures) | The record: the first pictures | `docs/adr` | **0254** | accepted |
 | [3](#step-3--the-record-denoising-while-sampling) | The record: denoising while sampling | `docs/adr` | **0255** | accepted |
 | [4](#step-4--the-record-a-rendered-view) | The record: a rendered view | `docs/adr` | **0256** | accepted |
-| [5](#step-5--a-pass-that-stops-between-tiles) | A pass that stops between tiles | `moya/libmoya/device`, `film` | 0194 | open |
-| [6](#step-6--materials-textures-and-volumes-kept-across-versions) | Materials, textures and volumes kept across versions | `moya/libmoya/geometry`, `texture`, `volume` | 0203 | open |
+| [5](#step-5--a-pass-that-stops-between-tiles) | A pass that stops between tiles | `moya/libmoya/device`, `film` | 0194 | done |
+| [6](#step-6--materials-textures-and-volumes-kept-across-versions) | Materials, textures and volumes kept across versions | `moya/libmoya/geometry`, `texture`, `volume` | 0203 | done |
 | [7](#step-7--lights-kept-across-versions) | Lights kept across versions | `moya/libmoya/light` | 0203, 0214 | open |
 | [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | open |
 | [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | open |
@@ -316,6 +316,12 @@ active or not, renders beside the others.
 bytes as they stood before it. A render stopped part way through a pass, and resumed from its
 checkpoint, ends on the bytes of one that never stopped.
 
+**Done.** `CpuDevice::launch()` takes a stop asked before each tile, and says whether every pixel
+ran. `Film::attempt()` runs a pass that may stop, and puts the film's floats back when it does. A
+render asks `Checkpoints::stop` before each tile as well as each pass, one thread at a time, and a
+render with no stop keeps no copy of the film. A counted render's tallies and a render's trails
+keep what a dropped pass's tiles added.
+
 ### Step 6 — Materials, textures and volumes kept across versions
 
 * **`geometry::Surfaces` keeps each material's compiled program**, and compiles again only the
@@ -331,6 +337,15 @@ checkpoint, ends on the bytes of one that never stopped.
 kept structure agrees with one built from nothing, and the unchanged materials and grids are not
 built again.
 
+**Done.** A material is compiled in the gather, not in `Surfaces`, so `geometry::Cache` keeps each
+material's programs, and the assembler's forgetting of changed objects drives them. A material is
+compiled again when its object, its network's nodes or connections, or the shader search path
+changed, or when the primvars read before it differ. `Surfaces` still uploads its buffers on each
+build. `Textures::update()` keeps the textures read before and closes the rest, and
+`Volumes::update()` keeps its blocks while its grids are the same. A grid's majorants are worked
+out in kernel code from its nodes, so a kept grid keeps them. A kept texture is read from its file
+as it was opened.
+
 ### Step 7 — Lights kept across versions
 
 * **`light::Lights` keeps its lights and the light tree across versions.** A light whose object or
@@ -341,6 +356,14 @@ built again.
 
 **Tests:** after each kind of edit, the kept lights agree with lights built from nothing, and the
 tree is rebuilt only for the edits that touch it.
+
+**Done.** `Lights::update()` makes a light again only when its object changed, and every light
+when the shutter changed. It places the lights and builds the tree again when a light was made,
+created or removed, when the reach or shutter changed, or when the bytes recorded for the emitting
+geometries differ. While the scene has a volume or a linked light, any edit but a camera's, an
+option's, an output's or a channel's places them again; that is coarser than the step asks.
+Images and IES profiles are read once and held for the life of the lights. Every update still
+converts the materials.
 
 ### Step 8 — The session
 

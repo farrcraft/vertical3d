@@ -13,7 +13,6 @@
 #include <api/log/Logger.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Instance.h>
-#include <moya/libmoya/geometry/Motion.h>
 #include <moya/libmoya/geometry/ConvertedMaterials.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/ShapedLight.h>
@@ -35,30 +34,32 @@
 #include <moya/libmoya/kernel/spectrum/Acescg.h>
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/volume/Volume.h>
+#include <moya/libmoya/light/internal/Emitters.h>
 #include <moya/libmoya/light/internal/Gathered.h>
 #include <moya/libmoya/light/internal/Glowing.h>
 #include <moya/libmoya/light/internal/Linking.h>
+#include <moya/libmoya/light/internal/Making.h>
 #include <moya/libmoya/light/internal/Profiles.h>
 #include <moya/libmoya/light/internal/Subtree.h>
 #include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/internal/Tree.h>
-#include <moya/libmoya/light/Planckian.h>
 #include <moya/libmoya/light/Shading.h>
+#include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Handle.h>
-#include <moya/libmoya/scene/Samples.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Schema.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <iterator>
 #include <map>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -68,7 +69,6 @@
 #include <glm/matrix.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/trigonometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -79,21 +79,17 @@ namespace {
 
 constexpr float kPi = 3.14159265358979323846F;
 
-/** The steps of the sums that measure a sphere's and a cylinder's area under a transformation. **/
-constexpr int kHeightSteps = 64;
-constexpr int kAngleSteps = 128;
-
-/** A cone of half a turn, in degrees, which takes in every direction. **/
-constexpr float kWholeCone = 180.0F;
-
-/** A whole turn, in degrees: the widest a distant light's angle is held to. **/
-constexpr float kWholeTurn = 360.0F;
-
 /** The solid angle of the whole sphere, in steradians. **/
 constexpr float kWholeSphere = 4.0F * kPi;
 
 /** A sphere's area over the area of the disk it casts: 4 pi r^2 over pi r^2. **/
 constexpr float kSphereOverDisk = 4.0F;
+
+/** The kinds of the scene's lights. An update makes one again when its object changes. **/
+constexpr std::array<std::string_view, 7> kLightKinds { "rectLight", "diskLight", "sphereLight", "cylinderLight", "distantLight", "domeLight", "meshLight" };
+
+/** The kinds of the objects no light reads but through the reach and the shutter. **/
+constexpr std::array<std::string_view, 4> kQuietKinds { "camera", "options", "output", "channel" };
 
 template <typename T>
 boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::vector<T> & values) {
@@ -101,54 +97,6 @@ boost::shared_ptr<device::Buffer> uploaded(device::Device & device, const std::v
     auto buffer = device.allocate(bytes);
     device.upload(*buffer, values.data(), bytes);
     return buffer;
-}
-
-/**
- * How a linear map scales the area of a surface where its unit normal is a direction: the length
- * of the normal through the map's cofactor matrix.
- **/
-float stretch(const glm::mat3 & cofactor, const glm::vec3 & normal) {
-    return glm::length(cofactor * normal);
-}
-
-/**
- * The area in the world of a light's shape, in its prototype's space, under a transformation. A
- * rect's and a disk's are exact. A sphere's and a cylinder's are summed over their normals, which
- * is exact under a turn and a scale of the same size on every axis.
- **/
-float area(const scene::Scene & scene, const scene::Handle & handle, const std::string & kind, const glm::mat3 & toWorld) {
-    const glm::mat3 cofactor { glm::cross(toWorld[1], toWorld[2]), glm::cross(toWorld[2], toWorld[0]), glm::cross(toWorld[0], toWorld[1]) };
-    const auto size = [&](const char * name) {
-        return scene.value(handle, name).floatArray().front();
-    };
-    const glm::vec3 up { 0.0F, 0.0F, 1.0F };
-    if (kind == "rectLight") {
-        return size("width") * size("height") * stretch(cofactor, up);
-    }
-    const float radius = size("radius");
-    if (kind == "diskLight") {
-        return kPi * radius * radius * stretch(cofactor, up);
-    }
-    const float turn = 2.0F * kPi / static_cast<float>(kAngleSteps);
-    float sum = 0.0F;
-    if (kind == "sphereLight") {
-        // heights spread evenly over [-1, 1] cover the sphere in bands of equal area
-        const float band = 2.0F / static_cast<float>(kHeightSteps);
-        for (int height = 0; height < kHeightSteps; ++height) {
-            const float z = -1.0F + ((static_cast<float>(height) + 0.5F) * band);
-            const float across = std::sqrt(1.0F - (z * z));
-            for (int angle = 0; angle < kAngleSteps; ++angle) {
-                const float phi = (static_cast<float>(angle) + 0.5F) * turn;
-                sum += stretch(cofactor, glm::vec3 { across * std::cos(phi), across * std::sin(phi), z });
-            }
-        }
-        return radius * radius * sum * band * turn;
-    }
-    for (int angle = 0; angle < kAngleSteps; ++angle) {
-        const float phi = (static_cast<float>(angle) + 0.5F) * turn;
-        sum += stretch(cofactor, glm::vec3 { std::cos(phi), std::sin(phi), 0.0F });
-    }
-    return radius * size("length") * sum * turn;
 }
 
 /** A light's box in its prototype's space: its shape's, or a point at its origin. **/
@@ -218,144 +166,6 @@ kernel::light::Bounds boundsOf(const kernel::light::Light & light, const geometr
     return out;
 }
 
-/** The IES profile a light's iesFile names, with its angle scale and normalisation, or none. **/
-std::uint32_t profileOf(const scene::Scene & scene, const scene::Handle & handle, internal::Profiles & profiles) {
-    const std::string & path = scene.value(handle, "iesFile").stringArray().front();
-    if (path.empty()) {
-        return kernel::geometry::kNoPrimitive;
-    }
-    return profiles.load(path, scene.value(handle, "iesAngleScale").floatArray().front(), scene.value(handle, "iesNormalize").integerArray().front() != 0);
-}
-
-/** A float parameter held between a least and a most. **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the least, then the most
-float heldTo(const scene::Scene & scene, const scene::Handle & handle, const char * name, float least, float most) {
-    return std::clamp(scene.value(handle, name).floatArray().front(), least, most);
-}
-
-/** The kernel's shape of a light of a kind. **/
-kernel::light::Shape shapeOf(const std::string & kind) {
-    if (kind == "diskLight") {
-        return kernel::light::Shape::Disk;
-    }
-    if (kind == "sphereLight") {
-        return kernel::light::Shape::Sphere;
-    }
-    return kind == "cylinderLight" ? kernel::light::Shape::Cylinder : kernel::light::Shape::Rect;
-}
-
-/** Whether a light's emission is divided by its size. **/
-bool normalised(const scene::Scene & scene, const scene::Handle & handle) {
-    return scene.value(handle, "normalize").integerArray().front() != 0;
-}
-
-/**
- * A distant light's size, as UsdLux measures it from the half angle of its cone: pi sin^2 for a
- * cone up to a quarter turn, and pi (2 - sin^2) for a wider one. Its radiance times its size is
- * the irradiance of a plane that faces it. A light of no angle gives that irradiance itself, so
- * its size is one.
- **/
-float coneFactor(float half) {
-    if (!(half > 0.0F)) {
-        return 1.0F;
-    }
-    const float sine = std::sin(half);
-    return half > 0.5F * kPi ? kPi * (2.0F - (sine * sine)) : kPi * sine * sine;
-}
-
-/**
- * What every light emits, before its size: its colour in ACEScg, its intensity times two to its
- * exposure, and its colour temperature.
- **/
-kernel::light::Light emitter(const scene::Scene & scene, const scene::Handle & handle, const colour::Config & config) {
-    const auto number = [&](const char * name) {
-        return scene.value(handle, name).floatArray().front();
-    };
-    kernel::light::Light out;
-    const scene::Value & colour = scene.value(handle, "colour");
-    const std::vector<float> & floats = colour.floatArray();
-    out.colour = config.input(colour.space()).apply(glm::vec3 { floats[0], floats[1], floats[2] });
-    out.scale = number("intensity") * std::exp2(number("exposure"));
-    if (scene.value(handle, "enableColorTemperature").integerArray().front() != 0) {
-        const Planckian radiator = planckian(number("colorTemperature"));
-        out.temperature = number("colorTemperature");
-        out.planckScale = radiator.scale;
-        out.planckColour = radiator.colour;
-    }
-    return out;
-}
-
-/** A light's cone, its angle held to [0, 180] degrees and its softness to [0, 1]. **/
-void cone(const scene::Scene & scene, const scene::Handle & handle, kernel::light::Light & out) {
-    out.coneAngle = glm::radians(heldTo(scene, handle, "coneAngle", 0.0F, kWholeCone));
-    out.coneSoftness = heldTo(scene, handle, "coneSoftness", 0.0F, 1.0F);
-}
-
-/** Where a light with no shape stands over the shutter, as an instance would place it. **/
-geometry::Instance placement(const scene::Scene & scene, const scene::Handle & handle) {
-    const scene::Samples & transform = scene.samples(handle, "transform");
-    geometry::Instance out;
-    out.transform = transform.values.front().matrixAt(0);
-    if (transform.values.size() > 1) {
-        out.keys = geometry::keys(transform);
-    }
-    return out;
-}
-
-/**
- * A light with a shape, from its instance's index in the scene and its area in the world as it
- * stands when the shutter opens.
- **/
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the instance, then the area
-kernel::light::Light withShape(const scene::Scene & scene, const scene::Handle & handle, std::uint32_t id, float size, const colour::Config & config) {
-    const std::string & kind = scene.schema().kind(handle.kind).name;
-    const auto number = [&](const char * name) {
-        return scene.value(handle, name).floatArray().front();
-    };
-    kernel::light::Light out = emitter(scene, handle, config);
-    out.id = id;
-    if (normalised(scene, handle) && size > 0.0F) {
-        out.scale /= size;
-    }
-    // a cylinder light's shape is a quadric about z, turned onto x, so the light's -z is its +x
-    out.axis = kind == "cylinderLight" ? glm::vec3 { 1.0F, 0.0F, 0.0F } : glm::vec3 { 0.0F, 0.0F, -1.0F };
-    out.shape = shapeOf(kind);
-    out.size = kind == "rectLight" ? glm::vec2 { number("width"), number("height") } : glm::vec2 { number("radius"), 0.0F };
-    if (kind == "cylinderLight") {
-        out.size.y = number("length");
-    }
-    cone(scene, handle, out);
-    return out;
-}
-
-/**
- * A sphere light that is a point, from the area in the world of the sphere it stands for. Its
- * radiant intensity is the sphere's, L pi r^2, which is L A / 4. With normalize, it is a quarter
- * of its emission.
- **/
-kernel::light::Light point(const scene::Scene & scene, const scene::Handle & handle, float size, const colour::Config & config) {
-    kernel::light::Light out = emitter(scene, handle, config);
-    out.id = kernel::geometry::kNoPrimitive;
-    out.shape = kernel::light::Shape::Point;
-    out.size = glm::vec2 { 0.0F };
-    out.scale = normalised(scene, handle) ? out.scale / kSphereOverDisk : out.scale * size / kSphereOverDisk;
-    cone(scene, handle, out);
-    return out;
-}
-
-/** A distant light, its half angle held to a half turn. **/
-kernel::light::Light distantOf(const scene::Scene & scene, const scene::Handle & handle, const colour::Config & config) {
-    kernel::light::Light out = emitter(scene, handle, config);
-    const float half = std::fmin(0.5F * glm::radians(heldTo(scene, handle, "angle", 0.0F, kWholeTurn)), kPi);
-    out.id = kernel::geometry::kNoPrimitive;
-    out.shape = kernel::light::Shape::Distant;
-    out.size = glm::vec2 { half, 0.0F };
-    if (normalised(scene, handle)) {
-        out.scale /= coneFactor(half);
-    }
-    return out;
-}
-
 /**
  * A light's power before its luminance, which leaves its cone out. A light with a shape has its
  * radiance times its area times pi. A point has its intensity times four pi. A distant light has
@@ -369,7 +179,7 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
         case kernel::light::Shape::Point:
             return light.scale * kSphereOverDisk * kPi;
         case kernel::light::Shape::Distant:
-            return light.scale * coneFactor(light.size.x) * kPi * reach * reach;
+            return light.scale * internal::coneFactor(light.size.x) * kPi * reach * reach;
         case kernel::light::Shape::Dome:
             return light.scale * size * kPi * reach * reach;
         case kernel::light::Shape::Rect:
@@ -383,36 +193,6 @@ float powerOf(const kernel::light::Light & light, float size, float reach) {
             break;
     }
     return light.scale * size * kPi;
-}
-
-/**
- * A dome light, whose image is read in latitude and longitude, and which camera rays see while its
- * camera is 1. A format of another layout, or a file that says it is a cube map, is reported, and
- * the light emits nothing.
- **/
-kernel::light::Light domeOf(const scene::Scene & scene, const scene::Handle & handle, const colour::Config & config, internal::Textures & textures) {
-    kernel::light::Light out = emitter(scene, handle, config);
-    out.id = kernel::geometry::kNoPrimitive;
-    out.shape = kernel::light::Shape::Dome;
-    out.camera = scene.value(handle, "camera").integerArray().front() != 0;
-    const std::string & path = scene.value(handle, "texture").stringArray().front();
-    if (path.empty()) {
-        return out;
-    }
-    const std::uint32_t image = textures.load(path);
-    if (image == kernel::geometry::kNoPrimitive) {
-        return out;
-    }
-    const std::string & format = scene.value(handle, "format").stringArray().front();
-    if ((format != "automatic" && format != "latlong") || (format == "automatic" && textures.cube(image))) {
-        const std::string layout = format == "automatic" ? std::string("a cube map") : "the format " + format;
-        textures.report("the dome light " + scene.name(handle) + " reads " + layout + ", which moya does not read, so it emits nothing");
-        out.scale = 0.0F;
-        return out;
-    }
-    textures.drawable(image);
-    out.image = image;
-    return out;
 }
 
 /**
@@ -435,46 +215,6 @@ std::vector<float> cumulative(const std::vector<float> & powers) {
     }
     out.back() = 1.0F;
     return out;
-}
-
-/**
- * The mesh light that makes each geometry of the scene emit, by the geometry's index in the
- * scene: the first, in the order of their indices, of those that name it.
- **/
-std::map<std::uint32_t, scene::Handle> emitters(const scene::Scene & scene) {
-    std::vector<scene::Handle> meshLights = scene.objects("meshLight");
-    std::sort(meshLights.begin(), meshLights.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
-    std::map<std::uint32_t, scene::Handle> out;
-    for (const scene::Handle & handle : meshLights) {
-        const std::vector<scene::Handle> & named = scene.value(handle, "geometry").handleArray();
-        if (!named.empty() && scene.contains(named.front())) {
-            out.emplace(named.front().index, handle);
-        }
-    }
-    return out;
-}
-
-/**
- * Calls found with every chain of instances from a group's members that places a geometry, by
- * the instances' places among the prototypes', outermost first, and the geometry's place among
- * the prototypes'. A chain deeper than kernel::geometry::kInstanceDepth places nothing, as a
- * traversal leaves it out.
- **/
-void chains(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & members, std::vector<std::uint32_t> & chain,
-    const std::function<void(const std::vector<std::uint32_t> &, std::uint32_t)> & found) {
-    if (chain.size() == kernel::geometry::kInstanceDepth) {
-        return;
-    }
-    for (const std::uint32_t member : members) {
-        const geometry::Instance & instance = prototypes.instances[member];
-        chain.push_back(member);
-        if (instance.kind == geometry::Prototype::Group) {
-            chains(prototypes, prototypes.groups[instance.prototype].instances, chain, found);
-        } else if (instance.kind == geometry::Prototype::Geometry) {
-            found(chain, instance.prototype);
-        }
-        chain.pop_back();
-    }
 }
 
 /**
@@ -642,63 +382,28 @@ void appendMesh(const geometry::Prototypes & prototypes, kernel::light::Light ma
 }
 
 /**
- * The material a chain of instances gives its geometry: the innermost instance's that names one,
- * or kNoMaterial.
- **/
-std::uint32_t materialOf(const geometry::Prototypes & prototypes, const std::vector<std::uint32_t> & placed) {
-    for (auto level = placed.rbegin(); level != placed.rend(); ++level) {
-        const std::uint32_t material = prototypes.instances[*level].material;
-        if (material != kernel::surface::kNoMaterial) {
-            return material;
-        }
-    }
-    return kernel::surface::kNoMaterial;
-}
-
-/**
- * The light an emitting material makes: OpenPBR's emission luminance in its emission colour,
- * which camera rays see, in ACEScg. It is an object, not a light of the scene. It emits from both
- * faces where the instance that places its geometry is double-sided. A material that is not
- * layered, or emits no luminance, makes none.
- **/
-bool materialEmitter(const std::vector<kernel::surface::Material> & materials, std::uint32_t material, bool doubleSided, kernel::light::Light & out) {
-    if (material == kernel::surface::kNoMaterial) {
-        return false;
-    }
-    const kernel::surface::Material & held = materials[material];
-    if (held.layered == 0U || !(held.surface.emissionLuminance > 0.0F)) {
-        return false;
-    }
-    out = kernel::light::Light {};
-    out.colour = held.surface.emissionColour;
-    out.scale = held.surface.emissionLuminance;
-    out.camera = true;
-    out.object = true;
-    out.twoSided = doubleSided;
-    return true;
-}
-
-/**
  * The scene's mesh lights and its emitting materials, each a light for every chain of instances
  * that places its geometry, appended to what is gathered with their powers. A chain whose
  * geometry a mesh light names makes that light, then the light of its material where its material
  * emits, so the two lie together and add. Each triangle's chance is appended to the triangles,
  * and the first light each instance in the world places to the meshes. Each geometry that emits
  * has one subtree, which each light that places it leads into from the top tree. A geometry with
- * no triangles emits nothing, and a mesh light that names one is reported.
+ * no triangles emits nothing, and a mesh light that names one is reported. named holds the mesh
+ * light that makes each geometry emit, by the geometry's index in the scene, and made each light
+ * of the scene as it was made, by its index.
  **/
-void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
-    const boost::shared_ptr<log::Logger> & logger, internal::Gathered & out) {
-    const std::map<std::uint32_t, scene::Handle> named = emitters(scene);
-    const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config).materials;
+void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototypes, const std::vector<kernel::surface::Material> & materials,
+    const std::map<std::uint32_t, scene::Handle> & named, const std::map<std::uint32_t, internal::Made> & made, const boost::shared_ptr<log::Logger> & logger,
+    internal::Gathered & out) {
     std::set<std::uint32_t> reported;
     std::map<std::pair<std::uint32_t, bool>, internal::Subtree> subtrees;
     std::vector<std::uint32_t> chain;
-    chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
+    internal::chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
         const geometry::Geometry & shape = prototypes.geometries[at];
         const auto naming = named.find(shape.id);
         kernel::light::Light glowing;
-        const bool glows = materialEmitter(materials, materialOf(prototypes, placed), prototypes.instances[placed.back()].doubleSided, glowing);
+        const bool glows =
+            internal::materialEmitter(materials, internal::materialOf(prototypes, placed), prototypes.instances[placed.back()].doubleSided, glowing);
         if (naming == named.end() && !glows) {
             return;
         }
@@ -709,10 +414,8 @@ void meshLights(const scene::Scene & scene, const geometry::Prototypes & prototy
             return;
         }
         if (naming != named.end()) {
-            const scene::Handle & handle = naming->second;
-            kernel::light::Light made = emitter(scene, handle, config);
-            made.camera = scene.value(handle, "camera").integerArray().front() != 0;
-            appendMesh(prototypes, made, normalised(scene, handle), handle, placed, at, subtrees, out);
+            const internal::Made & light = made.at(naming->second.index);
+            appendMesh(prototypes, light.light, light.normalise, naming->second, placed, at, subtrees, out);
         }
         if (glows) {
             appendMesh(prototypes, glowing, false, scene::Handle {}, placed, at, subtrees, out);
@@ -772,8 +475,8 @@ void volumeLights(const geometry::Prototypes & prototypes, const Shading & shadi
         }
     }
     std::vector<std::uint32_t> chain;
-    chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
-        const std::uint32_t material = materialOf(prototypes, placed);
+    internal::chains(prototypes, prototypes.world.instances, chain, [&](const std::vector<std::uint32_t> & placed, std::uint32_t at) {
+        const std::uint32_t material = internal::materialOf(prototypes, placed);
         if (material == kernel::surface::kNoMaterial || material >= shading.surfaces.materials.size || !shading.surfaces.materials[material].encloses()) {
             return;
         }
@@ -782,27 +485,6 @@ void volumeLights(const geometry::Prototypes & prototypes, const Shading & shadi
             out.enclosing.push_back(add(made, placed));
         }
     });
-}
-
-/**
- * The light a shaped light makes, with the size its power is measured by: its area in the world
- * as it stands when the shutter opens, weighed by its texture's average where it has one.
- **/
-kernel::light::Light shapedLight(const scene::Scene & scene, const geometry::Prototypes & prototypes, const geometry::ShapedLight & shaped,
-    const colour::Config & config, internal::Textures & textures, internal::Profiles & profiles, float & shining) {
-    const geometry::Instance & instance = prototypes.instances[shaped.instance];
-    const std::string & kind = scene.schema().kind(shaped.handle.kind).name;
-    const float size = area(scene, shaped.handle, kind, glm::mat3(geometry::transformAt(instance, prototypes.open)));
-    kernel::light::Light made = withShape(scene, shaped.handle, instance.id, size, config);
-    made.profile = profileOf(scene, shaped.handle, profiles);
-    shining = size;
-    const std::string & path = kind == "rectLight" ? scene.value(shaped.handle, "texture").stringArray().front() : std::string();
-    made.image = path.empty() ? kernel::geometry::kNoPrimitive : textures.load(path);
-    if (made.image != kernel::geometry::kNoPrimitive) {
-        // a texture shines by its texels, so it weighs the light by their average
-        shining *= textures.average(made.image);
-    }
-    return made;
 }
 
 /**
@@ -860,104 +542,221 @@ std::vector<std::uint32_t> placesById(const std::vector<kernel::light::Light> & 
     return out;
 }
 
+/** Whether a kind is among some. **/
+template <std::size_t N>
+bool among(const std::array<std::string_view, N> & kinds, const std::string & kind) {
+    return std::ranges::find(kinds, kind) != kinds.end();
+}
+
+/** The scene's objects of a kind, in the order of their indices. **/
+std::vector<scene::Handle> sorted(std::vector<scene::Handle> handles) {
+    std::sort(handles.begin(), handles.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
+    return handles;
+}
+
+/** The scene's distant lights and its sphere lights of no shape, in the order of their indices. **/
+std::vector<scene::Handle> unshaped(const scene::Scene & scene) {
+    std::vector<scene::Handle> out = scene.objects("distantLight");
+    for (const scene::Handle & handle : scene.objects("sphereLight")) {
+        if (!geometry::shaped(scene, handle)) {
+            out.push_back(handle);
+        }
+    }
+    return sorted(out);
+}
+
+/** Whether a light of the scene lights only the instances it names. **/
+bool linked(const scene::Scene & scene) {
+    return std::ranges::any_of(kLightKinds, [&](std::string_view kind) {
+        return std::ranges::any_of(scene.objects(std::string(kind)), [&](const scene::Handle & handle) {
+            return scene.value(handle, "includeRoot").integerArray().front() == 0;
+        });
+    });
+}
+
 };  // namespace
 
 Lights::Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
-    const Shading & shading, float reach, const boost::shared_ptr<log::Logger> & logger) {
+    const Shading & shading, float reach, const boost::shared_ptr<log::Logger> & logger)
+    : Lights(device, config, logger) {
+    update(scene, prototypes, shading, reach);
+}
+
+Lights::Lights(device::Device & device, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger)
+    : device_(device), config_(config), logger_(logger), read_(config, logger), shapes_(logger) {
+}
+
+void Lights::update(const scene::Scene & scene, const geometry::Prototypes & prototypes, const Shading & shading, float reach) {
+    madeLights_.clear();
+    const bool linking = linked(scene);
+    const bool volumes = !prototypes.volumes.empty();
+    // a light with a shape, and a point, is measured as the shutter opens
+    const bool shutter = prototypes.open != open_ || prototypes.close != close_;
+    bool stale = !built_ || shutter || reach != reach_;
+    if (built_ && shutter) {
+        made_.clear();
+    }
+    if (built_) {
+        for (const scene::Change & change : scene.changes(version_)) {
+            const std::string & kind = scene.schema().kind(change.handle.kind).name;
+            if (among(kLightKinds, kind)) {
+                made_.erase(change.handle.index);
+                stale = true;
+            } else if ((linking || linked_ || volumes || volumes_) && !among(kQuietKinds, kind)) {
+                stale = true;
+            }
+        }
+    }
+
+    stale = make(scene, prototypes) || stale;
+
+    const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config_).materials;
+    const std::map<std::uint32_t, scene::Handle> named = internal::meshEmitters(scene);
+    std::vector<std::uint8_t> emitting = internal::emitting(prototypes, materials, named, shading);
+    stale = stale || emitting != emitting_;
+    if (stale) {
+        place(scene, prototypes, shading, reach, materials, named);
+    }
+    builtTree_ = stale;
+    emitting_ = std::move(emitting);
+    version_ = scene.version();
+    built_ = true;
+    reach_ = reach;
+    open_ = prototypes.open;
+    close_ = prototypes.close;
+    linked_ = linking;
+    volumes_ = volumes;
+}
+
+bool Lights::make(const scene::Scene & scene, const geometry::Prototypes & prototypes) {
+    std::map<std::uint32_t, internal::Made> made;
+    const auto keep = [&](const scene::Handle & handle, const auto & build) {
+        const auto held = made_.find(handle.index);
+        if (held != made_.end() && held->second.handle == handle) {
+            made.emplace(handle.index, held->second);
+            return;
+        }
+        made.emplace(handle.index, build());
+        madeLights_.push_back(handle.index);
+    };
+    for (const geometry::ShapedLight & shaped : prototypes.lights) {
+        keep(shaped.handle, [&] { return internal::shapedLight(scene, prototypes, shaped, config_, read_, shapes_); });
+    }
+    for (const scene::Handle & handle : unshaped(scene)) {
+        keep(handle, [&] {
+            return scene.schema().kind(handle.kind).name == "sphereLight" ? internal::pointLight(scene, handle, prototypes.open, config_, shapes_)
+                                                                           : internal::distantLight(scene, handle, config_);
+        });
+    }
+    for (const scene::Handle & handle : sorted(scene.objects("domeLight"))) {
+        keep(handle, [&] { return internal::domeLight(scene, handle, config_, read_); });
+    }
+    for (const scene::Handle & handle : sorted(scene.objects("meshLight"))) {
+        keep(handle, [&] { return internal::meshLight(scene, handle, config_); });
+    }
+    const bool changed = !madeLights_.empty() || made.size() != made_.size();
+    made_ = std::move(made);
+    return changed;
+}
+
+void Lights::place(const scene::Scene & scene, const geometry::Prototypes & prototypes, const Shading & shading, float reach,
+    const std::vector<kernel::surface::Material> & materials, const std::map<std::uint32_t, scene::Handle> & named) {
     internal::Gathered all;
     std::vector<kernel::light::Light> & lights = all.lights;
     std::vector<kernel::geometry::Key> keys;
     std::vector<std::uint32_t> distant;
     std::vector<std::uint32_t> domes;
-    internal::Textures textures(config, logger);
-    internal::Profiles profiles(logger);
-    const auto add = [&](kernel::light::Light light, const scene::Handle & handle, const geometry::Instance & placed, float size) {
+    // the images and the profiles the lights read, in order, with the places of the lights
+    std::vector<internal::Textures::Use> imageUses;
+    std::vector<std::uint32_t> imaged;
+    std::vector<std::uint32_t> profileUses;
+    std::vector<std::uint32_t> profiled;
+    const auto add = [&](const internal::Made & made, const geometry::Instance & placed) {
+        kernel::light::Light light = made.light;
         light.transform = placed.transform;
         light.keys = static_cast<std::uint32_t>(keys.size());
         light.keyCount = static_cast<std::uint32_t>(placed.keys.size());
         keys.insert(keys.end(), placed.keys.begin(), placed.keys.end());
-        const float shaped = light.profile == kernel::geometry::kNoPrimitive ? 1.0F : profiles.mean(light.profile);
-        const float power = std::fmax(0.0F, powerOf(light, size, reach) * kernel::spectrum::acescgToXyz(light.colour).y * shaped);
+        const float power = std::fmax(0.0F, powerOf(light, made.size, reach) * kernel::spectrum::acescgToXyz(light.colour).y * made.shaping);
         const auto place = static_cast<std::uint32_t>(lights.size());
         if (light.shape == kernel::light::Shape::Distant || light.shape == kernel::light::Shape::Dome) {
             all.infinite.push_back(place);
         } else {
             all.top.push_back(internal::Leaf { .bounds = boundsOf(light, placed, power, prototypes.open, prototypes.close), .held = place });
         }
+        if (made.read != kernel::geometry::kNoPrimitive) {
+            // a dome draws its texels only when it emits by its image
+            imageUses.push_back(internal::Textures::Use { .image = made.read, .drawn = light.shape == kernel::light::Shape::Dome && light.image == made.read });
+            imaged.push_back(place);
+        }
+        if (light.profile != kernel::geometry::kNoPrimitive) {
+            profileUses.push_back(light.profile);
+            profiled.push_back(place);
+        }
         lights.push_back(light);
         all.powers.push_back(power);
-        all.handles.push_back(handle);
+        all.handles.push_back(made.handle);
     };
     std::uint32_t most = 0;
     for (const geometry::ShapedLight & shaped : prototypes.lights) {
         const geometry::Instance & instance = prototypes.instances[shaped.instance];
-        float shining = 0.0F;
-        const kernel::light::Light made = shapedLight(scene, prototypes, shaped, config, textures, profiles, shining);
-        add(made, shaped.handle, instance, shining);
+        add(made_.at(shaped.handle.index), instance);
         most = std::max(most, instance.id + 1U);
     }
-    std::vector<scene::Handle> unshaped = scene.objects("distantLight");
-    for (const scene::Handle & handle : scene.objects("sphereLight")) {
-        if (!geometry::shaped(scene, handle)) {
-            unshaped.push_back(handle);
-        }
-    }
-    std::sort(unshaped.begin(), unshaped.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
-    for (const scene::Handle & handle : unshaped) {
-        const geometry::Instance placed = placement(scene, handle);
-        if (scene.schema().kind(handle.kind).name == "sphereLight") {
-            const float size = area(scene, handle, "sphereLight", glm::mat3(geometry::transformAt(placed, prototypes.open)));
-            kernel::light::Light bulb = point(scene, handle, size, config);
-            bulb.profile = profileOf(scene, handle, profiles);
-            add(bulb, handle, placed, size);
-            continue;
-        }
-        const kernel::light::Light sun = distantOf(scene, handle, config);
-        if (sun.size.x > 0.0F) {
+    for (const scene::Handle & handle : unshaped(scene)) {
+        const internal::Made & made = made_.at(handle.index);
+        if (made.light.shape == kernel::light::Shape::Distant && made.light.size.x > 0.0F) {
             distant.push_back(static_cast<std::uint32_t>(lights.size()));
         }
-        add(sun, handle, placed, 0.0F);
+        add(made, internal::placement(scene, handle));
     }
-    std::vector<scene::Handle> skies = scene.objects("domeLight");
-    std::sort(skies.begin(), skies.end(), [](const scene::Handle & left, const scene::Handle & right) { return left.index < right.index; });
-    for (const scene::Handle & handle : skies) {
-        const kernel::light::Light sky = domeOf(scene, handle, config, textures);
+    for (const scene::Handle & handle : sorted(scene.objects("domeLight"))) {
         domes.push_back(static_cast<std::uint32_t>(lights.size()));
-        add(sky, handle, placement(scene, handle), sky.image == kernel::geometry::kNoPrimitive ? kWholeSphere : textures.integral(sky.image));
+        add(made_.at(handle.index), internal::placement(scene, handle));
     }
-    meshLights(scene, prototypes, config, logger, all);
+    // each light reads its image and its profile at its place among those the lights read
+    const internal::Textures::Packed images = read_.pack(imageUses);
+    for (std::size_t use = 0; use < imaged.size(); ++use) {
+        kernel::light::Light & light = lights[imaged[use]];
+        light.image = light.image == kernel::geometry::kNoPrimitive ? light.image : images.places[use];
+    }
+    const internal::Profiles::Packed profiles = shapes_.pack(profileUses);
+    for (std::size_t use = 0; use < profiled.size(); ++use) {
+        lights[profiled[use]].profile = static_cast<std::uint32_t>(use);
+    }
+    meshLights(scene, prototypes, materials, named, made_, logger_, all);
     volumeLights(prototypes, shading, all);
     labels_ = labelled(scene, all.handles, lights);
     const internal::Linking links = internal::linking(scene, prototypes, all.handles, lights);
     treesBySet(links, all);
     const std::vector<std::uint32_t> byId = placesById(lights, most);
-    lights_ = uploaded(device, lights);
-    keys_ = uploaded(device, keys);
-    distant_ = uploaded(device, distant);
-    byId_ = uploaded(device, byId);
-    cdf_ = uploaded(device, cumulative(all.powers));
-    triangles_ = uploaded(device, all.triangles);
-    meshes_ = uploaded(device, all.meshes);
-    images_ = uploaded(device, textures.images());
-    texels_ = uploaded(device, textures.texels());
-    sums_ = uploaded(device, textures.sums());
-    domes_ = uploaded(device, domes);
-    nodes_ = uploaded(device, all.nodes);
-    roots_ = uploaded(device, all.roots);
-    leaves_ = uploaded(device, all.leaves);
-    triangleLeaves_ = uploaded(device, all.triangleLeaves);
-    infinite_ = uploaded(device, all.afar);
-    infiniteFirst_ = uploaded(device, all.afarFirst);
-    bricks_ = uploaded(device, all.bricks);
-    cells_ = uploaded(device, all.cells);
-    glowing_ = uploaded(device, all.glowing);
-    enclosing_ = uploaded(device, all.enclosing);
-    linkFirst_ = uploaded(device, links.first);
-    linkSteps_ = uploaded(device, links.steps);
-    lit_ = uploaded(device, links.lit);
-    casters_ = uploaded(device, links.casters);
-    profiles_ = uploaded(device, profiles.profiles());
-    photometry_ = uploaded(device, profiles.photometry());
+    lights_ = uploaded(device_, lights);
+    keys_ = uploaded(device_, keys);
+    distant_ = uploaded(device_, distant);
+    byId_ = uploaded(device_, byId);
+    cdf_ = uploaded(device_, cumulative(all.powers));
+    triangles_ = uploaded(device_, all.triangles);
+    meshes_ = uploaded(device_, all.meshes);
+    images_ = uploaded(device_, images.images);
+    texels_ = uploaded(device_, images.texels);
+    sums_ = uploaded(device_, images.sums);
+    domes_ = uploaded(device_, domes);
+    nodes_ = uploaded(device_, all.nodes);
+    roots_ = uploaded(device_, all.roots);
+    leaves_ = uploaded(device_, all.leaves);
+    triangleLeaves_ = uploaded(device_, all.triangleLeaves);
+    infinite_ = uploaded(device_, all.afar);
+    infiniteFirst_ = uploaded(device_, all.afarFirst);
+    bricks_ = uploaded(device_, all.bricks);
+    cells_ = uploaded(device_, all.cells);
+    glowing_ = uploaded(device_, all.glowing);
+    enclosing_ = uploaded(device_, all.enclosing);
+    linkFirst_ = uploaded(device_, links.first);
+    linkSteps_ = uploaded(device_, links.steps);
+    lit_ = uploaded(device_, links.lit);
+    casters_ = uploaded(device_, links.casters);
+    profiles_ = uploaded(device_, profiles.profiles);
+    photometry_ = uploaded(device_, profiles.photometry);
     count_ = static_cast<std::uint32_t>(lights.size());
 }
 

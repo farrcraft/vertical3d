@@ -330,7 +330,8 @@ host, in `kernel/light/Tree.h`'s nodes.
   the centres, the lights are split in half in their order.
 - **A light of no power has no leaf**, and is never drawn.
 - **The tree is built from the scene alone**, on one thread, so every run builds the same tree.
-  Each render builds it again, with the lights.
+  An update builds it again only for the edits that
+  [Lights kept across versions](#lights-kept-across-versions) names.
 
 `nodes` holds every tree, and `roots` the root of each set of linked lights' top tree, as
 [Light linking](#light-linking) says. `leaves` holds each light's leaf in each set, and
@@ -338,6 +339,36 @@ host, in `kernel/light/Tree.h`'s nodes.
 and dome lights of each set, from `infiniteFirst`.
 
 Background: [ADR-0214](../adr/offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md)
+
+## Lights kept across versions
+
+`Lights` keeps its lights and its tree from one version of the scene to the next.
+`Lights::update()` takes the scene with the prototypes gathered from it, their shading and the
+reach. It asks `changes()` for what changed since the version it last updated from, and rebuilds
+only what the changes touch. The constructor that takes a scene makes the lights with one update.
+
+- **A light of the scene is made again when its object changed.** A rect, disk, sphere,
+  cylinder, distant, dome or mesh light is its own object, and also the instance that places its
+  shape. Every other light is kept as it was made.
+- **The lights are placed again, and the tree built again,** when a light was made, created or
+  removed, or when the reach or the shutter changed.
+- **What a geometry's lights are made from is compared.** It is each chain of instances whose
+  geometry a mesh light names, whose material emits, or whose material encloses a medium. It
+  holds the instances' transformations, what the material emits or encloses, and the geometry's
+  points or dimensions. When any of it differs, the lights are placed again and the tree built
+  again. A material that emits nothing before the edit or after it changes nothing.
+- **A volume or a linked light makes every edit count.** This holds while the scene has a volume,
+  or a light whose `includeRoot` is 0, before the edit or after it. An edit of any object but a
+  camera, the options, an output or a channel then places the lights again.
+- **Any other edit rebuilds nothing.** A camera's edit that leaves the shutter as it was, an
+  option's, and a material's that emits nothing all keep every light and the tree.
+- **An update ends where lights made from nothing end.** Every run of the view holds the same
+  bytes as the lights made from nothing for the same scene, and the labels are the same.
+- **An image or a profile is read once.** Each is held until the lights are destroyed. The lights
+  place each one they read where lights made from nothing would.
+
+`madeLights()` gives the scene's index of each light the last update made, and `builtTree()` says
+whether it placed the lights and built the tree.
 
 ## Light linking
 

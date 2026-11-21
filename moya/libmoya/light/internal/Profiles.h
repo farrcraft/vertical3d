@@ -22,7 +22,8 @@ namespace v3d::moya::light::internal {
 
 /**
  * The IES profiles the scene's lights read, each file read once. A file that cannot be read is
- * reported, once for each path, and gives no profile.
+ * reported, once for each path, and gives no profile. Every profile loaded is held until the
+ * profiles are destroyed.
  *
  * Without normalize, a profile multiplies a light's emission by its candela. With it, the candela
  * are divided by their mean over the sphere, so the profile shapes the light and leaves its power
@@ -45,8 +46,17 @@ class Profiles final {
      **/
     float mean(std::uint32_t profile) const;
 
-    const std::vector<kernel::light::Profile> & profiles() const;
-    const std::vector<float> & photometry() const;
+    /**
+     * The profiles some places among those loaded name, as kernel code reads them, in their order,
+     * with the photometry of the files they read, each once, in the order of its first use.
+     **/
+    struct Packed {
+        std::vector<kernel::light::Profile> profiles;
+        std::vector<float> photometry;
+    };
+
+    /** The profiles some places among those loaded name. **/
+    Packed pack(const std::vector<std::uint32_t> & uses) const;
 
  private:
     /** The mean over the sphere of a profile, summed over bands of equal latitude. **/
@@ -56,6 +66,9 @@ class Profiles final {
     std::map<std::string, kernel::light::Profile> byPath_;
     std::vector<kernel::light::Profile> profiles_;
     std::vector<float> photometry_;
+
+    /** How many values of the photometry each file read holds, by the first of them. **/
+    std::map<std::uint32_t, std::uint32_t> blocks_;
 };
 
 };  // namespace v3d::moya::light::internal

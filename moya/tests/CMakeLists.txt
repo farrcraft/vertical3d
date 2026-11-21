@@ -40,6 +40,7 @@ v3d_add_test(moya
 	"InstancesTest.cxx"
 	"LightSamplingTest.cxx"
 	"LightPathsTest.cxx"
+	"LightsKeptTest.cxx"
 	"LightsTest.cxx"
 	"LpeTest.cxx"
 	"MaterialCompileTest.cxx"

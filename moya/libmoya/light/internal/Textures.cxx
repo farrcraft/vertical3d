@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -117,10 +118,9 @@ std::vector<float> Textures::texelAngles(const kernel::light::Image & image) {
     return out;
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the rows' first sum, then the columns'
-void Textures::appendWay(const kernel::light::Image & image, const std::vector<float> & weights, std::uint32_t & rows, std::uint32_t & columns) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the rows' sums, then the columns'
+void Textures::wayOf(const kernel::light::Image & image, const std::vector<float> & weights, std::vector<float> & rows, std::vector<float> & columns) {
     std::vector<float> rowWeights;
-    std::vector<float> columnSums;
     const std::vector<float> angles = texelAngles(image);
     for (std::uint32_t row = 0; row < image.height; ++row) {
         const float * along = &weights[static_cast<std::size_t>(row) * image.width];
@@ -135,23 +135,20 @@ void Textures::appendWay(const kernel::light::Image & image, const std::vector<f
             const std::vector<float> even(image.width, 1.0F);
             sums = summed(even.data(), even.size());
         }
-        columnSums.insert(columnSums.end(), sums.begin(), sums.end());
+        columns.insert(columns.end(), sums.begin(), sums.end());
     }
-    std::vector<float> rowSums = summed(rowWeights.data(), rowWeights.size());
-    if (rowSums.empty()) {
-        rowSums = summed(angles.data(), angles.size());
+    rows = summed(rowWeights.data(), rowWeights.size());
+    if (rows.empty()) {
+        rows = summed(angles.data(), angles.size());
     }
-    rows = static_cast<std::uint32_t>(sums_.size());
-    sums_.insert(sums_.end(), rowSums.begin(), rowSums.end());
-    columns = static_cast<std::uint32_t>(sums_.size());
-    sums_.insert(sums_.end(), columnSums.begin(), columnSums.end());
 }
 
-void Textures::drawable(std::uint32_t image) {
-    kernel::light::Image & held = images_[image];
-    if (held.width == 0U || held.height == 0U) {
-        return;
+const Textures::Ways & Textures::waysOf(std::uint32_t image) {
+    const auto found = ways_.find(image);
+    if (found != ways_.end()) {
+        return found->second;
     }
+    const kernel::light::Image & held = images_[image];
     const std::vector<float> angles = texelAngles(held);
     std::vector<float> weights;
     weights.reserve(static_cast<std::size_t>(held.width) * held.height);
@@ -170,8 +167,41 @@ void Textures::drawable(std::uint32_t image) {
             compensated.push_back(std::fmax(0.0F, luminance - average) * angles[row]);
         }
     }
-    appendWay(held, weights, held.rows, held.columns);
-    appendWay(held, compensated, held.compensatedRows, held.compensatedColumns);
+    Ways out;
+    wayOf(held, weights, out.rows, out.columns);
+    wayOf(held, compensated, out.compensatedRows, out.compensatedColumns);
+    return ways_.emplace(image, std::move(out)).first->second;
+}
+
+Textures::Packed Textures::pack(const std::vector<Use> & uses) {
+    Packed out;
+    std::map<std::uint32_t, std::uint32_t> placed;
+    const auto append = [&](const std::vector<float> & sums) {
+        const auto first = static_cast<std::uint32_t>(out.sums.size());
+        out.sums.insert(out.sums.end(), sums.begin(), sums.end());
+        return first;
+    };
+    for (const Use & use : uses) {
+        auto found = placed.find(use.image);
+        if (found == placed.end()) {
+            kernel::light::Image image = images_[use.image];
+            const auto begin = texels_.begin() + static_cast<std::ptrdiff_t>(image.texels);
+            image.texels = static_cast<std::uint32_t>(out.texels.size());
+            out.texels.insert(out.texels.end(), begin, begin + (static_cast<std::ptrdiff_t>(image.width) * image.height));
+            found = placed.emplace(use.image, static_cast<std::uint32_t>(out.images.size())).first;
+            out.images.push_back(image);
+        }
+        out.places.push_back(found->second);
+        kernel::light::Image & image = out.images[found->second];
+        if (use.drawn && image.width != 0U && image.height != 0U) {
+            const Ways & ways = waysOf(use.image);
+            image.rows = append(ways.rows);
+            image.columns = append(ways.columns);
+            image.compensatedRows = append(ways.compensatedRows);
+            image.compensatedColumns = append(ways.compensatedColumns);
+        }
+    }
+    return out;
 }
 
 float Textures::integral(std::uint32_t image) const {
@@ -197,18 +227,6 @@ float Textures::average(std::uint32_t image) const {
         sum += luminanceOf(texels_[held.texels + i]);
     }
     return static_cast<float>(sum / static_cast<double>(count));
-}
-
-const std::vector<kernel::light::Image> & Textures::images() const {
-    return images_;
-}
-
-const std::vector<glm::vec3> & Textures::texels() const {
-    return texels_;
-}
-
-const std::vector<float> & Textures::sums() const {
-    return sums_;
 }
 
 };  // namespace v3d::moya::light::internal

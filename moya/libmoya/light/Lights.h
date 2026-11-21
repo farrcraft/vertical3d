@@ -10,10 +10,15 @@
 #include <moya/libmoya/device/Device.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/light/Lights.h>
+#include <moya/libmoya/kernel/surface/Material.h>
+#include <moya/libmoya/light/internal/Making.h>
+#include <moya/libmoya/light/internal/Profiles.h>
+#include <moya/libmoya/light/internal/Textures.h>
 #include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/scene/Scene.h>
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -83,13 +88,35 @@ namespace v3d::moya::light {
  * are the groups' names, sorted, each once, and a light whose lightGroup is empty is in none. The
  * lights an emitting material makes are objects, in no group.
  *
+ * The lights are kept up to date as the scene changes. They keep the version of the scene they
+ * last updated from, and ask the scene for what changed since. An update makes a light of the
+ * scene again when its object changed: a rect, disk, sphere, cylinder, distant, dome or mesh
+ * light, whose object is also the instance that places its shape. Every other light is kept as it
+ * was made. The lights are placed again, and the light tree built again, when:
+ *
+ * - a light of the scene was made, created or removed.
+ * - the reach, or the times the shutter opens and closes, changed.
+ * - what a geometry's lights are made from changed. That is each chain of instances whose
+ *   geometry a mesh light names, whose material emits, or whose material encloses a medium. It
+ *   holds the instances' transformations, what the material emits or encloses, and the
+ *   geometry's points or dimensions. A material that does not emit, before or after, changes
+ *   nothing.
+ * - the scene has a volume, or a light linked to the instances it names, before or after, and an
+ *   object that is not a camera, the options, an output or a channel changed.
+ *
+ * Every other edit leaves every light and the light tree as they were. The lights after an update
+ * are the lights made from nothing for the same scene, byte for byte. An image or a profile a
+ * light read is held until the lights are destroyed, and a light made again reads its path's
+ * file as it was first read.
+ *
  * It reads the device's memory, so the device outlives it.
  **/
 class Lights final {
  public:
     /**
-     * reach is the radius of a sphere that bounds the world, which a distant light's power is
-     * measured over. The logger, which may be null, reports a mesh light that emits nothing.
+     * The lights of a scene, made by one update. reach is the radius of a sphere that bounds the
+     * world, which a distant light's power is measured over. The logger, which may be null,
+     * reports a mesh light that emits nothing.
      *
      * @throws std::runtime_error, from OpenColorIO, when a light's colour names a space the
      *         configuration cannot convert into ACEScg
@@ -97,13 +124,75 @@ class Lights final {
     Lights(device::Device & device, const scene::Scene & scene, const geometry::Prototypes & prototypes, const colour::Config & config,
         const Shading & shading, float reach, const boost::shared_ptr<log::Logger> & logger);
 
-    /** The lights, as kernel code reads them. **/
+    /**
+     * Lights that hold nothing until the first update. The device and the configuration outlive
+     * them. The logger may be null.
+     **/
+    Lights(device::Device & device, const colour::Config & config, const boost::shared_ptr<log::Logger> & logger);
+
+    /**
+     * Brings the lights up to the scene's version, from the prototypes gathered from that version
+     * and the shading of them, with the reach of its world. The first update makes every light.
+     *
+     * @throws std::runtime_error, from OpenColorIO, when a light's colour names a space the
+     *         configuration cannot convert into ACEScg
+     **/
+    void update(const scene::Scene & scene, const geometry::Prototypes & prototypes, const Shading & shading, float reach);
+
+    /** The lights, as kernel code reads them, after an update. **/
     kernel::light::Lights view() const;
 
     /** The names of the light groups, by the label each light's events carry. **/
     const std::vector<std::string> & labels() const;
 
+    /** The scene's version the last update brought the lights up to. **/
+    std::uint64_t version() const {
+        return version_;
+    }
+
+    /** The scene's index of each light the last update made, in the order of the lights. **/
+    const std::vector<std::uint32_t> & madeLights() const {
+        return madeLights_;
+    }
+
+    /** Whether the last update placed the lights and built the light tree. **/
+    bool builtTree() const {
+        return builtTree_;
+    }
+
  private:
+    /**
+     * Keeps each light of the scene whose object did not change, and makes the others. Gives
+     * whether a light was made or one was dropped.
+     **/
+    bool make(const scene::Scene & scene, const geometry::Prototypes & prototypes);
+
+    /** Places the lights of the scene's objects and of its geometries, and builds the tree. **/
+    void place(const scene::Scene & scene, const geometry::Prototypes & prototypes, const Shading & shading, float reach,
+        const std::vector<kernel::surface::Material> & materials, const std::map<std::uint32_t, scene::Handle> & named);
+
+    device::Device & device_;
+    const colour::Config & config_;
+    boost::shared_ptr<log::Logger> logger_;
+    internal::Textures read_;
+    internal::Profiles shapes_;
+
+    /** Each light of the scene as it was made, by its index. **/
+    std::map<std::uint32_t, internal::Made> made_;
+
+    /** What the last update read, which the next compares against. **/
+    std::uint64_t version_ { 0 };
+    bool built_ { false };
+    float reach_ { 0.0F };
+    float open_ { 0.0F };
+    float close_ { 0.0F };
+    bool linked_ { false };
+    bool volumes_ { false };
+    std::vector<std::uint8_t> emitting_;
+
+    std::vector<std::uint32_t> madeLights_;
+    bool builtTree_ { false };
+
     boost::shared_ptr<device::Buffer> lights_;
     boost::shared_ptr<device::Buffer> keys_;
     boost::shared_ptr<device::Buffer> distant_;
