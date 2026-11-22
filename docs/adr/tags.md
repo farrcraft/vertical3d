@@ -142,6 +142,9 @@ reported, so the table lists only tags in use.
 | [0007](project/0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
+| [0258](project/0258-ci-workflows-are-audited-by-zizmor-and-actionlint.md) | CI: workflows are audited by zizmor and actionlint |
+| [0259](project/0259-releases-a-release-build-restores-nothing-from-the-cache.md) | Releases: a release build restores nothing from the cache |
 
 ### code
 
@@ -490,6 +493,7 @@ reported, so the table lists only tags in use.
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 | [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
 | [0183](project/0183-releases-the-flatpak-ships-only-as-a-release-bundle.md) | Releases: the Flatpak ships only as a release bundle |
+| [0259](project/0259-releases-a-release-build-restores-nothing-from-the-cache.md) | Releases: a release build restores nothing from the cache |
 
 ### rendering
 
@@ -517,6 +521,7 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0083](project/0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
 
 ### shaders
 
@@ -559,6 +564,7 @@ reported, so the table lists only tags in use.
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
 | [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
 | [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
 
 ### text
 
@@ -594,6 +600,7 @@ reported, so the table lists only tags in use.
 | [0171](project/0171-process-decision-records-are-filed-in-folders-by-area.md) | Process: decision records are filed in folders by area |
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
 | [0184](project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md) | Tooling: TypeScript is linted by oxlint and formatted by oxfmt |
+| [0258](project/0258-ci-workflows-are-audited-by-zizmor-and-actionlint.md) | CI: workflows are audited by zizmor and actionlint |
 
 ### ui
 

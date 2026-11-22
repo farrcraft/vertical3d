@@ -1,8 +1,9 @@
 # ADR-0174: Testing: the hand-written parsers are fuzzed
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-04
 **Tags**: testing, ci, offline
+**Amended by**: ADR-0257
 **Documented in**: [Testing.md](../../contributing/Testing.md#fuzz-targets)
 
 ## Context
