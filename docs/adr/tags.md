@@ -127,6 +127,7 @@ reported, so the table lists only tags in use.
 | [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
 | [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
 | [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0260](project/0260-code-a-public-header-never-includes-an-internal-one.md) | Code: a public header never includes an internal one |
 
 ### camera
 
@@ -157,6 +158,7 @@ reported, so the table lists only tags in use.
 | [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
 | [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
 | [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
+| [0260](project/0260-code-a-public-header-never-includes-an-internal-one.md) | Code: a public header never includes an internal one |
 
 ### colour
 

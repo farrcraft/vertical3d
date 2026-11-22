@@ -12,10 +12,12 @@ finished. The deleted source can still be recovered with `git show <commit>^:<pa
 - **While its list is open**, a record sits in this directory.
 - **When every item is closed**, it moves to [completed/](completed/).
 
-Every record is now complete. Besides the four tree records below, completed/ holds
-[ApiDesignReview.md](completed/ApiDesignReview.md). That is a design review of `api/` rather than
-a record of a tree, and [ApiDesignDebt](../plans/completed/ApiDesignDebt.md) worked through its
-items.
+One record is open: [DesignReview.md](DesignReview.md), a design review of the whole tree
+rather than a record of a tree. [DesignDebt](../plans/DesignDebt.md) works through its list.
+
+Every tree record is complete. Besides the four tree records below, completed/ holds
+[ApiDesignReview.md](completed/ApiDesignReview.md). That is an earlier design review of `api/`,
+and [ApiDesignDebt](../plans/completed/ApiDesignDebt.md) worked through its items.
 
 ## The records
 

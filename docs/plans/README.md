@@ -23,7 +23,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [CiWorkflows](CiWorkflows.md) | CI, testing, security | Workflows that fit their time limits and tell a pull request of a failure within an hour: the cache within its size, moya's suite made cheaper and split, jobs split across runners, checks chosen by event, required checks, and the workflows audited by a security linter |
+| [DesignDebt](DesignDebt.md) | All of the tree | The design review's defects fixed, each with a test that failed first; each rule it found copied by hand given one implementation; failures reported by one rule; the editor's largest classes split by job; and one text stack |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
+| [HeaderBoundaries](HeaderBoundaries.md) | Code, moya, rib, ui | No header outside an `internal/` directory includes one under it, with a gate that reports one that does, and moya's RIB handler split into the parts of its reader that each do one job |
 
 ## Completed plans
 
