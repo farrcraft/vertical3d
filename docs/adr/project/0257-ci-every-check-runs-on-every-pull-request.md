@@ -4,7 +4,6 @@
 **Date**: 2026-11-21
 **Tags**: ci, testing, review
 **Amends**: ADR-0174
-**Documented in**: [CI.md](../../contributing/CI.md)
 
 ## Context
 

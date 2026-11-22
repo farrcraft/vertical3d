@@ -3,7 +3,6 @@
 **Status**: accepted
 **Date**: 2026-11-21
 **Tags**: ci, tooling
-**Documented in**: [CI.md](../../contributing/CI.md)
 
 ## Context
 

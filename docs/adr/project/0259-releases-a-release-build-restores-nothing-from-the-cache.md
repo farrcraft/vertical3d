@@ -3,7 +3,6 @@
 **Status**: accepted
 **Date**: 2026-11-21
 **Tags**: releases, ci
-**Documented in**: [CI.md](../../contributing/CI.md)
 
 ## Context
 

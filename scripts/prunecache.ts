@@ -26,8 +26,7 @@
  */
 
 import process from 'node:process';
-import { parseArgs } from 'node:util';
-
+import { options, UsageError } from './lib/cli.ts';
 import { isEntryPoint } from './lib/entry.ts';
 
 const USAGE = 'usage: node scripts/prunecache.ts --prefix <prefix> --saved <key>';
@@ -101,7 +100,7 @@ async function deleted(repository: string, entry: Entry, token: string): Promise
 }
 
 async function main(): Promise<number> {
-    const { values } = parseArgs({ options: { prefix: { type: 'string' }, saved: { type: 'string' } } });
+    const { values } = options(USAGE, { prefix: { type: 'string' }, saved: { type: 'string' } });
     const token = process.env['GITHUB_TOKEN'];
     const repository = process.env['GITHUB_REPOSITORY'];
     const ref = process.env['GITHUB_REF'];
@@ -120,6 +119,15 @@ async function main(): Promise<number> {
     return 0;
 }
 
+// an option it does not take ends the run with its usage and status 2, as a gate's does
 if (isEntryPoint(import.meta.url)) {
-    process.exitCode = await main();
+    try {
+        process.exitCode = await main();
+    } catch (error) {
+        if (!(error instanceof UsageError)) {
+            throw error;
+        }
+        process.stderr.write(`${error.message}\n`);
+        process.exitCode = 2;
+    }
 }
