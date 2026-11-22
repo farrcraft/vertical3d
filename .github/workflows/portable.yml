@@ -30,6 +30,11 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 120
 
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
+
     env:
       WORK_DIR: ${{ github.workspace }}/out/build/portable
       VCPKG_CACHE: ${{ github.workspace }}/out/build/portable/vcpkg-cache
@@ -82,6 +87,16 @@ jobs:
           path: ${{ env.VCPKG_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
 
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job.
+      - name: Delete the vcpkg binaries this save replaced
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.built == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-${{ runner.os }}-
+          SAVED: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$PRUNED" --saved "$SAVED"
+
   # The whole tree, the apps included, built with Clang and with GCC on Linux, and every suite
   # run: the device suites on lavapipe, and the window suites on a virtual display. GCC is the
   # compiler the Flatpak builds with. scripts/portable/whole.sh does the build, in the same image
@@ -90,6 +105,11 @@ jobs:
   whole:
     runs-on: ubuntu-26.04
     timeout-minutes: 240
+
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
 
     strategy:
       fail-fast: false
@@ -153,3 +173,13 @@ jobs:
         with:
           path: ${{ env.VCPKG_CACHE }}
           key: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job.
+      - name: Delete the vcpkg binaries this save replaced
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.built == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-
+          SAVED: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$PRUNED" --saved "$SAVED"

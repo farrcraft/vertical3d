@@ -35,6 +35,11 @@ jobs:
     runs-on: windows-2025-vs2026
     timeout-minutes: 120
 
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
+
     # Each build type runs on a runner of its own, beside the other rather than after it. A
     # failure in one does not cancel the other, so a run reports both.
     strategy:
@@ -382,6 +387,18 @@ jobs:
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
+
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job. The
+      # prefix holds the toolset, so while runners on two images build, each keeps its own.
+      - name: Delete the vcpkg binaries this save replaced
+        if: steps.vcpkg-used.outputs.changed == 'True'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
+          SAVED: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$env:PRUNED" --saved "$env:SAVED"
 
       # A release shows a licence for everything it ships: every package in the install that
       # ships code has a copyright file, and every font has a licence. The check reads this job's

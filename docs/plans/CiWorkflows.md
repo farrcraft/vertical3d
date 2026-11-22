@@ -101,7 +101,7 @@ the options before the record is drafted.
 | [1](#step-1--the-record-what-runs-when) | The record: what runs when | `docs/adr` | **0257** | accepted |
 | [2](#step-2--the-record-auditing-the-workflows) | The record: auditing the workflows | `docs/adr` | **0258** | accepted |
 | [3](#step-3--the-record-what-a-release-may-reuse) | The record: what a release may reuse | `docs/adr` | **0259** | accepted |
-| [4](#step-4--the-cache-within-its-size) | The cache within its size | `.github/workflows` | — | open |
+| [4](#step-4--the-cache-within-its-size) | The cache within its size | `.github/workflows` | — | in progress |
 | [5](#step-5--the-cost-of-moyas-suite) | The cost of moya's suite | `moya/tests` | — | open |
 | [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | open |
 | [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | open |
@@ -235,6 +235,20 @@ before a release.
   10 GB.
 
 **Tests:** the cache's size after a week of runs, recorded with the hit rate of each restore.
+
+**In progress.** `scripts/prunecache.ts` deletes, after each save of vcpkg's archives, every entry
+on the run's ref under the save's prefix but those the run saved. It deletes nothing when the run's
+own entry is not listed, so a save that did not land leaves the older ones. The Windows prefix holds
+the toolset. On 2026-11-20 the Release job ran on a runner of MSVC 14.51 and the Debug job on one of
+14.52. The images are mixed, so the archives of 14.51 are still read, and the survey's word that no
+build reads them was wrong. Each toolset keeps its own until the old image is gone and the cache
+evicts them. The Linux prefixes are the system alone, since their restore keys stop at the hash. The
+jobs that save take `actions: write`. Two entries no restore could read, of old `vcpkg.json` files,
+were deleted by hand on 2026-11-22: `vcpkg-Windows-14.51.36231-a82be54e…` and
+`vcpkg-whole-clang-Linux-b43f69b7…`, 1.4 GB between them. The cache then held 7.97 GB of its 10. The
+Flatpak's module cache stays: a run that restored it built in 10 minutes, and one that did not in
+93. It is the only entry of its manifest, so none of it is stale. The step is verified once a week
+of runs on a pull request has passed.
 
 ### Step 5 — The cost of moya's suite
 
