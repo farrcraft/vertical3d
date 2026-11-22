@@ -166,12 +166,64 @@ function(v3d_add_app_icon target svg)
 	target_sources(${target} PRIVATE "${script}" "${icon}")
 endfunction()
 
+# A suite too slow to run as one ctest test is split into parts, each a ctest test of its own,
+# so ctest can run them at once and reports each one's time. The parts are declared before the
+# suite's v3d_add_test, which registers them in place of the whole suite.
+#
+#   v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>... [PART ...])
+#
+# Each part is the ctest test <lib>_<name>, labelled <lib>, and also renders when it is marked
+# RENDERS. It runs the units at the suite's top level that its patterns match: each a case's or a
+# Boost.Test suite's name, with a * at its start, its end or both, as Boost.Test's --run_test
+# reads it. A Boost.Test suite runs whole. The test <lib>_parts, labelled <lib> too, fails when
+# any unit is matched by no part or by more than one, so a case added under a new name cannot go
+# unrun.
+function(v3d_test_parts lib)
+	set(parts "")
+	set(part "")
+	set(expecting "")
+	foreach(argument IN LISTS ARGN)
+		if(argument STREQUAL "PART")
+			set(expecting "name")
+		elseif(expecting STREQUAL "name")
+			set(part "${argument}")
+			list(APPEND parts "${part}")
+			set(renders_${part} FALSE)
+			set(cases_${part} "")
+			set(expecting "")
+		elseif(part STREQUAL "")
+			message(FATAL_ERROR "v3d_test_parts(${lib}): \"${argument}\" comes before the first PART")
+		elseif(argument STREQUAL "RENDERS")
+			set(renders_${part} TRUE)
+		elseif(argument STREQUAL "CASES")
+			set(expecting "cases")
+		elseif(expecting STREQUAL "cases")
+			list(APPEND cases_${part} "${argument}")
+		else()
+			message(FATAL_ERROR "v3d_test_parts(${lib}): \"${argument}\" in part ${part} is neither RENDERS nor CASES")
+		endif()
+	endforeach()
+	if("${parts}" STREQUAL "")
+		message(FATAL_ERROR "v3d_test_parts(${lib}) names no PART")
+	endif()
+	set_property(GLOBAL PROPERTY V3D_TEST_PARTS_${lib} "${parts}")
+	foreach(part IN LISTS parts)
+		if(cases_${part} STREQUAL "")
+			message(FATAL_ERROR "v3d_test_parts(${lib}): part ${part} names no CASES")
+		endif()
+		set_property(GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_RENDERS "${renders_${part}}")
+		set_property(GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_CASES "${cases_${part}}")
+	endforeach()
+endfunction()
+
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
 # /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's
 # imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
 # wherever spdlog's bundled fmt is compiled. The working directory lets a test's data files
 # resolve the same way an app's do. Run them with ctest --test-dir out/build/<config>.
+#
+# The suite is one ctest test named <lib>, or the parts v3d_test_parts declared for it.
 function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
@@ -185,7 +237,38 @@ function(v3d_add_test lib)
 	endif()
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
 	# down, so any test that builds a Logger reports the same permanent false positive.
-	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+	get_property(parts GLOBAL PROPERTY V3D_TEST_PARTS_${lib})
+	if("${parts}" STREQUAL "")
+		add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+		return()
+	endif()
+	# Each part's patterns go to the coverage check as name=pattern,pattern, with the parts apart
+	# at a bar, since a semicolon would split the argument
+	set(described "")
+	foreach(part IN LISTS parts)
+		get_property(cases GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_CASES)
+		get_property(renders GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_RENDERS)
+		set(filters "")
+		foreach(pattern IN LISTS cases)
+			list(APPEND filters "--run_test=${pattern}")
+		endforeach()
+		add_test(NAME ${lib}_${part} COMMAND ${target} --detect_memory_leaks=0 ${filters} WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+		set(labels ${lib})
+		if(renders)
+			list(APPEND labels renders)
+		endif()
+		set_tests_properties(${lib}_${part} PROPERTIES LABELS "${labels}")
+		string(REPLACE ";" "," joined "${cases}")
+		if(described STREQUAL "")
+			set(described "${part}=${joined}")
+		else()
+			set(described "${described}|${part}=${joined}")
+		endif()
+	endforeach()
+	add_test(NAME ${lib}_parts
+		COMMAND ${CMAKE_COMMAND} "-DEXECUTABLE=$<TARGET_FILE:${target}>" "-DPARTS=${described}" -P "${V3D_ROOT}/cmake/v3dTestParts.cmake"
+		WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+	set_tests_properties(${lib}_parts PROPERTIES LABELS ${lib})
 endfunction()
 
 # A fuzz target passes one input to a parser through LLVMFuzzerTestOneInput, the entry point

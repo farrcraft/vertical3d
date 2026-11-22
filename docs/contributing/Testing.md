@@ -105,10 +105,29 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 - Builds `v3dtest_<lib>` and links Boost.Test.
 - Adds the repository root to the include path, so a test includes its subject as
   `<api/<lib>/...>` like any other file.
-- Registers the ctest entry `<lib>`, with the working directory set to the executable's
-  directory. Fixtures copied beside the executable then resolve by a relative path.
+- Registers the ctest entry `<lib>`, or the parts `v3d_test_parts` declared for it, with the
+  working directory set to the executable's directory. Fixtures copied beside the executable then
+  resolve by a relative path.
 - Passes `--detect_memory_leaks=0`. Without it, Boost.Test reports a false leak in every suite
   that builds a `Logger`, because spdlog's registry is destroyed after the report.
+
+A suite too slow to run as one ctest entry is split into parts, each an entry of its own, so
+ctest can run them at once and reports each one's time.
+`v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>...)`, called before the suite's
+`v3d_add_test`, declares them:
+
+- **Each part is the entry `<lib>_<name>`**, labelled `<lib>`, and also `renders` when it is marked
+  `RENDERS`. It runs the suite with one `--run_test` for each of its patterns.
+- **A pattern names units at the suite's top level**: cases, and Boost.Test suites, which run
+  whole. It is a name with a `*` at its start, its end or both, as `--run_test` reads it.
+- **The entry `<lib>_parts` fails when a unit is in no part or in two**, and when a part
+  matches nothing. A case added under a name no part matches therefore cannot go unrun. One
+  pattern of a part may match nothing, since a build can leave its cases out: moya's RGB build has
+  no compositing references.
+
+moya's suite is the one split this way.
+[RunningAndTesting.md](../offline/RunningAndTesting.md#building-and-testing) says how its parts
+are grouped.
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`

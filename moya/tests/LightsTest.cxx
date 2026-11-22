@@ -649,10 +649,20 @@ film::Snapshot underRect(float side, float height) {
     return rendered(scene);
 }
 
+/**
+ * The plane under a rect light of side 1 at a height of 0.5, rendered by the first case that asks
+ * for it. The cases that compare a square of light against that rect light share this render,
+ * since its samples are drawn the same on every run.
+ **/
+const film::Snapshot & squareRect() {
+    static const film::Snapshot rect = underRect(1.0F, 0.5F);
+    return rect;
+}
+
 // a mesh light of two triangles in a square gives the picture of a rect light of that square, by
 // light samples alone, by BSDF samples alone and by both
 BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_square_gives_a_rect_lights_picture_test) {
-    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Snapshot & rect = squareRect();
     const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
     for (const char * strategy : { "bsdf", "light", "mis" }) {
         BOOST_TEST_CONTEXT(strategy) {
@@ -759,7 +769,7 @@ film::Snapshot underGlowingSquare(const char * strategy, float luminance, bool m
 // a square whose material emits gives the picture of a rect light of its radiance, by light samples
 // alone, by BSDF samples alone and by both, as a mesh light does
 BOOST_AUTO_TEST_CASE(moya_lights_an_emitting_material_gives_a_rect_lights_picture_test) {
-    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Snapshot & rect = squareRect();
     const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
     for (const char * strategy : { "bsdf", "light", "mis" }) {
         BOOST_TEST_CONTEXT(strategy) {
@@ -799,7 +809,7 @@ film::Snapshot underTurnedGlowingSquare(const char * strategy, bool doubleSided)
 // that faces away from the plane lights it as a rect light facing it does, by light samples alone,
 // by BSDF samples alone and by both. On an instance that is not double-sided it lights nothing
 BOOST_AUTO_TEST_CASE(moya_lights_a_double_sided_material_emits_from_both_faces_test) {
-    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Snapshot & rect = squareRect();
     const film::Estimate expected = film::mean(rect, { 0, 0 }, { kSide, kSide });
     for (const char * strategy : { "bsdf", "light", "mis" }) {
         BOOST_TEST_CONTEXT(strategy) {
@@ -831,7 +841,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_camera_sees_a_double_sided_material_from_behi
 // a mesh light and an emitting material on one geometry both emit, and their light adds: a square
 // of both lights the plane as a rect light of their summed radiance does
 BOOST_AUTO_TEST_CASE(moya_lights_a_mesh_light_and_an_emitting_material_add_test) {
-    const film::Estimate alone = film::mean(underRect(1.0F, 0.5F), { 0, 0 }, { kSide, kSide });
+    const film::Estimate alone = film::mean(squareRect(), { 0, 0 }, { kSide, kSide });
     const film::Estimate both = film::mean(underGlowingSquare("mis", 1.5F, true), { 0, 0 }, { kSide, kSide });
     BOOST_TEST(film::sigmas(both, film::Estimate { .value = 2.5F * alone.value, .error = 2.5F * alone.error }) < 3.0F);
 }
@@ -881,7 +891,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_subdivision_surface_mesh_light_emits_from_its
     scene.set(instanced(scene, "cage", cage, {}, moved(0.0F, 0.0F, -0.5F)), "camera", scene::Value::integer(0));
     glowing(scene, cage);
     const film::Snapshot glowed = rendered(scene);
-    const film::Snapshot rect = underRect(1.0F, 0.5F);
+    const film::Snapshot & rect = squareRect();
     BOOST_TEST(film::sigmas(film::mean(glowed, { 0, 0 }, { kSide, kSide }), film::mean(rect, { 0, 0 }, { kSide, kSide })) < 3.0F);
 }
 

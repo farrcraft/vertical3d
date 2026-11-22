@@ -11,7 +11,7 @@ moya is three CMake targets, and it is built on one api library:
 | `moya/libmoya` | `v3dlib_moya` | The renderer. At its root, the directory of the running executable, beside which the CPU device and the material library find their files. Namespace `v3d::moya` |
 | `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the scene client that RIB requests reach. Namespace `v3d::moya::ri` |
 | `moya` | `moya` | The command-line driver, `moya.cxx`, and its demo scenes in `moya/data/` |
-| `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
+| `moya/tests` | `v3dtest_moya` | The test suite, run by ctest as the parts named `moya_<part>`, labelled `moya` |
 | `api/rib` | `v3dlib_rib` | RIB: the lexer, reader, writer and recorder, the handler they call, and the names and limits of the sampling requests. Namespace `v3d::rib` |
 | `api/rib/source` | `v3dlib_rib` | What the RIB lexer reads through: the character stream, a token's kind and text, and its position. Namespace `v3d::rib::source` |
 
@@ -62,8 +62,14 @@ threads do not meet.
 - **`v3dlib_rib` links `v3dlib_log`, `v3dlib_type` and glm**, and never Vulkan or SDL. A realtime
   dependency arriving through one of those libraries breaks its build, and its CI suites, first.
 - **Two suites cover the offline code**: `rib` tests the RIB library alone, and `moya` tests the
-  renderer. Run either with `ctest -R`. `v3dfuzz_rib` fuzzes the reader, with the `rib` suite's
-  fixtures in `api/rib/tests/data/` as its corpus.
+  renderer. `v3dfuzz_rib` fuzzes the reader, with the `rib` suite's fixtures in
+  `api/rib/tests/data/` as its corpus.
+- **moya's suite runs as parts**, one ctest test each, since in Debug it takes most of an hour
+  whole. `moya/tests/CMakeLists.txt` groups the cases into parts by their names' prefixes:
+  `moya_lights` holds the lights' cases, and `moya_scattering` the BSDFs'. `ctest -L moya` runs
+  them all, `ctest -R moya_lights` one part, and `ctest -L renders` those that render scenes through
+  the integrator. A new case's name starts with its file's prefix, which puts it in that file's
+  part. `moya_parts` fails when a case is in no part or in two.
 - **The moya suite renders against committed EXRs** in `moya/tests/data/`, each the path
   tracer's render of the `.rib` beside it, compared within five standard errors.
 - **`foundation-chart.png` is moya's chart**: 24 colours with no geometry, sampled
@@ -75,6 +81,9 @@ threads do not meet.
 - **Fixtures are copied only when the test target relinks.** Editing a `.rib`, `.mtlx` or `.exr`
   alone leaves the copy in the build in place, and the suite tests that copy. Touch a source file of
   the suite, or copy the fixture into `out/build/x64-Debug/moya/tests/data/` by hand.
+- **A fixture deleted from `moya/tests/data/` stays in the build's copy.** The cases that read
+  every scene in the directory then count it and fail. Delete `out/build/<config>/moya/tests/data/`
+  and build the suite again, which copies the fixtures afresh.
 - **To look at a reference at a useful size**, copy its `.rib` to a scratch directory, raise its
   `Format`, and give it an absolute shader search path. Render it with the driver from the
   driver's directory.

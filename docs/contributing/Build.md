@@ -232,6 +232,7 @@ guard has to cover the whole file.
 | `v3d_install_app(<target> <name>)` | Installs an app's executable into the install root, gives it a version resource, and names its Start menu entry. See [The install tree](#the-install-tree) |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
+| `v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>... [PART ...])` | Declares, before `v3d_add_test`, the parts a suite runs as, each a ctest entry `<lib>_<name>`, and the entry `<lib>_parts` that checks each case is in one. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
 | `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` | Compiles a GLSL shader into the target. See [Shaders](#shaders) |
 

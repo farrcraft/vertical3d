@@ -102,7 +102,7 @@ the options before the record is drafted.
 | [2](#step-2--the-record-auditing-the-workflows) | The record: auditing the workflows | `docs/adr` | **0258** | accepted |
 | [3](#step-3--the-record-what-a-release-may-reuse) | The record: what a release may reuse | `docs/adr` | **0259** | accepted |
 | [4](#step-4--the-cache-within-its-size) | The cache within its size | `.github/workflows` | — | in progress |
-| [5](#step-5--the-cost-of-moyas-suite) | The cost of moya's suite | `moya/tests` | — | open |
+| [5](#step-5--the-cost-of-moyas-suite) | The cost of moya's suite | `moya/tests` | — | in progress |
 | [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | open |
 | [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | open |
 | [8](#step-8--checks-by-event) | Checks by event | `.github/workflows` | 0257 | open |
@@ -260,6 +260,41 @@ of runs on a pull request has passed.
 
 **Tests:** each changed case still fails on the defect it was written for, shown by mutating the
 code it checks. moya's suite gives the same results as before.
+
+**In progress.** Each case was timed on 2026-11-22 on a 16-core machine: the suite took 2975 s in
+Debug and 233 s in Release, so Debug is the cost, at 13 times Release. 66 cases of 10 s or more
+held 82% of the Debug time. Three kinds of case led it:
+
+* **Density fits asserted every sample.** `densityFit` in `Scattering.h` ran a Boost.Test
+  assertion on each of a fit's 500,000 samples. It now asserts only a sample whose density lies
+  outside the assertion's own tolerance, so the same samples fail. The dielectric's fit fell from
+  170 s to 60 s, the conductor's from 103 s to 34 s, the hair's from 96 s to 37 s and the fuzz's
+  from 63 s to 18 s. Scaling a part's density by 1.002 in `Bsdf::part` fails all 11 cases that
+  call it.
+* **Six bench cases each ran the same short pass.** They now share one run of
+  `moya_bench --quick --isa sse42`, and the seven bench cases fell from 358 s to 45 s. A
+  `moya_bench` that exits with failure fails all six, alone and together.
+* **Five lights cases each rendered the same rect light.** They now share one render, about
+  45 s. A rect light 10% brighter fails all five.
+
+The reference cases in `PathsReferenceTest.cxx`, 457 s, keep their renders. Their comparison is
+defined at the committed sample count. A changed medium clears the bound by 8.8 errors in
+`volumes-smoke`, and fewer samples would halve that margin. The other render cases compare
+pictures within errors, and fewer samples would weaken what they can find. The remaining
+assertions are not the cost: the case with the most, 400,005, takes 2.4 s in Debug.
+
+The suite had no Boost.Test suites to split by but `moya_session` and `moya_session_pictures`,
+and wrapping each file in one would change every case's path, so `failsfirst.ts` would count all
+of them as new. It is split by the prefixes of its cases' names instead. `v3d_test_parts` declares
+ten parts, each a ctest test `moya_<part>` labelled `moya` and, for eight, `renders`. The test
+`moya_parts` fails when a case is in no part or in two, or a part matches nothing. In the RGB build
+one pattern, `moya_compositing_*`, matches nothing, and its part still runs. The RGB build in
+`scripts/portable/build.sh` runs `ctest -L '^moya$'`. Through ctest the parts took 2161 s in
+Debug one at a time, and 1009 s four at a time. Lights took 620 s and paths 614 s alone, so
+they are the longest at once. Every part passes in Debug, Release and the RGB build.
+
+The cases are still to be timed under the sanitizers on a runner's four cores, from the run of
+the pull request that carries the step. ctest reports each part's time there.
 
 ### Step 6 — The Linux jobs split
 

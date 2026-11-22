@@ -53,7 +53,7 @@ cmake -S "$src" -B "$work/rgb" -G Ninja \
     -DV3D_MOYA_RGB=ON \
     "-DV3D_LIBRARIES=log"
 cmake --build "$work/rgb" --target v3dtest_moya
-ctest --test-dir "$work/rgb" -R '^moya$' --output-on-failure
+ctest --test-dir "$work/rgb" -L '^moya$' --output-on-failure
 
 # Each fuzz target runs for FUZZ_SECONDS, starting from its fixtures. What it finds that reaches
 # new code is kept under $work/corpus, so a local run carries on from the last one. A failure

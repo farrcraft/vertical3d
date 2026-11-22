@@ -67,7 +67,13 @@ inline Fit densityFit(const kernel::bsdf::Bsdf & bsdf, const glm::vec3 & outgoin
         if (!sample.found() || sample.specular) {
             continue;
         }
-        BOOST_TEST_REQUIRE(sample.density == bsdf.part(sample.closure, outgoing, sample.incoming).density, boost::test_tools::tolerance(1.0e-3F));
+        // a sample's density is asserted only when it differs from its part's by more than the
+        // assertion's tolerance, since an assertion for each of a fit's samples is slow. The test
+        // is the assertion's own: the difference within the tolerance of the smaller of the two
+        const float part = bsdf.part(sample.closure, outgoing, sample.incoming).density;
+        if (!(std::fabs(sample.density - part) <= 1.0e-3F * std::fmin(std::fabs(sample.density), std::fabs(part)))) {
+            BOOST_TEST_REQUIRE(sample.density == part, boost::test_tools::tolerance(1.0e-3F));
+        }
         const glm::vec3 local = glm::normalize(bsdf.frame.toLocal(sample.incoming));
         const float polar = std::acos(std::fmin(std::fmax(local.z, -1.0F), 1.0F)) / kPi;
         const auto row = std::min(static_cast<std::size_t>(polar * kPolar), kPolar - 1);

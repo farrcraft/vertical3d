@@ -1,3 +1,23 @@
+# The suite runs as parts, grouped by what they cover, since in Debug it takes most of an hour as
+# one test. A part that renders scenes through the integrator is labelled renders; the others
+# check one piece of moya at a time. A new case's name starts with its file's prefix, which
+# puts it in that file's part.
+v3d_test_parts(moya
+	PART scattering CASES moya_bsdf_* moya_conductor_* moya_dielectric_* moya_fuzz_* moya_hair_* moya_layering_* moya_thin_* moya_geometric_*
+	PART lights RENDERS CASES moya_lights_*
+	PART paths RENDERS CASES moya_paths_*
+	PART transport RENDERS CASES moya_lightpaths_* moya_lightsampling_* moya_opacity_* moya_outputs_* moya_lpe_* moya_cryptomatte_*
+		moya_deep_* moya_denoise_* moya_denoiser_* moya_denoisefeatures_* moya_firsthit_* moya_compositing_*
+	PART volumes RENDERS CASES moya_volume_* moya_media_* moya_subsurface_*
+	PART scene RENDERS CASES moya_scene_* moya_sceneclient_* moya_scenehits_* moya_scenematerials_* moya_session* moya_kept_* moya_assembler_*
+		moya_events_*
+	PART geometry CASES moya_builder_* moya_traversal_* moya_hit_* moya_hitview_* moya_instances_* moya_motion_* moya_shapes_* moya_curves_*
+		moya_subdivision_* moya_displacement_* moya_triangulate_* moya_surfaces_* moya_cone_*
+	PART materials RENDERS CASES moya_material_* moya_program_* moya_texture_* moya_normal_* moya_shaders_*
+	PART foundation RENDERS CASES moya_foundation_* moya_output_* moya_colour_* moya_spectrum_* moya_rgb_* moya_zsobol_* moya_film_*
+		moya_filmcombine_* moya_exr_* moya_compare_* moya_device_* moya_grid_* moya_checkpoint_*
+	PART tools RENDERS CASES moya_bench_* moya_command_*)
+
 # Moya is an offline renderer and links nothing from the realtime stack. Its suite needs
 # neither a window nor a device.
 v3d_add_test(moya

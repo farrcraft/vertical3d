@@ -44,6 +44,15 @@ Run bench(const std::string & arguments) {
     return run;
 }
 
+/**
+ * One short pass at SSE4.2, run by the first case that asks for it. Each case that reads the
+ * short pass's table reads this one, since every run prints the same rows.
+ **/
+const Run & shortPass() {
+    static const Run run = bench("--quick --isa sse42");
+    return run;
+}
+
 /** The cells of each row of a table that starts with a scene's name, split at its bars. **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - what was printed, then the scene
 std::vector<std::vector<std::string>> rowsOf(const std::string & printed, const std::string & scene) {
@@ -70,7 +79,7 @@ std::vector<std::vector<std::string>> rowsOf(const std::string & printed, const 
 // a short pass times every scene at the instruction set it is asked for. Each row holds its
 // primitives, both kinds of ray are traced at a rate, and the incoherent rays meet something
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_every_scene_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     for (const char * scene : { "small triangles", "large triangles", "curves", "instances", "motion" }) {
         const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, scene);
@@ -90,7 +99,7 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_every_scene_test) {
 // a short pass times the lit room with its outputs, at a rate of samples, and the shares of its
 // time in adding Cryptomatte coverage and deep lists lie between none and all
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_room_with_outputs_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "lit room with outputs");
     BOOST_TEST_REQUIRE(rows.size() == 1U);
@@ -111,7 +120,7 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_room_with_outputs_test) {
 // are more rays than samples, since a sample traces a camera ray and its lights' shadow rays. The
 // share of the time in traversal lies between none and all
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_lit_room_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "lit room");
     BOOST_TEST_REQUIRE(rows.size() == 1U);
@@ -134,7 +143,7 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_lit_room_test) {
 // texture lookups each take a share of the time, and the lookups' share lies within the
 // programs', since a program's time holds the lookups it makes
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_textured_room_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "textured room");
     BOOST_TEST_REQUIRE(rows.size() == 1U);
@@ -154,7 +163,7 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_the_textured_room_test) {
 // is tracking through a medium of no grid, and the lock's time is in the hair model and not in
 // tracking
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_media_subsurface_and_hair_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     // the cells after the leading bar: as the lit room's to the share in traversal, then the
     // shares in tracking, grid lookups, programs and the hair model
@@ -184,7 +193,7 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_media_subsurface_and_hair_tes
 // each kind of edit. Each build rebuilds only what its edit touched, a camera move nothing at all,
 // and each edit gives a picture in a time
 BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_each_edit_test) {
-    const Run run = bench("--quick --isa sse42");
+    const Run & run = shortPass();
     BOOST_TEST_REQUIRE(run.succeeded, run.printed);
     const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "painted room");
     BOOST_TEST_REQUIRE(rows.size() == 5U, run.printed);
