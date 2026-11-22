@@ -1,7 +1,7 @@
 # Moya Interactive — Edits While Rendering, and Pictures as They Improve
 
 Drafted 2026-11-20 against `caaef331`. This plan takes up section 9 of
-[the moya rebuild roadmap](../roadmap/MoyaRebuild.md). When it closes, a render in the editor keeps
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, a render in the editor keeps
 running while the user works. An edit reaches the render between two passes, the render rebuilds
 only what the edit touched, and sampling starts again. The render view shows a picture within a
 moment of each edit and a better one as samples arrive, denoised if the user asks. A 3D view can
@@ -10,17 +10,17 @@ show moya's picture in place of its own shading.
 The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its plans are ADR-0195 to
 ADR-0252, all accepted. This plan follows five of them:
 
-* [ADR-0188](../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): the editor is a
+* [ADR-0188](../../adr/offline/0188-offline-a-retained-scene-interface-moya-owns.md): the editor is a
   client of moya's retained scene, so an edit is a change to that scene and nothing else.
-* [ADR-0203](../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md): a render
+* [ADR-0203](../../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md): a render
   takes a commit between passes, never during one. Nothing does so yet.
-* [ADR-0194](../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
   gives one picture on every run, so a render that took edits must end on the bytes a fresh render
   of the edited scene gives.
-* [ADR-0106](../adr/editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md):
+* [ADR-0106](../../adr/editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md):
   the editor drives an interactive render through `Delegate`, and a batch through moya.exe. The
   batch is not changed.
-* [ADR-0154](../adr/editor/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md): the
+* [ADR-0154](../../adr/editor/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md): the
   render view is an editor in an area or a window.
 
 The plan keeps the roadmap's order, with five changes:
@@ -51,7 +51,7 @@ The tree was read at `caaef331`.
 * **`Delegate::update()` compares a signature of the scene each tick.** On a difference it cancels
   the running render and starts another. The signature is each item's id, revision and parent, the
   evaluated values of the current frame, the camera and the settings
-  ([Rendering.md](../editor/Rendering.md#the-two-ways-in)).
+  ([Rendering.md](../../editor/Rendering.md#the-two-ways-in)).
 * **`MoyaDelegate::start()` brings the retained scene in step on the caller's thread**, through the
   `SceneTranslator`, applies it, and starts a thread that calls `integrate::render()`. The scene is
   never changed while a render reads it, because a running render is cancelled first.
@@ -62,7 +62,7 @@ The tree was read at `caaef331`.
   nothing until it finishes".
 * **The translator writes edits and commits them, and reads only the schema.** The scene takes
   edits from any thread and holds them until its owner applies them
-  ([Scene.md](../offline/Scene.md#edits-commits-and-versions)). The translator could therefore edit
+  ([Scene.md](../../offline/Scene.md#edits-commits-and-versions)). The translator could therefore edit
   while a render runs, and only the delegate's cancel keeps it from doing so.
 * **`RenderView::tick()` calls `update()` each tick while any area shows a render view**, and
   uploads a picture when the count of pictures moves.
@@ -79,13 +79,13 @@ The tree was read at `caaef331`.
   places each unchanged geometry as it was made. Only tests and the benchmark use it.
 * **No render calls `apply()`.** moya.exe applies the scene once, before it renders.
 * **The film can be read while it samples.** `snapshot()` can be called from any thread, and waits
-  for a pass in progress to end ([Film.md](../offline/Film.md#passes-and-snapshots)).
+  for a pass in progress to end ([Film.md](../../offline/Film.md#passes-and-snapshots)).
 * **The picture is the same whatever the passes hold**, and on any thread count (`Render.h`).
 * **A launch runs in tiles** of 32 by 32 pixels, in any order on oneTBB's threads, and has no way
-  to stop part way ([Devices.md](../offline/Devices.md)).
+  to stop part way ([Devices.md](../../offline/Devices.md)).
 * **`Checkpoints::stop` is asked before each pass**, and is how the delegate cancels.
 * **Denoising** is `denoise::denoise()` over a finished snapshot, from the beauty, albedo and
-  normal through OIDN ([Output.md](../offline/Output.md#denoised-channels)).
+  normal through OIDN ([Output.md](../../offline/Output.md#denoised-channels)).
 
 **The tests:** moya's suite holds the path tracer's, compositing's and volumes' reference renders,
 each a RIB file in `moya/tests/data/` with its committed EXR. `AssemblerTest.cxx` checks that an
@@ -129,7 +129,7 @@ listed as a number with no record, as the ADR index requires.
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | done |
 | [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | done |
 | [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | done |
-| [15](#step-15--the-documents) | The documents | `docs` | — | open |
+| [15](#step-15--the-documents) | The documents | `docs` | — | done |
 
 ## What blocks what
 
@@ -208,7 +208,7 @@ film is kept at its resolution and channels when neither changed, and what is re
 session ends.
 
 **Drafted** as
-[ADR-0253](../adr/offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md): a
+[ADR-0253](../../adr/offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md): a
 render is a session that keeps every structure it builds across versions. Between two passes it
 applies the batches committed since the last, rebuilds only what they changed, and starts the film
 again unless nothing a picture shows was changed. `render()` is a session that takes no edits and
@@ -241,7 +241,7 @@ sets it. It settles which thread turns a snapshot into a displayed picture, and 
 an edit can wait.
 
 **Drafted** as
-[ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md): after an
+[ADR-0254](../../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md): after an
 edit a session renders coarse pictures first, halving the block each pixel stands for until it
 reaches full resolution, and the coarse samples are never added to the film. The full-resolution
 passes then grow from one sample a pixel, doubling up to `kSamplesPerPass`. The caller sets the
@@ -268,7 +268,7 @@ OIDN's `cleanAux` does. It settles OIDN's quality for an interactive picture, an
 denoising runs between passes or on a thread of its own while the next pass samples.
 
 **Drafted** as
-[ADR-0255](../adr/offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md): a
+[ADR-0255](../../adr/offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md): a
 session whose caller turns denoising on denoises every picture whose pixels hold at least a start
 number of samples, which the caller sets, and gives it beside the raw picture. An interactive
 picture is denoised at OIDN's fast quality from the albedo and normal as they are. The picture that
@@ -295,7 +295,7 @@ settles what a rendered view that is not the active one does, and how many sessi
 once on one machine's threads.
 
 **Drafted** as
-[ADR-0256](../adr/editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md): each
+[ADR-0256](../../adr/editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md): each
 3D view in rendered shading has a session of its own, at the view's size and from the view's
 camera, and a view that is not shown pauses its session. The view draws the scene's depth as it
 rasterises it now, and the overlays are tested against that depth and drawn over moya's picture.
@@ -448,7 +448,7 @@ them, and each denoised picture takes a snapshot's worth of OIDN time from the s
 * **A stop keeps the latest picture.** The render view shows what was sampled before the stop.
 * **`Delegate`'s contract says an edit reaches a running render.** ADR-0106's decision is unchanged.
   The rule that a render reads the scene when it starts is removed from the header and from
-  [Rendering.md](../editor/Rendering.md).
+  [Rendering.md](../../editor/Rendering.md).
 
 **Tests:** an edit to an item while a render runs reaches its picture, without a cancel. The
 delegate's final picture of an edited scene matches moya.exe's render of the scene's RIB export
@@ -544,25 +544,34 @@ build its remaining 310 to 580 milliseconds are the gather, which places every g
 
 * **A new reference page**, `docs/offline/Interactive.md`, for the session, edits between passes,
   the first pictures and denoising while sampling. The docs site's summary lists it.
-* **[Integrator.md](../offline/Integrator.md)** names the session and a pass that stops.
-* **[Film.md](../offline/Film.md)** names a stopped pass and pictures made while sampling.
-* **[Scene.md](../offline/Scene.md)** names the session as the owner that applies, and when it
+* **[Integrator.md](../../offline/Integrator.md)** names the session and a pass that stops.
+* **[Film.md](../../offline/Film.md)** names a stopped pass and pictures made while sampling.
+* **[Scene.md](../../offline/Scene.md)** names the session as the owner that applies, and when it
   forgets.
-* **[Devices.md](../offline/Devices.md)** names a launch that stops.
-* **[Rendering.md](../editor/Rendering.md)** names edits reaching a running render, the render
+* **[Devices.md](../../offline/Devices.md)** names a launch that stops.
+* **[Rendering.md](../../editor/Rendering.md)** names edits reaching a running render, the render
   view's pictures and channels, and the rendered view.
-* **The editor's user manual**, [Rendering.md](../manual/editor/Rendering.md) and
-  [Views.md](../manual/editor/Views.md), names the render view's pictures and channel and the
+* **The editor's user manual**, [Rendering.md](../../manual/editor/Rendering.md) and
+  [Views.md](../../manual/editor/Views.md), names the render view's pictures and channel and the
   rendered shading.
-* **[The offline README](../offline/README.md)** lists the new page.
+* **[The offline README](../../offline/README.md)** lists the new page.
 * **Each record's `Documented in` line** names the reference page that states its rule.
 * **The roadmap's section 9** links here, and says so when this plan closes.
+
+**Done.** `docs/offline/Interactive.md` takes the session, what a build keeps, the pictures, denoising
+while sampling, and stopping and resuming from `Integrator.md`, which names the session and links
+to it. `Devices.md` gains a launch that stops, `Film.md` a pass that stops and the snapshot a
+picture is made from, and `Scene.md` the session as the owner that applies the scene. The offline
+README and the docs site's summary list the page, and the three offline records' `Documented in`
+lines name it. ADR-0256's names the editor's Rendering.md, which has a section on the rendered
+view. The editor's reference and its manual took their changes with steps 11 to 13. The roadmap's
+section 9 says it is done.
 
 ---
 
 ## Working beside the editor scripting plan
 
-[EditorScripting](EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan takes
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, and this plan takes
 ADR-0253 to ADR-0256. The two meet in the editor's render code:
 
 | Shared ground | This plan changes it in | EditorScripting changes it in |

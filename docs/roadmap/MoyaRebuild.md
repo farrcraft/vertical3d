@@ -194,7 +194,8 @@ Done. [MoyaVolumes](../plans/completed/MoyaVolumes.md) was its plan, and
 
 ### 9. Interactive rendering
 
-[MoyaInteractive](../plans/MoyaInteractive.md) is its plan.
+Done. [MoyaInteractive](../plans/completed/MoyaInteractive.md) was its plan, and
+[Interactive.md](../offline/Interactive.md) describes the session it built.
 
 - **Edits while rendering**: the editor's changes reach the scene interface, and sampling
   restarts with only the touched structures rebuilt.

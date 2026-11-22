@@ -183,7 +183,7 @@ The rebuild's sections up to output for compositing are closed, the last by
 [MoyaMaterials](completed/MoyaMaterials.md) left the editor's surfaces on RI's `matte`. The
 retirement of the old hiders (section 7) was [MoyaRetirement](completed/MoyaRetirement.md), which
 says where it met this plan. Interactive rendering (section 9) reaches the editor too, and
-[MoyaInteractive](MoyaInteractive.md) is its plan, which says where it meets this one.
+[MoyaInteractive](completed/MoyaInteractive.md) was its plan, which says where it met this one.
 Giving the editor materials is work for a plan of its own.
 
 **Where the two meet:**

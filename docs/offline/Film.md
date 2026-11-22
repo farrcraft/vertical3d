@@ -127,11 +127,17 @@ uses it.
 - **Samples are added in passes.** `pass(launch)` hands the function the film's
   `kernel::film::Pixels`. The function launches kernel code over the film's resolution, which
   adds each pixel's next samples, and returns when every pixel has run.
+- **`attempt(launch)` runs a pass that may stop part way.** Its function gives whether every pixel
+  ran. A pass that stopped leaves every pixel's floats as they stood before it, and is not
+  counted, so a snapshot shows the passes before it alone. A render session drops a pass for an
+  edit this way.
 - **`clear()` empties the film.** Every pixel is emptied and samples again, and the film counts
   no passes. A render session clears its film for a new version of the scene in place of making
   another of the same resolution and channels.
 - **`snapshot()` can be called from any thread at any time.** It waits for a pass in progress to
-  end, so a snapshot holds every sample of the passes before it, and none of the next.
+  end, so a snapshot holds every sample of the passes before it, and none of the next. A render
+  session makes each picture it shows while sampling from a snapshot, as
+  [Interactive.md](Interactive.md#pictures-as-a-session-samples) says.
 - **A snapshot is resolved.** The beauty's sums and each mean channel's are divided by the
   pixel's weight. The other combines are kept as they are, and a closest channel keeps its key.
   A pixel no sample reached is zero in every float. `passes` says how many passes it holds.

@@ -26,6 +26,7 @@ therefore run in CI on machines with no GPU.
 | [Patterns.md](Patterns.md) | Change the noises, ramps, splits and rotations a material's program runs |
 | [Textures.md](Textures.md) | Change the texture files moya reads, and the maker that writes them from images |
 | [Integrator.md](Integrator.md) | Change how moya builds paths, samples lights, stops a pixel and resumes a render |
+| [Interactive.md](Interactive.md) | Change the render session: edits between passes, what a build keeps, pictures while sampling and denoising them |
 | [Lights.md](Lights.md) | Change moya's lights, how a path meets and samples them, the light tree and linking |
 | [Volumes.md](Volumes.md) | Change media, how they nest, how a path tracks through them, grids, and a volume's light |
 | [Output.md](Output.md) | Change how moya writes its pictures to EXR and PNG files |
@@ -128,6 +129,10 @@ Background: [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-
   records every change as a version, so what is built from it rebuilds only what changed.
   `ri::SceneClient` fills it from RIB, and the editor keeps one in step with its own.
   `moya --scene` prints the scene a file makes. [Scene.md](Scene.md)
+- **A render session** renders a scene while clients edit it. It takes each edit between two
+  passes, rebuilds only what the edit touched, and makes pictures as it samples, coarse first and
+  denoised once they hold enough samples. A batch render is a session that takes no edits.
+  [Interactive.md](Interactive.md)
 - **Rays and hits** are kernel code. A triangle is met watertight, a ray leaving a surface starts
   off it, and a stage takes its traversal as a type, so each device brings its own. Camera rays
   follow RI's camera, and `moya --hits` writes what they hit. Rays are traced through the

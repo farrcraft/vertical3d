@@ -36,6 +36,14 @@ own pixel's, such as its slot in an output array. Pixels run in any order and on
 nothing else is safe, and a picture is then the same whatever order tiles finish in and however
 many threads run them.
 
+## A launch that stops
+
+`CpuDevice::launch(width, height, params, function, stop)` runs a kernel function as a launch
+does, and asks `stop` before each tile starts. Once `stop` has answered true, no tile starts, and
+the launch returns when the tiles already running end. It gives whether every pixel ran. `stop`
+is asked from any of the device's threads, and from several at once. A render session stops a
+pass this way for an edit, as [Interactive.md](Interactive.md#stopping-and-resuming) says.
+
 ## The CPU device
 
 - **Memory** is host memory.

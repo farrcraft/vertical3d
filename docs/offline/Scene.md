@@ -250,6 +250,9 @@ declared it.
   there after it.
 - **`forget(through)`** drops the record of removals up to a version, once every consumer has
   built past it.
+- **A render session owns the scene it renders.** It applies the batches clients commit, and is
+  the only reader while it lives. It forgets the removals up to each version it builds, as
+  [Interactive.md](Interactive.md#a-render-session) says.
 
 Background: [ADR-0203](../adr/offline/0203-offline-scene-changes-are-versioned-and-committed.md)
 

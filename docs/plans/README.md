@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [MoyaInteractive](MoyaInteractive.md) | Offline rendering, editor | Renders that take edits while they run: a session that keeps its structures across versions, passes that stop between tiles, pictures and denoised pictures as samples arrive, a render view that shows them, and a 3D view that shows moya's picture |
 | [CiWorkflows](CiWorkflows.md) | CI, testing, security | Workflows that fit their time limits and tell a pull request of a failure within an hour: the cache within its size, moya's suite made cheaper and split, jobs split across runners, checks chosen by event, required checks, and the workflows audited by a security linter |
 | [EditorScripting](EditorScripting.md) | Editor, script, moya | Scenes a script can finish: a rotation order for each item, shared geometry in the document and in renders, commands to place an item and set a key's interpolation, a headless run, and batches in parallel |
 
@@ -32,6 +31,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [MoyaInteractive](completed/MoyaInteractive.md) | Offline rendering, editor | 2026-11-22 | Renders that take edits while they run: a session that keeps its structures across versions, passes that stop between tiles, pictures and denoised pictures as samples arrive, a render view that shows them in a channel of its own, a 3D view that shows moya's picture, and the time from an edit to a picture measured |
 | [MoyaVolumes](completed/MoyaVolumes.md) | Offline rendering | 2026-11-20 | The rebuilt moya's volumes: homogeneous media and OpenVDB grids tracked at four wavelengths, nested media, random-walk subsurface, a hair BSDF on curves, volumetric lights, volumes in the compositing outputs, and all of it named in RIB |
 | [MoyaRetirement](completed/MoyaRetirement.md) | Offline rendering, editor | 2026-11-16 | moya with one renderer: RIB's built-in shaders as materials and lights, moya.exe and the editor rendering through the path tracer, RIB as a library of its own, and the reyes hider, the ray hider and the shading language deleted |
 | [MoyaCompositing](completed/MoyaCompositing.md) | Offline rendering | 2026-11-15 | The rebuilt moya's outputs for compositing: the scene's outputs in the render, alpha, values at the first hit, light path expressions, light groups, Cryptomatte, deep EXR and denoising through OIDN, all named in RIB |
