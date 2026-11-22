@@ -152,6 +152,13 @@ class Session final {
      **/
     void again();
 
+    /**
+     * Lets a version that the checkpoints' stop ended sample on, from the passes its film holds,
+     * once the stop answers false again. The film it ends on is that of a version never stopped.
+     * A version that holds every sample stays ended. Called while no thread of the session's runs.
+     **/
+    void resume();
+
     /** The scene's version the session renders. **/
     std::uint64_t version() const {
         return version_;

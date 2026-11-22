@@ -161,6 +161,7 @@
                   "items": [
                     { "label": "Flat", "type": "radio", "context": "view", "command": "shade::flat" },
                     { "label": "Smooth", "type": "radio", "context": "view", "command": "shade::smooth" },
+                    { "label": "Rendered", "type": "radio", "context": "view", "command": "shade::rendered" },
                     { "type": "separator" },
                     {
                       "label": "Front Facing",

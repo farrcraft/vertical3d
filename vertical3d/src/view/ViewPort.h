@@ -70,6 +70,8 @@ class ViewPort final {
         Cull cull = Cull::Back;
         Fill front = Fill::Fill;
         Fill back = Fill::Fill;
+        /** The side of the square of the view's pixels each pixel of a rendered picture covers. **/
+        unsigned int pixelSize = 1;
     };
 
     /**

@@ -109,7 +109,7 @@ Every item acts on one view, and each view keeps its own settings.
 |---|---|---|
 | Camera > Front, Back, Left, Right, Top, Bottom, Perspective | | Shows that fixed view |
 | Camera > Orthographic | P | Switches the view between orthographic and perspective |
-| Shading > Flat, Smooth | | Lights each face evenly, or blends the light across faces |
+| Shading > Flat, Smooth, Rendered | | Lights each face evenly, blends the light across faces, or shows moya's render |
 | Shading > Front Facing > Points, Lines, Fill | | Draws the outward side of faces as corners, edges, or filled |
 | Shading > Back Facing > Points, Lines, Fill | | Draws the inward side of faces as corners, edges, or filled |
 | Shading > Cull > None, Front, Back, Both | | Leaves out no side of the faces, the outward side, the inward side, or both |
@@ -191,7 +191,7 @@ A viewport's header has four more menus. Each acts on that view, whatever view i
 | Menu | Named for | Items |
 |---|---|---|
 | Camera | The camera the view shows, such as Front | The View menu's Camera items |
-| Shading | How the view draws: Flat, Smooth, Wireframe or Points | The View menu's Shading items |
+| Shading | How the view draws: Flat, Smooth, Rendered, Wireframe or Points | The View menu's Shading items |
 | Mask | The select mask in use, such as Object | The Select menu's items |
 | Overlays | Shown as an icon | Grid, Meshes, Cameras, Lights and Handles, as on the View menu's Show submenu |
 

@@ -38,6 +38,7 @@
 #include <vertical3d/src/tool/CameraControl.h>
 #include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -421,6 +422,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::GraphEditor> graph_;
     boost::shared_ptr<control::ConsoleEditor> console_;
     boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
+    // the render session of each view in rendered shading
+    boost::shared_ptr<view::RenderedViews> rendered_;
     // what a render view's buttons asked for in the last frame drawn
     control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
 
@@ -460,6 +463,11 @@ class Controller final : public v3d::engine::Engine {
      * The sides a kept window is opened again at, outside which it opens at its first size.
      **/
     static constexpr int MIN_OPENED = 64;
+
+    /**
+     * The largest pixel size a view's state can give its rendered picture.
+     **/
+    static constexpr int MOST_PIXELS = 16;
     static constexpr int MAX_OPENED = 16384;
 
     // the windows a workspace kept, held until there is a ui to open them in

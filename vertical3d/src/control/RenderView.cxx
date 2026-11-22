@@ -211,7 +211,7 @@ void RenderView::sync() {
         held.taken = status.pictures;
         const boost::shared_ptr<v3d::image::Image> image = delegate_->picture(channel);
         if (image) {
-            held.picture = v3d::ui::Image(upload_(image));
+            held.picture = v3d::ui::Image(upload_("render view " + std::string(name(channel)), image));
             held.size = glm::uvec2(image->width(), image->height());
         }
     }

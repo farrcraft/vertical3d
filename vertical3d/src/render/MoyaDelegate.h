@@ -69,6 +69,7 @@ class MoyaDelegate final : public Delegate {
      * Ask the render to stop, and wait until it has, which is before its next tile.
      **/
     void cancel() override;
+    void resume() override;
 
     Status status() const override;
     void show(const Showing& showing) override;
@@ -118,6 +119,8 @@ class MoyaDelegate final : public Delegate {
     // what the caller asked show() for, and whether the render's thread has yet to take it
     Showing showing_;
     bool reshow_ = false;
+    // whether a stopped render was asked to sample on, which the render's thread has yet to take
+    bool resumed_ = false;
     // the edits committed, counted
     std::uint64_t edits_ = 0;
     // asked by the session before each pass and each tile

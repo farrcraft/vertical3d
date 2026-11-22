@@ -84,9 +84,10 @@ class RenderView final {
     static constexpr float CHANNEL_WIDTH = 180.0F;
 
     /**
-     * Turn a picture into a texture the ui can draw.
+     * Turn a picture into a texture the ui can draw, in place of the last one uploaded to a slot.
+     * Each channel has a slot of its own.
      **/
-    typedef std::function<v3d::render::realtime::resource::TextureHandle(const boost::shared_ptr<v3d::image::Image>&)> Upload;
+    typedef std::function<v3d::render::realtime::resource::TextureHandle(const std::string& slot, const boost::shared_ptr<v3d::image::Image>&)> Upload;
 
     /**
      * @param delegate what renders the view

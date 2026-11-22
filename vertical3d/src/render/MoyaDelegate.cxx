@@ -64,6 +64,19 @@ void MoyaDelegate::cancel() {
 
 /**
  **/
+void MoyaDelegate::resume() {
+    const std::scoped_lock lock(mutex_);
+    if (status_.state != State::Stopped) {
+        return;
+    }
+    stopping_.store(false);
+    resumed_ = true;
+    status_.state = State::Rendering;
+    woken_.notify_all();
+}
+
+/**
+ **/
 Delegate::Status MoyaDelegate::status() const {
     const std::scoped_lock lock(mutex_);
     return status_;
@@ -181,11 +194,13 @@ void MoyaDelegate::run(const std::stop_token& stop) {
     while (!stop.stop_requested()) {
         std::uint64_t seen = 0;
         bool reshown = false;
+        bool resumed = false;
         Showing showing;
         {
             const std::scoped_lock lock(mutex_);
             seen = edits_;
             reshown = std::exchange(reshow_, false);
+            resumed = std::exchange(resumed_, false);
             showing = showing_;
         }
         bool more = false;
@@ -199,6 +214,9 @@ void MoyaDelegate::run(const std::stop_token& stop) {
                 if (remade) {
                     session->again();
                 }
+            }
+            if (resumed) {
+                session->resume();
             }
             more = session->advance();
         } catch (const std::exception& error) {
@@ -222,7 +240,7 @@ void MoyaDelegate::run(const std::stop_token& stop) {
             status_.done = 1.0F;
         }
         woken_.notify_all();
-        woken_.wait(lock, stop, [this, seen] { return edits_ != seen || reshow_; });
+        woken_.wait(lock, stop, [this, seen] { return edits_ != seen || reshow_ || resumed_; });
     }
 }
 

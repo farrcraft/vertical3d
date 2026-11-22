@@ -376,4 +376,31 @@ BOOST_FIXTURE_TEST_CASE(delegate_shows_a_channel_asked_for_after_it_finished_tes
     BOOST_CHECK_EQUAL(delegate.status().pictures, after);
 }
 
+// a stopped render resumed samples on, and ends on the picture of a render never stopped
+BOOST_FIXTURE_TEST_CASE(delegate_resumes_a_stopped_render_test, Cube) {
+    using Channel = v3d::editor::render::Delegate::Channel;
+    settings.size = glm::uvec2(128, 128);
+    settings.samples = 8;
+    v3d::editor::render::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
+    // nothing happens to a render that is not stopped
+    delegate.resume();
+    BOOST_CHECK(delegate.status().state == v3d::editor::render::Delegate::State::Idle);
+    delegate.render(scene, view, settings);
+    BOOST_REQUIRE(pictured(delegate, 0));
+    delegate.cancel();
+    BOOST_REQUIRE(delegate.status().state == v3d::editor::render::Delegate::State::Stopped);
+    const std::uint32_t stopped = delegate.status().samples;
+    BOOST_CHECK_LT(stopped, delegate.status().total);
+
+    delegate.resume();
+    const v3d::editor::render::Delegate::Status status = settle(delegate);
+    BOOST_REQUIRE(status.state == v3d::editor::render::Delegate::State::Finished);
+    BOOST_CHECK_EQUAL(status.samples, status.total);
+
+    v3d::editor::render::MoyaDelegate fresh(boost::make_shared<v3d::log::Logger>());
+    fresh.render(scene, view, settings);
+    BOOST_REQUIRE(settle(fresh).state == v3d::editor::render::Delegate::State::Finished);
+    BOOST_CHECK(same(*delegate.picture(Channel::Beauty), *fresh.picture(Channel::Beauty)));
+}
+
 };  // namespace

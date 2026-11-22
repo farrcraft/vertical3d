@@ -22,6 +22,8 @@ what the editor drives:
   and lens, and the settings. A change of frame or a pending edit is handed over too.
 - `cancel()` stops a running render. Its latest picture stays, and holds what was sampled before
   the stop.
+- `resume()` lets a stopped render sample on from the samples its picture holds, and it ends on
+  the picture of a render never stopped.
 - `status()` gives the render's state, how much of it is done, the samples each pixel of the
   latest picture holds and those it holds when done, and a count that moves with each new
   picture.
@@ -112,6 +114,33 @@ gives the camera both a shot and the translator look through.
 |---|---|---|
 | Width and height | 640 by 480 | 1 to `RenderSettings::LARGEST_SIDE`, 16384, each |
 | Samples along each side of a pixel | 2 | 1 to `RenderSettings::MOST_SAMPLES`, 16 |
+
+## A rendered view
+
+A 3D view in rendered shading shows moya's picture of the scene in place of its own shading.
+`view::RenderedViews` keeps one render session for each such view, through a `MoyaDelegate` of its
+own, and the controller ticks it with every view each window shows.
+
+- **A view's session renders from the view's camera**, and each tick hands it the scene and that
+  camera, so an orbit, a pan or a zoom is an edit of that session alone. The render settings are
+  the scene's, but for the size.
+- **The picture is the view's size divided by its pixel size**, rounded up. A view through a scene
+  camera renders the camera's frame in place of the whole view. Each side is at least 1 and at
+  most `RenderSettings::LARGEST_SIDE`. The pixel size is `Display::pixelSize`, which the view's
+  state holds as `pixelSize`.
+- **A view that is not shown pauses its session.** The render stops, keeps its picture, and
+  samples on once the view is shown again, through `Delegate::resume()`. A view that leaves
+  rendered shading, or is gone, ends its session.
+- **Each new picture is uploaded as the view's texture**, in the Renderer's slot of the view's name.
+  Every session runs on oneTBB's one pool of threads, beside the render view's.
+- **The overlays are tested against the scene's depth.** The view draws its meshes filled, for
+  their depth alone, then the picture over them, then its grid and wireframe. The picture
+  replaces the meshes' colour and leaves their depth, so a line behind a surface is hidden as it
+  is in a shaded view. The handles are drawn over all of it, as in any view. Where moya renders
+  what the view does not rasterise, such as displacement or a volume, the lines meet the
+  rasterised surface. Until its first picture, a rendered view is shaded flat.
+
+Background: [ADR-0256](../adr/editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md)
 
 ## The Render menu
 

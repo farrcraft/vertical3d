@@ -330,10 +330,12 @@ vertical and horizontal splits whose leaves are areas. A layout reads like this:
 - An area lists at least one editor. Each editor is an object that names its `kind`, and the
   whole object is the editor's state. A viewport's state names the camera profile it starts
   from, or `scene-camera` for a view that follows the scene's camera. It may name its `shading`,
-  `flat` or `smooth`, which is flat when it is missing. `through` is the document id of a scene
+  `flat`, `smooth` or `rendered`, which is flat when it is missing. It may name its
+  `pixelSize`: the side of the square of the view's pixels that each pixel of a rendered picture
+  covers. That is 1 to 16, and 1 when it is missing. `through` is the document id of a scene
   camera it looks through, and `locked` whether navigation moves that camera. The fixed views,
-  the scene's cameras, the lock, and the Flat and Smooth items of the view's header write these
-  back to the state.
+  the scene's cameras, the lock, and the shading items of the view's header write these back to
+  the state.
   `chosen` is the index of the editor the area shows, and is 0 when it is missing.
 - `load()` refuses a layout without a root, a split with no children, and a node that is
   neither. It refuses an area with no editors, an editor with no kind, and a chosen editor the
@@ -434,9 +436,9 @@ built as the editor runs and put before the editor's own container so its menus 
     cameras, then Orthographic, and Lock Camera to View while the view looks through a scene
     camera. While the area is active, its name is set on a pill.
   - one named for how the view shades the scene: Points or Wireframe when the front of each
-    triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
-    and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,
-    with None, Front, Back and Both.
+    triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. A rendered view
+    is named Rendered whatever its fill. It holds Flat, Smooth and Rendered, then Front Facing
+    and Back Facing, each with Points, Lines and Fill, and Cull, with None, Front, Back and Both.
   - one named for the select mask, such as Object, holding the nine masks. The mask is the
     editor's, not the view's, so every header names the same one.
   - Overlays, shown as its icon, which toggles the grid, the meshes, the cameras, the lights and
@@ -856,6 +858,9 @@ outside, the reverse of the face's loop.
   the average of the normals of the faces around it.
 - A face whose stored normal is zero, as an extrude's ring is until it is moved, takes its
   normal from its points, and +z when those have no area.
+- **A rendered view** shades its meshes flat until it has a picture. It then draws them filled,
+  with nothing culled, for their depth alone, as [Rendering.md](Rendering.md#a-rendered-view)
+  says.
 
 **Uploads.** A mesh is uploaded once for each shading a view draws it in. It is uploaded again
 only when its `BRep::changes()` has moved, so a move of the item uploads nothing: its placement
@@ -869,7 +874,7 @@ on keeps 30% of it. Either side of a surface is lit alike, so a back face is not
 
 | Command | Sets | Default |
 |---|---|---|
-| `view::shade::flat`, `smooth` | The shading | Flat |
+| `view::shade::flat`, `smooth`, `rendered` | The shading | Flat |
 | `view::cull::none`, `front`, `back`, `both` | Which side of the triangles is left out | Back |
 | `view::rendermode::front::points`, `lines`, `fill` | How the front of a triangle is drawn | Fill |
 | `view::rendermode::back::points`, `lines`, `fill` | How the back of a triangle is drawn | Fill |

@@ -41,6 +41,7 @@ add_library("v3dlib_editor"
 
 	"src/view/AreaLayout.h" "src/view/AreaLayout.cxx"
 	"src/view/AreaViews.h" "src/view/AreaViews.cxx"
+	"src/view/RenderedViews.h" "src/view/RenderedViews.cxx"
 	"src/view/frame/AreaFrame.h" "src/view/frame/AreaFrame.cxx"
 	"src/view/frame/Band.h"
 	"src/view/frame/Look.h"

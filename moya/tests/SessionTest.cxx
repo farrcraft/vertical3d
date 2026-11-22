@@ -405,6 +405,39 @@ BOOST_AUTO_TEST_CASE(moya_session_an_edit_drops_the_pass_in_progress_test) {
     BOOST_TEST(sameBytes(session.picture(), fresh({ materialChanged })));
 }
 
+// a session the checkpoints' stop ended samples on once resumed, and ends where a render that was
+// never stopped does. A stop asked before a pass and one asked during it are both resumed
+BOOST_AUTO_TEST_CASE(moya_session_a_stopped_version_resumes_where_it_stopped_test) {
+    for (const bool during : { false, true }) {
+        Staged made = staged();
+        lit(made);
+        made.made.apply();
+        CpuDevice device;
+        const colour::Config config;
+        bool halted = true;
+        std::uint32_t asks = 0;
+        // the second pass is stopped before it starts, or at its tile
+        const integrate::Checkpoints checkpoints { .stop = [&](std::uint32_t passes) {
+            if (!halted || passes != 1U) {
+                return false;
+            }
+            return !during || ++asks == 2U;
+        } };
+        integrate::Session session(device, made.made, {}, config, checkpoints);
+        BOOST_TEST_REQUIRE(session.advance());
+        BOOST_TEST_REQUIRE(!session.advance());
+        BOOST_TEST(session.passes() == 1U);
+        BOOST_TEST(!session.advance(), "during " << during);
+
+        halted = false;
+        session.resume();
+        while (session.advance()) {
+        }
+        BOOST_TEST(session.passes() > 1U);
+        BOOST_TEST(sameBytes(session.picture(), fresh({})), "during " << during);
+    }
+}
+
 // a session on its own thread takes the edits clients commit and say while it runs, and ends
 // where a fresh render of the edited scene does
 BOOST_AUTO_TEST_CASE(moya_session_on_its_own_thread_takes_edits_test) {

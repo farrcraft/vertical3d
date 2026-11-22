@@ -58,6 +58,10 @@ class Fake final : public Delegate {
         cancelled++;
     }
 
+    void resume() override {
+        resumed++;
+    }
+
     Status status() const override {
         return now;
     }
@@ -78,6 +82,7 @@ class Fake final : public Delegate {
     int started = 0;
     int edited = 0;
     int cancelled = 0;
+    int resumed = 0;
 
  protected:
     void start(const v3d::editor::scene::Scene& /*scene*/, const v3d::type::camera::Profile& /*from*/,
@@ -102,7 +107,7 @@ struct View {
         delegate(boost::make_shared<Fake>()),
         layer(v3d::ui::typeset::mono(&written)),
         view(delegate, boost::make_shared<v3d::editor::render::Batch>(boost::make_shared<v3d::log::Logger>(), boost::filesystem::path("moya.exe")),
-            [this](const boost::shared_ptr<v3d::image::Image>& image) {
+            [this](const std::string& /*slot*/, const boost::shared_ptr<v3d::image::Image>& image) {
                 uploaded.push_back(image);
                 return v3d::render::realtime::resource::TextureHandle(static_cast<std::uint32_t>(uploaded.size()));
             }) {

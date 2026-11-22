@@ -514,6 +514,10 @@ void Session::again() {
     pictured(true, ended_);
 }
 
+void Session::resume() {
+    ended_ = false;
+}
+
 void Session::written() {
     if (!sampler_ || !film_ || !kept_) {
         throw std::logic_error(kUnbuilt);

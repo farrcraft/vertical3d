@@ -101,6 +101,12 @@ class Delegate {
      **/
     virtual void cancel() = 0;
 
+    /**
+     * Let a stopped render sample on from the samples its picture holds. It ends on the picture a
+     * render never stopped ends on. Nothing happens to a render that is not stopped.
+     **/
+    virtual void resume() = 0;
+
     virtual Status status() const = 0;
 
     /**

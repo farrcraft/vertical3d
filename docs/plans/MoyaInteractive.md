@@ -127,7 +127,7 @@ listed as a number with no record, as the ADR index requires.
 | [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | done |
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | done |
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | done |
-| [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | open |
+| [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | done |
 | [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | open |
 | [15](#step-15--the-documents) | The documents | `docs` | — | open |
 
@@ -502,6 +502,19 @@ Under the shape step 4 settles.
 **Tests:** a view switched to `Rendered` shows a picture from moya, and switched back shows its
 own shading. Orbiting a rendered view makes a new picture from the new camera. A manipulator behind
 an object is hidden in a rendered view as it is in a shaded one, if the record chooses depth.
+
+**Done.** `view::Shading` gains `Rendered`, named `rendered` in a view's state, with a radio item in
+the header's shading menu and the View menu. `view::RenderedViews` keeps a `MoyaDelegate` for each
+rendered view, keyed by the view's name, and the controller ticks it with every view each window
+shows. A view's picture is its size, or its scene camera's frame, divided by `Display::pixelSize`.
+The view's state holds that as `pixelSize`, and it is 1 unless the state names another. A view
+not shown pauses its session, which samples on when the view is shown again through the new
+`Delegate::resume()` and `Session::resume()`. The film it ends on is that of a render never
+stopped. The Renderer keeps a texture for each slot in place of one for the whole editor, which
+also lets two render views show two channels at once. A rendered view draws its meshes filled for
+depth, then its picture through `RenderedViews::cover()` on the quad renderer, which neither
+tests nor writes depth, then its lines. A rendered view shades flat until its first picture.
+There is no menu item for the pixel size yet.
 
 ### Step 14 — Speed
 

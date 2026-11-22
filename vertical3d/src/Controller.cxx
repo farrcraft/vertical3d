@@ -70,6 +70,7 @@
 #include <vertical3d/src/view/AxisEnd.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/Through.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -255,6 +256,7 @@ boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::E
         .locked = v3d::asset::readBool(editor.state, "locked").value_or(false) });
     // the view starts in the shading its state names, as the Shading workspace's view names smooth
     made->display().shading = view::shading(v3d::asset::readString(editor.state, "shading").value_or("")).value_or(view::Shading::Flat);
+    made->display().pixelSize = static_cast<unsigned int>(std::clamp(v3d::asset::readInt(editor.state, "pixelSize").value_or(1), 1, MOST_PIXELS));
     return made;
 }
 
@@ -337,7 +339,9 @@ bool Controller::buildUi() {
     // moya.exe is built beside the editor
     context_.renderView = boost::make_shared<control::RenderView>(boost::make_shared<render::MoyaDelegate>(logger()),
         boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
-        [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
+        [this](const std::string& slot, const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(slot, image); });
+    rendered_ = boost::make_shared<view::RenderedViews>([this] { return boost::make_shared<render::MoyaDelegate>(logger()); },
+        [this](const std::string& view, const boost::shared_ptr<v3d::image::Image>& image) { renderer_->picture(view, image); });
     return findBars(vgui);
 }
 
@@ -887,6 +891,9 @@ bool Controller::release() {
     if (context_.renderView) {
         context_.renderView->release();
     }
+    if (rendered_) {
+        rendered_->release();
+    }
     // the screen draws through the renderer, so it goes first
     shell_.release();
     if (renderer_) {
@@ -912,6 +919,13 @@ bool Controller::tick(unsigned int delta) {
     }
     if (context_.renderView) {
         syncCaption();
+    }
+    if (rendered_ && context_.document) {
+        std::vector<boost::shared_ptr<view::ViewPort>> shown = context_.views->shown();
+        for (const Opened& opened : opened_) {
+            shown.insert(shown.end(), opened.views->shown().begin(), opened.views->shown().end());
+        }
+        rendered_->tick(*context_.document->scene(), shown);
     }
     return Engine::tick(delta);
 }

@@ -46,7 +46,9 @@
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ConstructionPlane.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -539,6 +541,7 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
     const view::ConstructionPlane::Colours grid = gridColours();
     canvases->scenes.resize(views.size());
     canvases->handles.resize(views.size());
+    canvases->rendered.resize(views.size());
     for (std::size_t index = 0; index < views.size(); index++) {
         const boost::shared_ptr<view::ViewPort>& view = views[index];
         if (!view) {
@@ -574,9 +577,7 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
         overlay->camera(view->camera()->view(), view->camera()->projection());
 
         // the surfaces first, so the wireframe drawn after them is drawn over them
-        if (shaded_ && view->shows(view::ViewPort::SHOW_MESH)) {
-            shaded_->submit(scene, view->display(), pass.get());
-        }
+        drawSurfaces(scene, *view, &canvases->rendered[index], pass.get());
         if (lines) {
             lines->submit(canvases->scenes[index], pass.get());
             if (!canvases->handles[index].empty()) {
@@ -584,6 +585,37 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
             }
         }
     }
+}
+
+/**
+ **/
+void Renderer::drawSurfaces(const scene::Scene& scene, const view::ViewPort& view, v3d::render::realtime::canvas::Canvas* canvas,
+    v3d::render::realtime::frame::Pass* pass) {
+    // a rendered view shades its surfaces flat until its first picture. Once it has one, it
+    // draws them for their depth alone and its picture over them, so the lines are tested
+    // against the depth of the scene the picture shows
+    const bool rendered = view.display().shading == view::Shading::Rendered;
+    const auto found = rendered ? pictures_.find(view.name()) : pictures_.end();
+    if (shaded_ && view.shows(view::ViewPort::SHOW_MESH)) {
+        view::ViewPort::Display surfaces = view.display();
+        if (found != pictures_.end()) {
+            surfaces = { .shading = view::Shading::Flat, .cull = view::ViewPort::Cull::None };
+        } else if (rendered) {
+            surfaces.shading = view::Shading::Flat;
+        }
+        shaded_->submit(scene, surfaces, pass);
+    }
+    if (found != pictures_.end() && engine_.quads()) {
+        drawPicture(view, found->second, canvas, pass);
+    }
+}
+
+/**
+ **/
+void Renderer::drawPicture(const view::ViewPort& view, const v3d::render::realtime::resource::TextureHandle& picture,
+    v3d::render::realtime::canvas::Canvas* canvas, v3d::render::realtime::frame::Pass* pass) {
+    view::RenderedViews::cover(view, picture, canvas);
+    engine_.quads()->submit(*canvas, pass);
 }
 
 /**
@@ -787,17 +819,20 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
 
 /**
  **/
-v3d::render::realtime::resource::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
-    // the ui stops drawing the old texture this frame, and its image is reclaimed once the
-    // frame in flight has finished with it
-    if (picture_.valid()) {
-        engine_.textures()->release(picture_);
-        picture_ = v3d::render::realtime::resource::TextureHandle();
+v3d::render::realtime::resource::TextureHandle Renderer::picture(const std::string& slot, const boost::shared_ptr<v3d::image::Image>& image) {
+    // what draws the old texture stops this frame, and its image is reclaimed once the frame in
+    // flight has finished with it
+    const auto found = pictures_.find(slot);
+    if (found != pictures_.end()) {
+        engine_.textures()->release(found->second);
+        pictures_.erase(found);
     }
-    if (image) {
-        picture_ = engine_.textures()->texture(image);
+    if (!image) {
+        return {};
     }
-    return picture_;
+    const v3d::render::realtime::resource::TextureHandle made = engine_.textures()->texture(image);
+    pictures_[slot] = made;
+    return made;
 }
 
 /**

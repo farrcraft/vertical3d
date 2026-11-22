@@ -374,6 +374,9 @@ stands for.
   a caller that changes what its pictures show once sampling has ended has a picture of it. The
   picture of a version that has ended is denoised as the last of a version is. It makes nothing
   before `show()` or before the version's first full pass.
+- **`resume()` lets a version that the checkpoints' `stop` ended sample on**, from the passes its
+  film holds, once the stop answers false again. The film it ends on is that of a version never
+  stopped. A version that holds every sample stays ended.
 - **A session without `show()`** runs no coarse passes, and samples in whole passes.
 
 Background: [ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md),

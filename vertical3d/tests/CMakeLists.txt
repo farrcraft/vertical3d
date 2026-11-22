@@ -9,6 +9,7 @@ v3d_add_test(vertical3d
 	"view/AreaFrameTest.cxx"
 	"view/ViewOverlayTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
+	"view/RenderedViewsTest.cxx"
 	"view/ViewPortTest.cxx"
 	"view/ThroughTest.cxx"
 
@@ -113,10 +114,12 @@ target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_INTERCHANGE_DATA="${V3
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
 v3d_copy_usd_plugins(v3dtest_vertical3d)
 
-# The cases that draw on a device: the shaded pass, through the render device suite's headless
-# device. Where there is no device the binary exits with 77, which ctest reports as a skip.
+# The cases that draw on a device: the shaded pass and a rendered view, through the render
+# device suite's headless device. Where there is no device the binary exits with 77, which ctest
+# reports as a skip.
 v3d_add_test(vertical3d_device
 	"device/TestMain.cxx"
+	"device/RenderedViewTest.cxx"
 	"device/ShadedPassTest.cxx"
 
 	"../../api/render/tests/device/Headless.cpp")
