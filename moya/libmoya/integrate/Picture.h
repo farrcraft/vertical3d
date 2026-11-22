@@ -26,6 +26,9 @@ struct Picture {
      **/
     std::uint32_t samples { 0 };
 
+    /** The samples each pixel holds once the version has every sample it takes. **/
+    std::uint32_t total { 0 };
+
     /**
      * The side of the square of pixels each sample stands for. It is one once the picture has
      * the film's own resolution, and a power of two above one for a coarse picture.

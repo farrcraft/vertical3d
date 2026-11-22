@@ -14,33 +14,44 @@ covers moya.
 **An interactive render goes through a renderer interface.** `Delegate` in `src/render/` is
 what the editor drives:
 
-- `render(scene, camera, settings)` starts a render, cancelling one already running.
-- `update(scene, camera, settings)` starts again when anything the picture shows has changed,
+- `render(scene, camera, settings)` starts a render from its first sample, and starts one already
+  running again.
+- `update(scene, camera, settings)` hands the render whatever its picture shows that has changed,
   and does nothing otherwise. What the picture shows is each item's document id, revision and
   parent, the values an evaluation of the current frame gives each item, the camera's placement
-  and lens, and the settings. A change of frame or a pending edit renders again too.
-- `cancel()` stops a running render, and keeps the last finished picture.
-- `status()` gives the render's state, how much of it is done, and a count that moves with each
-  new picture. `picture()` gives the latest one.
+  and lens, and the settings. A change of frame or a pending edit is handed over too.
+- `cancel()` stops a running render. Its latest picture stays, and holds what was sampled before
+  the stop.
+- `status()` gives the render's state, how much of it is done, the samples each pixel of the
+  latest picture holds and those it holds when done, and a count that moves with each new
+  picture. `picture()` gives the latest one.
 
-A render reads the scene when it starts, so an edit made while it runs is not in its picture.
+**An edit reaches a running render.** The render takes it between two passes without being
+cancelled, and samples the edited scene from its first sample. A render that had finished or
+stopped starts again.
 
 **moya is the first renderer behind it.** `MoyaDelegate` links `v3dlib_moya` into the editor and
-renders with moya's path tracer on a thread of its own. No RIB text is written or parsed, and no
+renders with moya's path tracer through one render session, kept for as long as the editor
+renders, on a thread of its own. No RIB text is written or parsed, and no
 file stands between the render and its picture.
 
-- **The retained scene changes only between renders.** Each render first brings moya's retained
-  scene in step with the editor's through a `SceneTranslator`, on the caller's thread, changing
-  only what moved. The render's thread then reads it until the render ends. A render already
-  running is cancelled first, so the scene is never changed while a render reads it.
-  [The scene](../offline/Scene.md) describes what it holds.
-- **Progress is counted in passes.** Before each pass the render reports the passes done over
-  the passes its samples take, which `integrate::passesOf()` gives. A cancel stops it there, so
-  a cancel waits for at most one pass. A render whose pixels all stop early ends at 1.
+- **An edit is committed to the retained scene, and the session applies it.** Each `update()`
+  brings moya's retained scene in step with the editor's through a `SceneTranslator`, on the
+  caller's thread, changing only what moved, and commits the change as one batch. The session
+  drops the pass in progress, applies the batch, and rebuilds only what it touched. The render's
+  thread owns the retained scene: it applies every batch, and is the only thread that reads the
+  scene while a render runs. [The scene](../offline/Scene.md) describes what it holds.
+- **`render()` starts a new session.** The one before ends, and the new one builds every
+  structure from nothing.
+- **A picture follows each pass**, at most one every `MoyaDelegate::kInterval` seconds but for the
+  first of each edit and the last. The first pictures after an edit are coarse, each block a
+  sample. A cancel drops the pass in progress before its next tile, and the latest picture then
+  holds every sample before it.
+- **Progress is counted in samples**: the samples the latest picture holds over those the render
+  takes. A coarse picture leaves it where it was. A render whose pixels all stop early ends at 1.
 - **The picture is the beauty as a display shows it**, through the colour configuration's
-  default display and view at 8 bits a channel, as moya writes a PNG output. It arrives when the
-  render finishes. A render of a scene and moya.exe's render of its RIB export give the same
-  bytes.
+  default display and view at 8 bits a channel, as moya writes a PNG output. The picture a render
+  ends on and moya.exe's render of the scene's RIB export give the same bytes, after any edits.
 - **The editor carries moya's CPU libraries and MaterialX's standard libraries beside it**, as
   moya.exe does, since the device and the materials load them from there.
 
@@ -66,7 +77,8 @@ program, waits for it, and ends it when a stop is asked for.
 A renderer failure during Render View takes the editor down with it, because moya runs in the
 editor's process. One during a batch fails only that frame.
 
-Background: [ADR-0106](../adr/editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md)
+Background: [ADR-0106](../adr/editor/0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md),
+[ADR-0253](../adr/offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md)
 
 ## What is rendered
 

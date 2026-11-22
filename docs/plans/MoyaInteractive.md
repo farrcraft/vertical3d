@@ -125,7 +125,7 @@ listed as a number with no record, as the ADR index requires.
 | [8](#step-8--the-session) | The session | `moya/libmoya/integrate` | 0253 | done |
 | [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | done |
 | [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | done |
-| [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | open |
+| [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | done |
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | open |
 | [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | open |
 | [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | open |
@@ -454,6 +454,16 @@ them, and each denoised picture takes a snapshot's worth of OIDN time from the s
 delegate's final picture of an edited scene matches moya.exe's render of the scene's RIB export
 after the edit. A stop during a render keeps a picture. TODO.md's "A render shows nothing until it
 finishes" is closed by this step, and its entry deleted.
+
+**Done.** `MoyaDelegate` keeps one `integrate::Session` from one `render()` to the next, and drives
+it on a thread of its own by `advance()`, waiting for an edit once a pass runs no more.
+`update()` translates and commits on the caller's thread, then says `edited()`. A cancel is the
+checkpoints' stop, so the session ends its version on a picture of every sample before it, and an
+edit after a stop starts the next version. `render()` ends the session and makes a new one, which
+builds from nothing. Pictures come at most one every tenth of a second but for the first and last
+of each version. `integrate::Picture` gains `total`, the samples a version takes, from which
+`status()` counts how much is done. The retained scene is read by the delegate's owner only once
+no render runs. The rate is the delegate's constant until step 12 hands it to the render view.
 
 ### Step 12 — The render view as it improves
 

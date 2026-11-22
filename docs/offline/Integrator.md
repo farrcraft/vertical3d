@@ -335,7 +335,8 @@ Background: [ADR-0253](../adr/offline/0253-offline-a-render-is-a-session-that-ta
 `Session::show(pictures)` makes the session hand its caller an `integrate::Picture` as it samples.
 A picture is the film's beauty through a display and its view, at 8 bits a channel, as
 `output::displayed()` gives it. It names the scene's version it shows, the samples its pixels
-hold, and the side of the block each sample stands for.
+hold, the samples they hold once the version has them all, and the side of the block each sample
+stands for.
 
 - **Coarse pictures come first after each new version.** Each renders one sample for each block of
   pixels, into a film of its own, and every pixel of the picture takes its block's colour. The

@@ -236,9 +236,10 @@ BOOST_AUTO_TEST_CASE(translator_the_moya_delegate_keeps_its_scene_in_step_test) 
     editor.add(cube);
     v3d::editor::render::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
     delegate.render(editor, view(), output().settings);
+    // the retained scene is read once the render has applied it and no longer runs
+    delegate.cancel();
     BOOST_TEST(delegate.retained().find("instance", cube->name()).has_value());
     BOOST_TEST(delegate.retained().find("options", "options").has_value());
-    delegate.cancel();
 }
 
 };  // namespace

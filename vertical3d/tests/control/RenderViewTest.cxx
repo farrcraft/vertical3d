@@ -52,12 +52,19 @@ class Fake final : public Delegate {
     Status now;
     boost::shared_ptr<v3d::image::Image> shown;
     int started = 0;
+    int edited = 0;
     int cancelled = 0;
 
  protected:
     void start(const v3d::editor::scene::Scene& /*scene*/, const v3d::type::camera::Profile& /*from*/,
         const v3d::editor::scene::RenderSettings& /*settings*/) override {
         started++;
+    }
+
+    bool edit(const v3d::editor::scene::Scene& /*scene*/, const v3d::type::camera::Profile& /*from*/,
+        const v3d::editor::scene::RenderSettings& /*settings*/) override {
+        edited++;
+        return true;
     }
 };
 
@@ -165,9 +172,9 @@ BOOST_AUTO_TEST_CASE(the_state_follows_the_render) {
 }
 
 /**
- * The scene is rendered again when it changes only while a render view is shown.
+ * A change to the scene reaches the render only while a render view is shown.
  **/
-BOOST_AUTO_TEST_CASE(a_change_renders_again_only_while_shown) {
+BOOST_AUTO_TEST_CASE(a_change_reaches_the_render_only_while_shown) {
     View view;
     view.view.render(view.scene, view.from);
     BOOST_CHECK_EQUAL(view.delegate->started, 1);
@@ -176,9 +183,10 @@ BOOST_AUTO_TEST_CASE(a_change_renders_again_only_while_shown) {
     wider.size.x = 800;
     view.scene.renderSettings(wider);
     view.view.tick(view.scene, view.from, false);
-    BOOST_CHECK_EQUAL(view.delegate->started, 1);
+    BOOST_CHECK_EQUAL(view.delegate->edited, 0);
     view.view.tick(view.scene, view.from, true);
-    BOOST_CHECK_EQUAL(view.delegate->started, 2);
+    BOOST_CHECK_EQUAL(view.delegate->edited, 1);
+    BOOST_CHECK_EQUAL(view.delegate->started, 1);
 }
 
 /**

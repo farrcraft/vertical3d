@@ -419,7 +419,7 @@ bool Session::coarse(const std::function<bool()> & during) {
 
     // each pixel of the picture takes the colour of the block it is in
     const std::vector<std::uint8_t> blocks = output::displayed(film.snapshot(), *display_);
-    Picture out { .version = version_, .samples = 1, .block = block, .resolution = window_.size, .image = image_, .origin = window_.origin };
+    Picture out { .version = version_, .samples = 1, .total = sampler_->samplesPerPixel(), .block = block, .resolution = window_.size, .image = image_, .origin = window_.origin };
     out.rgb.resize(static_cast<std::size_t>(window_.size.x) * window_.size.y * 3U);
     for (std::uint32_t y = 0; y < window_.size.y; ++y) {
         const std::size_t row = ((window_.origin.y + y) / block) - low.y;
@@ -440,6 +440,7 @@ void Session::pictured(bool forced, bool last) {
     const film::Snapshot snapshot = film_->snapshot();
     Picture out { .version = version_,
         .samples = first_,
+        .total = sampler_->samplesPerPixel(),
         .block = 1,
         .resolution = window_.size,
         .image = image_,

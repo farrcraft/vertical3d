@@ -182,8 +182,4 @@ are where to start.
 would be made by revolving, lofting or sweeping curves, and trimmed by curves on it. It needs an
 ADR on how it relates to meshes, and moya's `NuPatch` and `TrimCurve` have empty bodies.
 
-[] **A render shows nothing until it finishes.** moya resolves its samples into pixels at the end
-of a frame, so the render view waits for the whole picture. Resolving each bucket as it
-finishes would let `Delegate` hand over pictures as they improve.
-
 
