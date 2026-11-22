@@ -13,12 +13,15 @@
 #include <moya/libmoya/kernel/bsdf/Closure.h>
 #include <moya/libmoya/kernel/bsdf/Lobe.h>
 #include <moya/libmoya/kernel/bsdf/Model.h>
+#include <moya/libmoya/kernel/bsdf/Sample.h>
+#include <moya/libmoya/kernel/bsdf/scattering/Fibre.h>
 #include <moya/libmoya/kernel/bsdf/scattering/Hair.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
 #include <moya/libmoya/kernel/spectrum/Spectrum.h>
 #include <moya/libmoya/kernel/spectrum/Wavelengths.h>
 #include <moya/libmoya/kernel/surface/Frame.h>
 #include <moya/libmoya/kernel/surface/Hair.h>
+#include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/kernel/surface/ShadingPoint.h>
 #include <moya/libmoya/kernel/surface/Surfaces.h>
 #include <moya/libmoya/material/Albedos.h>
@@ -79,17 +82,18 @@ struct Pbrt {
     double sin2kAlpha[3];
     double cos2kAlpha[3];
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - pbrt-v4's order of its parameters
     Pbrt(double offset, double ior, double absorption, double betaM, double betaN, double alpha) : h(offset), eta(ior), sigma(absorption) {
-        v[0] = std::pow(0.726 * betaM + 0.812 * betaM * betaM + 3.7 * std::pow(betaM, 20.0), 2.0);
+        v[0] = std::pow((0.726 * betaM) + (0.812 * betaM * betaM) + (3.7 * std::pow(betaM, 20.0)), 2.0);
         v[1] = 0.25 * v[0];
         v[2] = 4.0 * v[0];
         v[3] = v[2];
-        s = 0.626657069 * (0.265 * betaN + 1.194 * betaN * betaN + 5.372 * std::pow(betaN, 22.0));
+        s = 0.626657069 * ((0.265 * betaN) + (1.194 * betaN * betaN) + (5.372 * std::pow(betaN, 22.0)));
         sin2kAlpha[0] = std::sin(alpha * kPi / 180.0);
-        cos2kAlpha[0] = safeSqrt(1.0 - sin2kAlpha[0] * sin2kAlpha[0]);
+        cos2kAlpha[0] = safeSqrt(1.0 - (sin2kAlpha[0] * sin2kAlpha[0]));
         for (int i = 1; i < 3; ++i) {
             sin2kAlpha[i] = 2.0 * cos2kAlpha[i - 1] * sin2kAlpha[i - 1];
-            cos2kAlpha[i] = cos2kAlpha[i - 1] * cos2kAlpha[i - 1] - sin2kAlpha[i - 1] * sin2kAlpha[i - 1];
+            cos2kAlpha[i] = (cos2kAlpha[i - 1] * cos2kAlpha[i - 1]) - (sin2kAlpha[i - 1] * sin2kAlpha[i - 1]);
         }
     }
 
@@ -119,15 +123,17 @@ struct Pbrt {
 
     static double logI0(double x) {
         if (x > 12.0) {
-            return x + 0.5 * (-std::log(2.0 * kPi) + std::log(1.0 / x) + 1.0 / (8.0 * x));
+            return x + (0.5 * (-std::log(2.0 * kPi) + std::log(1.0 / x) + (1.0 / (8.0 * x))));
         }
         return std::log(i0(x));
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - pbrt-v4's order of its parameters
     static double mp(double cosThetaI, double cosThetaO, double sinThetaI, double sinThetaO, double v) {
-        const double a = cosThetaI * cosThetaO / v;
-        const double b = sinThetaI * sinThetaO / v;
-        return v <= 0.1 ? std::exp(logI0(a) - b - 1.0 / v + 0.6931 + std::log(1.0 / (2.0 * v))) : (std::exp(-b) * i0(a)) / (std::sinh(1.0 / v) * 2.0 * v);
+        const double cosines = cosThetaI * cosThetaO / v;
+        const double sines = sinThetaI * sinThetaO / v;
+        return v <= 0.1 ? std::exp(logI0(cosines) - sines - (1.0 / v) + 0.6931 + std::log(1.0 / (2.0 * v)))
+                        : (std::exp(-sines) * i0(cosines)) / (std::sinh(1.0 / v) * 2.0 * v);
     }
 
     static double frDielectric(double cosThetaI, double eta) {
@@ -136,32 +142,33 @@ struct Pbrt {
             eta = 1.0 / eta;
             cosThetaI = -cosThetaI;
         }
-        const double sin2ThetaI = 1.0 - cosThetaI * cosThetaI;
+        const double sin2ThetaI = 1.0 - (cosThetaI * cosThetaI);
         const double sin2ThetaT = sin2ThetaI / (eta * eta);
         if (sin2ThetaT >= 1.0) {
             return 1.0;
         }
         const double cosThetaT = safeSqrt(1.0 - sin2ThetaT);
-        const double rParl = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
-        const double rPerp = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
-        return (rParl * rParl + rPerp * rPerp) / 2.0;
+        const double rParl = ((eta * cosThetaI) - cosThetaT) / ((eta * cosThetaI) + cosThetaT);
+        const double rPerp = (cosThetaI - (eta * cosThetaT)) / (cosThetaI + (eta * cosThetaT));
+        return ((rParl * rParl) + (rPerp * rPerp)) / 2.0;
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the cosine, then the transmittance
     std::array<double, 4> ap(double cosThetaO, double t) const {
         std::array<double, 4> out {};
-        const double cosGammaO = safeSqrt(1.0 - h * h);
-        const double f = frDielectric(cosThetaO * cosGammaO, eta);
-        out[0] = f;
-        out[1] = (1.0 - f) * (1.0 - f) * t;
-        out[2] = out[1] * t * f;
-        if (1.0 - t * f != 0.0) {
-            out[3] = out[2] * f * t / (1.0 - t * f);
+        const double cosGammaO = safeSqrt(1.0 - (h * h));
+        const double fresnel = frDielectric(cosThetaO * cosGammaO, eta);
+        out[0] = fresnel;
+        out[1] = (1.0 - fresnel) * (1.0 - fresnel) * t;
+        out[2] = out[1] * t * fresnel;
+        if (1.0 - (t * fresnel) != 0.0) {
+            out[3] = out[2] * fresnel * t / (1.0 - (t * fresnel));
         }
         return out;
     }
 
-    static double phi(int p, double gammaO, double gammaT) {
-        return 2.0 * p * gammaT - 2.0 * gammaO + p * kPi;
+    static double phi(int lobe, double gammaO, double gammaT) {
+        return (2.0 * lobe * gammaT) - (2.0 * gammaO) + (lobe * kPi);
     }
 
     static double logistic(double x, double s) {
@@ -173,8 +180,9 @@ struct Pbrt {
         return 1.0 / (1.0 + std::exp(-x / s));
     }
 
-    static double np(double phiValue, int p, double s, double gammaO, double gammaT) {
-        double dphi = phiValue - phi(p, gammaO, gammaT);
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - pbrt-v4's order of its parameters
+    static double np(double phiValue, int lobe, double s, double gammaO, double gammaT) {
+        double dphi = phiValue - phi(lobe, gammaO, gammaT);
         while (dphi > kPi) {
             dphi -= 2.0 * kPi;
         }
@@ -184,16 +192,17 @@ struct Pbrt {
         return logistic(dphi, s) / (logisticCdf(kPi, s) - logisticCdf(-kPi, s));
     }
 
-    void tilted(int p, double sinThetaO, double cosThetaO, double & sinThetapO, double & cosThetapO) const {
-        if (p == 0) {
-            sinThetapO = sinThetaO * cos2kAlpha[1] - cosThetaO * sin2kAlpha[1];
-            cosThetapO = cosThetaO * cos2kAlpha[1] + sinThetaO * sin2kAlpha[1];
-        } else if (p == 1) {
-            sinThetapO = sinThetaO * cos2kAlpha[0] + cosThetaO * sin2kAlpha[0];
-            cosThetapO = cosThetaO * cos2kAlpha[0] - sinThetaO * sin2kAlpha[0];
-        } else if (p == 2) {
-            sinThetapO = sinThetaO * cos2kAlpha[2] + cosThetaO * sin2kAlpha[2];
-            cosThetapO = cosThetaO * cos2kAlpha[2] - sinThetaO * sin2kAlpha[2];
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - a sine and cosine, then the tilted
+    void tilted(int lobe, double sinThetaO, double cosThetaO, double & sinThetapO, double & cosThetapO) const {
+        if (lobe == 0) {
+            sinThetapO = (sinThetaO * cos2kAlpha[1]) - (cosThetaO * sin2kAlpha[1]);
+            cosThetapO = (cosThetaO * cos2kAlpha[1]) + (sinThetaO * sin2kAlpha[1]);
+        } else if (lobe == 1) {
+            sinThetapO = (sinThetaO * cos2kAlpha[0]) + (cosThetaO * sin2kAlpha[0]);
+            cosThetapO = (cosThetaO * cos2kAlpha[0]) - (sinThetaO * sin2kAlpha[0]);
+        } else if (lobe == 2) {
+            sinThetapO = (sinThetaO * cos2kAlpha[2]) + (cosThetaO * sin2kAlpha[2]);
+            cosThetapO = (cosThetaO * cos2kAlpha[2]) - (sinThetaO * sin2kAlpha[2]);
         } else {
             sinThetapO = sinThetaO;
             cosThetapO = cosThetaO;
@@ -202,38 +211,39 @@ struct Pbrt {
     }
 
     /** f(), and the density PDF() gives, for two directions. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the value, then the density
     void evaluate(const glm::dvec3 & wo, const glm::dvec3 & wi, double & value, double & density) const {
         const double sinThetaO = wo.x;
-        const double cosThetaO = safeSqrt(1.0 - sinThetaO * sinThetaO);
+        const double cosThetaO = safeSqrt(1.0 - (sinThetaO * sinThetaO));
         const double phiO = std::atan2(wo.z, wo.y);
         const double gammaO = safeAsin(h);
         const double sinThetaI = wi.x;
-        const double cosThetaI = safeSqrt(1.0 - sinThetaI * sinThetaI);
+        const double cosThetaI = safeSqrt(1.0 - (sinThetaI * sinThetaI));
         const double phiI = std::atan2(wi.z, wi.y);
         const double sinThetaT = sinThetaO / eta;
-        const double cosThetaT = safeSqrt(1.0 - sinThetaT * sinThetaT);
-        const double etap = safeSqrt(eta * eta - sinThetaO * sinThetaO) / cosThetaO;
+        const double cosThetaT = safeSqrt(1.0 - (sinThetaT * sinThetaT));
+        const double etap = safeSqrt((eta * eta) - (sinThetaO * sinThetaO)) / cosThetaO;
         const double sinGammaT = h / etap;
-        const double cosGammaT = safeSqrt(1.0 - sinGammaT * sinGammaT);
+        const double cosGammaT = safeSqrt(1.0 - (sinGammaT * sinGammaT));
         const double gammaT = safeAsin(sinGammaT);
         const double t = std::exp(-sigma * (2.0 * cosGammaT / cosThetaT));
         const double phiValue = phiI - phiO;
-        const std::array<double, 4> a = ap(cosThetaO, t);
-        const double sum = a[0] + a[1] + a[2] + a[3];
+        const std::array<double, 4> attenuation = ap(cosThetaO, t);
+        const double sum = attenuation[0] + attenuation[1] + attenuation[2] + attenuation[3];
         value = 0.0;
         density = 0.0;
-        for (int p = 0; p < 3; ++p) {
+        for (int lobe = 0; lobe < 3; ++lobe) {
             double sinThetapO = 0.0;
             double cosThetapO = 0.0;
-            tilted(p, sinThetaO, cosThetaO, sinThetapO, cosThetapO);
-            const double m = mp(cosThetaI, cosThetapO, sinThetaI, sinThetapO, v[p]);
-            const double n = np(phiValue, p, s, gammaO, gammaT);
-            value += m * a[p] * n;
-            density += m * (a[p] / sum) * n;
+            tilted(lobe, sinThetaO, cosThetaO, sinThetapO, cosThetapO);
+            const double longitudinal = mp(cosThetaI, cosThetapO, sinThetaI, sinThetapO, v[lobe]);
+            const double azimuthal = np(phiValue, lobe, s, gammaO, gammaT);
+            value += longitudinal * attenuation[lobe] * azimuthal;
+            density += longitudinal * (attenuation[lobe] / sum) * azimuthal;
         }
         const double rest = mp(cosThetaI, cosThetaO, sinThetaI, sinThetaO, v[3]) / (2.0 * kPi);
-        value += rest * a[3];
-        density += rest * a[3] / sum;
+        value += rest * attenuation[3];
+        density += rest * attenuation[3] / sum;
         if (std::abs(wi.z) > 0.0) {
             value /= std::abs(wi.z);
         }
@@ -241,14 +251,14 @@ struct Pbrt {
 
     /** The sum of the attenuations, which is the albedo, for an outgoing longitudinal sine. **/
     double albedo(double sinThetaO) const {
-        const double cosThetaO = safeSqrt(1.0 - sinThetaO * sinThetaO);
+        const double cosThetaO = safeSqrt(1.0 - (sinThetaO * sinThetaO));
         const double sinThetaT = sinThetaO / eta;
-        const double cosThetaT = safeSqrt(1.0 - sinThetaT * sinThetaT);
-        const double etap = safeSqrt(eta * eta - sinThetaO * sinThetaO) / cosThetaO;
+        const double cosThetaT = safeSqrt(1.0 - (sinThetaT * sinThetaT));
+        const double etap = safeSqrt((eta * eta) - (sinThetaO * sinThetaO)) / cosThetaO;
         const double sinGammaT = h / etap;
-        const double cosGammaT = safeSqrt(1.0 - sinGammaT * sinGammaT);
-        const std::array<double, 4> a = ap(cosThetaO, std::exp(-sigma * (2.0 * cosGammaT / cosThetaT)));
-        return a[0] + a[1] + a[2] + a[3];
+        const double cosGammaT = safeSqrt(1.0 - (sinGammaT * sinGammaT));
+        const std::array<double, 4> attenuation = ap(cosThetaO, std::exp(-sigma * (2.0 * cosGammaT / cosThetaT)));
+        return attenuation[0] + attenuation[1] + attenuation[2] + attenuation[3];
     }
 };
 
@@ -267,6 +277,7 @@ float azimuthalOf(float betaN) {
  * MaterialX's parameters of a white fibre that matches pbrt-v4's of an index, roughnesses and a
  * tilt in degrees.
  **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - pbrt-v4's order
 kernel::surface::Hair matching(float ior, float betaM, float betaN, float alpha) {
     const float variance = varianceOf(betaM);
     const float azimuthal = azimuthalOf(betaN);
@@ -281,6 +292,7 @@ kernel::surface::Hair matching(float ior, float betaM, float betaN, float alpha)
 }
 
 /** A fibre of MaterialX's parameters, met at an offset, of a grey absorption. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the offset, then the absorption
 scattering::Fibre fibreOf(const kernel::surface::Hair & hair, float offset, float absorption = 0.0F) {
     scattering::Fibre out = scattering::Hair::fibre(hair, colour::acescgTable(), spectrum::SampledWavelengths::visible(0.5F), offset);
     out.absorption = spectrum::SampledSpectrum(absorption);
@@ -368,10 +380,10 @@ BOOST_AUTO_TEST_CASE(moya_hair_samples_follow_their_density_test) {
 BOOST_AUTO_TEST_CASE(moya_hair_keeps_a_furnaces_light_test) {
     std::uint32_t seed = 1721;
     for (const float betaM : { 0.2F, 0.4F }) {
-        for (const float h : { -0.6F, 0.1F, 0.95F }) {
+        for (const float offset : { -0.6F, 0.1F, 0.95F }) {
             for (const float alpha : { 0.0F, 3.0F }) {
-                BOOST_TEST_CONTEXT("beta_m " << betaM << ", h " << h << ", alpha " << alpha) {
-                    const bsdf::Bsdf white = haired(fibreOf(matching(1.55F, betaM, 0.5F, alpha), h));
+                BOOST_TEST_CONTEXT("beta_m " << betaM << ", h " << offset << ", alpha " << alpha) {
+                    const bsdf::Bsdf white = haired(fibreOf(matching(1.55F, betaM, 0.5F, alpha), offset));
                     BOOST_TEST(furnace(white, fibreward(0.3F, 0.9F), 200000, seed++) == 1.0F, boost::test_tools::tolerance(0.02F));
                     BOOST_TEST(furnace(white, fibreward(-0.75F, 2.5F), 200000, seed++) == 1.0F, boost::test_tools::tolerance(0.02F));
                 }
@@ -554,12 +566,13 @@ BOOST_AUTO_TEST_CASE(moya_hair_a_materialx_hair_compiles_test) {
     BOOST_TEST(made.hair.roughnessTT.x == 0.25F * variance, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(made.hair.roughnessTRT.x == 4.0F * variance, boost::test_tools::tolerance(1.0e-5F));
     BOOST_TEST(made.hair.roughnessTRT.y == azimuthal, boost::test_tools::tolerance(1.0e-5F));
-    const float b = 0.4F;
-    const float factor = 5.969F - (0.215F * b) + (2.532F * b * b) - (10.73F * b * b * b) + (5.574F * b * b * b * b) + (0.245F * b * b * b * b * b);
+    const float betaN = 0.4F;
+    const float factor = 5.969F - (0.215F * betaN) + (2.532F * betaN * betaN) - (10.73F * betaN * betaN * betaN) + (5.574F * betaN * betaN * betaN * betaN) +
+        (0.245F * betaN * betaN * betaN * betaN * betaN);
     const glm::vec3 colour { 0.3F, 0.2F, 0.1F };
-    for (int c = 0; c < 3; ++c) {
-        const float root = std::log(colour[c]) / factor;
-        BOOST_TEST(made.hair.absorption[c] == root * root, boost::test_tools::tolerance(1.0e-4F));
+    for (int channel = 0; channel < 3; ++channel) {
+        const float root = std::log(colour[channel]) / factor;
+        BOOST_TEST(made.hair.absorption[channel] == root * root, boost::test_tools::tolerance(1.0e-4F));
     }
 }
 
@@ -581,9 +594,9 @@ BOOST_AUTO_TEST_CASE(moya_hair_melanin_gives_its_absorption_test) {
     const float amount = -std::log(1.0F - 0.6F);
     const glm::vec3 eumelanin { 0.657704F, 0.498077F, 0.254107F };
     const glm::vec3 pheomelanin { 0.829444F, 0.67032F, 0.349938F };
-    for (int c = 0; c < 3; ++c) {
-        const float want = (amount * 0.8F * -std::log(eumelanin[c])) + (amount * 0.2F * -std::log(pheomelanin[c]));
-        BOOST_TEST(compiled.material.hair.absorption[c] == want, boost::test_tools::tolerance(1.0e-4F));
+    for (int channel = 0; channel < 3; ++channel) {
+        const float want = (amount * 0.8F * -std::log(eumelanin[channel])) + (amount * 0.2F * -std::log(pheomelanin[channel]));
+        BOOST_TEST(compiled.material.hair.absorption[channel] == want, boost::test_tools::tolerance(1.0e-4F));
     }
     // each melanin's colour is read a component at a time, so each of the two is three constants
     BOOST_TEST(std::ranges::count(compiled.spaces, std::string("lin_rec709")) == 6);
@@ -612,6 +625,7 @@ BOOST_AUTO_TEST_CASE(moya_hair_what_a_hair_does_not_take_is_reported_test) {
 }
 
 /** An instance, in the world, of a prototype with a material. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the prototype, then the material
 void placed(scene::Scene & scene, const std::string & name, const scene::Handle & prototype, const scene::Handle & held, const glm::mat4 & transform) {
     const scene::Handle instance = instanced(scene, name, prototype, {}, transform);
     scene.set(instance, "material", scene::Value::handle(held));

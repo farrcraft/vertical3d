@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <string>
 
 namespace v3d::rib::requests {
@@ -17,9 +18,12 @@ namespace v3d::rib::requests {
  * own bounds and voxels, and RIB writes the box and the counts all the same.
  **/
 struct Volume {
+    /** The values of a bound: a least and a most along each axis. **/
+    static constexpr std::size_t kBoundValues = 6;
+
     std::string type{};
     /** xmin, xmax, ymin, ymax, zmin and zmax, in object space **/
-    std::array<float, 6> bound { -1.0F, 1.0F, -1.0F, 1.0F, -1.0F, 1.0F };
+    std::array<float, kBoundValues> bound { -1.0F, 1.0F, -1.0F, 1.0F, -1.0F, 1.0F };
     /** how many voxels the varying values cover along x, y and z **/
     std::array<unsigned int, 3> voxels { 0, 0, 0 };
 };

@@ -96,10 +96,10 @@ std::optional<material::Compiled> displacementOf(const scene::Scene & scene, con
  * A material compiled with the medium it encloses, when its surface node is a MaterialX or an RI
  * node, or it has a volume and no surface, which makes it a boundary. A surface that does not
  * compile is diffuse, and its report says why. The volume's program, when it compiles, goes into
- * volumes by the material's index in the scene.
+ * medium.
  **/
 std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const scene::Handle & handle, std::vector<std::string> & names,
-    std::map<std::uint32_t, material::Compiled> & volumes) {
+    std::optional<material::Compiled> & medium) {
     const scene::Handle surface = scene.value(handle, "surface").handleArray().front();
     if (!surface.valid() || !scene.contains(surface)) {
         const scene::Handle volume = scene.value(handle, "volume").handleArray().front();
@@ -114,9 +114,7 @@ std::optional<material::Compiled> surfaceOf(const scene::Scene & scene, const sc
     }
     try {
         material::Compiled out = material::compile(material::Library::installed(), scene, handle, names);
-        if (std::optional<material::Compiled> volume = enclose(scene, handle, out, names)) {
-            volumes.insert_or_assign(handle.index, std::move(*volume));
-        }
+        medium = enclose(scene, handle, out, names);
         return out;
     } catch (const std::runtime_error & refused) {
         material::Compiled diffuse;
@@ -162,6 +160,18 @@ std::set<std::uint32_t> networkOf(const scene::Scene & scene, const scene::Handl
     return out;
 }
 
+/** Adds each primvar an output's channel reads that no program reads. **/
+void channelPrimvarsInto(const scene::Scene & scene, std::vector<std::string> & names) {
+    for (const scene::Handle & output : scene.objects("output")) {
+        for (const scene::Handle & channel : scene.value(output, "channels").handleArray()) {
+            const std::string & name = scene.value(channel, "sourceName").stringArray().front();
+            if (scene.value(channel, "sourceType").stringArray().front() == "primvar" && !name.empty() && std::ranges::find(names, name) == names.end()) {
+                names.push_back(name);
+            }
+        }
+    }
+}
+
 /** Every connection of the scene, by the scene's index of the node it feeds. **/
 std::multimap<std::uint32_t, scene::Handle> feedingOf(const scene::Scene & scene) {
     std::multimap<std::uint32_t, scene::Handle> out;
@@ -193,29 +203,21 @@ Programs::Programs(const scene::Scene & scene, Cache * cache) : names_ { "N", "C
         bool keep = false;
         if (cache != nullptr) {
             program.network = networkOf(scene, handle, feeding);
-            const auto held = cache->programs_.find(handle.index);
-            const auto touched = [&](const std::set<std::uint32_t> & indices) {
-                return std::ranges::any_of(indices, [&](std::uint32_t index) { return cache->forgotten_.contains(index); });
-            };
-            keep = held != cache->programs_.end() && held->second.handle == handle && held->second.before == names_ &&
-                !cache->forgotten_.contains(handle.index) && !touched(held->second.network) && !touched(program.network);
+            keep = keeps(*cache, handle, program.network);
             if (keep) {
-                program.before = std::move(held->second.before);
-                program.after = std::move(held->second.after);
-                program.displacement = std::move(held->second.displacement);
-                program.surface = std::move(held->second.surface);
-                program.volume = std::move(held->second.volume);
+                Cache::Program & held = cache->programs_.at(handle.index);
+                program.before = std::move(held.before);
+                program.after = std::move(held.after);
+                program.displacement = std::move(held.displacement);
+                program.surface = std::move(held.surface);
+                program.volume = std::move(held.volume);
                 names_ = program.after;
             }
         }
         if (!keep) {
             program.before = names_;
             program.displacement = displacementOf(scene, handle, names_);
-            std::map<std::uint32_t, material::Compiled> volume;
-            program.surface = surfaceOf(scene, handle, names_, volume);
-            if (!volume.empty()) {
-                program.volume = std::move(volume.begin()->second);
-            }
+            program.surface = surfaceOf(scene, handle, names_, program.volume);
             program.after = names_;
             if (cache != nullptr) {
                 cache->compiled_.insert(handle.index);
@@ -238,15 +240,18 @@ Programs::Programs(const scene::Scene & scene, Cache * cache) : names_ { "N", "C
         cache->programs_ = std::move(kept);
         cache->forgotten_.clear();
     }
-    // a channel can read a primvar that no program reads
-    for (const scene::Handle & output : scene.objects("output")) {
-        for (const scene::Handle & channel : scene.value(output, "channels").handleArray()) {
-            const std::string & name = scene.value(channel, "sourceName").stringArray().front();
-            if (scene.value(channel, "sourceType").stringArray().front() == "primvar" && !name.empty() && std::ranges::find(names_, name) == names_.end()) {
-                names_.push_back(name);
-            }
-        }
+    channelPrimvarsInto(scene, names_);
+}
+
+bool Programs::keeps(const Cache & cache, const scene::Handle & handle, const std::set<std::uint32_t> & network) const {
+    const auto held = cache.programs_.find(handle.index);
+    if (held == cache.programs_.end() || held->second.handle != handle || held->second.before != names_) {
+        return false;
     }
+    const auto touched = [&](const std::set<std::uint32_t> & indices) {
+        return std::ranges::any_of(indices, [&](std::uint32_t index) { return cache.forgotten_.contains(index); });
+    };
+    return !cache.forgotten_.contains(handle.index) && !touched(held->second.network) && !touched(network);
 }
 
 kernel::surface::Material Programs::place(std::uint32_t material, Prototypes & prototypes, std::vector<std::string> & reports) const {

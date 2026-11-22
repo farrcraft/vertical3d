@@ -456,6 +456,30 @@ MOYA_KERNEL media::Media shadowMedia(const Paths<T, X> & paths, const geometry::
 }
 
 /**
+ * What passes between a shading point and the point a light sample drew on a light, as passing()
+ * gives it. A shadow ray towards a distant or a dome light runs on past everything in the scene.
+ * A shadow ray through media is tracking, and is timed as tracking. One from a point in a medium
+ * is timed with the tracking that reached that point, so only a surface's is timed here.
+ **/
+template <geometry::Traversal T, texture::Texels X>
+MOYA_KERNEL Passed shadowed(const Paths<T, X> & paths, const geometry::Hit & hit, const surface::ShadingPoint & point, const light::Light & chosen,
+    const light::LightSample & drawn, float time, const PathState & state) {
+    geometry::Ray shadow = leavingRay(point, drawn.incoming, time, geometry::kShadowRay);
+    if (chosen.shape != light::Shape::Distant && chosen.shape != light::Shape::Dome) {
+        shadow.direction = drawn.point - shadow.origin;
+        shadow.end = 1.0F - kShadowShort;
+    }
+    const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
+    const std::uint64_t shadowing = texture::started(paths.textures);
+    const Passed passed = paths.surfaces.media != 0U ? passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)))
+                                                     : passing(paths, chosen, shadow, state, MOYA_PATH(state, media));
+    if (tracks) {
+        texture::finished(paths.textures, texture::Work::Tracking, shadowing);
+    }
+    return passed;
+}
+
+/**
  * Next event estimation at a shading point: the light a light sample brings in, weighed against
  * the BSDF's sample by the power heuristic. A light is drawn by pickLight(), then a point on it,
  * and a shadow ray towards the point says how much of its light passes what lies between. A
@@ -521,21 +545,7 @@ MOYA_KERNEL spectrum::SampledSpectrum direct(const Paths<T, X> & paths, const ge
     if (emitted.black()) {
         return none;
     }
-    // a shadow ray towards a distant or a dome light runs on past everything in the scene
-    geometry::Ray shadow = leavingRay(point, drawn.incoming, time, geometry::kShadowRay);
-    if (chosen.shape != light::Shape::Distant && chosen.shape != light::Shape::Dome) {
-        shadow.direction = drawn.point - shadow.origin;
-        shadow.end = 1.0F - kShadowShort;
-    }
-    // a shadow ray through media is tracking. One from a point in a medium is timed with the
-    // tracking that reached that point, so only a surface's is timed here
-    const bool tracks = paths.surfaces.media != 0U || paths.volumes.any();
-    const std::uint64_t shadowing = texture::started(paths.textures);
-    const Passed passed = paths.surfaces.media != 0U ? passing(paths, chosen, shadow, state, shadowMedia(paths, hit, point, shadow, MOYA_PATH(state, media)))
-                                                     : passing(paths, chosen, shadow, state, MOYA_PATH(state, media));
-    if (tracks) {
-        texture::finished(paths.textures, texture::Work::Tracking, shadowing);
-    }
+    const Passed passed = shadowed(paths, hit, point, chosen, drawn, time, state);
     if (!(passed.share > 0.0F) || !inGlow(chosen, passed)) {
         return none;
     }

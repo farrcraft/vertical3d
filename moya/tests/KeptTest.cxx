@@ -11,9 +11,9 @@
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/kernel/texture/Texture.h>
 #include <moya/libmoya/kernel/volume/Block.h>
+#include <moya/libmoya/kernel/volume/Volumes.h>
 #include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Handle.h>
-#include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/texture/Cache.h>
@@ -148,6 +148,7 @@ texture::Request data(const std::string & file) {
 std::vector<v3d::moya::kernel::texture::Texture> texturesRead(const texture::Textures & textures) {
     const v3d::moya::device::cpu::Textures view = textures.view();
     std::vector<v3d::moya::kernel::texture::Texture> out;
+    out.reserve(view.catalog.images.size);
     for (std::uint32_t image = 0; image < view.catalog.images.size; ++image) {
         out.push_back(view.catalog.textures[view.catalog.tiles[view.catalog.images[image].first]]);
     }
@@ -155,6 +156,7 @@ std::vector<v3d::moya::kernel::texture::Texture> texturesRead(const texture::Tex
 }
 
 /** A grid of a number of blocks, each word of which holds a value. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the blocks, then the value
 boost::shared_ptr<const volume::Grid> gridOf(std::size_t blocks, std::uint64_t value) {
     auto out = boost::make_shared<volume::Grid>();
     out->blocks.resize(blocks);

@@ -4,7 +4,6 @@
  */
 
 #include <moya/libmoya/colour/Config.h>
-#include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/integrate/Picture.h>
@@ -26,6 +25,7 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -270,8 +270,6 @@ double distanceOf(const std::vector<std::uint8_t> & one, const std::vector<std::
     }
     return sum / static_cast<double>(one.size());
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(moya_session)
 
@@ -667,4 +665,5 @@ BOOST_AUTO_TEST_CASE(moya_session_pictures_the_last_is_denoised_as_a_render_is_t
 
 BOOST_AUTO_TEST_SUITE_END()
 
+};  // namespace
 };  // namespace v3d::moya::tracing

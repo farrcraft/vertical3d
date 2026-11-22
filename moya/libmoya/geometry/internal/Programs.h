@@ -7,9 +7,11 @@
 
 #include <moya/libmoya/kernel/surface/Material.h>
 #include <moya/libmoya/material/Compile.h>
+#include <moya/libmoya/scene/Handle.h>
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -80,6 +82,12 @@ class Programs final {
     static kernel::surface::Material append(const material::Compiled & held, Prototypes & prototypes);
 
  private:
+    /**
+     * Whether the cache holds a program of a material that can be kept: compiled from the same
+     * object after the same primvars, with nothing in its network or the new one forgotten since.
+     **/
+    bool keeps(const Cache & cache, const scene::Handle & handle, const std::set<std::uint32_t> & network) const;
+
     std::vector<std::string> names_;
     std::map<std::uint32_t, material::Compiled> compiled_;
     std::map<std::uint32_t, material::Compiled> displacements_;

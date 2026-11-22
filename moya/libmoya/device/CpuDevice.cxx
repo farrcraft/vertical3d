@@ -29,7 +29,27 @@
 
 #include <boost/make_shared.hpp>
 
+#include <glm/vec2.hpp>
+
 namespace v3d::moya::device {
+
+namespace {
+
+/** Calls the kernel for each pixel of one tile, which the image's edges may cut short. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the tile's row, then its column
+void tile(std::uint32_t row, std::uint32_t column, glm::uvec2 size, void (*call)(const void *, kernel::Item), const void * bound) {
+    const std::uint32_t top = row * CpuDevice::kTile;
+    const std::uint32_t left = column * CpuDevice::kTile;
+    const std::uint32_t bottom = std::min(top + CpuDevice::kTile, size.y);
+    const std::uint32_t right = std::min(left + CpuDevice::kTile, size.x);
+    for (std::uint32_t y = top; y < bottom; ++y) {
+        for (std::uint32_t x = left; x < right; ++x) {
+            call(bound, kernel::Item { x, y });
+        }
+    }
+}
+
+};  // namespace
 
 CpuDevice::CpuDevice(unsigned int threads, cpu::Isa newest) :
     arena_(boost::make_shared<internal::Arena>(threads)), isa_(std::min(newest, newestIsa())) {
@@ -120,15 +140,7 @@ bool CpuDevice::run(std::uint32_t width, std::uint32_t height, void (*call)(cons
                             stopped.store(true, std::memory_order_relaxed);
                             return;
                         }
-                        const std::uint32_t top = row * kTile;
-                        const std::uint32_t left = column * kTile;
-                        const std::uint32_t bottom = std::min(top + kTile, height);
-                        const std::uint32_t right = std::min(left + kTile, width);
-                        for (std::uint32_t y = top; y < bottom; ++y) {
-                            for (std::uint32_t x = left; x < right; ++x) {
-                                call(bound, kernel::Item { x, y });
-                            }
-                        }
+                        tile(row, column, glm::uvec2 { width, height }, call, bound);
                     }
                 }
             },

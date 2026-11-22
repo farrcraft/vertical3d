@@ -14,7 +14,6 @@
 #include <moya/libmoya/camera/Camera.h>
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/colour/RgbTables.h>
-#include <moya/libmoya/colour/Transform.h>
 #include <moya/libmoya/denoise/Denoise.h>
 #include <moya/libmoya/denoise/Denoiser.h>
 #include <moya/libmoya/device/CpuDevice.h>
@@ -44,12 +43,10 @@
 #include <moya/libmoya/integrate/internal/TrailSteps.h>
 #include <moya/libmoya/kernel/camera/Camera.h>
 #include <moya/libmoya/kernel/film/Pixels.h>
-#include <moya/libmoya/kernel/Launch.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>
 #include <moya/libmoya/light/Lights.h>
 #include <moya/libmoya/light/Shading.h>
 #include <moya/libmoya/material/Albedos.h>
-#include <moya/libmoya/output/Channel.h>
 #include <moya/libmoya/output/Checkpoint.h>
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
@@ -62,6 +59,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -80,6 +78,9 @@
 namespace v3d::moya::integrate {
 
 namespace {
+
+/** What a session throws when it reads a structure it has not built. **/
+constexpr const char * kUnbuilt = "a render session read a structure before it built one";
 
 /** Makes the pixel filter the scene's options name, of the width they give. **/
 void filterInto(std::optional<film::Filter> & out, device::CpuDevice & device, const scene::Scene & scene) {
@@ -280,25 +281,23 @@ bool Session::stopping() {
 
 bool Session::advance() {
     refresh();
+    if (!sampler_ || !film_ || !kept_ || !records_) {
+        throw std::logic_error(kUnbuilt);
+    }
+    film::Film & film = *film_;
+    internal::Kept & kept = *kept_;
+    const internal::Records & records = *records_;
     if (ended_) {
         return false;
     }
     const std::uint32_t total = sampler_->samplesPerPixel();
     const std::uint32_t run = std::min(kSamplesPerPass, total);
-    const auto end = [this] {
-        ended_ = true;
-        written();
-        // the version ends on a picture of every sample, denoised as a batch render is
-        if (first_ != 0U && (unseen_ || (denoiser_ && !settled_))) {
-            pictured(true, true);
-        }
-    };
     // a pass only adds samples that the noise check after the pass before it left sampling, and
     // the check runs once the film holds whole passes. A resumed render repeats the check the
     // render it continues made before this pass
     if (first_ >= total || (checkpoints_.stop && checkpoints_.stop(done_)) ||
-        (first_ != 0 && first_ % run == 0 && threshold_ > 0.0F && first_ >= least_ && film_->converge(threshold_) == 0U)) {
-        end();
+        (first_ != 0 && first_ % run == 0 && threshold_ > 0.0F && first_ >= least_ && film.converge(threshold_) == 0U)) {
+        close();
         return false;
     }
 
@@ -309,9 +308,9 @@ bool Session::advance() {
         during = [this] { return stopping(); };
     }
     // an edit or a stop of the thread drops a pass, and the next advance goes on
-    const auto dropped = [&] {
+    const auto dropped = [this] {
         if (asked_) {
-            end();
+            close();
         }
         return !asked_;
     };
@@ -327,6 +326,37 @@ bool Session::advance() {
     // holds a whole pass
     const std::uint32_t samples = std::min(pictures_ && first_ < run ? std::max(first_, 1U) : run, total - first_);
     const std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
+    if (!sample(samples, run, during)) {
+        return dropped();
+    }
+    kept.add(records.taken(samples), samples);
+    ++done_;
+    first_ += samples;
+    unseen_ = true;
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    passing_ += std::chrono::duration<double>(now - began).count();
+    if (!checkpoints_.path.empty() && first_ % run == 0 && std::chrono::duration<double>(now - last_).count() >= checkpoints_.interval) {
+        output::writeCheckpoint(checkpoints_.path, stateOf(film, kept, first_ / run), print_);
+        written_ = done_;
+        last_ = now;
+    }
+    pictured(fresh_ || first_ >= total, first_ >= total);
+    return true;
+}
+
+void Session::close() {
+    ended_ = true;
+    written();
+    // the version ends on a picture of every sample, denoised as a batch render is
+    if (first_ != 0U && (unseen_ || (denoiser_ && !settled_))) {
+        pictured(true, true);
+    }
+}
+
+bool Session::sample(std::uint32_t samples, std::uint32_t run, const std::function<bool()> & during) {
+    if (!film_) {
+        throw std::logic_error(kUnbuilt);
+    }
     const auto launch = [&](const kernel::film::Pixels & pixels) {
         const device::cpu::PathParams params { .pixels = pixels,
             .filter = filter_->view(),
@@ -357,25 +387,15 @@ bool Session::advance() {
     // a session that cannot stop keeps no copy of the film to go back to
     if (!during) {
         film_->pass([&](const kernel::film::Pixels & pixels) { launch(pixels); });
-    } else if (!film_->attempt(launch)) {
-        return dropped();
+        return true;
     }
-    kept_->add(records_->taken(samples), samples);
-    ++done_;
-    first_ += samples;
-    unseen_ = true;
-    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-    passing_ += std::chrono::duration<double>(now - began).count();
-    if (!checkpoints_.path.empty() && first_ % run == 0 && std::chrono::duration<double>(now - last_).count() >= checkpoints_.interval) {
-        output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_, first_ / run), print_);
-        written_ = done_;
-        last_ = now;
-    }
-    pictured(fresh_ || first_ >= total, first_ >= total);
-    return true;
+    return film_->attempt(launch);
 }
 
 bool Session::coarse(const std::function<bool()> & during) {
+    if (!lights_ || !sampler_ || !display_) {
+        throw std::logic_error(kUnbuilt);
+    }
     // the blocks the window covers, of a grid that starts at the image's top left
     const std::uint32_t block = block_;
     const glm::uvec2 low = window_.origin / block;
@@ -437,6 +457,9 @@ void Session::pictured(bool forced, bool last) {
     if (!pictures_ || (!forced && std::chrono::duration<double>(std::chrono::steady_clock::now() - pictured_).count() < pictures_->interval)) {
         return;
     }
+    if (!film_ || !sampler_ || !display_) {
+        throw std::logic_error(kUnbuilt);
+    }
     const film::Snapshot snapshot = film_->snapshot();
     Picture out { .version = version_,
         .samples = first_,
@@ -456,6 +479,9 @@ void Session::pictured(bool forced, bool last) {
 }
 
 void Session::shown(const Picture & picture) {
+    if (!pictures_) {
+        throw std::logic_error(kUnbuilt);
+    }
     fresh_ = false;
     if (pictures_->shown) {
         pictures_->shown(picture);
@@ -474,6 +500,9 @@ void Session::show(const Pictures & pictures) {
 }
 
 void Session::written() {
+    if (!sampler_ || !film_ || !kept_) {
+        throw std::logic_error(kUnbuilt);
+    }
     const std::uint32_t run = std::min(kSamplesPerPass, sampler_->samplesPerPixel());
     if (!checkpoints_.path.empty() && written_ != done_ && first_ % run == 0) {
         output::writeCheckpoint(checkpoints_.path, stateOf(*film_, *kept_, first_ / run), print_);
@@ -482,6 +511,9 @@ void Session::written() {
 }
 
 void Session::finish() {
+    if (!kept_ || !trail_ || !lights_ || !textures_) {
+        throw std::logic_error(kUnbuilt);
+    }
     if (profile_ != nullptr) {
         profile_->seconds = passing_;
         profile_->coverage = kept_->coverageSeconds;
@@ -497,7 +529,7 @@ void Session::finish() {
 }
 
 film::Snapshot Session::picture() const {
-    if (!built_) {
+    if (!built_ || !film_ || !kept_) {
         throw std::logic_error("a render session's picture before its first advance");
     }
     film::Snapshot out = film_->snapshot();

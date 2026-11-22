@@ -209,6 +209,19 @@ class Session final {
     bool stopping();
 
     /**
+     * Ends the version: writes the checkpoint, and makes the last picture when samples are left
+     * that no picture shows, or when the last is yet to be denoised.
+     **/
+    void close();
+
+    /**
+     * Runs one pass of a number of samples into the film, from the first the film lacks.
+     *
+     * @return whether the pass ran to its end, which a pass that cannot stop always does
+     **/
+    bool sample(std::uint32_t samples, std::uint32_t run, const std::function<bool()> & during);
+
+    /**
      * Runs the next coarse pass, into a film of its own, and makes its picture.
      *
      * @return whether the pass ran to its end
@@ -250,16 +263,10 @@ class Session final {
     std::optional<texture::Textures> textures_;
     std::optional<light::Lights> lights_;
     std::optional<film::Filter> filter_;
-
-    kernel::camera::Camera camera_ {};
-    glm::uvec2 image_ { 0U };
-    internal::Window window_ {};
     std::optional<kernel::sample::ZSobol> sampler_;
-    kernel::integrate::Settings settings_ {};
-    float threshold_ { 0.0F };
-    std::uint32_t least_ { 0 };
     std::vector<output::Channel> outputs_;
 
+    // what reads the film is declared after it, so that it is destroyed first
     std::optional<film::Film> film_;
     std::optional<internal::FirstHits> firstHits_;
     std::optional<internal::LightPaths> lightPaths_;
@@ -268,19 +275,7 @@ class Session final {
     std::optional<internal::Tallies> tallies_;
     std::optional<internal::TrailSteps> trail_;
 
-    std::uint64_t version_ { 0 };
-    bool built_ { false };
-    bool madeFilm_ { false };
-    std::uint64_t print_ { 0 };
-    std::uint32_t done_ { 0 };
-    std::uint32_t written_ { 0 };
-    std::uint32_t first_ { 0 };
-    bool ended_ { false };
-    double passing_ { 0.0 };
-    std::chrono::steady_clock::time_point last_ {};
-
-    /** Whether the checkpoints' stop answered true in this pass, and the lock it is asked in. **/
-    bool asked_ { false };
+    /** The lock the checkpoints' stop is asked in. **/
     std::mutex asking_;
 
     /** How pictures are made, and the transform to their display. **/
@@ -288,11 +283,42 @@ class Session final {
     std::optional<colour::Transform> display_;
     std::optional<denoise::Denoiser> denoiser_;
 
+    /** The session's thread, and what it shares with the threads that call it. **/
+    std::thread thread_;
+    std::mutex mutex_;
+    std::condition_variable woken_;
+    std::exception_ptr failed_;
+
+    std::uint64_t version_ { 0 };
+    std::uint64_t print_ { 0 };
+    double passing_ { 0.0 };
+    std::chrono::steady_clock::time_point last_ {};
+
+    /** When the last picture was made. **/
+    std::chrono::steady_clock::time_point pictured_ {};
+
+    kernel::camera::Camera camera_ {};
+    glm::uvec2 image_ { 0U };
+    internal::Window window_ {};
+    kernel::integrate::Settings settings_ {};
+    float threshold_ { 0.0F };
+    std::uint32_t least_ { 0 };
+    std::uint32_t done_ { 0 };
+    std::uint32_t written_ { 0 };
+    std::uint32_t first_ { 0 };
+
     /** The frame the sampler is seeded from. **/
     std::uint32_t frame_ { 0 };
 
     /** The side of the next coarse pass's blocks, or one once none is left. **/
     std::uint32_t block_ { 1 };
+
+    bool built_ { false };
+    bool madeFilm_ { false };
+    bool ended_ { false };
+
+    /** Whether the checkpoints' stop answered true in this pass. **/
+    bool asked_ { false };
 
     /** Whether no picture shows this version yet. **/
     bool fresh_ { false };
@@ -303,24 +329,17 @@ class Session final {
     /** Whether the last picture is the last of its version. **/
     bool settled_ { false };
 
-    /** When the last picture was made. **/
-    std::chrono::steady_clock::time_point pictured_ {};
-
     /** Set by edited(), and taken by the next apply. **/
     std::atomic<bool> edited_ { false };
 
     /** Set while stop() waits for the session's thread, which drops the pass in progress. **/
     std::atomic<bool> quitting_ { false };
 
-    /** The session's thread, and what it shares with the threads that call it. **/
-    std::thread thread_;
-    std::mutex mutex_;
-    std::condition_variable woken_;
+    /** What the session's thread shares with the threads that call it, under the mutex. **/
     bool running_ { false };
     bool quit_ { false };
     bool idle_ { false };
     bool told_ { false };
-    std::exception_ptr failed_;
 };
 
 };  // namespace v3d::moya::integrate

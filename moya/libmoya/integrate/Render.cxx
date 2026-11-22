@@ -5,10 +5,14 @@
 
 #include <moya/libmoya/integrate/Render.h>
 
+#include <moya/libmoya/colour/Config.h>
+#include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/film/Channel.h>
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Session.h>
+#include <moya/libmoya/integrate/Trails.h>
 #include <moya/libmoya/integrate/internal/Options.h>
 #include <moya/libmoya/kernel/integrate/Settings.h>
 #include <moya/libmoya/kernel/sample/ZSobol.h>

@@ -6,6 +6,9 @@
 #include <moya/libmoya/ri/internal/Volumes.h>
 
 #include <api/rib/Declaration.h>
+#include <api/rib/Parameters.h>
+#include <api/rib/requests/Volume.h>
+#include <moya/libmoya/ri/internal/Warnings.h>
 
 #include <algorithm>
 #include <cstddef>

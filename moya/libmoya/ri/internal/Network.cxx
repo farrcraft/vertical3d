@@ -7,7 +7,11 @@
 
 #include <moya/libmoya/material/Library.h>
 #include <moya/libmoya/ri/internal/Document.h>
+#include <moya/libmoya/ri/internal/Objects.h>
 #include <moya/libmoya/ri/internal/Primvars.h>
+#include <moya/libmoya/ri/internal/Warnings.h>
+#include <moya/libmoya/scene/Handle.h>
+#include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/scene/Value.h>
 
 #include <cstddef>

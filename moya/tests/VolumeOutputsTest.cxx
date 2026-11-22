@@ -29,7 +29,6 @@
 #include <glm/vec3.hpp>
 
 #include "Staged.h"
-#include "Tracing.h"
 
 namespace v3d::moya::tracing {
 namespace {
@@ -97,6 +96,7 @@ struct Fogged {
 };
 
 /** The transmittance of the fog's chord at a place on the screen, from -1 to 1 on each axis. **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the extinction, then the place
 float transmittanceAt(float extinction, float x, float y) {
     const float chord = 2.0F * std::sqrt((kRadius * kRadius) - (x * x) - (y * y));
     return std::exp(-extinction * chord);
