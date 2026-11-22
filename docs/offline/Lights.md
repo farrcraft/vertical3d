@@ -362,6 +362,10 @@ only what the changes touch. The constructor that takes a scene makes the lights
   camera, the options, an output or a channel then places the lights again.
 - **Any other edit rebuilds nothing.** A camera's edit that leaves the shutter as it was, an
   option's, and a material's that emits nothing all keep every light and the tree.
+- **Edits to cameras, outputs and channels alone are not compared.** Every edit since the last
+  update may be to one of those, with nothing above holding. What the geometry's lights are made
+  from is then taken as it was, without converting the materials or reading the prototypes again. An
+  option's edit is compared, since the options can change what the gather makes.
 - **An update ends where lights made from nothing end.** Every run of the view holds the same
   bytes as the lights made from nothing for the same scene, and the labels are the same.
 - **An image or a profile is read once.** Each is held until the lights are destroyed. The lights

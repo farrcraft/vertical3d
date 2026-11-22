@@ -106,6 +106,9 @@ constexpr float kLightsAt[3][2] = { { 0.4F, 0.4F }, { -0.4F, 0.5F }, { -0.5F, -0
 /** How many times the textured room's image runs across its floor along x and along y. **/
 constexpr float kTextureRepeats = 4.0F;
 
+/** The painted room's walls' colour. **/
+constexpr glm::vec3 kPaint { 0.7F, 0.6F, 0.5F };
+
 /**
  * The textured room's image. Its texels to a side, in a full run and in a short pass. Its tiles to
  * a side and their two colours. How many rings shade a tile, and the darkest a ring makes it.
@@ -517,6 +520,22 @@ boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::ui
     const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
     out->commit();
     out->apply();
+    return out;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scale, then the side and samples
+boost::shared_ptr<scene::Scene> paintedRoom(float scale, std::uint32_t side, std::uint32_t samples) {
+    const boost::shared_ptr<scene::Scene> out = room(scale, side, samples);
+    scene::Scene & made = *out;
+    // the walls' instance is found once the room is applied
+    made.commit();
+    made.apply();
+    const scene::Handle surface = node(made, "paint", "ND_open_pbr_surface_surfaceshader", { { "base_color", scene::Value::colour(kPaint) } });
+    const scene::Handle material = made.create("material", "paint");
+    made.set(material, "surface", scene::Value::handle(surface));
+    made.set(*made.find("instance", "walls"), "material", scene::Value::handle(material));
+    made.commit();
+    made.apply();
     return out;
 }
 

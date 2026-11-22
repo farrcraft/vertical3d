@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -66,6 +67,11 @@ class Assembler final {
     /** The scene's index of each group whose hierarchy the last update built, or kWorld. **/
     const std::vector<std::uint32_t> & builtGroups() const {
         return builtGroups_;
+    }
+
+    /** The scene's indices of the materials the last update compiled, not kept from before. **/
+    const std::set<std::uint32_t> & compiledMaterials() const {
+        return cache_.compiled();
     }
 
  private:

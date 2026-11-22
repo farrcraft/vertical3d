@@ -13,7 +13,10 @@
  * materials' programs and in texture lookups. A third times the lit room with a compositor's
  * outputs. A fourth times the room filled with fog, the room with a statue that scatters below its
  * surface, and a lock of hair. It gives the shares of the time in tracking through media, in grid
- * lookups and in the hair model.
+ * lookups and in the hair model. A fifth times a render session over the painted room. It times the
+ * build of each structure from nothing, and after a camera move, an instance move, a material
+ * change and a light change. It gives what each build rebuilt and the time from the edit to its
+ * first picture. A camera move that rebuilds anything but the film fails the run.
  */
 
 #include <api/log/Logger.h>
@@ -31,12 +34,17 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Geometry.h>
 #include <moya/libmoya/geometry/Prototypes.h>
+#include <moya/libmoya/integrate/Built.h>
+#include <moya/libmoya/integrate/Picture.h>
 #include <moya/libmoya/integrate/Profile.h>
 #include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/integrate/Session.h>
 #include <moya/libmoya/kernel/geometry/Hit.h>
 #include <moya/libmoya/kernel/geometry/Key.h>
 #include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
+#include <moya/libmoya/scene/Value.h>
 #include <moya/libmoya/view/Traced.h>
 #include <moya/libmoya/view/Tracing.h>
 
@@ -65,6 +73,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
 #include <boost/shared_ptr.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -95,6 +106,14 @@ constexpr std::uint32_t kPixels = 256;
 constexpr std::uint32_t kSamples = 16;
 constexpr std::uint32_t kQuickPixels = 16;
 constexpr std::uint32_t kQuickSamples = 4;
+
+/**
+ * How far an interactive edit moves the camera or an instance, the paint's colour it changes to,
+ * and the rect light's intensity it changes to.
+ **/
+constexpr float kEditStep = 0.05F;
+constexpr glm::vec3 kRepaint { 0.2F, 0.5F, 0.7F };
+constexpr float kBrighter = 4.0F;
 
 /** A million, the rays a rate is given in, and the milliseconds in a second. **/
 constexpr double kMillion = 1.0e6;
@@ -293,6 +312,104 @@ void outputs(const scene::Scene & plain, const scene::Scene & covered, const std
     }
 }
 
+/** The painted room's edits, each of one kind: its name in the table, and what it changes. **/
+std::vector<std::pair<const char *, std::function<void(scene::Scene &)>>> edits() {
+    const auto moved = [](scene::Scene & room, const char * kind, const char * name, const glm::vec3 & by) {
+        const scene::Handle object = *room.find(kind, name);
+        const glm::mat4 was = room.value(object, "transform").matrixAt(0);
+        room.set(object, "transform", scene::Value::matrix(glm::translate(glm::mat4(1.0F), by) * was));
+    };
+    return {
+        { "camera move", [moved](scene::Scene & room) { moved(room, "camera", "camera", { kEditStep, 0.0F, 0.0F }); } },
+        { "instance move", [moved](scene::Scene & room) { moved(room, "instance", "walls", { 0.0F, kEditStep, 0.0F }); } },
+        { "material change", [](scene::Scene & room) { room.set(*room.find("shader", "paint"), "base_color", scene::Value::colour(kRepaint)); } },
+        { "light change", [](scene::Scene & room) { room.set(*room.find("rectLight", "rect"), "intensity", scene::Value::number(kBrighter)); } },
+    };
+}
+
+/** What a build rebuilt, in words, or "nothing". **/
+std::string rebuiltOf(const integrate::Built & built) {
+    std::vector<std::string> parts;
+    const auto counted = [&parts](std::size_t count, const char * what) {
+        if (count != 0U) {
+            parts.push_back(std::to_string(count) + " " + what);
+        }
+    };
+    counted(built.geometries, "geometries");
+    counted(built.groups, "groups");
+    counted(built.compiled, "materials");
+    counted(built.madeLights, "lights");
+    if (built.tree) {
+        parts.emplace_back("light tree");
+    }
+    if (built.laidOut) {
+        parts.emplace_back("volumes");
+    }
+    if (built.madeSurfaces) {
+        parts.emplace_back("surfaces");
+    }
+    if (built.madeFilter) {
+        parts.emplace_back("filter");
+    }
+    if (built.madeFilm) {
+        parts.emplace_back("film");
+    }
+    std::string out;
+    for (const std::string & part : parts) {
+        out += (out.empty() ? "" : ", ") + part;
+    }
+    return out.empty() ? std::string("nothing") : out;
+}
+
+/**
+ * Times a render session over a room at each instruction set, and prints a row of the fifth table
+ * for each build: from nothing, then after each edit. A row gives the milliseconds of each
+ * structure's build, what it rebuilt, and the milliseconds from the edit to the session's first
+ * picture, which is coarse. The session samples each version to its end before the next edit.
+ *
+ * @throws std::runtime_error when a camera move rebuilds anything but the film
+ **/
+void interactive(const std::function<boost::shared_ptr<scene::Scene>()> & make, const std::vector<cpu::Isa> & isas) {
+    const boost::shared_ptr<log::Logger> logger = boost::make_shared<log::Logger>();
+    for (const cpu::Isa isa : isas) {
+        const boost::shared_ptr<scene::Scene> room = make();
+        device::CpuDevice device(0, isa);
+        const colour::Config config;
+        integrate::Session session(device, *room, logger, config);
+        auto began = std::chrono::steady_clock::now();
+        double first = -1.0;
+        session.show({ .shown = [&](const integrate::Picture &) {
+            if (first < 0.0) {
+                first = std::chrono::duration<double>(std::chrono::steady_clock::now() - began).count();
+            }
+        } });
+        const auto timed = [&](const std::string & name) {
+            began = std::chrono::steady_clock::now();
+            first = -1.0;
+            session.advance();
+            const integrate::Built & built = session.lastBuild();
+            std::cout << "| painted room | " << device::isaName(isa) << " | " << name << " | " << fixed(built.geometry * kMilliseconds, 1) << " | "
+                      << fixed(built.surfaces * kMilliseconds, 1) << " | " << fixed(built.volumes * kMilliseconds, 1) << " | "
+                      << fixed(built.textures * kMilliseconds, 1) << " | " << fixed(built.lights * kMilliseconds, 1) << " | "
+                      << fixed(built.filter * kMilliseconds, 1) << " | " << fixed(built.film * kMilliseconds, 1) << " | " << rebuiltOf(built) << " | "
+                      << fixed(first * kMilliseconds, 1) << " |\n";
+            while (session.advance()) {
+            }
+            return built;
+        };
+        timed("from nothing");
+        for (const auto & [name, change] : edits()) {
+            change(*room);
+            room->commit();
+            session.edited();
+            const integrate::Built built = timed(name);
+            if (std::string(name) == "camera move" && rebuiltOf(built) != "nothing") {
+                throw std::runtime_error("a camera move rebuilt " + rebuiltOf(built));
+            }
+        }
+    }
+}
+
 int run(int argc, char * argv[]) {
     boost::program_options::options_description described("Allowed options");
     described.add_options()("help", "produce help message")(
@@ -359,6 +476,10 @@ int run(int argc, char * argv[]) {
     media("fog room", *fogRoom(scale, pixels, samples, grid), isas, pixels, samples, repeats);
     media("subsurface room", *subsurfaceRoom(scale, pixels, samples), isas, pixels, samples, repeats);
     media("hair lock", *hairLock(scale, pixels, samples), isas, pixels, samples, repeats);
+    std::cout << "\n| interactive | isa | edit | geometry ms | surfaces ms | volumes ms | textures ms | lights ms | filter ms | film ms | rebuilt | "
+                 "first picture ms |\n";
+    std::cout << "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|---:|\n";
+    interactive([scale, pixels, samples] { return paintedRoom(scale, pixels, samples); }, isas);
     return EXIT_SUCCESS;
 }
 

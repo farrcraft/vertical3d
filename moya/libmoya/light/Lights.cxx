@@ -593,12 +593,16 @@ void Lights::update(const scene::Scene & scene, const geometry::Prototypes & pro
     // a light with a shape, and a point, is measured as the shutter opens
     const bool shutter = prototypes.open != open_ || prototypes.close != close_;
     bool stale = !built_ || shutter || reach != reach_;
+    // whether every edit since the last update was to an object of a quiet kind but the options,
+    // which can change what the gather makes
+    bool quiet = built_;
     if (built_ && shutter) {
         made_.clear();
     }
     if (built_) {
         for (const scene::Change & change : scene.changes(version_)) {
             const std::string & kind = scene.schema().kind(change.handle.kind).name;
+            quiet = quiet && among(kQuietKinds, kind) && kind != "options";
             if (among(kLightKinds, kind)) {
                 made_.erase(change.handle.index);
                 stale = true;
@@ -610,15 +614,19 @@ void Lights::update(const scene::Scene & scene, const geometry::Prototypes & pro
 
     stale = make(scene, prototypes) || stale;
 
-    const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config_).materials;
-    const std::map<std::uint32_t, scene::Handle> named = internal::meshEmitters(scene);
-    std::vector<std::uint8_t> emitting = internal::emitting(prototypes, materials, named, shading);
-    stale = stale || emitting != emitting_;
-    if (stale) {
-        place(scene, prototypes, shading, reach, materials, named);
+    // what the geometry emits is made from the prototypes and their materials, which such edits
+    // leave as they were
+    if (!quiet || stale) {
+        const std::vector<kernel::surface::Material> materials = geometry::ConvertedMaterials::of(prototypes, config_).materials;
+        const std::map<std::uint32_t, scene::Handle> named = internal::meshEmitters(scene);
+        std::vector<std::uint8_t> emitting = internal::emitting(prototypes, materials, named, shading);
+        stale = stale || emitting != emitting_;
+        if (stale) {
+            place(scene, prototypes, shading, reach, materials, named);
+        }
+        emitting_ = std::move(emitting);
     }
     builtTree_ = stale;
-    emitting_ = std::move(emitting);
     version_ = scene.version();
     built_ = true;
     reach_ = reach;

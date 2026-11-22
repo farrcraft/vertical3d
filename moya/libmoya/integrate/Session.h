@@ -17,6 +17,7 @@
 #include <moya/libmoya/film/Snapshot.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/integrate/Built.h>
 #include <moya/libmoya/integrate/Picture.h>
 #include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Profile.h>
@@ -174,6 +175,11 @@ class Session final {
         return madeFilm_;
     }
 
+    /** What the last build rebuilt, and the seconds each structure took. **/
+    const Built & lastBuild() const {
+        return lastBuild_;
+    }
+
     /**
      * Runs passes on a thread of the session's until stop(). Once advance() runs no pass, the
      * thread waits for edited(). Nothing happens while the thread runs.
@@ -214,6 +220,15 @@ class Session final {
 
     /** Brings every structure up to the scene's version, and starts the film again. **/
     void build();
+
+    /**
+     * Brings the scene's structures up to its version: the hierarchies, the materials, the
+     * volumes, the textures and the lights. Each one's seconds are the lap after it.
+     **/
+    void buildScene(Built * record, const std::function<double()> & lap);
+
+    /** Makes the camera, the sampler and the film of the scene's version, or empties the film. **/
+    void buildFilm();
 
     /**
      * Writes the checkpoint when the passes since it was last written are not in it, and the film
@@ -331,6 +346,8 @@ class Session final {
 
     bool built_ { false };
     bool madeFilm_ { false };
+    // what the last build rebuilt, and the seconds each structure took
+    Built lastBuild_;
     bool ended_ { false };
 
     /** Whether the checkpoints' stop answered true in this pass. **/

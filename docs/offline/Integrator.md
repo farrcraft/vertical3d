@@ -303,10 +303,20 @@ from one version of the scene to the next, and rebuilds only what the edits touc
 - **What is kept.** The hierarchies, through an `accel::Assembler`
   ([Traversal.md](Traversal.md#rebuilding-what-changed)), the compiled materials, the textures
   ([Textures.md](Textures.md#textures-kept-across-versions)), the volumes' blocks and the lights
-  ([Lights.md](Lights.md#lights-kept-across-versions)). The tracing view, the surfaces' buffers,
-  the pixel filter and the records of the outputs are made again at each version.
+  ([Lights.md](Lights.md#lights-kept-across-versions)). The tracing view and the records of the
+  outputs are made again at each version.
+- **The surfaces' buffers are kept when the prototypes are.** They are made again unless every
+  edit since the last build was to a camera, and the gather built no geometry or group anew and
+  compiled no material. A session given its prototypes makes them once.
+- **The pixel filter is kept unless the options changed.**
 - **The film keeps its storage** while its resolution and channels are the same, and is emptied.
   It is made again when either changes. `madeFilm()` says which the last build did.
+- **`lastBuild()` says what the last build made again, and how long each part took**, as an
+  `integrate::Built`. It gives the seconds of the geometry, the surfaces, the volumes, the
+  textures, the lights, the pixel filter and the film. It gives the geometries and groups whose
+  hierarchies were built, the materials compiled, and the lights made. It says whether the light
+  tree was built, the volumes laid out, and the surfaces, the filter and the film made. A camera
+  move makes nothing again but the film's sampling.
 - **A pass never sees half a batch.** A batch committed during a pass is applied after it, so
   its samples are not in the pass. `edited()` says that a batch was committed. A pass in progress
   then stops before its next tile and is dropped, so the film holds the passes before it, and the
@@ -519,4 +529,8 @@ fallback, a render keeps no checkpoint.
   one render and counts another.
 
 `moya_bench` times the integrator this way over a lit room, a textured one and one with outputs,
-and over scenes of fog, subsurface and hair, as [Traversal.md](Traversal.md#speed) describes.
+and over scenes of fog, subsurface and hair, as [Traversal.md](Traversal.md#speed) describes. It
+also times a session over a painted room, the lit room with a material on its walls. It gives each
+build's `lastBuild()` from nothing and after a camera move, an instance move, a material change and
+a light change, and the time from each edit to its first picture. A camera move that makes
+anything again but the film's sampling fails the run.

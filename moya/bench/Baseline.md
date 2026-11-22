@@ -70,3 +70,30 @@ tenth in the rates.
 | subsurface room | avx2 | 1048367 | 65536 | 16 | 0.840 | 6.597 | 7.85 | 38.9 | 19.3 | 0.0 | 0.0 | 0.0 |
 | hair lock | sse42 | 81920 | 65536 | 16 | 1.130 | 1.620 | 1.43 | 56.1 | 0.0 | 0.0 | 0.0 | 14.1 |
 | hair lock | avx2 | 81920 | 65536 | 16 | 1.151 | 1.650 | 1.43 | 55.6 | 0.0 | 0.0 | 0.0 | 14.2 |
+
+## Edits in a render session
+
+A render session over the painted room, the lit room with a material on its walls, run in the
+`x64-Release` build on the same machine with the interactive plan's step 14. Each row is one
+build: from nothing, then after one edit of each kind, each sampled to its end before the next.
+It gives each part's milliseconds as `Session::lastBuild()` gives them, what the build made
+again, and the time from the edit to the session's first picture, which is coarse. The lit room
+ran at 1.393 Msamples/s at sse42 and 1.352 at avx2 in the same run.
+
+| interactive | isa | edit | geometry ms | surfaces ms | volumes ms | textures ms | lights ms | filter ms | film ms | rebuilt | first picture ms |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|---:|
+| painted room | sse42 | from nothing | 3764.0 | 68.9 | 0.0 | 0.0 | 75.7 | 0.1 | 2.3 | 5 geometries, 1 groups, 1 materials, 4 lights, light tree, volumes, surfaces, filter, film | 3960.6 |
+| painted room | sse42 | camera move | 583.8 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.7 | nothing | 606.9 |
+| painted room | sse42 | instance move | 338.9 | 60.4 | 0.0 | 0.0 | 15.3 | 0.0 | 1.4 | 1 groups, light tree, surfaces | 432.4 |
+| painted room | sse42 | material change | 872.6 | 109.3 | 0.0 | 0.0 | 24.0 | 0.0 | 1.8 | 1 materials, surfaces | 1045.9 |
+| painted room | sse42 | light change | 451.1 | 85.7 | 0.0 | 0.0 | 30.0 | 0.0 | 1.6 | 1 geometries, 1 groups, 1 lights, light tree, surfaces | 611.0 |
+| painted room | avx2 | from nothing | 3823.1 | 58.7 | 0.0 | 0.0 | 81.6 | 0.2 | 2.2 | 5 geometries, 1 groups, 1 materials, 4 lights, light tree, volumes, surfaces, filter, film | 3983.6 |
+| painted room | avx2 | camera move | 313.2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.2 | nothing | 328.4 |
+| painted room | avx2 | instance move | 316.8 | 57.5 | 0.0 | 0.0 | 15.4 | 0.0 | 1.6 | 1 groups, light tree, surfaces | 409.9 |
+| painted room | avx2 | material change | 853.4 | 83.9 | 0.0 | 0.0 | 34.8 | 0.0 | 1.4 | 1 materials, surfaces | 1019.1 |
+| painted room | avx2 | light change | 300.5 | 56.2 | 0.0 | 0.0 | 25.2 | 0.0 | 1.8 | 1 geometries, 1 groups, 1 lights, light tree, surfaces | 400.0 |
+
+A camera move builds no hierarchy, surfaces, lights, filter or film. Its time is in the geometry's
+lap: the gather places every geometry in new prototypes, and the assembly is laid out again,
+though every hierarchy is kept. That is most of the time to a first picture after any edit but a
+material change, whose lap also compiles the material.

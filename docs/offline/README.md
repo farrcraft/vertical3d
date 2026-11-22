@@ -182,7 +182,8 @@ Background: [ADR-0186](../adr/offline/0186-offline-moya-renders-by-path-tracing-
   [Integrator.md](Integrator.md#adaptive-sampling)
 - **`moya_bench` times the hierarchies** over fixed scenes, against a committed baseline. It
   times the integrator over a lit room, a textured one, one with outputs, one of fog, one with a
-  statue of subsurface and a lock of hair. [Traversal.md](Traversal.md#speed)
+  statue of subsurface and a lock of hair. It times a session's builds after each kind of edit.
+  [Traversal.md](Traversal.md#speed)
 
 A picture is the same on one thread and on every thread, since a pixel's samples are added in
 order by the one work item that owns it. `FoundationTest.cxx` renders a colour chart through

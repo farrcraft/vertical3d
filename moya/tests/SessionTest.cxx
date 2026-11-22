@@ -9,6 +9,7 @@
 #include <moya/libmoya/integrate/Picture.h>
 #include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Render.h>
+#include <moya/libmoya/integrate/Built.h>
 #include <moya/libmoya/integrate/Session.h>
 #include <moya/libmoya/output/Exr.h>
 #include <moya/libmoya/output/Outputs.h>
@@ -403,6 +404,58 @@ BOOST_AUTO_TEST_CASE(moya_session_an_edit_drops_the_pass_in_progress_test) {
     while (session.advance()) {
     }
     BOOST_TEST(sameBytes(session.picture(), fresh({ materialChanged })));
+}
+
+// a session's build says what it made again: everything from nothing, nothing but the film's
+// sampling for a camera move, the surfaces for a material, and the pixel filter for an option.
+// Each edited session still ends where a fresh render of the edited scene does
+BOOST_AUTO_TEST_CASE(moya_session_a_build_keeps_what_its_edit_did_not_touch_test) {
+    Staged made = staged();
+    lit(made);
+    made.made.apply();
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    BOOST_TEST_REQUIRE(session.advance());
+    const integrate::Built first = session.lastBuild();
+    BOOST_TEST(first.geometries > 0U);
+    BOOST_TEST(first.madeLights > 0U);
+    BOOST_TEST(first.tree);
+    BOOST_TEST(first.madeSurfaces);
+    BOOST_TEST(first.madeFilter);
+    BOOST_TEST(first.madeFilm);
+
+    const auto after = [&](const Edit & edit) {
+        while (session.advance()) {
+        }
+        edit(made);
+        made.made.commit();
+        session.edited();
+        BOOST_TEST_REQUIRE(session.advance());
+        return session.lastBuild();
+    };
+    const integrate::Built moved = after(cameraMoved);
+    BOOST_TEST(moved.geometries == 0U);
+    BOOST_TEST(moved.groups == 0U);
+    BOOST_TEST(moved.compiled == 0U);
+    BOOST_TEST(moved.madeLights == 0U);
+    BOOST_TEST(!moved.tree);
+    BOOST_TEST(!moved.madeSurfaces);
+    BOOST_TEST(!moved.madeFilter);
+    BOOST_TEST(!moved.madeFilm);
+
+    const integrate::Built painted = after(materialChanged);
+    BOOST_TEST(painted.compiled > 0U);
+    BOOST_TEST(painted.madeSurfaces);
+    BOOST_TEST(!painted.madeFilter);
+
+    const integrate::Built filtered = after([](Staged & staged) { staged.made.set(staged.options, "filterWidth", scene::Value::floats({ 3.0F, 3.0F })); });
+    BOOST_TEST(filtered.madeFilter);
+    while (session.advance()) {
+    }
+    BOOST_TEST(sameBytes(session.picture(), fresh({ cameraMoved, materialChanged, [](Staged & staged) {
+        staged.made.set(staged.options, "filterWidth", scene::Value::floats({ 3.0F, 3.0F }));
+    } })));
 }
 
 // a session the checkpoints' stop ended samples on once resumed, and ends where a render that was

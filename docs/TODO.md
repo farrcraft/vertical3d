@@ -85,6 +85,15 @@ triangles, traversal takes 31 to 33 percent of the time, so a traversal twice as
 render about a fifth faster. [Traversal.md](offline/Traversal.md#speed) has the
 figures, and `moya/bench/Baseline.md` the run to measure a change against.
 
+[] **A camera move gathers the prototypes again.** `moya_bench`'s painted room, a million
+triangles, takes 310 to 580 milliseconds from a camera move to its first picture in the Release
+build. Nearly all of it is `accel::Assembler::update()`. It gathers every geometry into new
+prototypes, placing each from the cache by copying its points, then lays the assembly out again,
+though no hierarchy is built. Keep the prototypes and the assembly when every edit since the last
+update leaves them as they were. A camera's edit can change them, since a subdivision surface is
+diced from a camera, so the rule has to know which camera each surface is measured from.
+`moya/bench/Baseline.md` has the figures, and the edits table measures a change.
+
 [] **Texture lookups take three quarters of a textured render.** `moya_bench`'s textured room
 has a coated OpenPBR surface whose colour and roughness are one image. It renders at under a
 fifth of the lit room's samples a second, and 75 percent of its time is in texture lookups. The

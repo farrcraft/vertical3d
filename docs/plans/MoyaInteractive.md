@@ -128,7 +128,7 @@ listed as a number with no record, as the ADR index requires.
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | done |
 | [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | done |
 | [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | done |
-| [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | open |
+| [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | done |
 | [15](#step-15--the-documents) | The documents | `docs` | — | open |
 
 ## What blocks what
@@ -525,6 +525,20 @@ There is no menu item for the pixel size yet.
 
 **Tests:** the benchmark's short pass times each edit, and checks that a camera move rebuilds no
 structure but the film.
+
+**Done.** `Session::lastBuild()` gives an `integrate::Built`: the seconds of the geometry, the
+surfaces, the volumes, the textures, the lights, the pixel filter and the film, and what the build
+made again. `moya_bench` gains a fifth table over the painted room, the lit room with a material
+on its walls. It gives the build from nothing and after a camera move, an instance move, a
+material change and a light change, with the time from each edit to its first picture. A camera
+move that makes anything again but the film's sampling fails the run. The first figures showed a
+camera move remaking the surfaces' buffers and comparing the lights' emitting geometry at every
+version. The session now keeps the surfaces unless an edit touched more than cameras or the
+gather built or compiled anything anew. It keeps the pixel filter unless the options changed.
+`Lights::update()` skips the comparison when every edit was to a camera, an output or a channel.
+A camera move's first picture then took a tenth of the time in the Debug build. In the Release
+build its remaining 310 to 580 milliseconds are the gather, which places every geometry again.
+`docs/TODO.md` holds that. `moya/bench/Baseline.md` has the figures.
 
 ### Step 15 — The documents
 

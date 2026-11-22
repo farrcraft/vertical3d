@@ -53,6 +53,12 @@ std::vector<Fixed> scenes(float scale);
 boost::shared_ptr<scene::Scene> litRoom(float scale, std::uint32_t side, std::uint32_t samples);
 
 /**
+ * The lit room with an OpenPBR material on its walls, of a shader named paint whose base colour
+ * is a constant, so an interactive render can change it. The scene is committed and applied.
+ **/
+boost::shared_ptr<scene::Scene> paintedRoom(float scale, std::uint32_t side, std::uint32_t samples);
+
+/**
  * The lit room with a material of textures on every surface: OpenPBR's base under a coat, whose
  * base colour is an image and whose specular roughness is the image's red. The floor's st runs
  * over it four times along each axis, and the walls have none. The image is written to the path

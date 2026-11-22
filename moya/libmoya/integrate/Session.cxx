@@ -26,6 +26,7 @@
 #include <moya/libmoya/film/State.h>
 #include <moya/libmoya/geometry/Prototypes.h>
 #include <moya/libmoya/geometry/Surfaces.h>
+#include <moya/libmoya/integrate/Built.h>
 #include <moya/libmoya/integrate/Picture.h>
 #include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Profile.h>
@@ -51,6 +52,7 @@
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/output/Outputs.h>
 #include <moya/libmoya/output/Png.h>
+#include <moya/libmoya/scene/Change.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <moya/libmoya/texture/Options.h>
 #include <moya/libmoya/texture/Textures.h>
@@ -178,6 +180,34 @@ void Session::refresh() {
 }
 
 void Session::build() {
+    Built record;
+    auto mark = std::chrono::steady_clock::now();
+    // the seconds since the last lap, or since the build began
+    const auto lap = [&mark] {
+        const auto now = std::chrono::steady_clock::now();
+        const double out = std::chrono::duration<double>(now - mark).count();
+        mark = now;
+        return out;
+    };
+    buildScene(&record, lap);
+    buildFilm();
+    record.film = lap();
+    if (!lights_ || !volumes_) {
+        throw std::logic_error(kUnbuilt);
+    }
+    if (assembler_) {
+        record.geometries = assembler_->builtGeometries().size();
+        record.groups = assembler_->builtGroups().size();
+        record.compiled = assembler_->compiledMaterials().size();
+    }
+    record.madeLights = lights_->madeLights().size();
+    record.tree = lights_->builtTree();
+    record.laidOut = volumes_->laidOut();
+    record.madeFilm = madeFilm_;
+    lastBuild_ = record;
+}
+
+void Session::buildScene(Built * record, const std::function<double()> & lap) {
     if (assembler_) {
         assembler_->update(scene_);
     } else if (!assembly_) {
@@ -187,13 +217,28 @@ void Session::build() {
     const accel::Assembly & assembly = assembler_ ? assembler_->assembly() : *assembly_;
     tracing_.reset();
     tracing_.emplace(device_, made, assembly);
-    surfaces_.reset();
-    surfaces_.emplace(device_, made, config_);
+    record->geometry = lap();
+    // the surfaces are made from the prototypes alone, so a version whose edits touched only
+    // cameras, and gathered no geometry, group or material anew, keeps them
+    const std::vector<scene::Change> changed = built_ ? scene_.changes(version_) : std::vector<scene::Change> {};
+    const auto only = [&](const char * kind) {
+        const std::optional<std::uint32_t> index = scene_.schema().find(kind);
+        return built_ && index && std::all_of(changed.begin(), changed.end(), [&](const scene::Change & each) { return each.handle.kind == *index; });
+    };
+    const bool gatheredNothing = !assembler_ ||
+        (assembler_->builtGeometries().empty() && assembler_->builtGroups().empty() && assembler_->compiledMaterials().empty());
+    record->madeSurfaces = !surfaces_ || !gatheredNothing || (assembler_ && !only("camera"));
+    if (record->madeSurfaces) {
+        surfaces_.reset();
+        surfaces_.emplace(device_, made, config_);
+    }
+    record->surfaces = lap();
     if (volumes_) {
         volumes_->update(device_, made);
     } else {
         volumes_.emplace(device_, made);
     }
+    record->volumes = lap();
     const texture::Options options = texture::optionsOf(scene_);
     if (textures_ && textures_->options() == options) {
         textures_->update(device_, made.images);
@@ -201,13 +246,28 @@ void Session::build() {
         textures_.reset();
         textures_.emplace(device_, made.images, options, config_, logger_);
     }
+    record->textures = lap();
     const light::Shading shading { .surfaces = surfaces_->view(), .textures = textures_->view(), .volumes = volumes_->view() };
     if (!lights_) {
         lights_.emplace(device_, config_, logger_);
     }
     lights_->update(scene_, made, shading, reach(assembly.bounds));
-    filterInto(filter_, device_, scene_);
+    record->lights = lap();
+    // the pixel filter is made from the options alone
+    const std::optional<std::uint32_t> optionsKind = scene_.schema().find("options");
+    record->madeFilter = !filter_ || !built_ || !optionsKind ||
+        std::any_of(changed.begin(), changed.end(), [&](const scene::Change & each) { return each.handle.kind == *optionsKind; });
+    if (record->madeFilter) {
+        filterInto(filter_, device_, scene_);
+    }
+    record->filter = lap();
+}
 
+void Session::buildFilm() {
+    if (!lights_) {
+        throw std::logic_error(kUnbuilt);
+    }
+    const geometry::Prototypes & made = prototypes();
     camera_ = camera::fromScene(scene_);
     image_ = glm::uvec2 { static_cast<std::uint32_t>(camera_.resolution.x), static_cast<std::uint32_t>(camera_.resolution.y) };
     window_ = internal::windowOf(internal::option(scene_, "crop").floatArray(), image_, logger_);

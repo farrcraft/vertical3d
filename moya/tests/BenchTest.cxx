@@ -7,6 +7,7 @@
 #include <fstream>
 #include <ios>
 #include <iterator>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -177,6 +178,42 @@ BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_media_subsurface_and_hair_tes
     BOOST_TEST(std::stod(lock[13]) > 0.0);
     BOOST_TEST(std::stod(lock[13]) < 100.0);
     BOOST_TEST(std::stod(lock[10]) == 0.0);
+}
+
+// a short pass times a render session over the painted room: its build from nothing, and after
+// each kind of edit. Each build rebuilds only what its edit touched, a camera move nothing at all,
+// and each edit gives a picture in a time
+BOOST_AUTO_TEST_CASE(moya_bench_a_short_pass_times_each_edit_test) {
+    const Run run = bench("--quick --isa sse42");
+    BOOST_TEST_REQUIRE(run.succeeded, run.printed);
+    const std::vector<std::vector<std::string>> rows = rowsOf(run.printed, "painted room");
+    BOOST_TEST_REQUIRE(rows.size() == 5U, run.printed);
+    // the cells after the leading bar: scene, isa, edit, the milliseconds of the geometry,
+    // surfaces, volumes, textures, lights, filter and film, what was rebuilt, and the first
+    // picture's milliseconds
+    std::map<std::string, std::vector<std::string>> byEdit;
+    for (const std::vector<std::string> & cells : rows) {
+        BOOST_TEST_REQUIRE(cells.size() >= 13U);
+        BOOST_TEST(cells[2] == "sse42");
+        BOOST_TEST(std::stod(cells[12]) > 0.0, cells[3]);
+        byEdit[cells[3]] = cells;
+    }
+    const auto rebuilt = [&byEdit](const std::string & edit) {
+        BOOST_TEST_REQUIRE(byEdit.contains(edit), edit);
+        return byEdit[edit][11];
+    };
+    BOOST_TEST(rebuilt("from nothing").find("geometries") != std::string::npos);
+    BOOST_TEST(rebuilt("from nothing").find("film") != std::string::npos);
+    BOOST_TEST(rebuilt("from nothing").find("surfaces") != std::string::npos);
+    BOOST_TEST(rebuilt("from nothing").find("filter") != std::string::npos);
+    BOOST_TEST(std::stod(byEdit["from nothing"][4]) > 0.0);
+    BOOST_TEST(rebuilt("camera move") == "nothing");
+    BOOST_TEST(rebuilt("instance move").find("geometries") == std::string::npos);
+    BOOST_TEST(rebuilt("instance move").find("film") == std::string::npos);
+    BOOST_TEST(rebuilt("material change").find("materials") != std::string::npos);
+    BOOST_TEST(rebuilt("material change").find("geometries") == std::string::npos);
+    BOOST_TEST(rebuilt("light change").find("lights") != std::string::npos);
+    BOOST_TEST(rebuilt("light change").find("materials") == std::string::npos);
 }
 
 // an instruction set the processor does not run, or one that has no such name, is refused
