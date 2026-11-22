@@ -153,6 +153,15 @@ std::vector<Channel> channelsOf(const scene::Scene & scene) {
     return channels;
 }
 
+std::optional<std::uint32_t> guideOf(const film::Snapshot & snapshot, const std::vector<Channel> & channels, const std::string & reading) {
+    for (const Channel & channel : channels) {
+        if (channel.source == Source::Raw && channel.sourceName == reading && channel.film.components == 3U) {
+            return snapshot.offset(channel.film.name);
+        }
+    }
+    return std::nullopt;
+}
+
 bool denoisesBeauty(const scene::Scene & scene) {
     return option(scene, "denoise") != 0;
 }

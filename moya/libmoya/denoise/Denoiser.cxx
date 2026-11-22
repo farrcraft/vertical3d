@@ -36,16 +36,6 @@ using internal::Guides;
 /** The floats of a colour. **/
 constexpr std::size_t kComponents = 3;
 
-/** The offset of the first float of a raw channel of three components that reads a value. **/
-std::optional<std::uint32_t> guideOf(const film::Snapshot & snapshot, const std::vector<output::Channel> & channels, const std::string & reading) {
-    for (const output::Channel & channel : channels) {
-        if (channel.source == output::Source::Raw && channel.sourceName == reading && channel.film.components == kComponents) {
-            return snapshot.offset(channel.film.name);
-        }
-    }
-    return std::nullopt;
-}
-
 /** A picture's three floats from an offset of each pixel, packed. **/
 std::vector<float> pictureAt(const film::Snapshot & snapshot, std::uint32_t offset) {
     const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
@@ -93,8 +83,8 @@ void cleaned(oidn::DeviceRef & device, const char * name, std::vector<float> & g
 Guides guidesOf(oidn::DeviceRef & device, const film::Snapshot & snapshot, const std::vector<output::Channel> & channels, bool clean,
     const boost::shared_ptr<log::Logger> & logger) {
     Guides out;
-    const std::optional<std::uint32_t> albedoAt = guideOf(snapshot, channels, "albedo");
-    const std::optional<std::uint32_t> normalAt = guideOf(snapshot, channels, "denoisingNormal");
+    const std::optional<std::uint32_t> albedoAt = output::guideOf(snapshot, channels, "albedo");
+    const std::optional<std::uint32_t> normalAt = output::guideOf(snapshot, channels, "denoisingNormal");
     if (albedoAt) {
         out.albedo = pictureAt(snapshot, *albedoAt);
     }

@@ -41,6 +41,12 @@ struct Pictures {
     bool denoised { false };
     std::uint32_t denoiseFrom { 16 };
 
+    /**
+     * Whether a picture also shows the albedo and the normal that guide the denoiser. A coarse
+     * picture shows neither, and nor does a picture of a film that holds no guides.
+     **/
+    bool guides { false };
+
     /** Takes each picture, on the thread that runs the session's passes. **/
     std::function<void(const Picture &)> shown;
 };

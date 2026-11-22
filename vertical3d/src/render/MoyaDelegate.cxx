@@ -9,6 +9,7 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/integrate/Picture.h>
+#include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Render.h>
 #include <moya/libmoya/integrate/Session.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -17,11 +18,15 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <mutex>
 #include <stop_token>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "Delegate.h"
 #include "RIBExportVisitor.h"
@@ -72,9 +77,22 @@ const v3d::moya::scene::Scene& MoyaDelegate::retained() const noexcept {
 
 /**
  **/
-boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
+void MoyaDelegate::show(const Showing& showing) {
     const std::scoped_lock lock(mutex_);
-    return picture_;
+    if (showing == showing_) {
+        return;
+    }
+    showing_ = showing;
+    reshow_ = true;
+    woken_.notify_all();
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture(Channel channel) const {
+    const std::scoped_lock lock(mutex_);
+    const boost::shared_ptr<v3d::image::Image>& held = pictures_.at(static_cast<std::size_t>(channel));
+    return held ? held : pictures_.at(static_cast<std::size_t>(Channel::Beauty));
 }
 
 /**
@@ -141,6 +159,9 @@ void MoyaDelegate::run(const std::stop_token& stop) {
         status_.state = State::Failed;
         woken_.notify_all();
     };
+    // what the session's pictures show, as the render's thread last took it from show()
+    Showing applied;
+    v3d::moya::integrate::Session* session = nullptr;
     try {
         if (!device_) {
             device_.emplace();
@@ -148,8 +169,10 @@ void MoyaDelegate::run(const std::stop_token& stop) {
         v3d::moya::integrate::Checkpoints checkpoints;
         checkpoints.stop = [this](std::uint32_t) { return stopping_.load(); };
         const std::scoped_lock lock(mutex_);
-        session_.emplace(*device_, retained_, logger_, colours_, checkpoints);
-        session_->show({ .interval = kInterval, .shown = [this](const v3d::moya::integrate::Picture& picture) { shown(picture); } });
+        session = &session_.emplace(*device_, retained_, logger_, colours_, checkpoints);
+        applied = showing_;
+        reshow_ = false;
+        session->show(picturesOf(applied));
     } catch (const std::exception& error) {
         failed(error);
         return;
@@ -157,13 +180,27 @@ void MoyaDelegate::run(const std::stop_token& stop) {
 
     while (!stop.stop_requested()) {
         std::uint64_t seen = 0;
+        bool reshown = false;
+        Showing showing;
         {
             const std::scoped_lock lock(mutex_);
             seen = edits_;
+            reshown = std::exchange(reshow_, false);
+            showing = showing_;
         }
         bool more = false;
         try {
-            more = session_->advance();
+            // a change of what the pictures show remakes the latest picture, since a render that
+            // has finished makes no more
+            if (reshown) {
+                const bool remade = showing.denoised != applied.denoised || showing.guides != applied.guides;
+                applied = showing;
+                session->show(picturesOf(applied));
+                if (remade) {
+                    session->again();
+                }
+            }
+            more = session->advance();
         } catch (const std::exception& error) {
             failed(error);
             return;
@@ -185,17 +222,33 @@ void MoyaDelegate::run(const std::stop_token& stop) {
             status_.done = 1.0F;
         }
         woken_.notify_all();
-        woken_.wait(lock, stop, [this, seen] { return edits_ != seen; });
+        woken_.wait(lock, stop, [this, seen] { return edits_ != seen || reshow_; });
     }
 }
 
 /**
  **/
+v3d::moya::integrate::Pictures MoyaDelegate::picturesOf(const Showing& showing) {
+    return { .interval = showing.interval,
+        .denoised = showing.denoised,
+        .guides = showing.guides,
+        .shown = [this](const v3d::moya::integrate::Picture& picture) { shown(picture); } };
+}
+
+/**
+ **/
 void MoyaDelegate::shown(const v3d::moya::integrate::Picture& picture) {
-    const boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(picture.resolution), static_cast<std::uint8_t>(24));
-    std::copy(picture.rgb.begin(), picture.rgb.end(), image->data());
+    const auto image = [&picture](const std::vector<std::uint8_t>& bytes) {
+        if (bytes.empty()) {
+            return boost::shared_ptr<v3d::image::Image>();
+        }
+        const boost::shared_ptr<v3d::image::Image> made = boost::make_shared<v3d::image::Image>(glm::uvec2(picture.resolution), static_cast<std::uint8_t>(24));
+        std::copy(bytes.begin(), bytes.end(), made->data());
+        return made;
+    };
+    const std::array<boost::shared_ptr<v3d::image::Image>, 4> made{ image(picture.rgb), image(picture.denoised), image(picture.albedo), image(picture.normal) };
     const std::scoped_lock lock(mutex_);
-    picture_ = image;
+    pictures_ = made;
     status_.pictures++;
     status_.samples = picture.samples;
     status_.total = picture.total;

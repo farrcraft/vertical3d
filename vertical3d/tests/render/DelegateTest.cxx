@@ -143,7 +143,7 @@ boost::shared_ptr<v3d::image::Image> exported(const boost::shared_ptr<v3d::log::
 BOOST_FIXTURE_TEST_CASE(delegate_renders_test, Cube) {
     v3d::editor::render::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(delegate.status().state == v3d::editor::render::Delegate::State::Idle);
-    BOOST_CHECK(!delegate.picture());
+    BOOST_CHECK(!delegate.picture(v3d::editor::render::Delegate::Channel::Beauty));
 
     // a render runs off the caller's thread and leaves its picture in memory, at the size
     // the settings give. The cube faces the camera's own light, so its middle is lit
@@ -154,7 +154,7 @@ BOOST_FIXTURE_TEST_CASE(delegate_renders_test, Cube) {
     BOOST_CHECK_GE(status.pictures, 1U);
     BOOST_CHECK_EQUAL(status.samples, 1U);
     BOOST_CHECK_EQUAL(status.total, 1U);
-    const boost::shared_ptr<v3d::image::Image> picture = delegate.picture();
+    const boost::shared_ptr<v3d::image::Image> picture = delegate.picture(v3d::editor::render::Delegate::Channel::Beauty);
     BOOST_REQUIRE(picture);
     BOOST_CHECK_EQUAL(picture->width(), 64U);
     BOOST_CHECK_EQUAL(picture->height(), 48U);
@@ -228,14 +228,14 @@ BOOST_FIXTURE_TEST_CASE(delegate_takes_an_edit_while_it_renders_test, Cube) {
     BOOST_REQUIRE(pictured(delegate, before));
     BOOST_CHECK(delegate.status().state == v3d::editor::render::Delegate::State::Rendering);
     BOOST_CHECK(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
-    const boost::shared_ptr<v3d::image::Image> edited = delegate.picture();
+    const boost::shared_ptr<v3d::image::Image> edited = delegate.picture(v3d::editor::render::Delegate::Channel::Beauty);
     BOOST_REQUIRE(edited);
 
     // the render ends where a render of the edited scene from nothing does
     v3d::editor::render::MoyaDelegate fresh(boost::make_shared<v3d::log::Logger>());
     fresh.render(scene, view, settings);
     BOOST_REQUIRE(settle(fresh).state == v3d::editor::render::Delegate::State::Finished);
-    BOOST_CHECK(same(*edited, *fresh.picture()));
+    BOOST_CHECK(same(*edited, *fresh.picture(v3d::editor::render::Delegate::Channel::Beauty)));
 }
 
 // a stop keeps the latest picture, which holds what was sampled before it
@@ -250,17 +250,17 @@ BOOST_FIXTURE_TEST_CASE(delegate_cancel_test, Cube) {
     BOOST_CHECK(status.state == v3d::editor::render::Delegate::State::Stopped);
     BOOST_CHECK_LT(status.samples, status.total);
     BOOST_CHECK_LT(status.done, 1.0F);
-    const boost::shared_ptr<v3d::image::Image> stopped = delegate.picture();
+    const boost::shared_ptr<v3d::image::Image> stopped = delegate.picture(v3d::editor::render::Delegate::Channel::Beauty);
     BOOST_REQUIRE(stopped);
     BOOST_CHECK_EQUAL(stopped->width(), 128U);
 
     // nothing more arrives once a render has stopped, and an edit starts it again
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    BOOST_CHECK(delegate.picture() == stopped);
+    BOOST_CHECK(delegate.picture(v3d::editor::render::Delegate::Channel::Beauty) == stopped);
     settings.samples = 1;
     BOOST_CHECK(delegate.update(scene, view, settings));
     BOOST_CHECK(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
-    BOOST_CHECK(delegate.picture() != stopped);
+    BOOST_CHECK(delegate.picture(v3d::editor::render::Delegate::Channel::Beauty) != stopped);
 }
 
 // a render reports the samples its pictures hold over those it takes, and ends at 1
@@ -302,7 +302,7 @@ BOOST_FIXTURE_TEST_CASE(delegate_picture_is_moyas_render_of_the_export_test, Cub
     v3d::editor::render::MoyaDelegate delegate(logger);
     delegate.render(scene, view, settings);
     BOOST_REQUIRE(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
-    const boost::shared_ptr<v3d::image::Image> rendered = delegate.picture();
+    const boost::shared_ptr<v3d::image::Image> rendered = delegate.picture(v3d::editor::render::Delegate::Channel::Beauty);
     const boost::shared_ptr<v3d::image::Image> written = exported(logger, scene, view, settings, scratch.path() / "first");
     BOOST_REQUIRE(written);
     BOOST_CHECK(same(*written, *rendered));
@@ -310,11 +310,70 @@ BOOST_FIXTURE_TEST_CASE(delegate_picture_is_moyas_render_of_the_export_test, Cub
     mesh->translate(glm::vec3(0.25F, 0.0F, 0.0F));
     BOOST_REQUIRE(delegate.update(scene, view, settings));
     BOOST_REQUIRE(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
-    const boost::shared_ptr<v3d::image::Image> edited = delegate.picture();
+    const boost::shared_ptr<v3d::image::Image> edited = delegate.picture(v3d::editor::render::Delegate::Channel::Beauty);
     const boost::shared_ptr<v3d::image::Image> after = exported(logger, scene, view, settings, scratch.path() / "edited");
     BOOST_REQUIRE(after);
     BOOST_CHECK(same(*after, *edited));
     BOOST_CHECK(!same(*rendered, *edited));
+}
+
+// a render shown in every channel gives the denoised beauty, the albedo and the normal beside the
+// beauty, and the beauty's bytes are those of a render shown in none
+BOOST_FIXTURE_TEST_CASE(delegate_shows_each_channel_test, Cube) {
+    using Channel = v3d::editor::render::Delegate::Channel;
+    settings.samples = 2;
+    v3d::editor::render::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
+    delegate.show({ .denoised = true, .guides = true });
+    delegate.render(scene, view, settings);
+    BOOST_REQUIRE(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
+    const boost::shared_ptr<v3d::image::Image> beauty = delegate.picture(Channel::Beauty);
+    BOOST_REQUIRE(beauty);
+    for (const Channel channel : { Channel::Denoised, Channel::Albedo, Channel::Normal }) {
+        const boost::shared_ptr<v3d::image::Image> shown = delegate.picture(channel);
+        BOOST_REQUIRE(shown);
+        BOOST_CHECK(shown != beauty);
+        BOOST_CHECK_EQUAL(shown->width(), beauty->width());
+    }
+    // the albedo of the cube's matte is lit nowhere and coloured everywhere it covers, and the
+    // background has none
+    BOOST_CHECK_GT(red(*delegate.picture(Channel::Albedo), 32, 24), 0);
+    BOOST_CHECK_EQUAL(red(*delegate.picture(Channel::Albedo), 1, 1), 0);
+    BOOST_CHECK(!same(*delegate.picture(Channel::Albedo), *beauty));
+    BOOST_CHECK(!same(*delegate.picture(Channel::Normal), *beauty));
+
+    v3d::editor::render::MoyaDelegate plain(boost::make_shared<v3d::log::Logger>());
+    plain.render(scene, view, settings);
+    BOOST_REQUIRE(settle(plain).state == v3d::editor::render::Delegate::State::Finished);
+    BOOST_CHECK(same(*plain.picture(Channel::Beauty), *beauty));
+    // a render that shows no channel but the beauty gives the beauty for each
+    BOOST_CHECK(plain.picture(Channel::Albedo) == plain.picture(Channel::Beauty));
+    BOOST_CHECK(plain.picture(Channel::Denoised) == plain.picture(Channel::Beauty));
+}
+
+// a channel asked for once the render has finished is shown without sampling again
+BOOST_FIXTURE_TEST_CASE(delegate_shows_a_channel_asked_for_after_it_finished_test, Cube) {
+    using Channel = v3d::editor::render::Delegate::Channel;
+    v3d::editor::render::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
+    delegate.render(scene, view, settings);
+    BOOST_REQUIRE(settle(delegate).state == v3d::editor::render::Delegate::State::Finished);
+    const boost::shared_ptr<v3d::image::Image> beauty = delegate.picture(Channel::Beauty);
+    BOOST_CHECK(delegate.picture(Channel::Albedo) == beauty);
+
+    const std::uint64_t before = delegate.status().pictures;
+    delegate.show({ .denoised = true, .guides = true });
+    BOOST_REQUIRE(pictured(delegate, before));
+    const v3d::editor::render::Delegate::Status status = settle(delegate);
+    BOOST_CHECK(status.state == v3d::editor::render::Delegate::State::Finished);
+    BOOST_CHECK_EQUAL(status.samples, status.total);
+    BOOST_CHECK(delegate.picture(Channel::Albedo) != delegate.picture(Channel::Beauty));
+    BOOST_CHECK(delegate.picture(Channel::Denoised) != delegate.picture(Channel::Beauty));
+    BOOST_CHECK(same(*delegate.picture(Channel::Beauty), *beauty));
+
+    // the same pictures asked for again make none
+    const std::uint64_t after = delegate.status().pictures;
+    delegate.show({ .denoised = true, .guides = true });
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    BOOST_CHECK_EQUAL(delegate.status().pictures, after);
 }
 
 };  // namespace

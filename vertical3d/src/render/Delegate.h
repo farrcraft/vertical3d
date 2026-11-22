@@ -28,7 +28,8 @@ namespace v3d::editor::render {
  *
  * An edit reaches a running render. update() hands the render whatever its picture shows that
  * has changed, and the render takes it without being cancelled. A renderer works off the
- * caller's thread, and the caller polls status() and picture() for what it has.
+ * caller's thread, and the caller polls status() and picture() for what it has. show() says
+ * which channels the caller wants pictures of and how often.
  **/
 class Delegate {
  public:
@@ -49,6 +50,29 @@ class Delegate {
         std::uint32_t total = 0;
         /** A count that moves each time a new picture is ready. **/
         std::uint64_t pictures = 0;
+    };
+
+    /**
+     * What a picture shows: the beauty, the beauty denoised, or the albedo or the normal that guide
+     * the denoiser.
+     **/
+    enum class Channel : std::uint8_t { Beauty, Denoised, Albedo, Normal };
+
+    /** The least seconds from one picture to the next until show() names another. **/
+    static constexpr double kInterval = 0.1;
+
+    /**
+     * Which pictures the caller wants, and how often.
+     **/
+    struct Showing {
+        /** The least seconds between two pictures, but for the first of each edit and the last. **/
+        double interval = kInterval;
+        /** Whether pictures are denoised too. **/
+        bool denoised = false;
+        /** Whether pictures show the albedo and the normal too. **/
+        bool guides = false;
+
+        bool operator==(const Showing& other) const = default;
     };
 
     Delegate();
@@ -80,10 +104,19 @@ class Delegate {
     virtual Status status() const = 0;
 
     /**
+     * Say which pictures to make, and how often. A running render makes them from its next
+     * picture, and a render that has finished or stopped makes its latest picture again. A render
+     * started later makes them from its first.
+     **/
+    virtual void show(const Showing& showing) = 0;
+
+    /**
+     * @param channel what the picture shows. A picture that does not show it gives its beauty:
+     *        one not denoised yet, or a coarse picture, which shows no albedo or normal
      * @return the latest picture, which improves while a render runs, or an empty pointer before
      *         the first
      **/
-    virtual boost::shared_ptr<v3d::image::Image> picture() const = 0;
+    virtual boost::shared_ptr<v3d::image::Image> picture(Channel channel) const = 0;
 
  protected:
     /**

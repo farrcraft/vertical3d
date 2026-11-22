@@ -49,8 +49,10 @@ class SceneTranslator final {
     /**
      * @param scene made with moya::scene::kinds(), which outlives the translator and is filled by
      *        nothing else
+     * @param guides whether the options ask for the beauty denoised, so that the film holds the
+     *        albedo and the normal that guide the denoiser. The RIB export asks for neither.
      **/
-    explicit SceneTranslator(v3d::moya::scene::Scene* scene);
+    explicit SceneTranslator(v3d::moya::scene::Scene* scene, bool guides = false);
 
     /**
      * Bring the scene in step with an evaluation of the editor's scene, seen from a camera, as the
@@ -106,6 +108,7 @@ class SceneTranslator final {
     v3d::moya::scene::Handle material();
 
     v3d::moya::scene::Scene* scene_;
+    bool guides_;
     std::map<std::pair<std::string, std::string>, v3d::moya::scene::Handle> objects_;
     /** The values set on each object, by its handle's index and generation. **/
     std::map<std::pair<std::uint32_t, std::uint32_t>, std::map<std::string, v3d::moya::scene::Value>> values_;

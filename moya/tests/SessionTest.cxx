@@ -663,6 +663,87 @@ BOOST_AUTO_TEST_CASE(moya_session_pictures_the_last_is_denoised_as_a_render_is_t
     }
 }
 
+// a picture shows the guides when asked, but for a coarse one, and the beauty's bytes do not
+// depend on it. A scene that holds no guides shows none
+BOOST_AUTO_TEST_CASE(moya_session_pictures_show_the_guides_test) {
+    for (const bool held : { true, false }) {
+        std::vector<std::vector<integrate::Picture>> runs(2);
+        for (std::size_t run = 0; run < runs.size(); ++run) {
+            Staged made = staged();
+            lit(made);
+            made.made.apply();
+            if (held) {
+                denoising(made);
+            }
+            made.made.commit();
+            CpuDevice device;
+            const colour::Config config;
+            integrate::Session session(device, made.made, {}, config);
+            integrate::Pictures pictures = every(runs[run]);
+            pictures.guides = run == 1;
+            session.show(pictures);
+            while (session.advance()) {
+            }
+        }
+        const std::vector<integrate::Picture> & plain = runs[0];
+        const std::vector<integrate::Picture> & guided = runs[1];
+        BOOST_TEST_REQUIRE(plain.size() == guided.size());
+        for (std::size_t i = 0; i < plain.size(); ++i) {
+            BOOST_TEST((plain[i].rgb == guided[i].rgb), "picture " << i);
+            BOOST_TEST(plain[i].albedo.empty());
+            const bool due = held && guided[i].block == 1U;
+            BOOST_TEST(guided[i].albedo.empty() == !due, "picture " << i << " held " << held);
+            BOOST_TEST(guided[i].normal.empty() == !due, "picture " << i << " held " << held);
+        }
+        if (!held) {
+            continue;
+        }
+        // the last shows the guides the film holds once it has every sample
+        const film::Snapshot want = fresh({ denoising });
+        const integrate::Picture & last = guided.back();
+        BOOST_TEST((last.albedo == shownAt(want, want.offset(std::string(output::kDenoiseAlbedo)))));
+        BOOST_TEST((last.normal == output::directions(want, want.offset(std::string(output::kDenoiseNormal)))));
+        BOOST_TEST((last.albedo != last.rgb));
+    }
+}
+
+// a session makes its latest picture again as show() now asks for, and one that has ended
+// denoises it as the last of a version is
+BOOST_AUTO_TEST_CASE(moya_session_pictures_again_shows_the_latest_as_now_asked_test) {
+    Staged made = staged();
+    lit(made);
+    made.made.apply();
+    denoising(made);
+    made.made.commit();
+    CpuDevice device;
+    const colour::Config config;
+    integrate::Session session(device, made.made, {}, config);
+    std::vector<integrate::Picture> pictures;
+    session.show(every(pictures));
+    // nothing is made before a full pass
+    session.again();
+    BOOST_TEST(pictures.empty());
+    while (session.advance()) {
+    }
+    BOOST_TEST_REQUIRE(!pictures.empty());
+    const integrate::Picture ended = pictures.back();
+    BOOST_TEST(ended.denoised.empty());
+
+    integrate::Pictures asked = denoisedFrom(pictures, 1U);
+    asked.guides = true;
+    session.show(asked);
+    const std::size_t before = pictures.size();
+    session.again();
+    BOOST_TEST_REQUIRE(pictures.size() == before + 1U);
+    const integrate::Picture & again = pictures.back();
+    const film::Snapshot want = fresh({ denoising });
+    BOOST_TEST((again.rgb == ended.rgb));
+    BOOST_TEST(again.samples == ended.samples);
+    BOOST_TEST((again.denoised == shownAt(want, want.offset(output::denoisedOf(std::string(output::kBeauty))))));
+    BOOST_TEST(!again.albedo.empty());
+    BOOST_TEST(!session.advance());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

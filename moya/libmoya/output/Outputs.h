@@ -14,6 +14,7 @@
 #include <moya/libmoya/output/Output.h>
 #include <moya/libmoya/scene/Scene.h>
 
+#include <cstdint>
 #include <optional>
 #include <string_view>
 #include <string>
@@ -54,6 +55,15 @@ inline constexpr std::string_view kDenoiseNormal = "denoiseNormal";
 
 /** What a denoised copy's name adds to the name of the channel it copies, or to the beauty's. **/
 inline constexpr std::string_view kDenoised = "_denoised";
+
+/**
+ * Where the first float of a raw channel of three components that reads a value sits in a pixel
+ * of a snapshot, as film::Snapshot::offset() gives it.
+ *
+ * @param reading a raw channel's source name, such as `albedo` or `denoisingNormal`
+ * @return the offset, or none when the channels hold no such channel
+ **/
+std::optional<std::uint32_t> guideOf(const film::Snapshot & snapshot, const std::vector<Channel> & channels, const std::string & reading);
 
 /** Whether the scene's options ask for the beauty denoised. **/
 bool denoisesBeauty(const scene::Scene & scene);

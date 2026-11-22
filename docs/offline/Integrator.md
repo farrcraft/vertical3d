@@ -365,6 +365,15 @@ stands for.
   beauty, and its bytes are those of `beauty_denoised`. A version that adaptive sampling ends
   after a preview gives its last picture again, denoised so. The raw picture's bytes are the
   same whether pictures are denoised or not.
+- **A picture can show the guides**, the albedo and the normal the film holds, once `guides` is
+  set. The albedo is shown as the beauty is, and the normal is each component from -1 to 1 as 0
+  to 255 with no display transform, as `output::directions()` gives it. A coarse picture shows
+  neither, and nor does a picture of a film that holds no guides. The raw picture's bytes are the
+  same whether the guides are shown or not.
+- **`again()` makes the latest picture again** as `show()` now asks for, without a pass, so that
+  a caller that changes what its pictures show once sampling has ended has a picture of it. The
+  picture of a version that has ended is denoised as the last of a version is. It makes nothing
+  before `show()` or before the version's first full pass.
 - **A session without `show()`** runs no coarse passes, and samples in whole passes.
 
 Background: [ADR-0254](../adr/offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md),

@@ -45,6 +45,14 @@ struct Picture {
 
     /** The beauty denoised, as rgb shows the beauty, or empty for a picture not denoised. **/
     std::vector<std::uint8_t> denoised;
+
+    /**
+     * The albedo that guides the denoiser, as rgb shows the beauty, and the normal, each
+     * component from -1 to 1 as 0 to 255 with no display transform. Each is empty for a picture
+     * that does not show the guides.
+     **/
+    std::vector<std::uint8_t> albedo;
+    std::vector<std::uint8_t> normal;
 };
 
 };  // namespace v3d::moya::integrate

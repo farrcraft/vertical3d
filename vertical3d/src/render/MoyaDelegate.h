@@ -11,12 +11,14 @@
 #include <moya/libmoya/colour/Config.h>
 #include <moya/libmoya/device/CpuDevice.h>
 #include <moya/libmoya/integrate/Picture.h>
+#include <moya/libmoya/integrate/Pictures.h>
 #include <moya/libmoya/integrate/Session.h>
 #include <moya/libmoya/scene/Kinds.h>
 #include <moya/libmoya/scene/Scene.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -45,19 +47,17 @@ namespace v3d::editor::render {
  * and waits for an edit once the film holds every sample. It owns the retained scene: it applies
  * the commits and is the only thread that reads the scene while it renders.
  *
- * **A picture follows each pass**, at most one every kInterval seconds but for the first of each
- * edit and the last, as the session makes them. The first pictures after an edit are coarse. A
- * stop drops the pass in progress, and the latest picture then holds every sample before it.
+ * **A picture follows each pass**, at most one every interval show() names but for the first of
+ * each edit and the last, as the session makes them. The first pictures after an edit are coarse.
+ * A stop drops the pass in progress, and the latest picture then holds every sample before it.
  *
  * **The picture is the beauty as a display shows it**, through the colour configuration's default
  * display and view, 8 bits a channel, as moya writes a PNG output. The picture a render ends on
- * and moya.exe's render of the scene's RIB export give the same bytes.
+ * and moya.exe's render of the scene's RIB export give the same bytes. The denoised beauty and
+ * the albedo are shown the same way. The normal is each component from -1 to 1 as 0 to 255.
  **/
 class MoyaDelegate final : public Delegate {
  public:
-    /** The least seconds between two pictures, but for the first of each edit and the last. **/
-    static constexpr double kInterval = 0.1;
-
     explicit MoyaDelegate(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
@@ -71,7 +71,8 @@ class MoyaDelegate final : public Delegate {
     void cancel() override;
 
     Status status() const override;
-    boost::shared_ptr<v3d::image::Image> picture() const override;
+    void show(const Showing& showing) override;
+    boost::shared_ptr<v3d::image::Image> picture(Channel channel) const override;
 
     /**
      * moya's retained scene, which may be read only while no render runs: before the first, or
@@ -97,6 +98,11 @@ class MoyaDelegate final : public Delegate {
     void run(const std::stop_token& stop);
 
     /**
+     * How the session makes pictures of what a caller asked show() for.
+     **/
+    v3d::moya::integrate::Pictures picturesOf(const Showing& showing);
+
+    /**
      * Take a picture from the session, on the render's thread.
      **/
     void shown(const v3d::moya::integrate::Picture& picture);
@@ -107,7 +113,11 @@ class MoyaDelegate final : public Delegate {
     mutable std::mutex mutex_;
     std::condition_variable_any woken_;
     Status status_;
-    boost::shared_ptr<v3d::image::Image> picture_;
+    // the latest picture of each channel, by the channel's value, empty for one it does not show
+    std::array<boost::shared_ptr<v3d::image::Image>, 4> pictures_;
+    // what the caller asked show() for, and whether the render's thread has yet to take it
+    Showing showing_;
+    bool reshow_ = false;
     // the edits committed, counted
     std::uint64_t edits_ = 0;
     // asked by the session before each pass and each tile
@@ -115,7 +125,8 @@ class MoyaDelegate final : public Delegate {
 
     // edited and committed on the caller's thread, and applied and read by the render's
     v3d::moya::scene::Scene retained_{ v3d::moya::scene::kinds() };
-    SceneTranslator translator_{ &retained_ };
+    // the film holds the guides, so that a picture can be denoised and can show them
+    SceneTranslator translator_{ &retained_, true };
     const v3d::moya::colour::Config colours_;
 
     // the device is made by the first render's thread and kept. The session is made by each

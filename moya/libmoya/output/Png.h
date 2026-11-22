@@ -28,6 +28,23 @@ namespace v3d::moya::output {
 std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, const colour::Transform & display);
 
 /**
+ * A colour channel of a snapshot as a display shows it, as displayed() shows the beauty.
+ *
+ * @param offset where the channel's first float sits in a pixel, as film::Snapshot::offset() gives it
+ * @return red, green and blue for each pixel, row by row from the top left
+ **/
+std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, std::uint32_t offset, const colour::Transform & display);
+
+/**
+ * A channel of unit directions as 8 bits a component, with no display transform: each component
+ * from -1 to 1 is mapped to 0 to 255, so a direction along x is red. A NaN is the middle step.
+ *
+ * @param offset where the channel's first float sits in a pixel, as film::Snapshot::offset() gives it
+ * @return three bytes for each pixel, row by row from the top left
+ **/
+std::vector<std::uint8_t> directions(const film::Snapshot & snapshot, std::uint32_t offset);
+
+/**
  * Writes a snapshot's beauty through a display transform to a PNG file, as displayed() gives it.
  *
  * @param path the file, as UTF-8

@@ -143,6 +143,15 @@ class Session final {
      **/
     void show(const Pictures & pictures);
 
+    /**
+     * Makes the latest picture again, as show() now asks for, without a pass. A caller that
+     * changes what its pictures show once sampling has ended has a picture of it this way. The
+     * picture of a version that has ended is denoised as the last of a version is. Nothing is
+     * made before show(), or before the first full pass of a version. Called while no thread of
+     * the session's runs.
+     **/
+    void again();
+
     /** The scene's version the session renders. **/
     std::uint64_t version() const {
         return version_;

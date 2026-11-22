@@ -126,7 +126,7 @@ listed as a number with no record, as the ADR index requires.
 | [9](#step-9--pictures-while-sampling-continues) | Pictures while sampling continues | `moya/libmoya/integrate`, `film` | 0254 | done |
 | [10](#step-10--denoised-pictures) | Denoised pictures | `moya/libmoya/denoise`, `integrate` | 0255 | done |
 | [11](#step-11--the-editors-delegate-on-a-session) | The editor's delegate on a session | `vertical3d/src/render` | 0106, 0253 | done |
-| [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | open |
+| [12](#step-12--the-render-view-as-it-improves) | The render view as it improves | `vertical3d/src/control` | 0154 | done |
 | [13](#step-13--a-rendered-view) | A rendered view | `vertical3d/src/view`, `src/render` | 0256 | open |
 | [14](#step-14--speed) | Speed: the time from an edit to a picture | `moya/bench` | — | open |
 | [15](#step-15--the-documents) | The documents | `docs` | — | open |
@@ -475,6 +475,19 @@ no render runs. The rate is the delegate's constant until step 12 hands it to th
 
 **Tests:** a render view's picture count moves before its render ends. Choosing a channel shows
 that channel's picture. A workspace saved with the denoised channel chosen reads back with it.
+
+**Done.** `Delegate::picture()` takes a `Channel`, and `show()` takes a `Delegate::Showing`: the
+least interval between pictures, and whether they are denoised and show the guides.
+`integrate::Pictures` gains `guides`, and `integrate::Picture` an `albedo` and a `normal` beside
+`rgb`, from the guides the film holds. `output::guideOf()` now finds them for the session and the
+denoiser alike. A coarse picture shows neither. `Session::again()` makes the latest picture again
+as `show()` now asks for, so a channel chosen once a render has finished is shown without sampling
+again. The translator sets the options' `denoise` for the delegate, and not for the RIB export, so
+the film holds the guides. The beauty still matches moya.exe's render of the export byte for
+byte. The render view's first row gains a Channel box and the samples its picture holds. Its
+channel is the editor's state `channel`, which the controller writes to the layout when it
+changes. The render view asks for the average time between its ticks as the interval, never less
+than a tenth of a second, and for denoising and the guides only while a shown view needs them.
 
 ### Step 13 — A rendered view
 

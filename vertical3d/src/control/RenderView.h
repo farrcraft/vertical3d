@@ -15,13 +15,18 @@
 #include <vertical3d/src/render/Delegate.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -32,10 +37,21 @@ namespace v3d::editor::control {
  * The render view: an editor that shows what the render is doing and its latest picture, and
  * what renders into it and a batch of frames.
  *
- * Its first row holds a button that renders again, one that stops the render, and the render's
- * state. Below them the picture is fitted to the rest of the region without changing its shape.
- * While any area shows a render view, the scene is rendered again whenever it has
- * changed. Every render view shows the same render.
+ * Its first row holds a button that renders again, one that stops the render, the channel the
+ * view shows, and the render's state with the samples its picture holds. Below them the picture
+ * is fitted to the rest of the region without changing its shape. While any area shows a render
+ * view, the scene is rendered again whenever it has changed, and each picture is shown as it
+ * comes.
+ *
+ * **Every render view shows the same render**, each in a channel of its own: the beauty, the
+ * denoised beauty, or the albedo or the normal that guide the denoiser. The channel is kept in
+ * the editor's state under CHANNEL, so a saved workspace keeps it. It is not a render setting,
+ * and changing it does not render again. A picture that does not show the channel, such as a
+ * coarse one or one not yet denoised, is shown as its beauty.
+ *
+ * **The view sets how often pictures come**, from how often it is drawn, and never more often
+ * than one every LEAST_INTERVAL seconds. Pictures are denoised, and show the albedo and the
+ * normal, only while a view shows that channel.
  **/
 class RenderView final {
  public:
@@ -48,6 +64,24 @@ class RenderView final {
      * What a click on a render view's buttons asks for.
      **/
     enum class Asked : std::uint8_t { Nothing, Render, Stop };
+
+    typedef render::Delegate::Channel Channel;
+
+    /**
+     * The key of the editor's state that names its channel.
+     **/
+    static constexpr std::string_view CHANNEL = "channel";
+
+    /**
+     * The least seconds from one picture to the next. A picture costs the render a copy of
+     * its film.
+     **/
+    static constexpr double LEAST_INTERVAL = 0.1;
+
+    /**
+     * The width in pixels of the box that chooses the channel.
+     **/
+    static constexpr float CHANNEL_WIDTH = 180.0F;
 
     /**
      * Turn a picture into a texture the ui can draw.
@@ -84,19 +118,31 @@ class RenderView final {
 
     /**
      * Render again when the scene has changed, while a render view is shown, and take up the
-     * render's state and its picture when there is a new one.
+     * render's state and its picture in each channel shown when there is a new one.
      *
-     * @param shown whether any area shows a render view
+     * @param shown the channel of each render view an area shows, empty when none does
+     * @param since the last tick
      **/
-    void tick(const scene::Scene& scene, const v3d::type::camera::Profile& from, bool shown);
+    void tick(const scene::Scene& scene, const v3d::type::camera::Profile& from, const std::vector<Channel>& shown, std::chrono::milliseconds since);
 
     /**
      * Draw one render view into a region of the window.
      *
      * @param editor the editor's id, which keeps its buttons apart from another's
+     * @param channel read and written - the channel the view shows. Its first row chooses it
      * @return what a click on its buttons asked for
      **/
-    Asked draw(v3d::ui::Immediate* ui, std::size_t editor, const glm::vec4& region);
+    Asked draw(v3d::ui::Immediate* ui, std::size_t editor, const glm::vec4& region, Channel* channel);
+
+    /**
+     * @return a channel's name in an editor's state: `beauty`, `denoised`, `albedo` or `normal`
+     **/
+    static std::string_view name(Channel channel);
+
+    /**
+     * @return the channel an editor's state names, or the beauty when it names none of the four
+     **/
+    static Channel channelOf(const boost::json::object& state);
 
     /**
      * @return what the render is doing, as the first row says it
@@ -117,20 +163,31 @@ class RenderView final {
 
  private:
     /**
-     * Take up the render's state, and its picture when there is a new one.
+     * A channel's latest picture, as the view draws it.
+     **/
+    struct Shown {
+        v3d::ui::Image picture;
+        glm::uvec2 size{ 0 };
+        // the count of the delegate's picture it was taken from, or 0 before the first
+        std::uint64_t taken = 0;
+    };
+
+    /**
+     * Take up the render's state, and its picture in each channel shown when there is a new one.
      **/
     void sync();
 
     boost::shared_ptr<render::Delegate> delegate_;
     boost::shared_ptr<render::Batch> batch_;
     Upload upload_;
-    // the count of the delegate's last picture that is taken up, and the state last said
-    std::uint64_t shownPictures_;
-    render::Delegate::State shownState_;
-    int shownDone_;
     std::string state_;
-    v3d::ui::Image picture_;
-    glm::uvec2 size_;
+    // by the channel's value
+    std::array<Shown, 4> pictures_;
+    // the channels last shown, the seconds a tick takes on average, and what the delegate was
+    // last asked to show
+    std::vector<Channel> shown_;
+    double frame_;
+    std::optional<render::Delegate::Showing> showing_;
 };
 
 };  // namespace v3d::editor::control

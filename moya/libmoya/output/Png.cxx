@@ -37,19 +37,36 @@ constexpr float kLargest = 255.0F;
 };  // namespace
 
 std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, const colour::Transform & display) {
+    return displayed(snapshot, 0, display);
+}
+
+std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, std::uint32_t offset, const colour::Transform & display) {
     const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
-    std::vector<float> beauty(pixels * 3);
+    std::vector<float> colour(pixels * 3);
     for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
         for (std::size_t i = 0; i < 3; ++i) {
-            beauty[(pixel * 3) + i] = snapshot.values.at((pixel * snapshot.stride) + i);
+            colour[(pixel * 3) + i] = snapshot.values.at((pixel * snapshot.stride) + offset + i);
         }
     }
-    display.apply(beauty.data(), pixels, 3);
+    display.apply(colour.data(), pixels, 3);
 
-    std::vector<std::uint8_t> out(beauty.size());
-    for (std::size_t i = 0; i < beauty.size(); ++i) {
-        const float value = std::isnan(beauty[i]) ? 0.0F : std::clamp(beauty[i], 0.0F, 1.0F);
+    std::vector<std::uint8_t> out(colour.size());
+    for (std::size_t i = 0; i < colour.size(); ++i) {
+        const float value = std::isnan(colour[i]) ? 0.0F : std::clamp(colour[i], 0.0F, 1.0F);
         out[i] = static_cast<std::uint8_t>(std::lround(value * kLargest));  // checked: clamped to [0, 1] first
+    }
+    return out;
+}
+
+std::vector<std::uint8_t> directions(const film::Snapshot & snapshot, std::uint32_t offset) {
+    const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
+    std::vector<std::uint8_t> out(pixels * 3);
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        for (std::size_t i = 0; i < 3; ++i) {
+            const float component = snapshot.values.at((pixel * snapshot.stride) + offset + i);
+            const float value = std::isnan(component) ? 0.5F : std::clamp((component * 0.5F) + 0.5F, 0.0F, 1.0F);
+            out[(pixel * 3) + i] = static_cast<std::uint8_t>(std::lround(value * kLargest));  // checked: clamped to [0, 1] first
+        }
     }
     return out;
 }

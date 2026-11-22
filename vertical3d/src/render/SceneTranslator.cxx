@@ -203,7 +203,7 @@ void SceneTranslator::Walk::place(const moya::Handle& prototype, const std::stri
     translator_->put(instance, "doubleSided", moya::Value::integer(1));
 }
 
-SceneTranslator::SceneTranslator(v3d::moya::scene::Scene* scene) : scene_(scene) {
+SceneTranslator::SceneTranslator(v3d::moya::scene::Scene* scene, bool guides) : scene_(scene), guides_(guides) {
 }
 
 v3d::moya::scene::Handle SceneTranslator::object(const std::string& kind, const std::string& name) {
@@ -273,6 +273,9 @@ bool SceneTranslator::update(const scene::Scene& scene, const scene::Evaluation&
     put(options, "resolution", moya::Value::integers({ static_cast<std::int32_t>(output.settings.size.x), static_cast<std::int32_t>(output.settings.size.y) }));
     put(options, "pixelAspect", moya::Value::number(1.0F));
     put(options, "samples", moya::Value::integer(static_cast<std::int32_t>(output.settings.samples * output.settings.samples)));
+    if (guides_) {
+        put(options, "denoise", moya::Value::integer(1));
+    }
     put(lens, "projection", moya::Value::string(profile.orthographic() ? "orthographic" : "perspective"));
     // an orthographic camera has no field of view, so one that turns orthographic loses it
     if (profile.orthographic()) {

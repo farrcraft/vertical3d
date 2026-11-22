@@ -77,6 +77,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -614,7 +615,7 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
 
 /**
  **/
-void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, view::AreaLayout& layout,
     control::chrome::Pointer* pointer, std::uint32_t window) {
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
@@ -649,7 +650,7 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
         } else if (editor.kind == control::ConsoleEditor::KIND && console_) {
             console_->draw(layer, editor.id, region);
         } else if (editor.kind == control::RenderView::KIND && context_.renderView) {
-            asked = std::max(asked, context_.renderView->draw(layer, editor.id, region));
+            asked = std::max(asked, drawRenderView(layer, layout, editor, region));
         } else if (editor.kind == control::RenderSettingsEditor::KIND && renderSettings_) {
             renderSettings_->draw(layer, editor.id, region);
         }
@@ -659,6 +660,20 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
     if (pointer != nullptr) {
         pointer->settle();
     }
+}
+
+/**
+ **/
+control::RenderView::Asked Controller::drawRenderView(v3d::ui::Immediate* layer, view::AreaLayout& layout, const view::AreaLayout::Editor& editor,
+    const glm::vec4& region) {
+    // the channel is kept in the editor's state, so a saved workspace keeps it
+    const control::RenderView::Channel was = control::RenderView::channelOf(editor.state);
+    control::RenderView::Channel channel = was;
+    const control::RenderView::Asked asked = context_.renderView->draw(layer, editor.id, region, &channel);
+    if (channel != was) {
+        layout.set(editor.id, control::RenderView::CHANNEL, boost::json::string(control::RenderView::name(channel)));
+    }
+    return asked;
 }
 
 /**
@@ -893,7 +908,7 @@ bool Controller::tick(unsigned int delta) {
         commands().invoke(v3d::event::Event(asked == control::RenderView::Asked::Render ? "render::view" : "render::stop"));
     }
     if (context_.renderView && context_.activeView() && context_.activeView()->camera()) {
-        context_.renderView->tick(*context_.document->scene(), context_.shot(), shows(control::RenderView::KIND));
+        context_.renderView->tick(*context_.document->scene(), context_.shot(), renderChannels(), std::chrono::milliseconds(delta));
     }
     if (context_.renderView) {
         syncCaption();

@@ -25,16 +25,29 @@ The picture appears in a render view. If an area holds a render view, that area 
 area holds one, a window of its own opens, holding a render view. You can split that window and
 add tabs to it as you can the main window. Its close button closes it, and the render goes on.
 
-The picture appears when the render is finished. The top of the render view says what the
-render is doing: Nothing rendered yet, Rendering with how much is done, Rendered, Stopped, or
-that the render failed.
+The picture appears within a moment and improves as the render samples. The first pictures after
+a change are coarse. The top of the render view says what the render is doing: Nothing rendered
+yet, Rendering with how much is done, Rendered, Stopped, or that the render failed. Beside it are
+the samples each pixel of the picture holds, and those it holds when the render is done.
+
+The **Channel** box chooses what the render view shows:
+
+| Channel | Shows |
+|---|---|
+| Beauty | The picture as it renders |
+| Denoised | The picture with its noise filtered out, once it holds 16 samples. Until then it shows the beauty |
+| Albedo | The colour of each surface, without its lighting |
+| Normal | The direction each surface faces, as a colour |
+
+Each render view keeps its own channel, and a saved workspace keeps it too. Choosing a channel
+does not render again.
 
 While a render view is shown, the editor renders again after each change to the scene, the
-camera, the frame or the settings. A render already running stops once it finishes the pass it
-is on, and starts again.
+camera, the frame or the settings. A render already running takes the change without stopping,
+and starts its samples again.
 
 The render view has two buttons. **Render** starts a render. **Stop** stops it, and keeps the
-last finished picture.
+latest picture.
 
 moya runs inside the editor while it renders into the render view. If moya fails, the editor
 closes with it. Save your project before a long render.

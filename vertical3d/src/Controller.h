@@ -258,9 +258,9 @@ class Controller final : public v3d::engine::Engine {
     void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
-     * @return whether any area or opened window shows an editor of a kind
+     * @return the channel of each render view an area or an opened window shows
      **/
-    bool shows(std::string_view kind) const;
+    std::vector<control::RenderView::Channel> renderChannels() const;
 
     /**
      * Show an editor of a kind in a window of its own: the first an opened window holds, or a
@@ -313,8 +313,17 @@ class Controller final : public v3d::engine::Engine {
      * header. The layer has the mouse while the pointer gives the panels the cursor in the
      * window it is in.
      **/
-    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, view::AreaLayout& layout,
         control::chrome::Pointer* pointer, std::uint32_t window);
+
+    /**
+     * Draw a render view in the channel its editor's state names, and keep the channel its first
+     * row chooses in that state.
+     *
+     * @return what a click on its buttons asked for
+     **/
+    control::RenderView::Asked drawRenderView(v3d::ui::Immediate* layer, view::AreaLayout& layout, const view::AreaLayout::Editor& editor,
+        const glm::vec4& region);
 
     /**
      * Lay out each opened window's areas in it, and build their headers again where they

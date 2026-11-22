@@ -24,7 +24,13 @@ what the editor drives:
   the stop.
 - `status()` gives the render's state, how much of it is done, the samples each pixel of the
   latest picture holds and those it holds when done, and a count that moves with each new
-  picture. `picture()` gives the latest one.
+  picture.
+- `show(showing)` says how often pictures come, as the least seconds between two, and whether
+  they are denoised and show the albedo and the normal too. A running render takes it from its
+  next picture, and a render that has finished or stopped makes its latest picture again.
+- `picture(channel)` gives the latest picture in a channel: the beauty, the denoised beauty, the
+  albedo or the normal. A picture that does not show the channel gives its beauty, so a coarse
+  picture and one not yet denoised are the beauty in every channel.
 
 **An edit reaches a running render.** The render takes it between two passes without being
 cancelled, and samples the edited scene from its first sample. A render that had finished or
@@ -43,15 +49,20 @@ file stands between the render and its picture.
   scene while a render runs. [The scene](../offline/Scene.md) describes what it holds.
 - **`render()` starts a new session.** The one before ends, and the new one builds every
   structure from nothing.
-- **A picture follows each pass**, at most one every `MoyaDelegate::kInterval` seconds but for the
-  first of each edit and the last. The first pictures after an edit are coarse, each block a
-  sample. A cancel drops the pass in progress before its next tile, and the latest picture then
-  holds every sample before it.
+- **A picture follows each pass**, at most one every interval `show()` names, and
+  `Delegate::kInterval` seconds until it names one, but for the first of each edit and the last.
+  The first pictures after an edit are coarse, each block a sample. A cancel drops the pass in
+  progress before its next tile, and the latest picture then holds every sample before it.
 - **Progress is counted in samples**: the samples the latest picture holds over those the render
   takes. A coarse picture leaves it where it was. A render whose pixels all stop early ends at 1.
 - **The picture is the beauty as a display shows it**, through the colour configuration's
   default display and view at 8 bits a channel, as moya writes a PNG output. The picture a render
   ends on and moya.exe's render of the scene's RIB export give the same bytes, after any edits.
+  The denoised beauty and the albedo are shown the same way, and the normal is each component
+  from -1 to 1 as 0 to 255.
+- **The film holds the denoiser's guides.** The translator sets the options' `denoise`, which
+  the RIB export does not, so that a picture can be denoised from the albedo and the normal and
+  can show them. The beauty's bytes do not depend on it.
 - **The editor carries moya's CPU libraries and MaterialX's standard libraries beside it**, as
   moya.exe does, since the device and the materials load them from there.
 
@@ -123,10 +134,23 @@ is open, as in an area. Its close button closes it and leaves the render running
 ## The render view
 
 The render view (`render-view`) is an editor an area holds. Its first row has a Render button, a
-Stop button, and what the render is doing. Below them is the latest picture, fitted to the rest
-of the area without changing its shape. Every render view shows the same render. While any area
-shows one, the editor brings the render up to date each tick, so an edit renders again.
-`RenderView` in `src/control/` draws it, and owns the renderer and the batch.
+Stop button, the channel it shows, and what the render is doing with the samples its picture
+holds. Below them is the latest picture, fitted to the rest of the area without changing its
+shape. While any area shows one, the editor brings the render up to date each tick, so an edit
+renders again, and each picture is shown as it comes. `RenderView` in `src/control/` draws it,
+and owns the renderer and the batch.
+
+- **Every render view shows the same render, each in a channel of its own**: Beauty, Denoised,
+  Albedo or Normal. The channel is kept in the editor's state as `channel`, with the value
+  `beauty`, `denoised`, `albedo` or `normal`, so a saved workspace keeps it. A state that names
+  none of them is the beauty. The channel is not a render setting, and choosing one does not
+  render again.
+- **Pictures are denoised, and show the albedo and the normal, only while a view shows that
+  channel.** A channel first shown once the render has finished is made from its latest picture,
+  without sampling again.
+- **The render view sets how often pictures come**, from the average time between its ticks, and
+  never more often than one every `RenderView::LEAST_INTERVAL` seconds, a tenth. The interval is
+  asked for again only once the average moves by half of it.
 
 **The render settings** (`render-settings`) are an editor too. The width, the height and the
 samples are numbers that are dragged or typed. A change is taken when its drag or its typing

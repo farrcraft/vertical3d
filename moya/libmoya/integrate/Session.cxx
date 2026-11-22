@@ -473,6 +473,14 @@ void Session::pictured(bool forced, bool last) {
         const film::Snapshot denoised { .resolution = snapshot.resolution, .stride = 3, .values = denoiser_->beauty(snapshot, outputs_, !last) };
         out.denoised = output::displayed(denoised, *display_);
     }
+    if (pictures_->guides) {
+        const std::optional<std::uint32_t> albedo = output::guideOf(snapshot, outputs_, "albedo");
+        const std::optional<std::uint32_t> normal = output::guideOf(snapshot, outputs_, "denoisingNormal");
+        if (albedo && normal) {
+            out.albedo = output::displayed(snapshot, *albedo, *display_);
+            out.normal = output::directions(snapshot, *normal);
+        }
+    }
     unseen_ = false;
     settled_ = last;
     shown(out);
@@ -497,6 +505,13 @@ void Session::show(const Pictures & pictures) {
     if (pictures.denoised) {
         denoiser_.emplace(logger_);
     }
+}
+
+void Session::again() {
+    if (!pictures_ || first_ == 0U) {
+        return;
+    }
+    pictured(true, ended_);
 }
 
 void Session::written() {
