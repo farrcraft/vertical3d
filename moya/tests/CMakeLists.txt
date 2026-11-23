@@ -123,12 +123,7 @@ target_compile_definitions(v3dtest_moya PRIVATE V3D_MOYA_EXECUTABLE="$<TARGET_FI
 
 # The reference image is resolved against the working directory. v3d_add_test sets that to the
 # directory of the executable, so the fixtures are copied beside it.
-add_custom_command(TARGET v3dtest_moya POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/data"
-		"$<TARGET_FILE_DIR:v3dtest_moya>/data"
-	COMMENT "Copying moya test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_moya fixtures "${CMAKE_CURRENT_SOURCE_DIR}/data" "data")
 
 # The suite traces through the CPU device, which loads its libraries from beside the executable.
 v3d_moya_cpu_libraries(v3dtest_moya)

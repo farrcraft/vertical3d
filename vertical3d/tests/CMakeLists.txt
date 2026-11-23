@@ -134,9 +134,4 @@ target_link_libraries(v3dtest_vertical3d_device PRIVATE
 set_tests_properties(vertical3d_device PROPERTIES SKIP_RETURN_CODE 77)
 
 # The panels' cases measure through the ui suite's monospaced fixture face.
-add_custom_command(TARGET v3dtest_vertical3d POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_SOURCE_DIR}/api/ui/tests/fonts"
-		"$<TARGET_FILE_DIR:v3dtest_vertical3d>/fonts"
-	COMMENT "Copying ui test fonts"
-	VERBATIM)
+v3d_copy_directory(v3dtest_vertical3d fonts "${CMAKE_SOURCE_DIR}/api/ui/tests/fonts" "fonts")

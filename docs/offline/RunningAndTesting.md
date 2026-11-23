@@ -78,12 +78,9 @@ threads do not meet.
   no wavelengths, so its suite leaves this case and the EXR references out.
 - **A failing case writes what it rendered to `data_out/`** beside the test executable. That is
   also how a reference is made again when a change is meant to alter the picture.
-- **Fixtures are copied only when the test target relinks.** Editing a `.rib`, `.mtlx` or `.exr`
-  alone leaves the copy in the build in place, and the suite tests that copy. Touch a source file of
-  the suite, or copy the fixture into `out/build/x64-Debug/moya/tests/data/` by hand.
-- **A fixture deleted from `moya/tests/data/` stays in the build's copy.** The cases that read
-  every scene in the directory then count it and fail. Delete `out/build/<config>/moya/tests/data/`
-  and build the suite again, which copies the fixtures afresh.
+- **The build mirrors `moya/tests/data/` beside the suite.** An edited, added or deleted
+  `.rib`, `.mtlx` or `.exr` is copied or removed at the next build of `v3dtest_moya`. The cases
+  that read every scene in the directory then see the tree's scenes and no others.
 - **To look at a reference at a useful size**, copy its `.rib` to a scratch directory, raise its
   `Format`, and give it an absolute shader search path. Render it with the driver from the
   driver's directory.

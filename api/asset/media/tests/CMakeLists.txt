@@ -23,9 +23,4 @@ target_link_libraries(v3dtest_asset_media PRIVATE
 # too. They are copied from that directory rather than kept twice. The scripts beside them
 # generate most of the glTF ones. accessor_overrun.gltf, inverse_bind_overrun.gltf and
 # inverse_bind_not_matrices.gltf are written by hand.
-add_custom_command(TARGET v3dtest_asset_media POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../tests/data"
-		"$<TARGET_FILE_DIR:v3dtest_asset_media>/data"
-	COMMENT "Copying asset media test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_asset_media fixtures "${CMAKE_CURRENT_SOURCE_DIR}/../../tests/data" "data")

@@ -251,14 +251,19 @@ into `data/`. An app's own assets live in `<app>/data`, and are copied into
 app's directory first and `data/` after it, which is the layout an install has too.
 [Assets.md](../api/Assets.md#the-asset-manager) has the rule.
 
-The two data helpers add a build rule whose inputs are the files in the source directory:
+The two data helpers call `v3d_copy_directory`, which test suites call for their fixtures too.
+It adds a build rule whose inputs are the files in the source directory:
 
 - Editing a file, or adding one, is copied at the next build. The file list is re-globbed at
   build time.
-- **A deleted file is not removed** from the build tree, because the copy merges rather than
-  mirrors. Delete the `data/` directory beside the executable and build again to clear it.
+- **The copy mirrors the source.** A file deleted from the source is removed from the build tree
+  at the next build. The rule keeps a manifest of what it copied, and removes only those files,
+  so a copy made inside another is left alone.
 - An app that calls both helpers gets its own directory copied inside the shared one, in the
   order it calls them.
+- **Deleting a copy does not bring it back** on the next build, because the rule's manifest is
+  still newer than every source file. Delete the manifest too: the `.files` file named for the
+  copy, under the build's `<config>/` directory beside the target's `CMakeLists.txt`.
 - A test suite that needs an app's documents calls `v3d_copy_data(<test> app <directory>)`,
   which copies them into `data/` itself. A test builds its engine with no program name, so it
   reads `data/` alone.

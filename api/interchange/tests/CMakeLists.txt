@@ -7,9 +7,4 @@ v3d_add_test(interchange
 target_link_libraries(v3dtest_interchange PRIVATE v3dlib_interchange v3dlib_curve)
 
 # make_scene_fixture.py generates scene.glb with Blender. nodes.gltf is written by hand.
-add_custom_command(TARGET v3dtest_interchange POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/data"
-		"$<TARGET_FILE_DIR:v3dtest_interchange>/data"
-	COMMENT "Copying interchange test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_interchange fixtures "${CMAKE_CURRENT_SOURCE_DIR}/data" "data")

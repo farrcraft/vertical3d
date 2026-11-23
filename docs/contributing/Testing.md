@@ -143,9 +143,11 @@ Fixtures and helpers come before the first case, and none of them holds mutable 
 namespace scope. [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) has the
 rules a test file shares with the rest of the tree.
 
-A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
-command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
-to `data/`. Some copy something else:
+A suite with fixture files copies a directory of them beside the executable through
+`v3d_copy_directory`, which the suite's `tests/CMakeLists.txt` calls. It is a build rule whose
+inputs are the fixtures, so an edited, added or deleted fixture is mirrored at the next build
+whether or not the suite relinks. [Build.md](Build.md#data-directories) has the rule. Most suites
+copy their `tests/data/` to `data/`. Some copy something else:
 
 - `engine` copies `api/engine/tests/fixtures/` to `fixtures/`.
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
@@ -153,9 +155,11 @@ to `data/`. Some copy something else:
 - `ui` and `vertical3d` copy `api/ui/tests/fonts/` to `fonts/`: a monospaced face at which
   `api/ui/tests/Typeset.h` sets every character ten pixels wide, and a face that sets Hebrew.
   The helper's renderer tells a test each line it draws, through `TextRenderer::trace()`.
+- `font` copies `api/font/tests/fonts/` to `fonts/`, and `ui` copies it into its `fonts/` too.
+- `shell` copies `api/shell/tests/fixtures/` to `fixtures/`, and the shared `data/ui/` into the
+  game fixture's `data/ui/`.
 
-Some suites take data through the build rule an app uses instead, which copies an edited file
-on the next build whether or not the suite relinks:
+Some suites take data through the helpers an app uses instead:
 
 - `font` and `ui` take the shared font through `v3d_add_shared_data`.
 - `pong`, `tetris`, `voxel`, `odyssey`, `diorama` and `vertical3d` take their app's `data/`
@@ -568,8 +572,8 @@ chance, so a case over every pixel allows more than one over a region's mean.
   commit and a PNG to look at. Copy the EXR over the reference to change it on purpose. When
   the Linux `whole` job fails, it uploads every suite's `data_out/` as the artifact
   `data-out-<compiler>`.
-- **The fixtures are copied beside the suite when it builds.** A change to a `.rib` file alone
-  does not rebuild the suite, so copy it into the build's `data/` while working on a scene.
+- **The fixtures are mirrored beside the suite when it builds.** A changed `.rib` file is copied
+  at the next build, and the suite tests that copy.
 
 Each `.rib` file also has what moya makes of it committed in `moya/tests/data/scenes/`:
 
@@ -643,12 +647,10 @@ change locally by running an app and reading its log.
 
 ## Traps
 
-- **A new or changed fixture is copied only when its suite relinks.** A suite copies its
-  fixture directory in a `POST_BUILD` command, which runs only when the executable is relinked.
-  Adding a reference image and rebuilding copies nothing. Touch one of the suite's sources, or
-  copy the file by hand into the directory the suite copies to, beside the executable.
-  [Writing a test](#writing-a-test) lists which directory each suite copies. A fresh CI
-  checkout always relinks.
+- **A deleted copy of the fixtures is not copied again.** The copy's rule is satisfied by its
+  manifest in the build directory, which deleting the copy leaves in place. Delete the manifest
+  too, as [Build.md](Build.md#data-directories) says, or let the next edit to a fixture copy
+  the whole directory again.
 - **Boost.Test prints a one-byte enum as a character.** An unscoped enum with a `std::uint8_t`
   or `std::int8_t` base reaches the stream as a `char`, so a failed `BOOST_CHECK_EQUAL(a, b)` or
   `BOOST_TEST(a == b)` reports unreadable bytes. Compare such enums with `BOOST_CHECK(a == b)`,

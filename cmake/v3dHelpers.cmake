@@ -32,56 +32,79 @@ function(v3d_add_api_library name)
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
-# Copy a directory of assets into the data/ directory beside a target's executable, as a build
-# rule that the assets themselves are the inputs to.
+# Copy a directory into a directory beside a target's executable, as a build rule that the
+# directory's files are the inputs to. Test fixtures and an app's assets are copied this way.
 #
 # **Not a POST_BUILD step on the target.** POST_BUILD runs only when the target itself
-# relinks, so an edited asset would not be copied until the next relink. Until then the app
-# would keep reading the old copy while Ninja reports "no work to do".
+# relinks, so an edited file would not be copied until the next relink. Until then the app or
+# suite would keep reading the old copy while Ninja reports "no work to do".
 #
-# A stamp file is the rule's output because a generator cannot compare timestamps on a
-# directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at configure
-# time, so an asset that is added, not just edited, is copied as well.
+# **The copy mirrors the source.** v3dMirror.cmake copies each file whose contents changed, and
+# removes each file it copied before that the source no longer holds. A suite that lists a
+# directory, such as moya's scenes, would otherwise find a file deleted from the tree. It removes
+# only what it copied, so an app's own data can be copied inside the shared data's directory.
 #
-# The stamp is per configuration. A multi-config generator gives each configuration its own
-# TARGET_FILE_DIR, and one shared stamp would leave the second configuration's data
-# directory unwritten.
+# The rule's output is the manifest of what was copied, because a generator cannot compare
+# timestamps on a directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at
+# configure time, so a file that is added or deleted, not just edited, is mirrored as well.
 #
-# **A deleted asset is still left behind**, because copy_directory merges rather than
-# mirrors. The destination cannot be cleared first: an app's own data is copied inside the
-# shared data's directory, so clearing the shared copy would clear the app's.
-# A leftover file is harmless because nothing reads it. To clear a stale data directory,
-# delete it and the next build fills it again.
+# The manifest is per configuration. A multi-config generator gives each configuration its own
+# TARGET_FILE_DIR, and one shared manifest would leave the second configuration's copy unwritten.
+# Deleting a copy does not bring it back on the next build, since the manifest is still newer than
+# every source file. Deleting the manifest too, under the build directory's <config>/ beside the
+# target's CMakeLists.txt, does.
 #
-# @param target the executable the data is copied beside
-# @param name what this set of data is, which separates one call's stamp from another's
+# @param target the executable the directory is copied beside
+# @param name what this copy is, which separates one call's manifest from another's
 # @param source the directory to copy
-# @param ARGV3 optional: the directory under data/ to copy into. Without it the copy goes into
-#        data/ itself, as a test's fixtures do
-function(v3d_copy_data target name source)
-	set(destination "$<TARGET_FILE_DIR:${target}>/data")
-	if(ARGC GREATER 3)
-		string(APPEND destination "/${ARGV3}")
-	endif()
+# @param destination the directory to copy into, relative to the executable's directory
+function(v3d_copy_directory target name source destination)
 	file(GLOB_RECURSE files CONFIGURE_DEPENDS "${source}/*")
 	set(copier "${target}_${name}_data")
-	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
-	add_custom_command(OUTPUT "${stamp}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${source}" "${destination}"
-		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
-		DEPENDS ${files}
-		COMMENT "Copying ${name} data for ${target}"
+	set(manifest "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.files")
+	set(script "${V3D_ROOT}/cmake/v3dMirror.cmake")
+	# A deleted file leaves every remaining input older than the manifest, so the rule would not
+	# run. The list of source files is an input too, written only when it changes.
+	set(sources "${CMAKE_CURRENT_BINARY_DIR}/${copier}.sources")
+	list(JOIN files "\n" listed)
+	set(written "")
+	if(EXISTS "${sources}")
+		file(READ "${sources}" written)
+	endif()
+	if(NOT written STREQUAL "${listed}\n")
+		file(WRITE "${sources}" "${listed}\n")
+	endif()
+	add_custom_command(OUTPUT "${manifest}"
+		COMMAND ${CMAKE_COMMAND} "-DSOURCE=${source}" "-DDESTINATION=$<TARGET_FILE_DIR:${target}>/${destination}"
+			"-DMANIFEST=${manifest}" -P "${script}"
+		DEPENDS ${files} "${sources}" "${script}"
+		COMMENT "Copying ${name} for ${target}"
 		VERBATIM)
-	add_custom_target(${copier} DEPENDS "${stamp}")
+	add_custom_target(${copier} DEPENDS "${manifest}")
 	add_dependencies(${target} ${copier})
-	# An app that takes both the shared data and its own copies one directory inside the other,
-	# and nothing orders those copies against each other. They are chained in the order they were
-	# requested rather than left to run at the same time.
+	# Copies one inside another are chained in the order they were requested rather than left to
+	# run at the same time, since nothing else orders them.
 	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
 	if(previous)
 		add_dependencies(${copier} ${previous})
 	endif()
 	set_target_properties(${target} PROPERTIES V3D_LAST_DATA_TARGET ${copier})
+endfunction()
+
+# Copy a directory of assets into the data/ directory beside a target's executable, through
+# v3d_copy_directory.
+#
+# @param target the executable the data is copied beside
+# @param name what this set of data is, which separates one call's manifest from another's
+# @param source the directory to copy
+# @param ARGV3 optional: the directory under data/ to copy into. Without it the copy goes into
+#        data/ itself, as a test's fixtures do
+function(v3d_copy_data target name source)
+	set(destination "data")
+	if(ARGC GREATER 3)
+		string(APPEND destination "/${ARGV3}")
+	endif()
+	v3d_copy_directory(${target} ${name} "${source}" "${destination}")
 endfunction()
 
 # Copy OpenUSD's plugins beside an executable that reads USD.
