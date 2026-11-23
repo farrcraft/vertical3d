@@ -7,7 +7,7 @@ plugs into other pipelines through RIB and USD. It is written for whoever starts
 Before the rebuild, moya implemented RenderMan as it was before 2016: a reyes hider, a Whitted ray
 hider and an interpreted RenderMan Shading Language. Every current production renderer is a path
 tracer in which the integrator gathers light. The rebuild replaced moya's core with one, and kept
-the name, the executable and the editor's two ways of rendering. Sections 1 to 7 are done.
+the name, the executable and the editor's two ways of rendering. Sections 1 to 9 are done.
 [The offline renderer](../offline/README.md) describes the code as it stands.
 
 ## Glossary
@@ -231,12 +231,26 @@ onto the BSDF library.
 - **Manifold next event estimation**, for caustics seen through glass.
 - **Dispersion**, from an index of refraction that varies with wavelength.
 
+### 15. Showcase renders in the manual
+
+- **A gallery page in the moya manual** shows what moya renders, at a size and a sample count
+  that show it well. Its pictures cover OpenPBR's lobes, glass, metal, a coat and thin film. They
+  cover area, IES, dome and many lights, and volumes, subsurface scattering and hair. They cover
+  depth of field, motion blur and displacement.
+- **Each picture is rendered by `scripts/pictures.ts`** from a RIB scene committed under
+  `docs/manual/moya/scenes/`, as the manual's other pictures are, so each one can be rendered
+  again when moya changes.
+- **Each picture links its scene** and the manual page that explains what it shows, so a reader
+  can start from it.
+- **The page is in the docs site's summary**, and the manual's README links it.
+
 ## The order
 
 Section 1 comes first. Sections 2 and 3 build on it and can run beside each other. Section 4
 needs both, and section 5 needs section 4. Section 6 needs the film and the integrator. Section 7
 follows sections 2 to 6. Sections 8 to 14 build on that core in any order, but section 11 shares
-its device layer with section 10, and section 13's OptiX half needs section 11.
+its device layer with section 10, and section 13's OptiX half needs section 11. Section 15 shows
+what sections 1 to 9 built, so it needs nothing that is not done.
 
 ## Sources
 
