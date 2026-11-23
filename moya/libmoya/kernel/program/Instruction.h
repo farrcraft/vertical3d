@@ -19,9 +19,13 @@ inline constexpr std::uint32_t kMostOperands = 5;
  * One node of a material's program: its operation, the registers of its output, and the
  * registers of each operand it reads. A value of n components lies in n registers from its
  * first. An operation takes as many operands as its node has inputs, in the order Op gives them.
+ *
+ * It holds no padding, so two instructions of the same values hold the same bytes: the bytes after
+ * the operation are a member of their own, always zero.
  **/
 struct Instruction {
     Op op { Op::Copy };
+    std::uint8_t unused[3] {};
 
     /** The output's first register and its components, one to four. **/
     std::uint32_t out { 0 };

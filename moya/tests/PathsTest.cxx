@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE(moya_paths_a_clear_sphere_in_a_white_furnace_vanishes_test)
                 geometry::Prototypes prototypes = geometry::gather(scene, {});
                 BOOST_TEST_REQUIRE(prototypes.materials.size() == 1U);
                 closured(prototypes, 1.0F).closures[0] =
-                    kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Dielectric, .scale = 1.0F, .roughness = roughness, .ior = 1.5F, .thin = thin };
+                    kernel::surface::MaterialClosure { .model = kernel::bsdf::Model::Dielectric, .scale = 1.0F, .roughness = roughness, .ior = 1.5F, .thin = thin ? 1U : 0U };
                 CpuDevice device;
                 const film::Snapshot snapshot = integrate::render(device, scene, prototypes, {}, colour::Config());
                 const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 &) { return 1.0F; });

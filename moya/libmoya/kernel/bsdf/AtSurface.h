@@ -141,7 +141,7 @@ MOYA_KERNEL Bsdf atSurface(const surface::Surfaces & surfaces, const X & texture
             closure.fresnel = scattering::F82 { .normal = reflectance, .tint = spectrum::reflectance(table, named.tint, wavelengths) };
         } else {
             closure.ior = named.ior / outside;
-            closure.thin = named.thin;
+            closure.thin = named.thin != 0U;
         }
         out.add(closure);
     }

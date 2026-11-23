@@ -198,7 +198,7 @@ MOYA_KERNEL inline float indexOf(const surface::Material & material) {
         return bsdf::Layering::modulated(std::fmax(material.surface.specularIor, 1.0F), std::fmax(material.surface.specularWeight, 0.0F));
     }
     for (std::uint32_t i = 0; i < material.count && i < surface::kMostMaterialClosures; ++i) {
-        if (material.closures[i].model == bsdf::Model::Dielectric && !material.closures[i].thin) {
+        if (material.closures[i].model == bsdf::Model::Dielectric && material.closures[i].thin == 0U) {
             return material.closures[i].ior;
         }
     }

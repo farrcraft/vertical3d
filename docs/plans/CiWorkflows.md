@@ -293,8 +293,22 @@ one pattern, `moya_compositing_*`, matches nothing, and its part still runs. The
 Debug one at a time, and 1009 s four at a time. Lights took 620 s and paths 614 s alone, so
 they are the longest at once. Every part passes in Debug, Release and the RGB build.
 
-The cases are still to be timed under the sanitizers on a runner's four cores, from the run of
-the pull request that carries the step. ctest reports each part's time there.
+The run of `b5dc1a72` on pull request 32 timed the parts on a runner's four cores. In the
+`clang` job, under the sanitizers, the build took 74 minutes before any test ran, `moya_scattering`
+took 982 s, and `moya_lights` had run 28 minutes when the job was cancelled at its 120. In
+`whole (clang)`, in Debug without them, lights took 552 s and paths 598 s. Scattering took 233 s,
+volumes 255 s, geometry 156 s and transport 100 s, and the rest less than a minute each. The
+Windows Debug job passed. A sanitized suite after a sanitized build cannot fit one job, which
+steps 6 and 7 answer.
+
+The same run found `moya_scene` failing six cases of `KeptTest.cxx` under Clang. Their
+`samePrograms()` compares two gathers' materials and programs with `memcmp`, and
+`kernel::surface::MaterialClosure` and `kernel::program::Instruction` held padding, whose bytes
+C++ leaves unspecified. One process had left the same bytes in both by chance. Each struct now
+holds the three bytes after its one-byte enum as a member of its own, always zero, and a
+closure's `thin` is a whole word, as the kernel's other flags are. Neither struct changed size.
+
+The step is verified once a run of the parts passes on the pull request.
 
 ### Step 6 — The Linux jobs split
 

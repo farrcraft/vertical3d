@@ -120,7 +120,7 @@ struct Material {
             return (transmits != 0U || subsurfaces != 0U) && surface.thinWalled == 0U;
         }
         for (std::uint32_t i = 0; i < count && i < kMostMaterialClosures; ++i) {
-            if (closures[i].model == bsdf::Model::Dielectric && !closures[i].thin) {
+            if (closures[i].model == bsdf::Model::Dielectric && closures[i].thin == 0U) {
                 return true;
             }
         }
