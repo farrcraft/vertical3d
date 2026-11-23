@@ -132,16 +132,19 @@ requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the
   `Ci` and `a` name the beauty. Any other name is a `DisplayChannel`'s, or a channel named after
   it whose source is the name.
 - **RenderMan's `DisplayChannel` declares a channel**, named as its declaration is, such as
-  `"varying color diffuse"`, of three components for a colour, point, vector or normal and one
-  for any other type. Its `"string source"`, after the source's type, is `lpe:` and a light path
-  expression, or a value at the first hit, RenderMan's `z`, `P` and `Nn` read as the depth, the
+  `"varying color diffuse"`. RIB reads the declaration's type, and the channel has three
+  components for a colour, point, vector or normal, and one for any other type or none. Its
+  `"string source"`, after the source's type, is `lpe:` and a light path expression, or a value
+  at the first hit, RenderMan's `z`, `P` and `Nn` read as the depth, the
   position and the normal. A channel of no source collects the value its name names. Its
   `"string filter"` of `min`, `max`, `sum` or `zmin`, the closest, sets how its samples combine,
-  and its `"int denoise"` of 1 writes it denoised beside it.
+  and its `"int denoise"` of 1 writes it denoised beside it. A channel declared again replaces
+  the one before it in every output that names it.
 - **RenderMan's `PxrCryptomatte` sample filter adds a Cryptomatte output** of its
   `"string filename"`, in floats. Its `"string layer"` names what the IDs name: `Name` an object,
   `Material` a material, and `Path` an asset, each a layer named CryptoObject, CryptoMaterial or
-  CryptoAsset. Any other sample filter is logged and changes nothing.
+  CryptoAsset. A second filter of one layer names the same channel, as a file of several frames
+  that repeats the filter does. Any other sample filter is logged and changes nothing.
 - **A light's `"string lightGroup"` names its light group**, on RI's `LightSource` and on
   RenderMan's `Light`.
 - **A projection other than perspective or orthographic** is logged and changes nothing.
@@ -317,8 +320,10 @@ requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the
   texture that cannot be made is logged, and the file reads on.
 - **The client's jobs are classes of their own**, in `moya/libmoya/ri/internal`. `Shapes`
   turns each primitive request into a scene kind and its parameters. `Deforming` takes a
-  deforming primitive's later poses. `Transformations` holds the current transformation, the
-  stack `TransformBegin` saves it on, an open motion block and the named coordinate systems.
+  deforming primitive's later poses. `Outputs` makes the outputs and channels from `Display`,
+  `DisplayChannel` and `PxrCryptomatte`, and reports what it refuses. `Transformations` holds
+  the current transformation, the stack `TransformBegin` saves it on, an open motion block and
+  the named coordinate systems.
   `Lights` makes the lights and records what each lit.
   `Objects` makes the world's objects and names them. `Network` makes a material's terminals
   from the `Pattern` and `Bxdf` requests in force, and `openVdbGrids()` gives the grids an

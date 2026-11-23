@@ -93,7 +93,7 @@ what each changes here.
 |---|---|---|---|---|
 | [1](#step-1--the-record-internal-headers) | The record: internal headers | `docs/adr` | **0260** | accepted |
 | [2](#step-2--the-transformation) | The transformation | `moya/libmoya/ri` | — | done |
-| [3](#step-3--the-outputs) | The outputs | `moya/libmoya/ri` | — | open |
+| [3](#step-3--the-outputs) | The outputs | `moya/libmoya/ri` | — | done |
 | [4](#step-4--the-options-and-the-camera) | The options and the camera | `moya/libmoya/ri` | — | open |
 | [5](#step-5--the-attribute-state-and-its-materials) | The attribute state and its materials | `moya/libmoya/ri` | — | open |
 | [6](#step-6--the-handlers-private-implementation) | The handler's private implementation | `moya/libmoya/ri` | 0260 | open |
@@ -195,6 +195,19 @@ suite pass unchanged, and the step is clean at the verify preset and at every ga
 * **The class is shaped so the editor's translator can call it later.** EV2 asks for one mapping
   from RI to moya's scene. This plan does not make the translator use it, but leaves nothing in
   `Outputs` that only the handler can supply.
+
+**Done.** Three cases in `SceneClientTest.cxx` failed on the handler before the fixes. A
+Cryptomatte repeated in a second frame threw "two of kind channel named CryptoObject" (MS-D1).
+Outputs held the handle of a channel declared again (MS-D2). `colour` gave one component, since
+the handler's own list of type words spelled the colour one way (MS-D3). `ri::internal::Outputs` now
+takes `Display`, `DisplayChannel` and `PxrCryptomatte`, with `channelOf()` and the reading of a
+display's mode. A second filter of a layer names the layer's channel. A channel declared again
+is replaced in each output that names it, found from the record `Outputs` keeps of each
+output's channels, since the scene answers only for what it has applied. The components come
+from `rib::Declaration::parse()`: three for a type of three floats, and one otherwise. `Outputs`
+takes the scene and RIB's requests alone, and returns false where the handler logs, so the
+translator can call it with no handler. moya's eleven ctest parts and the editor's suite pass,
+and the step is clean at the verify preset and at every gate.
 
 ### Step 4 — The options and the camera
 

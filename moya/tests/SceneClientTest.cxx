@@ -251,6 +251,62 @@ BOOST_AUTO_TEST_CASE(moya_sceneclient_cryptomatte_and_denoising_come_from_ri_tes
     BOOST_TEST(read.value("options", "options", "deepTolerance").floatArray().front() == 0.01F);
 }
 
+// a PxrCryptomatte repeated in each frame of a file, or a second one of the same layer for another
+// file, names the one channel its layer makes
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_second_cryptomatte_of_a_layer_reuses_its_channel_test) {
+    const Read read(
+        "FrameBegin 1\n"
+        "SampleFilter \"PxrCryptomatte\" \"ids\" \"string filename\" [\"ids.exr\"] \"string layer\" [\"Name\"]\n"
+        "WorldBegin\nWorldEnd\n"
+        "FrameEnd\n"
+        "FrameBegin 2\n"
+        "SampleFilter \"PxrCryptomatte\" \"ids\" \"string filename\" [\"ids.exr\"] \"string layer\" [\"Name\"]\n"
+        "SampleFilter \"PxrCryptomatte\" \"more\" \"string filename\" [\"more.exr\"] \"string layer\" [\"object\"]\n"
+        "WorldBegin\nWorldEnd\n"
+        "FrameEnd\n");
+    const scene::Scene & made = read.scene();
+    BOOST_TEST(read.frames().size() == 2U);
+    BOOST_TEST_REQUIRE(made.objects("channel").size() == 1U);
+    const scene::Value named = scene::Value::handles({ *made.find("channel", "CryptoObject") });
+    BOOST_TEST((read.value("output", "ids.exr", "channels") == named));
+    BOOST_TEST((read.value("output", "more.exr", "channels") == named));
+}
+
+// a DisplayChannel that declares a channel again replaces it in every output that names it, and
+// the output holds the channel as last declared
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_redeclared_channel_is_replaced_in_each_output_test) {
+    const Read read(
+        "DisplayChannel \"color diffuse\" \"string source\" [\"color lpe:C<RD>L\"]\n"
+        "Display \"out.exr\" \"openexr\" \"rgba,diffuse\"\n"
+        "Display \"+more.exr\" \"openexr\" \"diffuse\"\n"
+        "DisplayChannel \"float diffuse\" \"string source\" [\"float z\"]\n"
+        "WorldBegin\nWorldEnd\n");
+    const scene::Scene & made = read.scene();
+    BOOST_TEST_REQUIRE(made.objects("channel").size() == 1U);
+    const scene::Handle diffuse = *made.find("channel", "diffuse");
+    BOOST_TEST((read.value("output", "out.exr", "channels") == scene::Value::handles({ diffuse })));
+    BOOST_TEST((read.value("output", "more.exr", "channels") == scene::Value::handles({ diffuse })));
+    BOOST_TEST((made.value(diffuse, "sourceName") == scene::Value::string("depth")));
+    BOOST_TEST((made.value(diffuse, "components") == scene::Value::integer(1)));
+}
+
+// a channel's components come from its declaration's type as RIB reads it. A colour spelled either
+// way, a point, a vector and a normal have three, and a float or a declaration of no type has one
+BOOST_AUTO_TEST_CASE(moya_sceneclient_a_channels_components_come_from_its_declaration_test) {
+    const Read read(
+        "DisplayChannel \"varying colour tint\"\n"
+        "DisplayChannel \"color shade\"\n"
+        "DisplayChannel \"normal facing\"\n"
+        "DisplayChannel \"uniform float depth\"\n"
+        "DisplayChannel \"plain\"\n"
+        "WorldBegin\nWorldEnd\n");
+    BOOST_TEST((read.value("channel", "tint", "components") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("channel", "shade", "components") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("channel", "facing", "components") == scene::Value::integer(3)));
+    BOOST_TEST((read.value("channel", "depth", "components") == scene::Value::integer(1)));
+    BOOST_TEST((read.value("channel", "plain", "components") == scene::Value::integer(1)));
+}
+
 // a light's "string lightGroup" names its light group, on RI's LightSource and RenderMan's Light
 BOOST_AUTO_TEST_CASE(moya_sceneclient_a_light_names_its_group_test) {
     const Read read(

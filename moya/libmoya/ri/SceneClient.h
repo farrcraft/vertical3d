@@ -36,6 +36,7 @@
 #include <moya/libmoya/ri/internal/Lights.h>
 #include <moya/libmoya/ri/internal/Network.h>
 #include <moya/libmoya/ri/internal/Objects.h>
+#include <moya/libmoya/ri/internal/Outputs.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
 #include <moya/libmoya/ri/internal/Shape.h>
 #include <moya/libmoya/ri/internal/Transformations.h>
@@ -196,13 +197,14 @@ class SceneClient final : public v3d::rib::Handler {
 
     /**
      * Declares a channel of the declaration's name, of three components for a colour, point,
-     * vector or normal and one for any other type. Its `"string source"` is what it collects,
-     * after the source's type: `lpe:` and a light path expression, or a value at the first hit.
-     * RenderMan's `z`, `P` and `Nn` are the depth, the position and the normal, and any other
-     * name is read as moya names its values. A channel of no source collects the value its own
-     * name names. Its `"string filter"` is how its samples combine: `min`, `max`, `sum`, or
-     * `zmin` for the closest, and the default for any other. Its `"int denoise"` of 1 writes it
-     * denoised beside it.
+     * vector or normal as RIB reads the type, and one for any other type or none. Its
+     * `"string source"` is what it collects, after the source's type: `lpe:` and a light path
+     * expression, or a value at the first hit. RenderMan's `z`, `P` and `Nn` are the depth, the
+     * position and the normal, and any other name is read as moya names its values. A channel of
+     * no source collects the value its own name names. Its `"string filter"` is how its samples
+     * combine: `min`, `max`, `sum`, or `zmin` for the closest, and the default for any other. Its
+     * `"int denoise"` of 1 writes it denoised beside it. A channel declared again replaces the one
+     * before it in every output.
      **/
     void displayChannel(const v3d::rib::requests::DisplayChannel & request,
         const v3d::rib::ParameterList & parameters) override;
@@ -211,7 +213,8 @@ class SceneClient final : public v3d::rib::Handler {
      * RenderMan's `PxrCryptomatte` adds an output of its `"string filename"`, in floats, of one
      * Cryptomatte layer. Its `"string layer"` names what the IDs name: `Name` or `object` an
      * object, `Material` or `material` a material, and `Path` or `asset` an asset. The layer is
-     * named CryptoObject, CryptoMaterial or CryptoAsset. Any other sample filter is reported.
+     * named CryptoObject, CryptoMaterial or CryptoAsset, and a second filter of one layer names
+     * the same channel. Any other sample filter is reported.
      **/
     void sampleFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) override;
     /**
@@ -324,9 +327,6 @@ class SceneClient final : public v3d::rib::Handler {
     /** Sets the options' background to a colour parameter, black when it is not given. **/
     void background(const v3d::rib::ParameterList & parameters, const std::string & colour);
 
-    /** Whether a file name ends with a suffix, compared exactly. **/
-    static bool endsWith(const std::string & text, const std::string & suffix);
-
     /** A search path as RI gives it, with each `&` replaced by the path it replaces. **/
     static std::string searchPath(const std::string & given, const std::string & previous);
 
@@ -421,16 +421,6 @@ class SceneClient final : public v3d::rib::Handler {
     /** A name for a new object of a kind: the attribute state's, or the request's and a count. **/
     std::string nameFor(const std::string & kind, const std::string & request);
 
-    /** The output named after a display's file, made when there is none. **/
-    scene::Handle output(const std::string & file);
-
-    /**
-     * A channel of a name that collects a source: `lpe:` and an expression, or a value.
-     * RenderMan's z, P and Nn are read as the depth, the position and the normal. Components
-     * above zero set its own.
-     **/
-    scene::Handle channelOf(const std::string & name, const std::string & source, std::int32_t components);
-
     scene::Scene & scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::function<void()> committed_;
@@ -450,8 +440,7 @@ class SceneClient final : public v3d::rib::Handler {
 
     scene::Handle options_;
     scene::Handle camera_;
-    std::map<std::string, scene::Handle> outputs_;
-    std::map<std::string, scene::Handle> channels_;
+    internal::Outputs outputs_;
 
     Attributes current_;
     std::vector<Attributes> attributes_;

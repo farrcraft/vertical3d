@@ -77,15 +77,11 @@
 namespace v3d::moya::ri {
 
 SceneClient::SceneClient(scene::Scene & scene, const boost::shared_ptr<v3d::log::Logger> & logger) :
-    scene_(scene), logger_(logger), warnings_(logger), made_(&scene), lights_(&scene, &made_, &warnings_, logger),
+    scene_(scene), logger_(logger), warnings_(logger), outputs_(&scene), made_(&scene), lights_(&scene, &made_, &warnings_, logger),
     deformations_(&scene, &warnings_, logger, current_.basis) {
     options_ = scene_.create("options", "options");
     camera_ = scene_.create("camera", "camera");
     scene_.set(options_, "camera", scene::Value::handle(camera_));
-}
-
-bool SceneClient::endsWith(const std::string & text, const std::string & suffix) {
-    return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the path given, then the path it replaces
@@ -204,111 +200,16 @@ void SceneClient::pixelVariance(float variation) {
     scene_.set(options_, "noiseThreshold", scene::Value::number(variation));
 }
 
-scene::Handle SceneClient::output(const std::string & file) {
-    const auto found = outputs_.find(file);
-    if (found != outputs_.end()) {
-        return found->second;
-    }
-    const scene::Handle made = scene_.create("output", file);
-    scene_.set(made, "file", scene::Value::string(file));
-    outputs_[file] = made;
-    return made;
-}
-
 void SceneClient::display(const v3d::rib::requests::Display & request, const v3d::rib::ParameterList & parameters) {
     unread("Display", "", parameters, {});
-    const bool adds = !request.name.empty() && request.name.front() == '+';
-    const std::string file = adds ? request.name.substr(1) : request.name;
-    if (!adds) {
-        for (const auto & [name, made] : outputs_) {
-            if (name != file) {
-                scene_.remove(made);
-            }
-        }
-        std::erase_if(outputs_, [&file](const auto & named) { return named.first != file; });
-    }
-
-    const scene::Handle made = output(file);
-    std::string format = endsWith(file, ".png") ? "png" : "exr";
-    if (request.type == "framebuffer") {
-        format = "framebuffer";
-    } else if (request.type == "deepexr") {
-        format = "deepexr";
-    }
-    scene_.set(made, "format", scene::Value::string(format));
-
-    std::vector<scene::Handle> channels;
-    std::size_t from = 0;
-    while (from <= request.mode.size()) {
-        const std::size_t comma = std::min(request.mode.find(',', from), request.mode.size());
-        std::string name = request.mode.substr(from, comma - from);
-        name.erase(0, name.find_first_not_of(' '));
-        name.erase(name.find_last_not_of(' ') + 1U);
-        from = comma + 1U;
-        if (name.empty() || name == "rgb" || name == "rgba" || name == "Ci" || name == "a") {
-            continue;
-        }
-        if (channels_.find(name) == channels_.end()) {
-            channels_[name] = channelOf(name, name, 0);
-        }
-        channels.push_back(channels_[name]);
-    }
-    scene_.set(made, "channels", scene::Value::handles(channels));
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the channel's name, then its source
-scene::Handle SceneClient::channelOf(const std::string & name, const std::string & source, std::int32_t components) {
-    const scene::Handle channel = scene_.create("channel", name);
-    const std::string lpe = "lpe:";
-    const bool expression = source.starts_with(lpe);
-    static const std::map<std::string, std::string> kRenderMan { { "z", "depth" }, { "P", "position" }, { "Nn", "normal" } };
-    const auto renamed = kRenderMan.find(source);
-    scene_.set(channel, "sourceType", scene::Value::string(expression ? "lpe" : "raw"));
-    std::string named = renamed != kRenderMan.end() ? renamed->second : source;
-    if (expression) {
-        named = source.substr(lpe.size());
-    }
-    scene_.set(channel, "sourceName", scene::Value::string(named));
-    if (components > 0) {
-        scene_.set(channel, "components", scene::Value::integer(components));
-    }
-    return channel;
+    outputs_.display(request);
 }
 
 void SceneClient::displayChannel(const v3d::rib::requests::DisplayChannel & request,
     const v3d::rib::ParameterList & parameters) {
-    std::vector<std::string> words;
-    std::size_t at = 0;
-    while (at < request.declaration.size()) {
-        const std::size_t next = std::min(request.declaration.find(' ', at), request.declaration.size());
-        if (next > at) {
-            words.push_back(request.declaration.substr(at, next - at));
-        }
-        at = next + 1U;
-    }
-    if (words.empty()) {
+    if (!outputs_.declare(request, parameters)) {
         warnings_.once("display channel", "a DisplayChannel that declares no name makes no channel");
-        return;
     }
-    const std::string name = words.back();
-    static const std::set<std::string> kTriples { "color", "point", "vector", "normal" };
-    const bool triple = std::any_of(words.begin(), words.end() - 1, [](const std::string & word) { return kTriples.contains(word); });
-    std::string source = parameters.has("source") ? parameters.string("source") : name;
-    const std::size_t space = source.rfind(' ');
-    source = space == std::string::npos ? source : source.substr(space + 1U);
-    if (channels_.find(name) != channels_.end()) {
-        scene_.remove(channels_[name]);
-    }
-    const scene::Handle channel = channelOf(name, source, triple ? 3 : 1);
-    static const std::map<std::string, std::string> kFilters { { "min", "min" }, { "max", "max" }, { "sum", "sum" }, { "zmin", "closest" } };
-    const auto filter = kFilters.find(parameters.has("filter") ? parameters.string("filter") : std::string());
-    if (filter != kFilters.end()) {
-        scene_.set(channel, "filter", scene::Value::string(filter->second));
-    }
-    if (parameters.has("denoise")) {
-        scene_.set(channel, "denoise", scene::Value::integer(parameters.number("denoise", 0.0F) != 0.0F ? 1 : 0));
-    }
-    channels_[name] = channel;
 }
 
 void SceneClient::displayFilter(const v3d::rib::requests::ShadingNode & request, const v3d::rib::ParameterList & parameters) {
@@ -344,21 +245,9 @@ void SceneClient::sampleFilter(const v3d::rib::requests::ShadingNode & request, 
         warnings_.once("sample filter " + request.type, "the sample filter " + request.type + " is not one moya reads, so it changes nothing");
         return;
     }
-    static const std::map<std::string, std::pair<std::string, std::string>> kLayers { { "Name", { "CryptoObject", "crypto_object" } },
-        { "object", { "CryptoObject", "crypto_object" } }, { "Material", { "CryptoMaterial", "crypto_material" } },
-        { "material", { "CryptoMaterial", "crypto_material" } }, { "Path", { "CryptoAsset", "crypto_asset" } }, { "asset", { "CryptoAsset", "crypto_asset" } } };
-    const auto layer = kLayers.find(parameters.has("layer") ? parameters.string("layer") : std::string("Name"));
-    if (layer == kLayers.end()) {
+    if (!outputs_.cryptomatte(parameters)) {
         warnings_.once("cryptomatte layer", "a PxrCryptomatte layer other than Name, Material or Path makes no output");
-        return;
     }
-    const std::string file = parameters.has("filename") ? parameters.string("filename") : std::string("cryptomatte.exr");
-    const scene::Handle made = output(file);
-    scene_.set(made, "format", scene::Value::string("exr"));
-    scene_.set(made, "precision", scene::Value::string("float"));
-    const scene::Handle channel = channelOf(layer->second.first, layer->second.second, 0);
-    channels_[layer->second.first] = channel;
-    scene_.set(made, "channels", scene::Value::handles({ channel }));
 }
 
 void SceneClient::option(const std::string & name, const v3d::rib::ParameterList & parameters) {
