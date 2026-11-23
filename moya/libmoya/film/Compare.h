@@ -28,8 +28,10 @@ Estimate mean(const Snapshot & snapshot, const glm::uvec2 & from, const glm::uve
 
 /**
  * How many standard errors an estimate lies from an expected value. An estimate whose error is
- * infinite measures nothing, and lies 0 from any value. An error below a millionth of the larger
- * of 1 and the expected value is taken as that, so that rounding alone is never a difference.
+ * infinite measures nothing, and lies 0 from any value. An error below a ten-thousandth of the
+ * larger of 1 and the expected value is taken as that, so that rounding alone is never a
+ * difference. A render of no noise, such as an RGB build's of a pixel whose samples agree, has an
+ * error of 0 and still rounds by tens of millionths.
  **/
 float sigmas(const Estimate & estimate, float expected);
 

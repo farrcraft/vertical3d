@@ -193,6 +193,15 @@ BOOST_AUTO_TEST_CASE(moya_compare_a_pixel_of_one_sample_is_not_measured_test) {
     BOOST_TEST(furthest.unmeasured == kSide * kSide);
 }
 
+// an estimate of no noise is measured against a ten-thousandth of its value. The rounding of a
+// render whose samples all agree is then never a difference, and a part in a thousand still is
+BOOST_AUTO_TEST_CASE(moya_compare_an_estimate_of_no_error_is_measured_by_rounding_test) {
+    BOOST_TEST(film::sigmas(film::Estimate { .value = 1.00003F, .error = 0.0F }, 1.0F) < 1.0F);
+    BOOST_TEST(film::sigmas(film::Estimate { .value = 4.0001F, .error = 0.0F }, 4.0F) < 1.0F);
+    BOOST_TEST(film::sigmas(film::Estimate { .value = 1.001F, .error = 0.0F }, 1.0F) > 5.0F);
+    BOOST_TEST(film::sigmas(film::Estimate { .value = 0.0F, .error = 0.0F }, film::Estimate { .value = 0.00003F, .error = 0.0F }) < 1.0F);
+}
+
 BOOST_AUTO_TEST_CASE(moya_compare_a_pixel_that_is_not_a_number_is_furthest_test) {
     const film::Snapshot snapshot = uniformPicture(1);
     const film::Furthest furthest = film::furthest(snapshot, [](const glm::uvec2 & pixel) {

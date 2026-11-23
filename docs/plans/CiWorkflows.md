@@ -291,7 +291,8 @@ ten parts, each a ctest test `moya_<part>` labelled `moya` and, for eight, `rend
 one pattern, `moya_compositing_*`, matches nothing, and its part still runs. The RGB build in
 `scripts/portable/build.sh` runs `ctest -L '^moya$'`. Through ctest the parts took 2161 s in
 Debug one at a time, and 1009 s four at a time. Lights took 620 s and paths 614 s alone, so
-they are the longest at once. Every part passes in Debug, Release and the RGB build.
+they are the longest at once. Every part passes in Debug and Release. In the RGB build four cases
+failed until step 6 fixed them.
 
 The run of `b5dc1a72` on pull request 32 timed the parts on a runner's four cores. In the
 `clang` job, under the sanitizers, the build took 74 minutes before any test ran, `moya_scattering`
@@ -341,12 +342,18 @@ image, `libraries` took 278 s and `moya` 1317 s, of which the suite was 647 s, t
 
 The RGB build had not built with Clang since its reference tests were added. Their helpers went
 unused there, which `-Werror` stopped, and each file is now left out of an RGB build whole. Four
-cases then fail in Clang's RGB build at both `-O0` and `-O1`, and pass in MSVC's:
+cases then failed in the RGB build, under MSVC and Clang alike, and had since they were written:
 `moya_lights_a_point_gives_its_closed_form_test`,
 `moya_lights_a_point_is_the_limit_of_a_shrinking_sphere_test`,
 `moya_lights_each_shape_is_normalised_by_its_area_in_the_world_test` and
-`moya_paths_a_white_metal_sphere_in_a_white_furnace_is_white_test`, the last by 25 errors. The
-step is verified once those are fixed and a run on the pull request passes inside the limits.
+`moya_paths_a_white_metal_sphere_in_a_white_furnace_is_white_test`. An RGB build samples no
+wavelengths, so a pixel whose samples all agree has an error of 0. `film::sigmas()` floored an
+error at a millionth, below a render's rounding, and measured 2.5e-5 of rounding as 25 errors.
+The floor is now a ten-thousandth, and a case in `CompareTest.cxx` holds it. The point cases'
+expected mean took each pixel at its centre, while the render's filter reached past each pixel,
+3.5e-4 apart. They now render through a box filter a pixel wide, and the mean averages each
+pixel's area. Every moya suite passes in MSVC's RGB build. The step is verified once a run on the
+pull request passes inside the limits.
 
 ### Step 7 — The Windows job split
 

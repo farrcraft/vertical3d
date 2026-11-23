@@ -186,16 +186,29 @@ float underDisk(float off, float radius, float height) {
     return 0.5F * (1.0F - ((h2 + d2 - r2) / std::sqrt(((h2 + d2 + r2) * (h2 + d2 + r2)) - (4.0F * r2 * d2))));
 }
 
-/** The mean over every pixel of what is expected at its centre, as a camera views a square. **/
+/**
+ * The mean of what is expected over a square a camera views, as a box filter a pixel wide sees it.
+ * Each pixel is averaged over kAcross points along each axis of its area, not taken at its centre,
+ * which would differ by a few parts in ten thousand under a point.
+ **/
 float meanOver(const glm::vec2 & centre, float half, float (*expected)(const glm::vec2 &, float, float), float radius, float height) {
+    constexpr std::uint32_t kAcross = 8;
+    const std::uint32_t steps = kSide * kAcross;
+    const float step = 2.0F * half / static_cast<float>(steps);
     double sum = 0.0;
-    for (std::uint32_t y = 0; y < kSide; ++y) {
-        for (std::uint32_t x = 0; x < kSide; ++x) {
-            const glm::vec2 at = centre - half + (glm::vec2 { static_cast<float>(x), static_cast<float>(y) } + 0.5F) * (2.0F * half / static_cast<float>(kSide));
+    for (std::uint32_t y = 0; y < steps; ++y) {
+        for (std::uint32_t x = 0; x < steps; ++x) {
+            const glm::vec2 at = centre - half + (glm::vec2 { static_cast<float>(x), static_cast<float>(y) } + 0.5F) * step;
             sum += expected(at, radius, height);
         }
     }
-    return static_cast<float>(sum / (kSide * kSide));
+    return static_cast<float>(sum / (static_cast<double>(steps) * steps));
+}
+
+/** Gives a render a box filter a pixel wide, which takes in only what its pixel covers. **/
+void boxed(scene::Scene & scene, const scene::Handle & options) {
+    scene.set(options, "filter", scene::Value::string("box"));
+    scene.set(options, "filterWidth", scene::Value::floats({ 1.0F, 1.0F }));
 }
 
 float diskAt(const glm::vec2 & at, float radius, float height) {
@@ -537,13 +550,14 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_distant_lights_angle_softens_a_shadow_test) {
 }
 
 // a white plane under a point of a radiant intensity of one reaches the closed form of a point's
-// irradiance, whatever the strategy, since only a light sample finds it
+// irradiance, whatever the strategy, since only a light sample finds it. A box filter keeps each
+// pixel to its own area, as the closed form's mean takes it
 BOOST_AUTO_TEST_CASE(moya_lights_a_point_gives_its_closed_form_test) {
     const float expected = meanOver(glm::vec2 { 0.0F }, 0.5F, &underPoint, 0.0F, 1.0F);
     for (const char * strategy : { "bsdf", "light", "mis" }) {
         BOOST_TEST_CONTEXT(strategy) {
             scene::Scene scene(scene::kinds());
-            litPlane(scene, strategy, 16, 0.5F);
+            boxed(scene, litPlane(scene, strategy, 16, 0.5F));
             bulb(scene, 0.0F, 1.0F);
             const film::Snapshot snapshot = rendered(scene);
             BOOST_TEST(film::sigmas(film::mean(snapshot, { 0, 0 }, { kSide, kSide }), expected) < 3.0F);
@@ -559,7 +573,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_a_point_is_the_limit_of_a_shrinking_sphere_test
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the radius, then the two switches
     const auto lit = [](float radius, std::int32_t point, std::int32_t normalize) {
         scene::Scene scene(scene::kinds());
-        litPlane(scene, "mis", 64, 0.5F);
+        boxed(scene, litPlane(scene, "mis", 64, 0.5F));
         const scene::Handle sphere = bulb(scene, radius, 1.0F);
         scene.set(sphere, "treatAsPoint", scene::Value::integer(point));
         scene.set(sphere, "normalize", scene::Value::integer(normalize));

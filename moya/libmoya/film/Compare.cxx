@@ -24,7 +24,7 @@ namespace {
 
 /** The least error a comparison divides by, for an expected value. **/
 float floorFor(float expected) {
-    constexpr float kRelative = 1.0e-6F;
+    constexpr float kRelative = 1.0e-4F;
     return kRelative * std::max(1.0F, std::abs(expected));
 }
 

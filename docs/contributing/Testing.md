@@ -534,9 +534,11 @@ lobe transmits.
 A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
 finds the pixel whose luminance lies furthest from an expected value, or from another picture,
 in standard errors. `film::mean()` gives a region's mean with its error, and `film::sigmas()`
-measures an estimate against a value or another estimate. A case chooses how many standard
-errors it allows. A picture of many pixels lies a few errors from its mean somewhere by chance,
-so a case over every pixel allows more than one over a region's mean.
+measures an estimate against a value or another estimate. An error is never taken as less than
+a ten-thousandth of the larger of 1 and the value compared. A pixel whose samples all agree has
+an error of 0, as many do in an RGB build, and it is held to rounding. A case chooses how many
+standard errors it allows. A picture of many pixels lies a few errors from its mean somewhere by
+chance, so a case over every pixel allows more than one over a region's mean.
 [Film.md](../offline/Film.md#a-pixels-noise) states how a pixel's error is estimated.
 
 - **A path tracer's render is compared with its committed one this way**, every pixel within
