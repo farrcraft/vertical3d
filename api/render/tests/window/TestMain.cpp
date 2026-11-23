@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // Boost.Test linked as a DLL, as on Windows, leaves main to the suite, which probes first. Linked
 // statically, as on Linux, it brings its own main, and the probe runs in the function that main

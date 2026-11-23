@@ -1,0 +1,94 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 4
+    focalLength float = 0.5
+    fov float = 40
+    fstop float = 1
+    near float = 0.1
+    projection string = "perspective"
+    screen float[0] =
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "constant"
+    priority integer = 0
+    prototype handle = mesh "Polygon 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 2"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "constant 2"
+    priority integer = 0
+    prototype handle = mesh "Polygon 2"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+material "constant"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "constant"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+material "constant 2"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "constant 2"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+mesh "Polygon 1"
+    P point[4] = (-1.5, -1, 4) (-0.2, -1, 4) (-0.2, 1, 4) (-1.5, 1, 4)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+mesh "Polygon 2"
+    P point[4] = (0.5, -2.5, 10) (4, -2.5, 10) (4, 2.5, 10) (0.5, 2.5, 10)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+options "options"
+    background colour[0] =
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    deepTolerance float = 0.001
+    denoise integer = 0
+    dicingCamera handle = none
+    diffuseDepth integer = 4
+    edgeLength float = 1
+    filter string = "gaussian"
+    filterWidth float[2] = 2 2
+    frame integer = 0
+    frameAspect float = 0
+    glossyDepth integer = 4
+    lightPicking string = "tree"
+    lightSampling string = "mis"
+    maxDepth integer = 12
+    minSamples integer = 16
+    noiseThreshold float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 64 48
+    rouletteDepth integer = 3
+    samples integer = 16
+    shaderSearchPath string = ""
+    specularDepth integer = 12
+    subsurfaceDepth integer = 256
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
+    transmissionDepth integer = 12
+    volumeDepth integer = 4
+shader "constant"
+    Cs colour = (0.9, 0.2, 0.2)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "constant"
+shader "constant 2"
+    Cs colour = (0.2, 0.4, 0.9)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "constant"

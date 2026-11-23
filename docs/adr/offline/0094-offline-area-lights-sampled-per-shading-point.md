@@ -1,9 +1,9 @@
 # ADR-0094: Offline: area lights sampled per shading point
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-18
 **Tags**: offline
-**Documented in**: [offline/ShadingLanguage.md](../../offline/ShadingLanguage.md)
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 
 ## Context
 

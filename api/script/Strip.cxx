@@ -1,9 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Strip.h"
+
+#include "Problem.h"
+#include "Stripped.h"
 
 #include <api/script/internal/Eraser.h>
 

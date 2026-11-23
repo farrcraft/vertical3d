@@ -17,9 +17,4 @@ target_link_libraries(v3dtest_asset PRIVATE v3dlib_asset v3dlib_log ${Boost_LIBR
 
 # The manager resolves a relative path against the working directory, which v3d_add_test
 # points at the executable, so the fixtures have to sit beside it.
-add_custom_command(TARGET v3dtest_asset POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/data"
-		"$<TARGET_FILE_DIR:v3dtest_asset>/data"
-	COMMENT "Copying asset test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_asset fixtures "${CMAKE_CURRENT_SOURCE_DIR}/data" "data")

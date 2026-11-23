@@ -62,21 +62,11 @@ target_link_libraries(v3dtest_ui PRIVATE
 v3d_add_shared_data(v3dtest_ui)
 
 # The faces in fonts/ are fixtures: a monospaced face the cases measure predictably, and a face
-# that sets Hebrew. The editor's suite copies them too. The font library's colour fixtures beside
-# them draw an emoji's layers, its gradients, and its picture, and its variable fixture is drawn
-# at a weight.
-add_custom_command(TARGET v3dtest_ui POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
-		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${V3D_ROOT}/api/font/tests/fonts/colr0.ttf"
-		"${V3D_ROOT}/api/font/tests/fonts/colr1.ttf"
-		"${V3D_ROOT}/api/font/tests/fonts/cbdt.ttf"
-		"${V3D_ROOT}/api/font/tests/fonts/variable.ttf"
-		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
-	COMMENT "Copying ui test fonts"
-	VERBATIM)
+# that sets Hebrew. The editor's suite copies them too. The font library's fixtures are copied
+# beside them. Its colour faces draw an emoji's layers, its gradients, and its picture, and its
+# variable face is drawn at a weight.
+v3d_copy_directory(v3dtest_ui fonts "${CMAKE_CURRENT_SOURCE_DIR}/fonts" "fonts")
+v3d_copy_directory(v3dtest_ui font_library "${V3D_ROOT}/api/font/tests/fonts" "fonts")
 
 # The cases that draw text on a device, through the render device suite's headless device. Where
 # there is no device the binary exits with 77, which ctest reports as a skip.

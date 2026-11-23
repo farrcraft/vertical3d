@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -18,6 +18,9 @@
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
+/**
+ * Menus: a bar of named menus, a menu, and its items.
+ **/
 namespace v3d::ui::component::menu {
 /**
  * A Menu is a container for an ordered set of Items. It does not dictate how the

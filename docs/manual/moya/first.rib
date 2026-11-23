@@ -1,8 +1,8 @@
 ##RenderMan RIB-Structure 1.1
-##Scene A sphere and a box on a floor, lit by a distant light, through the ray-trace hider
+##Scene A sphere and a box on a floor, lit by a distant light
 version 3.03
-Hider "raytrace"
 Format 320 240 1
+PixelSamples 8 8
 Display "first.png" "file" "rgb"
 Projection "perspective" "fov" [40]
 Clipping 0.1 100

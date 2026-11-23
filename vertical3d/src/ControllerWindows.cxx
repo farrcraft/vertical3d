@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // The controller's other windows: opening one for an editor, keeping and reopening those a
 // workspace holds, drawing and closing them.
@@ -22,8 +22,10 @@
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/chrome/Pointer.h>
+#include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/AxisEnd.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -48,11 +50,20 @@ namespace v3d::editor {
 
 /**
  **/
-bool Controller::shows(std::string_view kind) const {
-    return std::ranges::any_of(context_.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; }) ||
-        std::ranges::any_of(opened_, [kind](const Opened& each) {
-            return std::ranges::any_of(each.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; });
-        });
+std::vector<control::RenderView::Channel> Controller::renderChannels() const {
+    std::vector<control::RenderView::Channel> channels;
+    const auto held = [&channels](const view::AreaLayout& layout) {
+        for (const view::AreaLayout::Area& area : layout.areas()) {
+            if (area.editor().kind == control::RenderView::KIND) {
+                channels.push_back(control::RenderView::channelOf(area.editor().state));
+            }
+        }
+    };
+    held(*context_.layout);
+    for (const Opened& each : opened_) {
+        held(*each.layout);
+    }
+    return channels;
 }
 
 /**

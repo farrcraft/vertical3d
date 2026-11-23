@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!--
+    RI's surface "checked": a matte surface checked in squares of size across the x and z axes of
+    object space, between its own colour and other. It is the floor a reflection or a refraction
+    is easy to read against, since a bent ray shows as a bent line.
+  -->
+  <nodedef name="ND_ri_checked_surfaceshader" node="ri_checked" nodegroup="pbr">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="size" type="float" value="1" />
+    <input name="other" type="color3" value="0.15, 0.15, 0.15" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="out" type="surfaceshader" />
+  </nodedef>
+  <nodedef name="ND_ri_checked_to_open_pbr_surface" node="ri_checked_to_open_pbr_surface" nodegroup="translation">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="size" type="float" value="1" />
+    <input name="other" type="color3" value="0.15, 0.15, 0.15" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="base_weight_out" type="float" />
+    <output name="base_color_out" type="color3" />
+    <output name="specular_weight_out" type="float" />
+    <output name="geometry_opacity_out" type="float" />
+  </nodedef>
+  <nodegraph name="NG_ri_checked_to_open_pbr_surface" nodedef="ND_ri_checked_to_open_pbr_surface">
+    <dot name="baseWeight" type="float">
+      <input name="in" type="float" interfacename="Kd" />
+    </dot>
+    <dot name="none" type="float">
+      <input name="in" type="float" value="0" />
+    </dot>
+    <geompropvalue name="colour" type="color3">
+      <input name="geomprop" type="string" value="Cs" />
+      <input name="default" type="color3" interfacename="Cs" />
+    </geompropvalue>
+    <!-- the square a point lies in along x and along z -->
+    <position name="where" type="vector3" />
+    <extract name="x" type="float">
+      <input name="in" type="vector3" nodename="where" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <extract name="z" type="float">
+      <input name="in" type="vector3" nodename="where" />
+      <input name="index" type="integer" value="2" />
+    </extract>
+    <divide name="acrossX" type="float">
+      <input name="in1" type="float" nodename="x" />
+      <input name="in2" type="float" interfacename="size" />
+    </divide>
+    <divide name="acrossZ" type="float">
+      <input name="in1" type="float" nodename="z" />
+      <input name="in2" type="float" interfacename="size" />
+    </divide>
+    <floor name="squareX" type="float">
+      <input name="in" type="float" nodename="acrossX" />
+    </floor>
+    <floor name="squareZ" type="float">
+      <input name="in" type="float" nodename="acrossZ" />
+    </floor>
+    <add name="squares" type="float">
+      <input name="in1" type="float" nodename="squareX" />
+      <input name="in2" type="float" nodename="squareZ" />
+    </add>
+    <!-- 0 on an even square and 1 on an odd one, on either side of the origin -->
+    <multiply name="half" type="float">
+      <input name="in1" type="float" nodename="squares" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <fract name="parity" type="float">
+      <input name="in" type="float" nodename="half" />
+    </fract>
+    <multiply name="which" type="float">
+      <input name="in1" type="float" nodename="parity" />
+      <input name="in2" type="float" value="2" />
+    </multiply>
+    <mix name="checks" type="color3">
+      <input name="fg" type="color3" interfacename="other" />
+      <input name="bg" type="color3" nodename="colour" />
+      <input name="mix" type="float" nodename="which" />
+    </mix>
+    <!-- the mean of the node's Os, one value over the surface -->
+    <extract name="opacityRed" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <extract name="opacityGreen" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="1" />
+    </extract>
+    <extract name="opacityBlue" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="2" />
+    </extract>
+    <add name="opacityRedGreen" type="float">
+      <input name="in1" type="float" nodename="opacityRed" />
+      <input name="in2" type="float" nodename="opacityGreen" />
+    </add>
+    <add name="opacitySum" type="float">
+      <input name="in1" type="float" nodename="opacityRedGreen" />
+      <input name="in2" type="float" nodename="opacityBlue" />
+    </add>
+    <multiply name="opacity" type="float">
+      <input name="in1" type="float" nodename="opacitySum" />
+      <input name="in2" type="float" value="0.333333" />
+    </multiply>
+    <output name="base_weight_out" type="float" nodename="baseWeight" />
+    <output name="base_color_out" type="color3" nodename="checks" />
+    <output name="specular_weight_out" type="float" nodename="none" />
+    <output name="geometry_opacity_out" type="float" nodename="opacity" />
+  </nodegraph>
+</materialx>

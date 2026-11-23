@@ -1,13 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Measure.h"
 
-#include <api/font/text/ShapedGlyph.h>
-#include <api/font/text/ShapedRun.h>
-#include <api/font/text/ShapingCache.h>
+#include <api/font/text/shaping/Glyph.h>
+#include <api/font/text/shaping/Run.h>
+#include <api/font/text/shaping/Text.h>
 #include <api/font/text/Utf8.h>
 #include <unicode/uchar.h>
 #include <unicode/umachine.h>
@@ -18,12 +18,12 @@
 
 namespace v3d::font::text::internal {
 
-Measure::Measure(const ShapedText& shaped) :
+Measure::Measure(const shaping::Text& shaped) :
     shaped_(shaped),
     prefix_(shaped.text.size() + 1, 0.0F) {
     std::vector<float> advances(shaped.text.size(), 0.0F);
-    for (const ShapedRun& run : shaped.runs) {
-        for (const ShapedGlyph& glyph : run.glyphs) {
+    for (const shaping::Run& run : shaped.runs) {
+        for (const shaping::Glyph& glyph : run.glyphs) {
             if (glyph.cluster < advances.size()) {
                 advances[glyph.cluster] += glyph.advance;
             }

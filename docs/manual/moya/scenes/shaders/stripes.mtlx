@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!--
+    RI's surface "stripes": a matte surface in stripes of two colours along s, its own colour and
+    stripecolor, frequency stripes of each to a unit of s.
+  -->
+  <nodedef name="ND_ri_stripes_surfaceshader" node="ri_stripes" nodegroup="pbr">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="frequency" type="float" value="8" />
+    <input name="stripecolor" type="color3" value="1, 1, 1" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="out" type="surfaceshader" />
+  </nodedef>
+  <nodedef name="ND_ri_stripes_to_open_pbr_surface" node="ri_stripes_to_open_pbr_surface" nodegroup="translation">
+    <input name="Ka" type="float" value="1" />
+    <input name="Kd" type="float" value="1" />
+    <input name="frequency" type="float" value="8" />
+    <input name="stripecolor" type="color3" value="1, 1, 1" />
+    <input name="Cs" type="color3" value="1, 1, 1" />
+    <input name="Os" type="color3" value="1, 1, 1" />
+    <output name="base_weight_out" type="float" />
+    <output name="base_color_out" type="color3" />
+    <output name="specular_weight_out" type="float" />
+    <output name="geometry_opacity_out" type="float" />
+  </nodedef>
+  <nodegraph name="NG_ri_stripes_to_open_pbr_surface" nodedef="ND_ri_stripes_to_open_pbr_surface">
+    <dot name="baseWeight" type="float">
+      <input name="in" type="float" interfacename="Kd" />
+    </dot>
+    <dot name="none" type="float">
+      <input name="in" type="float" value="0" />
+    </dot>
+    <geompropvalue name="colour" type="color3">
+      <input name="geomprop" type="string" value="Cs" />
+      <input name="default" type="color3" interfacename="Cs" />
+    </geompropvalue>
+    <!-- 0 in the first half of each stripe and 1 in the second -->
+    <texcoord name="st" type="vector2" />
+    <extract name="s" type="float">
+      <input name="in" type="vector2" nodename="st" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <multiply name="across" type="float">
+      <input name="in1" type="float" nodename="s" />
+      <input name="in2" type="float" interfacename="frequency" />
+    </multiply>
+    <fract name="within" type="float">
+      <input name="in" type="float" nodename="across" />
+    </fract>
+    <multiply name="halves" type="float">
+      <input name="in1" type="float" nodename="within" />
+      <input name="in2" type="float" value="2" />
+    </multiply>
+    <floor name="band" type="float">
+      <input name="in" type="float" nodename="halves" />
+    </floor>
+    <mix name="stripes" type="color3">
+      <input name="fg" type="color3" interfacename="stripecolor" />
+      <input name="bg" type="color3" nodename="colour" />
+      <input name="mix" type="float" nodename="band" />
+    </mix>
+    <!-- the mean of the node's Os, one value over the surface -->
+    <extract name="opacityRed" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <extract name="opacityGreen" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="1" />
+    </extract>
+    <extract name="opacityBlue" type="float">
+      <input name="in" type="color3" interfacename="Os" />
+      <input name="index" type="integer" value="2" />
+    </extract>
+    <add name="opacityRedGreen" type="float">
+      <input name="in1" type="float" nodename="opacityRed" />
+      <input name="in2" type="float" nodename="opacityGreen" />
+    </add>
+    <add name="opacitySum" type="float">
+      <input name="in1" type="float" nodename="opacityRedGreen" />
+      <input name="in2" type="float" nodename="opacityBlue" />
+    </add>
+    <multiply name="opacity" type="float">
+      <input name="in1" type="float" nodename="opacitySum" />
+      <input name="in2" type="float" value="0.333333" />
+    </multiply>
+    <output name="base_weight_out" type="float" nodename="baseWeight" />
+    <output name="base_color_out" type="color3" nodename="stripes" />
+    <output name="specular_weight_out" type="float" nodename="none" />
+    <output name="geometry_opacity_out" type="float" nodename="opacity" />
+  </nodegraph>
+</materialx>

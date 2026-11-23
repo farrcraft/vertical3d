@@ -1,17 +1,19 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
-#include <api/font/glyph/Curves.h>
-#include <api/font/glyph/CurveStore.h>
+#include <api/font/glyph/curve/Curves.h>
+#include <api/font/glyph/curve/Glyph.h>
+#include <api/font/glyph/curve/Store.h>
 #include <api/font/face/Face.h>
 #include <api/font/face/Family.h>
 #include <api/font/face/FallbackChain.h>
 #include <api/font/face/Library.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapingCache.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
+#include <api/font/text/style/Effect.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
@@ -45,12 +47,12 @@ constexpr std::uint32_t FIELD_PAGE = 100;
 /**
  * An outline two pixels wide.
  **/
-constexpr v3d::font::text::Effect kOutline{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), .width = 2.0F };
+constexpr v3d::font::text::style::Effect kOutline{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), .width = 2.0F };
 
 /**
  * A soft shadow three pixels below and to the right.
  **/
-constexpr v3d::font::text::Effect kShadow{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), .softness = 2.0F, .offset = glm::vec2(3.0F) };
+constexpr v3d::font::text::style::Effect kShadow{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), .softness = 2.0F, .offset = glm::vec2(3.0F) };
 
 /**
  * What the curve pages asked of the device.
@@ -67,7 +69,7 @@ struct Drawing {
     Drawing() :
         logger(boost::make_shared<v3d::log::Logger>()),
         library(boost::make_shared<v3d::font::face::Library>()),
-        cache(boost::make_shared<v3d::font::text::ShapingCache>("", logger)),
+        cache(boost::make_shared<v3d::font::text::shaping::Cache>("", logger)),
         text(v3d::ui::paint::CurvePages(
             [this](const float*, std::uint32_t, std::uint32_t) {
                 device.created++;
@@ -110,8 +112,8 @@ struct Drawing {
     Device device;
     boost::shared_ptr<v3d::log::Logger> logger;
     boost::shared_ptr<v3d::font::face::Library> library;
-    boost::shared_ptr<v3d::font::text::ShapingCache> cache;
-    v3d::font::text::Style style;
+    boost::shared_ptr<v3d::font::text::shaping::Cache> cache;
+    v3d::font::text::style::Style style;
     v3d::ui::paint::CurveText text;
     v3d::render::realtime::canvas::Canvas canvas;
 };
@@ -144,7 +146,7 @@ BOOST_AUTO_TEST_CASE(a_colour_glyph_is_drawn_from_its_program) {
     style.colour = glm::vec4(0.0F, 1.0F, 0.0F, 0.5F);
     draw("\uE000");
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_NE(canvas.vertices()[0].glyph & v3d::font::glyph::CurveStore::COLOUR, 0U);
+    BOOST_CHECK_NE(canvas.vertices()[0].glyph & v3d::font::glyph::curve::Store::COLOUR, 0U);
     BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
     BOOST_CHECK(canvas.vertices()[0].colour == style.colour);
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
@@ -222,7 +224,7 @@ BOOST_AUTO_TEST_CASE(a_paragraph_stands_in_the_world) {
     }
     // the quad is as wide as the outline, and the world margin on either side
     const boost::shared_ptr<v3d::font::face::Face> face = style.fonts->faces({}).front();
-    const v3d::font::glyph::CurveGlyph outlined = v3d::font::glyph::outline(*face, face->glyphIndex(U'H'));
+    const v3d::font::glyph::curve::Glyph outlined = v3d::font::glyph::curve::outline(*face, face->glyphIndex(U'H'));
     BOOST_CHECK_CLOSE(world.vertices()[1].uv.x - world.vertices()[0].uv.x,
         (outlined.max.x - outlined.min.x) + (2.0F * v3d::ui::paint::CurveText::WORLD_MARGIN), 0.01F);
 
@@ -282,7 +284,7 @@ BOOST_AUTO_TEST_CASE(a_field_is_made_once) {
     draw("H");
     // twice the size and twice the width reach as far into the em
     style.size = 80.0F;
-    style.effects = { v3d::font::text::Effect{ .width = 4.0F } };
+    style.effects = { v3d::font::text::style::Effect{ .width = 4.0F } };
     text.beginFrame();
     draw("H");
     BOOST_CHECK_EQUAL(text.fields().made(), 1U);

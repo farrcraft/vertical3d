@@ -1,11 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/immediate/Context.h>
+#include <api/ui/immediate/Field.h>
+#include <api/ui/immediate/Id.h>
+#include <api/ui/immediate/Number.h>
+#include <api/ui/immediate/Reaction.h>
+#include <api/ui/immediate/Retained.h>
+#include <api/ui/input/Clipboard.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Type.h>

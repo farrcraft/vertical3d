@@ -1,19 +1,19 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/asset/Manager.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapingCache.h>
+#include <api/font/text/shaping/Cache.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/lighting/LitScene.h>
 #include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/lighting/Settings.h>
-#include <api/render/realtime/lighting/Shadow.h>
+#include <api/render/realtime/lighting/ShadowBounds.h>
 #include <api/render/realtime/renderer/World.h>
 #include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
@@ -97,8 +97,8 @@ class Renderer final {
     static constexpr uint32_t SHADOW_TEXELS = 2048;
 
     /**
-     * How far past the casters the shadow map reaches, for the height of a tree and the length of
-     * its shadow, in world units.
+     * How far past the casters' models the shadow map reaches, for the length of a tree's shadow,
+     * in world units.
      **/
     static constexpr float SHADOW_MARGIN = 3.0F;
 
@@ -156,7 +156,7 @@ class Renderer final {
     v3d::ui::shell::Screen* screen_ = nullptr;
     // the sign over the well: its words laid out once, drawn from their curves, and the world
     // quads they become, built for the lit scene's target
-    boost::shared_ptr<v3d::font::text::ShapingCache> shaping_;
+    boost::shared_ptr<v3d::font::text::shaping::Cache> shaping_;
     std::optional<v3d::font::text::Paragraph> sign_;
     boost::shared_ptr<v3d::ui::paint::CurveText> signText_;
     boost::shared_ptr<v3d::render::realtime::renderer::World> signs_;

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/event/Event.h>
 #include <api/event/Router.h>
@@ -339,6 +339,23 @@ BOOST_FIXTURE_TEST_CASE(a_change_to_the_areas_builds_again, Chrome) {
     sync();
     BOOST_CHECK(!container(0)->visible());
     BOOST_CHECK(container(2)->visible());
+}
+
+/**
+ * A rendered view's header names its shading Rendered, whatever its fill, and marks it.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_rendered_viewports_header_names_it_rendered, Chrome) {
+    views->of(1)->display().shading = v3d::editor::view::Shading::Rendered;
+    views->of(1)->display().front = v3d::editor::view::ViewPort::Fill::Lines;
+    sync();
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
+    BOOST_REQUIRE_EQUAL(bar->count(), 5U);
+    BOOST_CHECK_EQUAL(bar->label(2), "Rendered");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> rendered = bar->find("view::shade::rendered");
+    BOOST_REQUIRE(rendered);
+    BOOST_CHECK(rendered->checked());
+    BOOST_CHECK(number(rendered->event()) == static_cast<int>(layout.areas()[1].id));
+    BOOST_CHECK(!bar->find("view::shade::flat")->checked());
 }
 
 /**

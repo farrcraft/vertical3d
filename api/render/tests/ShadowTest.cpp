@@ -1,9 +1,10 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/lighting/Cascades.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
@@ -25,6 +26,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec2.hpp>
@@ -319,6 +321,25 @@ BOOST_AUTO_TEST_CASE(the_fit_covers_the_casters_and_not_the_ground) {
     // (2, 0, 6) is four from the centre, and the other two are sqrt(8)
     BOOST_CHECK_CLOSE(fitted->radius, 7.0F, 1e-3F);
     BOOST_CHECK_CLOSE(covered->centre.z, -1.0F, 1e-3F);
+}
+
+/**
+ * A model's sphere is moved by the matrix that places it, turned with it, and grown by the
+ * largest of its scales, so a model stretched along one axis still lies inside.
+ **/
+BOOST_AUTO_TEST_CASE(a_placed_sphere_moves_turns_and_grows_with_its_model) {
+    Transform transform;
+    transform.position = glm::vec3(5.0F, 0.0F, -2.0F);
+    transform.rotation = v3d::ecs::component::aboutY(glm::half_pi<float>());
+    transform.scale = glm::vec3(1.0F, 3.0F, 2.0F);
+
+    const lighting::ShadowBounds sphere = lighting::placed(glm::vec4(1.0F, 0.0F, 0.0F, 0.5F), transform.matrix());
+
+    // a quarter turn about y takes +x to -z
+    BOOST_CHECK_CLOSE(sphere.centre.x, 5.0F, 1e-3F);
+    BOOST_CHECK_SMALL(sphere.centre.y, 1e-5F);
+    BOOST_CHECK_CLOSE(sphere.centre.z, -3.0F, 1e-3F);
+    BOOST_CHECK_CLOSE(sphere.radius, 1.5F, 1e-3F);
 }
 
 /**

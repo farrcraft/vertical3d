@@ -1,0 +1,13 @@
+# zizmor's configuration. pre-commit and the workflows job both run zizmor over .github.
+rules:
+  # GitHub's $/ form for a workflow in this repository is not yet parsed by actionlint, which
+  # would then fail every workflow that uses one. ./ names the same workflow.
+  self-repository:
+    disable: true
+  # Every action is pinned to a full commit sha, whoever publishes it, since a tag can be moved
+  # to other code after it was reviewed. A workflow in this repository, named by its path, needs
+  # none.
+  unpinned-uses:
+    config:
+      policies:
+        "*": hash-pin

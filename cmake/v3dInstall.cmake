@@ -1,7 +1,8 @@
 # The install tree a release ships. On Windows it is one flat directory: every app, the DLLs they
 # load, the MSVC runtime, data/ with each app's own assets in data/<executable>/, OpenUSD's
-# plugins in usd/, and NOTICES.txt. The engine finds data/ beside the executable, and the editor
-# finds moya beside itself, so an app runs from the install as it does from the build.
+# plugins in usd/, MaterialX's standard libraries in materialx/, and NOTICES.txt. The engine
+# finds data/ beside the executable, and the editor finds moya beside itself, so an app runs from
+# the install as it does from the build.
 #
 # Elsewhere, as in the Flatpak, the same flat directory is lib/vertical3d under the prefix, and
 # bin/ holds a link to each app. The libraries the apps load are the system's, or the Flatpak's.
@@ -124,7 +125,6 @@ endfunction()
 function(v3d_install_usd_plugins)
 	if(WIN32)
 		install(DIRECTORY "$<TARGET_FILE_DIR:usd>/usd" DESTINATION .)
-		install(FILES "$<TARGET_FILE_DIR:usd>/../lib/usd/plugInfo.json" DESTINATION usd)
 	endif()
 endfunction()
 

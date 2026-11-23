@@ -19,17 +19,43 @@
 //   node api/asset/tests/data/make_model_fixture.ts
 
 import {
-    ARRAY_BUFFER, ASSET, ELEMENT_ARRAY_BUFFER, FLOAT, UNSIGNED_SHORT, Writer, bounds, f32, float, floats, u16,
+    ARRAY_BUFFER,
+    ASSET,
+    ELEMENT_ARRAY_BUFFER,
+    FLOAT,
+    UNSIGNED_SHORT,
+    Writer,
+    bounds,
+    f32,
+    float,
+    floats,
+    u16,
 } from './gltf_writer.ts';
 
 const TRIANGLES = [
-    [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
-    [[2, 0, 0], [3, 0, 0], [2, 1, 0]],
-    [[4, 0, 0], [5, 0, 0], [4, 1, 0]],
+    [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+    ],
+    [
+        [2, 0, 0],
+        [3, 0, 0],
+        [2, 1, 0],
+    ],
+    [
+        [4, 0, 0],
+        [5, 0, 0],
+        [4, 1, 0],
+    ],
 ];
 const INDEXED = [true, true, false];
 const NORMAL = [0, 0, 1];
-const UVS = [[0, 0], [1, 0], [0, 1]];
+const UVS = [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+];
 
 const writer = new Writer();
 
@@ -48,20 +74,25 @@ const primitives = TRIANGLES.map((triangle, at) => {
     return primitive;
 });
 
-writer.glb({
-    asset: ASSET,
-    scene: 0,
-    scenes: [{ nodes: [0] }],
-    nodes: [{ mesh: 0 }],
-    meshes: [{ primitives }],
-    materials: [{
-        pbrMetallicRoughness: {
-            baseColorFactor: floats([0.25, 0.5, 0.75, 1]),
-            baseColorTexture: { index: 0 },
-            metallicFactor: float(0),
-            roughnessFactor: float(1),
-        },
-    }],
-    textures: [{ source: 0 }],
-    images: [{ uri: 'albedo.png' }],
-}, 'three_primitives.glb');
+writer.glb(
+    {
+        asset: ASSET,
+        scene: 0,
+        scenes: [{ nodes: [0] }],
+        nodes: [{ mesh: 0 }],
+        meshes: [{ primitives }],
+        materials: [
+            {
+                pbrMetallicRoughness: {
+                    baseColorFactor: floats([0.25, 0.5, 0.75, 1]),
+                    baseColorTexture: { index: 0 },
+                    metallicFactor: float(0),
+                    roughnessFactor: float(1),
+                },
+            },
+        ],
+        textures: [{ source: 0 }],
+        images: [{ uri: 'albedo.png' }],
+    },
+    'three_primitives.glb',
+);

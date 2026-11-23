@@ -80,10 +80,14 @@ export function mergeBase(branch?: string): string {
 
 /** The tracked files that match the pathspecs, relative to the root. */
 export function tracked(...pathspecs: string[]): string[] {
-    return git(['ls-files', '-z', '--', ...pathspecs]).split('\0').filter((file) => file !== '');
+    return git(['ls-files', '-z', '--', ...pathspecs])
+        .split('\0')
+        .filter((file) => file !== '');
 }
 
 /** The files neither tracked nor ignored, relative to the repository root. A change adds them. */
 export function untracked(cwd: string = ROOT): string[] {
-    return git(['ls-files', '-z', '--others', '--exclude-standard'], cwd).split('\0').filter((file) => file !== '');
+    return git(['ls-files', '-z', '--others', '--exclude-standard'], cwd)
+        .split('\0')
+        .filter((file) => file !== '');
 }

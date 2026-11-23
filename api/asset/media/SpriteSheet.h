@@ -1,11 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/image/Pack.h>
+#include <api/image/Packing.h>
+#include <api/image/Placement.h>
 
 #include "SpriteRegion.h"
 

@@ -1,9 +1,9 @@
 # ADR-0092: Offline: a bounding volume hierarchy for traced rays
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-18
 **Tags**: offline
-**Documented in**: [offline/RayTracing.md](../../offline/RayTracing.md)
+**Superseded by**: [ADR-0193](0193-offline-moya-owns-its-ray-acceleration-structure.md)
 
 ## Context
 

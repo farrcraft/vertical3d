@@ -1,0 +1,85 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 0
+    focalLength float = 0
+    fov float = 40
+    fstop float = inf
+    near float = 0.01
+    projection string = "perspective"
+    screen float[0] =
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 -5 1]
+domeLight "light sky"
+    camera integer = 1
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    format string = "automatic"
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 1
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    texture string = ""
+    transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
+instance "Sphere 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "matte"
+    priority integer = 0
+    prototype handle = sphere "Sphere 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+material "matte"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "matte"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+options "options"
+    background colour[0] =
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    deepTolerance float = 0.001
+    denoise integer = 0
+    dicingCamera handle = none
+    diffuseDepth integer = 4
+    edgeLength float = 1
+    filter string = "gaussian"
+    filterWidth float[2] = 2 2
+    frame integer = 0
+    frameAspect float = 0
+    glossyDepth integer = 4
+    lightPicking string = "tree"
+    lightSampling string = "mis"
+    maxDepth integer = 12
+    minSamples integer = 16
+    noiseThreshold float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 64 64
+    rouletteDepth integer = 3
+    samples integer = 64
+    shaderSearchPath string = ""
+    specularDepth integer = 12
+    subsurfaceDepth integer = 256
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = ""
+    transmissionDepth integer = 12
+    volumeDepth integer = 4
+shader "matte"
+    Cs colour = (1, 1, 1)
+    Os colour = (1, 1, 1)
+    language string = "ri"
+    shader string = "matte"
+sphere "Sphere 1"
+    radius float = 1
+    thetamax float = 360
+    zmax float = 1
+    zmin float = -1

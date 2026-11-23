@@ -39,63 +39,66 @@ test('diff decodes a quoted path: octal bytes of UTF-8, and the C escapes', () =
 });
 
 test('diff numbers the added lines of each hunk, across several hunks and files', () => {
-    assert.deepEqual(added([
-        'diff --git a/one.md b/one.md',
-        '--- a/one.md',
-        '+++ b/one.md',
-        '@@ -2,0 +3,2 @@',
-        '+first',
-        '+second',
-        '@@ -10 +12 @@',
-        '-old',
-        '+new',
-        'diff --git a/two.md b/two.md',
-        '--- a/two.md',
-        '+++ b/two.md',
-        '@@ -1 +1 @@',
-        '-a',
-        '+b',
-    ]), ['one.md: 3, 4, 12', 'two.md: 1']);
+    assert.deepEqual(
+        added([
+            'diff --git a/one.md b/one.md',
+            '--- a/one.md',
+            '+++ b/one.md',
+            '@@ -2,0 +3,2 @@',
+            '+first',
+            '+second',
+            '@@ -10 +12 @@',
+            '-old',
+            '+new',
+            'diff --git a/two.md b/two.md',
+            '--- a/two.md',
+            '+++ b/two.md',
+            '@@ -1 +1 @@',
+            '-a',
+            '+b',
+        ]),
+        ['one.md: 3, 4, 12', 'two.md: 1'],
+    );
 });
 
 test('diff reads an added line that starts "++ " as a line, and not as a header', () => {
-    assert.deepEqual(added([
-        '--- a/c.md',
-        '+++ b/c.md',
-        '@@ -0,0 +1,2 @@',
-        '+++ b/other.md',
-        '+--- a/other.md',
-    ]), ['c.md: 1, 2']);
+    assert.deepEqual(added(['--- a/c.md', '+++ b/c.md', '@@ -0,0 +1,2 @@', '+++ b/other.md', '+--- a/other.md']), ['c.md: 1, 2']);
 });
 
 test('diff skips the marker of a missing newline, and reads the hunk after it', () => {
-    assert.deepEqual(added([
-        '--- a/d.md',
-        '+++ b/d.md',
-        '@@ -3 +3,2 @@',
-        '-last',
-        '\\ No newline at end of file',
-        '+last',
-        '++++ b/not-a-header.md',
-        '\\ No newline at end of file',
-        '@@ -9,0 +10 @@',
-        '+later',
-    ]), ['d.md: 3, 4, 10']);
+    assert.deepEqual(
+        added([
+            '--- a/d.md',
+            '+++ b/d.md',
+            '@@ -3 +3,2 @@',
+            '-last',
+            '\\ No newline at end of file',
+            '+last',
+            '++++ b/not-a-header.md',
+            '\\ No newline at end of file',
+            '@@ -9,0 +10 @@',
+            '+later',
+        ]),
+        ['d.md: 3, 4, 10'],
+    );
 });
 
 test('diff gives a file that only loses lines no added lines, and a deleted file no entry', () => {
-    assert.deepEqual(added([
-        '--- a/e.md',
-        '+++ b/e.md',
-        '@@ -4,2 +3,0 @@',
-        '-gone',
-        '-gone too',
-        '--- a/f.md',
-        '+++ /dev/null',
-        '@@ -1,2 +0,0 @@',
-        '-x',
-        '-y',
-    ]), ['e.md: ']);
+    assert.deepEqual(
+        added([
+            '--- a/e.md',
+            '+++ b/e.md',
+            '@@ -4,2 +3,0 @@',
+            '-gone',
+            '-gone too',
+            '--- a/f.md',
+            '+++ /dev/null',
+            '@@ -1,2 +0,0 @@',
+            '-x',
+            '-y',
+        ]),
+        ['e.md: '],
+    );
 });
 
 test('diff reads a header line that ends with a carriage return', () => {
@@ -142,9 +145,9 @@ test('diff reads what a working tree adds: staged, unstaged, new, untracked and 
         writeFileSync(join(directory, 'loose.md'), 'u\n');
         unlinkSync(join(directory, 'gone.md'));
         const change = changeSince(base, directory);
-        const shown = [...change.added].map(([path, lines]) => `${path}: ${lines === null ? 'all' : [...lines].join(', ')}`).sort();
+        const shown = [...change.added].map(([path, lines]) => `${path}: ${lines === null ? 'all' : [...lines].join(', ')}`).toSorted();
         assert.deepEqual(shown, ['kept.md: 2, 5', 'loose.md: all', 'naïve name.md: 2', 'staged.md: 1, 2']);
-        assert.deepEqual([...change.newFiles].sort(), ['loose.md', 'staged.md']);
+        assert.deepEqual([...change.newFiles].toSorted(), ['loose.md', 'staged.md']);
     });
 });
 
@@ -156,6 +159,9 @@ test('diff reads a change whatever the user has configured git to print', () => 
         run(directory, 'config', 'diff.mnemonicPrefix', 'true');
         writeFileSync(join(directory, 'kept.md'), 'one\ntwo\nthree\nfour\n');
         const change = changeSince(base, directory);
-        assert.deepEqual([...change.added].map(([path, lines]) => `${path}: ${[...(lines ?? [])].join(', ')}`), ['kept.md: 4']);
+        assert.deepEqual(
+            [...change.added].map(([path, lines]) => `${path}: ${[...(lines ?? [])].join(', ')}`),
+            ['kept.md: 4'],
+        );
     });
 });

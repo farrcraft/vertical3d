@@ -1,0 +1,50 @@
+##RenderMan RIB-Structure 1.1
+##Scene A skin-toned figure of a head, two thin ears and a body, scattering below its surface, under a key light, a light behind it and a dim dome
+version 3.03
+Format 96 64 1
+PixelSamples 6 6
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -10 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.15]
+# a rect light shines along +z unless turned, so the key faces the figure as it is and the one
+# behind it is turned to face the camera
+TransformBegin
+Translate -1.2 1 -2.5
+Light "PxrRectLight" "key" "float intensity" [4]
+TransformEnd
+TransformBegin
+Translate 0 0.8 2
+Rotate 180 0 1 0
+Light "PxrRectLight" "behind" "float intensity" [8]
+TransformEnd
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.35 0.35 0.4] "float specular_roughness" [0.6]
+Polygon "P" [-4 -1 -3  4 -1 -3  4 -1 3  -4 -1 3]
+AttributeEnd
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "skin" "float subsurface_weight" [1] "color subsurface_color" [0.85 0.55 0.45]
+     "float subsurface_radius" [0.15] "color subsurface_radius_scale" [1 0.35 0.2] "float specular_roughness" [0.4]
+AttributeBegin
+Translate 0 -0.55 0
+Scale 0.8 0.55 0.5
+Sphere 1 -1 1 360
+AttributeEnd
+AttributeBegin
+Translate 0 0.45 0
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate -0.47 0.45 0
+Scale 0.04 0.16 0.11
+Sphere 1 -1 1 360
+AttributeEnd
+AttributeBegin
+Translate 0.47 0.45 0
+Scale 0.04 0.16 0.11
+Sphere 1 -1 1 360
+AttributeEnd
+AttributeEnd
+WorldEnd

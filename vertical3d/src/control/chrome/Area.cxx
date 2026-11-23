@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Area.h"
 
@@ -134,6 +134,7 @@ boost::json::array Area::viewMenus(const view::ViewPort& view, std::size_t area,
     boost::json::array shading = {
         mark("Flat", "radio", "shade::flat", area),
         mark("Smooth", "radio", "shade::smooth", area),
+        mark("Rendered", "radio", "shade::rendered", area),
         boost::json::object{ { "type", "separator" } },
         choices("Front Facing", "rendermode::front::", FILLS, area),
         choices("Back Facing", "rendermode::back::", FILLS, area),
@@ -254,6 +255,10 @@ const std::vector<Area::FixedView>& Area::fixedViews() {
 /**
  **/
 std::string Area::shading(const view::ViewPort::Display& display) {
+    // a rendered view shows moya's picture whatever its fill
+    if (display.shading == view::Shading::Rendered) {
+        return "Rendered";
+    }
     switch (display.front) {
         case view::ViewPort::Fill::Points:
             return "Points";
@@ -278,6 +283,7 @@ std::vector<std::pair<std::string, bool>> Area::marks(const view::ViewPort& view
     const view::ViewPort::Display& shown = view.display();
     made.emplace_back("view::shade::flat", shown.shading == view::Shading::Flat);
     made.emplace_back("view::shade::smooth", shown.shading == view::Shading::Smooth);
+    made.emplace_back("view::shade::rendered", shown.shading == view::Shading::Rendered);
     for (std::size_t index = 0; index < std::size(CULLS); index++) {
         made.emplace_back(std::string("view::cull::") + CULLS[index].command, shown.cull == CULLED[index]);
     }

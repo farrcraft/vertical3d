@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 // The main of a fuzz target built without libFuzzer. It passes each file it is given to the
 // target's LLVMFuzzerTestOneInput once, and a directory stands for every file in it, so the

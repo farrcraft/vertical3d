@@ -1,8 +1,9 @@
 # ADR-0166: Releases: a Windows installer and a Flatpak on Linux
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-03
 **Tags**: releases
+**Amended by**: [ADR-0183](0183-releases-the-flatpak-ships-only-as-a-release-bundle.md)
 **Documented in**: [Releasing.md](../../contributing/Releasing.md#what-a-release-is)
 
 ## Context

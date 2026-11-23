@@ -1,14 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "Document.h"
+
+#include "Outcome.h"
 
 #include <api/animation/Curve.h>
 #include <api/brep/Primitives.h>
 #include <api/interchange/Gltf.h>
-#include <api/interchange/Scene.h>
+#include <api/interchange/Imported.h>
 #include <api/interchange/usd/Usd.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
@@ -26,6 +28,7 @@
 #include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/render/Shot.h>
+#include <vertical3d/src/scene/FrameKey.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/Import.h>

@@ -1,0 +1,19 @@
+##RenderMan RIB-Structure 1.1
+##Scene A grey room of a floor and three walls, open at its front and top, under a white dome
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -30 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky"
+Color [0.6 0.6 0.6]
+Surface "matte"
+# the floor, then the back, left and right walls
+Polygon "P" [-1.5 -1 -1.5  1.5 -1 -1.5  1.5 -1 1.5  -1.5 -1 1.5]
+Polygon "P" [-1.5 -1 1.5  1.5 -1 1.5  1.5 0.5 1.5  -1.5 0.5 1.5]
+Polygon "P" [-1.5 -1 -1.5  -1.5 -1 1.5  -1.5 0.5 1.5  -1.5 0.5 -1.5]
+Polygon "P" [1.5 -1 -1.5  1.5 0.5 -1.5  1.5 0.5 1.5  1.5 -1 1.5]
+WorldEnd

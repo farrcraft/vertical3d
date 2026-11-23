@@ -9,6 +9,7 @@ v3d_add_test(vertical3d
 	"view/AreaFrameTest.cxx"
 	"view/ViewOverlayTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
+	"view/RenderedViewsTest.cxx"
 	"view/ViewPortTest.cxx"
 	"view/ThroughTest.cxx"
 
@@ -26,6 +27,7 @@ v3d_add_test(vertical3d
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
+	"render/SceneTranslatorTest.cxx"
 	"store/ProjectTest.cxx"
 	"store/CodecTest.cxx"
 	"store/SceneTest.cxx"
@@ -91,8 +93,9 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_image
 	v3dlib_interchange
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
-	v3dlib_render_offline
+	v3dlib_rib
 	v3dlib_type
 	v3dlib_ui)
 
@@ -100,16 +103,23 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 add_dependencies(v3dtest_vertical3d moya)
 target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_MOYA="$<TARGET_FILE:moya>")
 
+# the delegate's cases render through moya's CPU device, which loads its libraries from beside
+# the suite, and read materials against MaterialX's standard libraries, which it finds there too
+v3d_moya_cpu_libraries(v3dtest_vertical3d)
+v3d_moya_materialx_libraries(v3dtest_vertical3d)
+
 # the import cases read the interchange suite's fixtures where they are kept
 target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_INTERCHANGE_DATA="${V3D_ROOT}/api/interchange/tests/data")
 
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
 v3d_copy_usd_plugins(v3dtest_vertical3d)
 
-# The cases that draw on a device: the shaded pass, through the render device suite's headless
-# device. Where there is no device the binary exits with 77, which ctest reports as a skip.
+# The cases that draw on a device: the shaded pass and a rendered view, through the render
+# device suite's headless device. Where there is no device the binary exits with 77, which ctest
+# reports as a skip.
 v3d_add_test(vertical3d_device
 	"device/TestMain.cxx"
+	"device/RenderedViewTest.cxx"
 	"device/ShadedPassTest.cxx"
 
 	"../../api/render/tests/device/Headless.cpp")
@@ -124,9 +134,4 @@ target_link_libraries(v3dtest_vertical3d_device PRIVATE
 set_tests_properties(vertical3d_device PROPERTIES SKIP_RETURN_CODE 77)
 
 # The panels' cases measure through the ui suite's monospaced fixture face.
-add_custom_command(TARGET v3dtest_vertical3d POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_SOURCE_DIR}/api/ui/tests/fonts"
-		"$<TARGET_FILE_DIR:v3dtest_vertical3d>/fonts"
-	COMMENT "Copying ui test fonts"
-	VERBATIM)
+v3d_copy_directory(v3dtest_vertical3d fonts "${CMAKE_SOURCE_DIR}/api/ui/tests/fonts" "fonts")

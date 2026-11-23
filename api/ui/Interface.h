@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,6 +21,9 @@
 #include <entt/entt.hpp>
 
 
+/**
+ * The user interface: components, layout, themes, and an immediate-mode layer.
+ **/
 namespace v3d::ui {
 
 class Component;

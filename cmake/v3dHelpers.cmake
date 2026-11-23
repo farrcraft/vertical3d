@@ -32,51 +32,58 @@ function(v3d_add_api_library name)
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
-# Copy a directory of assets into the data/ directory beside a target's executable, as a build
-# rule that the assets themselves are the inputs to.
+# Copy a directory into a directory beside a target's executable, as a build rule that the
+# directory's files are the inputs to. Test fixtures and an app's assets are copied this way.
 #
 # **Not a POST_BUILD step on the target.** POST_BUILD runs only when the target itself
-# relinks, so an edited asset would not be copied until the next relink. Until then the app
-# would keep reading the old copy while Ninja reports "no work to do".
+# relinks, so an edited file would not be copied until the next relink. Until then the app or
+# suite would keep reading the old copy while Ninja reports "no work to do".
 #
-# A stamp file is the rule's output because a generator cannot compare timestamps on a
-# directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at configure
-# time, so an asset that is added, not just edited, is copied as well.
+# **The copy mirrors the source.** v3dMirror.cmake copies each file whose contents changed, and
+# removes each file it copied before that the source no longer holds. A suite that lists a
+# directory, such as moya's scenes, would otherwise find a file deleted from the tree. It removes
+# only what it copied, so an app's own data can be copied inside the shared data's directory.
 #
-# The stamp is per configuration. A multi-config generator gives each configuration its own
-# TARGET_FILE_DIR, and one shared stamp would leave the second configuration's data
-# directory unwritten.
+# The rule's output is the manifest of what was copied, because a generator cannot compare
+# timestamps on a directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at
+# configure time, so a file that is added or deleted, not just edited, is mirrored as well.
 #
-# **A deleted asset is still left behind**, because copy_directory merges rather than
-# mirrors. The destination cannot be cleared first: an app's own data is copied inside the
-# shared data's directory, so clearing the shared copy would clear the app's.
-# A leftover file is harmless because nothing reads it. To clear a stale data directory,
-# delete it and the next build fills it again.
+# The manifest is per configuration. A multi-config generator gives each configuration its own
+# TARGET_FILE_DIR, and one shared manifest would leave the second configuration's copy unwritten.
+# Deleting a copy does not bring it back on the next build, since the manifest is still newer than
+# every source file. Deleting the manifest too, under the build directory's <config>/ beside the
+# target's CMakeLists.txt, does.
 #
-# @param target the executable the data is copied beside
-# @param name what this set of data is, which separates one call's stamp from another's
+# @param target the executable the directory is copied beside
+# @param name what this copy is, which separates one call's manifest from another's
 # @param source the directory to copy
-# @param ARGV3 optional: the directory under data/ to copy into. Without it the copy goes into
-#        data/ itself, as a test's fixtures do
-function(v3d_copy_data target name source)
-	set(destination "$<TARGET_FILE_DIR:${target}>/data")
-	if(ARGC GREATER 3)
-		string(APPEND destination "/${ARGV3}")
-	endif()
+# @param destination the directory to copy into, relative to the executable's directory
+function(v3d_copy_directory target name source destination)
 	file(GLOB_RECURSE files CONFIGURE_DEPENDS "${source}/*")
 	set(copier "${target}_${name}_data")
-	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
-	add_custom_command(OUTPUT "${stamp}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${source}" "${destination}"
-		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
-		DEPENDS ${files}
-		COMMENT "Copying ${name} data for ${target}"
+	set(manifest "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.files")
+	set(script "${V3D_ROOT}/cmake/v3dMirror.cmake")
+	# A deleted file leaves every remaining input older than the manifest, so the rule would not
+	# run. The list of source files is an input too, written only when it changes.
+	set(sources "${CMAKE_CURRENT_BINARY_DIR}/${copier}.sources")
+	list(JOIN files "\n" listed)
+	set(written "")
+	if(EXISTS "${sources}")
+		file(READ "${sources}" written)
+	endif()
+	if(NOT written STREQUAL "${listed}\n")
+		file(WRITE "${sources}" "${listed}\n")
+	endif()
+	add_custom_command(OUTPUT "${manifest}"
+		COMMAND ${CMAKE_COMMAND} "-DSOURCE=${source}" "-DDESTINATION=$<TARGET_FILE_DIR:${target}>/${destination}"
+			"-DMANIFEST=${manifest}" -P "${script}"
+		DEPENDS ${files} "${sources}" "${script}"
+		COMMENT "Copying ${name} for ${target}"
 		VERBATIM)
-	add_custom_target(${copier} DEPENDS "${stamp}")
+	add_custom_target(${copier} DEPENDS "${manifest}")
 	add_dependencies(${target} ${copier})
-	# An app that takes both the shared data and its own copies one directory inside the other,
-	# and nothing orders those copies against each other. They are chained in the order they were
-	# requested rather than left to run at the same time.
+	# Copies one inside another are chained in the order they were requested rather than left to
+	# run at the same time, since nothing else orders them.
 	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
 	if(previous)
 		add_dependencies(${copier} ${previous})
@@ -84,19 +91,34 @@ function(v3d_copy_data target name source)
 	set_target_properties(${target} PROPERTIES V3D_LAST_DATA_TARGET ${copier})
 endfunction()
 
+# Copy a directory of assets into the data/ directory beside a target's executable, through
+# v3d_copy_directory.
+#
+# @param target the executable the data is copied beside
+# @param name what this set of data is, which separates one call's manifest from another's
+# @param source the directory to copy
+# @param ARGV3 optional: the directory under data/ to copy into. Without it the copy goes into
+#        data/ itself, as a test's fixtures do
+function(v3d_copy_data target name source)
+	set(destination "data")
+	if(ARGC GREATER 3)
+		string(APPEND destination "/${ARGV3}")
+	endif()
+	v3d_copy_directory(${target} ${name} "${source}" "${destination}")
+endfunction()
+
 # Copy OpenUSD's plugins beside an executable that reads USD.
 #
 # OpenUSD reads usd/plugInfo.json beside its libraries, which names each plugin's directory
 # under it, and stops at a breakpoint when it finds none. vcpkg copies the libraries beside each
-# executable but not the plugins. It also installs the plugins beside the libraries, in bin/usd,
-# and that one file in lib/usd, so both are copied. The sources are found from the imported usd
-# target, so a Debug build copies the debug plugins.
+# executable but not the plugins. It installs the plugins and that file beside the libraries, in
+# bin/usd, which is copied whole. The source is found from the imported usd target, so a Debug
+# build copies the debug plugins.
 #
 # @param target the executable that links v3dlib_interchange_usd, directly or not
 function(v3d_copy_usd_plugins target)
 	add_custom_command(TARGET ${target} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_FILE_DIR:usd>/usd" "$<TARGET_FILE_DIR:${target}>/usd"
-		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE_DIR:usd>/../lib/usd/plugInfo.json" "$<TARGET_FILE_DIR:${target}>/usd/plugInfo.json"
 		COMMENT "Copying OpenUSD's plugins for ${target}"
 		VERBATIM)
 endfunction()
@@ -167,12 +189,64 @@ function(v3d_add_app_icon target svg)
 	target_sources(${target} PRIVATE "${script}" "${icon}")
 endfunction()
 
+# A suite too slow to run as one ctest test is split into parts, each a ctest test of its own,
+# so ctest can run them at once and reports each one's time. The parts are declared before the
+# suite's v3d_add_test, which registers them in place of the whole suite.
+#
+#   v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>... [PART ...])
+#
+# Each part is the ctest test <lib>_<name>, labelled <lib>, and also renders when it is marked
+# RENDERS. It runs the units at the suite's top level that its patterns match: each a case's or a
+# Boost.Test suite's name, with a * at its start, its end or both, as Boost.Test's --run_test
+# reads it. A Boost.Test suite runs whole. The test <lib>_parts, labelled <lib> too, fails when
+# any unit is matched by no part or by more than one, so a case added under a new name cannot go
+# unrun.
+function(v3d_test_parts lib)
+	set(parts "")
+	set(part "")
+	set(expecting "")
+	foreach(argument IN LISTS ARGN)
+		if(argument STREQUAL "PART")
+			set(expecting "name")
+		elseif(expecting STREQUAL "name")
+			set(part "${argument}")
+			list(APPEND parts "${part}")
+			set(renders_${part} FALSE)
+			set(cases_${part} "")
+			set(expecting "")
+		elseif(part STREQUAL "")
+			message(FATAL_ERROR "v3d_test_parts(${lib}): \"${argument}\" comes before the first PART")
+		elseif(argument STREQUAL "RENDERS")
+			set(renders_${part} TRUE)
+		elseif(argument STREQUAL "CASES")
+			set(expecting "cases")
+		elseif(expecting STREQUAL "cases")
+			list(APPEND cases_${part} "${argument}")
+		else()
+			message(FATAL_ERROR "v3d_test_parts(${lib}): \"${argument}\" in part ${part} is neither RENDERS nor CASES")
+		endif()
+	endforeach()
+	if("${parts}" STREQUAL "")
+		message(FATAL_ERROR "v3d_test_parts(${lib}) names no PART")
+	endif()
+	set_property(GLOBAL PROPERTY V3D_TEST_PARTS_${lib} "${parts}")
+	foreach(part IN LISTS parts)
+		if(cases_${part} STREQUAL "")
+			message(FATAL_ERROR "v3d_test_parts(${lib}): part ${part} names no CASES")
+		endif()
+		set_property(GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_RENDERS "${renders_${part}}")
+		set_property(GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_CASES "${cases_${part}}")
+	endforeach()
+endfunction()
+
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
 # /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's
 # imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
 # wherever spdlog's bundled fmt is compiled. The working directory lets a test's data files
 # resolve the same way an app's do. Run them with ctest --test-dir out/build/<config>.
+#
+# The suite is one ctest test named <lib>, or the parts v3d_test_parts declared for it.
 function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
@@ -186,7 +260,38 @@ function(v3d_add_test lib)
 	endif()
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
 	# down, so any test that builds a Logger reports the same permanent false positive.
-	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+	get_property(parts GLOBAL PROPERTY V3D_TEST_PARTS_${lib})
+	if("${parts}" STREQUAL "")
+		add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+		return()
+	endif()
+	# Each part's patterns go to the coverage check as name=pattern,pattern, with the parts apart
+	# at a bar, since a semicolon would split the argument
+	set(described "")
+	foreach(part IN LISTS parts)
+		get_property(cases GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_CASES)
+		get_property(renders GLOBAL PROPERTY V3D_TEST_PART_${lib}_${part}_RENDERS)
+		set(filters "")
+		foreach(pattern IN LISTS cases)
+			list(APPEND filters "--run_test=${pattern}")
+		endforeach()
+		add_test(NAME ${lib}_${part} COMMAND ${target} --detect_memory_leaks=0 ${filters} WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+		set(labels ${lib})
+		if(renders)
+			list(APPEND labels renders)
+		endif()
+		set_tests_properties(${lib}_${part} PROPERTIES LABELS "${labels}")
+		string(REPLACE ";" "," joined "${cases}")
+		if(described STREQUAL "")
+			set(described "${part}=${joined}")
+		else()
+			set(described "${described}|${part}=${joined}")
+		endif()
+	endforeach()
+	add_test(NAME ${lib}_parts
+		COMMAND ${CMAKE_COMMAND} "-DEXECUTABLE=$<TARGET_FILE:${target}>" "-DPARTS=${described}" -P "${V3D_ROOT}/cmake/v3dTestParts.cmake"
+		WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
+	set_tests_properties(${lib}_parts PROPERTIES LABELS ${lib})
 endfunction()
 
 # A fuzz target passes one input to a parser through LLVMFuzzerTestOneInput, the entry point
@@ -216,6 +321,23 @@ function(v3d_add_fuzzer name source)
 	endif()
 	add_test(NAME fuzz_${name} COMMAND ${target} -runs=0 ${arg_CORPUS})
 	set_tests_properties(fuzz_${name} PROPERTIES LABELS fuzz)
+endfunction()
+
+# A generator is a program the build runs to write a source file, such as a table it integrates
+# or fits. Under GCC and Clang it is optimised in every configuration and left out of the
+# sanitizers and the fuzzing instrumentation. Its output does not depend on either, since the
+# kernel turns off floating-point contraction. A Debug build would otherwise wait on it: built in
+# Debug under the sanitizers, a generator runs for most of an hour on four cores. The suites
+# check the kernel code a generator runs, under the sanitizers.
+#
+# MSVC is left as it is. Its Debug run-time checks cannot be combined with /O2, and its
+# generators take seconds in Debug.
+#
+# @param target the generator's executable
+function(v3d_optimise_generator target)
+	if(NOT MSVC)
+		target_compile_options(${target} PRIVATE "-O2" "-fno-sanitize=all")
+	endif()
 endfunction()
 
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with

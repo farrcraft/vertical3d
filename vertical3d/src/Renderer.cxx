@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Renderer.h"
 
@@ -26,6 +26,7 @@
 #include <api/ui/paint/Type.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
+#include <vertical3d/src/control/chrome/Status.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
@@ -39,14 +40,20 @@
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
-#include <vertical3d/src/view/AreaFrame.h>
+#include <vertical3d/src/view/OverlayLook.h>
+#include <vertical3d/src/view/OverlayMetrics.h>
+#include <vertical3d/src/view/frame/AreaFrame.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ConstructionPlane.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
+#include <vertical3d/src/view/frame/Band.h>
+#include <vertical3d/src/view/frame/Look.h>
 
 #include <algorithm>
 #include <cmath>
@@ -160,14 +167,14 @@ void Renderer::drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d:
     const view::AreaLayout& layout, const control::chrome::Pointer& pointer) {
     const v3d::ui::paint::Dressing& dress = std::as_const(screen.components()).dressing();
     const float factor = screen.factor();
-    const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
+    const view::frame::Look look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
         .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
-        .radius = view::FrameLook::RADIUS * factor, .line = frameLine(factor) };
+        .radius = view::frame::Look::RADIUS * factor, .line = frameLine(factor) };
 
     // each strip is the recess a set of tabs sits in. Each header is drawn partly through, over
     // the view beneath it, with a rule along its bottom so it reads as over the scene
     const glm::vec4 header(glm::vec3(dress.panel), dress.panel.a * static_cast<float>(control::chrome::Area::HEADER_OPACITY));
-    std::vector<view::Band> bands;
+    std::vector<view::frame::Band> bands;
     for (const view::AreaLayout::Area& area : layout.areas()) {
         const control::chrome::Area::Bands each = control::chrome::Area::bands(area, dress.barHeight);
         if (each.strip) {
@@ -180,7 +187,7 @@ void Renderer::drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d:
         }
     }
     const std::optional<control::chrome::Pointer::Drop> landing = pointer.drop();
-    drawFrame(canvas, layout, look, pointer.activeArea(), pointer.lit(),
+    view::frame::drawFrame(canvas, layout, look, pointer.activeArea(), pointer.lit(),
         landing ? std::optional<glm::vec4>(landing->region) : std::nullopt, bands);
 }
 
@@ -534,6 +541,7 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
     const view::ConstructionPlane::Colours grid = gridColours();
     canvases->scenes.resize(views.size());
     canvases->handles.resize(views.size());
+    canvases->rendered.resize(views.size());
     for (std::size_t index = 0; index < views.size(); index++) {
         const boost::shared_ptr<view::ViewPort>& view = views[index];
         if (!view) {
@@ -569,9 +577,7 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
         overlay->camera(view->camera()->view(), view->camera()->projection());
 
         // the surfaces first, so the wireframe drawn after them is drawn over them
-        if (shaded_ && view->shows(view::ViewPort::SHOW_MESH)) {
-            shaded_->submit(scene, view->display(), pass.get());
-        }
+        drawSurfaces(scene, *view, &canvases->rendered[index], pass.get());
         if (lines) {
             lines->submit(canvases->scenes[index], pass.get());
             if (!canvases->handles[index].empty()) {
@@ -579,6 +585,37 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
             }
         }
     }
+}
+
+/**
+ **/
+void Renderer::drawSurfaces(const scene::Scene& scene, const view::ViewPort& view, v3d::render::realtime::canvas::Canvas* canvas,
+    v3d::render::realtime::frame::Pass* pass) {
+    // a rendered view shades its surfaces flat until its first picture. Once it has one, it
+    // draws them for their depth alone and its picture over them, so the lines are tested
+    // against the depth of the scene the picture shows
+    const bool rendered = view.display().shading == view::Shading::Rendered;
+    const auto found = rendered ? pictures_.find(view.name()) : pictures_.end();
+    if (shaded_ && view.shows(view::ViewPort::SHOW_MESH)) {
+        view::ViewPort::Display surfaces = view.display();
+        if (found != pictures_.end()) {
+            surfaces = { .shading = view::Shading::Flat, .cull = view::ViewPort::Cull::None };
+        } else if (rendered) {
+            surfaces.shading = view::Shading::Flat;
+        }
+        shaded_->submit(scene, surfaces, pass);
+    }
+    if (found != pictures_.end() && engine_.quads()) {
+        drawPicture(view, found->second, canvas, pass);
+    }
+}
+
+/**
+ **/
+void Renderer::drawPicture(const view::ViewPort& view, const v3d::render::realtime::resource::TextureHandle& picture,
+    v3d::render::realtime::canvas::Canvas* canvas, v3d::render::realtime::frame::Pass* pass) {
+    view::RenderedViews::cover(view, picture, canvas);
+    engine_.quads()->submit(*canvas, pass);
 }
 
 /**
@@ -782,17 +819,20 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
 
 /**
  **/
-v3d::render::realtime::resource::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
-    // the ui stops drawing the old texture this frame, and its image is reclaimed once the
-    // frame in flight has finished with it
-    if (picture_.valid()) {
-        engine_.textures()->release(picture_);
-        picture_ = v3d::render::realtime::resource::TextureHandle();
+v3d::render::realtime::resource::TextureHandle Renderer::picture(const std::string& slot, const boost::shared_ptr<v3d::image::Image>& image) {
+    // what draws the old texture stops this frame, and its image is reclaimed once the frame in
+    // flight has finished with it
+    const auto found = pictures_.find(slot);
+    if (found != pictures_.end()) {
+        engine_.textures()->release(found->second);
+        pictures_.erase(found);
     }
-    if (image) {
-        picture_ = engine_.textures()->texture(image);
+    if (!image) {
+        return {};
     }
-    return picture_;
+    const v3d::render::realtime::resource::TextureHandle made = engine_.textures()->texture(image);
+    pictures_[slot] = made;
+    return made;
 }
 
 /**

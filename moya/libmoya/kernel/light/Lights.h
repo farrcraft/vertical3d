@@ -1,0 +1,515 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+#pragma once
+
+#include <moya/libmoya/kernel/Array.h>
+#include <moya/libmoya/kernel/geometry/Hit.h>
+#include <moya/libmoya/kernel/geometry/Key.h>
+#include <moya/libmoya/kernel/geometry/Motion.h>
+#include <moya/libmoya/kernel/geometry/Ray.h>
+#include <moya/libmoya/kernel/light/Brick.h>
+#include <moya/libmoya/kernel/light/Emission.h>
+#include <moya/libmoya/kernel/light/Image.h>
+#include <moya/libmoya/kernel/light/Light.h>
+#include <moya/libmoya/kernel/light/link/Links.h>
+#include <moya/libmoya/kernel/light/Picked.h>
+#include <moya/libmoya/kernel/light/Profile.h>
+#include <moya/libmoya/kernel/light/Tree.h>
+#include <moya/libmoya/kernel/Qualifiers.h>
+#include <moya/libmoya/kernel/sample/Sobol.h>
+#include <moya/libmoya/kernel/spectrum/RgbTable.h>
+#include <moya/libmoya/kernel/spectrum/Spectrum.h>
+#include <moya/libmoya/kernel/spectrum/Wavelengths.h>
+#include <moya/libmoya/kernel/surface/Surfaces.h>
+
+#include <cmath>
+#include <cstdint>
+
+#include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/matrix.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
+namespace v3d::moya::kernel::light {
+
+/**
+ * Every light, which instance in the world places each light's shape, and the chance of each
+ * being drawn. A light is drawn in proportion to its power: cdf holds the sum of the chances up
+ * to and including each light, and is empty when no light has any power. A mesh light's triangle
+ * is then drawn in proportion to its area: triangles holds the sums of each mesh light's chances
+ * in the same way, from its own first.
+ *
+ * The light tree draws a light by what it may bring to a shading point instead. Each set of
+ * linked lights has a top tree of its own, from roots[set] among nodes. It holds the lights with
+ * a place that light the set: those with a shape, the points and the mesh lights. Each mesh light's
+ * leaf leads on into its geometry's subtree over its triangles, in the geometry's own space,
+ * which every set and every light that places the geometry shares. leaves holds the leaf of each
+ * light in each set, by the set times the count of lights plus its place, or none, and
+ * triangleLeaves that of each triangle of each subtree's geometry. infinite holds the distant and
+ * dome lights of each set, from infiniteFirst[set] up to infiniteFirst[set + 1]. They are drawn
+ * beside the set's tree, each with the same chance as the tree.
+ *
+ * A volume light's leaf leads on into its subtree over its bricks, in the light's own space, and
+ * a light of one brick draws it with a chance of one. Drawn by power, a brick is drawn in
+ * proportion to its emission as a triangle is by its area, from the light's own first among
+ * triangles.
+ **/
+struct Lights {
+    Array<Light> lights;
+
+    /** The transformation of each light that moves, at each of its samples. **/
+    Array<geometry::Key> keys;
+
+    /** The places of the distant lights with an angle, which a ray that leaves the scene meets. **/
+    Array<std::uint32_t> distant;
+
+    /** Each light's place among the lights, by its instance's index in the scene, or none. **/
+    Array<std::uint32_t> byId;
+
+    Array<float> cdf;
+
+    Array<float> triangles;
+
+    /**
+     * The place of the first mesh light that an instance in the world places, by that instance's
+     * index in the scene, or none. The mesh lights an instance places follow each other.
+     **/
+    Array<std::uint32_t> meshes;
+
+    /** Every image a light reads, and their texels and their sums for drawing a texel. **/
+    Array<Image> images;
+    Array<glm::vec3> texels;
+    Array<float> sums;
+
+    /** The places of the dome lights, which every ray that leaves the scene meets. **/
+    Array<std::uint32_t> domes;
+
+    Array<TreeNode> nodes;
+    Array<std::uint32_t> roots;
+    Array<std::uint32_t> leaves;
+    Array<std::uint32_t> triangleLeaves;
+    Array<std::uint32_t> infinite;
+    Array<std::uint32_t> infiniteFirst;
+
+    /**
+     * Every volume light's bricks, and the sums of each brick's cells' chances. glowing holds the
+     * place of the light of each volume, by the volume's place among the volumes, or none.
+     * enclosing holds the places of the lights of closed surfaces.
+     **/
+    Array<Brick> bricks;
+    Array<float> cells;
+    Array<std::uint32_t> glowing;
+    Array<std::uint32_t> enclosing;
+
+    link::Links links;
+
+    /** The IES profiles that shape the lights, and their angles and candela. **/
+    Array<Profile> profiles;
+    Array<float> photometry;
+
+    /**
+     * The place, among count chances from a first, of one drawn by a random number, from the sums
+     * of the chances up to and including each. None when count is zero.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the first, then how many
+    MOYA_KERNEL static std::uint32_t drawnFrom(const Array<float> & sums, std::uint32_t first, std::uint32_t count, float u) {
+        if (count == 0U) {
+            return geometry::kNoPrimitive;
+        }
+        std::uint32_t low = 0;
+        std::uint32_t high = count - 1U;
+        while (low < high) {
+            const std::uint32_t middle = low + ((high - low) / 2U);
+            if (u < sums[first + middle]) {
+                high = middle;
+            } else {
+                low = middle + 1U;
+            }
+        }
+        return low;
+    }
+
+    /** The chance of a place among count chances from a first, from sums drawnFrom() reads. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the first, then how many
+    MOYA_KERNEL static float chanceIn(const Array<float> & sums, std::uint32_t first, std::uint32_t count, std::uint32_t place) {
+        if (place >= count) {
+            return 0.0F;
+        }
+        return place == 0U ? sums[first] : sums[first + place] - sums[first + place - 1U];
+    }
+
+    /** How many distant and dome lights light a set of linked lights. **/
+    MOYA_KERNEL std::uint32_t afar(std::uint32_t set) const {
+        return infiniteFirst.size > set + 1U ? infiniteFirst[set + 1U] - infiniteFirst[set] : 0U;
+    }
+
+    /** The root of a set's tree, or kNoPrimitive when no light with a place lights it. **/
+    MOYA_KERNEL std::uint32_t rootOf(std::uint32_t set) const {
+        return roots.size > set ? roots[set] : geometry::kNoPrimitive;
+    }
+
+    /**
+     * The chance of drawing a set's tree, and each of its distant and dome lights: the same for
+     * each, and zero when nothing lights the set.
+     **/
+    MOYA_KERNEL float aside(std::uint32_t set) const {
+        const std::uint32_t count = afar(set) + (rootOf(set) != geometry::kNoPrimitive ? 1U : 0U);
+        return count == 0U ? 0.0F : 1.0F / static_cast<float>(count);
+    }
+
+    /**
+     * A point and its normal in the world, taken into the space of the geometry the mesh light at
+     * a place emits from, at a time within the shutter. The point moves as a point does and the
+     * normal as a normal does. False for a light the surfaces do not place.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL bool intoMesh(const surface::Surfaces & surfaces, std::uint32_t place, float time, glm::vec3 & point, glm::vec3 & normal) const {
+        const Light & light = lights[place];
+        glm::mat4 toWorld { 1.0F };
+        std::uint32_t placed = 0;
+        std::uint32_t material = 0;
+        if (!surfaces.chainAt(light.chain, light.depth, time, toWorld, placed, material)) {
+            return false;
+        }
+        point = glm::vec3(glm::inverse(toWorld) * glm::vec4(point, 1.0F));
+        normal = glm::transpose(glm::mat3(toWorld)) * normal;
+        if (glm::dot(normal, normal) > 0.0F) {
+            normal = glm::normalize(normal);
+        }
+        return true;
+    }
+
+    /**
+     * The transformation into the world, at a time within the shutter, of the own space of the
+     * volume light at a place: its transform, then its chain's. False for a chain the surfaces do
+     * not hold.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL bool ownToWorld(const surface::Surfaces & surfaces, std::uint32_t place, float time, glm::mat4 & toWorld) const {
+        const Light & light = lights[place];
+        std::uint32_t placed = 0;
+        std::uint32_t material = surface::kNoMaterial;
+        if (!surfaces.placedBy(light.chain, light.depth, time, toWorld, placed, material)) {
+            return false;
+        }
+        toWorld = toWorld * light.transform;
+        return true;
+    }
+
+    /**
+     * A point and its normal in the world, taken into the own space of the volume light at a
+     * place, at a time within the shutter, as intoMesh() takes them. False for a light the
+     * surfaces do not place.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL bool intoOwn(const surface::Surfaces & surfaces, std::uint32_t place, float time, glm::vec3 & point, glm::vec3 & normal) const {
+        glm::mat4 toWorld { 1.0F };
+        if (!ownToWorld(surfaces, place, time, toWorld)) {
+            return false;
+        }
+        point = glm::vec3(glm::inverse(toWorld) * glm::vec4(point, 1.0F));
+        normal = glm::transpose(glm::mat3(toWorld)) * normal;
+        if (glm::dot(normal, normal) > 0.0F) {
+            normal = glm::normalize(normal);
+        }
+        return true;
+    }
+
+    /**
+     * A light drawn by the light tree for a shading point of a set of linked lights, with a
+     * normal, at a time within the shutter, by one random number. A mesh light's triangle, or a
+     * volume light's brick, is drawn on through its subtree by what is left of the number. Draws
+     * nothing when the tree's nodes
+     * bring nothing to the point, or nothing lights the set.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the point, then the time
+    MOYA_KERNEL Picked pickByTree(const surface::Surfaces & surfaces, std::uint32_t set, const glm::vec3 & point, const glm::vec3 & normal, float time,
+        float u) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        const float share = aside(set);
+        if (!(share > 0.0F)) {
+            return Picked {};
+        }
+        const std::uint32_t count = afar(set);
+        const float sideways = share * static_cast<float>(count);
+        if (u < sideways) {
+            const auto drawn = static_cast<std::uint32_t>(u / share);
+            return Picked { .place = infinite[infiniteFirst[set] + (drawn < count ? drawn : count - 1U)], .chance = share };
+        }
+        float rest = std::fmin((u - sideways) / (1.0F - sideways), sample::kOneMinusEpsilon);
+        float chance = share;
+        const std::uint32_t leaf = walk(nodes, roots[set], point, normal, rest, chance);
+        if (leaf == geometry::kNoPrimitive) {
+            return Picked {};
+        }
+        Picked out { .place = nodes[leaf].left, .chance = chance };
+        const Light & light = lights[out.place];
+        if (light.shape == Shape::Volume) {
+            return pickBrick(surfaces, out, point, normal, time, rest);
+        }
+        if (light.shape != Shape::Mesh) {
+            return out;
+        }
+        glm::vec3 local = point;
+        glm::vec3 turned = normal;
+        if (!intoMesh(surfaces, out.place, time, local, turned)) {
+            return Picked {};
+        }
+        const std::uint32_t triangle = walk(nodes, light.tree, local, turned, rest, out.chance);
+        if (triangle == geometry::kNoPrimitive) {
+            return Picked {};
+        }
+        out.primitive = nodes[triangle].left;
+        return out;
+    }
+
+    /**
+     * A brick of the volume light a walk of the light tree reached, drawn on through the light's
+     * subtree for a shading point by what is left of the walk's number. A light of one brick draws
+     * it. Draws nothing where the subtree brings nothing to the point.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the point, then the time
+    MOYA_KERNEL Picked pickBrick(const surface::Surfaces & surfaces, Picked out, const glm::vec3 & point, const glm::vec3 & normal, float time,
+        float rest) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        const Light & light = lights[out.place];
+        if (light.tree == geometry::kNoPrimitive) {
+            out.primitive = 0;
+            return out;
+        }
+        glm::vec3 local = point;
+        glm::vec3 turned = normal;
+        if (!intoOwn(surfaces, out.place, time, local, turned)) {
+            return Picked {};
+        }
+        const std::uint32_t brick = walk(nodes, light.tree, local, turned, rest, out.chance);
+        if (brick == geometry::kNoPrimitive) {
+            return Picked {};
+        }
+        out.primitive = nodes[brick].left;
+        return out;
+    }
+
+    /**
+     * The chance that pickBrick() draws a brick of the volume light at a place, once the light is
+     * drawn: one for a light of one brick.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the brick, then the time
+    MOYA_KERNEL float brickChance(const surface::Surfaces & surfaces, std::uint32_t place, std::uint32_t primitive, const glm::vec3 & point,
+        const glm::vec3 & normal, float time) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        const Light & light = lights[place];
+        if (primitive >= light.count) {
+            return 0.0F;
+        }
+        if (light.tree == geometry::kNoPrimitive) {
+            return 1.0F;
+        }
+        const std::uint32_t leaf = bricks[light.bricks + primitive].leaf;
+        glm::vec3 local = point;
+        glm::vec3 turned = normal;
+        if (leaf == geometry::kNoPrimitive || !intoOwn(surfaces, place, time, local, turned)) {
+            return 0.0F;
+        }
+        return reached(nodes, leaf, local, turned);
+    }
+
+    /**
+     * The chance that pickByTree() draws the light at a place, and the triangle given of a mesh
+     * light or the brick given of a volume light. It is drawn for a shading point of a set of
+     * linked lights, with a normal, at a time within the shutter. Zero for a light that does not
+     * light the set.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the set, the place, then the time
+    MOYA_KERNEL float chanceByTree(const surface::Surfaces & surfaces, std::uint32_t set, std::uint32_t place, std::uint32_t primitive,
+        const glm::vec3 & point, const glm::vec3 & normal, float time) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        if (!links.lights(set, place)) {
+            return 0.0F;
+        }
+        const Light & light = lights[place];
+        if (light.shape == Shape::Distant || light.shape == Shape::Dome) {
+            return aside(set);
+        }
+        const std::uint32_t leaf = leaves[(set * lights.size) + place];
+        if (leaf == geometry::kNoPrimitive) {
+            return 0.0F;
+        }
+        const float chance = aside(set) * reached(nodes, leaf, point, normal);
+        if (light.shape == Shape::Volume) {
+            return chance * brickChance(surfaces, place, primitive, point, normal, time);
+        }
+        if (light.shape != Shape::Mesh) {
+            return chance;
+        }
+        glm::vec3 local = point;
+        glm::vec3 turned = normal;
+        if (primitive >= light.count || triangleLeaves[light.leaves + primitive] == geometry::kNoPrimitive ||
+            !intoMesh(surfaces, place, time, local, turned)) {
+            return 0.0F;
+        }
+        return chance * reached(nodes, triangleLeaves[light.leaves + primitive], local, turned);
+    }
+
+    /**
+     * What the IES profile of the light at a place multiplies its emission by, along a unit
+     * direction it emits along in the world, with its prototype's transformation into the world.
+     * One for a light that no profile shapes.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the transformation, then the direction
+    MOYA_KERNEL float shaping(std::uint32_t place, const glm::mat4 & toWorld, const glm::vec3 & towards) const {
+        const Light & light = lights[place];
+        if (light.profile == geometry::kNoPrimitive) {
+            return 1.0F;
+        }
+        const glm::vec3 local = glm::inverse(glm::mat3(toWorld)) * towards;
+        if (!(glm::dot(local, local) > 0.0F)) {
+            return 0.0F;
+        }
+        return profileShare(profiles[light.profile], photometry, ownSpace(light, glm::normalize(local)));
+    }
+
+    /** The place among the lights of the light whose shape a hit met, or kNoPrimitive. **/
+    MOYA_KERNEL std::uint32_t at(const geometry::Hit & hit) const {
+        if (!hit.found() || hit.depth != 1U) {
+            return geometry::kNoPrimitive;
+        }
+        const std::uint32_t id = hit.instances[0];
+        return id < byId.size ? byId[id] : geometry::kNoPrimitive;
+    }
+
+    /** The transformation into the world of the light at a place, at a time within the shutter. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL glm::mat4 placement(std::uint32_t place, float time) const {
+        const Light & light = lights[place];
+        return light.keyCount > 1U ? geometry::transformAt(&keys[light.keys], light.keyCount, time) : light.transform;
+    }
+
+    /** The chance that pick() draws the light at a place. **/
+    MOYA_KERNEL float chance(std::uint32_t place) const {
+        return chanceIn(cdf, 0U, cdf.size, place);
+    }
+
+    /** The place of a light drawn in proportion to its power, or none when no light has any. **/
+    MOYA_KERNEL std::uint32_t pick(float u) const {
+        return drawnFrom(cdf, 0U, cdf.size, u);
+    }
+
+    /**
+     * A triangle of the mesh light at a place, drawn in proportion to its area, or a brick of the
+     * volume light there, drawn in proportion to its emission.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the random number
+    MOYA_KERNEL std::uint32_t pickTriangle(std::uint32_t place, float u) const {
+        const Light & light = lights[place];
+        return drawnFrom(triangles, light.triangles, light.count, u);
+    }
+
+    /** The chance that pickTriangle() draws a triangle or a brick of the light at a place. **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the triangle
+    MOYA_KERNEL float triangleChance(std::uint32_t place, std::uint32_t primitive) const {
+        const Light & light = lights[place];
+        return chanceIn(triangles, light.triangles, light.count, primitive);
+    }
+
+    /**
+     * The place of a mesh light whose geometry a hit's chain places, or kNoPrimitive. A chain
+     * makes a mesh light's and its material's, which lie together: the first is found from none,
+     * and the next from the place of the one before.
+     **/
+    MOYA_KERNEL std::uint32_t emitting(const geometry::Hit & hit, std::uint32_t after = geometry::kNoPrimitive) const {
+        if (!hit.found() || hit.depth == 0U || hit.instances[0] >= meshes.size) {
+            return geometry::kNoPrimitive;
+        }
+        const std::uint32_t first = after == geometry::kNoPrimitive ? meshes[hit.instances[0]] : after + 1U;
+        for (std::uint32_t place = first; place < lights.size; ++place) {
+            const Light & light = lights[place];
+            if (light.shape != Shape::Mesh || light.chain[0] != hit.instances[0]) {
+                break;
+            }
+            bool same = light.depth == hit.depth;
+            for (std::uint32_t level = 1; same && level < hit.depth; ++level) {
+                same = light.chain[level] == hit.instances[level];
+            }
+            if (same) {
+                return place;
+            }
+        }
+        return geometry::kNoPrimitive;
+    }
+
+    /**
+     * A triangle of the mesh light at a place, in the world at a time within the shutter. The
+     * normal is the unit normal of the side it emits from: the side its winding faces, turned as a
+     * normal is. False for a light the surfaces do not place.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, the triangle, then the time
+    MOYA_KERNEL bool triangleAt(const surface::Surfaces & surfaces, std::uint32_t place, std::uint32_t primitive, float time, glm::vec3 (&corners)[3],
+        glm::vec3 & normal) const {  // NOLINT(bugprone-easily-swappable-parameters)
+        const Light & light = lights[place];
+        glm::mat4 toWorld { 1.0F };
+        std::uint32_t placed = 0;
+        std::uint32_t material = 0;
+        if (!surfaces.chainAt(light.chain, light.depth, time, toWorld, placed, material)) {
+            return false;
+        }
+        glm::vec3 local[3];
+        surfaces.corners(placed, primitive, time, local);
+        for (std::uint32_t corner = 0; corner < 3U; ++corner) {
+            corners[corner] = glm::vec3(toWorld * glm::vec4(local[corner], 1.0F));
+        }
+        const glm::vec3 turned = glm::transpose(glm::inverse(glm::mat3(toWorld))) * glm::cross(local[1] - local[0], local[2] - local[0]);
+        if (!(glm::dot(turned, turned) > 0.0F)) {
+            return false;
+        }
+        normal = glm::normalize(turned);
+        return true;
+    }
+
+    /** Which of count cells over [0, 1] holds a fraction, held to the first and last. **/
+    MOYA_KERNEL static std::uint32_t cellOf(float fraction, std::uint32_t count) {
+        const float scaled = fraction * static_cast<float>(count);
+        if (!(scaled > 0.0F)) {
+            return 0U;
+        }
+        const auto whole = static_cast<std::uint32_t>(scaled);
+        return whole < count ? whole : count - 1U;
+    }
+
+    /** The texel of an image at a place, (0, 0) at its top left and (1, 1) at its bottom right. **/
+    MOYA_KERNEL glm::vec3 texel(const Image & image, const glm::vec2 & at) const {
+        return texels[image.texels + (cellOf(at.y, image.height) * image.width) + cellOf(at.x, image.width)];
+    }
+
+    /**
+     * What the texture of the light at a place tints its colour by, at a point of its shape in the
+     * world: a rect light's texel there, or one. A texture's first corner lies at the rect's +x and
+     * +y, and its last at its -x and -y.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the transformation, then the point
+    MOYA_KERNEL glm::vec3 tint(std::uint32_t place, const glm::mat4 & toWorld, const glm::vec3 & point) const {
+        const Light & light = lights[place];
+        if (light.shape != Shape::Rect || light.image == geometry::kNoPrimitive) {
+            return glm::vec3 { 1.0F };
+        }
+        const glm::vec3 local { glm::inverse(toWorld) * glm::vec4(point, 1.0F) };
+        return texel(images[light.image], glm::vec2 { 0.5F - (local.x / light.size.x), 0.5F - (local.y / light.size.y) });
+    }
+
+    /**
+     * The radiance the light at a place sends back along a ray that met its shape, as its shape
+     * stood at a time within the shutter.
+     **/
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the place, then the time
+    MOYA_KERNEL spectrum::SampledSpectrum emitted(std::uint32_t place, float time, const geometry::Ray & ray, const geometry::Hit & hit,
+        const spectrum::RgbTable & table, const spectrum::SampledWavelengths & wavelengths) const {
+        const glm::mat4 toWorld = placement(place, time);
+        const glm::vec3 point = ray.at(hit.distance);
+        const glm::vec3 towards = -glm::normalize(ray.direction);
+        return radiance(lights[place], toWorld, point, towards, tint(place, toWorld, point), table, wavelengths) * shaping(place, toWorld, towards);
+    }
+};
+
+};  // namespace v3d::moya::kernel::light

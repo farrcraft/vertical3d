@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/render/realtime/resource/Handle.h>
 
+/**
+ * The components an entity is drawn by: a mesh, a sprite, and the look of its particles.
+ **/
 namespace v3d::render::realtime::component {
 
 /**

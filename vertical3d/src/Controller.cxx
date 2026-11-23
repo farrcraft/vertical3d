@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #include "Controller.h"
 
@@ -48,10 +48,12 @@
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/RenderSettingsEditor.h>
 #include <vertical3d/src/control/RenderView.h>
+#include <vertical3d/src/control/chrome/Status.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
 #include <vertical3d/src/scene/item/Item.h>
@@ -65,8 +67,10 @@
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/AxisEnd.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/Through.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -74,6 +78,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -251,6 +256,7 @@ boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::E
         .locked = v3d::asset::readBool(editor.state, "locked").value_or(false) });
     // the view starts in the shading its state names, as the Shading workspace's view names smooth
     made->display().shading = view::shading(v3d::asset::readString(editor.state, "shading").value_or("")).value_or(view::Shading::Flat);
+    made->display().pixelSize = static_cast<unsigned int>(std::clamp(v3d::asset::readInt(editor.state, "pixelSize").value_or(1), 1, MOST_PIXELS));
     return made;
 }
 
@@ -333,7 +339,9 @@ bool Controller::buildUi() {
     // moya.exe is built beside the editor
     context_.renderView = boost::make_shared<control::RenderView>(boost::make_shared<render::MoyaDelegate>(logger()),
         boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
-        [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
+        [this](const std::string& slot, const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(slot, image); });
+    rendered_ = boost::make_shared<view::RenderedViews>([this] { return boost::make_shared<render::MoyaDelegate>(logger()); },
+        [this](const std::string& view, const boost::shared_ptr<v3d::image::Image>& image) { renderer_->picture(view, image); });
     return findBars(vgui);
 }
 
@@ -611,7 +619,7 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
 
 /**
  **/
-void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, view::AreaLayout& layout,
     control::chrome::Pointer* pointer, std::uint32_t window) {
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
@@ -646,7 +654,7 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
         } else if (editor.kind == control::ConsoleEditor::KIND && console_) {
             console_->draw(layer, editor.id, region);
         } else if (editor.kind == control::RenderView::KIND && context_.renderView) {
-            asked = std::max(asked, context_.renderView->draw(layer, editor.id, region));
+            asked = std::max(asked, drawRenderView(layer, layout, editor, region));
         } else if (editor.kind == control::RenderSettingsEditor::KIND && renderSettings_) {
             renderSettings_->draw(layer, editor.id, region);
         }
@@ -656,6 +664,20 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
     if (pointer != nullptr) {
         pointer->settle();
     }
+}
+
+/**
+ **/
+control::RenderView::Asked Controller::drawRenderView(v3d::ui::Immediate* layer, view::AreaLayout& layout, const view::AreaLayout::Editor& editor,
+    const glm::vec4& region) {
+    // the channel is kept in the editor's state, so a saved workspace keeps it
+    const control::RenderView::Channel was = control::RenderView::channelOf(editor.state);
+    control::RenderView::Channel channel = was;
+    const control::RenderView::Asked asked = context_.renderView->draw(layer, editor.id, region, &channel);
+    if (channel != was) {
+        layout.set(editor.id, control::RenderView::CHANNEL, boost::json::string(control::RenderView::name(channel)));
+    }
+    return asked;
 }
 
 /**
@@ -869,6 +891,9 @@ bool Controller::release() {
     if (context_.renderView) {
         context_.renderView->release();
     }
+    if (rendered_) {
+        rendered_->release();
+    }
     // the screen draws through the renderer, so it goes first
     shell_.release();
     if (renderer_) {
@@ -890,10 +915,17 @@ bool Controller::tick(unsigned int delta) {
         commands().invoke(v3d::event::Event(asked == control::RenderView::Asked::Render ? "render::view" : "render::stop"));
     }
     if (context_.renderView && context_.activeView() && context_.activeView()->camera()) {
-        context_.renderView->tick(*context_.document->scene(), context_.shot(), shows(control::RenderView::KIND));
+        context_.renderView->tick(*context_.document->scene(), context_.shot(), renderChannels(), std::chrono::milliseconds(delta));
     }
     if (context_.renderView) {
         syncCaption();
+    }
+    if (rendered_ && context_.document) {
+        std::vector<boost::shared_ptr<view::ViewPort>> shown = context_.views->shown();
+        for (const Opened& opened : opened_) {
+            shown.insert(shown.end(), opened.views->shown().begin(), opened.views->shown().end());
+        }
+        rendered_->tick(*context_.document->scene(), shown);
     }
     return Engine::tick(delta);
 }

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Bidi.h"
 
@@ -78,7 +78,7 @@ Bidi::Bidi(std::string_view utf8, BaseDirection base) :
     }
 }
 
-const std::vector<LevelRun>& Bidi::runs() const noexcept {
+const std::vector<Bidi::LevelRun>& Bidi::runs() const noexcept {
     return runs_;
 }
 
@@ -107,7 +107,7 @@ bool Bidi::rightToLeft(std::size_t offset) const {
     return !internal::failed(status) ? odd(found) : odd(base_);
 }
 
-std::vector<LevelRun> Bidi::line(std::size_t start, std::size_t end) const {
+std::vector<Bidi::LevelRun> Bidi::line(std::size_t start, std::size_t end) const {
     std::vector<LevelRun> visual;
     if (start >= end || end > size_) {
         return visual;
@@ -134,7 +134,7 @@ std::vector<LevelRun> Bidi::line(std::size_t start, std::size_t end) const {
     return visual;
 }
 
-CaretEdge Bidi::caret(std::size_t offset, Affinity affinity) const {
+Bidi::CaretEdge Bidi::caret(std::size_t offset, Affinity affinity) const {
     if (size_ == 0) {
         return {0, rightToLeft(0)};
     }

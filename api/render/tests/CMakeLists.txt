@@ -73,12 +73,7 @@ v3d_add_test(render_device
 
 # A committed reference image is opened relative to the working directory. v3d_add_test sets
 # that to the executable's directory, so the references are copied there.
-add_custom_command(TARGET v3dtest_render_device POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/device/data"
-		"$<TARGET_FILE_DIR:v3dtest_render_device>/data"
-	COMMENT "Copying render device references"
-	VERBATIM)
+v3d_copy_directory(v3dtest_render_device references "${CMAKE_CURRENT_SOURCE_DIR}/device/data" "data")
 
 # the case that compiles a depth only pipeline needs a vertex stage of its own, because the
 # renderers' shaders belong to v3dlib_render

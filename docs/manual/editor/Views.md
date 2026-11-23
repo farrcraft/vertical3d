@@ -71,17 +71,25 @@ room back.
 ## Change how a view shades the scene
 
 Choose from **View > Shading**, or from the shading menu in a view's header. The header's menu is
-named for how the view draws: Flat, Smooth, Wireframe or Points.
+named for how the view draws: Flat, Smooth, Rendered, Wireframe or Points.
 
 | Item | What it does | Default |
 |---|---|---|
 | Flat | Lights each face evenly | Chosen |
 | Smooth | Blends the light across the faces around each vertex | |
+| Rendered | Shows the scene as moya renders it, from the view's camera | |
 | Front Facing > Points, Lines, Fill | Draws the outward side of each face as its corners, its edges, or filled | Fill |
 | Back Facing > Points, Lines, Fill | The same, for the inward side | Fill |
 | Cull > None, Front, Back, Both | Leaves out no side, the outward side, the inward side, or both | Back |
 
-The light comes from the eye. Each view keeps its own shading. The Shading workspace starts
+The light comes from the eye. Each view keeps its own shading.
+
+A rendered view renders the scene as you work in it. The picture appears within a moment of each
+change, and improves as moya samples. Orbiting, panning or zooming renders again from the new
+camera. The grid, the wireframe and the handles are drawn over the picture, and a line behind a
+surface is hidden as it is in a shaded view. Each rendered view has a render of its own, and a
+view you cannot see stops rendering until you can. Several rendered views share the computer, so
+each renders more slowly than one would. The Shading workspace starts
 with a smooth view.
 
 Some graphics cards cannot draw points or lines. On such a card the side is drawn filled.

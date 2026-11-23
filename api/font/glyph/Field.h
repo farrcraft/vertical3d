@@ -1,11 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Effect.h>
 
 #include <cstdint>
 #include <vector>
@@ -38,7 +38,7 @@ constexpr std::uint8_t MAX_SPREAD = 32;
  *         mode or with no spread, a face that cannot be sized or set to the coordinates, or a
  *         glyph that cannot be loaded gives an empty bitmap
  **/
-Bitmap field(const Key& key);
+Store::Bitmap field(const Store::Key& key);
 
 /**
  * The spread is the reach with a pixel more for the effect's edge. It is rounded up to a multiple
@@ -53,14 +53,14 @@ std::uint8_t fieldSpread(float reach);
  * @return the key of the field a glyph's effects are drawn from, for an effect reaching a
  *         distance past its edge in em units, at a variable font's normalized coordinates
  **/
-Key fieldKey(const face::Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates = {});
+Store::Key fieldKey(const face::Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates = {});
 
 /**
  * @param effect the effect, whose width and softness are in pixels
  * @param size the size the text is drawn at, in pixels
  * @return how far past a glyph's edge an effect reaches, in em units
  **/
-float effectReach(const text::Effect& effect, float size);
+float effectReach(const text::style::Effect& effect, float size);
 
 /**
  * Where an effect's coverage is whole and where it reaches nothing, as values of a field made
@@ -71,6 +71,6 @@ float effectReach(const text::Effect& effect, float size);
  * @param spread the field's spread, in its pixels, as fieldSpread() gives it
  * @return the value at which the effect is whole, then the value at which it is gone
  **/
-glm::vec2 effectRamp(const text::Effect& effect, float size, std::uint8_t spread);
+glm::vec2 effectRamp(const text::style::Effect& effect, float size, std::uint8_t spread);
 
 };  // namespace v3d::font::glyph

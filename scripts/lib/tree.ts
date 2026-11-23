@@ -28,4 +28,3 @@ export function isGenerated(file: string): boolean {
 export function isTestPath(file: string): boolean {
     return /(^|\/)tests\//.test(file);
 }
-

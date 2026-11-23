@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -16,6 +16,7 @@
 #include "Chord.h"
 #include "Context.h"
 #include "Source.h"
+#include "Unclaimed.h"
 
 namespace v3d::event {
 /**

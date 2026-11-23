@@ -1,10 +1,9 @@
 ##RenderMan RIB-Structure 1.1
 ##Scene Depth of field from Camera.md: three spheres, with the camera focused on the middle one
 version 3.03
-Hider "raytrace"
 Format 320 240 1
 Display "focus.png" "file" "rgb"
-PixelSamples 6 6
+PixelSamples 8 8
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
 # an f-stop of 0.7, a focal length of 0.5, and focus at 6 units, where the middle sphere stands

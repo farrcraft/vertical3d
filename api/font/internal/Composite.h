@@ -1,11 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/colour/Layer.h>
 
 #include <glm/vec4.hpp>
 
@@ -19,6 +19,6 @@ namespace v3d::font::internal {
  * @param source the colour put down
  * @param destination the colour beneath it
  **/
-glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, glyph::ColourComposite mode);
+glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, glyph::colour::Composite mode);
 
 };  // namespace v3d::font::internal

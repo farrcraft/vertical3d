@@ -20,7 +20,9 @@ import { supportedNode } from '../lib/entry.ts';
 import { ROOT } from '../lib/tree.ts';
 
 /** Every gate: each TypeScript file directly in scripts/. */
-const GATES = readdirSync(join(ROOT, 'scripts')).filter((name) => name.endsWith('.ts')).sort();
+const GATES = readdirSync(join(ROOT, 'scripts'))
+    .filter((name) => name.endsWith('.ts'))
+    .toSorted();
 
 /** The gates that compare against a base revision named by --base. */
 const BASED = ['boundary.ts', 'changelog.ts', 'commentsonly.ts', 'failsfirst.ts', 'prose.ts'];

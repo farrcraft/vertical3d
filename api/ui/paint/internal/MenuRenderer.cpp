@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "MenuRenderer.h"
 
@@ -11,12 +11,13 @@
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
 #include <api/ui/Image.h>
-#include <api/ui/Transition.h>
+#include <api/ui/Motion.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Emphasis.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/Type.h>

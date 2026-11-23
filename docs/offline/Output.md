@@ -1,0 +1,159 @@
+# Output
+
+This page is for anyone changing how moya writes its pictures to files and shows
+them on a display. The code is
+host code, in `moya/libmoya/output/` and the namespace `v3d::moya::output`. It writes a film's
+snapshot, which [The film](Film.md) describes.
+
+## A scene's outputs
+
+`output/Outputs.h` reads what a scene's `output` and `channel` objects ask for, which
+[Scene.md](Scene.md) describes, and writes it.
+
+- **`channelsOf(scene)` gives every channel an output names**, each once, in the order the outputs
+  name them. A channel two outputs name is one film channel. A channel no output names is not
+  rendered.
+- **The render's film holds those channels.** `integrate::render()` makes its film from
+  `filmChannelsOf(scene)`. A channel whose source the path tracer does not fill is reported, and
+  holds zero, as [Integrator.md](Integrator.md#values-at-the-first-hit) says.
+- **`outputsOf(scene)` gives the outputs**, in the order the scene holds them, with each one's
+  file, format, channels, precision and compression.
+- **`write(output, snapshot, config, logger)` writes one.** An EXR output is one part of the
+  beauty followed by its channels, at its precision and compression. A PNG output is the beauty
+  through the configuration's default display and view. A framebuffer is logged and not written,
+  since moya has no window.
+- **`moya` writes every output after each frame.** Its `--output` replaces the first output's
+  file, and the file's name gives its format. A scene with no output writes its beauty to
+  `--output`, or to an EXR file named after the scene in the working directory, in floats.
+
+## EXR files
+
+`writeExr(path, snapshot, parts, metadata)` writes a snapshot to an OpenEXR file. The path is
+UTF-8.
+
+- **A file holds one or more parts.** Each `ExrPart` names the outputs it holds, in order, how
+  they are stored and how they are compressed. Every part covers the snapshot's whole
+  resolution.
+- **The display window is the snapshot's image, and the data window its pixels.** A render of a
+  crop window holds a window of its image, so its file's data window lies at the window's place
+  in the display window. A deep file is written the same way. A snapshot that names no image is
+  its own image.
+- **One part is written as a plain scanline file**, which every EXR reader opens. Several are
+  written as a multi-part file, and each then needs a name of its own.
+- **An output is the beauty, the count of samples or a channel.** `kBeauty`, "beauty", is the
+  beauty, and `kSampleCount`, "sampleCount", each pixel's count of samples. A snapshot that holds
+  no count for each pixel refuses it. Any other output is the name of one of the film's channels.
+- **Precision is per part**: `Precision::Half` stores 16-bit floats and `Precision::Float` 32-bit
+  ones. A half part converts the snapshot's floats to halves before it writes them, because
+  OpenEXR converts between pixel types only when it reads a file. To store the beauty as halves
+  and depth as floats, put them in two parts.
+- **Compression is per part**, any of OpenEXR's, with `Compression::Zip` the default.
+- **A part's `floats` are written as 32-bit floats whatever its precision.** A Cryptomatte
+  layer's ranks are, since an ID read as a half loses its hash.
+
+## Channel names
+
+- **The beauty is R, G, B and A**, its alpha the share of its samples that met something, as
+  [Film.md](Film.md#the-films-pixels) says.
+- **The count of samples is `sampleCount`**, as a float.
+- **A channel of one float** keeps the channel's name, such as `depth`.
+- **A channel of several floats** is the channel's name followed by `.R`, `.G`, `.B` and `.A` in
+  order, such as `albedo.R`, `albedo.G` and `albedo.B`.
+
+## The header
+
+Every part's header holds:
+
+- **`colorInteropID`**, the Color Interop Forum ID that `ExrMetadata::colourSpace` gives. It
+  is `lin_ap1_scene` unless set, since the film holds ACEScg. An output converted into the working
+  space by [`colour::Config::output()`](Colour.md) names the working space's ID instead. An
+  empty ID writes nothing.
+- **The chromaticities of the space**, when its ID is one of the linear spaces with standard
+  primaries: AP0, AP1, Rec. 709, P3-D65, Rec. 2020 and Adobe RGB. The ID of any other space is
+  written without them.
+- **`worldToCamera` and `worldToNDC`**, OpenEXR's standard matrices, when `ExrMetadata` gives
+  them. A glm matrix is written with each float at the same indices. glm multiplies column vectors
+  and Imath multiplies row vectors, so the matrix reads back in Imath as the same transform.
+- **`moya/renderTime`**, a float of seconds, when `ExrMetadata` gives one.
+- **Each string of `ExrMetadata::strings`**, by its name.
+
+## Denoised channels
+
+A render denoises its beauty, and each channel the scene marks, after its last pass, through
+OIDN's `RT` filter on its CPU device, in `denoise::denoise()`. A `denoise::Denoiser` keeps that
+device for the pictures it denoises, and `denoise()` is one denoiser's `into()`.
+
+- **What is denoised.** The beauty is denoised while the options' `denoise` is 1, or under
+  `moya --denoise`. A channel is denoised while its own `denoise` is 1, which suits a
+  light path expression or a light group.
+- **A denoised copy sits beside its noisy original.** The beauty's is the channel
+  `beauty_denoised`, and a channel's is its name followed by `_denoised`, both of ACEScg's three
+  components. An EXR output starts with the denoised beauty, and follows each marked channel it
+  names with its copy.
+- **One albedo and one normal guide every copy**: the scene's raw `albedo` and `denoisingNormal`
+  channels of three components, or `denoiseAlbedo` and `denoiseNormal`, which a render that
+  denoises adds when the scene names neither. OIDN filters each guide first, and then every copy
+  with `cleanAux` set. The normal is in world space.
+- **moya gives each picture's input scale**: 0.18 over the exponent of the mean log luminance of
+  the pixels that hold light, summed in pixel order. OIDN's own estimate is not used.
+- **A denoised copy is the same on every run.** OIDN's `RT` filter gives the same floats on one
+  thread and on every thread, so it runs on its own count of threads.
+- **A filter that fails is reported**, and its copy holds the noisy picture.
+- **`Denoiser::beauty()` denoises the beauty alone**, for a render session's pictures. A preview
+  is filtered at OIDN's fast quality from the guides as they are, without `cleanAux`. Any other
+  is filtered as `into()` filters the beauty, and gives the same bytes as `beauty_denoised`.
+
+Background:
+[ADR-0234](../adr/offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md)
+
+## Cryptomatte and deep files
+
+A Cryptomatte layer's channels and header, and a deep file, are written as
+[Compositing.md](Compositing.md) describes.
+
+## A background
+
+`composited(snapshot, background)` gives a snapshot whose beauty is composited over a colour in
+ACEScg. An output whose scene's options name a `background` is written from that snapshot, and
+`output::Output` holds the colour, with the colour space it is in.
+
+- **Each pixel's beauty gains the background times one less its alpha**, and its alpha becomes
+  one.
+- **A denoised beauty is composited the same way**, by the beauty's alpha, after denoising, so the
+  denoiser never sees the background.
+- **Nothing else changes.** The film, a checkpoint, every other channel, the Cryptomatte layers
+  and the deep samples are the render's, so a compositor still takes coverage from them. The
+  background lights nothing and is seen in no reflection.
+- **A PNG is written from the composited snapshot too.**
+
+Background: [ADR-0238](../adr/offline/0238-offline-a-background-is-composited-when-an-output-is-written.md)
+
+## 8-bit pictures
+
+`displayed(snapshot, display)` gives a snapshot's beauty as a display shows it, for a PNG or the
+editor's render view. `writePng(path, snapshot, display, logger)` writes it to a PNG file.
+
+- **The display is a `colour::Transform`** from [`colour::Config::display()`](Colour.md), from the
+  film's ACEScg through a display's view.
+- **Each channel is 8 bits.** A value is clamped to [0, 1] and rounded to the nearest of 256 steps,
+  and a NaN is zero.
+- **The bytes are red, green and blue** for each pixel, row by row from the top left.
+- **A PNG holds the snapshot's pixels alone.** A render of a crop window writes the window, since
+  a PNG has no window within an image.
+- **`writePng` throws `std::runtime_error`** when the picture does not encode or the file cannot
+  be written.
+
+## Errors
+
+`writeExr` throws `std::invalid_argument` when:
+
+- there are no parts;
+- a part holds no outputs, or one output twice;
+- an output is neither the beauty nor one of the snapshot's channels;
+- two of a part's channels have the same name in the file, such as a channel named `R` beside the
+  beauty, or a channel named `albedo.R` beside a three-float `albedo`;
+- a file of several parts has a part with no name, or two parts with the same name;
+- the snapshot's values do not fill its resolution.
+
+It checks all of these before it opens the file, so a refused call writes nothing. OpenEXR's own
+exceptions, which derive from `std::exception`, report a file that cannot be written.

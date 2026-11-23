@@ -36,9 +36,4 @@ target_link_libraries(v3dtest_engine PRIVATE
 # A fixture is an app path, not a data path: initialize() appends "data/" to it. The asset
 # manager resolves a relative path against the working directory, and v3d_add_test sets that
 # to the executable's directory.
-add_custom_command(TARGET v3dtest_engine POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
-		"$<TARGET_FILE_DIR:v3dtest_engine>/fixtures"
-	COMMENT "Copying engine test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_engine fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures" "fixtures")

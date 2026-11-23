@@ -9,9 +9,4 @@ v3d_copy_usd_plugins(v3dtest_interchange_usd)
 # The fixtures are the interchange suite's: make_scene_fixture.py writes scene.usda beside
 # scene.glb, so both readers are checked against one scene. keyed_root.usda and curves.usda are
 # written by hand.
-add_custom_command(TARGET v3dtest_interchange_usd POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../tests/data"
-		"$<TARGET_FILE_DIR:v3dtest_interchange_usd>/data"
-	COMMENT "Copying interchange test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_interchange_usd fixtures "${CMAKE_CURRENT_SOURCE_DIR}/../../tests/data" "data")

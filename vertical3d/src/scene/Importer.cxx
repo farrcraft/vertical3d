@@ -1,15 +1,23 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Importer.h"
 
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
+#include <api/brep/BuildOptions.h>
 #include <api/brep/Builder.h>
+#include <api/brep/Built.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Curves.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Mesh.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/item/Camera.h>

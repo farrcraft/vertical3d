@@ -1,0 +1,16 @@
+# actionlint's configuration. pre-commit and the workflows job both run actionlint over every
+# workflow.
+self-hosted-runner:
+  # GitHub-hosted labels missing from actionlint's list. Each is hosted, not self-hosted, and
+  # comes off this list once a release of actionlint lists it.
+  labels:
+    - ubuntu-26.04
+paths:
+  # GitHub's cache-mode, which a release and the scheduled build set to none on each job that
+  # calls a workflow, is missing from actionlint's schema
+  .github/workflows/release.yml:
+    ignore:
+      - 'unexpected key "cache-mode" for "job" section'
+  .github/workflows/scheduled.yml:
+    ignore:
+      - 'unexpected key "cache-mode" for "job" section'

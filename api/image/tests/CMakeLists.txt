@@ -14,12 +14,7 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image v3dlib_log ${Boost_LIBR
 
 # Factory resolves a relative path against the working directory. v3d_add_test sets that to
 # the executable's directory, so the fixtures are copied there.
-add_custom_command(TARGET v3dtest_image POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/data"
-		"$<TARGET_FILE_DIR:v3dtest_image>/data"
-	COMMENT "Copying image test fixtures"
-	VERBATIM)
+v3d_copy_directory(v3dtest_image fixtures "${CMAKE_CURRENT_SOURCE_DIR}/data" "data")
 
 # The fuzz targets for the readers this library decodes itself. The fixtures are their corpus,
 # so each reader is given every fixture, whatever its format.

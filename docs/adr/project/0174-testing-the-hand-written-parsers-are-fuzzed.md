@@ -1,13 +1,14 @@
 # ADR-0174: Testing: the hand-written parsers are fuzzed
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-11-04
 **Tags**: testing, ci, offline
+**Amended by**: ADR-0257
 **Documented in**: [Testing.md](../../contributing/Testing.md#fuzz-targets)
 
 ## Context
 
-The tree parses several formats itself: RIB, the shading language, TGA and BMP. Their input
+The tree parses several formats itself: RIB, TGA and BMP. Their input
 comes from files a user writes or downloads, so a malformed file is ordinary input, not a
 fault. A unit test covers the malformed cases its author thought of. Generated input reaches
 the ones nobody thought of, and the sanitizers turn a quiet misread into a failure.

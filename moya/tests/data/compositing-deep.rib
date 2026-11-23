@@ -1,0 +1,27 @@
+##RenderMan RIB-Structure 1.1
+##Scene A grey wall behind a pane of glass and a red card a quarter opaque, under a dome, written as a deep file
+version 3.03
+Format 48 32 1
+PixelSamples 4 4
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -20 1 0 0
+Display "compositing-deep.exr" "openexr" "rgba"
+Display "+compositing-deep-samples.exr" "deepexr" "rgba"
+WorldBegin
+Light "PxrDomeLight" "sky"
+Attribute "identifier" "name" ["wall"]
+Bxdf "ND_open_pbr_surface_surfaceshader" "grey" "color base_color" [0.5 0.5 0.5]
+Polygon "P" [-1.6 -1 1  1.6 -1 1  1.6 1.2 1  -1.6 1.2 1]
+AttributeBegin
+Attribute "identifier" "name" ["pane"]
+Bxdf "ND_open_pbr_surface_surfaceshader" "glass" "float transmission_weight" [1] "float specular_roughness" [0]
+Polygon "P" [-1.2 -0.8 0  -0.1 -0.8 0  -0.1 0.6 0  -1.2 0.6 0]
+AttributeEnd
+AttributeBegin
+Attribute "identifier" "name" ["card"]
+Bxdf "ND_open_pbr_surface_surfaceshader" "red" "color base_color" [0.8 0.1 0.1] "float geometry_opacity" [0.25]
+Polygon "P" [0.1 -0.8 -0.3  1.2 -0.8 -0.3  1.2 0.6 -0.3  0.1 0.6 -0.3]
+AttributeEnd
+WorldEnd

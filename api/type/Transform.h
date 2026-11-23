@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * Value types and maths: transforms, sets of flags, checked conversions and random numbers.
+ **/
 namespace v3d::type {
 
 /**

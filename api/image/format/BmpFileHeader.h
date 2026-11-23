@@ -1,12 +1,16 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <stdint.h>
 
+/**
+ * What the reader and the writer of a format share: the bmp headers and palette entry, and the
+ * error manager libjpeg is given.
+ **/
 namespace v3d::image::format {
 
 // the type_ of every bmp: the bytes "BM", read as a little endian word

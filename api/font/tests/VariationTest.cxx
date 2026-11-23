@@ -1,10 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
-#include <api/font/glyph/CurveStore.h>
-#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/curve/Store.h>
+#include <api/font/face/Axis.h>
+#include <api/font/glyph/curve/Curves.h>
+#include <api/font/glyph/curve/Glyph.h>
 #include <api/font/face/Face.h>
 #include <api/font/face/Style.h>
 #include <api/font/face/FallbackChain.h>
@@ -14,10 +16,10 @@
 #include <api/font/face/Library.h>
 #include <api/font/text/Paragraph.h>
 #include <api/font/glyph/Rasterize.h>
-#include <api/font/text/ShapedRun.h>
-#include <api/font/text/Shaper.h>
-#include <api/font/text/ShapingCache.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Run.h>
+#include <api/font/text/shaping/Shaper.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
 #include <api/font/face/Variation.h>
 #include <api/log/Logger.h>
 
@@ -77,8 +79,9 @@ struct Variable {
     /**
      * @return the bar shaped at a weight and at the test size, with variations
      **/
-    v3d::font::text::ShapedRun shaped(unsigned int weight, const std::vector<v3d::font::face::Variation>& variations = {}) const {
-        const std::vector<v3d::font::text::ShapedRun> runs = v3d::font::text::Shaper(chain).shape(kBar, v3d::font::face::Style{ .weight = weight }, kSize, {}, variations);
+    v3d::font::text::shaping::Run shaped(unsigned int weight, const std::vector<v3d::font::face::Variation>& variations = {}) const {
+        const std::vector<v3d::font::text::shaping::Run> runs =
+            v3d::font::text::shaping::Shaper(chain).shape(kBar, v3d::font::face::Style{ .weight = weight }, kSize, {}, variations);
         BOOST_REQUIRE_EQUAL(runs.size(), 1U);
         BOOST_REQUIRE_EQUAL(runs.front().glyphs.size(), 1U);
         return runs.front();
@@ -138,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_style_sets_the_coordinates) {
 BOOST_AUTO_TEST_CASE(a_weight_between_two_named_instances_is_shaped_between_them) {
     BOOST_CHECK_CLOSE(shaped(400).glyphs.front().advance, 50.0F, 0.5F);
     BOOST_CHECK_CLOSE(shaped(900).glyphs.front().advance, 100.0F, 0.5F);
-    const v3d::font::text::ShapedRun between = shaped(650);
+    const v3d::font::text::shaping::Run between = shaped(650);
     BOOST_CHECK_CLOSE(between.glyphs.front().advance, 75.0F, 0.5F);
     // at 100 pixels the optical size is the axis's largest
     BOOST_CHECK(between.coordinates == (std::vector<std::int32_t>{ kHalf, kWhole }));
@@ -164,16 +167,16 @@ BOOST_AUTO_TEST_CASE(a_family_chooses_a_variable_face_by_its_range) {
  * larger optical size. The curve store keeps each instance's curves apart.
  **/
 BOOST_AUTO_TEST_CASE(an_outline_is_read_at_its_coordinates) {
-    const v3d::font::glyph::CurveGlyph regular = v3d::font::glyph::outline(*face, bar());
+    const v3d::font::glyph::curve::Glyph regular = v3d::font::glyph::curve::outline(*face, bar());
     BOOST_CHECK_CLOSE(regular.max.x, 0.4F, 0.1F);
     BOOST_CHECK_CLOSE(regular.max.y, 0.8F, 0.1F);
-    const v3d::font::glyph::CurveGlyph varied = v3d::font::glyph::outline(*face, bar(), { kHalf, kHalf });
+    const v3d::font::glyph::curve::Glyph varied = v3d::font::glyph::curve::outline(*face, bar(), { kHalf, kHalf });
     BOOST_CHECK_CLOSE(varied.max.x, 0.65F, 0.1F);
     BOOST_CHECK_CLOSE(varied.max.y, 0.7F, 0.1F);
 
-    v3d::font::glyph::CurveStore store;
-    const v3d::font::glyph::StoredCurves& atDefault = store.glyph(*face, bar());
-    const v3d::font::glyph::StoredCurves& atHalf = store.glyph(*face, bar(), { kHalf, 0 });
+    v3d::font::glyph::curve::Store store;
+    const v3d::font::glyph::curve::Store::StoredCurves& atDefault = store.glyph(*face, bar());
+    const v3d::font::glyph::curve::Store::StoredCurves& atHalf = store.glyph(*face, bar(), { kHalf, 0 });
     BOOST_CHECK_EQUAL(store.read(), 2U);
     BOOST_CHECK_CLOSE(atDefault.max.x, 0.4F, 0.1F);
     BOOST_CHECK_CLOSE(atHalf.max.x, 0.65F, 0.1F);
@@ -186,23 +189,23 @@ BOOST_AUTO_TEST_CASE(an_outline_is_read_at_its_coordinates) {
  * last loaded at. A key with none is made at the default.
  **/
 BOOST_AUTO_TEST_CASE(glyphs_are_made_at_their_keys_coordinates) {
-    const v3d::font::glyph::Key regular{ .face = face.get(), .index = bar(), .size = kSize };
-    v3d::font::glyph::Key varied = regular;
+    const v3d::font::glyph::Store::Key regular{ .face = face.get(), .index = bar(), .size = kSize };
+    v3d::font::glyph::Store::Key varied = regular;
     varied.coordinates = { kHalf, kWhole };
 
-    const v3d::font::glyph::Bitmap wide = v3d::font::glyph::rasterize(varied);
+    const v3d::font::glyph::Store::Bitmap wide = v3d::font::glyph::rasterize(varied);
     BOOST_CHECK(wide.size.x >= 65U && wide.size.x <= 66U);
     BOOST_CHECK(wide.size.y >= 60U && wide.size.y <= 61U);
-    const v3d::font::glyph::Bitmap narrow = v3d::font::glyph::rasterize(regular);
+    const v3d::font::glyph::Store::Bitmap narrow = v3d::font::glyph::rasterize(regular);
     BOOST_CHECK(narrow.size.x >= 40U && narrow.size.x <= 41U);
     BOOST_CHECK(narrow.size.y >= 80U && narrow.size.y <= 81U);
     BOOST_CHECK_EQUAL(v3d::font::glyph::rasterize(varied).size.x, wide.size.x);
 
-    const v3d::font::glyph::Bitmap field = v3d::font::glyph::field(v3d::font::glyph::fieldKey(face.get(), bar(), 0.0F, varied.coordinates));
-    const v3d::font::glyph::Bitmap plain = v3d::font::glyph::field(v3d::font::glyph::fieldKey(face.get(), bar(), 0.0F));
+    const v3d::font::glyph::Store::Bitmap field = v3d::font::glyph::field(v3d::font::glyph::fieldKey(face.get(), bar(), 0.0F, varied.coordinates));
+    const v3d::font::glyph::Store::Bitmap plain = v3d::font::glyph::field(v3d::font::glyph::fieldKey(face.get(), bar(), 0.0F));
     BOOST_CHECK_GT(field.size.x, plain.size.x + 10U);
 
-    const v3d::font::glyph::Key stillKey{ .face = still.get(), .index = 1, .size = kSize, .coordinates = { kHalf, 0 } };
+    const v3d::font::glyph::Store::Key stillKey{ .face = still.get(), .index = 1, .size = kSize, .coordinates = { kHalf, 0 } };
     BOOST_CHECK(v3d::font::glyph::rasterize(stillKey).pixels.empty());
 }
 
@@ -211,8 +214,8 @@ BOOST_AUTO_TEST_CASE(glyphs_are_made_at_their_keys_coordinates) {
  * are drawn at.
  **/
 BOOST_AUTO_TEST_CASE(a_paragraph_follows_its_variations) {
-    const boost::shared_ptr<v3d::font::text::ShapingCache> cache = boost::make_shared<v3d::font::text::ShapingCache>("", logger);
-    v3d::font::text::Style style{ .fonts = chain, .size = kSize };
+    const boost::shared_ptr<v3d::font::text::shaping::Cache> cache = boost::make_shared<v3d::font::text::shaping::Cache>("", logger);
+    v3d::font::text::style::Style style{ .fonts = chain, .size = kSize };
     v3d::font::text::Paragraph paragraph(cache, std::string(kBar), style);
     BOOST_CHECK_CLOSE(paragraph.size().x, 50.0F, 0.5F);
 

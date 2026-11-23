@@ -39,7 +39,7 @@ directories. The five demos, voxel, pong, tetris, odyssey and diorama, are under
 | **tetris** | Tetris |
 | **odyssey** | A tile-based roguelike in early development: a world of regions loaded as the player moves, routes and line of sight across them, and a player sprite |
 | **diorama** | A lit village of glTF models with shadows under a moving sun, an isometric camera, and a looping sound placed at its well |
-| **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
+| **moya** | A RenderMan-style renderer. It reads a RIB file and renders it by spectral path tracing, with MaterialX materials and UsdLux lights |
 | **imagetool** | A command-line tool for images. It prints an image's size, crops it and converts it, and it packs images into a sprite sheet and unpacks one |
 
 [examples/](examples/) is separate: each example is its own CMake project that uses the
@@ -74,6 +74,25 @@ for what you are doing:
 
 [docs/README.md](docs/README.md) indexes every document. [CLAUDE.md](CLAUDE.md) is orientation
 for coding agents.
+
+## Code signing policy
+
+Windows releases are to be signed with free code signing provided by
+[SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/). Until SignPath Foundation accepts the project, they
+are unsigned.
+
+Each signed release is built in this repository's GitHub Actions workflow, from the tagged
+commit, and each signing request is approved by hand. The project's roles are:
+
+| Role | What it covers | Members |
+|---|---|---|
+| Authors | Change the code without further review | [farrcraft](https://github.com/farrcraft) |
+| Reviewers | Review each pull request from someone who is not an author | [farrcraft](https://github.com/farrcraft) |
+| Approvers | Approve each signing request | [farrcraft](https://github.com/farrcraft) |
+
+Privacy: this program will not transfer any information to other networked systems unless
+specifically requested by the user or the person installing or operating it.
 
 ## License
 

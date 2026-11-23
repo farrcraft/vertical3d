@@ -1,9 +1,9 @@
 # ADR-0026: Offline: shaders run over batches of points
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-09-08
 **Tags**: offline
-**Documented in**: [offline/ShadingLanguage.md](../../offline/ShadingLanguage.md)
+**Superseded by**: [ADR-0186](0186-offline-moya-renders-by-path-tracing-alone.md)
 
 ## Context
 

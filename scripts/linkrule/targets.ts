@@ -107,22 +107,32 @@ export function loadTargets(root: string, files: readonly string[]): { targets: 
     const targets = new Map<string, Target>();
     const linkCalls: string[][] = [];
     let boost: string[] = [];
-    const make = (name: string, kind: Kind, cmake: string, sources: string[]): Target =>
-        ({ name, kind, cmake, dir: path.dirname(cmake), sources, links: [] });
+    const make = (name: string, kind: Kind, cmake: string, sources: string[]): Target => ({
+        name,
+        kind,
+        cmake,
+        dir: path.dirname(cmake),
+        sources,
+        links: [],
+    });
     for (const f of files) {
         const file = path.join(root, f);
         const underApi = f.startsWith('api/');
         for (const [name, args] of cmakeCommands(read(file))) {
             const low = name.toLowerCase();
             if (low === 'find_package' && args[0] === 'Boost' && args.includes('COMPONENTS')) {
-                boost = args.slice(args.indexOf('COMPONENTS') + 1)
-                    .filter((a) => a !== 'REQUIRED' && a !== 'CONFIG').map((a) => 'Boost::' + a);
+                boost = args
+                    .slice(args.indexOf('COMPONENTS') + 1)
+                    .filter((a) => a !== 'REQUIRED' && a !== 'CONFIG')
+                    .map((a) => 'Boost::' + a);
             }
             const [first] = args;
             if (!f.endsWith('CMakeLists.txt') || first === undefined) {
                 continue;
             }
-            const sources = args.slice(1).filter((a) => endsWithAny(a, SOURCE_SUFFIXES))
+            const sources = args
+                .slice(1)
+                .filter((a) => endsWithAny(a, SOURCE_SUFFIXES))
                 .map((a) => path.normalize(path.join(path.dirname(file), a)));
             if (low === 'v3d_add_api_library') {
                 targets.set('v3dlib_' + first, make('v3dlib_' + first, 'api', file, sources));

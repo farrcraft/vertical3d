@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!--
+    RI's displacement "ripple": the surface moved along its normal by height times a sine of x in
+    object space, frequency waves to a unit.
+  -->
+  <nodedef name="ND_ri_ripple_displacementshader" node="ri_ripple" nodegroup="pbr">
+    <input name="height" type="float" value="0.05" />
+    <input name="frequency" type="float" value="10" />
+    <output name="out" type="displacementshader" />
+  </nodedef>
+  <nodegraph name="NG_ri_ripple_displacementshader" nodedef="ND_ri_ripple_displacementshader">
+    <position name="where" type="vector3" />
+    <extract name="x" type="float">
+      <input name="in" type="vector3" nodename="where" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <multiply name="phase" type="float">
+      <input name="in1" type="float" nodename="x" />
+      <input name="in2" type="float" interfacename="frequency" />
+    </multiply>
+    <sin name="wave" type="float">
+      <input name="in" type="float" nodename="phase" />
+    </sin>
+    <multiply name="lift" type="float">
+      <input name="in1" type="float" nodename="wave" />
+      <input name="in2" type="float" interfacename="height" />
+    </multiply>
+    <displacement name="moved" type="displacementshader">
+      <input name="displacement" type="float" nodename="lift" />
+    </displacement>
+    <output name="out" type="displacementshader" nodename="moved" />
+  </nodegraph>
+</materialx>

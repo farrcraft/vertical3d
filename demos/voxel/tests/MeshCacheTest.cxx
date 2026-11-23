@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <demos/voxel/src/voxel/MeshCache.h>
 #include <demos/voxel/src/voxel/Voxel.h>

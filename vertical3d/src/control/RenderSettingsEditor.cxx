@@ -1,13 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "RenderSettingsEditor.h"
 
 #include <api/type/Checked.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/document/Outcome.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 
 #include <cmath>
@@ -53,13 +54,6 @@ void RenderSettingsEditor::draw(v3d::ui::Immediate* ui, std::size_t editor, cons
     if (finished && state.editing) {
         state.editing = false;
         take(state);
-    }
-
-    int hider = held.hider == scene::RenderSettings::Hider::RayTrace ? 1 : 0;
-    if (ui->combo("Hider", &hider, { "Reyes", "Ray trace" })) {
-        scene::RenderSettings chosen = held;
-        chosen.hider = hider == 1 ? scene::RenderSettings::Hider::RayTrace : scene::RenderSettings::Hider::Hidden;
-        apply(chosen);
     }
     ui->popId();
     ui->endRegion();

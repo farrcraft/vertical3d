@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
@@ -95,10 +95,11 @@ BOOST_AUTO_TEST_CASE(viewport_display_test) {
  * A shading has a name a viewport's state keeps it by, and a name that is neither gives none.
  **/
 BOOST_AUTO_TEST_CASE(a_shading_is_named_in_a_state) {
-    for (const v3d::editor::view::Shading each : { v3d::editor::view::Shading::Flat, v3d::editor::view::Shading::Smooth }) {
+    for (const v3d::editor::view::Shading each : { v3d::editor::view::Shading::Flat, v3d::editor::view::Shading::Smooth, v3d::editor::view::Shading::Rendered }) {
         BOOST_CHECK(v3d::editor::view::shading(v3d::editor::view::name(each)) == each);
     }
     BOOST_CHECK_EQUAL(v3d::editor::view::name(v3d::editor::view::Shading::Smooth), "smooth");
+    BOOST_CHECK_EQUAL(v3d::editor::view::name(v3d::editor::view::Shading::Rendered), "rendered");
     BOOST_CHECK(!v3d::editor::view::shading("Smooth"));
     BOOST_CHECK(!v3d::editor::view::shading(""));
 }

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Codec.h"
 
@@ -11,6 +11,7 @@
 #include <string_view>
 #include <vector>
 
+#include "Buffer.h"
 #include "CameraCodec.h"
 #include "CurveCodec.h"
 #include "GroupCodec.h"

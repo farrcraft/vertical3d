@@ -1,12 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <vertical3d/src/view/AreaFrame.h>
+#include <vertical3d/src/view/frame/AreaFrame.h>
 #include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/frame/Band.h>
 
 #include <algorithm>
 #include <cmath>
@@ -41,7 +42,7 @@ struct Pair {
     }
 
     void draw(std::optional<std::size_t> active = std::nullopt, const std::optional<AreaLayout::Divider>& lit = std::nullopt) {
-        v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, active, lit);
+        v3d::editor::view::frame::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, active, lit);
     }
 
     /**
@@ -96,8 +97,8 @@ BOOST_FIXTURE_TEST_CASE(the_corners_are_rounded, Pair) {
  **/
 BOOST_FIXTURE_TEST_CASE(the_bands_go_under_the_lines, Pair) {
     const glm::vec4 band(1.0F, 0.0F, 1.0F, 0.8F);
-    const v3d::editor::view::Band bands[] = { { .box = glm::vec4(3.0F, 3.0F, 95.0F, 20.0F), .colour = band } };
-    v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, 1, std::nullopt,
+    const v3d::editor::view::frame::Band bands[] = { { .box = glm::vec4(3.0F, 3.0F, 95.0F, 20.0F), .colour = band } };
+    v3d::editor::view::frame::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, 1, std::nullopt,
         std::nullopt, bands);
     const std::vector<Canvas::Vertex>& drawn = canvas.vertices();
     const auto first = [&drawn](const glm::vec4& colour) {
@@ -137,7 +138,7 @@ BOOST_FIXTURE_TEST_CASE(a_lit_divider_takes_the_accent, Pair) {
  * Where a dragged tab would land is covered in the landing colour, over everything else.
  **/
 BOOST_FIXTURE_TEST_CASE(a_landing_is_covered, Pair) {
-    v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent, .landing = landing },
+    v3d::editor::view::frame::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent, .landing = landing },
         std::nullopt, std::nullopt, glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
     BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 149.0F, 3.0F); }));
     BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 197.0F, 97.0F); }));

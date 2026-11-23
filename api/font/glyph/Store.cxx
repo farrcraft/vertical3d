@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Store.h"
 
@@ -46,7 +46,7 @@ void Store::beginFrame() {
     frame_++;
 }
 
-std::optional<StoredGlyph> Store::glyph(const Key& key, const Rasterizer& rasterize) {
+std::optional<Store::StoredGlyph> Store::glyph(const Key& key, const Rasterizer& rasterize) {
     const auto found = entries_.find(key);
     if (found != entries_.end()) {
         plots_[found->second.plot].used = frame_;
@@ -79,7 +79,7 @@ const std::vector<unsigned char>& Store::pixels(std::size_t page) const {
     return pages_.at(page);
 }
 
-std::vector<Region> Store::regions() {
+std::vector<Store::Region> Store::regions() {
     std::vector<Region> changed;
     for (Plot& plot : plots_) {
         if (plot.dirty) {

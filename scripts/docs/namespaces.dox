@@ -1,0 +1,31 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+// The namespaces whose directory under api/ holds only other directories, so no header there
+// can describe them. Every other namespace is described above its opening in a header.
+
+/**
+ * @namespace v3d
+ * The Vertical3D api. Each library is a namespace under this one, named for its directory under
+ * api/.
+ **/
+
+/**
+ * @namespace v3d::font
+ * Fonts: faces opened through FreeType, their glyphs, text shaped and laid out in them, and faces
+ * drawn into a texture atlas.
+ **/
+
+/**
+ * @namespace v3d::render
+ * The renderers: the Vulkan realtime renderer an app draws with, and the offline renderer moya is
+ * built on.
+ **/
+
+/**
+ * @namespace v3d::render::realtime::vulkan
+ * The Vulkan objects the realtime renderer is built from: the device, the frames in flight,
+ * memory, and pipelines.
+ **/

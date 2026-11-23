@@ -1,0 +1,26 @@
+##RenderMan RIB-Structure 1.1
+##Scene A grey floor and sphere lit by two glowing quads: a PxrMeshLight and an AreaLightSource
+version 3.03
+Format 64 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -30 1 0 0
+WorldBegin
+AttributeBegin
+Light "PxrMeshLight" "glow" "float intensity" [12] "color lightColor" [1 0.6 0.3]
+Polygon "P" [-1.4 0 -0.4  -0.6 0 -0.4  -0.6 0 0.4  -1.4 0 0.4]
+AttributeEnd
+AttributeBegin
+AreaLightSource "arealight" 1 "intensity" [12] "lightcolor" [0.3 0.6 1]
+Polygon "P" [0.6 0 -0.4  1.4 0 -0.4  1.4 0 0.4  0.6 0 0.4]
+AttributeEnd
+Color [0.6 0.6 0.6]
+Surface "matte"
+Polygon "P" [-2 -1 -2  2 -1 -2  2 -1 2  -2 -1 2]
+AttributeBegin
+Translate 0 -0.6 0
+Sphere 0.4 -0.4 0.4 360
+AttributeEnd
+WorldEnd

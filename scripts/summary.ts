@@ -27,7 +27,7 @@ export function pages(files: readonly string[]): string[] {
         .filter((file) => file.startsWith('docs/') && file.endsWith('.md') && file !== SUMMARY)
         .filter((file) => !file.split('/').includes('completed'))
         .map((file) => file.slice('docs/'.length))
-        .sort();
+        .toSorted();
 }
 
 /** One entry of SUMMARY.md: the page it links, and its line. */

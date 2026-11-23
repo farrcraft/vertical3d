@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,8 +20,11 @@ class Face;
 
 };  // namespace v3d::font::face
 
+/**
+ * The pixels of a glyph: a coverage bitmap, a distance field, its curves, or a colour glyph painted
+ * from the colour tables of its face.
+ **/
 namespace v3d::font::glyph {
-
 
 /**
  * How a glyph's pixels are made.
@@ -30,53 +33,6 @@ enum class Mode : std::uint8_t {
     Coverage,  /**< how much of each pixel the glyph covers **/
     Distance,  /**< each pixel's distance from the glyph's edge **/
     Colour     /**< each pixel's colour, from the face's colour tables **/
-};
-
-/**
- * What tells one stored glyph from another.
- **/
-struct Key final {
-    const face::Face* face = nullptr;
-    unsigned int index = 0;                /**< the glyph's index in its face **/
-    float size = 0.0F;                     /**< in pixels **/
-    std::uint8_t subpixel = 0;             /**< the step of a pixel its pen was at, horizontally **/
-    Mode mode = Mode::Coverage;
-    std::uint8_t spread = 0;               /**< how far a distance field reaches from the edge, in pixels. Coverage leaves it 0 **/
-    std::uint16_t palette = 0;             /**< a colour glyph's palette. Other modes leave it 0 **/
-    std::uint32_t foreground = 0;          /**< the text's colour, which a colour glyph's layers may take, packed by packColour(). Other modes leave it 0 **/
-    std::vector<std::int32_t> coordinates{}; /**< a variable font's axes, normalized, or none **/
-
-    auto operator<=>(const Key& other) const = default;
-};
-
-/**
- * A glyph's pixels, in rows, before it is stored. A pixel is one byte, or for a colour glyph
- * four: red, green and blue, unpremultiplied, then alpha.
- **/
-struct Bitmap final {
-    glm::uvec2 size{ 0 };
-    glm::ivec2 bearing{ 0 };            /**< the top left pixel from the pen, y downwards **/
-    std::vector<unsigned char> pixels{};  /**< size.x * size.y * channels of them **/
-    std::uint8_t channels = 1;
-};
-
-/**
- * Where a glyph is stored.
- **/
-struct StoredGlyph final {
-    std::size_t page = 0;
-    glm::uvec2 position{ 0 };  /**< its top left texel in the page **/
-    glm::uvec2 size{ 0 };
-    glm::ivec2 bearing{ 0 };
-};
-
-/**
- * A stretch of a page whose pixels changed and have to reach the device.
- **/
-struct Region final {
-    std::size_t page = 0;
-    glm::uvec2 position{ 0 };
-    glm::uvec2 size{ 0 };
 };
 
 /**
@@ -98,6 +54,53 @@ struct Region final {
  **/
 class Store final {
  public:
+    /**
+     * What tells one stored glyph from another.
+     **/
+    struct Key final {
+        const face::Face* face = nullptr;
+        unsigned int index = 0;                /**< the glyph's index in its face **/
+        float size = 0.0F;                     /**< in pixels **/
+        std::uint8_t subpixel = 0;             /**< the step of a pixel its pen was at, horizontally **/
+        Mode mode = Mode::Coverage;
+        std::uint8_t spread = 0;               /**< how far a distance field reaches from the edge, in pixels. Coverage leaves it 0 **/
+        std::uint16_t palette = 0;             /**< a colour glyph's palette. Other modes leave it 0 **/
+        std::uint32_t foreground = 0;          /**< the text's colour, which a colour glyph's layers may take, packed by colour::packColour(). Other modes leave it 0 **/
+        std::vector<std::int32_t> coordinates{}; /**< a variable font's axes, normalized, or none **/
+
+        auto operator<=>(const Key& other) const = default;
+    };
+
+    /**
+     * A glyph's pixels, in rows, before it is stored. A pixel is one byte, or for a colour glyph
+     * four: red, green and blue, unpremultiplied, then alpha.
+     **/
+    struct Bitmap final {
+        glm::uvec2 size{ 0 };
+        glm::ivec2 bearing{ 0 };            /**< the top left pixel from the pen, y downwards **/
+        std::vector<unsigned char> pixels{};  /**< size.x * size.y * channels of them **/
+        std::uint8_t channels = 1;
+    };
+
+    /**
+     * Where a glyph is stored.
+     **/
+    struct StoredGlyph final {
+        std::size_t page = 0;
+        glm::uvec2 position{ 0 };  /**< its top left texel in the page **/
+        glm::uvec2 size{ 0 };
+        glm::ivec2 bearing{ 0 };
+    };
+
+    /**
+     * A stretch of a page whose pixels changed and have to reach the device.
+     **/
+    struct Region final {
+        std::size_t page = 0;
+        glm::uvec2 position{ 0 };
+        glm::uvec2 size{ 0 };
+    };
+
     /**
      * The shape of the pages.
      **/

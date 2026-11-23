@@ -17,19 +17,8 @@ function findings(path: string, was: string[], now: string[]): string[] {
 }
 
 test('commentsonly passes a reworded and reflowed docblock', () => {
-    const was = [
-        '/**',
-        ' * The width, which is what the layout reads.',
-        ' */',
-        'int width() const;',
-    ];
-    const now = [
-        '/**',
-        ' * The width in pixels. The layout reads it',
-        ' * on every pass.',
-        ' */',
-        'int width() const;',
-    ];
+    const was = ['/**', ' * The width, which is what the layout reads.', ' */', 'int width() const;'];
+    const now = ['/**', ' * The width in pixels. The layout reads it', ' * on every pass.', ' */', 'int width() const;'];
     assert.deepEqual(findings('api/ui/Example.h', was, now), []);
 });
 
@@ -86,8 +75,7 @@ test('commentsonly passes a CMake comment that changed, and keeps a # inside quo
     const was = ['# the sources', 'set(SOURCES a.cpp)  # one', 'message("#1")'];
     const now = ['# the sources this target builds', 'set(SOURCES a.cpp)', 'message("#1")'];
     assert.deepEqual(findings('api/example/CMakeLists.txt', was, now), []);
-    assert.deepEqual(findings('api/example/CMakeLists.txt', ['message("#1")'], ['message("#2")']),
-        ['1: code-changed']);
+    assert.deepEqual(findings('api/example/CMakeLists.txt', ['message("#1")'], ['message("#2")']), ['1: code-changed']);
 });
 
 test('commentsonly passes a changed CMake bracket comment and counts the lines after it', () => {

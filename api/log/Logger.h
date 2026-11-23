@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -10,6 +10,9 @@
 #include <memory>
 #include <string>
 
+/**
+ * The process log, a thin wrapper over spdlog.
+ **/
 namespace v3d::log {
 
 /**

@@ -1,12 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
+#include <api/interchange/Camera.h>
+#include <api/interchange/Channel.h>
+#include <api/interchange/Curves.h>
+#include <api/interchange/Light.h>
+#include <api/interchange/Node.h>
 #include <api/interchange/Scene.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>

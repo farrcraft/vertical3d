@@ -1,0 +1,950 @@
+# Moya Materials — The BSDF Library, the Node Program and Textures
+
+Drafted 2026-11-11 against `2bbe0def`. This plan takes up section 5 of
+[the moya rebuild roadmap](../../roadmap/MoyaRebuild.md). When it closes, the new core shades a
+surface by its material. A material is a MaterialX graph, compiled into a node program that every
+device runs, and it feeds a BSDF library of moya's own that arranges its lobes as OpenPBR Surface
+does. Patterns read textures through a cache of tiles, filtered by the footprint a ray carries. A
+material's displacement terminal displaces the tessellated surface, and its opacity cuts it out.
+The reyes hider and the ray hider keep rendering every RIB scene and every editor render, and no
+picture they make changes.
+
+The rebuild's decisions are ADR-0186 to ADR-0194, and the decisions of its first four plans are
+ADR-0195 to ADR-0216, all accepted. This plan follows five of them:
+
+* [ADR-0187](../../adr/offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md):
+  moya implements its own scattering models, node program and texture cache. MaterialX reads
+  material documents, and OpenEXR reads texture files.
+* [ADR-0189](../../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md): a BSDF is
+  evaluated at a path's four wavelengths, and a colour becomes a spectrum through the
+  RGB-to-spectrum table.
+* [ADR-0190](../../adr/offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md):
+  materials are moya's BSDF library fed by MaterialX graphs, compiled into a node program every
+  device runs.
+* [ADR-0194](../../adr/offline/0194-offline-stateless-samples-one-picture-per-device.md): each device
+  gives one picture on every run, so a texture lookup gives the same value whatever its cache
+  holds.
+* [ADR-0212](../../adr/offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md):
+  what a ray's footprint adds to a path is declared once in the path state.
+
+The plan keeps the roadmap's order, with five changes:
+
+* **Six decisions the roadmap leaves open are steps of their own**, each before the step that
+  builds on it. Three are how the BSDF library holds OpenPBR's layers, how a material graph runs
+  on every device, and how a ray's footprint is carried. Three are how textures are stored and
+  cached, how a material reaches the scene from RIB, and how a surface's opacity is met.
+  [Decisions](#decisions).
+* **The BSDF library comes before the node program.** Each lobe is tested on its own, from
+  constants set in code, before any material graph feeds it. The node program then only has to
+  reach parameters the library already honours. [Step 8](#step-8--a-bsdf-of-several-lobes).
+* **The material's displacement terminal replaces the `displacement` primvar.** The geometry plan
+  displaced a surface by a primvar until materials existed. This plan evaluates the material's
+  displacement on the host when a surface is tessellated.
+  [Step 22](#step-22--displacement-from-the-material).
+* **Opacity is a step of its own.** OpenPBR's `geometry_opacity` cuts a surface out, which a ray
+  has to pass through. The roadmap does not name it. [Step 23](#step-23--opacity).
+* **RIB names a material.** No client gives the scene a MaterialX material today, and the editor
+  and the importers read none. A RIB file names one, so `moya --paths` renders it and the
+  reference renders are RIB files. [Step 25](#step-25--materials-from-rib).
+
+## What the survey found
+
+The tree was read at `2bbe0def`.
+
+**The BSDF and the integrator:**
+
+* **A BSDF has one model, the diffuse lobe**
+  ([Surfaces.md](../../offline/Surfaces.md#the-bsdf)). `kernel::bsdf::Bsdf` is a tagged type that
+  switches over its `Model`, since kernel code has no virtual call. It evaluates, gives a density
+  and samples in the frame around the shading normal, and refuses a reflection that crosses the
+  geometric surface.
+* **A sample names its lobe**: diffuse, glossy, specular or transmission. The integrator keeps a
+  depth limit for each
+  ([Integrator.md](../../offline/Integrator.md#depth-limits-and-russian-roulette)).
+* **Every BSDF sample is weighed by its density.** The scatter stage divides the throughput by the
+  density and keeps it for MIS. Nothing marks a sample of a perfectly specular lobe, whose density
+  is not a number MIS can weigh.
+* **The diffuse lobe's colour is the geometry's `Cs` primvar or its material's `Cs`**, in ACEScg,
+  made a reflectance through the RGB-to-spectrum table.
+* **`BsdfTest.cxx` checks the diffuse lobe's samples against its density by chi-squared**, and its
+  reflectance against a closed form.
+
+**The material and the shading point:**
+
+* **A material is a network of nodes**, whose shaders the scene does not read
+  ([Scene.md](../../offline/Scene.md)). A `shader` node names its shader and its language,
+  `materialx`, `osl` or `ri`. A `material` names a `surface` and a `displacement` terminal.
+* **A material on the device is a colour** ([Surfaces.md](../../offline/Surfaces.md#materials)).
+  `kernel::surface::Material` holds its surface node's `Cs`, and whether it gives one.
+* **Two primvars reach the device**, `N` and `Cs`, each of three floats
+  ([Surfaces.md](../../offline/Surfaces.md#primvars)). No texture coordinate, tangent or primvar of
+  another width does.
+* **A shading point holds its position, normals, frame, `uv` and corner weights**, but no
+  differential. A ray carries no footprint.
+* **A surface is displaced by its `displacement` primvar** when it is tessellated, within its
+  `displacementBound` ([Geometry.md](../../offline/Geometry.md#tessellation-and-displacement)).
+
+**Images and textures:**
+
+* **A light's image is an EXR read whole**, through `output::readExr()`, converted into ACEScg by
+  its chromaticities ([Lights.md](../../offline/Lights.md#images)). A lookup reads the texel that
+  holds a place, with no filtering. A dome light's sampling needs the whole image.
+* **The scene holds no search path.** A light's image and an IES profile are opened relative to
+  the working directory.
+* **The RIB reader reads `MakeTexture`** into `Handler::makeTexture()`. The old hiders' textures
+  are in `api/render/offline/texture`, which section 7 retires.
+
+**The clients:**
+
+* **The RIB client makes a node of language `ri` for `Surface`**, with the attribute state's
+  colour as `Cs` ([Rib.md](../../offline/Rib.md#the-scene-client)). RI's built-in shaders become
+  OpenPBR materials in section 7.
+* **The editor gives every surface one material**, RI's `matte`, through `SceneTranslator`.
+* **The importers read no material.** The glTF and USD readers leave materials and shaders out.
+
+**Dependencies:** MaterialX is not a dependency. The vendored vcpkg has a `materialx` port at
+1.39.1. USD is built without its imaging.
+
+**The tests:** moya's suite has 29 RIB scenes, each with a committed description and hit view,
+and 7 reference renders of the path tracer held within five standard errors
+([Testing.md](../../contributing/Testing.md#moya-references)).
+
+---
+
+## Decisions
+
+| ADR | Decides | Step |
+|---|---|---|
+| 0222 | How the BSDF library holds OpenPBR's layers | [1](#step-1--the-record-the-bsdf-librarys-layers) |
+| 0223 | How a material graph runs on every device | [2](#step-2--the-record-the-node-program) |
+| 0224 | How a ray's footprint is carried | [3](#step-3--the-record-a-rays-footprint) |
+| 0225 | How textures are stored, cached and filtered | [4](#step-4--the-record-the-texture-cache) |
+| 0226 | How a material reaches the scene from RIB | [5](#step-5--the-record-materials-in-rib) |
+| 0227 | How a surface's opacity is met | [6](#step-6--the-record-opacity) |
+
+Each record step researches how production renderers make the choice, and the owner chooses
+among the options before the record is drafted.
+
+---
+
+## The steps
+
+| | What | Where | ADR | State |
+|---|---|---|---|---|
+| [1](#step-1--the-record-the-bsdf-librarys-layers) | The record: the BSDF library's layers | `docs/adr` | **0222** | accepted |
+| [2](#step-2--the-record-the-node-program) | The record: the node program | `docs/adr` | **0223** | accepted |
+| [3](#step-3--the-record-a-rays-footprint) | The record: a ray's footprint | `docs/adr` | **0224** | accepted |
+| [4](#step-4--the-record-the-texture-cache) | The record: the texture cache | `docs/adr` | **0225** | accepted |
+| [5](#step-5--the-record-materials-in-rib) | The record: materials in RIB | `docs/adr` | **0226** | accepted |
+| [6](#step-6--the-record-opacity) | The record: opacity | `docs/adr` | **0227** | accepted |
+| [7](#step-7--materialx) | MaterialX as a dependency | `vcpkg.json`, `ports` | — | done |
+| [8](#step-8--a-bsdf-of-several-lobes) | A BSDF of several lobes, and specular samples in the integrator | `moya/libmoya/kernel` | 0222 | done |
+| [9](#step-9--microfacets-and-the-conductor) | Microfacets, the conductor and energy compensation | `moya/libmoya/kernel/bsdf` | 0222 | done |
+| [10](#step-10--the-dielectric) | The dielectric: reflection and transmission | `moya/libmoya/kernel/bsdf` | 0222 | done |
+| [11](#step-11--openpbrs-base-specular-and-coat) | OpenPBR's base, specular and coat | `moya/libmoya/kernel/bsdf` | 0222 | done |
+| [12](#step-12--fuzz-and-thin-film) | Fuzz and thin film | `moya/libmoya/kernel/bsdf` | 0222, 0228 | done |
+| [13](#step-13--emission) | Emission from a material | `moya/libmoya` | 0222 | done |
+| [14](#step-14--compiling-a-material) | Compiling a MaterialX material | `moya/libmoya/material` | 0223 | done |
+| [15](#step-15--the-node-program-on-the-device) | The node program on the device | `moya/libmoya/kernel` | 0223 | done |
+| [16](#step-16--primvars-by-name-and-tangents) | Primvars by name, and tangents | `moya/libmoya/geometry`, `kernel` | — | done |
+| [17](#step-17--procedural-patterns) | Procedural patterns | `moya/libmoya/kernel` | 0223 | done |
+| [18](#step-18--a-rays-footprint) | A ray's footprint | `moya/libmoya/kernel` | 0224 | done |
+| [19](#step-19--the-texture-maker) | The texture maker | `moya/libmoya`, `moya` | 0225 | done |
+| [20](#step-20--the-texture-cache) | The texture cache, filtered lookups and UDIM | `moya/libmoya/texture`, `kernel` | 0225, 0229 | done |
+| [21](#step-21--bump-and-normal-maps) | Bump and normal maps | `moya/libmoya/kernel` | — | done |
+| [22](#step-22--displacement-from-the-material) | Displacement from the material | `moya/libmoya/geometry` | — | done |
+| [23](#step-23--opacity) | Opacity | `moya/libmoya/kernel` | 0227 | done |
+| [24](#step-24--other-surface-shaders) | Standard Surface, UsdPreviewSurface and glTF PBR | `moya/libmoya/material` | — | done |
+| [25](#step-25--materials-from-rib) | Materials from RIB | `api/render/offline/rib`, `moya/libmoya/ri` | 0226 | done |
+| [26](#step-26--the-reference-renders) | The reference renders | `moya/tests` | — | done |
+| [27](#step-27--speed) | Speed: a textured scene against the baseline | `moya/bench` | — | done |
+| [28](#step-28--the-documents) | The reference pages for materials and textures | `docs` | — | done |
+
+## What blocks what
+
+```
+1 ADR ──> 8 Lobes ──> 9 Microfacets ──> 10 Dielectric ──> 11 Base, specular, coat ──> 12 Fuzz, film
+                                                                    │
+                                                                    └──> 13 Emission
+2 ADR ──> 14 Compile (after 7) ──> 15 Program (after 11) ──┬──> 16 Primvars ──> 17 Procedurals
+                                                           ├──> 22 Displacement
+                                                           ├──> 24 Other shaders
+5 ADR ──────────────────────────────────────────────────────┴──> 25 Materials from RIB
+3 ADR ──> 18 Footprint ─────────────────┐
+4 ADR ──> 19 Maker ──> 20 Cache (after 15, 18) ──> 21 Bump and normal maps (after 16)
+6 ADR ──> 23 Opacity (after 15)
+
+(8 to 25) ──> 26 References, 27 Speed ──> 28 Documents
+```
+
+Steps 1 to 7 depend on nothing but each other. Step 8 needs the record of step 1, and each lobe
+after it builds on the one before. Step 13 needs the base of step 11. Step 14 needs MaterialX and
+the record of step 2, and step 15 needs the program and a BSDF of OpenPBR's parameters to feed.
+Steps 16, 17, 22, 23, 24 and 25 each need the node program. Step 18 needs only the integrator and
+the record of step 3. Step 20 needs the maker's files, the image node of the program and the
+footprint. Step 21 needs tangents and textures. Each step updates its own section of the reference
+documents, and step 28 checks that they read as a whole.
+
+## How every step is verified
+
+* **The build and the gates.** Everything compiles at `/W4 /WX`, and cpplint, `/analyze`,
+  clang-tidy and every review gate stay clean. Kernel code passes `kernel.ts`.
+* **The suites.** The offline suite, moya's suites and the editor's suite pass. Each step with
+  code adds cases, and `failsfirst.ts` is run on the change to show that each new case fails
+  without it.
+* **Every lobe meets the same three checks.** Its samples follow its density by chi-squared,
+  through `BsdfTest.cxx`'s check made a helper every lobe calls. Its value is reciprocal, the same
+  with the two directions swapped. A white furnace gives the energy a closed form says the lobe
+  keeps.
+* **The statistical oracle.** A picture is compared with its expected value, or with another
+  picture, through the path tracer's comparison within standard errors.
+* **One picture on every run.** A render on one thread and on every thread gives the same bytes,
+  textured ones included, whatever the texture cache held when the render began.
+* **Linux.** portable.yml's clang job builds `v3dlib_moya` and runs moya's suite under the
+  sanitizers, in the spectral and the RGB build.
+* **No old picture changes.** The old hiders read RIB as before, so every committed PNG in
+  `moya/tests/data/` stays as it is, and the editor's render window shows the same picture. An RI
+  `Surface` stays diffuse in the new core until section 7, so the path tracer's seven reference
+  renders stay as they are.
+
+---
+
+### Step 1 — The record: the BSDF library's layers
+
+**The question.** How a shading point's BSDF holds the lobes OpenPBR Surface layers: a diffuse or
+metal base, a dielectric specular layer with transmission below it, a coat, fuzz and a thin film.
+Kernel code allocates nothing, so a shading point holds a bounded number of lobes.
+
+**The options:**
+
+* **One fixed model of OpenPBR's parameters**, evaluated lobe by lobe with each layer scaling the
+  ones below it by its albedo, as Arnold's Standard Surface, Cycles' Principled BSDF and
+  RenderMan's PxrSurface hold theirs. A sample picks a lobe by an estimate of its albedo. It is the
+  fastest, and the size of a shading point is fixed. A MaterialX graph of other BSDF nodes has to
+  be mapped onto its parameters.
+* **A list of weighted closures** that a material's graph builds at each shading point, as OSL's
+  closures and Cycles' SVM closures hold a BSDF, and as MaterialX's `layer`, `mix` and `add` nodes
+  describe one. Any MaterialX BSDF graph renders as authored. OpenPBR's albedo scaling has to be
+  carried by the layer node, and the list has a longest length.
+* **Both**: the fixed model for `open_pbr_surface`, and closures for every other BSDF graph.
+
+The record also settles how energy lost to a microfacet lobe's single scattering is put back,
+whether by Kulla and Conty's tables of albedo or by Turquin's scale. It settles how a lobe is
+picked for a sample, and whether a material's emission is found by light samples or by the BSDF's
+alone.
+
+**Drafted** as
+[ADR-0222](../../adr/offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md): a bounded list
+of weighted closures, which `open_pbr_surface` and MaterialX's `layer` node weight by the albedo
+of the layers above, as Cycles' layered Principled BSDF does. A sample picks a closure by its
+estimated albedo. Kulla and Conty's compensation lobe restores a microfacet lobe's energy, and an
+emitting material makes its prototype a light of the light tree.
+
+### Step 2 — The record: the node program
+
+**The question.** How a MaterialX graph of patterns runs at a shading point on every device. The
+CPU runs kernel code compiled ahead of time, and a GPU will too.
+
+**The options:**
+
+* **An instruction list interpreted on the device**, over a small store of registers, as Cycles'
+  SVM runs a shader graph. Each node is an instruction with its inputs and outputs. One program
+  format serves every device, and nothing is compiled while rendering. Each node costs a branch.
+* **Code generated for each material and compiled for each device**, from MaterialX's shader
+  generators, as GPU renderers compile OSL or MDL to PTX at render time. Each node is inlined, but
+  every machine needs a compiler for every device, and a cache of what it compiled.
+* **A material evaluated on the host into constants and textures**, as many glTF renderers take
+  one. The device reads only constants and texture lookups. It is the cheapest, and loses every
+  pattern that varies with the shading point's position.
+
+The record also settles where MaterialX's node graphs are flattened into its standard nodes,
+which nodes the program implements, and how a program reads primvars, textures and the shading
+point.
+
+**Drafted** as
+[ADR-0223](../../adr/offline/0223-offline-a-material-is-an-interpreted-node-program.md): a program of
+instructions over a store of registers, compiled on the host and run by one interpreter on every
+device, as Cycles' SVM runs. Compiling flattens every node with a graph implementation into
+standard nodes, and stops at surface shader and BSDF nodes, which build the closure list. An
+instruction reads the shading point, a primvar by its slot or a texture by its handle.
+
+### Step 3 — The record: a ray's footprint
+
+**The question.** How wide a ray is where it meets a surface, so that a texture is filtered over
+the area a pixel's sample covers. A path state's size is ADR-0212's concern on every device.
+
+**The options:**
+
+* **Ray differentials**, after Igehy, as pbrt and RenderMan carry them: the offsets of two
+  neighbouring rays' origins and directions, carried through every bounce by rules for
+  reflection and refraction. They give an anisotropic footprint, and add four vectors to a path.
+* **Ray cones**, after Akenine-Möller and others, as Falcor and Unreal Engine carry them: a width
+  and a spread angle, grown at each bounce by the surface's curvature and roughness. Two floats,
+  and an isotropic footprint.
+* **Camera differentials alone**, as pbrt-v4 approximates later bounces from the camera's
+  differentials at the hit, and as Cycles compresses a differential to one float for the
+  position and one for the direction.
+
+The record also settles how a rough bounce widens the footprint, and whether a lookup filters
+trilinearly or over an anisotropic footprint.
+
+**Drafted** as [ADR-0224](../../adr/offline/0224-offline-a-rays-footprint-is-a-cone.md): a ray cone,
+a width and a spread angle, carried through reflection and refraction. At each hit it grows by
+the surface's curvature, its spread widens by the lobe's roughness, and it is projected onto the
+surface as an ellipse. A lookup takes a bounded number of trilinear probes along the ellipse's
+major axis, as OpenImageIO's texture system does.
+
+### Step 4 — The record: the texture cache
+
+**The question.** How texture files are held while rendering, within a limit of memory, and what
+a lookup does when the tile it needs is not in memory. ADR-0194 requires the same picture on every
+run, so a lookup cannot read a coarser level because a tile was absent.
+
+**The options:**
+
+* **Tiled, mipmapped EXR files, cached tile by tile on the host**, as RenderMan's `.tex` and
+  Arnold's `.tx` files are, with moya's maker writing them. Any other image is made into one when
+  the scene is read. Memory stays within its limit. A GPU loads the tiles a pass misses between
+  passes, as OptiX's demand loading does, and runs the pass's missed lookups again.
+* **Every image loaded whole and mipmapped in memory**, as Cycles loads its images. The same on
+  every device, with no miss. Memory grows with every texture.
+* **OpenImageIO's cache and texture system.** Every format it reads, and filtering as Arnold's and
+  RenderMan's have used it. Its algorithms are not moya's, so ADR-0187 would be amended, and it
+  runs on the CPU alone.
+
+The record also settles which file formats a texture is read from, when an image is converted
+into ACEScg, and how a texture's path is found.
+
+**Drafted** as [ADR-0225](../../adr/offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md):
+tiled, mipmapped OpenEXR files, cached tile by tile, as Cycles' texture cache holds `.tx` files. A
+missed lookup runs again once its tile is loaded, never at a coarser level. A colour texture is
+converted into ACEScg when it is made, and a data texture keeps its values. Any other image is made
+into one in a cache directory, keyed by its content and colour space. A path is found relative to
+the file that names it, then along RI's texture search path.
+
+### Step 5 — The record: materials in RIB
+
+**The question.** How a RIB file names a MaterialX material, so `moya --paths` renders it from a
+file. No client gives the scene one today.
+
+**The options:**
+
+* **RenderMan's `Bxdf` and `Pattern` requests**, with `PxrSurface` mapped onto OpenPBR and
+  RenderMan's patterns onto MaterialX nodes, as step 18 of the path tracer plan mapped RenderMan's
+  lights. RenderMan's RIB reads as written. The mapping is large, and MaterialX content still has
+  no route.
+* **A MaterialX document named from RIB**: a request naming a `.mtlx` file and a material in it,
+  which the scene client reads into nodes of language `materialx`. Any MaterialX material renders
+  as authored. No other renderer reads that request.
+* **Both.**
+
+The record also settles the request's name and parameters, and how a material's inputs are
+overridden from RIB.
+
+**Drafted** as
+[ADR-0226](../../adr/offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md):
+RenderMan's `Pattern` and `Bxdf` requests make MaterialX nodes of the types they name, connected
+by RenderMan's `reference` parameters, and the last `Bxdf` is the surface terminal. A `Bxdf` of
+type `materialx` names a document and a material in it, and its other parameters override the
+material's inputs. RenderMan's own node types can be mapped later in the same syntax.
+
+### Step 6 — The record: opacity
+
+**The question.** How a ray meets a surface that OpenPBR's `geometry_opacity` makes partly
+transparent, for camera, indirect and shadow rays.
+
+**The options:**
+
+* **The integrator passes through**: a hit whose opacity is drawn as transparent continues the
+  ray from just past it, as a shadow link passes through instances. The traversal is unchanged,
+  and each pass is another traversal from the world's root.
+* **A test inside the traversal**, as Embree's filter functions, OptiX's any-hit programs and HIP
+  RT's filters run one. A ray traverses once, and the traversal runs the node program, so each
+  device's traversal reaches the material.
+
+The record also settles whether a shadow ray is attenuated by a transparency or passes by a draw,
+and the most surfaces a ray passes through.
+
+**Drafted** as
+[ADR-0227](../../adr/offline/0227-offline-opacity-is-tested-inside-the-traversal.md): each device's
+traversal tests a hit on geometry whose material has an opacity, as pbrt-v4 tests alpha and as
+OptiX's any-hit programs and HIP RT's filters run. A shadow ray is attenuated by one minus the
+opacity. A camera or indirect ray keeps a hit with a probability of its opacity, drawn from a
+hash of the sample's draw and the primitive. No limit is set on the surfaces a ray passes.
+
+### Step 7 — MaterialX
+
+* **MaterialX joins the `moya` feature** in `vcpkg.json`, with the libraries that read a document
+  and its standard library of node definitions. Its shader generators are not built.
+* **The OpenPBR version is checked.** If the baseline's MaterialX 1.39.1 defines an
+  `open_pbr_surface` older than OpenPBR Surface 1.1, an overlay port in `ports/` brings the
+  release that defines 1.1.
+* **The standard libraries are installed beside moya**, so a document's node definitions resolve
+  without a MaterialX install.
+* **[Dependencies.md](../../contributing/Dependencies.md)** names the port and why.
+
+**Tests:** a document of the standard library loads, and `open_pbr_surface` resolves to its node
+graph.
+
+**Done.** The vcpkg baseline moved to a commit that builds MaterialX 1.39.5, whose
+`open_pbr_surface` is OpenPBR Surface 1.1.1, so no overlay port is needed. MaterialX joins the
+`moya` feature with none of its features, and libmoya links its core and format libraries.
+`material::Library` reads every definition under `materialx/` beside the executable, in a fixed
+order, and names the node graph a definition is implemented by. The definitions and graphs are
+copied there for moya and its suite, and installed there, without the shader generators'
+implementations. The Flatpak builds MaterialX as a module.
+
+### Step 8 — A BSDF of several lobes
+
+* **The BSDF holds several lobes** as the record of step 1 decides, with the diffuse lobe as the
+  first. A sample picks a lobe, and evaluation and density sum over the lobes.
+* **A specular sample is marked.** The scatter stage does not divide by a density it cannot
+  weigh, and a light the next ray meets takes its whole weight, as no light sample could reach it.
+* **The chi-squared check becomes a helper** every lobe's case calls.
+
+**Tests:** every committed reference render of the path tracer is unchanged. A BSDF of two
+diffuse lobes of half weight renders as one. A perfect mirror in front of a light shows the light
+with no MIS weight lost.
+
+**Done.** A BSDF holds up to eight weighted closures, and a sample picks one by its share of the
+albedo. The first random number is stretched over that share, so a BSDF of one closure draws as
+before, and every reference render is unchanged byte for byte. A `Mirror` model is the first
+singular closure. Its sample is marked specular, the scatter stage multiplies by its value over
+the chance of its closure, and a light the next ray meets takes its whole weight under every
+strategy. A device material holds the closures its BSDF is built from, one diffuse closure until
+code sets others, and an overload of `integrate::render()` renders prototypes a case has
+changed. The chi-squared check is `densityFit()` in `moya/tests/Scattering.h`.
+
+### Step 9 — Microfacets and the conductor
+
+* **The GGX distribution**, with Smith's masking and shadowing, sampled by its visible normals.
+* **A conductor** of OpenPBR's base colour and specular colour through the F82 tint, at a path's
+  four wavelengths.
+* **Anisotropy**, by OpenPBR's roughness and anisotropy, along the shading point's tangent.
+* **Energy compensation** as the record of step 1 decides, with any table it needs built when
+  moya is built.
+
+**Tests:** chi-squared, reciprocity, and a white furnace in which a white conductor of every
+roughness keeps all its energy. Its reflectance at normal incidence is its base colour.
+
+**Done.** `Ggx` holds the distribution, Smith's height-correlated masking and shadowing, and
+Heitz's sampling of visible normals. `F82` is OpenPBR's Fresnel factor at each wavelength. A
+`Conductor` closure sums GGX's single scattering and Kulla and Conty's compensation lobe. It is
+singular below an alpha of 0.001, and its anisotropy follows the shading frame's tangent.
+`moya_albedo` integrates the albedo table at build time from the kernel's own GGX, and the kernel
+reads it through `Paths`, as it reads the RGB-to-spectrum table. A white conductor keeps its
+energy within 1% from a roughness of 0.1 to 1. Anisotropic compensation reads the isotropic
+table at the alphas' geometric mean. The chi-squared bins became even in the polar angle, so a
+narrow lobe falls across many.
+
+### Step 10 — The dielectric
+
+* **Reflection and transmission by Fresnel's equations**, smooth and rough, with total internal
+  reflection.
+* **A smooth interface is specular**, marked as step 8 marks it, and a rough one glossy or
+  transmission.
+* **A thin-walled surface** transmits without bending, as OpenPBR's `geometry_thin_walled` says.
+* **The medium inside is not built.** OpenPBR's transmission depth and scatter wait for
+  section 8's volumes.
+
+**Tests:** Fresnel's closed forms at several angles, chi-squared over both hemispheres,
+reciprocity across the interface by the ratio of the indices, and a white furnace of a clear
+sphere.
+
+**Done.** `Fresnel` holds the equations for unpolarised light, Snell's refraction and a thin
+slab's reflectance. A `Dielectric` closure reflects and refracts by GGX and Walter's
+transmission, its transmission's value being radiance, divided by eta squared. Kulla and Conty's
+compensation is given back on each side, and a share of it transmitted that keeps the two sides
+reciprocal. A thin slab transmits the mirror image of its reflection, and a smooth one passes light
+unbent. `moya_albedo` integrates the dielectric's albedos from outside and inside at 16 points of
+the ior axis, with the mean share a smooth interface transmits and a thin slab reflects. The BSDF
+asks the geometric surface and the shading frame to agree on whether two directions cross. A
+crossing sample is a transmission, and a third random number of each bounce picks between
+reflection and transmission. A white rough dielectric keeps its energy within 2% from either
+side, and a clear sphere vanishes in a white furnace, smooth, rough or thin-walled.
+
+### Step 11 — OpenPBR's base, specular and coat
+
+* **The diffuse base** as OpenPBR's energy-preserving Oren–Nayar lobe, with its roughness, and the
+  metal base mixed by `base_metalness`.
+* **The specular layer over the base**, its albedo scaling what lies below it.
+* **The coat** over both, with its own roughness, index and colour, and the darkening OpenPBR
+  gives the layers under it.
+* **Subsurface is the diffuse base** until section 8, with its colour.
+* **A BSDF of OpenPBR's parameters** set from constants, which the node program feeds from step 15.
+
+**Tests:** OpenPBR's limiting cases: a metalness of one is the conductor, a specular weight of
+zero is the base alone, and a coat of weight zero changes nothing. A white furnace keeps the energy
+each layer's closed form allows.
+
+**Done.** `OrenNayar` is the energy-preserving Oren-Nayar lobe, sampled by the cosine. `Specular`
+is a dielectric's reflection alone, compensated as a conductor is by the mean a smooth interface
+reflects. `moya_albedo` integrates the reflection alone at every point of the ior axis, which the
+layering reads. A dielectric's reflection and transmission take colours of their own.
+`surface::OpenPbr` holds OpenPBR's parameters, and a material with one set is layered by
+`bsdf::Layering`. Each layer scales the one below by one less its albedo at the outgoing
+direction. The coat tints, darkens and roughens what lies below it. A white surface keeps its
+energy within 2%, coated, metal or not, and a grey one matches each layer's closed form. Anisotropy
+follows the tangent without rotation until tangents arrive in step 16.
+
+### Step 12 — Fuzz and thin film
+
+* **Fuzz**, OpenPBR's sheen, as the lobe OpenPBR names, over the coat.
+* **A thin film** over the specular layer, its interference evaluated at each of a path's four
+  wavelengths, so its colours come from the spectrum and need no fit to RGB.
+
+**Tests:** chi-squared and reciprocity for fuzz, and a film of zero thickness that changes
+nothing. A film's reflectance at a wavelength matches the closed form for one layer.
+
+**Done.** Fuzz is Zeltner, Burley and Chiang's sheen, which OpenPBR names. It is not reciprocal,
+so [ADR-0228](../../adr/offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) amends
+ADR-0222, and fuzz is checked by chi-squared and by its closed-form albedo in place of
+reciprocity. Its fitted albedo dips just below zero at low roughness, so it is held to [0, 1]. A
+`ThinFilm` gives Airy's reflectance at each of a path's wavelengths, over a dielectric or over a
+conductor's F82 factor, and is mixed into the specular layer's and the metal's Fresnel factor by
+its weight. A vanishing film is the bare Fresnel factor, a quarter-wave film reflects nothing,
+and a white surface under fuzz or a film keeps its energy within 2%.
+
+### Step 13 — Emission
+
+* **A material emits** OpenPBR's `emission_luminance` in its `emission_color`, found as the record
+  of step 1 decides.
+* **A mesh light still makes a geometry emit**, as before, and both add.
+
+**Tests:** an emitting sphere in a black scene shows its luminance. A diffuse plane beside it
+receives the irradiance a closed form gives, within its errors.
+
+**Done.** `surface::OpenPbr` holds `emissionLuminance` and `emissionColour`. Each chain that
+gives a layered, emitting material to a geometry of triangles makes a mesh light of its own.
+Camera rays see it, and it lights everything. Light linking gives a light the scene does
+not hold its defaults. A chain a mesh light names makes both lights, and `Lights::emitting()`
+finds each in turn at a hit, so they add. The emitter is a square, as a geometry with no
+triangles emits nothing, as with a mesh light. It shows its luminance to the camera, and lights
+a plane as a rect light of its radiance does, by each strategy. With a mesh light it adds.
+
+### Step 14 — Compiling a material
+
+* **MaterialX reads a material** from a scene's nodes of language `materialx`, and flattens its
+  node graphs into its standard nodes.
+* **The material's surface terminal** names `open_pbr_surface`, and its inputs feed the BSDF of
+  step 11.
+* **A program** as the record of step 2 decides, made on the host for each material when the
+  surfaces are made, and rebuilt when a material changes, as the hierarchy is.
+* **A node the program does not implement** is reported, and its output is its default.
+
+**Tests:** a material of constant inputs compiles to the BSDF those constants give. A node graph
+flattens to the nodes MaterialX's own flattening gives. An unknown node is reported once.
+
+**Done.** `material::compile()` reads a material whose surface node is of language `materialx`
+into a MaterialX document, over the standard libraries `Library::installed()` reads once. It
+flattens every node a graph implements, leaving shader, closure and material nodes, and fills
+`surface::OpenPbr` from `open_pbr_surface`'s inputs. The gather compiles each such material on
+every update. A node feeding the surface gives its output's default and is reported, and each
+report is given once. The instructions and the register store wait for step 15, which has the
+first node to compile, and so does converting a colour input from its space.
+
+### Step 15 — The node program on the device
+
+* **A program** of instructions over a store of registers, as the record of step 2 decides,
+  compiled from the flattened network of step 14 and held with the surfaces.
+* **The program runs at a shading point** before the BSDF is built, and gives its parameters.
+* **MaterialX's standard nodes of math, colour, logic and channels**, each as MaterialX defines
+  it.
+* **A colour input is converted into ACEScg** from the space its document names, when the program
+  is compiled.
+
+**Tests:** each node against its definition at sample inputs. A material that mixes two colours
+by a constant renders as the mix. The path tracer's references are unchanged.
+
+**Done.** `kernel::program` holds the instruction, the program, OpenPBR's registers and
+`evaluate()`, which `bsdf::atSurface()` runs before it builds a layered BSDF. The compiler's
+`Emitter` compiles each node once, into registers after the surface's parameters, and copies each
+connected output into its parameter. The program compiles the math, adjustment, compositing,
+conditional, logical and channel nodes on values of up to four components.
+`geometry::ConvertedMaterials` converts each colour constant into ACEScg for the surfaces and
+the lights. Steps 16, 17 and 20 now name the transform and matrix nodes, the rotations, and the
+compositing nodes of colours with alpha. Emission that a node feeds is an entry in
+[TODO.md](../../TODO.md#offline-rendering).
+
+### Step 16 — Primvars by name and tangents
+
+* **Every primvar a program reads reaches the device**, by name, of one to four floats, spread
+  over the primitives as `N` and `Cs` are.
+* **Texture coordinates** are the `st` primvar, as RI names them, or MaterialX's `texcoord`.
+* **A tangent frame from the texture coordinates**, for anisotropy and normal maps, or from a
+  `tangent` primvar where a geometry gives one.
+* **MaterialX's geometric nodes**: `texcoord`, `geompropvalue`, `position`, `normal`, `tangent`
+  and `bitangent`, in the spaces MaterialX names.
+* **MaterialX's transform and matrix nodes**: `transformpoint`, `transformvector`,
+  `transformnormal` and `transformmatrix` between those spaces, and the nodes of `matrix33` and
+  `matrix44` values, which take sixteen registers.
+
+**Tests:** a primvar of each class and width reads back at a shading point. A tangent lies along
+the direction `s` increases.
+
+**Done.** The scene's declarations gain a width, so RI's
+`float[2] st` is a primvar of two floats. Every MaterialX material is compiled before the gather
+walks the scene, and the primvars the programs read are numbered after `N`, `Cs`, `tangent` and
+`st`. A cached geometry is made again when those names change. `Surfaces::tangentFrame()` gives a
+point's frame from `tangent` or from `st`, and a layered BSDF is built in it. The program reads
+geompropvalue, texcoord, geomcolor, position, normal, tangent and bitangent, in the geometry's
+own space or the world. It holds a matrix in nine or sixteen registers, row after row, and
+compiles the matrix nodes and the transforms between the geometry's space and the world, each
+checked against MaterialX's own matrices.
+
+### Step 17 — Procedural patterns
+
+* **MaterialX's noises**: `noise2d`, `noise3d`, `fractal3d`, `cellnoise2d`, `cellnoise3d` and
+  `worleynoise2d` and `3d`, as MaterialX's library defines them.
+* **Its procedural shapes and ramps**, such as `ramplr`, `ramp4` and `checkerboard`.
+* **`rotate2d` and `rotate3d`**, which `place2d`'s graph reads. MaterialX's GLSL and OSL
+  implementations turn in opposite directions, so the test fixes the direction MaterialX's
+  specification gives.
+
+**Tests:** each noise against MaterialX's definition at sample points, and a checkerboard's
+squares where its frequency puts them.
+
+**Done.** `kernel/program/Noise.h` holds the noises and `Pattern.h` the instructions from
+`Op::Noise` to `Op::Rotate3d`: noise, fractal, cell and Worley noise in two and three dimensions,
+the ramps and splits, and the rotations. MaterialX's specification does not define the noises'
+algorithms, so [Patterns.md](../../offline/Patterns.md) states them, from Perlin's improved noise,
+Jenkins' lookup3 and Worley's cellular noise, with the constants MaterialX's implementations add.
+The code is written from that page. `ProgramTest` checks every noise against what OSL gives for
+MaterialX's OSL implementation, rendered through Cycles, at eight points. MaterialX 1.39.5's GLSL
+and OSL turn `rotate2d` and `rotate3d` the same way, clockwise, against the specification's
+words. moya follows the implementations, so `place2d` turns textures as other renderers do. An
+input of a node the program runs given no value reads the geometric property its definition
+names, so a ramp with no texture coordinates reads `st`.
+
+### Step 18 — A ray's footprint
+
+* **Camera rays carry a footprint** as the record of step 3 decides, from the camera's projection
+  and the pixel filter.
+* **Each bounce carries it on**, widened by the lobe's roughness.
+* **A shading point gives its footprint** in its texture coordinates, which a lookup filters over.
+
+**Tests:** a plane square to the camera gives a footprint of one pixel at each pixel. A plane at an
+angle gives the footprint a closed form gives. A rough bounce's footprint is wider than a smooth
+one's.
+
+**Done.** A path carries a `geometry::Cone` in its state, which `Camera::cone()` sets. A pinhole's
+spreads by a pixel's width per unit of depth, a lens's narrows to a pixel's width at its focus,
+and an orthographic camera's is a pixel wide. The cone is a pixel wide, not the pixel filter's
+width, because the filter already places the samples across its width. Each shading point holds
+the ellipse the cone makes on it, `surface::Footprint`, and `Surfaces::textureFootprint()` gives
+it in `st`. A bounce widens the spread by the arctangent of the lobe's roughness, which
+`bsdf::Sample` now carries. A reflection also widens it by twice the curvature times the width, and
+`Surfaces::curvature()` reads the curvature from a triangle's corner normals. Smoothing a split's
+step needs the derivatives of the value the split reads, not the footprint, and is an entry in
+[TODO.md](../../TODO.md#offline-rendering).
+
+### Step 19 — The texture maker
+
+* **`moya --maketexture <image> <texture>`** makes a texture file as the record of step 4 decides,
+  as RI's `MakeTexture` names one.
+* **RIB's `MakeTexture`** makes one through the scene client.
+* **The wrap modes and the filter** are the request's, and the image's colour space is converted
+  as the record settles.
+
+**Tests:** a texture made from an image holds its levels, each the box filter of the level above.
+Wrap modes and a texture of one texel hold at their edges.
+
+**Done.** `texture::make()` reads an EXR file's R, G, B and A or Y and A, or a PNG, JPEG, TGA or
+BMP file through api/image. It writes a tiled EXR file of 64-texel tiles and every level, rounded
+down as OpenEXR's mipmaps are. A colour image is converted into ACEScg from the space
+named, its chromaticities' or sRGB, before `texture::mipmap()` filters each level from the one
+above with RI's filters, widths in texels of the level made. A space that holds data, as Raw does,
+keeps the values. The wrap modes are the `wrapmodes` attribute OpenImageIO reads, and they find a
+texel the filter reaches past the edge. `moya --maketexture` and the scene client's `MakeTexture`
+run it, the colour space named by `--colorspace` or `"string colorspace"`. A path is read as given,
+until step 20 finds it. [Textures.md](../../offline/Textures.md) is the reference page.
+
+### Step 20 — The texture cache
+
+* **The cache** as the record of step 4 decides, within a memory limit the options give.
+* **MaterialX's `image` and `tiledimage` nodes** look up through it, filtered over the footprint.
+* **UDIM tiles**, by the `<UDIM>` token in a texture's path.
+* **The compositing nodes of colours with alpha**: `premult`, `unpremult`, `over`, `in`, `mask`,
+  `matte`, `out` and `disjointover`.
+* **A texture's path** is found as the record settles, and the scene's options gain RI's texture
+  search path.
+
+**Tests:** a texture far from the camera reads a coarser level than one near it. A render with a
+cache of one tile gives the same picture as one with room for every tile. A UDIM tile is read for
+the coordinates it covers.
+
+**Done.** [ADR-0229](../../adr/offline/0229-offline-stages-take-their-texture-access-as-a-type.md)
+gives the stages that shade the device's texture access as a template parameter, beside its
+traversal. The CPU's, `device::cpu::Textures`, reads each texel through `texture::Cache::fetch()`
+in libmoya, which loads its tile and drops the one used longest ago past `textureMemory`.
+`kernel::texture::Resident` holds every level in memory, and is the oracle the CPU's lookups
+match exactly. `texture::Textures` finds each image along `textureSearchPath`, reads a tiled EXR
+of every level as it is, and makes any other image into `textureDirectory` under a hash of its
+bytes and how it is read. A `<UDIM>` path reads tiles 1001 to 1100, ten to a row. The image node
+compiles to `Op::Image`. Its lookup chooses the level by the footprint's minor axis and probes
+along its major axis, with MaterialX's address modes, v up the texture. The footprint is the
+shading point's in `st`, so a scaled coordinate filters over the wrong one, an entry in
+[TODO.md](../../TODO.md#offline-rendering). The eight compositing nodes of colours with alpha
+compute as MaterialX's OSL does. RIB's `Option "searchpath" "texture"` and `Option "limits"
+"texturememory"` set the options. A path is found along the search path alone until step 25
+names documents from RIB, since a material made of scene nodes is named by no file.
+
+### Step 21 — Bump and normal maps
+
+* **MaterialX's `normalmap` node** turns a tangent-space normal map into a shading normal.
+* **MaterialX's `bump` and `heighttonormal`** turn a height into one, by the height's differences
+  over the footprint.
+* **A normal that would face away** from the outgoing direction is bent back, so a bumped surface
+  shows no black.
+
+**Tests:** a flat normal map changes nothing. A tilted one turns the shading normal by its angle.
+A bump of a constant height changes nothing.
+
+**Done.** OpenPBR gives its coat a normal of its own, so a BSDF holds two frames: the coat works
+in `coatFrame` and every other closure in `frame`. The integrator's cosine moved into the BSDF
+to allow it. `Bsdf::projected()` sums each closure's value times the cosine to its own frame's
+normal, a sample carries that projected value, and the scatter stage and light samples
+multiply by it. Every reference render stays within its errors. The program gives
+`geometry_normal`, `geometry_tangent` and the coat's two in registers of their own, zero where an
+input is not connected, and `surface::frameAbout()` builds each frame from them. A normal that
+would mirror outgoing below the surface is bent back by `surface::visible()`, as Cycles bends one.
+normalmap compiles as MaterialX's OSL implementation gives it. heighttonormal compiles its
+height three times, after a `Shift` along each axis of the footprint and back, as Cycles' SVM
+compiles a bump, and bump flattens to the two. A point with no footprint steps a 1024th along
+`s` and `t`. A heighttonormal inside another's height gives its default and is reported. Step 20
+left two cases stale, the scene description's texture options and a node the program no longer
+leaves out, and both were brought up to date.
+
+### Step 22 — Displacement from the material
+
+* **The material's displacement terminal** gives a surface's height when it is tessellated,
+  through the node program run on the host's CPU device, in place of the `displacement` primvar.
+* **A displacement of a vector** moves a point along each axis, as MaterialX's `displacement`
+  node's vector input says.
+* **The height is held within the displacement bound**, as before.
+
+**Tests:** every displaced reference scene renders as it did, its height now from a material. A
+textured displacement moves the points the texture says.
+
+**Done.** `material::compileDisplacement()` compiles a material's displacement terminal of
+`ND_displacement_float` or `ND_displacement_vector3` into a program whose first four registers
+hold the displacement's vector and scale, and `program::run()` gives a program's registers apart
+from OpenPBR's parameters. A subdivision surface takes the displacement of the material of the
+placement it is cut for. The gather views the cut surface alone through a CPU device, and runs
+the program once at each place with a texture cache of the scene's options. Each sample's points
+move along its tangent, bitangent and normal, held within the bound. The `displacement` primvar is
+no longer read. The cached cut is placed again only when the displacement compiled alike.
+`texture::optionsOf()` reads the scene's texture options for the gather and the render. The
+displaced RIB scenes are the old hiders' and render as before. The new core's displaced cube now
+takes its height from a material and is hit where it was.
+
+### Step 23 — Opacity
+
+* **OpenPBR's `geometry_opacity`** cuts a surface out, as the record of step 6 decides, for camera,
+  indirect and shadow rays.
+* **A cut-out surface casts the shadow of its opacity.**
+
+**Tests:** a plane of opacity zero leaves the picture as it was without it. A plane of half opacity
+shows the expected mix, within its errors. A leaf cut out by a texture casts the leaf's shadow.
+
+**Done.** `geometry_opacity` compiles into a register of its own, and a layered material is cut
+out when a node feeds it or its constant is below one. A traversal now takes a filter: `nearest()`
+keeps the nearest hit it counts and `any()` stops at the first, and
+`kernel::geometry::EveryHit` counts them all. The CPU asks the filter only on a chain whose
+material is cut out, which each instance records, so a solid scene traverses as before. A mesh
+placed by a cut-out chain is built without spatial splits, as OptiX promises a single any-hit
+call, so a primitive is asked about once per ray. A camera or indirect ray keeps a hit by a hash
+of a new per-bounce draw, the primitive and its chain, and a shadow ray multiplies one minus each
+opacity, as the record decides. A light with a shadow link attenuates by the opacity of what casts
+its shadows, still meeting each surface by a traversal of its own. The hit view sees cut-out
+surfaces as solid. A light sample of a cut-out mesh light still sees its whole surface, which
+[TODO.md](../../TODO.md) holds.
+
+### Step 24 — Other surface shaders
+
+* **Standard Surface, UsdPreviewSurface and glTF PBR** render, each mapped onto OpenPBR's
+  parameters, through a translation MaterialX ships where one exists.
+* **Another surface shader** is reported, and the surface takes OpenPBR's defaults.
+
+**Tests:** each shader's documented defaults render as OpenPBR's equivalent material. A metal and a
+glass of each render as the OpenPBR ones do, within their errors.
+
+**Done.** `internal::translated()` replaces a surface of Standard Surface, UsdPreviewSurface or
+glTF PBR with a translation node feeding `open_pbr_surface`, before flattening. MaterialX ships
+only Standard Surface's translation onto OpenPBR, so moya's own of the other two are a document
+`material::Library` reads with the libraries. Normals in world space pass to OpenPBR directly,
+since the shipped translation drops them. Translation feeds every OpenPBR input from a node, so
+`material::fold()` now runs a program's constant registers on the host. A material's emission
+and opacity are constants wherever they are the same at every point, and only opacity that
+varies cuts a surface out by its program. Another surface shader now takes OpenPBR's defaults
+rather than a diffuse closure. The defaults are checked parameter by parameter, Standard
+Surface's at its version 1.0.1, whose base is one and base colour 0.8. A metal of each and a glass
+of Standard Surface and glTF PBR render as the OpenPBR ones within five errors. UsdPreviewSurface
+has no transmission, so it makes no glass.
+
+### Step 25 — Materials from RIB
+
+* **RIB names a material** as the record of step 5 decides, and the scene client makes its nodes.
+* **`moya --scene` prints the material**, and its description is committed with the scene.
+* **RI's `Surface` is unchanged**: a node of language `ri`, rendered diffuse until section 7.
+
+**Tests:** a RIB file naming a material gives the scene the nodes MaterialX's document holds. An
+input overridden from RIB reaches the node.
+
+**Done.** The RIB reader takes `Pattern` and `Bxdf` as `requests::ShadingNode`, a type and a
+handle, and RenderMan's `reference` qualifier, whose values are strings, through every handler,
+the recorder and the writer. The scene client keeps a network in the attribute state, and makes
+the last `Bxdf` and every node it reads into shader nodes of language `materialx`, with a
+connection for each reference. A node's type is the MaterialX node definition it names. A `Bxdf`
+of type `materialx` reads its `file`'s `material` through node graphs, and its other parameters
+override the surface's inputs. A later `Surface` clears the network, so the later of the two
+shades. The reyes and ray hiders log the first of either. `materials-network.rib` in the test
+data holds an inline network and a document's material, with its description and hit view.
+
+### Step 26 — The reference renders
+
+* **A set of scenes made for materials**, as RIB files in `moya/tests/data`. They are a furnace of
+  each lobe, a metal, a glass, a coated and a fuzzed material, and a thin film. A textured, a
+  normal-mapped, a displaced and a cut-out surface follow.
+* **Each is rendered and committed** as the path tracer's references are, with each pixel's
+  standard error, and compared within five of them.
+
+**Tests:** the committed renders, and a case that renders each with a material input changed and
+checks that the comparison fails.
+
+**Done.** Four scenes hold the set, rendered by the path tracer and committed as `materials-*.exr`
+beside their RIB files, each with its description and hit view. `materials-furnace` puts a sphere
+of each of OpenPBR's lobes under a white dome. The diffuse base, the metal, the coat, the fuzz and
+the thin film vanish into it, and the rough glass darkens at its rim. `materials-lobes` sets a
+gold, a glass, a coated, a fuzzed and a thin-filmed sphere on a floor. `materials-surfaces` holds
+a quad textured by `blocks.png` through an inline network, a sphere normal-mapped by noise and a
+card cut out by cell noise, which casts its cells' shadow. `materials-displaced` is a
+subdivision cube its material displaces by fractal noise. The procedural materials are a
+document, `materials-patterns.mtlx`. A third reference case halves every surface's
+`base_weight` and checks that each material scene then fails its comparison. A RIB scene could
+not displace by a material before this step, so two gaps were closed. A `Bxdf` of type
+`materialx` now gives its material's `displacementshader` as the material's displacement, and
+the scene client reads `Attribute "displacementbound"` into object space onto each subdivision
+surface after it, which it had left at zero.
+
+### Step 27 — Speed
+
+* **`moya_bench` gains a textured scene**: the lit room with a material of textures and a layered
+  OpenPBR surface. It reports samples a second, and the share of time in the node program and in
+  texture lookups beside traversal's.
+* **The baseline** in `moya/bench/Baseline.md` gains the figures, from the same machine.
+
+**Tests:** the benchmark's short pass times the textured scene.
+
+**Done.** `moya_bench`'s second table times a textured room beside the lit room: every surface
+is OpenPBR's base under a coat, whose colour and specular roughness are an image the benchmark
+writes. The table gains the shares of the time in materials' programs and in texture lookups. A
+profiled render wraps the textures in `device::cpu::ProfiledTextures`, and the kernel tells a
+texture access when a program and a lookup start and end, through `kernel::texture::started()`
+and `finished()`. Only an access that defines both is told, so an ordinary render reads no
+counter. The benchmark now gives its renders a logger, which a texture access needs, and finds
+MaterialX's libraries beside itself. The baseline was run again. The textured room runs at under
+a fifth of the lit room's samples a second, with three quarters of its time in texture lookups.
+The lit room runs a sixth slower than the baseline before this plan, with its traversal as fast
+as it was. [TODO.md](../../TODO.md) holds both.
+
+### Step 28 — The documents
+
+* **New reference pages**: `docs/offline/Materials.md` for the BSDF library, its lobes and the
+  node program, and `docs/offline/Textures.md` for the maker, the cache, filtering and UDIM. The
+  docs site's summary lists them.
+* **[Surfaces.md](../../offline/Surfaces.md)** names the primvars by name, tangents and the material
+  on the device.
+* **[Integrator.md](../../offline/Integrator.md)** names specular samples and a ray's footprint.
+* **[Geometry.md](../../offline/Geometry.md)** names displacement from the material.
+* **[Scene.md](../../offline/Scene.md)** names the options' texture search path and memory limit.
+* **[Rib.md](../../offline/Rib.md)** names how a material is named and `MakeTexture`.
+* **[The offline README](../../offline/README.md)**'s section on the new core says it shades by
+  materials.
+* **The moya manual's [CommandLine.md](../../manual/moya/CommandLine.md)** names `--maketexture`.
+* **[Testing.md](../../contributing/Testing.md)** names the lobes' checks and the material references.
+* **Each record's `Documented in` line** names the reference page that states its rule, and
+  ADR-0190's names Materials.md.
+* **The roadmap's section 5** links here, and says so when this plan closes.
+
+**Done.** `Materials.md` holds what `Surfaces.md` held of materials: the gathered material,
+compiling a material and a displacement, other surface shaders, the node program, the BSDF and
+its lobes, and layering. `Surfaces.md` keeps the shading point, its frames, its footprint and
+its primvars. `Textures.md` was written at step 19 and grew at step 20. The other pages named
+here were brought up to date by the steps that changed them, and read as a whole. The offline
+README names `Materials.md`, and its section on the new core says it shades by materials and
+reads textures. ADR-0190, 0222, 0223 and 0228 are documented in `Materials.md`, ADR-0224 in
+`Integrator.md` and ADR-0225 in `Textures.md`.
+
+---
+
+## Outcome
+
+Closed 2026-11-13. moya's new core shades a surface by its material. A material is a MaterialX
+graph, compiled into a node program every device runs, which feeds a BSDF library arranged as
+OpenPBR Surface arranges its layers. Standard Surface, UsdPreviewSurface and glTF PBR render as
+OpenPBR. Patterns read textures through a cache of tiles, filtered by the footprint of the cone a
+path carries, and the texture maker writes those files from images. A material's displacement
+moves a subdivision surface's points, and its opacity cuts a surface out. RIB names a material
+through RenderMan's `Pattern` and `Bxdf`. No picture the reyes and ray hiders make changed.
+
+**Delivered:**
+
+- How the BSDF library holds OpenPBR's layers (ADR-0222), how a material runs on every device
+  (ADR-0223), a ray's footprint (ADR-0224), the texture cache (ADR-0225), materials in RIB
+  (ADR-0226) and opacity (ADR-0227). Two more came of the work: fuzz is not reciprocal
+  (ADR-0228), and a stage takes its texture access as a type (ADR-0229).
+- MaterialX as a dependency, its standard libraries installed beside moya.
+- A BSDF of weighted closures with singular samples, and its lobes: the conductor, the
+  dielectric, Oren-Nayar, the specular layer, fuzz and thin film, each checked by chi-squared,
+  reciprocity and a white furnace.
+- OpenPBR's layering, emission from a material, and the translations of Standard Surface,
+  UsdPreviewSurface and glTF PBR.
+- The node program: MaterialX's math, geometric, matrix, procedural, image, normal map and bump
+  nodes, with primvars by name and tangents.
+- A path's cone and a shading point's footprint, the texture maker and `moya --maketexture`, the
+  texture cache, filtered lookups and UDIM.
+- Displacement and opacity from the material.
+- Materials from RIB, inline or from a MaterialX document, with a document's displacement.
+- Four reference renders of materials, and a textured room in `moya_bench` that times programs
+  and texture lookups.
+- `Materials.md` and `Textures.md`, and the surfaces, integrator, geometry, scene, RIB, testing
+  and offline pages brought up to date.
+
+**Different from the plan:**
+
+- A BSDF holds two frames, since OpenPBR's coat has a normal of its own, and the integrator's
+  cosine moved into the BSDF's projected value.
+- The `displacement` primvar is no longer read. A material's displacement replaced it.
+- Translation feeds every OpenPBR input from a node, so the host folds a program's constant
+  registers, and only what varies over a surface runs on the device.
+- MaterialX ships only Standard Surface's translation onto OpenPBR. moya's own translations of
+  the other two are a document read with the libraries.
+- The noises follow MaterialX's implementations, whose rotations turn against the
+  specification's words.
+- The reference scenes are four, each holding several of the cases the plan names. Making them
+  closed two gaps: a document's material gives its displacement, and the scene client reads
+  `displacementbound`.
+- A profiled render times programs and lookups through hooks a texture access defines, which an
+  ordinary render compiles away.
+
+**Left open**, each an entry in [TODO.md](../../TODO.md#offline-rendering):
+
+- Texture lookups take three quarters of the textured room's time.
+- The lit room runs a sixth slower than before this plan, with its traversal as fast as it was.
+- A material's emission cannot vary over its surface.
+- A mesh light's cut-away parts still light the scene.
+- A split's step is sharp, and an image read at a scaled coordinate filters over the wrong
+  footprint.
+- The editor's surfaces keep RI's `matte`. Giving the editor materials is work for a plan of
+  its own.
+
+---
+
+## Working beside the editor scripting plan
+
+[EditorScripting](../EditorScripting.md) is open. It takes ADR-0217 to ADR-0221, so this plan's
+records start at 0222. Its step 16 adds an option to `moya/moya.cxx` and
+`docs/manual/moya/CommandLine.md`, where step 19 adds `--maketexture`. Each lands as a commit of
+its own. This plan changes nothing the editor sends moya: the editor's surfaces keep RI's `matte`,
+and giving the editor materials is work for a plan of the editor's own.

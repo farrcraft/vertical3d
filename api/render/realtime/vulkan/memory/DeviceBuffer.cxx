@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "DeviceBuffer.h"
 
@@ -15,6 +15,7 @@
 
 #include "Allocator.h"
 #include "Buffer.h"
+#include "BufferSpec.h"
 #include "Uploader.h"
 
 namespace v3d::render::realtime::vulkan::memory {

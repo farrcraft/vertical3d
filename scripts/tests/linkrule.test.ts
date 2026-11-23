@@ -58,7 +58,8 @@ const BASE: Record<string, string> = {
     'api/core/Core.h': 'namespace v3d::core {\nclass Core {};\n};  // namespace v3d::core\n',
     'api/core/Core.cpp': '#include "Core.h"\n',
     'api/gfx/CMakeLists.txt': 'v3d_add_api_library(gfx Gfx.cpp)\ntarget_link_libraries(v3dlib_gfx PUBLIC v3dlib_core glm::glm)\n',
-    'api/gfx/Gfx.h': '#include <api/core/Core.h>\n#include <glm/vec3.hpp>\nnamespace v3d::gfx {\nclass Gfx {};\n};  // namespace v3d::gfx\n',
+    'api/gfx/Gfx.h':
+        '#include <api/core/Core.h>\n#include <glm/vec3.hpp>\nnamespace v3d::gfx {\nclass Gfx {};\n};  // namespace v3d::gfx\n',
     'api/gfx/Gfx.cpp': '#include "Gfx.h"\n',
 };
 
@@ -71,9 +72,13 @@ function report(files: Record<string, string>): string[] {
             mkdirSync(join(root, dirname(file)), { recursive: true });
             writeFileSync(join(root, file), text);
         }
-        const names = Object.keys(all).sort();
+        const names = Object.keys(all).toSorted();
         const cmake = names.filter((f) => f.endsWith('CMakeLists.txt') || f.endsWith('.cmake'));
-        return violations(root, cmake, names.filter((f) => f.startsWith('api/'))).map(formatFinding);
+        return violations(
+            root,
+            cmake,
+            names.filter((f) => f.startsWith('api/')),
+        ).map(formatFinding);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
@@ -95,32 +100,41 @@ test('linkrule accepts an app that links what it includes', () => {
 });
 
 test('linkrule reports an include of a library the app does not link', () => {
-    assert.deepEqual(report(app(USES_GFX + '#include "api/core/Core.h"\n', 'v3dlib_gfx')),
-        ['app/CMakeLists.txt: missing-link: app/main.cpp includes api/core/Core.h, and app does not link v3dlib_core']);
+    assert.deepEqual(report(app(USES_GFX + '#include "api/core/Core.h"\n', 'v3dlib_gfx')), [
+        'app/CMakeLists.txt: missing-link: app/main.cpp includes api/core/Core.h, and app does not link v3dlib_core',
+    ]);
 });
 
-test('linkrule follows the app\'s own headers to the libraries they include', () => {
+test("linkrule follows the app's own headers to the libraries they include", () => {
     const files = app('#include "local.h"\n', 'v3dlib_gfx', { 'app/local.h': USES_GFX });
     assert.deepEqual(report(files), []);
-    const missing = app('#include "local.h"\n', 'v3dlib_core', { 'app/local.h': USES_GFX + 'v3d::core::Core c;\n#include <api/core/Core.h>\n' });
-    assert.deepEqual(report(missing), ['app/CMakeLists.txt: missing-link: app/local.h includes api/gfx/Gfx.h, and app does not link v3dlib_gfx']);
+    const missing = app('#include "local.h"\n', 'v3dlib_core', {
+        'app/local.h': USES_GFX + 'v3d::core::Core c;\n#include <api/core/Core.h>\n',
+    });
+    assert.deepEqual(report(missing), [
+        'app/CMakeLists.txt: missing-link: app/local.h includes api/gfx/Gfx.h, and app does not link v3dlib_gfx',
+    ]);
 });
 
 test('linkrule reports a library the app links and none of its files includes', () => {
-    assert.deepEqual(report(app(USES_GFX, 'v3dlib_gfx v3d::core')),
-        ['app/CMakeLists.txt: extra-link: app links v3dlib_core, and none of its files includes its headers']);
+    assert.deepEqual(report(app(USES_GFX, 'v3dlib_gfx v3d::core')), [
+        'app/CMakeLists.txt: extra-link: app links v3dlib_core, and none of its files includes its headers',
+    ]);
 });
 
-test('linkrule reports a namespace used through another library\'s header', () => {
-    assert.deepEqual(report(app(USES_GFX + 'v3d::core::Core c;\n', 'v3dlib_gfx')),
-        ['app/main.cpp: namespace-use: names v3d::core::Core, and app includes no header of v3dlib_core']);
+test("linkrule reports a namespace used through another library's header", () => {
+    assert.deepEqual(report(app(USES_GFX + 'v3d::core::Core c;\n', 'v3dlib_gfx')), [
+        'app/main.cpp: namespace-use: names v3d::core::Core, and app includes no header of v3dlib_core',
+    ]);
 });
 
 test('linkrule reports a package that a linked library already carries, or that no file includes', () => {
-    assert.deepEqual(report(app(USES_GFX + '#include <glm/vec3.hpp>\n', 'v3dlib_gfx glm::glm')),
-        ['app/CMakeLists.txt: package: app names glm::glm: glm::glm comes through a v3dlib_* target it links']);
-    assert.deepEqual(report(app(USES_GFX, 'v3dlib_gfx Boost::json')),
-        ['app/CMakeLists.txt: package: app names Boost::json: none of its files includes Boost::json']);
+    assert.deepEqual(report(app(USES_GFX + '#include <glm/vec3.hpp>\n', 'v3dlib_gfx glm::glm')), [
+        'app/CMakeLists.txt: package: app names glm::glm: glm::glm comes through a v3dlib_* target it links',
+    ]);
+    assert.deepEqual(report(app(USES_GFX, 'v3dlib_gfx Boost::json')), [
+        'app/CMakeLists.txt: package: app names Boost::json: none of its files includes Boost::json',
+    ]);
     assert.deepEqual(report(app(USES_GFX + '#include <boost/json.hpp>\n', 'v3dlib_gfx Boost::json')), []);
 });
 
@@ -133,8 +147,9 @@ test('linkrule expands a package variable to the targets it names', () => {
 });
 
 test('linkrule reports a package header that nothing the app links carries', () => {
-    assert.deepEqual(report(app(USES_GFX + '#include <png.h>\n', 'v3dlib_gfx')),
-        ['app/CMakeLists.txt: package-unlinked: app/main.cpp includes png.h, and nothing app links carries PNG::PNG']);
+    assert.deepEqual(report(app(USES_GFX + '#include <png.h>\n', 'v3dlib_gfx')), [
+        'app/CMakeLists.txt: package-unlinked: app/main.cpp includes png.h, and nothing app links carries PNG::PNG',
+    ]);
     // a package a linked library carries reaches the app
     assert.deepEqual(report(app(USES_GFX + '#include <glm/vec3.hpp>\n', 'v3dlib_gfx')), []);
 });
@@ -145,11 +160,12 @@ test('linkrule gives a suite the test framework, and refuses it named again', ()
         'app/tests/Test.cpp': USES_GFX + '#include <boost/test/unit_test.hpp>\n',
     });
     assert.deepEqual(report(suite('v3dlib_gfx')), []);
-    assert.deepEqual(report(suite('v3dlib_gfx Boost::unit_test_framework')),
-        ['app/tests/CMakeLists.txt: package: v3dtest_app_suite names Boost::unit_test_framework: v3d_add_test already links Boost::unit_test_framework']);
+    assert.deepEqual(report(suite('v3dlib_gfx Boost::unit_test_framework')), [
+        'app/tests/CMakeLists.txt: package: v3dtest_app_suite names Boost::unit_test_framework: v3d_add_test already links Boost::unit_test_framework',
+    ]);
 });
 
-test('linkrule reads a header under an api tests directory as the suite\'s own', () => {
+test("linkrule reads a header under an api tests directory as the suite's own", () => {
     const files = {
         'api/core/tests/CMakeLists.txt': 'v3d_add_test(core Test.cpp)\ntarget_link_libraries(v3dtest_core PRIVATE v3dlib_gfx)\n',
         'api/core/tests/Test.cpp': '#include "api/core/tests/Helper.h"\n',
@@ -159,13 +175,14 @@ test('linkrule reads a header under an api tests directory as the suite\'s own',
     assert.deepEqual(report(files), []);
 });
 
-test('linkrule does not pass a library\'s PRIVATE links on to what links it', () => {
+test("linkrule does not pass a library's PRIVATE links on to what links it", () => {
     const files = {
         'api/core/CMakeLists.txt': 'v3d_add_api_library(core Core.cpp)\ntarget_link_libraries(v3dlib_core PRIVATE PNG::PNG)\n',
         ...app(USES_GFX + '#include <png.h>\n', 'v3dlib_gfx'),
     };
-    assert.deepEqual(report(files),
-        ['app/CMakeLists.txt: package-unlinked: app/main.cpp includes png.h, and nothing app links carries PNG::PNG']);
+    assert.deepEqual(report(files), [
+        'app/CMakeLists.txt: package-unlinked: app/main.cpp includes png.h, and nothing app links carries PNG::PNG',
+    ]);
 });
 
 /**
@@ -180,16 +197,18 @@ function applib(header: string, source: string, link: string): Record<string, st
     };
 }
 
-test('linkrule holds an app library\'s PUBLIC links to what its headers include', () => {
+test("linkrule holds an app library's PUBLIC links to what its headers include", () => {
     assert.deepEqual(report(applib(USES_GFX, '#include "Lib.h"\n', 'PUBLIC v3dlib_gfx')), []);
-    assert.deepEqual(report(applib(USES_GFX, '#include "Lib.h"\n', 'PRIVATE v3dlib_gfx')),
-        ['lib/CMakeLists.txt: visibility: lib/Lib.h includes api/gfx/Gfx.h, and v3dlib_applib links v3dlib_gfx PRIVATE']);
-    assert.deepEqual(report(applib('', USES_GFX, 'PUBLIC v3dlib_gfx')),
-        ['lib/CMakeLists.txt: visibility: v3dlib_applib links v3dlib_gfx PUBLIC, and none of its headers includes it']);
+    assert.deepEqual(report(applib(USES_GFX, '#include "Lib.h"\n', 'PRIVATE v3dlib_gfx')), [
+        'lib/CMakeLists.txt: visibility: lib/Lib.h includes api/gfx/Gfx.h, and v3dlib_applib links v3dlib_gfx PRIVATE',
+    ]);
+    assert.deepEqual(report(applib('', USES_GFX, 'PUBLIC v3dlib_gfx')), [
+        'lib/CMakeLists.txt: visibility: v3dlib_applib links v3dlib_gfx PUBLIC, and none of its headers includes it',
+    ]);
     assert.deepEqual(report(applib('', USES_GFX, 'PRIVATE v3dlib_gfx')), []);
 });
 
-test('linkrule reads an app library\'s internal header as private to it', () => {
+test("linkrule reads an app library's internal header as private to it", () => {
     const files = {
         ...applib('', '#include "internal/Detail.h"\n', 'PRIVATE v3dlib_gfx'),
         'lib/internal/Detail.h': USES_GFX,
@@ -197,12 +216,33 @@ test('linkrule reads an app library\'s internal header as private to it', () => 
     assert.deepEqual(report(files), []);
 });
 
-test('linkrule reads an app that uses an app library through the library\'s headers', () => {
+test("linkrule reads an app that uses an app library through the library's headers", () => {
     const files = {
         ...applib(USES_GFX, '#include "Lib.h"\n', 'PUBLIC v3dlib_gfx'),
         ...app('#include "lib/Lib.h"\n', 'v3dlib_applib'),
     };
     assert.deepEqual(report(files), []);
+});
+
+test("linkrule reads a library in a directory below an app library's as a library of its own", () => {
+    const inner = {
+        'lib/inner/CMakeLists.txt': 'add_library(v3dlib_inner Inner.cpp)\n',
+        'lib/inner/Inner.h': '#pragma once\n',
+        'lib/inner/Inner.cpp': '#include "Inner.h"\n',
+    };
+    const uses = '#include <lib/inner/Inner.h>\n';
+    assert.deepEqual(report({ ...applib(uses, '#include "Lib.h"\n', 'PUBLIC v3dlib_inner'), ...inner }), []);
+    assert.deepEqual(report({ ...applib(uses, '#include "Lib.h"\n', 'PUBLIC v3dlib_gfx'), ...inner }), [
+        'lib/CMakeLists.txt: missing-link: lib/Lib.h includes lib/inner/Inner.h, and v3dlib_applib does not link v3dlib_inner',
+        'lib/CMakeLists.txt: extra-link: v3dlib_applib links v3dlib_gfx, and none of its files includes its headers',
+    ]);
+});
+
+test('linkrule reads a TBB header as the TBB package', () => {
+    assert.deepEqual(report(app(USES_GFX + '#include <tbb/parallel_for.h>\n', 'v3dlib_gfx TBB::tbb')), []);
+    assert.deepEqual(report(app(USES_GFX + '#include <oneapi/tbb/task_arena.h>\n', 'v3dlib_gfx')), [
+        'app/CMakeLists.txt: package-unlinked: app/main.cpp includes oneapi/tbb/task_arena.h, and nothing app links carries TBB::tbb',
+    ]);
 });
 
 test('linkrule does not count an include inside a comment or an #if 0 block', () => {

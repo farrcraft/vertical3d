@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Scrollbar.h"
 
@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "SelectList.h"
+#include "Thumb.h"
 #include "Type.h"
 
 namespace v3d::ui::component {

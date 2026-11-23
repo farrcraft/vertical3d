@@ -11,13 +11,14 @@ editing.**
   one directory (`api/render/realtime/*.cpp` beside `api/render/realtime/vulkan/*.cxx`). Use the
   extension of the neighbouring files.
 - Every source file and header starts with the copyright block. A header follows it with
-  `#pragma once`.
+  `#pragma once`. The block opens with `/*`, not `/**`, because Doxygen takes a `/**` comment
+  as the description of the declaration after it, and in a header that is the namespace.
 
   ```
-  /**
+  /*
    * Vertical3D
    * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-   **/
+   */
   ```
 
 - Files use LF line endings. [.gitattributes](../../.gitattributes) sets `* text=auto eol=lf`. If
@@ -82,6 +83,10 @@ Background: [ADR-0048](../adr/project/0048-includes-name-headers-from-the-reposi
 - A typedef or an enum goes in the header of the class that gives it meaning.
 - When splitting leaves a family of headers that are only used together, such as an AST's node
   types or an app's ECS components, put them in a subdirectory of their own.
+- A header under `tests/` that fixtures share is exempt, as a test file is from the rules below.
+- `scripts/filelocal.ts` reports a header that defines a second class, struct or union at
+  namespace scope. An enum, a forward declaration and an explicit specialization, such as of
+  `std::hash`, are not counted.
 
 ### What a source file keeps to itself
 
@@ -151,8 +156,8 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
   headers that all implement one concept, so it stays one directory.
 - **A directory holds at most 15 headers, not counting those under `tests/`.** A directory past
   that size almost always does several jobs, so split it by them. The exception is a directory
-  whose headers all belong to one family that is used together, such as
-  `api/render/offline/sl/syntax`, which holds one header for each kind of syntax tree node. List
+  whose headers all belong to one family that is used together, such as `api/rib/requests`,
+  which holds one header for the arguments of each RIB request. List
   such a directory in `COHESIVE` in `scripts/dirsize.ts`, with the family it holds. Headers are
   counted rather than sources, because each class has one header and may have no source of its
   own. `scripts/dirsize.ts` reports a directory over the limit that is not listed, and a listed
@@ -165,7 +170,8 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
 
 - **A function is at most 100 lines.** A longer one does several steps that each deserve a
   name. Give each step a function of its own, named for what it does. clang-tidy's
-  `readability-function-size` reports a longer function.
+  `readability-function-size` reports a longer C++ function, and oxlint's
+  `max-lines-per-function` a longer TypeScript one.
 - **A C++ or TypeScript file is at most 1000 lines, unless it is a test.** A longer file is a
   class or a module doing several jobs. Split it into classes or modules with one job each,
   rather than spreading one class's definitions over several files. `scripts/filelength.ts`
@@ -199,7 +205,7 @@ Background: [ADR-0137](../adr/project/0137-code-only-stateless-helpers-are-file-
   reports a protected data member, and a public one in a class that also has private data.
 - **A record field that a designated initialiser may leave out has a default member
   initialiser.** Write `{}` when the type's default is the value wanted:
-  `std::vector<ColourStop> stops{};`. A field with no initialiser is one every initialiser has to
+  `std::vector<Stop> stops{};`. A field with no initialiser is one every initialiser has to
   name. Clang and GCC both report a designated initialiser that leaves such a field out, under
   `-Wextra`. MSVC does not, so the Clang build on Linux is where it fails. clang-tidy's
   `readability-redundant-member-init` would remove the `{}`, and is turned off for that reason.
@@ -297,6 +303,13 @@ there, and `node scripts/docs.ts` reports a break of each:
 
 A member is documented when it holds something its declaration cannot say, as any other comment
 is. An empty block above a trivial member is allowed.
+
+**Each namespace has one description.** It is a doc comment directly above the line that opens
+the namespace, in one public header of its directory, and says what the namespace holds. The
+other headers of the directory open the namespace with no comment above it. A namespace whose
+directory holds only other directories, such as `v3d::font`, is described by an `@namespace`
+block in [scripts/docs/namespaces.dox](../../scripts/docs/namespaces.dox). `scripts/namespaces.ts`
+reports a namespace of the reference that nothing describes, and one described twice.
 
 ## Documents
 

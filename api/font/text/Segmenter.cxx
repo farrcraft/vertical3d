@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Segmenter.h"
 
@@ -9,7 +9,9 @@
 #include <api/font/text/internal/Icu.h>
 #include <api/log/Logger.h>
 #include <unicode/ubrk.h>
+#include <unicode/uchar.h>
 #include <unicode/utext.h>
+#include <unicode/utf8.h>
 #include <unicode/utypes.h>
 
 #include <cstddef>
@@ -50,6 +52,21 @@ Text attach(UBreakIterator* iterator, std::string_view utf8) {
     return text;
 }
 
+/**
+ * Whether the text before a break ends in a line terminator, after which a line has to end. ICU
+ * reports the end of the text as a hard break too, whatever precedes it.
+ **/
+bool afterTerminator(std::string_view utf8, std::size_t offset) {
+    if (offset == 0) {
+        return false;
+    }
+    std::int32_t at = static_cast<std::int32_t>(offset);  // checked: ICU gave the offset as an int32_t
+    UChar32 previous = 0;
+    U8_PREV(reinterpret_cast<const std::uint8_t*>(utf8.data()), 0, at, previous);
+    const std::int32_t kind = u_getIntPropertyValue(previous, UCHAR_LINE_BREAK);
+    return kind == U_LB_MANDATORY_BREAK || kind == U_LB_CARRIAGE_RETURN || kind == U_LB_LINE_FEED || kind == U_LB_NEXT_LINE;
+}
+
 };  // namespace
 
 Segmenter::Segmenter(const std::string& locale, const boost::shared_ptr<v3d::log::Logger>& logger) :
@@ -80,7 +97,7 @@ std::vector<std::size_t> Segmenter::graphemes(std::string_view utf8) const {
     return offsets;
 }
 
-std::vector<WordSegment> Segmenter::words(std::string_view utf8) const {
+std::vector<Segmenter::WordSegment> Segmenter::words(std::string_view utf8) const {
     std::vector<WordSegment> segments;
     if (utf8.empty()) {
         return segments;
@@ -100,7 +117,7 @@ std::vector<WordSegment> Segmenter::words(std::string_view utf8) const {
     return segments;
 }
 
-std::vector<LineBreak> Segmenter::lineBreaks(std::string_view utf8) const {
+std::vector<Segmenter::LineBreak> Segmenter::lineBreaks(std::string_view utf8) const {
     std::vector<LineBreak> breaks;
     if (utf8.empty()) {
         return breaks;
@@ -112,7 +129,8 @@ std::vector<LineBreak> Segmenter::lineBreaks(std::string_view utf8) const {
     }
     for (std::int32_t offset = ubrk_next(handle_->lines); offset != UBRK_DONE; offset = ubrk_next(handle_->lines)) {
         const std::int32_t status = ubrk_getRuleStatus(handle_->lines);
-        breaks.push_back({static_cast<std::size_t>(offset), status >= UBRK_LINE_HARD && status < UBRK_LINE_HARD_LIMIT});
+        const bool hard = status >= UBRK_LINE_HARD && status < UBRK_LINE_HARD_LIMIT;
+        breaks.push_back({static_cast<std::size_t>(offset), hard && afterTerminator(utf8, static_cast<std::size_t>(offset))});
     }
     return breaks;
 }

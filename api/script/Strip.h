@@ -1,33 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <cstddef>
-#include <optional>
-#include <string>
 #include <string_view>
 
+#include "Stripped.h"
+
 namespace v3d::script {
-
-/**
- * Where a script could not be stripped, and why.
- **/
-struct Problem final {
-    std::size_t line = 0;       /**< from 1 **/
-    std::size_t column = 0;     /**< from 1, in bytes **/
-    std::string message;
-};
-
-/**
- * TypeScript with its types taken out, or why they could not be.
- **/
-struct Stripped final {
-    std::string code;                   /**< the JavaScript left, the source's length and lines **/
-    std::optional<Problem> problem;     /**< set, with no code, when the source was refused **/
-};
 
 /**
  * Take the types out of TypeScript, and leave JavaScript to run.

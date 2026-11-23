@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -13,8 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "Into.h"
 #include "Scene.h"
-#include "Timeline.h"
 
 namespace v3d::editor::scene {
 
@@ -33,14 +33,6 @@ struct Import final {
      * What the file held that the scene cannot, or what could not be made, one line each.
      **/
     std::vector<std::string> notes;
-};
-
-/**
- * What an import is made to fit: the timeline its keys go on, and the unit its lengths are in.
- **/
-struct Into final {
-    float rate = Timeline::DEFAULT_RATE;  /**< the frames a second of the timeline the keys go on **/
-    double metres = 1.0;                  /**< how many metres one unit of the scene is **/
 };
 
 /**

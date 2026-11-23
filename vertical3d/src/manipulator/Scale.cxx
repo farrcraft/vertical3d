@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Scale.h"
 
@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "Manipulator.h"
+#include "Motion.h"
 #include "Screen.h"
 #include "Target.h"
 

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,11 +20,11 @@
 namespace v3d::editor::control {
 
 /**
- * The render settings: an editor of the document's width, height, samples and hider.
+ * The render settings: an editor of the document's width, height and samples.
  *
  * Each number is dragged or typed, and a change is recorded when its drag or its typing ends. A
  * number that is not a whole one within its range is refused, and its field shows the document's
- * again. A choice of hider is recorded as it is made. Every change is one change in the history.
+ * again. Every change is one change in the history.
  **/
 class RenderSettingsEditor final {
  public:

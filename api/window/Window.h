@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -20,6 +20,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses
+ * no graphics API.
+ **/
 namespace v3d::window {
 /**
  * An OS window, and the platform calls that act on it: its size, caption, icon, focus, full

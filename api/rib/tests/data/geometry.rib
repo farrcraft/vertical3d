@@ -1,0 +1,32 @@
+##RenderMan RIB
+# Every geometry and instancing request the reader takes beyond the polygon, the sphere and
+# curves, so the fuzzer starts from each.
+version 3.04
+Format 64 48 1
+WorldBegin
+ObjectBegin 1
+Points "P" [0 0 5 1 1 5] "width" [0.1 0.2]
+ObjectEnd
+ObjectBegin "leaf"
+Disk 0 1 360
+ObjectEnd
+AttributeBegin
+Translate 0 0 5
+ObjectInstance 1
+ObjectInstance "leaf"
+Cone 1 0.5 360
+Cylinder 0.5 -1 1 270
+Hyperboloid 1 0 -1 0.5 0 1 360 "Cs" [1 0 0 0 1 0 0 0 1 1 1 1]
+Paraboloid 1 0 1 360
+Torus 1 0.25 0 360 360
+MotionBegin [0 1]
+Cone 1 0.5 360
+Cone 2 0.5 360
+MotionEnd
+SubdivisionMesh "catmull-clark" [4] [0 1 2 3]
+	["crease" "corner" "hole" "interpolateboundary"] [2 1 1 1 1 0 1 0] [0 1 2 0 1] [2.5 4]
+	"P" [-1 -1 0 1 -1 0 1 1 0 -1 1 0]
+SubdivisionMesh "loop" [3] [0 1 2] ["corner"] [1 1 0] [2] [3] []
+	"P" [0 0 0 1 0 0 0 1 0]
+AttributeEnd
+WorldEnd

@@ -1,0 +1,265 @@
+camera "camera"
+    far float = 100
+    focalDistance float = 0
+    focalLength float = 0
+    fov float = 40
+    fstop float = inf
+    near float = 0.01
+    projection string = "perspective"
+    screen float[0] =
+    shutter float[2] = 0 0
+    transform matrix = [1 0 0 0 0 0.939693 0.34202 0 0 -0.34202 0.939693 0 0 1.7101 -4.69846 1]
+connection "blocks to base_color of painted"
+    from handle = shader "blocks"
+    input string = "base_color"
+    output string = "out"
+    to handle = shader "painted"
+connection "cell to value1 of kept"
+    from handle = shader "cell"
+    input string = "value1"
+    output string = "out"
+    to handle = shader "kept"
+connection "finer to position of wobble"
+    from handle = shader "finer"
+    input string = "position"
+    output string = "out"
+    to handle = shader "wobble"
+connection "kept to geometry_opacity of card"
+    from handle = shader "kept"
+    input string = "geometry_opacity"
+    output string = "out"
+    to handle = shader "card"
+connection "map to geometry_normal of bumpy"
+    from handle = shader "map"
+    input string = "geometry_normal"
+    output string = "out"
+    to handle = shader "bumpy"
+connection "st to in1 of tiles"
+    from handle = shader "st"
+    input string = "in1"
+    output string = "out"
+    to handle = shader "tiles"
+connection "tiles to texcoord of cell"
+    from handle = shader "tiles"
+    input string = "texcoord"
+    output string = "out"
+    to handle = shader "cell"
+connection "tilt to in of map"
+    from handle = shader "tilt"
+    input string = "in"
+    output string = "out"
+    to handle = shader "map"
+connection "where to in1 of finer"
+    from handle = shader "where"
+    input string = "in1"
+    output string = "out"
+    to handle = shader "finer"
+connection "wobble to in1 of tilt"
+    from handle = shader "wobble"
+    input string = "in1"
+    output string = "out"
+    to handle = shader "tilt"
+distantLight "light 1"
+    angle float = 0
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 2
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    transform matrix = [-0.8 0 0.6 0 0.424264 0.707107 0.565685 0 -0.424264 0.707107 -0.565685 0 0 0 0 1]
+domeLight "light sky"
+    camera integer = 1
+    colorTemperature float = 6500
+    colour colour = (1, 1, 1)
+    enableColorTemperature integer = 0
+    exposure float = 0
+    format string = "automatic"
+    includeRoot integer = 1
+    instances handle[0] =
+    intensity float = 0.25
+    lightGroup string = ""
+    normalize integer = 0
+    shadowIncludeRoot integer = 1
+    shadowInstances handle[0] =
+    texture string = ""
+    transform matrix = [0 -1 0 0 0 0 1 0 -1 0 0 0 0 0 0 1]
+instance "Polygon 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material"
+    priority integer = 0
+    prototype handle = mesh "Polygon 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 2"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 2"
+    priority integer = 0
+    prototype handle = mesh "Polygon 2"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Polygon 3"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 4"
+    priority integer = 0
+    prototype handle = mesh "Polygon 3"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]
+instance "Sphere 1"
+    camera integer = 1
+    doubleSided integer = 1
+    group handle = none
+    indirect integer = 1
+    material handle = material "material 3"
+    priority integer = 0
+    prototype handle = sphere "Sphere 1"
+    shadow integer = 1
+    transform matrix = [1 0 0 0 0 1 0 0 0 0 1 0 0 -0.55 0 1]
+material "material"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "floor"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+material "material 2"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "painted"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+material "material 3"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "bumpy"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+material "material 4"
+    displacement handle = none
+    displacementOutput string = "out"
+    surface handle = shader "card"
+    surfaceOutput string = "out"
+    volume handle = none
+    volumeOutput string = "out"
+mesh "Polygon 1"
+    P point[4] = (-3, -1, -2) (3, -1, -2) (3, -1, 2) (-3, -1, 2)
+    indices integer[4] = 0 1 2 3
+    vertices integer[1] = 4
+mesh "Polygon 2"
+    P point[4] = (-2, -1, 0.3) (-1, -1, 0.3) (-1, 0, 0.3) (-2, 0, 0.3)
+    indices integer[4] = 0 1 2 3
+    st float2[4] varying = 0 1 1 1 1 0 0 0
+    vertices integer[1] = 4
+mesh "Polygon 3"
+    P point[4] = (1, -1, 0) (2, -1, 0) (2, 0, 0) (1, 0, 0)
+    indices integer[4] = 0 1 2 3
+    st float2[4] varying = 0 1 1 1 1 0 0 0
+    vertices integer[1] = 4
+options "options"
+    background colour[0] =
+    camera handle = camera "camera"
+    crop float[4] = 0 1 0 1
+    deepTolerance float = 0.001
+    denoise integer = 0
+    dicingCamera handle = none
+    diffuseDepth integer = 4
+    edgeLength float = 1
+    filter string = "gaussian"
+    filterWidth float[2] = 2 2
+    frame integer = 0
+    frameAspect float = 0
+    glossyDepth integer = 4
+    lightPicking string = "tree"
+    lightSampling string = "mis"
+    maxDepth integer = 12
+    minSamples integer = 16
+    noiseThreshold float = 0
+    pixelAspect float = 1
+    resolution integer[2] = 96 64
+    rouletteDepth integer = 3
+    samples integer = 64
+    shaderSearchPath string = ""
+    specularDepth integer = 12
+    subsurfaceDepth integer = 256
+    textureDirectory string = ""
+    textureMemory integer = 1048576
+    textureSearchPath string = "data:"
+    transmissionDepth integer = 12
+    volumeDepth integer = 4
+shader "blocks"
+    file string = "blocks.png"
+    language string = "materialx"
+    shader string = "ND_image_color3"
+shader "bumpy"
+    base_color colour = (0.8, 0.3, 0.2)
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+    specular_roughness float = 0.25
+shader "card"
+    base_color colour = (0.2, 0.6, 0.3)
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+shader "cell"
+    language string = "materialx"
+    shader string = "ND_cellnoise2d_float"
+shader "finer"
+    in2 float = 6
+    language string = "materialx"
+    shader string = "ND_multiply_vector3FA"
+shader "floor"
+    base_color colour = (0.5, 0.5, 0.5)
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+    specular_roughness float = 0.6
+shader "kept"
+    in1 float = 1
+    in2 float = 0
+    language string = "materialx"
+    shader string = "ND_ifgreater_float"
+    value2 float = 0.4
+shader "map"
+    language string = "materialx"
+    shader string = "ND_normalmap_float"
+shader "painted"
+    language string = "materialx"
+    shader string = "ND_open_pbr_surface_surfaceshader"
+    specular_roughness float = 0.4
+shader "st"
+    language string = "materialx"
+    shader string = "ND_texcoord_vector2"
+shader "tiles"
+    in2 float = 4
+    language string = "materialx"
+    shader string = "ND_multiply_vector2FA"
+shader "tilt"
+    in2 float[3] = 0.5 0.5 1
+    language string = "materialx"
+    shader string = "ND_add_vector3"
+shader "where"
+    language string = "materialx"
+    shader string = "ND_position_vector3"
+shader "wobble"
+    amplitude float[3] = 0.35 0.35 0
+    language string = "materialx"
+    shader string = "ND_noise3d_vector3"
+sphere "Sphere 1"
+    radius float = 0.45
+    thetamax float = 360
+    zmax float = 0.45
+    zmin float = -0.45

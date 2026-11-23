@@ -15,6 +15,19 @@ repos:
   - id: cpplint
     args: [--linelength=180]
     exclude: ^(out|vendor|vcpkg_installed)/
+# The workflows' audits, each pinned to the commit of the release the workflows job installs.
+# zizmor checks them, Dependabot's configuration and this file for security, and actionlint
+# checks the workflows for correctness. actionlint checks a step's shell script only where
+# shellcheck is installed, and the workflows job installs it.
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: c7d31dc612dffdd4d3b2f2b88b9660d3ab057ee8  # v1.33.1
+  hooks:
+  - id: zizmor
+    args: [--no-progress, --offline]
+- repo: https://github.com/rhysd/actionlint
+  rev: 914e7df21a07ef503a81201c76d2b11c789d3fca  # v1.7.12
+  hooks:
+  - id: actionlint
 # Each gate reads the tree itself, so none is passed file names. A gate whose rule covers only
 # some files runs when one of them, or anything under scripts/, is staged. The rest always run,
 # because a rename anywhere can break what they check.
@@ -74,12 +87,12 @@ repos:
     language: system
     pass_filenames: false
     files: \.(h|cpp|cxx)$|^scripts/
-  - id: pinned
-    name: pinned.ts
-    entry: node scripts/pinned.ts
+  - id: kernel
+    name: kernel.ts
+    entry: node scripts/kernel.ts
     language: system
     pass_filenames: false
-    files: ^\.github/|^scripts/
+    files: ^moya/libmoya/kernel/|^scripts/
   - id: npm
     name: npm.ts
     entry: node scripts/npm.ts

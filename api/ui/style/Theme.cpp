@@ -1,12 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Theme.h"
 
 #include "Button.h"
 #include "Menu.h"
+#include "Selector.h"
 #include "Style.h"
 
 #include <cstddef>

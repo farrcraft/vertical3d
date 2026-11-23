@@ -26,14 +26,18 @@ export function describeExit(status: number | null, signal: string | null): stri
         return 'no status';
     }
     // an NTSTATUS read as a signed number is negative
-    return status > 0xFFFF || status < 0 ? `0x${(status >>> 0).toString(16).toUpperCase()}` : String(status);
+    return status > 0xffff || status < 0 ? `0x${(status >>> 0).toString(16).toUpperCase()}` : String(status);
 }
 
 export type Outcome = { error: Error | undefined; status: number | null; signal: string | null; output: string };
 
 export function runCase(c: Case, executable: string, env: Env, timeout: number): void {
     const done = spawnSync(executable, [`--run_test=${c.path}`, '--detect_memory_leaks=0'], {
-        cwd: path.dirname(executable), env, encoding: 'utf8', maxBuffer: MAX_BUFFER, timeout: timeout * 1000,
+        cwd: path.dirname(executable),
+        env,
+        encoding: 'utf8',
+        maxBuffer: MAX_BUFFER,
+        timeout: timeout * 1000,
     });
     const output = (done.stdout ?? '') + (done.stderr ?? '');
     classify(c, { error: done.error, status: done.status, signal: done.signal, output }, timeout);

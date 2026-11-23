@@ -1,13 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Type.h"
 
-#include <api/font/text/Feature.h>
+#include <api/font/text/shaping/Feature.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Style.h>
 
 #include <optional>
 #include <string>
@@ -62,7 +62,7 @@ std::optional<font::text::Paragraph> Type::paragraph(const std::string& text) co
  **/
 void Type::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour) const {
     if (text_) {
-        font::text::Style styled = style();
+        font::text::style::Style styled = style();
         styled.colour = colour;
         text_->draw(canvas, text, pen, styled);
     }
@@ -98,13 +98,13 @@ Type Type::tabular() const {
 
 /**
  **/
-font::text::Style Type::style() const {
+font::text::style::Style Type::style() const {
     if (!text_) {
-        return font::text::Style();
+        return font::text::style::Style();
     }
-    font::text::Style styled = text_->style(size_, weight_);
+    font::text::style::Style styled = text_->style(size_, weight_);
     if (tabular_) {
-        styled.features.push_back(font::text::Feature{ .tag = "tnum" });
+        styled.features.push_back(font::text::shaping::Feature{ .tag = "tnum" });
     }
     return styled;
 }

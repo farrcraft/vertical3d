@@ -13,9 +13,11 @@ import type { Case, Change, Found, SuiteEntry } from './types.ts';
 // a fixture names the case in its second argument, and every other macro in its first.
 const TOKEN = new RegExp(
     '\\b(BOOST_AUTO_TEST_SUITE_END|BOOST_AUTO_TEST_SUITE|BOOST_FIXTURE_TEST_SUITE' +
-    '|BOOST_AUTO_TEST_CASE_TEMPLATE|BOOST_FIXTURE_TEST_CASE_TEMPLATE' +
-    '|BOOST_DATA_TEST_CASE_F|BOOST_AUTO_TEST_CASE|BOOST_FIXTURE_TEST_CASE|BOOST_DATA_TEST_CASE)' +
-    '\\s*\\(([^)]*)', 'g');
+        '|BOOST_AUTO_TEST_CASE_TEMPLATE|BOOST_FIXTURE_TEST_CASE_TEMPLATE' +
+        '|BOOST_DATA_TEST_CASE_F|BOOST_AUTO_TEST_CASE|BOOST_FIXTURE_TEST_CASE|BOOST_DATA_TEST_CASE)' +
+        '\\s*\\(([^)]*)',
+    'g',
+);
 const NAME_ARGUMENT: Record<string, number> = {
     BOOST_AUTO_TEST_SUITE: 0,
     BOOST_FIXTURE_TEST_SUITE: 0,
@@ -56,14 +58,19 @@ function markedText(text: string, at: number, marker: RegExp): string | null {
         comment = before.slice(start);
     } else {
         const lines = before.split('\n');
-        const kept: string[] = [];
-        while (lines.at(-1)?.trim().startsWith('//')) {
-            kept.unshift(lines.pop() as string);
+        let start = lines.length;
+        while (lines[start - 1]?.trim().startsWith('//') === true) {
+            start--;
         }
-        comment = kept.join('\n');
+        comment = lines.slice(start).join('\n');
     }
-    const lines = comment.split(/\r?\n/).map((line) => line.trim()
-        .replace(/^\/\*+|^\/\/+|^\*+(?!\/)/, '').replace(/\*+\/$/, '').trim());
+    const lines = comment.split(/\r?\n/).map((line) =>
+        line
+            .trim()
+            .replace(/^\/\*+|^\/\/+|^\*+(?!\/)/, '')
+            .replace(/\*+\/$/, '')
+            .trim(),
+    );
     const first = lines.findIndex((line) => marker.test(line));
     if (first < 0) {
         return null;
@@ -133,7 +140,7 @@ export function inBase(covers: string, base: string): string | null {
 export function findNewCases(base: string, head: string, changes: Change[]): { cases: Case[]; unregistered: string[] } {
     const headMap = suiteMap(head);
     const baseMap = suiteMap(base);
-    const touched = [...new Set(changes.map((c) => c.file).filter((f) => isTestPath(f) && isSource(f)))].sort();
+    const touched = [...new Set(changes.map((c) => c.file).filter((f) => isTestPath(f) && isSource(f)))].toSorted();
 
     const collect = (revision: string, mapping: Map<string, SuiteEntry>): Map<string, Map<string, [string, Found]>> => {
         const bySuite = new Map<string, Map<string, [string, Found]>>();
@@ -159,13 +166,19 @@ export function findNewCases(base: string, head: string, changes: Change[]): { c
     const now = collect(head, headMap);
     const before = collect(base, baseMap);
     const cases: Case[] = [];
-    for (const suite of [...now.keys()].sort()) {
+    for (const suite of [...now.keys()].toSorted()) {
         for (const [name, [file, found]] of now.get(suite)!) {
             if (!before.get(suite)?.has(name)) {
                 const claim = found.covers;
                 cases.push({
-                    path: name, suite, file, stated: found.stated, claim, covers: claim === null ? null : inBase(claim, base),
-                    result: null, note: '',
+                    path: name,
+                    suite,
+                    file,
+                    stated: found.stated,
+                    claim,
+                    covers: claim === null ? null : inBase(claim, base),
+                    result: null,
+                    note: '',
                 });
             }
         }

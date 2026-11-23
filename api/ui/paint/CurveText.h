@@ -1,17 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
-#include <api/font/glyph/CurveStore.h>
+#include <api/font/glyph/curve/Store.h>
 #include <api/font/glyph/Store.h>
 #include <api/font/text/Paragraph.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/canvas/World.h>
-#include <api/ui/paint/internal/EffectQuad.h>
+#include <api/ui/paint/internal/PlacedEffect.h>
 
 #include <array>
 #include <cstdint>
@@ -33,7 +33,7 @@ namespace v3d::ui::paint {
  *
  * Each glyph is a quad over its outline, a little wider on every side so its edge is not cut,
  * whose corners carry their place in the em square. The quad shaders find each pixel's coverage
- * from the curves that cross it. The curves come from a font::glyph::CurveStore, read the first
+ * from the curves that cross it. The curves come from a font::glyph::curve::Store, read the first
  * time a glyph is drawn at any size, and reach the device through CurvePages.
  *
  * A glyph its face draws in colour is drawn from its layers' curves, through a program the
@@ -105,7 +105,7 @@ class CurveText final {
     /**
      * @return the store the curves are kept in
      **/
-    const font::glyph::CurveStore& store() const noexcept;
+    const font::glyph::curve::Store& store() const noexcept;
 
     /**
      * @return the store the effects' distance fields are kept in
@@ -118,7 +118,7 @@ class CurveText final {
      * its colour.
      **/
     struct Placed {
-        font::glyph::StoredCurves stored;
+        font::glyph::curve::Store::StoredCurves stored;
         glm::vec2 origin{ 0.0F };
         float size = 0.0F;
         glm::vec4 colour{ 1.0F };
@@ -130,7 +130,7 @@ class CurveText final {
      * left and bottom right, and its colour, white faded by the text's alpha.
      **/
     struct PlacedPicture {
-        font::glyph::StoredGlyph glyph;
+        font::glyph::Store::StoredGlyph glyph;
         glm::vec2 low{ 0.0F };
         glm::vec2 high{ 0.0F };
         glm::vec4 colour{ 1.0F };
@@ -141,7 +141,7 @@ class CurveText final {
      *
      * @return whether it was placed, and false for a glyph whose colour draws nothing
      **/
-    bool placeColour(const font::text::LineRun& run, unsigned int index, const font::text::Style& styled, const glm::vec2& origin);
+    bool placeColour(const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Style& styled, const glm::vec2& origin);
 
     /**
      * @return a picture's corners in the paragraph's space: top left, top right, bottom right,
@@ -171,7 +171,7 @@ class CurveText final {
      * @return a glyph's em corners, wider than its outline by a margin in em units: top left,
      *         top right, bottom right, bottom left, with y upwards
      **/
-    static std::array<glm::vec2, 4> emCorners(const font::glyph::StoredCurves& stored, float margin);
+    static std::array<glm::vec2, 4> emCorners(const font::glyph::curve::Store::StoredCurves& stored, float margin);
 
     /**
      * @return the corners in the paragraph's space, with y downwards
@@ -194,7 +194,7 @@ class CurveText final {
      **/
     static render::realtime::canvas::World::Corners inWorld(const internal::PlacedEffect& effect, const glm::mat4& transform);
 
-    font::glyph::CurveStore store_;
+    font::glyph::curve::Store store_;
     CurvePages pages_;
     font::glyph::Store fields_;
     GlyphPages fieldPages_;

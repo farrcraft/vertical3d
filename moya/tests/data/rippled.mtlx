@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <!--
+    A matte surface moved along its normal by amount, and by wave times a sine of x in object
+    space on top, so a flat surface comes out flat and lifted, or rippled.
+  -->
+  <nodegraph name="ripples">
+    <position name="where" type="vector3" />
+    <extract name="x" type="float">
+      <input name="in" type="vector3" nodename="where" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <!-- three ripples across the plane's 2.4 units of x -->
+    <multiply name="phase" type="float">
+      <input name="in1" type="float" nodename="x" />
+      <input name="in2" type="float" value="7.853982" />
+    </multiply>
+    <sin name="wave" type="float">
+      <input name="in" type="float" nodename="phase" />
+    </sin>
+    <multiply name="ripple" type="float">
+      <input name="in1" type="float" nodename="wave" />
+      <input name="in2" type="float" value="0.08" />
+    </multiply>
+    <add name="lift" type="float">
+      <input name="in1" type="float" nodename="ripple" />
+      <input name="in2" type="float" value="-0.08" />
+    </add>
+    <output name="height" type="float" nodename="lift" />
+  </nodegraph>
+  <displacement name="lifted" type="displacementshader">
+    <input name="displacement" type="float" nodegraph="ripples" output="height" />
+  </displacement>
+  <open_pbr_surface name="plain" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.8, 0.8, 0.85" />
+    <input name="specular_weight" type="float" value="0" />
+  </open_pbr_surface>
+  <surfacematerial name="rippled" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="plain" />
+    <input name="displacementshader" type="displacementshader" nodename="lifted" />
+  </surfacematerial>
+</materialx>

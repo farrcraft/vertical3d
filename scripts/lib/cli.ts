@@ -74,8 +74,12 @@ export function runGate(url: string, main: () => number): void {
  * Every option has to be one the gate takes, with a value when it needs one, and an option that
  * takes a value refuses an empty one. Anything else throws a UsageError carrying the usage.
  */
-export function options<T extends ParseArgsOptionsConfig>(usage: string, config: T, positionals = false,
-    args: string[] = process.argv.slice(2)) {
+export function options<T extends ParseArgsOptionsConfig>(
+    usage: string,
+    config: T,
+    positionals = false,
+    args: string[] = process.argv.slice(2),
+) {
     let parsed;
     try {
         parsed = parseArgs({ args, options: config, strict: true, allowPositionals: positionals });

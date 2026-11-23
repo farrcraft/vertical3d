@@ -49,7 +49,7 @@ import { tracked } from './lib/git.ts';
 import { ROOT } from './lib/tree.ts';
 import { type Report, check } from './linkrule/rules.ts';
 import { Tree } from './linkrule/scan.ts';
-import { type Target, loadTargets } from './linkrule/targets.ts';
+import { loadTargets } from './linkrule/targets.ts';
 
 export { includesIn, usesIn } from './linkrule/cpp.ts';
 
@@ -64,8 +64,7 @@ export function violations(root: string, cmakeFiles: readonly string[], apiFiles
     const add: Report = (where, rule, detail) => {
         found.push({ path: where, line: null, rule, message: detail });
     };
-    for (const name of [...targets.keys()].sort()) {
-        const t = targets.get(name) as Target;
+    for (const [, t] of [...targets].toSorted(([a], [b]) => a.localeCompare(b))) {
         if (t.kind !== 'api') {
             check(tree, t, boost, add);
         }

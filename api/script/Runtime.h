@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,29 +10,22 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <optional>
-#include <stdexcept>
-#include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/json.hpp>
 
-#include "Strip.h"
+#include "Refused.h"
+#include "Result.h"
 
 struct JSRuntime;
 struct JSContext;
 
-namespace v3d::script {
-
 /**
- * What a function a script calls throws to refuse the call. The script sees it as an Error with
- * the same message, which it can catch.
+ * TypeScript run on QuickJS: a runtime that strips the types of a script and runs it, with the
+ * functions a host binds into it.
  **/
-class Refused final : public std::runtime_error {
- public:
-    explicit Refused(const std::string& message);
-};
+namespace v3d::script {
 
 /**
  * Something a script can call: it takes the call's arguments as JSON values, and returns one.
@@ -40,14 +33,6 @@ class Refused final : public std::runtime_error {
  * null returned is undefined in the script, so a function with nothing to return gives nothing.
  **/
 using Function = std::function<boost::json::value(const boost::json::array& arguments)>;
-
-/**
- * What one run of a script did.
- **/
-struct Result final {
-    std::string value;                  /**< the value of the last statement run, as a person reads it, or empty for none **/
-    std::optional<Problem> problem;     /**< why it stopped early, and where when that is known **/
-};
 
 /**
  * Runs TypeScript, on QuickJS-ng.

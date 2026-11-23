@@ -1,17 +1,18 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "EffectQuad.h"
 
 #include <api/font/glyph/Field.h>
 #include <api/font/glyph/Store.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/style/Effect.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/FieldRamp.h>
 #include <api/ui/paint/GlyphPages.h>
+#include <api/ui/paint/internal/PlacedEffect.h>
 
 #include <algorithm>
 #include <array>
@@ -26,13 +27,13 @@
 
 namespace v3d::ui::paint::internal {
 
-std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::LineRun& run, unsigned int index, const font::text::Effect& effect) {
+std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Effect& effect) {
     const float size = run.size;
     if (store == nullptr || !run.face || !(size > 0.0F)) {
         return std::nullopt;
     }
-    const font::glyph::Key key = font::glyph::fieldKey(run.face.get(), index, font::glyph::effectReach(effect, size), run.coordinates);
-    const std::optional<font::glyph::StoredGlyph> stored = store->glyph(key, font::glyph::field);
+    const font::glyph::Store::Key key = font::glyph::fieldKey(run.face.get(), index, font::glyph::effectReach(effect, size), run.coordinates);
+    const std::optional<font::glyph::Store::StoredGlyph> stored = store->glyph(key, font::glyph::field);
     if (!stored.has_value() || stored->size.x == 0 || stored->size.y == 0) {
         return std::nullopt;
     }
@@ -48,8 +49,8 @@ std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text
         .ramp = render::realtime::canvas::fieldRamp(ramp.x, ramp.y) };
 }
 
-void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::LineRun& run, unsigned int index,
-    const std::vector<font::text::Effect>& effects, const glm::vec2& pen) {
+void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::Paragraph::LineRun& run, unsigned int index,
+    const std::vector<font::text::style::Effect>& effects, const glm::vec2& pen) {
     for (std::size_t layer = 0; layer < effects.size(); layer++) {
         std::optional<EffectQuad> quad = effectQuad(store, run, index, effects[layer]);
         if (quad.has_value()) {

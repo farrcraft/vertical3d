@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Delegate.h"
 
@@ -13,6 +13,7 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstdint>
+#include <utility>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
@@ -32,7 +33,6 @@ Delegate::~Delegate() {
 /**
  **/
 void Delegate::render(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
-    cancel();
     last_ = Signature::of(scene, from, settings);
     rendered_ = true;
     start(scene, from, settings);
@@ -41,11 +41,15 @@ void Delegate::render(const scene::Scene& scene, const v3d::type::camera::Profil
 /**
  **/
 bool Delegate::update(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
-    if (!rendered_ || Signature::of(scene, from, settings) == last_) {
+    if (!rendered_) {
         return false;
     }
-    render(scene, from, settings);
-    return true;
+    Signature now = Signature::of(scene, from, settings);
+    if (now == last_) {
+        return false;
+    }
+    last_ = std::move(now);
+    return edit(scene, from, settings);
 }
 
 /**

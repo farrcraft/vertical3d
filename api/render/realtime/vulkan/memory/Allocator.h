@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -16,6 +16,9 @@
 // keeps vk_mem_alloc.h out of every file except Allocator.cxx and VmaImpl.cxx
 VK_DEFINE_HANDLE(VmaAllocator)
 
+/**
+ * Device memory: allocation, buffers and images, layout transitions, and uploads through staging.
+ **/
 namespace v3d::render::realtime::vulkan::memory {
 
 /**

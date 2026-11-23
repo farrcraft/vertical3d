@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "ViewCommands.h"
 
@@ -58,7 +58,7 @@ ViewCommands::ViewCommands(const Context& context) :
  **/
 void ViewCommands::registerCommands(CommandTable* table) const {
     // the shading is kept in the editor's state, so a saved layout and the view's tab show it
-    for (const view::Shading shading : { view::Shading::Flat, view::Shading::Smooth }) {
+    for (const view::Shading shading : { view::Shading::Flat, view::Shading::Smooth, view::Shading::Rendered }) {
         display(table, "view::shade::" + std::string(view::name(shading)), [shading](const Context::Placed& at, view::ViewPort* view) {
             view->display().shading = shading;
             at.layout->set(at.layout->areas()[at.area].editor().id, "shading", boost::json::string(view::name(shading)));

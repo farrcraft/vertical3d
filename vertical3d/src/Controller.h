@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -38,6 +38,7 @@
 #include <vertical3d/src/tool/CameraControl.h>
 #include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
+#include <vertical3d/src/view/RenderedViews.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -258,9 +259,9 @@ class Controller final : public v3d::engine::Engine {
     void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
-     * @return whether any area or opened window shows an editor of a kind
+     * @return the channel of each render view an area or an opened window shows
      **/
-    bool shows(std::string_view kind) const;
+    std::vector<control::RenderView::Channel> renderChannels() const;
 
     /**
      * Show an editor of a kind in a window of its own: the first an opened window holds, or a
@@ -313,8 +314,17 @@ class Controller final : public v3d::engine::Engine {
      * header. The layer has the mouse while the pointer gives the panels the cursor in the
      * window it is in.
      **/
-    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, view::AreaLayout& layout,
         control::chrome::Pointer* pointer, std::uint32_t window);
+
+    /**
+     * Draw a render view in the channel its editor's state names, and keep the channel its first
+     * row chooses in that state.
+     *
+     * @return what a click on its buttons asked for
+     **/
+    control::RenderView::Asked drawRenderView(v3d::ui::Immediate* layer, view::AreaLayout& layout, const view::AreaLayout::Editor& editor,
+        const glm::vec4& region);
 
     /**
      * Lay out each opened window's areas in it, and build their headers again where they
@@ -412,6 +422,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::GraphEditor> graph_;
     boost::shared_ptr<control::ConsoleEditor> console_;
     boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
+    // the render session of each view in rendered shading
+    boost::shared_ptr<view::RenderedViews> rendered_;
     // what a render view's buttons asked for in the last frame drawn
     control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
 
@@ -451,6 +463,11 @@ class Controller final : public v3d::engine::Engine {
      * The sides a kept window is opened again at, outside which it opens at its first size.
      **/
     static constexpr int MIN_OPENED = 64;
+
+    /**
+     * The largest pixel size a view's state can give its rendered picture.
+     **/
+    static constexpr int MOST_PIXELS = 16;
     static constexpr int MAX_OPENED = 16384;
 
     // the windows a workspace kept, held until there is a ui to open them in

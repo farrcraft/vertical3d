@@ -32,13 +32,17 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 ## Open roadmaps
 
-None.
+| Roadmap | What it covers |
+|---|---|
+| [EditorScripting.md](EditorScripting.md) | Scenes a script can finish: a rotation order for each item, shared meshes in a scene document, commands to place an item and set a key's interpolation, a headless mode, and batches in parallel |
+| [MoyaRebuild.md](MoyaRebuild.md) | moya rebuilt as a spectral path tracer: a kernel source for every device, a retained scene interface, its own BVH, a BSDF library fed by MaterialX, physically based lights, compositing output, volumes, HIP and OptiX back ends, Hydra and OSL |
+| [ProductionSuite.md](ProductionSuite.md) | Vertical3D from storyboard to master: the editor's gaps, what established tools do, the tools and outside tools of the suite, the libraries they share, and the order to build them in |
 
 ## Completed roadmaps
 
 | Roadmap | What it covered | Done by |
 |---|---|---|
-| [Releases.md](completed/Releases.md) | Versioned releases of the apps: running from an install, a version in every app, install rules, a changelog and a release workflow, a Windows installer, the apps on Linux, and a Flatpak | [Releases](../plans/Releases.md), 2026-11-06 |
+| [Releases.md](completed/Releases.md) | Versioned releases of the apps: running from an install, a version in every app, install rules, a changelog and a release workflow, a Windows installer, the apps on Linux, and a Flatpak | [Releases](../plans/completed/Releases.md), 2026-11-06 |
 | [EditorModelling.md](completed/EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the fixed views and resizable panes. The other menu command groups are in [TODO.md](../TODO.md#editor) | [EditorModelling](../plans/completed/EditorModelling.md), 2026-10-24 |
 | [OfflineShading.md](completed/OfflineShading.md) | The remaining RenderMan features: verified transformations, an acceleration structure, area lights, reyes opacity, displacement and bump mapping. | [OfflineShading](../plans/completed/OfflineShading.md), 2026-10-18 |
 | [LitScenesAtScale.md](completed/LitScenesAtScale.md) | Instanced lit and shadow draws, a grade authored for display, and a panned voice. | [LitScenesAtScale](../plans/completed/LitScenesAtScale.md), 2026-10-17 |

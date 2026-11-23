@@ -1,9 +1,13 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Painter.h"
+
+#include "Chevron.h"
+#include "Plate.h"
+#include "Shadow.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
 

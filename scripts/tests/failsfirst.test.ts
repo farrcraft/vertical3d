@@ -15,7 +15,18 @@ import { test } from 'node:test';
 import { parseOptions } from '../failsfirst.ts';
 import { dropNote, failedSources } from '../failsfirst/build.ts';
 import { casesIn, inBase, namedCommit } from '../failsfirst/cases.ts';
-import { dropArgument, dropCall, dropSource, missingLinks, missingSources, sourceOf, unknownCommands } from '../failsfirst/cmake.ts';
+import {
+    dropArgument,
+    dropArgumentHolding,
+    dropCall,
+    dropSource,
+    missingDependencies,
+    missingExpressions,
+    missingLinks,
+    missingSources,
+    sourceOf,
+    unknownCommands,
+} from '../failsfirst/cmake.ts';
 import { classify, describeExit, type Outcome } from '../failsfirst/run.ts';
 import { type Case, FAILS, NOT_RUN, PASSES, PASSES_COVERS, PASSES_STATED, SKIPPED } from '../failsfirst/types.ts';
 import { ROOT } from '../lib/tree.ts';
@@ -32,7 +43,10 @@ test('failsfirst finds a case after a CRLF-continued string and after a raw stri
         'BOOST_AUTO_TEST_SUITE_END()',
         '',
     ].join('\r\n');
-    assert.deepEqual(casesIn(text).map((c) => c.path), ['suite/after_continued', 'suite/after_raw']);
+    assert.deepEqual(
+        casesIn(text).map((c) => c.path),
+        ['suite/after_continued', 'suite/after_raw'],
+    );
 });
 
 test('failsfirst names each kind of case, inside nested suites, and a data case by its second argument', () => {
@@ -48,10 +62,10 @@ test('failsfirst names each kind of case, inside nested suites, and a data case 
         'BOOST_AUTO_TEST_SUITE_END()',
         'BOOST_AUTO_TEST_CASE(at_top) {}',
     ].join('\n');
-    assert.deepEqual(casesIn(text).map((c) => c.path), [
-        'outer/inner/fixtured', 'outer/inner/data', 'outer/inner/data_fixture', 'outer/inner/templated',
-        'outer/in_outer', 'at_top',
-    ]);
+    assert.deepEqual(
+        casesIn(text).map((c) => c.path),
+        ['outer/inner/fixtured', 'outer/inner/data', 'outer/inner/data_fixture', 'outer/inner/templated', 'outer/in_outer', 'at_top'],
+    );
 });
 
 test('failsfirst reads a Passes before the change: line, wrapped to the end of its paragraph', () => {
@@ -82,8 +96,7 @@ test('failsfirst reads a Covers the base: line, wrapped onto the next line', () 
         '',
     ].join('\n');
     const found = casesIn(text);
-    assert.equal(found[0]?.covers,
-        '48412a1c merged the controller untested. Checked by swapping two pan directions, which fails it.');
+    assert.equal(found[0]?.covers, '48412a1c merged the controller untested. Checked by swapping two pan directions, which fails it.');
     assert.equal(found[0]?.stated, null);
     assert.equal(found[1]?.covers, null);
     assert.equal(namedCommit(found[0]?.covers ?? ''), '48412a1c');
@@ -102,7 +115,10 @@ test('failsfirst accepts a covered commit only when the base contains it', () =>
 
 test('failsfirst skips a case inside a comment', () => {
     const text = '// BOOST_AUTO_TEST_CASE(commented) {}\n/* BOOST_AUTO_TEST_CASE(blocked) {} */\nBOOST_AUTO_TEST_CASE(real) {}\n';
-    assert.deepEqual(casesIn(text).map((c) => c.path), ['real']);
+    assert.deepEqual(
+        casesIn(text).map((c) => c.path),
+        ['real'],
+    );
 });
 
 test('failsfirst reads an unknown command from a failed configure', () => {
@@ -115,8 +131,7 @@ test('failsfirst reads an unknown command from a failed configure', () => {
         '  Cannot find source file:',
         '',
     ].join('\r\n');
-    assert.deepEqual(unknownCommands(output),
-        [{ file: 'vertical3d/tests/CMakeLists.txt', line: 75, command: 'v3d_copy_usd_plugins' }]);
+    assert.deepEqual(unknownCommands(output), [{ file: 'vertical3d/tests/CMakeLists.txt', line: 75, command: 'v3d_copy_usd_plugins' }]);
 });
 
 test('failsfirst reads each source a failed configure cannot find, as the list spelled it', () => {
@@ -170,12 +185,60 @@ test('failsfirst reads each link to a target a failed configure cannot find', ()
 
 test('failsfirst drops one item from a call, and only a whole item', () => {
     const text = 'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2 ICU::uc\n    ICU::data)\nb(ICU::uc)\n';
-    assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::uc'),
-        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2\n    ICU::data)\nb(ICU::uc)\n');
-    assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::data'),
-        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2 ICU::uc)\nb(ICU::uc)\n');
+    assert.equal(
+        dropArgument(text, 2, 'target_link_libraries', 'ICU::uc'),
+        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2\n    ICU::data)\nb(ICU::uc)\n',
+    );
+    assert.equal(
+        dropArgument(text, 2, 'target_link_libraries', 'ICU::data'),
+        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2 ICU::uc)\nb(ICU::uc)\n',
+    );
     assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::i18n'), null);
     assert.equal(dropArgument(text, 1, 'target_link_libraries', 'ICU::uc'), null);
+});
+
+test('failsfirst reads each dependency on a target a failed configure cannot find', () => {
+    const output = [
+        'CMake Error at moya/tests/CMakeLists.txt:72 (add_dependencies):',
+        '  The dependency target "moya_bench" of target "v3dtest_moya" does not exist.',
+        '',
+        'CMake Error at api/font/tests/CMakeLists.txt:20 (target_link_libraries):',
+        '  Target "v3dtest_font" links to:',
+    ].join('\r\n');
+    assert.deepEqual(missingDependencies(output), [{ file: 'moya/tests/CMakeLists.txt', line: 72, target: 'moya_bench' }]);
+    assert.deepEqual(missingDependencies('-- Configuring done'), []);
+});
+
+test('failsfirst reads each generator expression that names a target the generate cannot find', () => {
+    const output = [
+        'CMake Error at moya/tests/CMakeLists.txt:73 (target_compile_definitions):',
+        '  Error evaluating generator expression:',
+        '',
+        '    $<TARGET_FILE:moya_bench>',
+        '',
+        '  No target "moya_bench"',
+        '',
+        '',
+        '-- Generating done (1.6s)',
+    ].join('\r\n');
+    assert.deepEqual(missingExpressions(output), [
+        { file: 'moya/tests/CMakeLists.txt', line: 73, command: 'target_compile_definitions', expression: '$<TARGET_FILE:moya_bench>' },
+    ]);
+    assert.deepEqual(missingExpressions('-- Generating done'), []);
+});
+
+test('failsfirst drops the whole argument that holds a fragment, and only from its call', () => {
+    const text = 'a(x)\ntarget_compile_definitions(t PRIVATE A="$<TARGET_FILE:a>"\n    B="$<TARGET_FILE:b>")\nb("$<TARGET_FILE:b>")\n';
+    assert.equal(
+        dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:b>'),
+        'a(x)\ntarget_compile_definitions(t PRIVATE A="$<TARGET_FILE:a>")\nb("$<TARGET_FILE:b>")\n',
+    );
+    assert.equal(
+        dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:a>'),
+        'a(x)\ntarget_compile_definitions(t PRIVATE\n    B="$<TARGET_FILE:b>")\nb("$<TARGET_FILE:b>")\n',
+    );
+    assert.equal(dropArgumentHolding(text, 2, 'target_compile_definitions', '$<TARGET_FILE:c>'), null);
+    assert.equal(dropArgumentHolding(text, 4, 'target_compile_definitions', '$<TARGET_FILE:b>'), null);
 });
 
 test('failsfirst resolves a list entry against its directory, and gives up on another variable', () => {
@@ -185,36 +248,42 @@ test('failsfirst resolves a list entry against its directory, and gives up on an
     assert.equal(sourceOf('api/ui/tests', '${OTHER}/ScreenTest.cpp'), null);
 });
 
-test('failsfirst drops a source from its suite\'s list, quoted or not, and leaves the rest', () => {
+test("failsfirst drops a source from its suite's list, quoted or not, and leaves the rest", () => {
     const worktree = mkdtempSync(join(tmpdir(), 'v3d-failsfirst-'));
     try {
         mkdirSync(join(worktree, 'api', 'ui', 'tests'), { recursive: true });
         const file = join(worktree, 'api', 'ui', 'tests', 'CMakeLists.txt');
-        writeFileSync(file, [
-            '# A.cpp is named in this comment',
-            'v3d_add_test(other A.cpp)',
-            'v3d_add_test(ui',
-            '    # B.cpp is named in a comment inside the list',
-            '    ${CMAKE_CURRENT_SOURCE_DIR}/A.cpp',
-            '    "B.cpp"',
-            '    C.cpp)',
-            '',
-        ].join('\n'));
+        writeFileSync(
+            file,
+            [
+                '# A.cpp is named in this comment',
+                'v3d_add_test(other A.cpp)',
+                'v3d_add_test(ui',
+                '    # B.cpp is named in a comment inside the list',
+                '    ${CMAKE_CURRENT_SOURCE_DIR}/A.cpp',
+                '    "B.cpp"',
+                '    C.cpp)',
+                '',
+            ].join('\n'),
+        );
         assert.equal(dropSource(worktree, 'api/ui/tests', 'ui', 'api/ui/tests/B.cpp'), true);
         assert.equal(dropSource(worktree, 'api/ui/tests', 'ui', 'api/ui/tests/A.cpp'), true);
         assert.equal(dropSource(worktree, 'api/ui/tests', 'ui', 'api/ui/tests/Missing.cpp'), false);
         assert.equal(dropSource(worktree, 'api/ui/tests', 'nosuite', 'api/ui/tests/C.cpp'), false);
         assert.equal(dropSource(worktree, 'api/none/tests', 'ui', 'api/none/tests/C.cpp'), false);
-        assert.equal(readFileSync(file, 'utf8'), [
-            '# A.cpp is named in this comment',
-            'v3d_add_test(other A.cpp)',
-            'v3d_add_test(ui',
-            '    # B.cpp is named in a comment inside the list',
-            '    ',
-            '    ',
-            '    C.cpp)',
-            '',
-        ].join('\n'));
+        assert.equal(
+            readFileSync(file, 'utf8'),
+            [
+                '# A.cpp is named in this comment',
+                'v3d_add_test(other A.cpp)',
+                'v3d_add_test(ui',
+                '    # B.cpp is named in a comment inside the list',
+                '    ',
+                '    ',
+                '    C.cpp)',
+                '',
+            ].join('\n'),
+        );
     } finally {
         rmSync(worktree, { recursive: true, force: true });
     }
@@ -232,7 +301,7 @@ test('failsfirst names the suite sources that failed to compile, including one o
     assert.deepEqual(failedSources('ninja: no work to do.', 'api/ui/tests', 'ui', SOURCES), []);
 });
 
-test('failsfirst gives up on a failure that is not one of the suite\'s own objects', () => {
+test("failsfirst gives up on a failure that is not one of the suite's own objects", () => {
     const library = 'FAILED: api/ui/CMakeFiles/v3dlib_ui.dir/Screen.cpp.obj\n';
     assert.equal(failedSources(library, 'api/ui/tests', 'ui', SOURCES), null);
     const other = 'FAILED: api/font/tests/CMakeFiles/v3dtest_font.dir/FontTest.cpp.obj\n';
@@ -253,22 +322,47 @@ test('failsfirst gives up on a link error that no one source answers for', () =>
     const exe = 'FAILED: api/ui/tests/v3dtest_ui.exe\n';
     // a library the link cannot open, even beside a symbol a test object leaves unresolved
     assert.equal(failedSources(exe + 'LINK : fatal error LNK1104: cannot open file v3dlib_new.lib\n', 'api/ui/tests', 'ui', SOURCES), null);
-    assert.equal(failedSources(exe + 'ScreenTest.cpp.obj : error LNK2019: unresolved external symbol z\n' +
-        'LINK : fatal error LNK1104: cannot open file v3dlib_new.lib\n', 'api/ui/tests', 'ui', SOURCES), null);
+    assert.equal(
+        failedSources(
+            exe +
+                'ScreenTest.cpp.obj : error LNK2019: unresolved external symbol z\n' +
+                'LINK : fatal error LNK1104: cannot open file v3dlib_new.lib\n',
+            'api/ui/tests',
+            'ui',
+            SOURCES,
+        ),
+        null,
+    );
     // an unresolved symbol in an object no source of the suite makes
-    assert.equal(failedSources(exe + 'Screen.cpp.obj : error LNK2019: unresolved external symbol y\n', 'api/ui/tests', 'ui', SOURCES), null);
+    assert.equal(
+        failedSources(exe + 'Screen.cpp.obj : error LNK2019: unresolved external symbol y\n', 'api/ui/tests', 'ui', SOURCES),
+        null,
+    );
     // an object two sources of the same name could have made
     const twins = [...SOURCES, 'api/ui/tests/more/ScreenTest.cpp'];
-    assert.equal(failedSources(exe + 'ScreenTest.cpp.obj : error LNK2019: unresolved external symbol z\n', 'api/ui/tests', 'ui', twins), null);
+    assert.equal(
+        failedSources(exe + 'ScreenTest.cpp.obj : error LNK2019: unresolved external symbol z\n', 'api/ui/tests', 'ui', twins),
+        null,
+    );
     // a failed link that names no object
     assert.equal(failedSources(exe, 'api/ui/tests', 'ui', SOURCES), null);
 });
 
 test('failsfirst says why a suite that lost sources may not build', () => {
-    assert.equal(dropNote([{ source: 'a.cxx', added: true }, { source: 'b.cxx', added: true }]),
-        'the suite needs a.cxx, b.cxx, which the change added');
-    assert.equal(dropNote([{ source: 'a.cxx', added: true }, { source: 'c.cxx', added: false }]),
-        'the suite needs a.cxx, which the change added; the suite lists c.cxx, which the worktree does not have');
+    assert.equal(
+        dropNote([
+            { source: 'a.cxx', added: true },
+            { source: 'b.cxx', added: true },
+        ]),
+        'the suite needs a.cxx, b.cxx, which the change added',
+    );
+    assert.equal(
+        dropNote([
+            { source: 'a.cxx', added: true },
+            { source: 'c.cxx', added: false },
+        ]),
+        'the suite needs a.cxx, which the change added; the suite lists c.cxx, which the worktree does not have',
+    );
     assert.equal(dropNote([]), '');
 });
 
@@ -287,22 +381,31 @@ test('failsfirst counts only a failure Boost.Test reports as failing', () => {
     assert.equal(classified({ output: '*** 1 failure is detected in the test module "ui"' }), FAILS);
     assert.equal(classified({ output: '*** 3 failures are detected in the test module "ui"' }), FAILS);
     assert.equal(classified({ output: 'f.cpp(12): error: in "suite/case": check x == y has failed' }), FAILS);
-    assert.equal(classified({ output: 'unknown location(0): fatal error: in "suite/case": memory access violation\nfailure occurred' }), FAILS);
+    assert.equal(
+        classified({ output: 'unknown location(0): fatal error: in "suite/case": memory access violation\nfailure occurred' }),
+        FAILS,
+    );
     assert.equal(classified({ status: 3221225781, output: '' }), `${NOT_RUN} (exited with 0xC0000135 and reported no failed check)`);
-    assert.equal(classified({ status: 1, output: 'Test setup error: no test cases matching filter or all test cases were disabled' }),
-        `${NOT_RUN} (the binary has no such case)`);
+    assert.equal(
+        classified({ status: 1, output: 'Test setup error: no test cases matching filter or all test cases were disabled' }),
+        `${NOT_RUN} (the binary has no such case)`,
+    );
     assert.equal(classified({ status: 200, output: 'Test setup error: test tree is empty' }), `${NOT_RUN} (the binary has no such case)`);
     // a binary that printed something, and died before Boost.Test reported, has not shown a failure
-    assert.equal(classified({ status: 1, output: 'Running 1 test case...\nloading the device\n' }),
-        `${NOT_RUN} (exited with 1 and reported no failed check)`);
+    assert.equal(
+        classified({ status: 1, output: 'Running 1 test case...\nloading the device\n' }),
+        `${NOT_RUN} (exited with 1 and reported no failed check)`,
+    );
 });
 
 test('failsfirst reports a passing case as weak unless its doc comment explains it', () => {
     assert.equal(classified({ status: 0 }), PASSES);
     assert.equal(classified({ status: 0 }, plainCase('ui', { stated: 'why' })), PASSES_STATED);
     assert.equal(classified({ status: 0 }, plainCase('ui', { claim: 'abc1234 brought it', covers: 'abc1234def' })), PASSES_COVERS);
-    assert.equal(classified({ status: 0 }, plainCase('ui', { claim: 'no commit', covers: null })),
-        `${PASSES} (its Covers the base: line names no commit the base contains)`);
+    assert.equal(
+        classified({ status: 0 }, plainCase('ui', { claim: 'no commit', covers: null })),
+        `${PASSES} (its Covers the base: line names no commit the base contains)`,
+    );
 });
 
 test('failsfirst skips a case only in a suite that may find no device', () => {
@@ -319,7 +422,7 @@ test('failsfirst reports a run that timed out or could not start as not run', ()
 
 test('failsfirst writes an exit status as Windows reports it', () => {
     assert.equal(describeExit(1, null), '1');
-    assert.equal(describeExit(0xC0000005, null), '0xC0000005');
+    assert.equal(describeExit(0xc0000005, null), '0xC0000005');
     assert.equal(describeExit(-1073741819, null), '0xC0000005');
     assert.equal(describeExit(null, 'SIGTERM'), 'signal SIGTERM');
     assert.equal(describeExit(null, null), 'no status');
@@ -328,12 +431,24 @@ test('failsfirst writes an exit status as Windows reports it', () => {
 test('failsfirst reads its options, and refuses a timeout that is not a whole number', () => {
     const defaults = parseOptions([]);
     assert.deepEqual(defaults, {
-        base: null, commit: null, list: false, keep: false, scratch: null, timeout: 900, build: join(ROOT, 'out', 'build', 'x64-Debug'),
+        base: null,
+        commit: null,
+        list: false,
+        keep: false,
+        scratch: null,
+        timeout: 900,
+        build: join(ROOT, 'out', 'build', 'x64-Debug'),
     });
     assert.equal(parseOptions(['--help']), null);
     assert.equal(parseOptions(['-h']), null);
     assert.deepEqual(parseOptions(['--base', 'main', '--list', '--timeout', '60', '--build', 'out/build/ci']), {
-        base: 'main', commit: null, list: true, keep: false, scratch: null, timeout: 60, build: join(ROOT, 'out', 'build', 'ci'),
+        base: 'main',
+        commit: null,
+        list: true,
+        keep: false,
+        scratch: null,
+        timeout: 60,
+        build: join(ROOT, 'out', 'build', 'ci'),
     });
     for (const timeout of ['0', '1.5', '12abc', 'x', '']) {
         assert.throws(() => parseOptions(['--timeout', timeout]), /whole number|usage/, timeout);

@@ -24,9 +24,4 @@ v3d_add_shared_data(v3dtest_font)
 
 # The faces in fonts/ are fixtures: one for each colour table and a variable font, written by
 # fixtures.ts there.
-add_custom_command(TARGET v3dtest_font POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
-		"$<TARGET_FILE_DIR:v3dtest_font>/fonts"
-	COMMENT "Copying font test fonts"
-	VERBATIM)
+v3d_copy_directory(v3dtest_font fonts "${CMAKE_CURRENT_SOURCE_DIR}/fonts" "fonts")

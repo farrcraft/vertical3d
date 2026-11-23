@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "ThemeReader.h"
 
@@ -9,6 +9,7 @@
 #include <api/log/Logger.h>
 #include <api/ui/style/Button.h>
 #include <api/ui/style/Property.h>
+#include <api/ui/style/Selector.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>

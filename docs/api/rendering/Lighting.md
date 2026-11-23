@@ -192,14 +192,25 @@ Rules:
 
 ### Fitting the shadow map
 
-`lighting::fitShadow(registry, alsoCover, {.margin, .alpha})` returns a sphere around every shadow
-caster: the mean of their positions, and the farthest of them plus `margin`. The margin has to
-cover a caster's size and the length of its shadow. Things that cast nothing, such as the
-ground, stay out of the fit. `alsoCover` adds points that must be inside the map, such as where
-a character is walking to. `fitShadow` returns nothing when no entity casts. The radius is never
-below `lighting::minimumShadowRadius` (0.01), so one caster with no margin still gives a usable
-matrix. Each caster is read where it is drawn, `alpha` of the way from its previous step, as the
-lit pass draws it. Pass `engine::Engine::alpha()`; the default of one reads the current step.
+`lighting::fitShadow(registry, alsoCover, {.margin, .alpha, .meshes})` returns a sphere around
+every shadow caster.
+
+- **Pass the mesh registry as `meshes`.** Each caster is then the sphere around its model
+  (`MeshRegistry::Entry::bound`), moved by its transform and grown by its largest scale, as
+  `lighting::placed(bound, model)` gives it. Without a registry, or while a caster's mesh does
+  not resolve, a caster is its position alone.
+- The centre is the mean of the casters' centres. The radius reaches the far side of the
+  farthest caster, plus `margin`.
+- **The margin covers the length of a shadow.** Without a registry it has to cover each
+  caster's size as well. A skinned caster's sphere is its bind pose, so the margin also covers
+  how far a pose reaches past it.
+- Things that cast nothing, such as the ground, stay out of the fit. `alsoCover` adds points
+  that must be inside the map, such as where a character is walking to.
+- `fitShadow` returns nothing when no entity casts. The radius is never below
+  `lighting::minimumShadowRadius` (0.01), so one point with no margin still gives a usable
+  matrix.
+- Each caster is read where it is drawn, `alpha` of the way from its previous step, as the lit
+  pass draws it. Pass `engine::Engine::alpha()`; the default of one reads the current step.
 
 `lighting::fitShadowToView(viewProjection, distance, towards, texels)` fits the map to what the
 camera sees instead, for a world larger than one view. Call it every frame with the camera's

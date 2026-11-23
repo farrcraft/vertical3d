@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
-**/
+ */
 
 #pragma once
 
@@ -12,6 +12,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The asset a sound file loads as.
+ **/
 namespace v3d::audio::kind {
 /**
  * An audio clip loaded from a sound file, as the asset manager hands it out.

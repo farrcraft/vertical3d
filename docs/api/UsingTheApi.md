@@ -152,8 +152,8 @@ api library they depend on, and looks only for the third-party packages that set
 | (left unset, `all`) | Every package in the manifest |
 
 - **Boost is always required**, because every api library links `Boost::headers`.
-- **`render_offline` needs no Vulkan and no SDL.** It is a separate library from `render`, so
-  you can select it alone.
+- **`rib` needs no Vulkan and no SDL.** It is a separate library from `render`, so you can
+  select it alone.
 - **A selection that needs no Vulkan and no SDL builds with Clang and GCC too**, on any platform.
   Leave the manifest's `platform` feature out of your own vcpkg install. The rest of the api is
   built and checked with MSVC on Windows only.

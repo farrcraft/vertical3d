@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -14,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-#include "Arguments.h"
+#include "Parameter.h"
 
 #include <boost/json.hpp>
 

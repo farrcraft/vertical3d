@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -16,6 +16,6 @@ namespace v3d::font::glyph::internal {
  * @return the bitmap a glyph slot was rendered into, one byte a pixel in rows from the top, with
  *         its top left pixel from the pen. A bitmap of another pixel mode gives no pixels
  **/
-font::glyph::Bitmap slotBitmap(const FT_GlyphSlotRec& slot);
+font::glyph::Store::Bitmap slotBitmap(const FT_GlyphSlotRec& slot);
 
 };  // namespace v3d::font::glyph::internal

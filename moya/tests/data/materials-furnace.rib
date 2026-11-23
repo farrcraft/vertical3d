@@ -1,0 +1,42 @@
+##RenderMan RIB-Structure 1.1
+##Scene Six white spheres under a white dome, each of one of OpenPBR's lobes: diffuse, metal, glass, coat, fuzz and thin film
+version 3.03
+Format 96 64 1
+PixelSamples 8 8
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+WorldBegin
+Light "PxrDomeLight" "sky"
+# a lobe that keeps all the light it is given vanishes into the dome
+AttributeBegin
+Translate -1.2 0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "diffuse" "color base_color" [1 1 1] "float specular_weight" [0]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate 0 0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "metal" "color base_color" [1 1 1] "float base_metalness" [1] "float specular_roughness" [0.5]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate 1.2 0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "glass" "float transmission_weight" [1] "float specular_roughness" [0.2]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate -1.2 -0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "coat" "color base_color" [1 1 1] "float coat_weight" [1] "float coat_roughness" [0.3]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate 0 -0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "fuzz" "color base_color" [1 1 1] "float specular_weight" [0] "float fuzz_weight" [1]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+AttributeBegin
+Translate 1.2 -0.55 0
+Bxdf "ND_open_pbr_surface_surfaceshader" "film" "color base_color" [1 1 1] "float base_metalness" [1] "float specular_roughness" [0.3] "float thin_film_weight" [1]
+Sphere 0.45 -0.45 0.45 360
+AttributeEnd
+WorldEnd

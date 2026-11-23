@@ -49,7 +49,7 @@ the libraries that need neither a window nor a device under the sanitizers.
 
 - **One suite per api library**, in `api/<lib>/tests/`, built as `v3dtest_<lib>`. A library nested
   inside another one's directory has its own suite: `asset_media` is in
-  `api/asset/media/tests/` and `render_offline` is in `api/render/offline/tests/`.
+  `api/asset/media/tests/` and `interchange_usd` is in `api/interchange/usd/tests/`.
 - **One extra suite for the realtime renderer on a real device**, `render_device`, from
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
 - **One more for the frame loop on a real window**, `render_window`, from
@@ -105,10 +105,29 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 - Builds `v3dtest_<lib>` and links Boost.Test.
 - Adds the repository root to the include path, so a test includes its subject as
   `<api/<lib>/...>` like any other file.
-- Registers the ctest entry `<lib>`, with the working directory set to the executable's
-  directory. Fixtures copied beside the executable then resolve by a relative path.
+- Registers the ctest entry `<lib>`, or the parts `v3d_test_parts` declared for it, with the
+  working directory set to the executable's directory. Fixtures copied beside the executable then
+  resolve by a relative path.
 - Passes `--detect_memory_leaks=0`. Without it, Boost.Test reports a false leak in every suite
   that builds a `Logger`, because spdlog's registry is destroyed after the report.
+
+A suite too slow to run as one ctest entry is split into parts, each an entry of its own, so
+ctest can run them at once and reports each one's time.
+`v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>...)`, called before the suite's
+`v3d_add_test`, declares them:
+
+- **Each part is the entry `<lib>_<name>`**, labelled `<lib>`, and also `renders` when it is marked
+  `RENDERS`. It runs the suite with one `--run_test` for each of its patterns.
+- **A pattern names units at the suite's top level**: cases, and Boost.Test suites, which run
+  whole. It is a name with a `*` at its start, its end or both, as `--run_test` reads it.
+- **The entry `<lib>_parts` fails when a unit is in no part or in two**, and when a part
+  matches nothing. A case added under a name no part matches therefore cannot go unrun. One
+  pattern of a part may match nothing, since a build can leave its cases out: moya's RGB build has
+  no compositing references.
+
+moya's suite is the one split this way.
+[RunningAndTesting.md](../offline/RunningAndTesting.md#building-and-testing) says how its parts
+are grouped.
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
@@ -124,9 +143,11 @@ Fixtures and helpers come before the first case, and none of them holds mutable 
 namespace scope. [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) has the
 rules a test file shares with the rest of the tree.
 
-A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
-command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
-to `data/`. Some copy something else:
+A suite with fixture files copies a directory of them beside the executable through
+`v3d_copy_directory`, which the suite's `tests/CMakeLists.txt` calls. It is a build rule whose
+inputs are the fixtures, so an edited, added or deleted fixture is mirrored at the next build
+whether or not the suite relinks. [Build.md](Build.md#data-directories) has the rule. Most suites
+copy their `tests/data/` to `data/`. Some copy something else:
 
 - `engine` copies `api/engine/tests/fixtures/` to `fixtures/`.
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
@@ -134,9 +155,11 @@ to `data/`. Some copy something else:
 - `ui` and `vertical3d` copy `api/ui/tests/fonts/` to `fonts/`: a monospaced face at which
   `api/ui/tests/Typeset.h` sets every character ten pixels wide, and a face that sets Hebrew.
   The helper's renderer tells a test each line it draws, through `TextRenderer::trace()`.
+- `font` copies `api/font/tests/fonts/` to `fonts/`, and `ui` copies it into its `fonts/` too.
+- `shell` copies `api/shell/tests/fixtures/` to `fixtures/`, and the shared `data/ui/` into the
+  game fixture's `data/ui/`.
 
-Some suites take data through the build rule an app uses instead, which copies an edited file
-on the next build whether or not the suite relinks:
+Some suites take data through the helpers an app uses instead:
 
 - `font` and `ui` take the shared font through `v3d_add_shared_data`.
 - `pong`, `tetris`, `voxel`, `odyssey`, `diorama` and `vertical3d` take their app's `data/`
@@ -149,8 +172,11 @@ The glTF fixtures in `api/asset/tests/data/` are written by generators beside th
 generator's header says why its fixture is shaped as it is. A `make_*_fixture.ts` generator writes
 glTF by hand through `gltf_writer.ts`, and Node runs it from the root of the tree:
 `node api/asset/tests/data/make_skin_fixture.ts`. `make_blender_fixture.py` builds a rig in
-Blender and exports it with Blender's own exporter. Blender scripts only in Python, so it is the
-one Python file in the tree. Its header gives the command line.
+Blender and exports it with Blender's own exporter. moya's `make_blender_smoke.py` simulates a
+puff of smoke in Blender and keeps the grid Blender's own OpenVDB cache writes, and
+`make_blender_fire.py` does the same for a small fire, whose flame grid lights it. Blender scripts
+only in Python, so its generators are written in Python. Each one's header gives the command
+line.
 
 ### Patterns the suites use
 
@@ -259,6 +285,15 @@ dereference. Its `vptr` check is off, because thorvg is built without the type i
 reads. A report ends the program with a failure, so a suite that triggers one fails. Only the
 tree is instrumented, not the vcpkg packages, so a fault inside a package goes unreported.
 
+- **A Debug build under GCC or Clang is optimised at `-O1`.** Unoptimised code under both
+  sanitizers runs about four times slower than a plain Debug build. `-O1` keeps every check, and
+  the frame pointer stays, so each report's stack is whole. MSVC's build is left unoptimised.
+- **A generator is not instrumented.** A generator is a program the build runs to write a source,
+  such as `moya_albedo` and `moya_rgbtable`. `v3d_optimise_generator` builds one under GCC and
+  Clang with `-O2` and without the sanitizers in every configuration, because the build waits on
+  its output. Unoptimised under the sanitizers, one runs for most of an hour. The suites check the
+  kernel code the generators run, under the sanitizers.
+
 - **CI** builds the Linux job's libraries with both sanitizers, and every suite there runs
   under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are.
 - **On Windows**, the `asan` preset builds the whole tree with MSVC's AddressSanitizer. MSVC has
@@ -292,8 +327,7 @@ makes its parser misbehave. Whether the parser accepts the input does not matter
 |---|---|---|
 | `v3dfuzz_tga` | `image::reader::Tga` | [api/image/tests/data](../../api/image/tests/data) |
 | `v3dfuzz_bmp` | `image::reader::Bmp` | [api/image/tests/data](../../api/image/tests/data) |
-| `v3dfuzz_rib` | `render::offline::rib::Reader` and its lexer | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
-| `v3dfuzz_sl` | the shading language parser and compiler | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+| `v3dfuzz_rib` | `rib::Reader` and its lexer | [api/rib/tests/data](../../api/rib/tests/data) |
 
 **Every build builds the targets, and ctest runs each over its corpus once**, as the ctest entry
 `fuzz_<name>`, labelled `fuzz`. Without libFuzzer, a target links a small main that passes each
@@ -304,14 +338,22 @@ Clang, so it builds only off MSVC. Given a corpus directory and no `-runs`, a ta
 until it finds a failure or is stopped. The first directory it is given is where it keeps the
 inputs that reach new code.
 
-**CI fuzzes each target for 60 seconds**, in the Linux job, under both sanitizers.
-[scripts/portable/build.sh](../../scripts/portable/build.sh) runs them after the suites. It keeps
-the inputs it finds under the job's work directory, and `FUZZ_SECONDS` changes the time.
+**A pull request fuzzes each target for 60 seconds**, in the Linux job's `fuzz` stage, under both
+sanitizers. [scripts/portable/build.sh](../../scripts/portable/build.sh) configures the libraries
+that declare a target, image and rib, and builds the targets alone. It keeps the inputs it finds
+under the job's work directory, and `FUZZ_SECONDS` changes the time.
 `scripts\portable.cmd` runs the same script locally and keeps its work in a Docker volume, so
 each local run carries on from the corpus of the last.
 
-**A failure prints the input that caused it.** libFuzzer writes it to a file named
-`crash-<hash>` and prints it in the log. Fix the parser, then add the input to the library's
+**A scheduled run fuzzes each target for 90 minutes**, twice a week, in
+[scheduled.yml](../../.github/workflows/scheduled.yml)'s `fuzz` job. It starts from the corpus
+the last scheduled run kept in the Actions cache, and saves what it finds there. GitHub evicts a
+cache entry nobody reads for seven days, which twice a week stays clear of.
+
+**A failure keeps the input that caused it**, and the other targets are still fuzzed. libFuzzer
+writes the input under the work directory's `crashes/`, named for the target and `crash-<hash>`,
+and prints it in the log. A scheduled run that fails opens an issue that holds the input in
+base64, or comments on the one already open. Fix the parser, then add the input to the library's
 suite as a test case that fails without the fix.
 
 **A new parser of a file format gets a target.** Write `api/<lib>/tests/fuzz/<Format>Fuzzer.cxx`,
@@ -322,7 +364,8 @@ v3d_add_fuzzer(<name> "fuzz/<Format>Fuzzer.cxx" LIBRARIES <target>... CORPUS <di
 ```
 
 The corpus is the suite's fixtures, which hold a valid file of the format and the malformed
-ones its tests already check.
+ones its tests already check. A target in a library other than image and rib also adds the
+library to the `fuzz` stage's list in `scripts/portable/build.sh`, or CI never fuzzes it.
 
 Background: [ADR-0174](../adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 
@@ -442,18 +485,130 @@ Background: [ADR-0054](../adr/project/0054-testing-golden-images-hold-only-spec-
 
 ### moya references
 
-The moya suite renders scenes on the CPU and compares them with committed PNGs in
+The moya suite renders scenes on the CPU and compares them with committed pictures in
 `moya/tests/data/`:
 
-- `reference-*.png` are rendered with the Reyes hider.
-- `raytrace-*.png` are rendered with the ray tracing hider.
-- Each PNG has a `.rib` file beside it that describes the same scene. The suite renders it from
-  the file and from code, so both paths are tied to one picture.
+- `foundation-chart.png` is rendered by moya, from code alone, and only in a spectral
+  build.
+- `paths-*.exr` are rendered by moya's path tracer from the `.rib` file beside each, and
+  only in a spectral build. They cover a furnace, a room under a dome, RenderMan's shaped lights,
+  RI's standard lights, mesh lights, lights that `Illuminate` links, and a light that
+  `paths.ies` shapes. Each holds the beauty as `R`, `G` and `B` floats and the standard error of
+  each pixel's luminance as `error`.
+- `materials-*.exr` are rendered the same way, from scenes whose every surface is OpenPBR's. One
+  puts a sphere of each of OpenPBR's lobes in a white furnace. One holds a metal, a glass, a
+  coated, a fuzzed and a thin-filmed sphere. The others hold a textured quad, a normal-mapped
+  sphere, a cut-out card, and a subdivision surface its material displaces.
+  `materials-patterns.mtlx` holds the materials they read from a document.
+- `volumes-*.exr` are rendered the same way, from scenes of media, subsurface and hair. They
+  hold a ball of fog under a spot light, two balls of a medium that scatters and absorbs each
+  channel differently, and a glass ball of amber liquid. A puff of smoke and a fire are grids
+  Blender simulated, `blender_smoke.vdb` and `blender_fire.vdb`. `volumes-fire.mtlx` gives the
+  fire its glow. A marble ball and slab and a skin-toned figure scatter below their surfaces, and
+  a lock of hair hangs under a key light and a light behind it.
+- `reference-*.exr`, `raytrace-*.exr`, `spec-cube.exr` and `textured.exr` are rendered the same
+  way, from scenes written for RI's own surfaces and lights. `checked.mtlx` and `bumpy.mtlx`
+  define two RI surfaces of their names, which the scenes read from the shader search path, and
+  `rippled.mtlx` holds a displacement.
 
-The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
-differences between compilers. It reports the worst pixel and by how much. A failing case, or a
-case with no reference yet, writes what it rendered to `data_out/` beside the executable. Copy that
-file over the reference to change it on purpose.
+The chart is compared by `image::compare` at a tolerance of 1, which absorbs floating-point
+rounding differences between compilers. It reports the worst pixel and by how much. A failing
+case, or a case with no reference yet, writes what it rendered to `data_out/` beside the
+executable. Copy that file over the reference to change it on purpose.
+
+Every traversal moya has is checked against the brute-force traversal, the oracle. It
+tests each ray against every placed primitive, so its nearest hit is right by construction. A
+case traces a fixed set of rays through both, and each ray meets the same primitive at a
+distance within a tolerance, since the two round apart.
+[Traversal.md](../offline/Traversal.md#the-brute-force-traversal) states how it places the scene.
+
+A BSDF's samples are checked against its density by chi-squared, through `densityFit()` in
+`moya/tests/Scattering.h`, which every lobe's case calls.
+
+- **The sphere about the shading normal is cut into bins even in the polar angle and the turn**,
+  40 by 80, so a narrow lobe falls across many. Each bin expects the BSDF's density integrated
+  over its solid angle on a finer grid.
+- **Bins expected to hold fewer than five samples are pooled into one.**
+- **A specular sample falls in no bin**, so the bins expect only what the density holds.
+- **A fit passes below six deviations above its mean**, a false failure less than once in a
+  billion.
+- **Each sample's density is checked** against the BSDF's density for its direction.
+
+`furnace()`, beside it, is the mean weight of a BSDF's samples, as the scatter stage weighs each:
+what the BSDF returns of a white furnace's light along outgoing. A lobe's case checks it against
+the energy a closed form says the lobe keeps, or against the lobe's value integrated over the
+hemisphere. A dielectric's case multiplies each sample that crosses the surface by eta squared,
+so it counts energy rather than radiance. A case checks a lobe's reciprocity by its value with
+the two directions swapped, each divided by the square of the index on its outgoing side where a
+lobe transmits.
+
+A noisy picture is compared within its standard errors, not byte for byte. `film::furthest()`
+finds the pixel whose luminance lies furthest from an expected value, or from another picture,
+in standard errors. `film::mean()` gives a region's mean with its error, and `film::sigmas()`
+measures an estimate against a value or another estimate. An error is never taken as less than
+a ten-thousandth of the larger of 1 and the value compared. A pixel whose samples all agree has
+an error of 0, as many do in an RGB build, and it is held to rounding. A case chooses how many
+standard errors it allows. A picture of many pixels lies a few errors from its mean somewhere by
+chance, so a case over every pixel allows more than one over a region's mean.
+[Film.md](../offline/Film.md#a-pixels-noise) states how a pixel's error is estimated.
+
+- **A path tracer's render is compared with its committed one this way**, every pixel within
+  five standard errors, and the mean luminance of the whole picture within five of its error. A
+  change too small to show in any one noisy pixel, such as one seen through glass, still moves
+  the mean. The same samples are drawn on every run, so a render lies far less than an error
+  from its reference unless its light changed. Rounding between compilers stays inside the
+  bound. A second case renders each scene with every light twice as bright and checks that
+  the comparison fails it. RI's `constant` surface emits its colour, so that case doubles its
+  colour too, and a scene lit by it alone fails as well. A third renders each material scene
+  with every surface's base at half its weight, and checks that the comparison fails it too. A
+  fourth renders each scene of media or subsurface with its media changed: every VDF's
+  absorption and scattering four times as large, and every subsurface colour halved. The
+  comparison fails that too.
+- **The compositing scenes, `compositing-*.rib`, are compared the same way**, channel by channel.
+  Their committed EXR holds every float of each pixel, the beauty's errors, each pixel's deep
+  samples flattened with their count, and each Cryptomatte layer's manifest. The beauty and
+  every channel lie within five of the beauty's errors. Each Cryptomatte ID matches bit for bit,
+  each manifest exactly, and each pixel's count of deep samples exactly. A second case renders
+  each with every light twice as bright, and checks that the comparison fails it.
+- **Channels that split every path one way are checked to add up to the beauty**, in
+  `LightPathsTest.cxx`. The first bounce's lobes sum to the beauty within float rounding, and
+  the light groups, the lights of no group and the emitting objects sum to it too. A group's
+  channel added to the beauty once more matches a render with that group's lights twice as
+  bright, within the errors.
+- **A render with no reference, or one that differs, is left in `data_out/`** as the EXR to
+  commit and a PNG to look at. Copy the EXR over the reference to change it on purpose. When
+  the Linux `whole` job fails, it uploads every suite's `data_out/` as the artifact
+  `data-out-<compiler>`.
+- **The fixtures are mirrored beside the suite when it builds.** A changed `.rib` file is copied
+  at the next build, and the suite tests that copy.
+
+Each `.rib` file also has what moya makes of it committed in `moya/tests/data/scenes/`:
+
+- `<scene>.txt` is the scene's description, as `moya --scene` prints it. The suite reads every
+  file through the scene client and compares the two exactly.
+- `<scene>.exr` is the scene's hit view, as `moya --hits` writes it. The suite traces every file
+  and compares the two. Depths agree to a ten thousandth of the depth, normals to a ten
+  thousandth, and what each ray met exactly. A pixel on an edge, where a neighbour's ray met
+  something else, is left out, since rounding between compilers can take a ray to either side.
+- **The hit view is checked against the brute-force traversal.** Each scene's hit view is traced
+  through the brute-force traversal too. The hit view through the hierarchy matches it in every
+  channel, in every scene, but on an edge of either view.
+
+Write both files again with `moya --scene` and `moya --hits`, from `moya/tests/` with `--file
+data/<scene>.rib`, when moya changes what a scene makes on purpose. A material scene
+names its MaterialX documents from there, so read from anywhere else it loses its networks.
+`--scene` writes to standard output, so its line endings are made LF before the file is
+committed.
+
+### moya's benchmark
+
+`moya_bench` times moya's hierarchies over fixed scenes, as
+[Traversal.md](../offline/Traversal.md#speed) describes. The suite runs one short pass of it,
+`--quick` at SSE4.2, in every build and checks that each scene and each room are timed, so it
+keeps working. Its
+numbers mean something only in the `x64-Release` build. Compare a change against
+`moya/bench/Baseline.md` on the machine it names, and write that file again from a fresh run
+when a change moves the numbers on purpose.
 
 ## Verifying a rendering change
 
@@ -499,12 +654,10 @@ change locally by running an app and reading its log.
 
 ## Traps
 
-- **A new or changed fixture is copied only when its suite relinks.** A suite copies its
-  fixture directory in a `POST_BUILD` command, which runs only when the executable is relinked.
-  Adding a reference image and rebuilding copies nothing. Touch one of the suite's sources, or
-  copy the file by hand into the directory the suite copies to, beside the executable.
-  [Writing a test](#writing-a-test) lists which directory each suite copies. A fresh CI
-  checkout always relinks.
+- **A deleted copy of the fixtures is not copied again.** The copy's rule is satisfied by its
+  manifest in the build directory, which deleting the copy leaves in place. Delete the manifest
+  too, as [Build.md](Build.md#data-directories) says, or let the next edit to a fixture copy
+  the whole directory again.
 - **Boost.Test prints a one-byte enum as a character.** An unscoped enum with a `std::uint8_t`
   or `std::int8_t` base reaches the stream as a `char`, so a failed `BOOST_CHECK_EQUAL(a, b)` or
   `BOOST_TEST(a == b)` reports unreadable bytes. Compare such enums with `BOOST_CHECK(a == b)`,
@@ -513,4 +666,5 @@ change locally by running an app and reading its log.
 - **Run the moya executable from its own directory.** It is
   `out/build/x64-Debug/moya/moya.exe`. Started from another directory it can stop on a
   missing-DLL dialog and use no CPU, which looks like a hung render.
-- **A debug moya render is slow.** A 256x192 ray traced scene takes about a minute.
+- **A debug moya render is slow.** It renders `raytrace-scene.rib` at 320 by 240 in about 25
+  seconds.

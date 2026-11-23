@@ -1,10 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
+#include <api/ui/Clock.h>
+#include <api/ui/Opening.h>
 #include <api/ui/Transition.h>
 
 #include <glm/vec4.hpp>

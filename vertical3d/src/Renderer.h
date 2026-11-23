@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -243,11 +243,13 @@ class Renderer final {
     void draw();
 
     /**
-     * Upload a rendered picture as a texture the ui can draw, in place of the last one.
+     * Upload a rendered picture as a texture, in place of the last one uploaded to the same slot.
+     * A view in rendered shading draws the picture in the slot of its name.
      *
+     * @param image the picture, or an empty pointer to empty the slot
      * @return the texture, or an unset handle for no picture
      **/
-    v3d::render::realtime::resource::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
+    v3d::render::realtime::resource::TextureHandle picture(const std::string& slot, const boost::shared_ptr<v3d::image::Image>& image);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -471,8 +473,23 @@ class Renderer final {
     struct ViewCanvases final {
         std::vector<v3d::render::realtime::canvas::Line> scenes;   /**< one per view shown **/
         std::vector<v3d::render::realtime::canvas::Line> handles;  /**< one per view, for the handles' pass **/
+        std::vector<v3d::render::realtime::canvas::Canvas> rendered;  /**< one per view, for a rendered view's picture **/
         std::vector<std::string> passes;                           /**< the views the frame holds passes for **/
     };
+
+    /**
+     * Draw a view's surfaces into its pass as its shading asks, and a rendered view's picture
+     * over them once it has one.
+     **/
+    void drawSurfaces(const scene::Scene& scene, const view::ViewPort& view, v3d::render::realtime::canvas::Canvas* canvas,
+        v3d::render::realtime::frame::Pass* pass);
+
+    /**
+     * Draw a rendered view's picture over the whole of its pass, or over its camera's frame for a
+     * view through a scene camera. The picture neither tests nor writes depth.
+     **/
+    void drawPicture(const view::ViewPort& view, const v3d::render::realtime::resource::TextureHandle& picture,
+        v3d::render::realtime::canvas::Canvas* canvas, v3d::render::realtime::frame::Pass* pass);
 
     /**
      * Draw each view shown into a pass of its own in a frame, with its handles over it.
@@ -546,8 +563,8 @@ class Renderer final {
     v3d::ui::shell::Screen* screen_ = nullptr;
 
     glm::vec4 background_;
-    // the last rendered picture's texture, released when the next one arrives
-    v3d::render::realtime::resource::TextureHandle picture_;
+    // the texture of the last picture uploaded to each slot, released when the next one arrives
+    std::map<std::string, v3d::render::realtime::resource::TextureHandle> pictures_;
 };
 
 };  // namespace v3d::editor

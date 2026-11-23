@@ -123,22 +123,27 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 The whole tree, every api library and every app, builds and passes its suites on Linux with
 Clang and with GCC. [.github/workflows/portable.yml](../../.github/workflows/portable.yml) checks
 that on every pull request that changes more than documents, so a change can pass every gate on
-Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 image,
+Windows and fail there. It has two jobs, each a matrix, which build in the same Ubuntu 26.04 image,
 [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile).
 
 - **The `whole` job builds the whole tree, once with Clang and once with GCC.**
   [scripts/portable/whole.sh](../../scripts/portable/whole.sh) configures, builds and runs every
-  suite with the compiler `CC` and `CXX` name. The device suites draw with lavapipe, Mesa's
+  suite with the compiler `CC` and `CXX` name, the build and the suites as a step each. The
+  device suites draw with lavapipe, Mesa's
   software Vulkan driver, with the validation layer on. The window suites open their windows on a
   virtual X display, Xvfb, with the Openbox window manager, which carries out a request to go full
   screen. SDL plays sound into its dummy driver. GCC is the compiler the Flatpak builds with.
-- **The `clang` job builds the libraries that need neither a window nor a device**, under
-  `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
-  fuzz target after them. See [Testing.md](Testing.md#sanitizers).
+- **The `clang` job builds the libraries that need neither a window nor a device, and moya**,
+  under `V3D_SANITIZE`, so their suites run under both sanitizers. See
+  [Testing.md](Testing.md#sanitizers).
   [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
-  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log,
-  render_offline and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
-  leaves out the manifest's `platform` and `usd` features.
+  asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log, rib
+  and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
+  leaves out the manifest's `platform` and `usd` features. The script has four stages, and
+  the job runs each on a runner of its own. `libraries` builds the libraries and runs their
+  suites, `moya` builds moya and runs its suite, `rgb` does the same for moya's RGB build, and
+  `fuzz` builds the fuzz targets alone and fuzzes each. The four install the same packages, and
+  only `libraries` saves them to the cache.
 - **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
   older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's
   Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
@@ -153,9 +158,10 @@ Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 im
 - **A test that needs a device or a window starts in two ways.** Boost.Test is a DLL on Windows,
   where the suite's `main` probes and then calls `unit_test_main`. On Linux it is static and
   brings its own `main`, and the probe runs in `init_unit_test_suite`, which that `main` calls.
-- **`scriptsportable.cmd` runs a job locally**, with Docker Desktop running: no argument for the
-  `clang` job, `whole` for the whole tree with Clang, and `whole gcc` for GCC. It builds the
-  same image and runs the same script, with the tree mounted read-only. The builds, the vcpkg
+- **`scripts\portable.cmd` runs a job locally**, with Docker Desktop running. With no argument
+  it runs every stage of the `clang` job, and `libraries`, `moya`, `rgb` or `fuzz` runs one.
+  `whole` builds the whole tree with Clang, and `whole gcc` with GCC. It builds the same image
+  and runs the same script, with the tree mounted read-only. The builds, the vcpkg
   checkout and the binary cache live in the Docker volume `v3d-portable`, apart from the Windows
   build, so a second run reuses them. The first run of each compiler builds every dependency from
   source. `docker volume rm v3d-portable` starts again from cold.
@@ -199,6 +205,8 @@ than an imported target, so it never appears in a link line.
 |---|---|---|
 | `V3D_BUILD_APPS` | top level | Everything outside `api/` |
 | `V3D_BUILD_TESTS` | top level | The Boost.Test suites and their ctest entries |
+| `V3D_BUILD_MOYA` | `OFF` | moya and its suite in a build whose `V3D_BUILD_APPS` is off. See [Kernel.md](../offline/Kernel.md#building-moya-without-the-apps) |
+| `V3D_MOYA_RGB` | `OFF` | moya's colour as three ACEScg channels rather than four wavelengths. See [Spectra.md](../offline/Spectra.md#the-rgb-build) |
 | `V3D_RELEASE` | `OFF` | A release build, whose version is the bare number. See [api/engine/README.md](../api/engine/README.md#the-version) |
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
@@ -230,6 +238,7 @@ guard has to cover the whole file.
 | `v3d_install_app(<target> <name>)` | Installs an app's executable into the install root, gives it a version resource, and names its Start menu entry. See [The install tree](#the-install-tree) |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
+| `v3d_test_parts(<lib> PART <name> [RENDERS] CASES <pattern>... [PART ...])` | Declares, before `v3d_add_test`, the parts a suite runs as, each a ctest entry `<lib>_<name>`, and the entry `<lib>_parts` that checks each case is in one. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
 | `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` | Compiles a GLSL shader into the target. See [Shaders](#shaders) |
 
@@ -242,14 +251,19 @@ into `data/`. An app's own assets live in `<app>/data`, and are copied into
 app's directory first and `data/` after it, which is the layout an install has too.
 [Assets.md](../api/Assets.md#the-asset-manager) has the rule.
 
-The two data helpers add a build rule whose inputs are the files in the source directory:
+The two data helpers call `v3d_copy_directory`, which test suites call for their fixtures too.
+It adds a build rule whose inputs are the files in the source directory:
 
 - Editing a file, or adding one, is copied at the next build. The file list is re-globbed at
   build time.
-- **A deleted file is not removed** from the build tree, because the copy merges rather than
-  mirrors. Delete the `data/` directory beside the executable and build again to clear it.
+- **The copy mirrors the source.** A file deleted from the source is removed from the build tree
+  at the next build. The rule keeps a manifest of what it copied, and removes only those files,
+  so a copy made inside another is left alone.
 - An app that calls both helpers gets its own directory copied inside the shared one, in the
   order it calls them.
+- **Deleting a copy does not bring it back** on the next build, because the rule's manifest is
+  still newer than every source file. Delete the manifest too: the `.files` file named for the
+  copy, under the build's `<config>/` directory beside the target's `CMakeLists.txt`.
 - A test suite that needs an app's documents calls `v3d_copy_data(<test> app <directory>)`,
   which copies them into `data/` itself. A test builds its engine with no program name, so it
   reads `data/` alone.
@@ -283,6 +297,7 @@ A release ships the install tree. `cmake --install out/build/x64-Release` writes
   lays it out;
 - one copy of each DLL the apps load, and the MSVC runtime from `InstallRequiredSystemLibraries`;
 - OpenUSD's plugins in `usd/`, beside its DLLs, where it looks for them;
+- MaterialX's standard libraries in `materialx/`, beside moya, where it reads them;
 - `NOTICES.txt`, which [scripts/notices.ts](../../scripts/notices.ts) writes as the tree is
   installed. Installing needs Node on the `PATH` for it.
 
@@ -476,6 +491,12 @@ to a temporary.
 - **Editing `vcpkg.json` re-runs the package install at the next configure.** Adding or removing
   a boost port can rebuild boost. Changing the `sdl3` feature list rebuilds SDL only, which takes
   about five minutes.
+- **A new baseline does not rebuild the tree's objects.** The packages' headers are on an
+  `/external:I` path, and ninja records no dependency on them, so an object compiled against an
+  older package is linked as it stands. A mismatch can then show as LNK2038 between two versions
+  of one package, as EnTT checks its own, or not at all. After the configure that installs the
+  new packages, run `ninja -C out/build/<config> -t clean`, configure again and build. It
+  deletes the build's outputs and leaves `vcpkg_installed/` alone.
 - **cgltf has no CMake config.** It is a single header. `cmake/v3dDependencies.cmake` finds it with
   `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_interchange` and `v3dlib_asset_media` each
   add that directory to their own include path. Its implementation is compiled once for every
@@ -484,6 +505,9 @@ to a temporary.
   excluded from both static analysers.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
+- **LNK1235 naming a static library the build has just written** is not a corrupt library.
+  The library on disk is sound, and building again links it, so build again before deleting
+  anything. It comes after a build that recompiles much of a large library.
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
   build again. If the same object fails again at the same section number, the corrupt object is
   another one that defines the same symbol. Run `dumpbin /headers` on the named object and read

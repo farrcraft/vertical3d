@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "WireframeVisitor.h"
 
@@ -12,13 +12,15 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Nurbs.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/geometry/AABBox.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveHandle.h>
 #include <vertical3d/src/scene/item/CurveParts.h>
-#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/item/Group.h>
 #include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/item/Mesh.h>

@@ -8,7 +8,9 @@ v3d_add_api_library(engine
 	"Launch.h" "Launch.cpp"
 	"Settings.h" "Settings.cpp"
 	"Main.h"
+	"IsometricCommands.h"
 	"IsometricController.h" "IsometricController.cpp"
+	"IsometricSpeeds.h"
 	"CameraProfiles.h" "CameraProfiles.cpp"
 	"WindowSize.h" "WindowSize.cpp"
 )

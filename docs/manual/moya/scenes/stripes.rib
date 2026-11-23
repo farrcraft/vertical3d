@@ -1,8 +1,8 @@
 ##RenderMan RIB-Structure 1.1
-##Scene The stripes surface shader from Shaders.md on a sphere, beside a matte one
+##Scene The stripes surface from Materials.md on a standing panel, beside a matte sphere
 version 3.03
-Hider "raytrace"
 Format 320 240 1
+PixelSamples 8 8
 Display "stripes.png" "file" "rgb"
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
@@ -19,12 +19,12 @@ Surface "matte"
 Polygon "P" [-5 0 -5  5 0 -5  5 0 6  -5 0 6]
 AttributeEnd
 
-# stripes runs along s, which goes once around a sphere
+# stripes runs along s, which goes once across the panel from left to right
 AttributeBegin
 Color [0.2 0.3 0.8]
-Surface "stripes" "float frequency" [12] "color stripecolor" [1 0.9 0.2]
-Translate -0.9 0.8 0.5
-Sphere 0.8 -0.8 0.8 360
+Surface "stripes" "float frequency" [6] "color stripecolor" [1 0.9 0.2]
+Polygon "P" [-2.1 0 0.5  -0.3 0 0.5  -0.3 1.6 0.5  -2.1 1.6 0.5]
+    "st" [0 1  1 1  1 0  0 0]
 AttributeEnd
 
 AttributeBegin

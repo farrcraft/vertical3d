@@ -31,7 +31,12 @@ test('tree names third-party code by its directory, and only at the root', () =>
 });
 
 test('tree names generated files at the root, and an install below it', () => {
-    for (const file of ['out/build/x.h', 'node_modules/typescript/lib.d.ts', 'vcpkg_installed/x64/a.h', 'examples/starter/vcpkg_installed/a.h']) {
+    for (const file of [
+        'out/build/x.h',
+        'node_modules/typescript/lib.d.ts',
+        'vcpkg_installed/x64/a.h',
+        'examples/starter/vcpkg_installed/a.h',
+    ]) {
         assert.equal(isGenerated(file), true, file);
     }
     for (const file of ['api/out/x.h', 'scripts/output.ts']) {
@@ -50,8 +55,11 @@ test('tree names a test path by a tests directory at any depth, and not by a nam
 
 test('git returns what a command prints, and a failure throws a GateError with its first line', () => {
     assert.match(git(['rev-parse', '--show-toplevel']), /\S/);
-    assert.throws(() => git(['rev-parse', '--verify', 'no-such-ref-at-all']), (error: unknown) =>
-        error instanceof GateError && /^git rev-parse --verify no-such-ref-at-all failed: fatal/.test(error.message));
+    assert.throws(
+        () => git(['rev-parse', '--verify', 'no-such-ref-at-all']),
+        (error: unknown) =>
+            error instanceof GateError && error.message.startsWith('git rev-parse --verify no-such-ref-at-all failed: fatal'),
+    );
 });
 
 test('git reports a failed command without throwing, when asked how it ended', () => {
@@ -91,8 +99,11 @@ test('cli reads the options a gate takes, in either spelling', () => {
 test('cli refuses an option the gate does not take, a missing or empty value, and a stray argument', () => {
     const config = { base: { type: 'string' } } as const;
     for (const args of [['--x'], ['--base'], ['--base='], ['--base', '  '], ['file.md'], ['-b', 'main']]) {
-        assert.throws(() => options('usage: gate', config, false, args), (error: unknown) =>
-            error instanceof UsageError && error.message === 'usage: gate', args.join(' '));
+        assert.throws(
+            () => options('usage: gate', config, false, args),
+            (error: unknown) => error instanceof UsageError && error.message === 'usage: gate',
+            args.join(' '),
+        );
     }
     assert.throws(() => options('usage: gate', {}, false, ['--anything']), UsageError);
 });
@@ -100,11 +111,11 @@ test('cli refuses an option the gate does not take, a missing or empty value, an
 /** What report prints for some findings, and the exit status it returns. */
 function reported(findings: Finding[]): { printed: string; status: number } {
     let printed = '';
-    const write = process.stdout.write;
-    process.stdout.write = ((chunk: string) => {
+    const write = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (chunk: string) => {
         printed += chunk;
         return true;
-    }) as typeof process.stdout.write;
+    };
     try {
         const status = report(findings, 'breaks a rule in docs/Rules.md.');
         return { printed, status };
@@ -114,7 +125,10 @@ function reported(findings: Finding[]): { printed: string; status: number } {
 }
 
 test('cli prints a finding with its line, or without one when it has none', () => {
-    assert.equal(formatFinding({ path: 'a/b.cpp', line: 12, rule: 'some-rule', message: 'what is wrong' }), 'a/b.cpp:12: some-rule: what is wrong');
+    assert.equal(
+        formatFinding({ path: 'a/b.cpp', line: 12, rule: 'some-rule', message: 'what is wrong' }),
+        'a/b.cpp:12: some-rule: what is wrong',
+    );
     assert.equal(formatFinding({ path: 'a/CMakeLists.txt', line: null, rule: 'other', message: 'x' }), 'a/CMakeLists.txt: other: x');
 });
 

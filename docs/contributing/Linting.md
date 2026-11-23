@@ -7,6 +7,9 @@ The four checks are cpplint, the compiler's warnings, MSVC `/analyze` and clang-
 is clean at all four**, so every finding is new and should be fixed. cpplint runs in CI. The
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
+The tree's TypeScript has a linter and a formatter of its own, and is clean at both. See
+[TypeScript](#typescript).
+
 The review gates in `scripts/` check the rules a compiler cannot, such as the writing rules and
 the linking rules. [Gates.md](Gates.md) lists them and says how they run.
 
@@ -14,6 +17,7 @@ the linking rules. [Gates.md](Gates.md) lists them and says how they run.
 - [The compiler](#the-compiler)
 - [MSVC /analyze](#msvc-analyze)
 - [clang-tidy](#clang-tidy)
+- [TypeScript](#typescript)
 - [Prose](#prose)
 - [Comments only](#comments-only)
 - [CodeQL](#codeql)
@@ -177,6 +181,51 @@ fix-its, such as reordered member initialisers. It can apply one edit twice to a
 sources include. `misc-const-correctness` writes the `const` after the type. Review its diff
 line by line, keep only the check's own edits, and fix the rest by hand.
 
+## TypeScript
+
+Every TypeScript file in the tree is type-checked, linted and formatted. The tools come from npm,
+as [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) describes:
+
+```
+npm ci                  # once
+npm run lint            # oxlint, with type information
+npm run format          # oxfmt, which rewrites each file in place
+npm run format:check    # report a file the formatter would change, and change nothing
+```
+
+**oxlint** reads the rules in [.oxlintrc.json](../../.oxlintrc.json). Three categories are on,
+and each finding is an error:
+
+- `correctness`: code that is wrong or does nothing.
+- `suspicious`: code that is most likely wrong, such as a shadowed name, an assertion that
+  narrows a type the code never checked, or a sort that mutates the array it sorts.
+- `perf`: code that does more work than it needs to.
+
+On top of those, `max-lines-per-function` holds a function to 100 lines, the rule
+[Conventions.md](Conventions.md#size) sets. A function counts every line, comments and blank
+lines included. `unicorn/consistent-function-scoping` is off, because a short helper that one
+function uses is defined in that function, beside its use.
+
+The type-aware rules, such as `no-floating-promises`, read each file through its own
+`tsconfig.json` with tsgolint, which is built on TypeScript 7. A promise returned by
+`node:test`'s `test` is allowed to float, because the test runner already reports its result.
+`oxlint-tsgolint` is pinned to a version built for the `typescript` version in `package.json`, so
+the two are updated together.
+
+A finding is fixed in the code. When the rule is wrong for one line, an
+`// oxlint-disable-next-line <rule> -- <reason>` comment above that line silences it, and an
+unused one is itself an error. A rule that is wrong for the whole tree is turned off in
+`.oxlintrc.json`, with a comment that says why.
+
+**oxfmt** lays out each file to the settings in [.oxfmtrc.json](../../.oxfmtrc.json): four
+spaces, single quotes and lines of up to 140 characters. Its output is Prettier's. Run
+`npm run format` before committing rather than laying code out by hand. `editor.d.ts` is left
+out, because the editor writes it and a test compares the two byte for byte. oxfmt is not yet at
+version 1.0, so an update can change its layout. The commit that updates it also reformats the
+tree, and holds nothing else.
+
+Background: [ADR-0184](../adr/project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md)
+
 ## Prose
 
 [scripts/prose.ts](../../scripts/prose.ts) checks the writing rules in
@@ -274,8 +323,8 @@ Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are ru
 CodeQL runs only in CI, in a workflow of its own. See [CodeQL](#codeql).
 
 [.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs the review
-gates on each pull request and on each push to `main`. [Gates.md](Gates.md#in-ci) says what it
-runs and what each gate compares against.
+gates on each pull request and on each push to `main`, after the type check, the lint and the
+format check. [Gates.md](Gates.md#in-ci) says what it runs and what each gate compares against.
 
 **Every action a workflow uses is pinned to a full commit sha**, with the release it came from in
 a comment:
@@ -284,13 +333,33 @@ a comment:
 - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 ```
 
-A tag can be moved to other code after it was reviewed, and a sha cannot. `scripts/pinned.ts`
-reads every workflow in `.github/workflows` and every `action.yml` under `.github/actions`, with
-either the `.yml` or the `.yaml` extension. It fails on a `uses:` whose value is not a full
-lowercase sha, written in a block or a flow mapping, plain or quoted. A local action, named by a
-path in this repository, is exempt. To find the sha for a release, read the commit its tag
-points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
-the tag is annotated. Updating an action means changing both the sha and the comment.
+A tag can be moved to other code after it was reviewed, and a sha cannot. zizmor's audit of pins
+fails on any other `uses:`, whoever publishes the action, under the policy in
+[.github/zizmor.yml](../../.github/zizmor.yml). A workflow in this repository, named by its path,
+is exempt. To find the sha for a release, read the commit its tag points at:
+`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when the tag is
+annotated. Updating an action means changing both the sha and the comment. A container image is
+pinned by its digest, after its tag.
+
+**The workflows are audited by zizmor and actionlint**, before each commit and in CI.
+
+- **zizmor checks them for security**, with Dependabot's configuration and
+  `.pre-commit-config.yaml`. It finds a token a checkout leaves on disk, an expression expanded
+  into a script, a cache a release could restore, and an action or an image that is not pinned.
+  Its online audits, which read each action's own repository, run only in CI, with the job's
+  token.
+- **actionlint checks the workflows for correctness**: their syntax, a job `needs:` cannot find,
+  an expression of the wrong type, and each step's shell script through shellcheck. A machine
+  without shellcheck checks no script, so CI's job fails when shellcheck is missing.
+- **A finding fails the commit and the job.** It is fixed in the workflow. An expression reaches
+  a script through `env:`, and a checkout sets `persist-credentials: false`. A finding that is
+  wrong is ignored on its line with the reason beside it, as `ctest.yml` does for each step that
+  runs in `cmd`.
+- **Each tool is pinned** to one release, in `.pre-commit-config.yaml` and in the job, and the two
+  are moved together. Their configuration is in `.github/zizmor.yml` and
+  `.github/actionlint.yaml`, and each entry there says why it is needed.
+
+The job is `workflows`, in [review-gates.yml](../../.github/workflows/review-gates.yml).
 
 **Every workflow states the permissions of its token.** A workflow that states none gets the
 repository's defaults, which can write. A workflow that only reads the checkout says so at the

@@ -1,0 +1,27 @@
+##RenderMan RIB-Structure 1.1
+##Scene Two balls of a medium that scatters red most and absorbs blue most, one scattering evenly and one forward, under a distant light and a dome
+version 3.03
+Format 96 64 1
+PixelSamples 6 6
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -15 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.3]
+LightSource "distantlight" 1 "intensity" [2] "from" [0 0 0] "to" [-0.4 -1 0.6]
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.6 0.6 0.6] "float specular_roughness" [0.6]
+Polygon "P" [-4 -1 -3  4 -1 -3  4 -1 3  -4 -1 3]
+AttributeEnd
+AttributeBegin
+Translate -1 -0.2 0
+Bxdf "ND_anisotropic_vdf" "even" "vector absorption" [0.1 0.4 1.2] "vector scattering" [2.4 1.2 0.4]
+Sphere 0.8 -0.8 0.8 360
+AttributeEnd
+AttributeBegin
+Translate 1 -0.2 0
+Bxdf "ND_anisotropic_vdf" "forward" "vector absorption" [0.1 0.4 1.2] "vector scattering" [2.4 1.2 0.4] "float anisotropy" [0.8]
+Sphere 0.8 -0.8 0.8 360
+AttributeEnd
+WorldEnd

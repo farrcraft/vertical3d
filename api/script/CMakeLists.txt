@@ -1,6 +1,11 @@
 v3d_add_api_library(script
+	"Refused.h" "Refused.cxx"
+	"Result.h"
 	"Runtime.h" "Runtime.cxx"
+	"Problem.h"
+	"Stripped.h"
 	"Strip.h" "Strip.cxx"
+	"internal/Lexeme.h" "internal/Lexeme.cxx"
 	"internal/Scanner.h" "internal/Scanner.cxx"
 	"internal/Eraser.h" "internal/Eraser.cxx" "internal/EraserExpressions.cxx" "internal/EraserTypes.cxx"
 )

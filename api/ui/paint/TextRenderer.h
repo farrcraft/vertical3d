@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,11 +9,11 @@
 #include <api/font/face/FallbackChain.h>
 #include <api/font/glyph/Store.h>
 #include <api/font/text/Paragraph.h>
-#include <api/font/text/ShapingCache.h>
-#include <api/font/text/Style.h>
+#include <api/font/text/shaping/Cache.h>
+#include <api/font/text/style/Style.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/ui/paint/internal/EffectQuad.h>
+#include <api/ui/paint/internal/PlacedEffect.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -182,7 +182,7 @@ class TextRenderer {
      * @param text the string measured, in UTF-8
      * @param styled the style it is set in, from style(), with any features it asks for
      **/
-    float width(std::string_view text, const font::text::Style& styled) const;
+    float width(std::string_view text, const font::text::style::Style& styled) const;
 
     /**
      * Break a string into the rows it takes at a width, as a paragraph lays it out: at Unicode's
@@ -195,7 +195,7 @@ class TextRenderer {
      * @param styled the style it is set in, from style()
      * @return the rows, and none for a string with no text
      **/
-    std::vector<std::string> rows(std::string_view text, float width, const font::text::Style& styled) const;
+    std::vector<std::string> rows(std::string_view text, float width, const font::text::style::Style& styled) const;
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
@@ -222,7 +222,7 @@ class TextRenderer {
      * @param pen where the baseline of the first line starts
      * @param styled the style it is set in, from style(), with its colour and any features
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::Style& styled);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::style::Style& styled);
 
     /**
      * Append a paragraph's glyphs to a canvas, each in the colour of its style, with its
@@ -238,12 +238,12 @@ class TextRenderer {
      * @return the style text of a size and a weight is set in, defaulting to size(), for a
      *         paragraph drawn through this
      **/
-    font::text::Style style(float size = 0.0F, Weight weight = Weight::Regular) const;
+    font::text::style::Style style(float size = 0.0F, Weight weight = Weight::Regular) const;
 
     /**
      * @return the cache this shapes text through, which a paragraph drawn through this can share
      **/
-    const boost::shared_ptr<font::text::ShapingCache>& shaping() const noexcept;
+    const boost::shared_ptr<font::text::shaping::Cache>& shaping() const noexcept;
 
     /**
      * Tell a trace of every line drawn from now on, or of none when it is empty.
@@ -255,7 +255,7 @@ class TextRenderer {
      * A glyph placed for a draw, before its page is on the device.
      **/
     struct Placed {
-        font::glyph::StoredGlyph glyph;
+        font::glyph::Store::StoredGlyph glyph;
         glm::vec2 position{ 0.0F };
         glm::vec4 colour{ 1.0F };
         float contrast = 0.0F;
@@ -282,7 +282,7 @@ class TextRenderer {
      *
      * @param pen the glyph's pen, its baseline already on a whole pixel
      **/
-    void place(const font::text::LineRun& run, unsigned int index, const font::text::Style& styled, const glm::vec2& pen);
+    void place(const font::text::Paragraph::LineRun& run, unsigned int index, const font::text::style::Style& styled, const glm::vec2& pen);
 
     /**
      * Append the glyphs placed for a draw to a canvas, each a quad sampling its page.
@@ -292,10 +292,10 @@ class TextRenderer {
     /**
      * Tell the trace of a line drawn with its baseline starting at a pen.
      **/
-    void report(const font::text::Paragraph& paragraph, const font::text::Line& line, const glm::vec2& pen) const;
+    void report(const font::text::Paragraph& paragraph, const font::text::Paragraph::Line& line, const glm::vec2& pen) const;
 
     boost::shared_ptr<font::face::FallbackChain> chain_;
-    boost::shared_ptr<font::text::ShapingCache> shaping_;
+    boost::shared_ptr<font::text::shaping::Cache> shaping_;
     font::glyph::Store store_;
     font::glyph::Store colourStore_;
     GlyphPages pages_;

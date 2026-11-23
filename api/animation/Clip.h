@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+/**
+ * Skeletons, poses, animation clips, keyframe curves, and the tracks particle effects follow.
+ **/
 namespace v3d::animation {
 
 struct Pose;

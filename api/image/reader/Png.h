@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,9 @@
 
 #include <cstddef>
 
+/**
+ * A reader for each image format, each giving an image.
+ **/
 namespace v3d::image::reader {
 /**
  * Reads a png file into an image, through libpng.

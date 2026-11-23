@@ -1,5 +1,5 @@
 {
-  "builtin-baseline": "99a97de2cb371449d4fb9dc970f2ac562d689ec2",
+  "builtin-baseline": "b58529e33332fbb6dfe20317a82009b78ceeab36",
   "dependencies": [
     "boost-filesystem",
     "boost-foreach",
@@ -32,10 +32,24 @@
     "thorvg"
   ],
   "default-features": [
+    "moya",
     "platform",
     "usd"
   ],
   "features": {
+    "moya": {
+      "description": "What moya alone uses: oneTBB, which its CPU device schedules its work on, OpenEXR and Imath, which it writes pictures through, OpenColorIO, which manages its colour, OpenSubdiv, which evaluates its subdivision surfaces, MaterialX, which reads its materials, OIDN, which denoises its pictures, and OpenVDB, which reads its grids, with NanoVDB, which holds them where kernel code reads them",
+      "dependencies": [
+        "imath",
+        "materialx",
+        "oidn",
+        "opencolorio",
+        "openexr",
+        "openvdb",
+        "opensubdiv",
+        "tbb"
+      ]
+    },
     "platform": {
       "description": "The window, the device and the audio: what the realtime renderer, the engine, input, the ui and audio need",
       "dependencies": [

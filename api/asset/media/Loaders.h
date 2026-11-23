@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -10,6 +10,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+/**
+ * The loaders for pictures and models, and sprite sheets. This is a library of its own, linked as
+ * `v3d::asset_media`.
+ **/
 namespace v3d::asset::media {
 
 /**

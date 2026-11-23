@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "EditCommands.h"
 
@@ -15,6 +15,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/script/Arguments.h>
+#include <vertical3d/src/script/Parameter.h>
 #include <vertical3d/src/selection/SelectMask.h>
 
 #include <optional>

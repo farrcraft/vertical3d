@@ -19,6 +19,7 @@ reported, so the table lists only tags in use.
 | `camera` | projection, handedness and camera profiles |
 | `ci` | the continuous integration jobs |
 | `code` | rules for C++ code |
+| `compositing` | what a renderer writes for a compositor: channels, light paths, IDs and deep pixels |
 | `colour` | colour spaces, and the swapchain's format |
 | `docs` | the documentation site |
 | `ecs` | the entity component system |
@@ -54,6 +55,7 @@ reported, so the table lists only tags in use.
 | `textures` | textures and samplers |
 | `tooling` | the scripts, the gates and the developer tools |
 | `ui` | `api/ui` |
+| `volumes` | media, grids and the light that scatters through them |
 | `vulkan` | the Vulkan version and features the renderer requires |
 
 ## Records by tag
@@ -73,6 +75,7 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0070](scene/0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step |
+| [0217](editor/0217-editor-a-change-of-rotation-order-keeps-the-angles-or-the-pose.md) | Editor: a change of rotation order keeps the angles or the pose |
 
 ### apps
 
@@ -82,6 +85,7 @@ reported, so the table lists only tags in use.
 | [0080](engine/0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order |
 | [0117](engine/0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds |
 | [0163](engine/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line |
+| [0220](editor/0220-editor-a-headless-run-is-a-console-program-of-its-own.md) | Editor: a headless run is a console program of its own |
 
 ### assets
 
@@ -115,6 +119,15 @@ reported, so the table lists only tags in use.
 | [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 | [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
+| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
+| [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
+| [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
+| [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0260](project/0260-code-a-public-header-never-includes-an-internal-one.md) | Code: a public header never includes an internal one |
 
 ### camera
 
@@ -130,6 +143,9 @@ reported, so the table lists only tags in use.
 | [0007](project/0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
+| [0258](project/0258-ci-workflows-are-audited-by-zizmor-and-actionlint.md) | CI: workflows are audited by zizmor and actionlint |
+| [0259](project/0259-releases-a-release-build-restores-nothing-from-the-cache.md) | Releases: a release build restores nothing from the cache |
 
 ### code
 
@@ -138,12 +154,36 @@ reported, so the table lists only tags in use.
 | [0047](project/0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches |
 | [0137](project/0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local |
 | [0161](project/0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default |
+| [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
+| [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
+| [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
+| [0260](project/0260-code-a-public-header-never-includes-an-internal-one.md) | Code: a public header never includes an internal one |
 
 ### colour
 
 | ADR | Decision |
 |---|---|
 | [0009](rendering/0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain |
+| [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
+| [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
+
+### compositing
+
+| ADR | Decision |
+|---|---|
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
+| [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
 
 ### docs
 
@@ -197,6 +237,17 @@ reported, so the table lists only tags in use.
 | [0157](editor/0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene |
 | [0168](editor/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags |
 | [0169](editor/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md) | Editor: navigating a camera view frees it unless locked |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
+| [0217](editor/0217-editor-a-change-of-rotation-order-keeps-the-angles-or-the-pose.md) | Editor: a change of rotation order keeps the angles or the pose |
+| [0218](editor/0218-editor-shared-geometry-is-a-record-mesh-items-refer-to.md) | Editor: shared geometry is a record mesh items refer to |
+| [0219](editor/0219-editor-a-placement-is-set-in-the-parents-space-or-the-scenes.md) | Editor: a placement is set in the parent's space or the scene's |
+| [0220](editor/0220-editor-a-headless-run-is-a-console-program-of-its-own.md) | Editor: a headless run is a console program of its own |
+| [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
+| [0253](offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md) | Offline: a render is a session that takes edits between passes |
+| [0254](offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md) | Offline: first pictures are coarse, then passes grow |
+| [0255](offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md) | Offline: each picture is denoised once it holds enough samples |
+| [0256](editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md) | Editor: a rendered view has its own session and raster depth |
 
 ### files
 
@@ -204,6 +255,9 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0041](engine/0041-files-write-documents-atomically.md) | Files: write documents atomically |
 | [0073](engine/0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time |
+| [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
+| [0218](editor/0218-editor-shared-geometry-is-a-record-mesh-items-refer-to.md) | Editor: shared geometry is a record mesh items refer to |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
 
 ### frames
 
@@ -240,6 +294,20 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0123](scene/0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0200](offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md) | Offline: scene objects are nodes of declared parameters |
+| [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
+| [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
+| [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0247](offline/0247-offline-hair-scatters-by-chiangs-model.md) | Offline: hair scatters by Chiang's model |
 
 ### lighting
 
@@ -247,6 +315,17 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0064](rendering/0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder |
 | [0066](rendering/0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0213](offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md) | Offline: a light's shape is a primitive of the hierarchy |
+| [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
+| [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
 
 ### lit
 
@@ -307,6 +386,74 @@ reported, so the table lists only tags in use.
 | [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative |
 | [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0185](offline/0185-offline-a-surface-sets-its-trace-bias.md) | Offline: a surface sets its trace bias |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0187](offline/0187-offline-moya-owns-its-algorithms-libraries-own-formats.md) | Offline: moya owns its algorithms, libraries own formats |
+| [0188](offline/0188-offline-a-retained-scene-interface-moya-owns.md) | Offline: a retained scene interface moya owns |
+| [0189](offline/0189-offline-light-is-carried-as-sampled-spectra.md) | Offline: light is carried as sampled spectra |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0191](offline/0191-offline-one-c-kernel-source-for-every-device.md) | Offline: one C++ kernel source for every device |
+| [0192](offline/0192-offline-path-stages-run-fused-on-the-cpu-queued-on-the-gpu.md) | Offline: path stages run fused on the CPU, queued on the GPU |
+| [0193](offline/0193-offline-moya-owns-its-ray-acceleration-structure.md) | Offline: moya owns its ray acceleration structure |
+| [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
+| [0195](offline/0195-offline-the-renderers-core-lives-in-libmoya.md) | Offline: the renderer's core lives in libmoya |
+| [0196](offline/0196-offline-the-cpu-device-runs-on-onetbb.md) | Offline: the CPU device runs on oneTBB |
+| [0197](offline/0197-offline-kernel-code-uses-glm-for-vectors-and-matrices.md) | Offline: kernel code uses glm for vectors and matrices |
+| [0198](offline/0198-offline-the-working-space-is-opencolorios-scene-linear-role.md) | Offline: the working space is OpenColorIO's scene-linear role |
+| [0199](offline/0199-offline-a-sample-lands-in-the-one-pixel-it-was-drawn-for.md) | Offline: a sample lands in the one pixel it was drawn for |
+| [0200](offline/0200-offline-scene-objects-are-nodes-of-declared-parameters.md) | Offline: scene objects are nodes of declared parameters |
+| [0201](offline/0201-offline-each-scene-object-keeps-its-own-sample-times.md) | Offline: each scene object keeps its own sample times |
+| [0202](offline/0202-offline-a-material-is-a-network-of-shading-nodes.md) | Offline: a material is a network of shading nodes |
+| [0203](offline/0203-offline-scene-changes-are-versioned-and-committed.md) | Offline: scene changes are versioned and committed |
+| [0204](offline/0204-offline-stages-take-their-traversal-as-a-type.md) | Offline: stages take their traversal as a type |
+| [0205](offline/0205-offline-the-hierarchy-is-eight-wide-at-full-precision.md) | Offline: the hierarchy is eight wide at full precision |
+| [0206](offline/0206-offline-the-cpu-path-is-built-per-instruction-set.md) | Offline: the CPU path is built per instruction set |
+| [0207](offline/0207-offline-the-hierarchy-splits-motion-by-time.md) | Offline: the hierarchy splits motion by time |
+| [0208](offline/0208-offline-curves-are-swept-and-converted-to-bezier.md) | Offline: curves are swept and converted to Bézier |
+| [0209](offline/0209-offline-surfaces-are-tessellated-when-the-hierarchy-is-built.md) | Offline: surfaces are tessellated when the hierarchy is built |
+| [0210](offline/0210-offline-each-cpu-instruction-set-is-a-library.md) | Offline: each CPU instruction set is a library |
+| [0211](offline/0211-offline-a-round-curve-is-swept-by-a-sphere.md) | Offline: a round curve is swept by a sphere |
+| [0212](offline/0212-offline-the-path-state-is-declared-once-laid-out-per-device.md) | Offline: the path state is declared once, laid out per device |
+| [0213](offline/0213-offline-a-lights-shape-is-a-primitive-of-the-hierarchy.md) | Offline: a light's shape is a primitive of the hierarchy |
+| [0214](offline/0214-offline-the-light-tree-has-a-subtree-per-emitting-prototype.md) | Offline: the light tree has a subtree per emitting prototype |
+| [0215](offline/0215-offline-a-pixels-noise-is-the-difference-of-two-halves.md) | Offline: a pixel's noise is the difference of two halves |
+| [0216](offline/0216-offline-a-checkpoint-is-an-exr-of-the-films-sums.md) | Offline: a checkpoint is an EXR of the film's sums |
+| [0221](editor/0221-editor-a-batch-runs-frames-at-once-each-on-a-share-of-threads.md) | Editor: a batch runs frames at once, each on a share of threads |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
+| [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
+| [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
+| [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
+| [0230](offline/0230-offline-channels-follow-usds-render-vars.md) | Offline: channels follow USD's render vars |
+| [0231](offline/0231-offline-light-path-expressions-run-as-one-automaton.md) | Offline: light path expressions run as one automaton |
+| [0232](offline/0232-offline-cryptomatte-coverage-is-merged-on-the-host.md) | Offline: Cryptomatte coverage is merged on the host |
+| [0233](offline/0233-offline-deep-pixels-are-merged-on-the-host.md) | Offline: deep pixels are merged on the host |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0235](offline/0235-offline-a-bounce-samples-one-closure-alone.md) | Offline: a bounce samples one closure alone |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
+| [0237](offline/0237-offline-ris-ambient-light-is-an-unshadowed-dome.md) | Offline: RI's ambient light is an unshadowed dome |
+| [0238](offline/0238-offline-a-background-is-composited-when-an-output-is-written.md) | Offline: a background is composited when an output is written |
+| [0239](offline/0239-offline-ris-c-interface-is-retired.md) | Offline: RI's C interface is retired |
+| [0240](offline/0240-offline-rib-is-a-library-of-its-own.md) | Offline: RIB is a library of its own |
+| [0241](offline/0241-offline-ris-sides-decides-which-faces-a-material-emits-from.md) | Offline: RI's Sides decides which faces a material emits from |
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0244](offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md) | Offline: media are tracked by null scattering with spectral MIS |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
+| [0247](offline/0247-offline-hair-scatters-by-chiangs-model.md) | Offline: hair scatters by Chiang's model |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
+| [0253](offline/0253-offline-a-render-is-a-session-that-takes-edits-between-passes.md) | Offline: a render is a session that takes edits between passes |
+| [0254](offline/0254-offline-first-pictures-are-coarse-then-passes-grow.md) | Offline: first pictures are coarse, then passes grow |
+| [0255](offline/0255-offline-each-picture-is-denoised-once-it-holds-enough-samples.md) | Offline: each picture is denoised once it holds enough samples |
+| [0256](editor/0256-editor-a-rendered-view-has-its-own-session-and-raster-depth.md) | Editor: a rendered view has its own session and raster depth |
 
 ### particles
 
@@ -347,6 +494,8 @@ reported, so the table lists only tags in use.
 | [0180](project/0180-releases-signpath-foundation-signs-the-windows-release.md) | Releases: SignPath Foundation signs the Windows release |
 | [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 | [0182](project/0182-releases-the-flatpak-takes-the-runtimes-libraries-and-builds-the-rest.md) | Releases: the Flatpak takes the runtime's libraries and builds the rest |
+| [0183](project/0183-releases-the-flatpak-ships-only-as-a-release-bundle.md) | Releases: the Flatpak ships only as a release bundle |
+| [0259](project/0259-releases-a-release-build-restores-nothing-from-the-cache.md) | Releases: a release build restores nothing from the cache |
 
 ### rendering
 
@@ -374,12 +523,21 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0083](project/0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
 
 ### shaders
 
 | ADR | Decision |
 |---|---|
 | [0008](rendering/0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency |
+| [0186](offline/0186-offline-moya-renders-by-path-tracing-alone.md) | Offline: moya renders by path tracing alone |
+| [0190](offline/0190-offline-materials-are-a-bsdf-library-and-materialx-graphs.md) | Offline: materials are a BSDF library and MaterialX graphs |
+| [0222](offline/0222-offline-a-bsdf-is-a-list-of-weighted-closures.md) | Offline: a BSDF is a list of weighted closures |
+| [0223](offline/0223-offline-a-material-is-an-interpreted-node-program.md) | Offline: a material is an interpreted node program |
+| [0226](offline/0226-offline-rib-names-materialx-nodes-in-renderman-syntax.md) | Offline: RIB names MaterialX nodes in RenderMan's syntax |
+| [0227](offline/0227-offline-opacity-is-tested-inside-the-traversal.md) | Offline: opacity is tested inside the traversal |
+| [0228](offline/0228-offline-fuzz-is-openpbrs-sheen-not-reciprocal.md) | Offline: fuzz is OpenPBR's sheen, not reciprocal |
+| [0236](offline/0236-offline-ris-built-in-surfaces-are-materialx-definitions.md) | Offline: RI's built-in surfaces are MaterialX definitions |
 
 ### shell
 
@@ -406,6 +564,9 @@ reported, so the table lists only tags in use.
 | [0054](project/0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
+| [0194](offline/0194-offline-stateless-samples-one-picture-per-device.md) | Offline: stateless samples, one picture per device |
+| [0234](offline/0234-offline-denoised-channels-sit-beside-noisy-ones.md) | Offline: denoised channels sit beside noisy ones |
+| [0257](project/0257-ci-every-check-runs-on-every-pull-request.md) | CI: every check runs on every pull request |
 
 ### text
 
@@ -428,6 +589,9 @@ reported, so the table lists only tags in use.
 |---|---|
 | [0082](rendering/0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context |
 | [0109](rendering/0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot |
+| [0224](offline/0224-offline-a-rays-footprint-is-a-cone.md) | Offline: a ray's footprint is a cone |
+| [0225](offline/0225-offline-textures-are-tiled-exr-cached-by-tile.md) | Offline: textures are tiled EXR, cached by tile |
+| [0229](offline/0229-offline-stages-take-their-texture-access-as-a-type.md) | Offline: stages take their texture access as a type |
 
 ### tooling
 
@@ -437,6 +601,8 @@ reported, so the table lists only tags in use.
 | [0164](project/0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit |
 | [0171](project/0171-process-decision-records-are-filed-in-folders-by-area.md) | Process: decision records are filed in folders by area |
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
+| [0184](project/0184-tooling-typescript-is-linted-by-oxlint-and-formatted-by-oxfmt.md) | Tooling: TypeScript is linted by oxlint and formatted by oxfmt |
+| [0258](project/0258-ci-workflows-are-audited-by-zizmor-and-actionlint.md) | CI: workflows are audited by zizmor and actionlint |
 
 ### ui
 
@@ -457,6 +623,21 @@ reported, so the table lists only tags in use.
 | [0151](ui/0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree |
 | [0156](ui/0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own |
 | [0167](ui/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md) | UI: a chosen tab is marked as a place, not a toggle |
+
+### volumes
+
+| ADR | Decision |
+|---|---|
+| [0242](offline/0242-offline-media-follow-usdvols-volumes-and-fields.md) | Offline: media follow UsdVol's volumes and fields |
+| [0243](offline/0243-offline-nested-media-are-resolved-by-instance-priority.md) | Offline: nested media are resolved by instance priority |
+| [0244](offline/0244-offline-media-are-tracked-by-null-scattering-with-spectral-mis.md) | Offline: media are tracked by null scattering with spectral MIS |
+| [0245](offline/0245-offline-grids-are-held-as-nanovdb-on-every-device.md) | Offline: grids are held as NanoVDB on every device |
+| [0246](offline/0246-offline-subsurface-is-a-random-walk-inside-the-surface.md) | Offline: subsurface is a random walk inside the surface |
+| [0248](offline/0248-offline-an-emitting-volume-is-a-subtree-of-the-light-tree.md) | Offline: an emitting volume is a subtree of the light tree |
+| [0249](offline/0249-offline-a-collision-in-a-medium-is-a-first-hit.md) | Offline: a collision in a medium is a first hit |
+| [0250](offline/0250-offline-a-volumes-deep-samples-are-cut-by-the-tolerance.md) | Offline: a volume's deep samples are cut by the tolerance |
+| [0251](offline/0251-offline-alpha-through-a-medium-is-its-mean-transmittance.md) | Offline: alpha through a medium is its mean transmittance |
+| [0252](offline/0252-offline-a-walk-leaves-its-surface-by-a-lambertian-lobe.md) | Offline: a walk leaves its surface by a Lambertian lobe |
 
 ### vulkan
 

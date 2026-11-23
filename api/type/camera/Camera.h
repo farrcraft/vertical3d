@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -15,6 +15,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * Cameras: a perspective camera, an isometric one, the arcball, and the settings a camera profile
+ * gives.
+ **/
 namespace v3d::type::camera {
 
 /**

@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -9,6 +9,10 @@
 
 #include <vector>
 
+/**
+ * Graphics pipelines and what they bind: the pipeline builder and cache, descriptor pools, samplers
+ * and textures.
+ **/
 namespace v3d::render::realtime::vulkan::pipeline {
 
 /**

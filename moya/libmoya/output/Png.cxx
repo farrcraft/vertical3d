@@ -1,0 +1,91 @@
+/*
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ */
+
+#include <moya/libmoya/output/Png.h>
+
+#include <api/asset/Writer.h>
+#include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <moya/libmoya/colour/Transform.h>
+#include <moya/libmoya/film/Snapshot.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <glm/vec2.hpp>
+
+namespace v3d::moya::output {
+
+namespace {
+
+/** The largest value of an 8-bit channel. **/
+constexpr float kLargest = 255.0F;
+
+};  // namespace
+
+std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, const colour::Transform & display) {
+    return displayed(snapshot, 0, display);
+}
+
+std::vector<std::uint8_t> displayed(const film::Snapshot & snapshot, std::uint32_t offset, const colour::Transform & display) {
+    const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
+    std::vector<float> colour(pixels * 3);
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        for (std::size_t i = 0; i < 3; ++i) {
+            colour[(pixel * 3) + i] = snapshot.values.at((pixel * snapshot.stride) + offset + i);
+        }
+    }
+    display.apply(colour.data(), pixels, 3);
+
+    std::vector<std::uint8_t> out(colour.size());
+    for (std::size_t i = 0; i < colour.size(); ++i) {
+        const float value = std::isnan(colour[i]) ? 0.0F : std::clamp(colour[i], 0.0F, 1.0F);
+        out[i] = static_cast<std::uint8_t>(std::lround(value * kLargest));  // checked: clamped to [0, 1] first
+    }
+    return out;
+}
+
+std::vector<std::uint8_t> directions(const film::Snapshot & snapshot, std::uint32_t offset) {
+    const std::size_t pixels = static_cast<std::size_t>(snapshot.resolution.x) * snapshot.resolution.y;
+    std::vector<std::uint8_t> out(pixels * 3);
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        for (std::size_t i = 0; i < 3; ++i) {
+            const float component = snapshot.values.at((pixel * snapshot.stride) + offset + i);
+            const float value = std::isnan(component) ? 0.5F : std::clamp((component * 0.5F) + 0.5F, 0.0F, 1.0F);
+            out[(pixel * 3) + i] = static_cast<std::uint8_t>(std::lround(value * kLargest));  // checked: clamped to [0, 1] first
+        }
+    }
+    return out;
+}
+
+void writePng(const std::string & path, const film::Snapshot & snapshot, const colour::Transform & display,
+    const boost::shared_ptr<log::Logger> & logger) {
+    const std::vector<std::uint8_t> bytes = displayed(snapshot, display);
+    const auto image = boost::make_shared<image::Image>(glm::uvec2(snapshot.resolution.x, snapshot.resolution.y), 24);
+    if (!bytes.empty()) {
+        std::memcpy(image->data(), bytes.data(), bytes.size());
+    }
+    image::Factory factory(logger);
+    const std::optional<std::string> encoded = factory.encode(image, "png");
+    if (!encoded) {
+        throw std::runtime_error("the picture for " + path + " did not encode as a PNG");
+    }
+    if (!asset::writeFile(path, *encoded)) {
+        throw std::runtime_error("cannot write " + path);
+    }
+}
+
+};  // namespace v3d::moya::output

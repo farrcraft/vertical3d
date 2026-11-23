@@ -1,14 +1,14 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Spline.h"
 
+#include "Nurbs.h"
+
 #include <cstddef>
 #include <vector>
-
-#include "Curve.h"
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>

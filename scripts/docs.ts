@@ -87,7 +87,7 @@ export function archiveFor(tool: Tool, platform: string): Archive {
 }
 
 /** The tool TOOLS pins by a name. Throws a GateError when it pins none. */
-export function tool(name: string): Tool {
+export function pinnedTool(name: string): Tool {
     const found = TOOLS.find((candidate) => candidate.name === name);
     if (found === undefined) {
         throw new GateError(`TOOLS pins no ${name}`);
@@ -134,11 +134,16 @@ export function commentFindings(output: string, check: boolean): Finding[] {
             }
             continue;
         }
-        const file = path.relative(ROOT, path.resolve(start[1] ?? '')).split(path.sep).join('/');
+        const file = path
+            .relative(ROOT, path.resolve(start[1] ?? ''))
+            .split(path.sep)
+            .join('/');
         const message = start[3] ?? '';
         const rule = /^Compound .* is not documented\.$/.test(message)
             ? 'undocumented-type'
-            : /parameters? of .* (is|are) not documented:$/.test(message) ? 'missing-param' : 'comment-error';
+            : /parameters? of .* (is|are) not documented:$/.test(message)
+              ? 'missing-param'
+              : 'comment-error';
         found.push({ path: file, line: Number(start[2]), rule, message });
     }
     return check ? found.filter((finding) => finding.rule === 'undocumented-type') : found;
@@ -169,9 +174,7 @@ async function ensure(tool: Tool, platform: string): Promise<string> {
     const file = path.join(directory, path.posix.basename(archive.url));
     writeFileSync(file, bytes);
     // Windows' own tar reads a zip; the tar on PATH under Git Bash does not
-    const tar = platform.startsWith('win32')
-        ? path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe')
-        : 'tar';
+    const tar = platform.startsWith('win32') ? path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
     run(tar, ['-xf', file, '-C', directory], directory);
     writeFileSync(stamp, archive.sha256);
     return binary;
@@ -182,8 +185,8 @@ async function main(): Promise<number> {
     options('usage: node scripts/docs.ts', {});
     const platform = `${process.platform}-${process.arch}`;
     const book = path.join(ROOT, 'scripts', 'docs');
-    const mdbook = await ensure(tool('mdbook'), platform);
-    const doxygen = await ensure(tool('doxygen'), platform);
+    const mdbook = await ensure(pinnedTool('mdbook'), platform);
+    const doxygen = await ensure(pinnedTool('doxygen'), platform);
     // mdBook empties out/docs/ before it writes, so the reference is built after it
     run(mdbook, ['build'], book);
     const findings = [
@@ -195,13 +198,16 @@ async function main(): Promise<number> {
 
 // runGate takes a main that returns at once, and this one waits on the network
 if (shouldRun(import.meta.url)) {
-    main().then((status) => {
-        process.exitCode = status;
-    }, (error: unknown) => {
-        if (!(error instanceof GateError)) {
-            throw error;
-        }
-        process.stderr.write(error instanceof UsageError ? `${error.message}\n` : `docs.ts: ${error.message}\n`);
-        process.exitCode = 2;
-    });
+    main().then(
+        (status) => {
+            process.exitCode = status;
+        },
+        (error: unknown) => {
+            if (!(error instanceof GateError)) {
+                throw error;
+            }
+            process.stderr.write(error instanceof UsageError ? `${error.message}\n` : `docs.ts: ${error.message}\n`);
+            process.exitCode = 2;
+        },
+    );
 }

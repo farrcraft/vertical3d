@@ -1,17 +1,17 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
-#include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
+#include <api/curve/Poly.h>
 #include <vertical3d/src/scene/item/Components.h>
 #include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/script/Arguments.h>
+#include <vertical3d/src/script/Parameter.h>
 #include <vertical3d/src/script/Text.h>
 
 #include <optional>

@@ -1,10 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
-#include <api/font/glyph/CurveStore.h>
-#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/curve/Store.h>
+#include <api/font/glyph/curve/Curves.h>
+#include <api/font/glyph/curve/Glyph.h>
+#include <api/font/glyph/curve/Quadratic.h>
 #include <api/font/face/Face.h>
 #include <api/font/face/Library.h>
 #include <api/log/Logger.h>
@@ -34,7 +36,7 @@ struct Storing {
     boost::shared_ptr<v3d::log::Logger> logger;
     boost::shared_ptr<v3d::font::face::Library> library;
     boost::shared_ptr<v3d::font::face::Face> inter;
-    v3d::font::glyph::CurveStore store;
+    v3d::font::glyph::curve::Store store;
 };
 
 BOOST_FIXTURE_TEST_SUITE(curve_store_test, Storing)
@@ -58,8 +60,8 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_stored_as_the_shader_reads_it) {
     // a glyph first, so the next is stored after it
     store.glyph(*inter, inter->glyphIndex(U'o'));
     const unsigned int index = inter->glyphIndex(U'H');
-    const v3d::font::glyph::CurveGlyph outlined = v3d::font::glyph::outline(*inter, index);
-    const v3d::font::glyph::StoredCurves& stored = store.glyph(*inter, index);
+    const v3d::font::glyph::curve::Glyph outlined = v3d::font::glyph::curve::outline(*inter, index);
+    const v3d::font::glyph::curve::Store::StoredCurves& stored = store.glyph(*inter, index);
     BOOST_REQUIRE(!stored.empty);
     const std::vector<float>& bands = store.bands();
     const std::vector<float>& curves = store.curves();
@@ -75,7 +77,7 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_stored_as_the_shader_reads_it) {
     const auto list = static_cast<std::size_t>(bands[base + 9]);
     BOOST_REQUIRE_EQUAL(count, outlined.horizontal[0].size());
     const auto curve = static_cast<std::size_t>(bands[list]);
-    const v3d::font::glyph::QuadraticCurve& expected = outlined.curves[outlined.horizontal[0][0]];
+    const v3d::font::glyph::curve::Quadratic& expected = outlined.curves[outlined.horizontal[0][0]];
     BOOST_CHECK_EQUAL(curves[curve * 8], expected.p1.x);
     BOOST_CHECK_EQUAL(curves[(curve * 8) + 3], expected.p2.y);
     BOOST_CHECK_EQUAL(curves[(curve * 8) + 5], expected.p3.y);
@@ -88,7 +90,7 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_stored_as_the_shader_reads_it) {
 BOOST_AUTO_TEST_CASE(changed_rows_are_given_once) {
     store.glyph(*inter, inter->glyphIndex(U'H'));
     BOOST_CHECK_EQUAL(store.curveRows(), 1U);
-    const v3d::font::glyph::CurveStore::Changed changed = store.changedCurves();
+    const v3d::font::glyph::curve::Store::Changed changed = store.changedCurves();
     BOOST_CHECK_EQUAL(changed.first, 0U);
     BOOST_CHECK_EQUAL(changed.rows, 1U);
     BOOST_CHECK_EQUAL(store.changedCurves().rows, 0U);

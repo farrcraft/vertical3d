@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Scanner.h"
+
+#include "Lexeme.h"
 
 #include <array>
 #include <cstddef>
@@ -45,12 +47,6 @@ bool digit(char letter) noexcept {
 }
 
 };  // namespace
-
-/**
- **/
-bool Lexeme::is(std::string_view written) const noexcept {
-    return (kind == Token::Punctuator || kind == Token::Identifier) && text == written;
-}
 
 /**
  **/

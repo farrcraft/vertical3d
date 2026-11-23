@@ -1,8 +1,9 @@
 # ADR-0025: Offline: RIB reader calls a typed handler interface
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-05
 **Tags**: offline
+**Amended by**: [ADR-0239](0239-offline-ris-c-interface-is-retired.md), [ADR-0240](0240-offline-rib-is-a-library-of-its-own.md)
 **Documented in**: [offline/Rib.md](../../offline/Rib.md)
 
 ## Context

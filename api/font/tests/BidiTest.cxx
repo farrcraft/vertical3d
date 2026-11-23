@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/font/text/Bidi.h>
 
@@ -23,7 +23,7 @@ constexpr std::string_view kHebrewInEnglish = "I said \xD7\xA9\xD7\x9C\xD7\x95\x
 /**
  * Check runs against the starts, ends and levels expected.
  **/
-void same(const std::vector<v3d::font::text::LevelRun>& found, const std::vector<v3d::font::text::LevelRun>& expected) {
+void same(const std::vector<v3d::font::text::Bidi::LevelRun>& found, const std::vector<v3d::font::text::Bidi::LevelRun>& expected) {
     BOOST_REQUIRE_EQUAL(found.size(), expected.size());
     for (std::size_t run = 0; run < found.size(); ++run) {
         BOOST_CHECK_EQUAL(found[run].start, expected[run].start);

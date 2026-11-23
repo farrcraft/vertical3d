@@ -1,16 +1,19 @@
 # Draw curves
 
 `Curves` draws thin ribbons along lines or smooth curves. Use it for hair, grass, wires and
-lines. Both hiders draw curves.
+lines.
 
 ## Draw a curve
 
 ```
 Format 160 120 1
+PixelSamples 8 8
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
 WorldBegin
-Surface "constant"
+LightSource "ambientlight" 1 "intensity" [0.3]
+LightSource "distantlight" 2 "to" [0 0 1]
+Surface "matte"
 Color [0.9 0.9 0.3]
 Curves "linear" [3] "nonperiodic" "P" [-1.5 -1 5  0 1 5  1.5 -1 5] "constantwidth" [0.05]
 Color [0.3 0.8 0.9]
@@ -55,8 +58,9 @@ is followed by its step, the number of points from one segment to the next, from
 | `"hermite"` | 2 | Each pair of values is a point and a tangent |
 | `"power"` | 4 | The values are the coefficients of a polynomial |
 
-A basis can also be 16 numbers, a 4 by 4 matrix. The basis is the one in force at the `Curves`
-request. It is bezier with step 3 by default.
+The basis is the one in force at the `Curves` request. It is bezier with step 3 by default. A
+basis given as 16 numbers, rather than by name, is logged, and the curves after it are drawn as
+bezier.
 
 A nonperiodic cubic curve of n points has `(n - 4) / step + 1` segments. In the example, the
 first and last points are repeated so that the catmull-rom curve reaches the ends.
@@ -65,17 +69,19 @@ first and last points are repeated so that the catmull-rom curve reaches the end
 
 - `"constantwidth" [w]` gives every curve in the request the width w.
 - `"width"` gives a width at each end of each segment. A linear curve of n points has n widths.
-  A nonperiodic cubic curve has one more width than it has segments.
+  A nonperiodic cubic curve has one more width than it has segments. A width for each point in
+  `"P"` is also read.
 - With neither, the width is 1.
 
-The width is in object space, as the points are.
+The width is the ribbon's full width, in object space, as the points are. A width given at each
+end of a segment changes evenly along it.
 
 ## What curves do not do
 
-- A curve is a flat ribbon. It turns to face the camera under the reyes hider, and each ray
-  under the ray-trace hider. It is never round, and `"N"` does not turn it.
-- A varying `"Cs"` does not colour a curve. Use `Color` before the request.
-- A curve does not join an area light.
-- The ray-trace hider does not displace a curve.
-- If the point counts reach past the end of `"P"`, moya draws what `"P"` holds and logs the
-  rest.
+- **A curve is a flat ribbon that faces each ray.** It is never round, and `"N"` does not turn
+  it.
+- **A curve does not glow** under `AreaLightSource` or `PxrMeshLight`.
+- **A curve is not displaced.**
+- **A `Curves` request whose counts do not fit is not drawn**, and the log says so. That is a
+  count of points that does not add up to `"P"`, a curve too short for one segment, or widths of
+  neither count above.

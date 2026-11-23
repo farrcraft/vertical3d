@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -21,6 +21,9 @@
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
+/**
+ * Keyboard and mouse devices, and the state of what is held and what changed this frame.
+ **/
 namespace v3d::input {
 /**
  * Owns the input devices an app asked for, the keyboard and the mouse, and offers each polled

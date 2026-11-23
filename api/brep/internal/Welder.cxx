@@ -1,12 +1,12 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Welder.h"
 
-#include <api/brep/Builder.h>
 #include <api/brep/Index.h>
+#include <api/brep/Polygons.h>
 
 #include <bit>
 #include <cstddef>

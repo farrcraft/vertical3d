@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { formatFinding } from '../lib/cli.ts';
-import { compose, families, installed, licenceOf, shipsCode, unlicensedFonts } from '../notices.ts';
+import { DATA, compose, families, installed, licenceOf, missingDataNotices, shipsCode, unlicensedFonts } from '../notices.ts';
 
 const STATUS = [
     'Package: zlib\nVersion: 1.3.2\nArchitecture: x64-windows\nStatus: install ok installed',
@@ -39,8 +39,13 @@ test('notices counts a package that installs only under share/ as shipping nothi
 });
 
 test('notices names the family each font licence covers', () => {
-    assert.deepEqual([...families(['data/fonts/Inter-OFL.txt', 'data/fonts/Inter-Regular.ttf', 'data/fonts/NotoSans-OFL.txt'])],
-        [['Inter', 'data/fonts/Inter-OFL.txt'], ['NotoSans', 'data/fonts/NotoSans-OFL.txt']]);
+    assert.deepEqual(
+        [...families(['data/fonts/Inter-OFL.txt', 'data/fonts/Inter-Regular.ttf', 'data/fonts/NotoSans-OFL.txt'])],
+        [
+            ['Inter', 'data/fonts/Inter-OFL.txt'],
+            ['NotoSans', 'data/fonts/NotoSans-OFL.txt'],
+        ],
+    );
 });
 
 test('notices gives a font the licence of the longest family its name starts with', () => {
@@ -54,12 +59,28 @@ test('notices accepts fonts that each have a licence', () => {
 });
 
 test('notices reports a font no licence names the family of', () => {
-    assert.deepEqual(unlicensedFonts(['data/fonts/Inter-OFL.txt', 'data/fonts/Roboto-Regular.ttf']).map(formatFinding),
-        ['data/fonts/Roboto-Regular.ttf: unlicensed-font: no *-OFL.txt beside it names its family']);
+    assert.deepEqual(unlicensedFonts(['data/fonts/Inter-OFL.txt', 'data/fonts/Roboto-Regular.ttf']).map(formatFinding), [
+        'data/fonts/Roboto-Regular.ttf: unlicensed-font: no *-OFL.txt beside it names its family',
+    ]);
+});
+
+test('notices reports a data table whose notice is not in the tree', () => {
+    const data = [{ notice: 'a/NOTICE.txt' }, { notice: 'b/NOTICE.txt' }];
+    assert.deepEqual(missingDataNotices(data, ['a/NOTICE.txt']).map(formatFinding), [
+        'b/NOTICE.txt: no-data-notice: a data table names this notice, and it is not in the tree',
+    ]);
+    assert.deepEqual(missingDataNotices(data, ['a/NOTICE.txt', 'b/NOTICE.txt']), []);
+});
+
+test('notices names a notice for the CIE tables moya carries', () => {
+    assert.ok(DATA.some(({ notice }) => notice === 'moya/libmoya/kernel/spectrum/CIE-NOTICE.txt'));
 });
 
 test('notices writes each notice under its heading, after the opening', () => {
-    const text = compose([{ heading: 'Vertical3D', text: 'MIT\n' }, { heading: 'zlib 1.3.2', text: '  zlib licence  ' }]);
+    const text = compose([
+        { heading: 'Vertical3D', text: 'MIT\n' },
+        { heading: 'zlib 1.3.2', text: '  zlib licence  ' },
+    ]);
     assert.match(text, /^Third-party notices for Vertical3D\n/);
     assert.ok(text.indexOf('Vertical3D\n=') < text.indexOf('zlib 1.3.2\n='));
     assert.match(text, /\nzlib 1\.3\.2\n=+\n\nzlib licence\n$/);

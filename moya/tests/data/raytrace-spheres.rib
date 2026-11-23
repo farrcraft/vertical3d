@@ -5,7 +5,7 @@ Hider "raytrace"
 Format 64 48 1
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
-# the floor's shader is a fixture beside this file rather than one of the standard ones
+# checked is not one of RI's surfaces, so its document, checked.mtlx, is read from beside the scene
 Option "searchpath" "shader" ["data:&"]
 WorldBegin
 LightSource "ambientlight" 0 "intensity" [0.2]

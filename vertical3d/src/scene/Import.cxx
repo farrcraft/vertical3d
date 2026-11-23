@@ -1,9 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Import.h"
+
+#include "Into.h"
 
 #include <api/interchange/Rescale.h>
 #include <api/interchange/Scene.h>

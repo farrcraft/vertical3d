@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "Translate.h"
 
@@ -9,6 +9,7 @@
 
 #include <cmath>
 
+#include "Motion.h"
 #include "Screen.h"
 #include "Target.h"
 

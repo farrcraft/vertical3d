@@ -121,7 +121,7 @@ With the Vulkan SDK installed, the renderer turns on the validation layer and wr
 to this log. A run with no validation messages is a clean run.
 [Testing.md](Testing.md#verifying-a-rendering-change) explains how to check a rendering change.
 
-moya renders a RIB file from the command line. Run it from its own directory:
+moya renders a RIB file by path tracing, from the command line. Run it from its own directory:
 
 ```
 cd out/build/x64-Debug/moya

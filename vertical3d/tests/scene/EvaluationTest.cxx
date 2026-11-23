@@ -1,10 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/brep/BRep.h>
 #include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Placed.h>
 #include <vertical3d/src/scene/item/Group.h>
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>

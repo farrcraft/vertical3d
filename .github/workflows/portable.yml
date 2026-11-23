@@ -1,10 +1,11 @@
 # Builds the tree on Linux, so it keeps building with compilers other than MSVC. The clang job
-# builds the api libraries that need neither a window nor a device with Clang, runs their suites
-# under the sanitizers, and fuzzes each fuzz target after them, through scripts/portable/build.sh.
-# The whole job builds the whole tree with Clang and with GCC, and runs every suite, through
-# scripts/portable/whole.sh. The rest of CI builds with MSVC on Windows. Both run in the image
-# scripts/portable/Dockerfile defines. scripts\portable.cmd runs either locally in the same
-# image.
+# builds the api libraries that need neither a window nor a device, and moya, with Clang and
+# under the sanitizers, through scripts/portable/build.sh. Its four stages run as a job each: the
+# libraries and their suites, moya and its suite, moya's RGB build and its suite, and the fuzz
+# targets, each fuzzed. The whole job builds
+# the whole tree with Clang and with GCC, and runs every suite, through scripts/portable/whole.sh.
+# The rest of CI builds with MSVC on Windows. Both run in the image scripts/portable/Dockerfile
+# defines. scripts\portable.cmd runs either locally in the same image.
 name: portable
 
 # push is filtered to the default branch and pull_request is not. A branch in this repository
@@ -26,16 +27,39 @@ permissions:
   contents: read
 
 jobs:
+  # The four stages install the same vcpkg packages, so they share one cache entry, and only the
+  # libraries stage saves it.
   clang:
     runs-on: ubuntu-26.04
-    timeout-minutes: 120
+    timeout-minutes: ${{ matrix.timeout }}
+
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - stage: libraries
+            timeout: 45
+          - stage: moya
+            timeout: 75
+          - stage: rgb
+            timeout: 75
+          - stage: fuzz
+            timeout: 20
 
     env:
       WORK_DIR: ${{ github.workspace }}/out/build/portable
       VCPKG_CACHE: ${{ github.workspace }}/out/build/portable/vcpkg-cache
+      STAGE: ${{ matrix.stage }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build the image
         run: docker build -t v3d-portable scripts/portable
@@ -59,14 +83,14 @@ jobs:
           find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
 
       - name: Build and test
-        run: docker run --rm -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-portable "$STAGE"
 
       # Saved only when the run built an archive the restore did not bring, so a run that built
       # nothing does not store another copy of the same packages. A run whose build or tests
       # failed still saves what it built.
       - name: Check for new vcpkg binaries
         id: vcpkg-new
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.stage == 'libraries' }}
         run: |
           find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-now.txt"
           if cmp -s "$RUNNER_TEMP/vcpkg-restored.txt" "$RUNNER_TEMP/vcpkg-now.txt"; then
@@ -82,14 +106,30 @@ jobs:
           path: ${{ env.VCPKG_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
 
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job.
+      - name: Delete the vcpkg binaries this save replaced
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.built == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-${{ runner.os }}-
+          SAVED: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$PRUNED" --saved "$SAVED"
+
   # The whole tree, the apps included, built with Clang and with GCC on Linux, and every suite
   # run: the device suites on lavapipe, and the window suites on a virtual display. GCC is the
   # compiler the Flatpak builds with. scripts/portable/whole.sh does the build, in the same image
-  # as the job above. Each compiler keeps its own vcpkg binaries, because vcpkg hashes the
-  # compiler into every package's ABI.
+  # as the job above, and the build and the suites are a step each so each reports its time. Each
+  # compiler keeps its own vcpkg binaries, because vcpkg hashes the compiler into every package's
+  # ABI.
   whole:
     runs-on: ubuntu-26.04
-    timeout-minutes: 240
+    timeout-minutes: 90
+
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
 
     strategy:
       fail-fast: false
@@ -106,6 +146,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build the image
         run: docker build -t v3d-portable scripts/portable
@@ -123,8 +165,31 @@ jobs:
           mkdir -p "$VCPKG_CACHE"
           find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
 
-      - name: Build and test
-        run: docker run --rm ${{ matrix.environment }} -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole
+      # The compiler's options for docker are split into words here, from the environment rather
+      # than expanded into the script
+      - name: Build
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          read -ra environment <<< "$ENVIRONMENT"
+          docker run --rm "${environment[@]}" -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole build
+
+      - name: Test
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          read -ra environment <<< "$ENVIRONMENT"
+          docker run --rm "${environment[@]}" -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole test
+
+      # A suite that compares against a committed picture leaves what it drew in data_out/ when
+      # the two differ. Only this job draws with Linux's compilers and its maths library, so its
+      # pictures are kept for a failure to be looked at.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: data-out-${{ matrix.compiler }}
+          path: ${{ env.WORK_DIR }}/whole-*/**/data_out/
+          if-no-files-found: ignore
 
       - name: Check for new vcpkg binaries
         id: vcpkg-new
@@ -143,3 +208,13 @@ jobs:
         with:
           path: ${{ env.VCPKG_CACHE }}
           key: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job.
+      - name: Delete the vcpkg binaries this save replaced
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.built == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-
+          SAVED: vcpkg-whole-${{ matrix.compiler }}-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$PRUNED" --saved "$SAVED"

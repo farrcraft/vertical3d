@@ -1,12 +1,15 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include <api/image/Pack.h>
 
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
+#include <api/image/Packing.h>
+#include <api/image/Sprite.h>
+#include <api/image/Unpacking.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>

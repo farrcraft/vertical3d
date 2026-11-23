@@ -1,0 +1,23 @@
+##RenderMan RIB-Structure 1.1
+##Scene A ball of fog resting on a grey floor, under a spot light whose cone the fog shows, and a dim dome
+version 3.03
+Format 96 64 1
+PixelSamples 6 6
+Projection "perspective" "fov" [40]
+Clipping 0.01 100
+Translate 0 0 5
+Rotate -15 1 0 0
+WorldBegin
+Light "PxrDomeLight" "sky" "float intensity" [0.05]
+LightSource "spotlight" 1 "intensity" [24] "from" [0.3 2.6 0] "to" [0 -1 0] "coneangle" [0.3] "conedeltaangle" [0.08]
+AttributeBegin
+Bxdf "ND_open_pbr_surface_surfaceshader" "floor" "color base_color" [0.5 0.5 0.5] "float specular_roughness" [0.6]
+Polygon "P" [-4 -1 -3  4 -1 -3  4 -1 3  -4 -1 3]
+AttributeEnd
+# the fog has no surface of its own, so its sphere only bounds the medium
+AttributeBegin
+Translate 0 0.2 0
+Bxdf "ND_anisotropic_vdf" "fog" "vector absorption" [0.05 0.05 0.05] "vector scattering" [0.8 0.8 0.8] "float anisotropy" [0.4]
+Sphere 1.5 -1.5 1.5 360
+AttributeEnd
+WorldEnd

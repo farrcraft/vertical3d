@@ -1,7 +1,7 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #pragma once
 
@@ -11,6 +11,10 @@
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * Draws entities by their components: sprites and particles into a depth order, meshes into a lit
+ * pass, and the palettes of skinned entities.
+ **/
 namespace v3d::render::realtime::entity {
 
 /**

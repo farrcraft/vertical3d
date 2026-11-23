@@ -1,8 +1,7 @@
 # Builds the tree in Debug and in Release and runs the Boost.Test suites through ctest in each. A
 # release ships the Release build, so a defect only Release shows fails here, not in a release.
-# A pushed tag vX.Y.Z, or vX.Y.Z-rc.N for a release candidate, also publishes the Release build's
-# install tree, its installer and the Flatpak as a GitHub release, once every job has passed.
-# This is a separate workflow
+# release.yml calls it for a release's tag, and the Release build then packages its install tree
+# and its installer for the release to publish. This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
 # needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
@@ -12,19 +11,25 @@ name: ctest
 # whole life of a pull request. The cost of that is a second Vulkan SDK install and a second
 # boost build per push. A branch with no pull request open gets no run - open one to get CI.
 # A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
-# A tag push is never path-filtered, so a release always runs.
 on:
   push:
     branches: [main]
-    tags: ['v*']
     paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
+  # release.yml and scheduled.yml call it with nothing restored from the cache
+  workflow_call:
+    inputs:
+      cold:
+        description: The caller's jobs restore nothing from the cache and save nothing to it
+        type: boolean
+        default: false
 
 # A push that supersedes an earlier one cancels it. The cold dependency build is expensive
-# enough that queueing runs of the same branch is worth avoiding.
+# enough that queueing runs of the same branch is worth avoiding. A called run's group names the
+# workflow that called it, so a scheduled run on main is not cancelled by a push to main.
 concurrency:
-  group: ctest-${{ github.ref }}
+  group: ctest-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -32,15 +37,34 @@ permissions:
 
 jobs:
   test:
-    runs-on: windows-latest
-    timeout-minutes: 120
+    runs-on: windows-2025-vs2026
+    # A cold run restores nothing and builds every package from source, so it has the longest a
+    # hosted job may run
+    timeout-minutes: ${{ inputs.cold && 360 || matrix.timeout }}
+
+    # actions: write lets a save delete the cache entries it replaced
+    permissions:
+      contents: read
+      actions: write
 
     # Each build type runs on a runner of its own, beside the other rather than after it. A
-    # failure in one does not cancel the other, so a run reports both.
+    # failure in one does not cancel the other, so a run reports both. The part "build" builds
+    # the tree and runs its suites. The part "beside" sets up the Debug build's toolchain and
+    # packages and builds nothing of the tree. It builds the starter example and runs the
+    # fails-first harness, which need only the packages, on a runner of their own.
     strategy:
       fail-fast: false
       matrix:
-        preset: [ci, ci-release]
+        include:
+          - preset: ci
+            part: build
+            timeout: 120
+          - preset: ci-release
+            part: build
+            timeout: 90
+          - preset: ci
+            part: beside
+            timeout: 45
 
     env:
       # The configure preset in CMakePresets.json, and the directory it builds into
@@ -62,10 +86,13 @@ jobs:
       # comes from a third-party release, not a package manager. Resolving "latest" would let
       # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
-      # NSIS builds the Windows installer. The runner image does not ship it, and its version is
-      # pinned so the installer cannot change without a commit here.
-      NSIS_VERSION: "3.13.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
+      # NSIS builds the Windows installer. The runner image does not ship it. It comes from
+      # NSIS's own release, pinned by version and by the zip's hash, so the installer cannot
+      # change without a commit here.
+      NSIS_VERSION: "3.13"
+      NSIS_SHA256: "ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8"
+      NSIS_ROOT: ${{ github.workspace }}\out\build\nsis
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -73,6 +100,7 @@ jobs:
           # the whole history, so the fails-first step can find the branch a pull request
           # merges into and read each changed file at its version there
           fetch-depth: 0
+          persist-credentials: false
 
       # A release's tag has to name the version the tree builds, and the changelog has to have
       # that version's section, which becomes the release's notes. The step gives the configure
@@ -321,6 +349,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
 
       # The ci presets configure with the vcpkg checkout above, and with a job pool that holds
       # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
@@ -328,7 +357,8 @@ jobs:
       # of the installed bin directory the other link edges are reading. Only linking is pooled,
       # so compilation still uses the whole machine.
       - name: Configure
-        shell: cmd
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         env:
           RELEASE_OPTIONS: ${{ steps.tag.outputs.options }}
         run: |
@@ -374,25 +404,39 @@ jobs:
       # same packages, and each saves under a key of its own, because two saves of one key
       # cannot both succeed.
       - name: Save the vcpkg binaries
-        if: steps.vcpkg-used.outputs.changed == 'True'
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !inputs.cold
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
+
+      # A restore takes the newest entry its restore keys match, so the older ones on this ref are
+      # never read again. scripts/prunecache.ts deletes them, and never fails the job. The
+      # prefix holds the toolset, so while runners on two images build, each keeps its own.
+      - name: Delete the vcpkg binaries this save replaced
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !inputs.cold
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRUNED: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
+          SAVED: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix "$env:PRUNED" --saved "$env:SAVED"
 
       # A release shows a licence for everything it ships: every package in the install that
       # ships code has a copyright file, and every font has a licence. The check reads this job's
       # install, which the review gates' runner does not have. Both build types install the same
       # packages, so the Debug build alone runs it.
       - name: Everything a release ships has a licence
-        if: matrix.preset == 'ci'
+        if: matrix.preset == 'ci' && matrix.part == 'build'
         shell: pwsh
         run: |
           node scripts/notices.ts --installed "$env:BUILD_DIR/vcpkg_installed"
           if ($LASTEXITCODE -ne 0) { throw "the notices check exited $LASTEXITCODE" }
 
       - name: Build
-        shell: cmd
+        if: matrix.part == 'build'
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --build "%BUILD_DIR%" || exit /b 1
@@ -404,19 +448,25 @@ jobs:
       #
       # The device suites and the render window suite are left out. The steps after this run
       # them, and also fail on a skip, which ctest does not count as a failure.
+      #
+      # ctest runs as many suites at once as the runner has cores. moya's suite is split into
+      # parts so that its longest parts run beside each other.
       - name: Test
-        shell: cmd
+        if: matrix.part == 'build'
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^(render_(device|window)|ui_device|vertical3d_device)$" || exit /b 1
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure -j %NUMBER_OF_PROCESSORS% -E "^(render_(device|window)|ui_device|vertical3d_device)$" || exit /b 1
 
       # A skipped render suite is a failure here even though it is not one locally. A run where
       # the suite skipped is green but has checked nothing about the renderer. Locally the skip
       # is correct, because a machine may have no device. On this runner lavapipe was just
       # installed, so a skip means the loader is not finding it.
       - name: The render suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -461,6 +511,7 @@ jobs:
 
       # The editor's device suite is held to the same rule, on the same device.
       - name: The editor device suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -482,6 +533,7 @@ jobs:
 
       # The ui's device suite is held to the same rule, on the same device.
       - name: The ui device suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -505,6 +557,7 @@ jobs:
       # presents to it, so a skip means one of the two stopped working, and the WindowRenderer cases
       # have checked nothing. The suite prints its reason for skipping to the console.
       - name: The render window suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -551,12 +604,37 @@ jobs:
           Pop-Location
           if ($failed) { throw "from the install: $($failed -join '; ')" }
 
+      - name: Restore NSIS
+        id: nsis-cache
+        if: matrix.preset == 'ci-release'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.NSIS_ROOT }}
+          key: nsis-${{ runner.os }}-${{ env.NSIS_VERSION }}
+
       - name: Install NSIS
+        if: matrix.preset == 'ci-release' && steps.nsis-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        # curl fetches the zip, not Invoke-WebRequest. SourceForge answers PowerShell's user agent
+        # with an HTML download page in place of the file.
+        run: |
+          $archive = "$env:RUNNER_TEMP\nsis.zip"
+          $url = "https://downloads.sourceforge.net/project/nsis/NSIS%203/$env:NSIS_VERSION/nsis-$env:NSIS_VERSION.zip"
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-delay 10 --output $archive $url
+          if ($LASTEXITCODE -ne 0) { throw "the NSIS $env:NSIS_VERSION download exited $LASTEXITCODE" }
+          $hash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash
+          if ($hash -ne $env:NSIS_SHA256) { throw "the NSIS $env:NSIS_VERSION zip has the hash $hash, not $env:NSIS_SHA256" }
+          Expand-Archive -Path $archive -DestinationPath $env:NSIS_ROOT -Force
+
+      # The zip is a portable NSIS, which runs from where it is unpacked, and cpack finds makensis
+      # on the PATH.
+      - name: Put NSIS on the PATH
         if: matrix.preset == 'ci-release'
         shell: pwsh
         run: |
-          choco install nsis --version $env:NSIS_VERSION --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw "installing NSIS $env:NSIS_VERSION exited $LASTEXITCODE" }
+          $makensis = Join-Path $env:NSIS_ROOT "nsis-$env:NSIS_VERSION\makensis.exe"
+          if (-not (Test-Path $makensis)) { throw "makensis is not at $makensis - the NSIS zip or its cache is incomplete" }
+          Split-Path $makensis | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
       # The installer is built from the same install rules on every run, so a change that breaks
       # it fails here rather than at a release. It installs silently, gives the editor a Start
@@ -615,11 +693,13 @@ jobs:
       # something its manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
-      # would build boost a second time to install the same package set. The Debug build alone
-      # runs it, because what it checks does not depend on the build type.
+      # would build boost a second time to install the same package set. It runs in the part
+      # beside the Debug build, with the Debug build's packages, because what it checks does not
+      # depend on the build type.
       - name: Build the starter example
-        if: matrix.preset == 'ci'
-        shell: cmd
+        if: matrix.part == 'beside'
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
@@ -634,75 +714,23 @@ jobs:
 
       # Every test case a pull request adds has to fail without the rest of the pull request: a
       # case that passes on the base does not test the change. The harness builds the affected
-      # suites a second time, in a worktree with every file outside tests/ at the base, reusing
+      # suites in a worktree with every file outside tests/ at the base, reusing
       # this job's packages and its link pool. It runs the render suites on lavapipe as the
       # Test step does. Only pull requests run it, because a push to main has already been
       # checked as one. Its worktree and its build go under RUNNER_TEMP, which Defender does not
       # scan. A link that fails there would mark every new case as failing to build, which the
-      # harness counts as failing without the change. The Debug build alone runs it: a case
-      # fails without the change in both build types or in neither.
+      # harness counts as failing without the change. It runs in the part beside the Debug
+      # build, with the Debug build's packages: a case fails without the change in both build
+      # types or in neither.
       - name: The new test cases fail without the change
-        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
+        if: github.event_name == 'pull_request' && matrix.part == 'beside'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
           # the harness enters the developer environment through this file rather than looking
           # for a Visual Studio edition the image does not have
           V3D_VCVARS: ${{ runner.temp }}\vcvars.bat
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/${{ github.base_ref }}"
+          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/$env:BASE_REF"
           if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }
-
-  # A release's tag builds the Flatpak as pull requests do, as a release.
-  flatpak:
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/flatpak.yml
-
-  # A release's tag publishes the packages once every build and test has passed. The packages are
-  # attested, so a user can check they were built here, from the tagged commit. The release's notes
-  # are the changelog's section for its version, and a release candidate is marked as one.
-  release:
-    needs: [test, flatpak]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # the Windows packages are the artifact release, and the Flatpak is release-flatpak
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: release*
-          merge-multiple: true
-          path: dist
-
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: dist/*
-
-      - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          # a release asset is a file, so a directory here would fail the upload after the release
-          # was created
-          if [ -n "$(find dist -mindepth 1 -type d)" ]; then
-            echo "dist holds a directory, where it should hold only the files to publish:"
-            find dist
-            exit 1
-          fi
-          number="${TAG#v}"
-          number="${number%%-*}"
-          # the lines after the version's heading, up to the next version's
-          awk -v heading="## [$number]" 'index($0, heading) == 1 { on = 1; next } /^## \[/ { if (on) exit } on' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then
-            echo "CHANGELOG.md's section for $number is empty"
-            exit 1
-          fi
-          prerelease=()
-          case "$TAG" in *-rc.*) prerelease=(--prerelease) ;; esac
-          gh release create "$TAG" dist/* --verify-tag --title "Vertical3D ${TAG#v}" --notes-file notes.md "${prerelease[@]}"

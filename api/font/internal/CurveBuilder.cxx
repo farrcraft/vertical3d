@@ -1,11 +1,11 @@
-/**
+/*
  * Vertical3D
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
- **/
+ */
 
 #include "CurveBuilder.h"
 
-#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/curve/Quadratic.h>
 
 #include <utility>
 #include <vector>
@@ -69,9 +69,9 @@ void CurveBuilder::close() {
     }
 }
 
-std::vector<glyph::QuadraticCurve> CurveBuilder::take() {
+std::vector<glyph::curve::Quadratic> CurveBuilder::take() {
     close();
-    return std::exchange(curves_, std::vector<glyph::QuadraticCurve>());
+    return std::exchange(curves_, std::vector<glyph::curve::Quadratic>());
 }
 
 glm::vec2 CurveBuilder::map(const glm::vec2& point) const {
@@ -80,7 +80,7 @@ glm::vec2 CurveBuilder::map(const glm::vec2& point) const {
 
 void CurveBuilder::add(const glm::vec2& control, const glm::vec2& to) {
     if (to != pen_ || control != pen_) {
-        curves_.push_back(glyph::QuadraticCurve{ .p1 = pen_, .p2 = control, .p3 = to });
+        curves_.push_back(glyph::curve::Quadratic{ .p1 = pen_, .p2 = control, .p3 = to });
     }
     pen_ = to;
 }
