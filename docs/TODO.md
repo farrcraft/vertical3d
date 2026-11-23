@@ -32,6 +32,13 @@ only what the Vulkan specification determines exactly. Blending, filtered sampli
 and text are therefore checked only by a silent validation log and by spot checks. Checking them
 more strongly needs a second Vulkan implementation to compare against, and this tree has none.
 
+[] **`moya_bench_a_short_pass_times_every_scene_test` fails on a busy machine.** It checks that
+each scene's rates in `moya_bench`'s short pass are above 0. A short pass traces 1024 coherent
+rays, and the table prints a rate in millions of rays a second to two places. A trace that takes
+longer than about 0.2 s prints `0.00`, and the case fails. It failed for "large triangles" in a
+Debug run of every suite at once, and passed when `moya_tools` ran alone. The case reads the
+rounded cell, so it cannot tell a slow trace from one that traced nothing.
+
 ## Known review findings
 
 Defects a review found that the change under review did not introduce.
