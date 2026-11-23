@@ -317,7 +317,9 @@ requests, and the scene is what moya renders. [Scene.md](Scene.md) describes the
   texture that cannot be made is logged, and the file reads on.
 - **The client's jobs are classes of their own**, in `moya/libmoya/ri/internal`. `Shapes`
   turns each primitive request into a scene kind and its parameters. `Deforming` takes a
-  deforming primitive's later poses. `Lights` makes the lights and records what each lit.
+  deforming primitive's later poses. `Transformations` holds the current transformation, the
+  stack `TransformBegin` saves it on, an open motion block and the named coordinate systems.
+  `Lights` makes the lights and records what each lit.
   `Objects` makes the world's objects and names them. `Network` makes a material's terminals
   from the `Pattern` and `Bxdf` requests in force, and `openVdbGrids()` gives the grids an
   OpenVDB `Volume` reads.

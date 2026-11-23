@@ -430,20 +430,12 @@ void SceneClient::frameBegin(int frame) {
 }
 
 void SceneClient::worldBegin() {
-    // the transformation now takes world space to camera space, and the camera holds the other way
-    internal::Sampled camera = current_.transformation;
-    for (glm::mat4 & matrix : camera.matrices) {
-        matrix = glm::inverse(matrix);
-    }
-    camera.set(&scene_, camera_, "transform", logger_);
-    current_.transformation = internal::Sampled();
+    transformations_.worldBegin().set(&scene_, camera_, "transform", logger_);
 
     // a new world replaces everything the world before it made
     made_.clear();
     lights_.clear();
     objects_.clear();
-    spaces_.clear();
-    spaces_["camera"] = camera;
     current_.lights.clear();
     current_.material = boost::make_shared<scene::Handle>();
     worldAttributes_ = attributes_.size();
@@ -455,6 +447,7 @@ void SceneClient::worldEnd() {
     if (attributes_.size() > worldAttributes_) {
         warnings_.once("open at WorldEnd", "an AttributeBegin or ObjectBegin left open at WorldEnd ends there");
         current_ = attributes_[worldAttributes_];
+        transformations_.restore(current_.transformation);
         attributes_.erase(attributes_.begin() + static_cast<std::ptrdiff_t>(worldAttributes_), attributes_.end());
     }
     lights_.finish();
@@ -466,6 +459,7 @@ void SceneClient::worldEnd() {
 }
 
 void SceneClient::attributeBegin() {
+    current_.transformation = transformations_.current();
     attributes_.push_back(current_);
 }
 
@@ -475,92 +469,55 @@ void SceneClient::attributeEnd() {
     }
     current_ = attributes_.back();
     attributes_.pop_back();
+    transformations_.restore(current_.transformation);
 }
 
 void SceneClient::transformBegin() {
-    transformations_.push_back(current_.transformation);
+    transformations_.push();
 }
 
 void SceneClient::transformEnd() {
-    if (transformations_.empty()) {
-        return;
-    }
-    current_.transformation = transformations_.back();
-    transformations_.pop_back();
-}
-
-void SceneClient::concat(const glm::mat4 & matrix) {
-    if (motion_) {
-        // each request builds on the transformation the block opened with, at its own time
-        const std::size_t at = poses_.size();
-        const bool same = base_.times == times_;
-        poses_.push_back((same && at < base_.matrices.size() ? base_.matrices[at] : base_.matrices.front()) * matrix);
-        return;
-    }
-    for (glm::mat4 & sample : current_.transformation.matrices) {
-        sample = sample * matrix;
-    }
-}
-
-void SceneClient::replace(const glm::mat4 & matrix) {
-    if (motion_) {
-        poses_.push_back(matrix);
-        return;
-    }
-    current_.transformation = internal::Sampled { .times = {}, .matrices = { matrix } };
+    transformations_.pop();
 }
 
 void SceneClient::identity() {
-    replace(glm::mat4(1.0F));
+    transformations_.replace(glm::mat4(1.0F));
 }
 
 void SceneClient::transform(const glm::mat4x4 & matrix) {  // NOLINT(build/include_what_you_use)
-    replace(matrix);
+    transformations_.replace(matrix);
 }
 
 void SceneClient::concatTransform(const glm::mat4x4 & matrix) {
-    concat(matrix);
+    transformations_.concat(matrix);
 }
 
 void SceneClient::translate(float dx, float dy, float dz) {
-    concat(glm::translate(glm::mat4(1.0F), glm::vec3(dx, dy, dz)));
+    transformations_.concat(glm::translate(glm::mat4(1.0F), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate takes its angle in degrees and glm takes radians
 void SceneClient::rotate(float angle, const glm::vec3 & axis) {
-    concat(glm::rotate(glm::mat4(1.0F), glm::radians(angle), axis));
+    transformations_.concat(glm::rotate(glm::mat4(1.0F), glm::radians(angle), axis));
 }
 
 void SceneClient::scale(float sx, float sy, float sz) {
-    concat(glm::scale(glm::mat4(1.0F), glm::vec3(sx, sy, sz)));
+    transformations_.concat(glm::scale(glm::mat4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
 void SceneClient::motionBegin(const std::vector<float> & times) {
-    motion_ = true;
-    times_ = times;
-    base_ = current_.transformation;
-    poses_.clear();
+    transformations_.motionBegin(times);
     deformations_.clear();
 }
 
 void SceneClient::motionEnd() {
-    if (!motion_) {
+    if (!transformations_.inMotion()) {
         return;
     }
-    motion_ = false;
-
     // a deforming primitive's poses become samples of its prototype, one at each of the block's
     // times
-    deformations_.end(times_);
-
-    // a block that held one request, or named one time, moves nothing
-    const std::size_t count = std::min(poses_.size(), times_.size());
-    if (count == 1 || (count == 0 && !poses_.empty())) {
-        current_.transformation = internal::Sampled { .times = {}, .matrices = { poses_.front() } };
-    } else if (count > 1) {
-        current_.transformation = internal::Sampled { .times = std::vector<float>(times_.begin(), times_.begin() + static_cast<std::ptrdiff_t>(count)),
-            .matrices = std::vector<glm::mat4>(poses_.begin(), poses_.begin() + static_cast<std::ptrdiff_t>(count)) };
-    }
+    deformations_.end(transformations_.times());
+    transformations_.motionEnd();
 }
 
 void SceneClient::attribute(const std::string & name, const v3d::rib::ParameterList & parameters) {
@@ -598,18 +555,13 @@ void SceneClient::displacementBound(const v3d::rib::ParameterList & parameters) 
     // bound still holds the surface
     const std::vector<std::string> & named = parameters.strings("coordinatesystem");
     const std::string space = named.empty() ? std::string("object") : named.front();
-    glm::mat4 toWorld = current_.transformation.matrices.front();
-    if (space == "world") {
-        toWorld = glm::mat4(1.0F);
-    } else if (space != "object") {
-        const auto found = spaces_.find(space);
-        if (found == spaces_.end()) {
-            warnings_.once("bound space " + space, "the displacement bound's space \"" + space + "\" was not named, so object space is used");
-        } else {
-            toWorld = found->second.matrices.front();
-        }
+    const glm::mat4 & object = transformations_.current().matrices.front();
+    std::optional<glm::mat4> toWorld = transformations_.toWorld(space);
+    if (!toWorld) {
+        warnings_.once("bound space " + space, "the displacement bound's space \"" + space + "\" was not named, so object space is used");
+        toWorld = object;
     }
-    const glm::mat3 linear(glm::inverse(current_.transformation.matrices.front()) * toWorld);
+    const glm::mat3 linear(glm::inverse(object) * *toWorld);
     current_.displacementBound = radius * std::max({ glm::length(linear[0]), glm::length(linear[1]), glm::length(linear[2]) });
 }
 
@@ -645,7 +597,7 @@ void SceneClient::place(const internal::Shape & shape) {
     internal::declare(&scene_, prototype, shape.primvars, except, false);
 
     // the first pose of a deforming primitive, whose later poses add samples to it
-    if (motion_) {
+    if (transformations_.inMotion()) {
         deformations_.begin(prototype, shape);
     }
 
@@ -653,14 +605,14 @@ void SceneClient::place(const internal::Shape & shape) {
     instance(prototype, nameFor("instance", shape.request), !inObject);
 
     if (current_.area && !inObject) {
-        lights_.glow(prototype, current_.area->light, current_.area->name, current_.area->parameters, current_.transformation);
+        lights_.glow(prototype, current_.area->light, current_.area->name, current_.area->parameters, transformations_.current());
     }
 }
 
 scene::Handle SceneClient::instance(const scene::Handle & prototype, const std::string & name, bool lit) {
     const scene::Handle placed = made_.make("instance", name);
     scene_.set(placed, "prototype", scene::Value::handle(prototype));
-    current_.transformation.set(&scene_, placed, "transform", logger_);
+    transformations_.current().set(&scene_, placed, "transform", logger_);
     scene_.set(placed, "doubleSided", scene::Value::integer(current_.twoSided ? 1 : 0));
     if (current_.priority != 0) {
         scene_.set(placed, "priority", scene::Value::integer(current_.priority));
@@ -731,22 +683,13 @@ scene::Handle SceneClient::material() {
 }
 
 void SceneClient::coordinateSystem(const std::string & space) {
-    if (!space.empty()) {
-        spaces_[space] = current_.transformation;
-    }
+    transformations_.name(space);
 }
 
 void SceneClient::coordSysTransform(const std::string & space) {
-    if (space == "world") {
-        current_.transformation = internal::Sampled();
-        return;
-    }
-    const auto found = spaces_.find(space);
-    if (found == spaces_.end()) {
+    if (!transformations_.use(space)) {
         warnings_.once("space " + space, "the space \"" + space + "\" was not named, so CoordSysTransform changes nothing");
-        return;
     }
-    current_.transformation = found->second;
 }
 
 void SceneClient::color(const glm::vec3 & value) {
@@ -814,7 +757,7 @@ void SceneClient::lightSource(const v3d::rib::requests::LightSource & request, c
         return;
     }
     const std::string name = current_.name.empty() ? "light " + request.handle : current_.name;
-    if (lights_.source(request, parameters, name, current_.transformation)) {
+    if (lights_.source(request, parameters, name, transformations_.current())) {
         current_.lights.insert(request.handle);
     }
 }
@@ -846,7 +789,7 @@ void SceneClient::light(const v3d::rib::requests::LightSource & request, const v
         current_.area = Shader { .name = name, .parameters = parameters, .light = request.shader };
         return;
     }
-    if (lights_.renderman(request, parameters, name, current_.transformation)) {
+    if (lights_.renderman(request, parameters, name, transformations_.current())) {
         current_.lights.insert(request.handle);
     }
 }
@@ -935,10 +878,11 @@ void SceneClient::objectBegin(const std::string & handle) {
     if (!world_) {
         warnings_.once("object outside", "an object outside WorldBegin and WorldEnd is not kept");
     }
+    current_.transformation = transformations_.current();
     attributes_.push_back(current_);
     const scene::Handle group = made_.make("group", made_.unique("group", current_.name.empty() ? "object " + handle : current_.name));
     objects_[handle] = group;
-    current_.transformation = internal::Sampled();
+    transformations_.reset();
     current_.group = group;
 }
 
@@ -948,6 +892,7 @@ void SceneClient::objectEnd() {
     }
     current_ = attributes_.back();
     attributes_.pop_back();
+    transformations_.restore(current_.transformation);
 }
 
 void SceneClient::objectInstance(const std::string & handle) {

@@ -38,6 +38,7 @@
 #include <moya/libmoya/ri/internal/Objects.h>
 #include <moya/libmoya/ri/internal/Sampled.h>
 #include <moya/libmoya/ri/internal/Shape.h>
+#include <moya/libmoya/ri/internal/Transformations.h>
 #include <moya/libmoya/ri/internal/Warnings.h>
 #include <moya/libmoya/scene/Handle.h>
 #include <moya/libmoya/scene/Scene.h>
@@ -352,6 +353,10 @@ class SceneClient final : public v3d::rib::Handler {
 
     /** What AttributeBegin saves and AttributeEnd restores. **/
     struct Attributes {
+        /**
+         * The current transformation when the state was saved. While the state is current,
+         * transformations_ holds it.
+         **/
         internal::Sampled transformation{};
         std::string name{};
         glm::vec3 colour { 1.0F };
@@ -416,10 +421,6 @@ class SceneClient final : public v3d::rib::Handler {
     /** A name for a new object of a kind: the attribute state's, or the request's and a count. **/
     std::string nameFor(const std::string & kind, const std::string & request);
 
-    /** A transform request that concatenates, or one that replaces the transformation. **/
-    void concat(const glm::mat4 & matrix);
-    void replace(const glm::mat4 & matrix);
-
     /** The output named after a display's file, made when there is none. **/
     scene::Handle output(const std::string & file);
 
@@ -456,25 +457,15 @@ class SceneClient final : public v3d::rib::Handler {
     std::vector<Attributes> attributes_;
     // how deep the attribute stack was at WorldBegin, which WorldEnd unwinds it to
     std::size_t worldAttributes_ { 0 };
-    std::vector<internal::Sampled> transformations_;
+    internal::Transformations transformations_;
 
     bool world_ { false };
     internal::Objects made_;
     internal::Lights lights_;
     std::map<std::string, scene::Handle> objects_;
-    std::map<std::string, internal::Sampled> spaces_;
 
     /** Takes the later poses of a deforming primitive. **/
     internal::Deforming deformations_;
-
-    /**
-     * An open motion block's times, the transformation it opened with, and each time's
-     * request.
-     **/
-    bool motion_ { false };
-    std::vector<float> times_;
-    internal::Sampled base_;
-    std::vector<glm::mat4> poses_;
 };
 
 };  // namespace v3d::moya::ri

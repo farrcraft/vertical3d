@@ -92,7 +92,7 @@ what each changes here.
 | | What | Where | ADR | State |
 |---|---|---|---|---|
 | [1](#step-1--the-record-internal-headers) | The record: internal headers | `docs/adr` | **0260** | accepted |
-| [2](#step-2--the-transformation) | The transformation | `moya/libmoya/ri` | — | open |
+| [2](#step-2--the-transformation) | The transformation | `moya/libmoya/ri` | — | done |
 | [3](#step-3--the-outputs) | The outputs | `moya/libmoya/ri` | — | open |
 | [4](#step-4--the-options-and-the-camera) | The options and the camera | `moya/libmoya/ri` | — | open |
 | [5](#step-5--the-attribute-state-and-its-materials) | The attribute state and its materials | `moya/libmoya/ri` | — | open |
@@ -171,6 +171,17 @@ declaration where it is enough, and a type held by value in a public header move
 
 The attribute state still saves and restores the current transformation, so `Transformations`
 gives the handler the current samples to save and takes them back.
+
+**Done.** `ri::internal::Transformations` holds the current transformation, the stack
+`TransformBegin` saves it on, the open motion block and the named spaces, and takes every transform
+request. `toWorld()` gives the matrix a space's name stands for, which `displacementBound()` reads,
+and `use()` says whether `CoordSysTransform` named a known space, so the handler still logs an
+unknown one. `worldBegin()` resets it, names the camera's space and returns the camera's
+transformation. The attribute state keeps the transformation it was saved with: `AttributeBegin`
+and `ObjectBegin` read it from `Transformations`, and `AttributeEnd`, `ObjectEnd` and an unwinding
+`WorldEnd` hand it back. The handler's five members of the transformation and its `concat()` and
+`replace()` are gone, and its source is 55 lines shorter. moya's eleven ctest parts and the editor's
+suite pass unchanged, and the step is clean at the verify preset and at every gate.
 
 ### Step 3 — The outputs
 

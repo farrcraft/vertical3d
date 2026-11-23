@@ -211,6 +211,7 @@ add_library("v3dlib_moya"
 	"ri/internal/Sampled.h" "ri/internal/Sampled.cxx"
 	"ri/internal/Shape.h"
 	"ri/internal/Shapes.h" "ri/internal/Shapes.cxx"
+	"ri/internal/Transformations.h" "ri/internal/Transformations.cxx"
 	"ri/internal/Volumes.h" "ri/internal/Volumes.cxx"
 	"ri/internal/Warnings.h" "ri/internal/Warnings.cxx"
 
