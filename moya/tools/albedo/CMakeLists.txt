@@ -9,3 +9,6 @@ target_link_libraries(moya_albedo PRIVATE v3dlib_moya_kernel TBB::tbb)
 if(MSVC)
 	target_compile_options(moya_albedo PRIVATE /utf-8)
 endif()
+
+# Optimised and uninstrumented under GCC and Clang, since the build waits on what it writes
+v3d_optimise_generator(moya_albedo)

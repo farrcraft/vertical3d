@@ -168,6 +168,10 @@ if(V3D_SANITIZE)
 		# RTTI, so a class of its that this tree derives from or casts has no type information to
 		# link against.
 		add_compile_options("-fsanitize=address,undefined" "-fno-sanitize=vptr" "-fno-sanitize-recover=undefined" "-fno-omit-frame-pointer")
+		# Unoptimised code under both sanitizers runs about four times slower than a Debug build,
+		# so a Debug build is optimised a little. -O1 keeps every check, and the frame pointer
+		# keeps each report's stack whole.
+		add_compile_options("$<$<CONFIG:Debug>:-O1>")
 		add_link_options("-fsanitize=address,undefined")
 	endif()
 endif()

@@ -118,7 +118,7 @@ type.
   `kIlluminantAAcescg`. Both builds' suites check those colours against the tables.
 
 Kernel code uses the functions above and never reads a wavelength itself, so it builds both ways.
-portable.yml's clang job builds moya both ways and runs moya's suite in each.
+portable.yml's clang job builds moya both ways, on a runner each, and runs moya's suite in each.
 
 Background: [ADR-0189](../adr/offline/0189-offline-light-is-carried-as-sampled-spectra.md)
 

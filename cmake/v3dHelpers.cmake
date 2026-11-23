@@ -300,6 +300,23 @@ function(v3d_add_fuzzer name source)
 	set_tests_properties(fuzz_${name} PROPERTIES LABELS fuzz)
 endfunction()
 
+# A generator is a program the build runs to write a source file, such as a table it integrates
+# or fits. Under GCC and Clang it is optimised in every configuration and left out of the
+# sanitizers and the fuzzing instrumentation. Its output does not depend on either, since the
+# kernel turns off floating-point contraction. A Debug build would otherwise wait on it: built in
+# Debug under the sanitizers, a generator runs for most of an hour on four cores. The suites
+# check the kernel code a generator runs, under the sanitizers.
+#
+# MSVC is left as it is. Its Debug run-time checks cannot be combined with /O2, and its
+# generators take seconds in Debug.
+#
+# @param target the generator's executable
+function(v3d_optimise_generator target)
+	if(NOT MSVC)
+		target_compile_options(${target} PRIVATE "-O2" "-fno-sanitize=all")
+	endif()
+endfunction()
+
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with
 # them. They are not shipped as data files. They belong to the engine, not to any app, so no
 # app's data directory is the right place for them. glslc's -mfmt=c writes the module

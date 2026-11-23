@@ -43,6 +43,13 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+/**
+ * An RGB build carries no wavelengths, so its pictures are not the committed ones, which are
+ * rendered by a spectral build. Every helper here serves the cases that compare with them, so
+ * an RGB build compiles none of the file.
+ **/
+#ifndef MOYA_RGB
+
 namespace {
 
 namespace film = v3d::moya::film;
@@ -250,12 +257,6 @@ void keep(const std::string & name, const film::Snapshot & snapshot) {
         boost::make_shared<v3d::log::Logger>());
 }
 
-/**
- * An RGB build carries no wavelengths, so its pictures are not the committed ones, which are
- * rendered by a spectral build.
- **/
-#ifndef MOYA_RGB
-
 // each scene renders as its committed render, every pixel and the picture's mean within kAllowed
 // of it. A scene with no committed render yet, or one whose pixels differ, leaves what it
 // rendered in data_out/
@@ -356,6 +357,6 @@ BOOST_AUTO_TEST_CASE(moya_paths_references_a_changed_medium_fails_the_comparison
     }
 }
 
-#endif
-
 };  // namespace
+
+#endif

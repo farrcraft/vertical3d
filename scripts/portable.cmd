@@ -2,11 +2,14 @@
 rem Run a portable CI job locally, in the image it builds in, from scripts\portable\Dockerfile.
 rem Docker Desktop has to be running.
 rem
-rem   scripts\portable.cmd              The libraries that need no window or device.
+rem   scripts\portable.cmd              Every stage of the clang job.
+rem   scripts\portable.cmd <stage>      One stage of it: libraries, moya, rgb or fuzz.
 rem   scripts\portable.cmd whole        The whole tree with Clang, and every suite.
 rem   scripts\portable.cmd whole gcc    The whole tree with GCC, and every suite.
 rem
-rem The first builds with Clang under the sanitizers, then fuzzes the fuzz targets.
+rem The clang job builds the libraries that need no window or device, and moya, with Clang
+rem under the sanitizers. Its stages build and test the libraries, then moya, then
+rem moya's RGB build, then fuzz the fuzz targets.
 rem
 rem The tree is mounted read-only. The builds, the vcpkg checkout and the binary cache live in
 rem the Docker volume v3d-portable, so a second run reuses what the first one built.
@@ -14,7 +17,7 @@ rem "docker volume rm v3d-portable" starts again from cold.
 
 setlocal
 
-set "script=/usr/local/bin/v3d-portable"
+set "script=/usr/local/bin/v3d-portable %~1"
 set "compiler="
 if /i "%~1"=="whole" set "script=/usr/local/bin/v3d-whole"
 if /i "%~2"=="gcc" set "compiler=-e CC=gcc -e CXX=g++"

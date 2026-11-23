@@ -103,8 +103,8 @@ the options before the record is drafted.
 | [3](#step-3--the-record-what-a-release-may-reuse) | The record: what a release may reuse | `docs/adr` | **0259** | accepted |
 | [4](#step-4--the-cache-within-its-size) | The cache within its size | `.github/workflows` | — | in progress |
 | [5](#step-5--the-cost-of-moyas-suite) | The cost of moya's suite | `moya/tests` | — | in progress |
-| [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | open |
-| [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | open |
+| [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | in progress |
+| [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | in progress |
 | [8](#step-8--checks-by-event) | Checks by event | `.github/workflows` | 0257 | open |
 | [9](#step-9--the-workflows-audited) | The workflows audited | `.github`, `.pre-commit-config.yaml` | 0258, 0259 | open |
 | [10](#step-10--required-checks) | Required checks | the repository's settings | 0257 | open |
@@ -320,6 +320,34 @@ The step is verified once a run of the parts passes on the pull request.
 
 **Tests:** a run where every Linux job passes inside its limit.
 
+**In progress.** The run of `b5dc1a72` showed where the sanitized build's 73 minutes went: 49 of
+them ran one build step, `moya_albedo` integrating its tables in Debug under the sanitizers.
+`v3d_optimise_generator` now builds `moya_albedo` and `moya_rgbtable` with `-O2` and without
+the sanitizers under GCC and Clang. On four cores they take 3 s and 13 s, and each writes the same
+bytes as when built at `-O0`.
+
+A sanitized Debug build under GCC and Clang is optimised at `-O1`. On four cores
+`moya_scattering` fell from 1045 s to 66 s and `moya_volumes` from 1693 s to 156 s. The build
+takes about 2.4 times the processor time, most of it in the test sources: 3.8 times for moya's and
+2.4 times for the api suites', against 1.4 times or less for the libraries.
+
+The clang job is a matrix over the four stages of `build.sh`, each a job. `libraries` builds the
+api libraries and runs their suites. `moya` and `rgb` build `moya/all` and run moya's suite in
+each colour type, and `fuzz` builds the three fuzz targets alone and fuzzes each. Only
+`libraries` saves the vcpkg cache. `whole` builds and tests in a step each. On eight cores in the
+image, `libraries` took 278 s and `moya` 1317 s, of which the suite was 647 s, the time of
+`moya_paths`. `fuzz` took 57 s on four with 5 s for each target. The limits are 45 minutes for
+`libraries`, 75 for `moya` and `rgb`, 20 for `fuzz` and 90 for `whole`.
+
+The RGB build had not built with Clang since its reference tests were added. Their helpers went
+unused there, which `-Werror` stopped, and each file is now left out of an RGB build whole. Four
+cases then fail in Clang's RGB build at both `-O0` and `-O1`, and pass in MSVC's:
+`moya_lights_a_point_gives_its_closed_form_test`,
+`moya_lights_a_point_is_the_limit_of_a_shrinking_sphere_test`,
+`moya_lights_each_shape_is_normalised_by_its_area_in_the_world_test` and
+`moya_paths_a_white_metal_sphere_in_a_white_furnace_is_white_test`, the last by 25 errors. The
+step is verified once those are fixed and a run on the pull request passes inside the limits.
+
 ### Step 7 — The Windows job split
 
 * **The fails-first harness is a job of its own**, beside the Debug job's tests rather than after
@@ -329,6 +357,15 @@ The step is verified once a run of the parts passes on the pull request.
 * **The Debug job runs its suites at once**, with the split step 5 makes.
 
 **Tests:** a run where both Windows jobs pass, and the Debug job is measured against 97 minutes.
+
+**In progress.** The test job's matrix has a third part, `beside`, which sets up the Debug build's
+toolchain, packages and lavapipe and builds nothing of the tree. It builds the starter example and
+runs the fails-first harness, which need only the packages and took 18 of the Debug job's 107
+minutes in the run of `b5dc1a72`. The Debug job's suites run as many at once as the runner has
+cores. Locally, four at a time, all 44 suites passed in 1424 s, and `moya_lights` alone took
+1423 s, so it sets the step's length. Only the parts that build save the vcpkg cache. The limits
+are 120 minutes for Debug, 90 for Release and 45 for `beside`. The step is verified once a run on
+the pull request passes and the Debug job is measured.
 
 ### Step 8 — Checks by event
 

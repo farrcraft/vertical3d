@@ -33,7 +33,7 @@ permissions:
 jobs:
   test:
     runs-on: windows-2025-vs2026
-    timeout-minutes: 120
+    timeout-minutes: ${{ matrix.timeout }}
 
     # actions: write lets a save delete the cache entries it replaced
     permissions:
@@ -41,11 +41,23 @@ jobs:
       actions: write
 
     # Each build type runs on a runner of its own, beside the other rather than after it. A
-    # failure in one does not cancel the other, so a run reports both.
+    # failure in one does not cancel the other, so a run reports both. The part "build" builds
+    # the tree and runs its suites. The part "beside" sets up the Debug build's toolchain and
+    # packages and builds nothing of the tree. It builds the starter example and runs the
+    # fails-first harness, which need only the packages, on a runner of their own.
     strategy:
       fail-fast: false
       matrix:
-        preset: [ci, ci-release]
+        include:
+          - preset: ci
+            part: build
+            timeout: 120
+          - preset: ci-release
+            part: build
+            timeout: 90
+          - preset: ci
+            part: beside
+            timeout: 45
 
     env:
       # The configure preset in CMakePresets.json, and the directory it builds into
@@ -382,7 +394,7 @@ jobs:
       # same packages, and each saves under a key of its own, because two saves of one key
       # cannot both succeed.
       - name: Save the vcpkg binaries
-        if: steps.vcpkg-used.outputs.changed == 'True'
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
@@ -392,7 +404,7 @@ jobs:
       # never read again. scripts/prunecache.ts deletes them, and never fails the job. The
       # prefix holds the toolset, so while runners on two images build, each keeps its own.
       - name: Delete the vcpkg binaries this save replaced
-        if: steps.vcpkg-used.outputs.changed == 'True'
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -405,13 +417,14 @@ jobs:
       # install, which the review gates' runner does not have. Both build types install the same
       # packages, so the Debug build alone runs it.
       - name: Everything a release ships has a licence
-        if: matrix.preset == 'ci'
+        if: matrix.preset == 'ci' && matrix.part == 'build'
         shell: pwsh
         run: |
           node scripts/notices.ts --installed "$env:BUILD_DIR/vcpkg_installed"
           if ($LASTEXITCODE -ne 0) { throw "the notices check exited $LASTEXITCODE" }
 
       - name: Build
+        if: matrix.part == 'build'
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
@@ -424,19 +437,24 @@ jobs:
       #
       # The device suites and the render window suite are left out. The steps after this run
       # them, and also fail on a skip, which ctest does not count as a failure.
+      #
+      # ctest runs as many suites at once as the runner has cores. moya's suite is split into
+      # parts so that its longest parts run beside each other.
       - name: Test
+        if: matrix.part == 'build'
         shell: cmd
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^(render_(device|window)|ui_device|vertical3d_device)$" || exit /b 1
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure -j %NUMBER_OF_PROCESSORS% -E "^(render_(device|window)|ui_device|vertical3d_device)$" || exit /b 1
 
       # A skipped render suite is a failure here even though it is not one locally. A run where
       # the suite skipped is green but has checked nothing about the renderer. Locally the skip
       # is correct, because a machine may have no device. On this runner lavapipe was just
       # installed, so a skip means the loader is not finding it.
       - name: The render suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -481,6 +499,7 @@ jobs:
 
       # The editor's device suite is held to the same rule, on the same device.
       - name: The editor device suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -502,6 +521,7 @@ jobs:
 
       # The ui's device suite is held to the same rule, on the same device.
       - name: The ui device suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -525,6 +545,7 @@ jobs:
       # presents to it, so a skip means one of the two stopped working, and the WindowRenderer cases
       # have checked nothing. The suite prints its reason for skipping to the console.
       - name: The render window suite ran rather than skipped
+        if: matrix.part == 'build'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
@@ -660,10 +681,11 @@ jobs:
       # something its manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
-      # would build boost a second time to install the same package set. The Debug build alone
-      # runs it, because what it checks does not depend on the build type.
+      # would build boost a second time to install the same package set. It runs in the part
+      # beside the Debug build, with the Debug build's packages, because what it checks does not
+      # depend on the build type.
       - name: Build the starter example
-        if: matrix.preset == 'ci'
+        if: matrix.part == 'beside'
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
@@ -679,15 +701,16 @@ jobs:
 
       # Every test case a pull request adds has to fail without the rest of the pull request: a
       # case that passes on the base does not test the change. The harness builds the affected
-      # suites a second time, in a worktree with every file outside tests/ at the base, reusing
+      # suites in a worktree with every file outside tests/ at the base, reusing
       # this job's packages and its link pool. It runs the render suites on lavapipe as the
       # Test step does. Only pull requests run it, because a push to main has already been
       # checked as one. Its worktree and its build go under RUNNER_TEMP, which Defender does not
       # scan. A link that fails there would mark every new case as failing to build, which the
-      # harness counts as failing without the change. The Debug build alone runs it: a case
-      # fails without the change in both build types or in neither.
+      # harness counts as failing without the change. It runs in the part beside the Debug
+      # build, with the Debug build's packages: a case fails without the change in both build
+      # types or in neither.
       - name: The new test cases fail without the change
-        if: github.event_name == 'pull_request' && matrix.preset == 'ci'
+        if: github.event_name == 'pull_request' && matrix.part == 'beside'
         shell: pwsh
         env:
           VK_LAYER_VALIDATE_SYNC: "1"

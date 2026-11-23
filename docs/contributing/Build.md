@@ -123,22 +123,27 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 The whole tree, every api library and every app, builds and passes its suites on Linux with
 Clang and with GCC. [.github/workflows/portable.yml](../../.github/workflows/portable.yml) checks
 that on every pull request that changes more than documents, so a change can pass every gate on
-Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 image,
+Windows and fail there. It has two jobs, each a matrix, which build in the same Ubuntu 26.04 image,
 [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile).
 
 - **The `whole` job builds the whole tree, once with Clang and once with GCC.**
   [scripts/portable/whole.sh](../../scripts/portable/whole.sh) configures, builds and runs every
-  suite with the compiler `CC` and `CXX` name. The device suites draw with lavapipe, Mesa's
+  suite with the compiler `CC` and `CXX` name, the build and the suites as a step each. The
+  device suites draw with lavapipe, Mesa's
   software Vulkan driver, with the validation layer on. The window suites open their windows on a
   virtual X display, Xvfb, with the Openbox window manager, which carries out a request to go full
   screen. SDL plays sound into its dummy driver. GCC is the compiler the Flatpak builds with.
-- **The `clang` job builds the libraries that need neither a window nor a device**, under
-  `V3D_SANITIZE` and `V3D_FUZZ`, so their suites run under both sanitizers, and fuzzes each
-  fuzz target after them. See [Testing.md](Testing.md#sanitizers).
+- **The `clang` job builds the libraries that need neither a window nor a device, and moya**,
+  under `V3D_SANITIZE`, so their suites run under both sanitizers. See
+  [Testing.md](Testing.md#sanitizers).
   [scripts/portable/build.sh](../../scripts/portable/build.sh) holds the list: asset,
   asset_media, brep, curve, database, ecs, event, font, grid, image, interchange, log, rib
   and type. It configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which
-  leaves out the manifest's `platform` and `usd` features.
+  leaves out the manifest's `platform` and `usd` features. The script has four stages, and
+  the job runs each on a runner of its own. `libraries` builds the libraries and runs their
+  suites, `moya` builds moya and runs its suite, `rgb` does the same for moya's RGB build, and
+  `fuzz` builds the fuzz targets alone and fuzzes each. The four install the same packages, and
+  only `libraries` saves them to the cache.
 - **Both build with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts code an
   older one rejects, so the oldest catches a feature that a consumer's compiler lacks. Apple's
   Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
@@ -153,9 +158,10 @@ Windows and fail there. It has two jobs, which build in the same Ubuntu 26.04 im
 - **A test that needs a device or a window starts in two ways.** Boost.Test is a DLL on Windows,
   where the suite's `main` probes and then calls `unit_test_main`. On Linux it is static and
   brings its own `main`, and the probe runs in `init_unit_test_suite`, which that `main` calls.
-- **`scriptsportable.cmd` runs a job locally**, with Docker Desktop running: no argument for the
-  `clang` job, `whole` for the whole tree with Clang, and `whole gcc` for GCC. It builds the
-  same image and runs the same script, with the tree mounted read-only. The builds, the vcpkg
+- **`scripts\portable.cmd` runs a job locally**, with Docker Desktop running. With no argument
+  it runs every stage of the `clang` job, and `libraries`, `moya`, `rgb` or `fuzz` runs one.
+  `whole` builds the whole tree with Clang, and `whole gcc` with GCC. It builds the same image
+  and runs the same script, with the tree mounted read-only. The builds, the vcpkg
   checkout and the binary cache live in the Docker volume `v3d-portable`, apart from the Windows
   build, so a second run reuses them. The first run of each compiler builds every dependency from
   source. `docker volume rm v3d-portable` starts again from cold.

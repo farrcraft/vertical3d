@@ -45,6 +45,13 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
+/**
+ * An RGB build carries no wavelengths, so its pictures are not the committed ones, which are
+ * rendered by a spectral build. Every helper here serves the cases that compare with them, so
+ * an RGB build compiles none of the file.
+ **/
+#ifndef MOYA_RGB
+
 namespace {
 
 namespace film = v3d::moya::film;
@@ -280,12 +287,6 @@ void keep(const std::string & name, const Picture & picture) {
 }
 
 /**
- * An RGB build carries no wavelengths, so its pictures are not the committed ones, which are
- * rendered by a spectral build.
- **/
-#ifndef MOYA_RGB
-
-/**
  * Each scene renders as its committed render. Its beauty and every channel lie within kAllowed of
  * the beauty's errors, and each Cryptomatte ID and manifest is exact. Each pixel's deep samples
  * match by their count exactly, and by their flattened picture within the errors. A scene with no
@@ -337,6 +338,6 @@ BOOST_AUTO_TEST_CASE(moya_compositing_references_a_brighter_light_fails_the_comp
     }
 }
 
-#endif
-
 };  // namespace
+
+#endif

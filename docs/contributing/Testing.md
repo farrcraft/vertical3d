@@ -281,6 +281,15 @@ dereference. Its `vptr` check is off, because thorvg is built without the type i
 reads. A report ends the program with a failure, so a suite that triggers one fails. Only the
 tree is instrumented, not the vcpkg packages, so a fault inside a package goes unreported.
 
+- **A Debug build under GCC or Clang is optimised at `-O1`.** Unoptimised code under both
+  sanitizers runs about four times slower than a plain Debug build. `-O1` keeps every check, and
+  the frame pointer stays, so each report's stack is whole. MSVC's build is left unoptimised.
+- **A generator is not instrumented.** A generator is a program the build runs to write a source,
+  such as `moya_albedo` and `moya_rgbtable`. `v3d_optimise_generator` builds one under GCC and
+  Clang with `-O2` and without the sanitizers in every configuration, because the build waits on
+  its output. Unoptimised under the sanitizers, one runs for most of an hour. The suites check the
+  kernel code the generators run, under the sanitizers.
+
 - **CI** builds the Linux job's libraries with both sanitizers, and every suite there runs
   under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are.
 - **On Windows**, the `asan` preset builds the whole tree with MSVC's AddressSanitizer. MSVC has
@@ -325,9 +334,10 @@ Clang, so it builds only off MSVC. Given a corpus directory and no `-runs`, a ta
 until it finds a failure or is stopped. The first directory it is given is where it keeps the
 inputs that reach new code.
 
-**CI fuzzes each target for 60 seconds**, in the Linux job, under both sanitizers.
-[scripts/portable/build.sh](../../scripts/portable/build.sh) runs them after the suites. It keeps
-the inputs it finds under the job's work directory, and `FUZZ_SECONDS` changes the time.
+**CI fuzzes each target for 60 seconds**, in the Linux job's `fuzz` stage, under both
+sanitizers. [scripts/portable/build.sh](../../scripts/portable/build.sh) configures the libraries
+that declare a target, image and rib, and builds the targets alone. It keeps the inputs it finds
+under the job's work directory, and `FUZZ_SECONDS` changes the time.
 `scripts\portable.cmd` runs the same script locally and keeps its work in a Docker volume, so
 each local run carries on from the corpus of the last.
 
@@ -343,7 +353,8 @@ v3d_add_fuzzer(<name> "fuzz/<Format>Fuzzer.cxx" LIBRARIES <target>... CORPUS <di
 ```
 
 The corpus is the suite's fixtures, which hold a valid file of the format and the malformed
-ones its tests already check.
+ones its tests already check. A target in a library other than image and rib also adds the
+library to the `fuzz` stage's list in `scripts/portable/build.sh`, or CI never fuzzes it.
 
 Background: [ADR-0174](../adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 
