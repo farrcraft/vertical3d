@@ -28,7 +28,6 @@ document for its subject, which the table links to.
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
 | `namespaces.ts` | Each C++ file is in its directory's namespace, and each namespace of the API reference is described once | The tree | [Conventions.md](Conventions.md#language), [Conventions.md](Conventions.md#doc-comments-in-a-public-header) |
 | `kernel.ts` | moya's kernel code has no virtual function, allocation, exception, RTTI or include a device compiler lacks, and every kernel header is compiled by the kernel target | The tree | [Kernel.md](../offline/Kernel.md#the-rules) |
-| `pinned.ts` | Every action a workflow uses is pinned to a full commit sha | The tree | [Linting.md](Linting.md#ci) |
 | `npm.ts` | npm brings only pinned development tools, and no script imports a package | The tree | [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) |
 | `notices.ts` | Every package that ships code has a copyright file, and every font has a licence. `--out` writes the notices file | A vcpkg install | [Dependencies.md](Dependencies.md#third-party-notices) |
 | `changelog.ts` | A change to what a release ships adds its entry to `CHANGELOG.md` | Changed files | [Releasing.md](Releasing.md#the-changelog) |
@@ -56,6 +55,9 @@ The gates that read added lines compare against a base:
   the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
   with a message.
 
+The same workflow's job `workflows` audits the workflows with zizmor and actionlint, as
+[Linting.md](Linting.md#ci) describes.
+
 `notices.ts` runs in [ctest.yml](../../.github/workflows/ctest.yml) instead, after the Debug
 build's configure, because it reads that build's vcpkg install.
 
@@ -68,8 +70,8 @@ every new case as failing to build, and the gate would pass them.
 
 ## Before a commit
 
-[.pre-commit-config.yaml](../../.pre-commit-config.yaml) runs cpplint and every gate but
-`failsfirst.ts`, `notices.ts` and `commentsonly.ts` before each commit, through
+[.pre-commit-config.yaml](../../.pre-commit-config.yaml) runs cpplint, zizmor and actionlint, and
+every gate but `failsfirst.ts`, `notices.ts` and `commentsonly.ts`, before each commit, through
 [pre-commit](https://pre-commit.com/). Install it once, and turn it on in each clone:
 
 ```
@@ -82,7 +84,7 @@ check reads what is being committed. Untracked files stay on disk, and the gates
 lines count them. A failing hook stops the commit, and its findings print under its name.
 
 A gate whose rule covers only some files runs when one of them is staged, or anything under
-`scripts/`: the C++ checks on a C++ file, `pinned.ts` on a change under `.github/`, and so on.
+`scripts/`: the C++ checks on a C++ file, `npm.ts` on a change to `package.json`, and so on.
 `prose.ts` and `readmes.ts` run on every commit, because a rename anywhere can break what they
 check. cpplint reads only the staged C++ files, with the version and the options CI uses.
 

@@ -2,8 +2,8 @@
 # on the Freedesktop runtime, with no network once the sources are fetched. It runs on every pull
 # request that changes more than documents, because the Flatpak links other versions of its
 # libraries than the rest of CI does, and this is where those versions are tested. The bundle it
-# makes is kept with the run. ctest.yml calls it for a release's tag, and publishes the bundle
-# with the release.
+# makes is kept with the run. release.yml calls it for a release's tag, with nothing restored
+# from the cache, and publishes the bundle with the release.
 name: flatpak
 
 # push is filtered to the default branch and pull_request is not, for the reason cpplint.yml
@@ -29,18 +29,21 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 240
     # Flathub's own image, with the runtime and the SDK in it. flatpak-builder sandboxes each
-    # module, which needs a privileged container.
+    # module, which needs a privileged container. The image is pinned by its digest, since a tag
+    # can be moved to another image after it was reviewed.
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08@sha256:6ed6921bb5a9e1a916989971844f159b854b7b225880c381fa34f7a158863039
       options: --privileged
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # A release's tag builds the tree with the options of a release, so the apps show the
-      # release's version. ctest.yml has already checked the tag.
+      # release's version. ctest.yml checks the tag, and the release publishes nothing unless it
+      # passes.
       - name: A release's tag builds a release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash

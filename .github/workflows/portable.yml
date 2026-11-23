@@ -58,6 +58,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build the image
         run: docker build -t v3d-portable scripts/portable
@@ -144,6 +146,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build the image
         run: docker build -t v3d-portable scripts/portable
@@ -161,11 +165,21 @@ jobs:
           mkdir -p "$VCPKG_CACHE"
           find "$VCPKG_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
 
+      # The compiler's options for docker are split into words here, from the environment rather
+      # than expanded into the script
       - name: Build
-        run: docker run --rm ${{ matrix.environment }} -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole build
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          read -ra environment <<< "$ENVIRONMENT"
+          docker run --rm "${environment[@]}" -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole build
 
       - name: Test
-        run: docker run --rm ${{ matrix.environment }} -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole test
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          read -ra environment <<< "$ENVIRONMENT"
+          docker run --rm "${environment[@]}" -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-whole test
 
       # A suite that compares against a committed picture leaves what it drew in data_out/ when
       # the two differ. Only this job draws with Linux's compilers and its maths library, so its

@@ -68,8 +68,8 @@ Flatpak run on every push of a branch. CodeQL also runs weekly. Nothing else run
 **No check is required.** Branch protection on main requires a branch to be up to date before it
 merges, and names no status check. A red run does not block a merge.
 
-**The workflows are written carefully.** Every action is pinned to a commit, and
-[pinned.ts](../../scripts/pinned.ts) checks it. Permissions are read-only but for the jobs that
+**The workflows are written carefully.** Every action is pinned to a commit, and a script of the
+tree's own, `pinned.ts`, checks it. Permissions are read-only but for the jobs that
 publish. Dependabot waits seven days after a release. CodeQL reads the workflows. Four things an
 audit tool would flag remain:
 
@@ -106,7 +106,7 @@ the options before the record is drafted.
 | [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | in progress |
 | [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | in progress |
 | [8](#step-8--checks-by-event) | Checks by event | `.github/workflows` | 0257 | open |
-| [9](#step-9--the-workflows-audited) | The workflows audited | `.github`, `.pre-commit-config.yaml` | 0258, 0259 | open |
+| [9](#step-9--the-workflows-audited) | The workflows audited | `.github`, `.pre-commit-config.yaml` | 0258, 0259 | in progress |
 | [10](#step-10--required-checks) | Required checks | the repository's settings | 0257 | open |
 | [11](#step-11--the-documents) | The documents | `docs` | — | open |
 
@@ -400,6 +400,36 @@ Under the choices steps 2 and 3 settle.
 
 **Tests:** both tools are clean over every workflow, and zizmor over `dependabot.yml`. A workflow
 with a token left on disk fails the hook, and so does one that names a job `needs:` cannot find.
+
+**In progress.** zizmor 1.33.1 and actionlint 1.7.12 run in pre-commit, each pinned to its tag's
+commit, and in the job `workflows` in `review-gates.yml`. The job fetches actionlint's archive
+against a pinned SHA-256, and fails when the runner has no shellcheck. zizmor runs at its default
+persona, with its online audits in CI, and fails on any finding. It found 20. Nine checkouts
+left a token on disk, and two expressions expanded into scripts. A release restored four caches.
+Four steps ran in `cmd`, and a reusable workflow was named by `./`. The pedantic persona also
+found three more expressions, and the Flatpak's image pinned by a tag.
+
+* **Every checkout sets `persist-credentials: false`.** No job uses git's credentials after it.
+* **Every expression reaches its script through `env:`.**
+* **The Flatpak's image is pinned by its digest**, after its tag.
+* **A release has a workflow of its own**, `release.yml`. It calls `ctest.yml` and `flatpak.yml`
+  with `cache-mode: none` on each job, which GitHub enforces with the job's cache token, and then
+  publishes. A step's `if:` on the tag does not satisfy zizmor, and the docs do not say whether
+  `cache-mode` takes an expression, so the release could not stay a run of `ctest.yml`. The
+  vcpkg save and its prune skip a tag too, and the Windows jobs have six hours on one.
+* **The four `cmd` steps are ignored on their lines.** Each enters the developer environment
+  through a batch file, and each of its commands checks its own exit.
+* **zizmor's self-repository audit is off.** actionlint does not parse GitHub's `$/` form yet.
+  actionlint's config names `ubuntu-26.04` as a label and ignores `cache-mode` in `release.yml`,
+  since neither is in its schema yet.
+* **`pinned.ts` is deleted**, with its tests and its hook. zizmor's pin policy is a full sha for
+  every action, and a tag fails it.
+
+Both tools are clean over every workflow, `dependabot.yml` and `.pre-commit-config.yaml`, and
+actionlint's scripts through shellcheck 0.11.0. A checkout without `persist-credentials: false`
+fails zizmor's hook, and a `needs:` that names no job fails actionlint's. The step is verified
+once the job passes on the pull request. The release workflow runs only on a tag, so its first
+release is its first run.
 
 ### Step 10 — Required checks
 

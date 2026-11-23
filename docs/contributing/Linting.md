@@ -333,13 +333,33 @@ a comment:
 - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 ```
 
-A tag can be moved to other code after it was reviewed, and a sha cannot. `scripts/pinned.ts`
-reads every workflow in `.github/workflows` and every `action.yml` under `.github/actions`, with
-either the `.yml` or the `.yaml` extension. It fails on a `uses:` whose value is not a full
-lowercase sha, written in a block or a flow mapping, plain or quoted. A local action, named by a
-path in this repository, is exempt. To find the sha for a release, read the commit its tag
-points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
-the tag is annotated. Updating an action means changing both the sha and the comment.
+A tag can be moved to other code after it was reviewed, and a sha cannot. zizmor's audit of pins
+fails on any other `uses:`, whoever publishes the action, under the policy in
+[.github/zizmor.yml](../../.github/zizmor.yml). A workflow in this repository, named by its path,
+is exempt. To find the sha for a release, read the commit its tag points at:
+`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when the tag is
+annotated. Updating an action means changing both the sha and the comment. A container image is
+pinned by its digest, after its tag.
+
+**The workflows are audited by zizmor and actionlint**, before each commit and in CI.
+
+- **zizmor checks them for security**, with Dependabot's configuration and
+  `.pre-commit-config.yaml`. It finds a token a checkout leaves on disk, an expression expanded
+  into a script, a cache a release could restore, and an action or an image that is not pinned.
+  Its online audits, which read each action's own repository, run only in CI, with the job's
+  token.
+- **actionlint checks the workflows for correctness**: their syntax, a job `needs:` cannot find,
+  an expression of the wrong type, and each step's shell script through shellcheck. A machine
+  without shellcheck checks no script, so CI's job fails when shellcheck is missing.
+- **A finding fails the commit and the job.** It is fixed in the workflow. An expression reaches
+  a script through `env:`, and a checkout sets `persist-credentials: false`. A finding that is
+  wrong is ignored on its line with the reason beside it, as `ctest.yml` does for each step that
+  runs in `cmd`.
+- **Each tool is pinned** to one release, in `.pre-commit-config.yaml` and in the job, and the two
+  are moved together. Their configuration is in `.github/zizmor.yml` and
+  `.github/actionlint.yaml`, and each entry there says why it is needed.
+
+The job is `workflows`, in [review-gates.yml](../../.github/workflows/review-gates.yml).
 
 **Every workflow states the permissions of its token.** A workflow that states none gets the
 repository's defaults, which can write. A workflow that only reads the checkout says so at the

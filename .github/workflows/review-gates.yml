@@ -21,6 +21,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
+        persist-credentials: false
     # Node runs the gates directly; they use only its own modules and the gates' shared ones in
     # scripts/, and need no install. The install below is the type checker, Node's type
     # declarations, the linter and the formatter, at the versions package-lock.json names
@@ -49,9 +50,10 @@ jobs:
       shell: bash
       env:
         BEFORE: ${{ github.event.before }}
+        BASE_REF: ${{ github.base_ref }}
       run: |
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          echo "GATE_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+          echo "GATE_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
         elif [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
           if ! parent=$(git rev-parse --verify --quiet 'HEAD^'); then
             echo "::error::The push names no previous tip of main that the checkout has, and HEAD is a root commit, so there is no base to compare against."
@@ -69,12 +71,6 @@ jobs:
     - name: Link rule
       if: ${{ !cancelled() }}
       run: node scripts/linkrule.ts
-    # Every action is pinned to a full commit sha, because a tag can be moved to other code after
-    # it was reviewed. The version in the comment beside each sha is for a reader, and nothing
-    # checks it. A local action, named by a path in this repository, needs no sha.
-    - name: Actions are pinned to a commit
-      if: ${{ !cancelled() }}
-      run: node scripts/pinned.ts
     # npm brings only development tools at exact versions, from the registry, with install
     # scripts off, and no TypeScript file imports a package at run time
     - name: npm tools are pinned
@@ -129,3 +125,36 @@ jobs:
     - name: Changelog
       if: ${{ !cancelled() }}
       run: node scripts/changelog.ts --base "$GATE_BASE"
+
+  # zizmor audits the workflows, Dependabot's configuration and .pre-commit-config.yaml for
+  # security, online audits included, which read the actions' own repositories with the job's
+  # token. Its audit of pins fails an action that is not pinned to a full commit sha, since a
+  # tag can be moved to other code after it was reviewed. actionlint checks the workflows for
+  # correctness, and each step's shell script through shellcheck. Each is the release
+  # .pre-commit-config.yaml pins, and a finding from either fails the job.
+  workflows:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    env:
+      ZIZMOR_VERSION: "1.33.1"
+      ACTIONLINT_VERSION: "1.7.12"
+      ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: zizmor
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: pipx run "zizmor==$ZIZMOR_VERSION" --no-progress --format=github .github .pre-commit-config.yaml
+    # actionlint's release archive, checked against its pinned SHA-256 before it is unpacked. A
+    # runner without shellcheck would leave every shell script unchecked, so its absence fails.
+    - name: actionlint
+      if: ${{ !cancelled() }}
+      run: |
+        command -v shellcheck
+        archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+        curl -fsSL -o "$RUNNER_TEMP/$archive" "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/$archive"
+        echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+        tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" actionlint
+        "$RUNNER_TEMP/actionlint" -color

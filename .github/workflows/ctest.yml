@@ -1,8 +1,7 @@
 # Builds the tree in Debug and in Release and runs the Boost.Test suites through ctest in each. A
 # release ships the Release build, so a defect only Release shows fails here, not in a release.
-# A pushed tag vX.Y.Z, or vX.Y.Z-rc.N for a release candidate, also publishes the Release build's
-# install tree, its installer and the Flatpak as a GitHub release, once every job has passed.
-# This is a separate workflow
+# release.yml calls it for a release's tag, and the Release build then packages its install tree
+# and its installer for the release to publish. This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
 # needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
@@ -12,14 +11,13 @@ name: ctest
 # whole life of a pull request. The cost of that is a second Vulkan SDK install and a second
 # boost build per push. A branch with no pull request open gets no run - open one to get CI.
 # A change to documents alone does not run it: no build or test reads docs/ or a Markdown file.
-# A tag push is never path-filtered, so a release always runs.
 on:
   push:
     branches: [main]
-    tags: ['v*']
     paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
+  workflow_call:
 
 # A push that supersedes an earlier one cancels it. The cold dependency build is expensive
 # enough that queueing runs of the same branch is worth avoiding.
@@ -33,7 +31,9 @@ permissions:
 jobs:
   test:
     runs-on: windows-2025-vs2026
-    timeout-minutes: ${{ matrix.timeout }}
+    # A release's tag restores nothing and builds every package from source, so it has the
+    # longest a hosted job may run
+    timeout-minutes: ${{ startsWith(github.ref, 'refs/tags/') && 360 || matrix.timeout }}
 
     # actions: write lets a save delete the cache entries it replaced
     permissions:
@@ -93,6 +93,7 @@ jobs:
           # the whole history, so the fails-first step can find the branch a pull request
           # merges into and read each changed file at its version there
           fetch-depth: 0
+          persist-credentials: false
 
       # A release's tag has to name the version the tree builds, and the changelog has to have
       # that version's section, which becomes the release's notes. The step gives the configure
@@ -341,6 +342,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
 
       # The ci presets configure with the vcpkg checkout above, and with a job pool that holds
       # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
@@ -348,7 +350,8 @@ jobs:
       # of the installed bin directory the other link edges are reading. Only linking is pooled,
       # so compilation still uses the whole machine.
       - name: Configure
-        shell: cmd
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         env:
           RELEASE_OPTIONS: ${{ steps.tag.outputs.options }}
         run: |
@@ -394,7 +397,7 @@ jobs:
       # same packages, and each saves under a key of its own, because two saves of one key
       # cannot both succeed.
       - name: Save the vcpkg binaries
-        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build'
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !startsWith(github.ref, 'refs/tags/')
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
@@ -404,7 +407,7 @@ jobs:
       # never read again. scripts/prunecache.ts deletes them, and never fails the job. The
       # prefix holds the toolset, so while runners on two images build, each keeps its own.
       - name: Delete the vcpkg binaries this save replaced
-        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build'
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -425,7 +428,8 @@ jobs:
 
       - name: Build
         if: matrix.part == 'build'
-        shell: cmd
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --build "%BUILD_DIR%" || exit /b 1
@@ -442,7 +446,8 @@ jobs:
       # parts so that its longest parts run beside each other.
       - name: Test
         if: matrix.part == 'build'
-        shell: cmd
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
@@ -686,7 +691,8 @@ jobs:
       # depend on the build type.
       - name: Build the starter example
         if: matrix.part == 'beside'
-        shell: cmd
+        # vcvars is a batch file, and each command checks its own exit
+        shell: cmd  # zizmor: ignore[misfeature]
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
@@ -717,63 +723,7 @@ jobs:
           # the harness enters the developer environment through this file rather than looking
           # for a Visual Studio edition the image does not have
           V3D_VCVARS: ${{ runner.temp }}\vcvars.bat
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/${{ github.base_ref }}"
+          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/$env:BASE_REF"
           if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }
-
-  # A release's tag builds the Flatpak as pull requests do, as a release.
-  flatpak:
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/flatpak.yml
-
-  # A release's tag publishes the packages once every build and test has passed. The packages are
-  # attested, so a user can check they were built here, from the tagged commit. The release's notes
-  # are the changelog's section for its version, followed by a link to the code signing policy,
-  # and a release candidate is marked as one.
-  release:
-    needs: [test, flatpak]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-26.04
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # the Windows packages are the artifact release, and the Flatpak is release-flatpak
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: release*
-          merge-multiple: true
-          path: dist
-
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: dist/*
-
-      - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          # a release asset is a file, so a directory here would fail the upload after the release
-          # was created
-          if [ -n "$(find dist -mindepth 1 -type d)" ]; then
-            echo "dist holds a directory, where it should hold only the files to publish:"
-            find dist
-            exit 1
-          fi
-          number="${TAG#v}"
-          number="${number%%-*}"
-          # the lines after the version's heading, up to the next version's
-          awk -v heading="## [$number]" 'index($0, heading) == 1 { on = 1; next } /^## \[/ { if (on) exit } on' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then
-            echo "CHANGELOG.md's section for $number is empty"
-            exit 1
-          fi
-          # SignPath Foundation requires every release page to link the code signing policy
-          printf '\n---\n\n[Code signing policy](%s/%s#code-signing-policy)\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" >> notes.md
-          prerelease=()
-          case "$TAG" in *-rc.*) prerelease=(--prerelease) ;; esac
-          gh release create "$TAG" dist/* --verify-tag --title "Vertical3D ${TAG#v}" --notes-file notes.md "${prerelease[@]}"

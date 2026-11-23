@@ -90,7 +90,9 @@ A fix lands on `main` first, through a pull request, as any change does.
 
 ## What the workflow does
 
-[ctest.yml](../../.github/workflows/ctest.yml) runs on a pushed `v*` tag as it runs on a pull
+[release.yml](../../.github/workflows/release.yml) runs on a pushed `v*` tag. It calls
+[ctest.yml](../../.github/workflows/ctest.yml) and
+[flatpak.yml](../../.github/workflows/flatpak.yml), which build and test as they do on a pull
 request, with these steps added:
 
 1. It checks that the tag is `vX.Y.Z` or `vX.Y.Z-rc.N`, that `X.Y.Z` is the number `project()`
@@ -100,11 +102,17 @@ request, with these steps added:
 3. The Release build installs, runs every app from the install, and zips the install tree as
    `vertical3d-<version>-windows-x64.zip`. It builds the installer,
    `vertical3d-<version>-windows-x64-setup.exe`, and checks it installs and uninstalls.
-4. It calls [flatpak.yml](../../.github/workflows/flatpak.yml), which builds the Flatpak with
-   the same release options, as `vertical3d-<version>-linux-x86_64.flatpak`.
+4. flatpak.yml builds the Flatpak with the same release options, as
+   `vertical3d-<version>-linux-x86_64.flatpak`.
 5. Once every job has passed, the release job attests the three files, and publishes a GitHub
    release from the tag. Its notes are the changelog's section, and a candidate is marked as a
    pre-release.
+
+**A release restores nothing from the cache, and saves nothing to it.** Any run on `main` can
+write the cache, so a release that restored it would ship what that run wrote. Each of
+release.yml's jobs sets `cache-mode: none`, which GitHub enforces with the job's cache token,
+whichever action asks. Every package is built from source and every tool fetched from its
+release. A release therefore takes hours, and the Windows jobs have six hours on a tag.
 
 ## Signing
 
