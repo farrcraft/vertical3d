@@ -113,6 +113,8 @@ write the cache, so a release that restored it would ship what that run wrote. E
 release.yml's jobs sets `cache-mode: none`, which GitHub enforces with the job's cache token,
 whichever action asks. Every package is built from source and every tool fetched from its
 release. A release therefore takes hours, and the Windows jobs have six hours on a tag.
+[scheduled.yml](../../.github/workflows/scheduled.yml) builds and tests the same way each Monday,
+so a package that stops building from source is found before a release is.
 
 ## Signing
 

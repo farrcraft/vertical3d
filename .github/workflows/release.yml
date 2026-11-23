@@ -23,10 +23,12 @@ permissions:
 
 jobs:
   # actions: write is what ctest.yml's job asks for, to delete the cache entries a save
-  # replaced. A release saves nothing, so it deletes nothing.
+  # replaced. A cold run saves nothing, so it deletes nothing.
   test:
     uses: ./.github/workflows/ctest.yml
     cache-mode: none
+    with:
+      cold: true
     permissions:
       contents: read
       actions: write

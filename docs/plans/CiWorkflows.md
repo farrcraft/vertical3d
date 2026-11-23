@@ -105,7 +105,7 @@ the options before the record is drafted.
 | [5](#step-5--the-cost-of-moyas-suite) | The cost of moya's suite | `moya/tests` | — | done |
 | [6](#step-6--the-linux-jobs-split) | The Linux jobs split | `.github/workflows/portable.yml`, `scripts/portable` | 0173, 0174 | done |
 | [7](#step-7--the-windows-job-split) | The Windows job split | `.github/workflows/ctest.yml` | — | done |
-| [8](#step-8--checks-by-event) | Checks by event | `.github/workflows` | 0257 | open |
+| [8](#step-8--checks-by-event) | Checks by event | `.github/workflows` | 0257 | in progress |
 | [9](#step-9--the-workflows-audited) | The workflows audited | `.github`, `.pre-commit-config.yaml` | 0258, 0259 | in progress |
 | [10](#step-10--required-checks) | Required checks | the repository's settings | 0257 | open |
 | [11](#step-11--the-documents) | The documents | `docs` | — | open |
@@ -394,6 +394,25 @@ Under the tiers step 1 settles.
 **Tests:** a run started by hand on the scheduled workflow fuzzes every target and builds with an
 empty cache. A crash it finds opens an issue with the input.
 
+**In progress.** `scheduled.yml` runs at 04:00 UTC each Monday and Thursday, and by hand.
+
+* **Its `fuzz` job fuzzes each target for 90 minutes**, in the portable image, as the clang job's
+  `fuzz` stage does. The corpus is restored from the newest cache entry, saved after the batch
+  and the older entries pruned. GitHub evicts an entry nobody reads for seven days, so the corpus
+  is read twice a week. `build.sh`'s fuzz stage now fuzzes every target before it fails, and
+  names each that did.
+* **Monday's run and a run by hand also build as a release does.** They call `ctest.yml` and
+  `flatpak.yml` with `cache-mode: none`, as `release.yml` does. `ctest.yml` takes an input `cold`
+  in place of its checks for a tag: a cold run has six hours and saves and prunes nothing. A
+  called run's concurrency group names the workflow that called it, so a push to main does not
+  cancel the scheduled build.
+* **A failed run opens an issue**, or comments on the one already open. The issue names each
+  job's result and gives each input a target failed on in base64, up to 4096 bytes.
+
+zizmor and actionlint are clean over it, and the fuzz stage passes in the portable image. The
+issue's body was checked against two planted inputs. The step is verified once a run started by
+hand on main passes, and a run that crashes opens its issue.
+
 ### Step 9 — The workflows audited
 
 Under the choices steps 2 and 3 settle.
@@ -422,8 +441,9 @@ found three more expressions, and the Flatpak's image pinned by a tag.
 * **A release has a workflow of its own**, `release.yml`. It calls `ctest.yml` and `flatpak.yml`
   with `cache-mode: none` on each job, which GitHub enforces with the job's cache token, and then
   publishes. A step's `if:` on the tag does not satisfy zizmor, and the docs do not say whether
-  `cache-mode` takes an expression, so the release could not stay a run of `ctest.yml`. The
-  vcpkg save and its prune skip a tag too, and the Windows jobs have six hours on one.
+  `cache-mode` takes an expression, so the release could not stay a run of `ctest.yml`. Its
+  call passes `cold`, so the vcpkg save and its prune are skipped and the Windows jobs have six
+  hours.
 * **The four `cmd` steps are ignored on their lines.** Each enters the developer environment
   through a batch file, and each of its commands checks its own exit.
 * **zizmor's self-repository audit is off.** actionlint does not parse GitHub's `$/` form yet.

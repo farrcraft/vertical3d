@@ -17,12 +17,19 @@ on:
     paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
+  # release.yml and scheduled.yml call it with nothing restored from the cache
   workflow_call:
+    inputs:
+      cold:
+        description: The caller's jobs restore nothing from the cache and save nothing to it
+        type: boolean
+        default: false
 
 # A push that supersedes an earlier one cancels it. The cold dependency build is expensive
-# enough that queueing runs of the same branch is worth avoiding.
+# enough that queueing runs of the same branch is worth avoiding. A called run's group names the
+# workflow that called it, so a scheduled run on main is not cancelled by a push to main.
 concurrency:
-  group: ctest-${{ github.ref }}
+  group: ctest-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -31,9 +38,9 @@ permissions:
 jobs:
   test:
     runs-on: windows-2025-vs2026
-    # A release's tag restores nothing and builds every package from source, so it has the
-    # longest a hosted job may run
-    timeout-minutes: ${{ startsWith(github.ref, 'refs/tags/') && 360 || matrix.timeout }}
+    # A cold run restores nothing and builds every package from source, so it has the longest a
+    # hosted job may run
+    timeout-minutes: ${{ inputs.cold && 360 || matrix.timeout }}
 
     # actions: write lets a save delete the cache entries it replaced
     permissions:
@@ -397,7 +404,7 @@ jobs:
       # same packages, and each saves under a key of its own, because two saves of one key
       # cannot both succeed.
       - name: Save the vcpkg binaries
-        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !startsWith(github.ref, 'refs/tags/')
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !inputs.cold
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
@@ -407,7 +414,7 @@ jobs:
       # never read again. scripts/prunecache.ts deletes them, and never fails the job. The
       # prefix holds the toolset, so while runners on two images build, each keeps its own.
       - name: Delete the vcpkg binaries this save replaced
-        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !startsWith(github.ref, 'refs/tags/')
+        if: steps.vcpkg-used.outputs.changed == 'True' && matrix.part == 'build' && !inputs.cold
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}

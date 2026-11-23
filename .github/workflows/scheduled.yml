@@ -1,0 +1,173 @@
+# The checks too long for a pull request, on a schedule. Each fuzz target is fuzzed in a long
+# batch, from the corpus the last batch kept. Once a week the tree is also built and tested as a
+# release builds it, with nothing restored from the cache, so a dependency that stops building
+# from source is found before a release is. A run that fails opens an issue, since no pull
+# request is there to show it.
+#
+# Monday's run fuzzes and builds, and Thursday's only fuzzes. GitHub evicts a cache entry nobody
+# has read for seven days, so the corpus is read twice a week. A run started by hand does both.
+name: scheduled
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+    - cron: '0 4 * * 4'
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The fuzz targets as the portable job's fuzz stage builds them, each fuzzed for FUZZ_SECONDS.
+  # A target that fails leaves its input under crashes/, which is uploaded for the issue.
+  fuzz:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 330
+
+    # actions: write lets a save delete the corpus entries it replaced
+    permissions:
+      contents: read
+      actions: write
+
+    env:
+      WORK_DIR: ${{ github.workspace }}/out/build/portable
+      VCPKG_CACHE: ${{ github.workspace }}/out/build/portable/vcpkg-cache
+      # three targets for 90 minutes each, inside the job's limit
+      FUZZ_SECONDS: "5400"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the image
+        run: docker build -t v3d-portable scripts/portable
+
+      # The packages the portable job's clang stages saved. The fuzz job saves none of its own.
+      - name: Restore the vcpkg binaries
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'scripts/portable/Dockerfile') }}-
+
+      # The newest corpus. Its key ends in the run id and never matches exactly, so a restore
+      # takes the newest entry under the prefix.
+      - name: Restore the corpus
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.WORK_DIR }}/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: fuzz-corpus-
+
+      - name: Fuzz
+        run: |
+          mkdir -p "$VCPKG_CACHE"
+          docker run --rm -e FUZZ_SECONDS -v "$GITHUB_WORKSPACE:/src:ro" -v "$WORK_DIR:/work" v3d-portable bash /usr/local/bin/v3d-portable fuzz
+
+      # Saved whether or not a target failed, since what the batch found is kept either way
+      - name: Save the corpus
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.WORK_DIR }}/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+
+      # A restore takes the newest corpus, so the older ones are never read again.
+      # scripts/prunecache.ts deletes them, and never fails the job.
+      - name: Delete the corpus this save replaced
+        if: ${{ !cancelled() }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SAVED: fuzz-corpus-${{ github.run_id }}
+        run: node scripts/prunecache.ts --prefix fuzz-corpus- --saved "$SAVED"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ failure() }}
+        with:
+          name: fuzz-crashes
+          path: ${{ env.WORK_DIR }}/crashes
+          if-no-files-found: ignore
+
+  # The tree as a release builds it, through the workflows a release calls, with every package
+  # built from source and every tool fetched from its release. actions: write is what ctest.yml's
+  # job asks for, and a cold run deletes nothing with it.
+  test:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 1'
+    uses: ./.github/workflows/ctest.yml
+    cache-mode: none
+    with:
+      cold: true
+    permissions:
+      contents: read
+      actions: write
+
+  flatpak:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 1'
+    uses: ./.github/workflows/flatpak.yml
+    cache-mode: none
+
+  # One open issue holds every failure until it is closed: a run that fails while one is open
+  # comments on it. It names the run and each job's result, and gives each input a fuzz target
+  # failed on, in base64.
+  report:
+    needs: [fuzz, test, flatpak]
+    if: ${{ failure() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.fuzz.result == 'failure'
+        continue-on-error: true
+        with:
+          name: fuzz-crashes
+          path: crashes
+
+      - name: Open or comment on the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FUZZ: ${{ needs.fuzz.result }}
+          TEST: ${{ needs.test.result }}
+          FLATPAK: ${{ needs.flatpak.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="The scheduled run failed"
+          {
+            echo "[The run]($RUN) failed."
+            echo
+            echo "| job | result |"
+            echo "|---|---|"
+            echo "| fuzz | $FUZZ |"
+            echo "| test | $TEST |"
+            echo "| flatpak | $FLATPAK |"
+            if [ -d crashes ]; then
+              for input in crashes/*; do
+                [ -f "$input" ] || continue
+                echo
+                size=$(stat -c %s "$input")
+                if [ "$size" -gt 4096 ]; then
+                  echo "\`$(basename "$input")\`, $size bytes, of which the first 4096 in base64:"
+                else
+                  echo "\`$(basename "$input")\`, $size bytes, in base64:"
+                fi
+                echo
+                echo '```'
+                head -c 4096 "$input" | base64
+                echo '```'
+              done
+            fi
+          } > body.md
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number,title \
+            --jq "map(select(.title == \"$title\")) | .[0].number // empty")
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body-file body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file body.md
+          fi

@@ -338,15 +338,22 @@ Clang, so it builds only off MSVC. Given a corpus directory and no `-runs`, a ta
 until it finds a failure or is stopped. The first directory it is given is where it keeps the
 inputs that reach new code.
 
-**CI fuzzes each target for 60 seconds**, in the Linux job's `fuzz` stage, under both
+**A pull request fuzzes each target for 60 seconds**, in the Linux job's `fuzz` stage, under both
 sanitizers. [scripts/portable/build.sh](../../scripts/portable/build.sh) configures the libraries
 that declare a target, image and rib, and builds the targets alone. It keeps the inputs it finds
 under the job's work directory, and `FUZZ_SECONDS` changes the time.
 `scripts\portable.cmd` runs the same script locally and keeps its work in a Docker volume, so
 each local run carries on from the corpus of the last.
 
-**A failure prints the input that caused it.** libFuzzer writes it to a file named
-`crash-<hash>` and prints it in the log. Fix the parser, then add the input to the library's
+**A scheduled run fuzzes each target for 90 minutes**, twice a week, in
+[scheduled.yml](../../.github/workflows/scheduled.yml)'s `fuzz` job. It starts from the corpus
+the last scheduled run kept in the Actions cache, and saves what it finds there. GitHub evicts a
+cache entry nobody reads for seven days, which twice a week stays clear of.
+
+**A failure keeps the input that caused it**, and the other targets are still fuzzed. libFuzzer
+writes the input under the work directory's `crashes/`, named for the target and `crash-<hash>`,
+and prints it in the log. A scheduled run that fails opens an issue that holds the input in
+base64, or comments on the one already open. Fix the parser, then add the input to the library's
 suite as a test case that fails without the fix.
 
 **A new parser of a file format gets a target.** Write `api/<lib>/tests/fuzz/<Format>Fuzzer.cxx`,

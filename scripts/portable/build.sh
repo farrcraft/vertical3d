@@ -82,9 +82,10 @@ stage_rgb() {
 
 # The fuzz targets are built alone, instrumented for libFuzzer, from the libraries that declare
 # one. Each target runs for FUZZ_SECONDS, starting from its fixtures. What it finds that reaches
-# new code is kept under $work/corpus, so a local run carries on from the last one. A failure
-# stops the script, and libFuzzer prints the input that caused it, which belongs in the
-# library's tests once the fault is fixed.
+# new code is kept under $work/corpus, so a local run carries on from the last one. A target that
+# fails leaves the input that caused it under $work/crashes, and the others are still fuzzed. The
+# stage then fails and names each target that did. The input belongs in the library's tests once
+# the fault is fixed.
 stage_fuzz() {
     configure "$work/fuzz" -DV3D_BUILD_MOYA=OFF -DV3D_FUZZ=ON "-DV3D_LIBRARIES=image;rib"
     # Each ctest entry fuzz_<name> runs the target v3dfuzz_<name> over its corpus. ctest names
@@ -95,15 +96,21 @@ stage_fuzz() {
     cmake --build "$work/fuzz" --target "${names[@]/#/v3dfuzz_}"
 
     local fuzz_seconds="${FUZZ_SECONDS:-60}"
-    local name command
+    local name command failed=()
     for name in "${names[@]}"; do
         # the program, then -runs=0, then the corpus directories
         mapfile -t command < <(ctest --test-dir "$work/fuzz" -R "^fuzz_${name}\$" --show-only=json-v1 \
             | jq -r '.tests[0].command[]')
         mkdir -p "$work/corpus/v3dfuzz_$name" "$work/crashes"
-        "${command[0]}" -max_total_time="$fuzz_seconds" -print_final_stats=1 \
-            -artifact_prefix="$work/crashes/v3dfuzz_$name-" "$work/corpus/v3dfuzz_$name" "${command[@]:2}"
+        if ! "${command[0]}" -max_total_time="$fuzz_seconds" -print_final_stats=1 \
+            -artifact_prefix="$work/crashes/v3dfuzz_$name-" "$work/corpus/v3dfuzz_$name" "${command[@]:2}"; then
+            failed+=("$name")
+        fi
     done
+    if [ "${#failed[@]}" -gt 0 ]; then
+        echo "These fuzz targets failed, and left their inputs under $work/crashes: ${failed[*]}" >&2
+        exit 1
+    fi
 }
 
 case "$stage" in

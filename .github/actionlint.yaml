@@ -6,8 +6,11 @@ self-hosted-runner:
   labels:
     - ubuntu-26.04
 paths:
+  # GitHub's cache-mode, which a release and the scheduled build set to none on each job that
+  # calls a workflow, is missing from actionlint's schema
   .github/workflows/release.yml:
     ignore:
-      # GitHub's cache-mode, which a release sets to none on every job, is missing from
-      # actionlint's schema
+      - 'unexpected key "cache-mode" for "job" section'
+  .github/workflows/scheduled.yml:
+    ignore:
       - 'unexpected key "cache-mode" for "job" section'

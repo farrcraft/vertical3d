@@ -17,8 +17,9 @@ on:
     paths-ignore: ['docs/**', '**/*.md']
   workflow_call:
 
+# A called run's group names the workflow that called it, as ctest.yml's does
 concurrency:
-  group: flatpak-${{ github.ref }}
+  group: flatpak-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
